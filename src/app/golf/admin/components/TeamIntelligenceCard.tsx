@@ -7,6 +7,50 @@ interface Props {
   teams: AdminDashboardData['teams'];
 }
 
+const barColors = ['#16A34A', '#2563EB', '#8B5CF6', '#F59E0B', '#EC4899', '#14B8A6'];
+
+function TeamComparisonChart({ teams }: { teams: AdminDashboardData['teams'] }) {
+  const teamsWithScore = teams.filter((t) => t.avgScore != null).slice(0, 6);
+  if (teamsWithScore.length < 2) return null;
+
+  const maxScore = Math.max(...teamsWithScore.map((t) => t.avgScore ?? 0));
+  const minScore = Math.min(...teamsWithScore.map((t) => t.avgScore ?? 0));
+  const range = maxScore - minScore || 1;
+
+  return (
+    <div className="mb-5">
+      <h4 className="text-sm font-medium text-warm-500 mb-3">Team Scoring Comparison</h4>
+      <div className="space-y-2.5">
+        {teamsWithScore.map((team, i) => {
+          const score = team.avgScore ?? 0;
+          const normalized = maxScore === minScore ? 50 : ((maxScore - score) / range) * 60 + 30;
+          const color = barColors[i % barColors.length]!;
+          return (
+            <div key={team.id} className="flex items-center gap-3">
+              <span className="text-xs text-warm-500 w-24 truncate text-right shrink-0" title={team.name}>
+                {team.name}
+              </span>
+              <div className="flex-1 h-6 bg-warm-50 rounded-lg overflow-hidden relative">
+                <div
+                  className="h-full rounded-lg transition-all duration-500 flex items-center justify-end pr-2"
+                  style={{
+                    width: `${normalized}%`,
+                    backgroundImage: `linear-gradient(to right, ${color}99, ${color})`,
+                  }}
+                >
+                  <span className="text-[10px] font-semibold text-white drop-shadow-sm tabular-nums">
+                    {score.toFixed(1)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export function TeamIntelligenceCard({ teams }: Props) {
   if (teams.length === 0) {
     return (
@@ -40,6 +84,8 @@ export function TeamIntelligenceCard({ teams }: Props) {
           <span>{totalRoundsWeek} rounds/wk</span>
         </div>
       </div>
+
+      <TeamComparisonChart teams={teams} />
 
       <div className="space-y-3">
         {teams.map((team) => (

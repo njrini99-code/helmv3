@@ -1,7 +1,7 @@
 'use client';
 
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
-import { AdminBarChart, AdminDonutChart } from './AdminChart';
+import { AdminAreaChart, AdminDonutChart } from './AdminChart';
 import { IconUsers, IconTrendingUp, IconTrendingDown } from '@/components/icons';
 import { cn } from '@/lib/utils';
 
@@ -39,7 +39,6 @@ export function UserBreakdownCard({ users }: Props) {
           </div>
           <h3 className="text-lg font-semibold text-warm-900">User Analytics</h3>
         </div>
-        {/* Growth badge */}
         <div className={cn(
           'flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full',
           isGrowth ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
@@ -115,9 +114,9 @@ export function UserBreakdownCard({ users }: Props) {
         </div>
       )}
 
-      {/* Signups chart */}
+      {/* Signups chart - area chart */}
       {chartData.length > 0 && (
-        <AdminBarChart data={chartData} title="New Signups (12 Weeks)" />
+        <AdminAreaChart data={chartData} title="New Signups (12 Weeks)" color="#16A34A" height={100} />
       )}
     </div>
   );

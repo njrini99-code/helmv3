@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { cn } from '@/lib/utils';
 import { IconUsers, IconSearch } from '@/components/icons';
+import { DataExportButton } from './DataExportButton';
 
 interface Props {
   users: AdminDashboardData['userDirectory'];
@@ -24,12 +25,41 @@ function timeAgo(dateStr: string | null): string {
 }
 
 function formatDate(dateStr: string | null): string {
-  if (!dateStr) return '—';
+  if (!dateStr) return '\u2014';
   return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 type SortKey = 'name' | 'role' | 'team' | 'lastActive' | 'rounds' | 'signup';
 type SortDir = 'asc' | 'desc';
+
+type EngagementLevel = 'High' | 'Medium' | 'Low' | 'Dormant';
+
+function getEngagementLevel(user: AdminDashboardData['userDirectory'][number]): EngagementLevel {
+  if (!user.lastActiveAt) return 'Dormant';
+  const daysSinceActive = (Date.now() - new Date(user.lastActiveAt).getTime()) / 86400000;
+  if (daysSinceActive <= 7 && user.totalRounds >= 3) return 'High';
+  if (daysSinceActive <= 7) return 'Medium';
+  if (daysSinceActive <= 30) return 'Low';
+  return 'Dormant';
+}
+
+const engagementBadges: Record<EngagementLevel, string> = {
+  High: 'bg-emerald-50 text-emerald-700',
+  Medium: 'bg-blue-50 text-blue-600',
+  Low: 'bg-amber-50 text-amber-600',
+  Dormant: 'bg-warm-100 text-warm-400',
+};
+
+function getRowHighlight(user: AdminDashboardData['userDirectory'][number]): string {
+  if (!user.onboardingCompleted) return 'bg-amber-50/30';
+  if (user.lastActiveAt) {
+    const daysSinceActive = (Date.now() - new Date(user.lastActiveAt).getTime()) / 86400000;
+    if (daysSinceActive > 14) return 'bg-red-50/20';
+  } else if (user.role === 'player') {
+    return 'bg-red-50/20';
+  }
+  return '';
+}
 
 export function UserActivityTable({ users }: Props) {
   const [search, setSearch] = useState('');
@@ -42,7 +72,6 @@ export function UserActivityTable({ users }: Props) {
   const filtered = useMemo(() => {
     let result = users;
 
-    // Search
     if (search.trim()) {
       const q = search.toLowerCase();
       result = result.filter((u) =>
@@ -53,12 +82,10 @@ export function UserActivityTable({ users }: Props) {
       );
     }
 
-    // Role filter
     if (roleFilter !== 'all') {
       result = result.filter((u) => u.role === roleFilter);
     }
 
-    // Sort
     result = [...result].sort((a, b) => {
       const dir = sortDir === 'asc' ? 1 : -1;
       switch (sortKey) {
@@ -72,8 +99,8 @@ export function UserActivityTable({ users }: Props) {
         case 'team':
           return (a.teamName ?? '').localeCompare(b.teamName ?? '') * dir;
         case 'lastActive': {
-          const dateA = a.lastRoundDate ? new Date(a.lastRoundDate).getTime() : 0;
-          const dateB = b.lastRoundDate ? new Date(b.lastRoundDate).getTime() : 0;
+          const dateA = a.lastActiveAt ? new Date(a.lastActiveAt).getTime() : 0;
+          const dateB = b.lastActiveAt ? new Date(b.lastActiveAt).getTime() : 0;
           return (dateA - dateB) * dir;
         }
         case 'rounds':
@@ -106,7 +133,7 @@ export function UserActivityTable({ users }: Props) {
 
   const sortIcon = (key: SortKey) => {
     if (sortKey !== key) return null;
-    return <span className="ml-1 text-[10px]">{sortDir === 'asc' ? '▲' : '▼'}</span>;
+    return <span className="ml-1 text-[10px]">{sortDir === 'asc' ? '\u25b2' : '\u25bc'}</span>;
   };
 
   const roleCounts = useMemo(() => {
@@ -117,6 +144,20 @@ export function UserActivityTable({ users }: Props) {
     }
     return counts;
   }, [users]);
+
+  const exportData = useMemo(() => {
+    return filtered.map((u) => ({
+      name: [u.firstName, u.lastName].filter(Boolean).join(' ') || '\u2014',
+      email: u.email,
+      role: u.role ?? 'unknown',
+      team: u.teamName ?? '\u2014',
+      lastActive: u.lastActiveAt ? new Date(u.lastActiveAt).toISOString() : 'Never',
+      totalRounds: u.totalRounds,
+      signedUp: u.createdAt ? new Date(u.createdAt).toISOString() : '',
+      onboarded: u.onboardingCompleted ? 'Yes' : 'No',
+      engagement: getEngagementLevel(u),
+    }));
+  }, [filtered]);
 
   return (
     <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6 transition-all duration-200 hover:bg-white/80 hover:shadow-card-hover">
@@ -130,6 +171,10 @@ export function UserActivityTable({ users }: Props) {
             <p className="text-xs text-warm-400">{users.length} total users</p>
           </div>
         </div>
+        <DataExportButton
+          data={exportData}
+          filename={`golfhelm-users-${new Date().toISOString().slice(0, 10)}`}
+        />
       </div>
 
       {/* Filters */}
@@ -190,14 +235,17 @@ export function UserActivityTable({ users }: Props) {
                   {col.label}{sortIcon(col.key)}
                 </th>
               ))}
+              <th className="text-left py-2.5 px-2 text-xs font-medium text-warm-500 whitespace-nowrap">Engagement</th>
               <th className="text-left py-2.5 px-2 text-xs font-medium text-warm-500 whitespace-nowrap">Status</th>
             </tr>
           </thead>
           <tbody>
             {paged.map((u) => {
-              const name = [u.firstName, u.lastName].filter(Boolean).join(' ') || '—';
+              const name = [u.firstName, u.lastName].filter(Boolean).join(' ') || '\u2014';
+              const engagement = getEngagementLevel(u);
+              const rowHighlight = getRowHighlight(u);
               return (
-                <tr key={u.id} className="border-b border-warm-50 hover:bg-white/40 transition-colors">
+                <tr key={u.id} className={cn('border-b border-warm-50 hover:bg-white/40 transition-colors', rowHighlight)}>
                   <td className="py-2.5 px-2">
                     <div className="flex items-center gap-2.5">
                       <div className="w-7 h-7 rounded-full bg-primary-100 flex items-center justify-center shrink-0">
@@ -223,14 +271,14 @@ export function UserActivityTable({ users }: Props) {
                     </span>
                   </td>
                   <td className="py-2.5 px-2">
-                    <span className="text-warm-700 text-sm">{u.teamName ?? '—'}</span>
+                    <span className="text-warm-700 text-sm">{u.teamName ?? '\u2014'}</span>
                   </td>
                   <td className="py-2.5 px-2">
                     <span className={cn(
                       'text-sm tabular-nums',
-                      u.lastRoundDate ? 'text-warm-700' : 'text-warm-300'
+                      u.lastActiveAt ? 'text-warm-700' : 'text-warm-300'
                     )}>
-                      {timeAgo(u.lastRoundDate)}
+                      {timeAgo(u.lastActiveAt)}
                     </span>
                   </td>
                   <td className="py-2.5 px-2">
@@ -243,6 +291,14 @@ export function UserActivityTable({ users }: Props) {
                   </td>
                   <td className="py-2.5 px-2">
                     <span className="text-xs text-warm-500 tabular-nums">{formatDate(u.createdAt)}</span>
+                  </td>
+                  <td className="py-2.5 px-2">
+                    <span className={cn(
+                      'text-xs px-2 py-0.5 rounded-full font-medium',
+                      engagementBadges[engagement]
+                    )}>
+                      {engagement}
+                    </span>
                   </td>
                   <td className="py-2.5 px-2">
                     {u.onboardingCompleted ? (
@@ -268,7 +324,7 @@ export function UserActivityTable({ users }: Props) {
       {pageCount > 1 && (
         <div className="flex items-center justify-between mt-4 pt-3 border-t border-warm-100">
           <p className="text-xs text-warm-400">
-            Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filtered.length)} of {filtered.length}
+            Showing {page * PAGE_SIZE + 1}\u2013{Math.min((page + 1) * PAGE_SIZE, filtered.length)} of {filtered.length}
           </p>
           <div className="flex gap-1">
             <button

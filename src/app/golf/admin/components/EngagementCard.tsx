@@ -2,17 +2,23 @@
 
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { cn } from '@/lib/utils';
+import { AdminAreaChart, AdminDonutChart } from './AdminChart';
 import { IconTrendingUp } from '@/components/icons';
 
 interface Props {
   engagement: AdminDashboardData['engagement'];
   totalPlayers: number;
   totalCoaches: number;
+  playerEngagement?: AdminDashboardData['playerEngagement'];
+  stickiness?: AdminDashboardData['stickiness'];
 }
 
-export function EngagementCard({ engagement, totalPlayers, totalCoaches }: Props) {
-  // Mini sparkline for daily active users
-  const maxDaily = Math.max(...engagement.dailyActiveUsers.map((d) => d.count), 1);
+export function EngagementCard({ engagement, totalPlayers, totalCoaches, playerEngagement, stickiness }: Props) {
+  // Convert daily active users to area chart data
+  const dailyChartData = engagement.dailyActiveUsers.map((d) => ({
+    label: new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    value: d.count,
+  }));
 
   return (
     <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6 transition-all duration-200 hover:bg-white/80 hover:shadow-card-hover">
@@ -39,31 +45,45 @@ export function EngagementCard({ engagement, totalPlayers, totalCoaches }: Props
         </div>
       </div>
 
-      {/* Daily activity sparkline */}
-      {engagement.dailyActiveUsers.length > 0 && (
+      {/* Stickiness metric */}
+      {stickiness && stickiness.mau > 0 && (
+        <div className="bg-white/50 rounded-xl p-3 mb-5">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-warm-600">DAU/MAU Stickiness</span>
+            <span className={cn(
+              'text-xl font-semibold tabular-nums',
+              stickiness.dauMauRatio > 20 ? 'text-emerald-600' : stickiness.dauMauRatio > 10 ? 'text-amber-600' : 'text-red-500'
+            )}>
+              {stickiness.dauMauRatio}%
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Daily activity - area chart */}
+      {dailyChartData.length > 0 && (
         <div className="mb-5">
-          <h4 className="text-sm font-medium text-warm-500 mb-2">Daily Activity (30d)</h4>
-          <div className="flex items-end gap-[2px] h-16">
-            {engagement.dailyActiveUsers.map((d, i) => {
-              const h = Math.max((d.count / maxDaily) * 100, 3);
-              const isToday = i === engagement.dailyActiveUsers.length - 1;
-              return (
-                <div
-                  key={d.date}
-                  className={cn(
-                    'flex-1 rounded-t transition-all duration-200',
-                    isToday ? 'bg-primary-500' : d.count > 0 ? 'bg-primary-300' : 'bg-warm-100'
-                  )}
-                  style={{ height: `${h}%`, minHeight: 2 }}
-                  title={`${d.date}: ${d.count} rounds`}
-                />
-              );
-            })}
-          </div>
-          <div className="flex justify-between mt-1">
-            <span className="text-[10px] text-warm-400">30d ago</span>
-            <span className="text-[10px] text-warm-400">Today</span>
-          </div>
+          <AdminAreaChart
+            data={dailyChartData}
+            title="Daily Activity (30d)"
+            color="#16A34A"
+            height={120}
+          />
+        </div>
+      )}
+
+      {/* Player engagement segments donut */}
+      {playerEngagement && playerEngagement.segments.some((s) => s.count > 0) && (
+        <div className="mb-5">
+          <AdminDonutChart
+            data={playerEngagement.segments.map((s) => ({
+              label: s.label,
+              value: s.count,
+              color: s.color,
+            }))}
+            title="Player Engagement Segments"
+            size={110}
+          />
         </div>
       )}
 

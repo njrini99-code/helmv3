@@ -221,7 +221,7 @@ function calculatePressureMetrics(
       nonPressureRounds.length;
 
     // Lower is better, so if pressure avg is lower, clutch factor > 1
-    if (nonPressureAvg !== 0) {
+    if (pressureAvg !== 0 && nonPressureAvg !== 0) {
       clutchFactor = nonPressureAvg / pressureAvg;
     }
 

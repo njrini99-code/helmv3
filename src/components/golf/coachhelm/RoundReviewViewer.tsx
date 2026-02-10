@@ -421,9 +421,21 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
 // SUB-COMPONENTS
 // ============================================================================
 
+/** Strip NaN% artifacts from text stored in DB by earlier versions */
+function sanitizeNaN(text: string): string {
+  return text
+    .replace(/\bNaN%/g, '—')
+    .replace(/\bNaN\b/g, '—')
+    .replace(/\s+—\s+of rounds with\s+—\s+reliability\.?/gi, '')
+    .replace(/This occurs in\s+—\s+of rounds with\s+—\s+reliability\.?/gi, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
 /** Grade + Summary */
 function GradeSummaryCard({ content }: { content: RoundReviewContent }) {
   const gc = gradeColors[content.overallGrade] ?? gradeColors['C']!;
+  const cleanSummary = sanitizeNaN(content.summary);
   return (
     <div className="rounded-2xl border border-warm-200 bg-white/80 backdrop-blur-sm p-6 shadow-sm">
       <div className="flex items-start gap-5">
@@ -449,7 +461,7 @@ function GradeSummaryCard({ content }: { content: RoundReviewContent }) {
               {sentimentLabel[content.sentiment] ?? content.sentiment}
             </span>
           </div>
-          <p className="text-sm text-warm-700 leading-relaxed">{content.summary}</p>
+          <p className="text-sm text-warm-700 leading-relaxed">{cleanSummary}</p>
         </div>
       </div>
     </div>

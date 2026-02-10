@@ -1,6 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
+import { AdminSparkline } from './AdminChart';
 
 interface AdminStatCardProps {
   label: string;
@@ -10,6 +11,8 @@ interface AdminStatCardProps {
   detail?: string;
   accentColor?: 'green' | 'red' | 'amber' | 'blue';
   trend?: { value: number; label: string };
+  sparklineData?: number[];
+  sparklineColor?: string;
 }
 
 const accents = {
@@ -17,6 +20,13 @@ const accents = {
   red: 'border-l-red-500',
   amber: 'border-l-amber-500',
   blue: 'border-l-blue-500',
+};
+
+const sparklineColors: Record<string, string> = {
+  green: '#16A34A',
+  red: '#EF4444',
+  amber: '#F59E0B',
+  blue: '#2563EB',
 };
 
 export function AdminStatCard({
@@ -27,6 +37,8 @@ export function AdminStatCard({
   detail,
   accentColor = 'green',
   trend,
+  sparklineData,
+  sparklineColor,
 }: AdminStatCardProps) {
   return (
     <div
@@ -38,7 +50,7 @@ export function AdminStatCard({
       )}
     >
       <div className="flex items-start justify-between">
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="text-sm font-medium text-warm-500 truncate">{label}</p>
           <p className="mt-2 text-3xl font-semibold text-warm-900 tabular-nums tracking-tight">
             {typeof value === 'number' ? value.toLocaleString() : value}
@@ -65,8 +77,18 @@ export function AdminStatCard({
             {detail && <p className="text-xs text-warm-400">{detail}</p>}
           </div>
         </div>
-        <div className="p-2.5 bg-white/50 rounded-lg text-warm-500 shrink-0">
-          {icon}
+        <div className="flex flex-col items-end gap-2 shrink-0">
+          <div className="p-2.5 bg-white/50 rounded-lg text-warm-500">
+            {icon}
+          </div>
+          {sparklineData && sparklineData.length >= 2 && (
+            <AdminSparkline
+              data={sparklineData}
+              color={sparklineColor ?? sparklineColors[accentColor] ?? '#16A34A'}
+              width={64}
+              height={20}
+            />
+          )}
         </div>
       </div>
     </div>

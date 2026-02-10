@@ -1,7 +1,7 @@
 'use client';
 
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
-import { AdminBarChart, AdminProgressBar } from './AdminChart';
+import { AdminAreaChart, AdminFunnelChart, AdminProgressBar } from './AdminChart';
 import { cn } from '@/lib/utils';
 import {
   IconTrendingUp,
@@ -15,6 +15,8 @@ interface Props {
   users: AdminDashboardData['users'];
   usage: AdminDashboardData['usage'];
   coachhelm: AdminDashboardData['coachhelm'];
+  userJourney?: AdminDashboardData['userJourney'];
+  stickiness?: AdminDashboardData['stickiness'];
 }
 
 const HEALTH_LABELS: Record<string, { label: string; color: string }> = {
@@ -67,7 +69,7 @@ function HealthScoreRing({ score }: { score: number }) {
   );
 }
 
-export function GrowthCard({ growth, users, usage, coachhelm }: Props) {
+export function GrowthCard({ growth, users, usage, coachhelm, userJourney, stickiness }: Props) {
   const signupChartData = users.signupsByWeek.slice(-12).map((w) => ({
     label: w.week.slice(5),
     value: w.count,
@@ -75,6 +77,14 @@ export function GrowthCard({ growth, users, usage, coachhelm }: Props) {
 
   const sortedFeatures = [...usage.featureAdoption].sort((a, b) => b.count - a.count);
   const maxFeatureCount = sortedFeatures[0]?.count || 1;
+
+  // User journey funnel
+  const journeyStages = userJourney ? [
+    { label: 'Signups', value: userJourney.totalSignups, color: '#3B82F6' },
+    { label: 'Onboarded', value: userJourney.completedOnboarding, color: '#2563EB' },
+    { label: '1st Round', value: userJourney.submittedFirstRound, color: '#16A34A' },
+    { label: 'Active (7d)', value: userJourney.activeThisWeek, color: '#8B5CF6' },
+  ] : [];
 
   return (
     <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6 transition-all duration-200 hover:bg-white/80 hover:shadow-card-hover">
@@ -136,14 +146,47 @@ export function GrowthCard({ growth, users, usage, coachhelm }: Props) {
             </div>
           </div>
           <div className="bg-white/50 rounded-xl p-3">
-            <p className="text-xs text-warm-500 mb-0.5">Power Users</p>
+            <p className="text-xs text-warm-500 mb-0.5">
+              {stickiness ? 'DAU/MAU' : 'Power Users'}
+            </p>
             <div className="flex items-center gap-1">
               <IconSparkles size={14} className="text-primary-500" />
-              <span className="text-lg font-semibold text-warm-900 tabular-nums">{growth.npsProxy}%</span>
+              <span className="text-lg font-semibold text-warm-900 tabular-nums">
+                {stickiness ? `${stickiness.dauMauRatio}%` : `${growth.npsProxy}%`}
+              </span>
             </div>
           </div>
         </div>
       </div>
+
+      {/* User Journey Funnel */}
+      {journeyStages.length > 0 && journeyStages[0]!.value > 0 && (
+        <div className="mb-5">
+          <h4 className="text-sm font-medium text-warm-500 mb-2.5">User Journey Funnel</h4>
+          <AdminFunnelChart stages={journeyStages} height={160} />
+        </div>
+      )}
+
+      {/* DAU/WAU/MAU stickiness */}
+      {stickiness && stickiness.mau > 0 && (
+        <div className="mb-5">
+          <h4 className="text-sm font-medium text-warm-500 mb-2.5">Engagement Stickiness</h4>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="bg-white/50 rounded-xl p-2.5 text-center">
+              <p className="text-lg font-semibold text-warm-900 tabular-nums">{stickiness.dau}</p>
+              <p className="text-[10px] text-warm-400">DAU</p>
+            </div>
+            <div className="bg-white/50 rounded-xl p-2.5 text-center">
+              <p className="text-lg font-semibold text-warm-900 tabular-nums">{stickiness.wau}</p>
+              <p className="text-[10px] text-warm-400">WAU</p>
+            </div>
+            <div className="bg-white/50 rounded-xl p-2.5 text-center">
+              <p className="text-lg font-semibold text-warm-900 tabular-nums">{stickiness.mau}</p>
+              <p className="text-[10px] text-warm-400">MAU</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Cohort Retention */}
       <div className="mb-5">
@@ -164,10 +207,10 @@ export function GrowthCard({ growth, users, usage, coachhelm }: Props) {
         </div>
       </div>
 
-      {/* Signup Trend */}
+      {/* Signup Trend - area chart */}
       {signupChartData.length > 0 && (
         <div className="mb-5">
-          <AdminBarChart data={signupChartData} title="Signups (12 Weeks)" height={100} />
+          <AdminAreaChart data={signupChartData} title="Signups (12 Weeks)" color="#16A34A" height={100} />
         </div>
       )}
 

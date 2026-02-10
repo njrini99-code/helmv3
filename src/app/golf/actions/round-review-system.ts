@@ -1138,12 +1138,13 @@ export async function generateAndStoreRoundReview(
         const isPredictionText = /expected score|range:|key factor/i.test(aiSummary);
 
         // Only use AI summary if it's a genuine narrative (not a prediction) and clean
-        if (aiSummary && !aiSummary.includes('NaN') && aiSummary.length > 40 && !isPredictionText) {
+        const hasNaN = /\bNaN\b/.test(aiSummary) || /—%/.test(aiSummary);
+        if (aiSummary && !hasNaN && aiSummary.length > 40 && !isPredictionText) {
           reviewContent.summary = aiSummary;
         }
 
         // Add AI primary takeaway to recommendations if it's actionable
-        if (aiResult.review.primaryTakeaway && !aiResult.review.primaryTakeaway.includes('NaN')) {
+        if (aiResult.review.primaryTakeaway && !/\bNaN\b/.test(aiResult.review.primaryTakeaway)) {
           const takeaway = aiResult.review.primaryTakeaway;
           const isPredTakeaway = /expected score|range:|forecast/i.test(takeaway);
           if (!isPredTakeaway) {

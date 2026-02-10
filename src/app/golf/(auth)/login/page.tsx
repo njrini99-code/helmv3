@@ -16,6 +16,7 @@ function LoginContent() {
   const signupHref = returnTo ? `/golf/signup?returnTo=${encodeURIComponent(returnTo)}` : '/golf/signup';
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const supabase = createClient();
@@ -24,10 +25,18 @@ function LoginContent() {
     async function checkAuth() {
       const { data: { user } } = await supabase.auth.getUser();
       setIsLoggedIn(!!user);
+      if (user) {
+        const { data } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', user.id)
+          .maybeSingle();
+        setIsAdmin((data?.role as string) === 'admin');
+      }
       setCheckingAuth(false);
     }
     checkAuth();
-  }, [supabase.auth]);
+  }, [supabase, supabase.auth]);
 
   async function handleSignOut() {
     setIsLoggingOut(true);
@@ -224,6 +233,17 @@ function LoginContent() {
                 className="text-helm-green-600 font-semibold hover:text-helm-green-500 transition-colors"
               >
                 Sign up
+              </Link>
+            </p>
+          )}
+
+          {isLoggedIn && isAdmin && (
+            <p className="text-center mt-4">
+              <Link
+                href="/golf/admin"
+                className="text-xs text-warm-400 hover:text-warm-600 transition-colors"
+              >
+                Admin Dashboard
               </Link>
             </p>
           )}

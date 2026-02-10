@@ -120,7 +120,17 @@ export function useRoundReview(roundId: string | null, isCoach?: boolean): UseRo
           // If the review has rule-based content stored in round_stats, extract it
           const roundStats = data.round_stats;
           if (roundStats && typeof roundStats === 'object' && 'summary' in roundStats) {
-            setRuleBasedContent(roundStats as RoundReviewContent);
+            const content = roundStats as RoundReviewContent;
+            // Sanitize stale NaN text from previously generated reviews
+            if (content.summary && content.summary.includes('NaN')) {
+              content.summary = content.summary
+                .replace(/This occurs in NaN% of rounds with NaN% reliability\.?\s*/g, '')
+                .replace(/\bNaN%/g, '')
+                .replace(/\bNaN\b/g, '')
+                .replace(/\s{2,}/g, ' ')
+                .trim();
+            }
+            setRuleBasedContent(content);
           }
         }
         return true;

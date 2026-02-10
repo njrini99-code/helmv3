@@ -21,6 +21,7 @@ import { GrowthCard } from './components/GrowthCard';
 import { UserActivityTable } from './components/UserActivityTable';
 import { TeamRosterCard } from './components/TeamRosterCard';
 import { DailyCharts } from './components/DailyCharts';
+import { InsightCallout } from './components/InsightCallout';
 import {
   IconUsers,
   IconTarget,
@@ -338,6 +339,8 @@ export default function AdminDashboardPage() {
                     <QuickPulse data={data} />
                   </div>
 
+                  <InsightCallout data={data} tab="dashboard" />
+
                   {/* Top KPIs */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                     <AdminStatCard
@@ -399,6 +402,8 @@ export default function AdminDashboardPage() {
               {/* ============================================ */}
               {activeTab === 'visibility' && (
                 <>
+                  <InsightCallout data={data} tab="visibility" />
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <AdminStatCard
                       label="Total Users"
@@ -443,6 +448,8 @@ export default function AdminDashboardPage() {
               {/* ============================================ */}
               {activeTab === 'performance' && (
                 <>
+                  <InsightCallout data={data} tab="performance" />
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
                     <AdminStatCard
                       label="Scoring Avg"
@@ -490,7 +497,7 @@ export default function AdminDashboardPage() {
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <ScoringIntelligenceCard scoring={data.scoring} />
                     <TeamIntelligenceCard teams={data.teams} />
-                    <UsageMetricsCard usage={data.usage} />
+                    <UsageMetricsCard usage={data.usage} dataQuality={data.dataQuality} funnel={data.funnel} />
                   </div>
                 </>
               )}
@@ -500,6 +507,8 @@ export default function AdminDashboardPage() {
               {/* ============================================ */}
               {activeTab === 'growth' && (
                 <>
+                  <InsightCallout data={data} tab="growth" />
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
                     <AdminStatCard
                       label="Health Score"
@@ -550,16 +559,20 @@ export default function AdminDashboardPage() {
                       users={data.users}
                       usage={data.usage}
                       coachhelm={data.coachhelm}
+                      userJourney={data.userJourney}
+                      stickiness={data.stickiness}
                     />
                     <EngagementCard
                       engagement={data.engagement}
                       totalPlayers={data.users.totalPlayers}
                       totalCoaches={data.users.totalCoaches}
+                      playerEngagement={data.playerEngagement}
+                      stickiness={data.stickiness}
                     />
                   </div>
 
                   {/* CoachHelm AI Detail — full width */}
-                  <CoachHelmHealthCard coachhelm={data.coachhelm} />
+                  <CoachHelmHealthCard coachhelm={data.coachhelm} coachhelmRoi={data.coachhelmRoi} />
                 </>
               )}
 

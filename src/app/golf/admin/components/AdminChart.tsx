@@ -1,11 +1,20 @@
 'use client';
 
 import { cn } from '@/lib/utils';
+import { useState, useEffect, useRef, useCallback, useId } from 'react';
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
 interface ChartDataPoint {
   label: string;
   value: number;
 }
+
+// ---------------------------------------------------------------------------
+// AdminBarChart (upgraded)
+// ---------------------------------------------------------------------------
 
 interface AdminBarChartProps {
   data: ChartDataPoint[];
@@ -22,6 +31,9 @@ export function AdminBarChart({
 }: AdminBarChartProps) {
   const max = Math.max(...data.map((d) => d.value), 1);
   const total = data.reduce((s, d) => s + d.value, 0);
+  const avg = data.length > 0 ? total / data.length : 0;
+  const avgPct = (avg / max) * 100;
+  const gradientId = useId();
 
   return (
     <div>
@@ -29,38 +41,68 @@ export function AdminBarChart({
         <h4 className="text-sm font-medium text-warm-500">{title}</h4>
         <span className="text-xs text-warm-400 tabular-nums">{total.toLocaleString()} total</span>
       </div>
-      <div className="flex items-end gap-[3px]" style={{ height }}>
-        {data.map((d, i) => {
-          const barHeight = (d.value / max) * 100;
-          const isLast = i === data.length - 1;
-          return (
-            <div key={i} className="flex-1 flex flex-col items-center group relative">
-              {/* Tooltip */}
-              <div className="absolute -top-9 left-1/2 -translate-x-1/2 bg-warm-900 text-white text-xs px-2.5 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10 shadow-lg">
-                <span className="font-medium">{d.value}</span>
-                <span className="text-warm-300 ml-1">{d.label}</span>
-              </div>
-              {/* Value label on hover */}
-              {d.value > 0 && (
-                <span className="text-[9px] font-medium text-warm-500 tabular-nums mb-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                  {d.value}
-                </span>
-              )}
-              <div
-                className={cn(
-                  'w-full rounded-t-sm transition-all duration-300 group-hover:brightness-110',
-                  isLast ? 'rounded-t' : ''
+
+      {/* Hidden SVG for gradient definitions */}
+      <svg width={0} height={0} className="absolute">
+        <defs>
+          <linearGradient id={`bar-grad-${gradientId}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity={1} />
+            <stop offset="100%" stopColor={color} stopOpacity={0.6} />
+          </linearGradient>
+        </defs>
+      </svg>
+
+      <div className="relative">
+        <div className="flex items-end gap-[3px]" style={{ height }}>
+          {data.map((d, i) => {
+            const barHeight = (d.value / max) * 100;
+            return (
+              <div key={i} className="flex-1 flex flex-col items-center group relative">
+                {/* Tooltip */}
+                <div className="absolute -top-9 left-1/2 -translate-x-1/2 bg-warm-900 text-white text-xs px-2.5 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10 shadow-lg">
+                  <span className="font-medium">{d.value}</span>
+                  <span className="text-warm-300 ml-1">{d.label}</span>
+                </div>
+                {/* Value label on hover */}
+                {d.value > 0 && (
+                  <span className="text-[9px] font-medium text-warm-500 tabular-nums mb-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {d.value}
+                  </span>
                 )}
-                style={{
-                  height: `${Math.max(barHeight, 3)}%`,
-                  backgroundColor: isLast ? color : `${color}cc`,
-                  minHeight: 3,
-                }}
-              />
-            </div>
-          );
-        })}
+                <div
+                  className="w-full rounded-t transition-all duration-300 group-hover:brightness-110"
+                  style={{
+                    height: `${Math.max(barHeight, 3)}%`,
+                    background: `url(#bar-grad-${gradientId})`,
+                    backgroundColor: color,
+                    backgroundImage: `linear-gradient(to bottom, ${color}, ${color}99)`,
+                    minHeight: 3,
+                  }}
+                />
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Dashed average line */}
+        {data.length > 1 && avg > 0 && (
+          <div
+            className="absolute left-0 right-0 border-t-[1.5px] border-dashed pointer-events-none"
+            style={{
+              borderColor: `${color}66`,
+              bottom: `${avgPct}%`,
+            }}
+          >
+            <span
+              className="absolute -top-3 right-0 text-[8px] tabular-nums px-1 rounded"
+              style={{ color: `${color}cc` }}
+            >
+              avg {Math.round(avg)}
+            </span>
+          </div>
+        )}
       </div>
+
       <div className="flex gap-[3px] mt-1.5">
         {data.map((d, i) => (
           <div key={i} className="flex-1 text-center">
@@ -74,6 +116,10 @@ export function AdminBarChart({
   );
 }
 
+// ---------------------------------------------------------------------------
+// AdminDonutChart (upgraded with animated entry)
+// ---------------------------------------------------------------------------
+
 interface AdminDonutChartProps {
   data: { label: string; value: number; color: string }[];
   title: string;
@@ -82,6 +128,13 @@ interface AdminDonutChartProps {
 
 export function AdminDonutChart({ data, title, size = 120 }: AdminDonutChartProps) {
   const total = data.reduce((sum, d) => sum + d.value, 0);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const timer = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(timer);
+  }, []);
+
   if (total === 0) {
     return (
       <div>
@@ -117,8 +170,12 @@ export function AdminDonutChart({ data, title, size = 120 }: AdminDonutChartProp
                 stroke={d.color}
                 strokeWidth={strokeWidth}
                 strokeDasharray={`${dash} ${gap}`}
-                strokeDashoffset={-currentOffset}
-                className="transition-all duration-500"
+                strokeDashoffset={mounted ? -currentOffset : circumference}
+                strokeLinecap="butt"
+                style={{
+                  transition: 'stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
+                  transitionDelay: `${i * 80}ms`,
+                }}
                 transform={`rotate(-90 ${size / 2} ${size / 2})`}
               />
             );
@@ -150,6 +207,10 @@ export function AdminDonutChart({ data, title, size = 120 }: AdminDonutChartProp
   );
 }
 
+// ---------------------------------------------------------------------------
+// AdminProgressBar (kept as-is)
+// ---------------------------------------------------------------------------
+
 interface AdminProgressBarProps {
   label: string;
   value: number;
@@ -174,6 +235,389 @@ export function AdminProgressBar({
         />
       </div>
       <span className="text-sm text-warm-500 tabular-nums w-12 text-right">{value}</span>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// AdminAreaChart (new)
+// ---------------------------------------------------------------------------
+
+interface AdminAreaChartProps {
+  data: ChartDataPoint[];
+  title: string;
+  color?: string;
+  height?: number;
+  showGrid?: boolean;
+  gradientId?: string;
+}
+
+export function AdminAreaChart({
+  data,
+  title,
+  color = '#16A34A',
+  height = 160,
+  showGrid = true,
+  gradientId: gradientIdProp,
+}: AdminAreaChartProps) {
+  const autoId = useId();
+  const gId = gradientIdProp ?? `area-fill-${autoId}`;
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const [svgWidth, setSvgWidth] = useState(300);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setSvgWidth(entry.contentRect.width);
+      }
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  const total = data.reduce((s, d) => s + d.value, 0);
+
+  if (data.length === 0) {
+    return (
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="text-sm font-medium text-warm-500">{title}</h4>
+        </div>
+        <p className="text-sm text-warm-400">No data</p>
+      </div>
+    );
+  }
+
+  const padTop = 16;
+  const padBottom = 4;
+  const padLeft = 28;
+  const padRight = 8;
+  const chartW = svgWidth - padLeft - padRight;
+  const chartH = height - padTop - padBottom;
+
+  const values = data.map((d) => d.value);
+  const maxVal = Math.max(...values, 1);
+  const minVal = Math.min(...values, 0);
+  const range = maxVal - minVal || 1;
+
+  const toX = (i: number) =>
+    padLeft + (data.length === 1 ? chartW / 2 : (i / (data.length - 1)) * chartW);
+  const toY = (v: number) => padTop + chartH - ((v - minVal) / range) * chartH;
+
+  const polylinePoints = data.map((d, i) => `${toX(i)},${toY(d.value)}`).join(' ');
+  const firstValue = data[0]?.value ?? 0;
+  const areaPath = [
+    `M${toX(0)},${toY(firstValue)}`,
+    ...data.slice(1).map((d, i) => `L${toX(i + 1)},${toY(d.value)}`),
+    `L${toX(data.length - 1)},${padTop + chartH}`,
+    `L${toX(0)},${padTop + chartH}`,
+    'Z',
+  ].join(' ');
+
+  // Grid lines at quartiles
+  const gridValues = [0.25, 0.5, 0.75].map((f) => minVal + range * f);
+
+  // X-axis label interval
+  const labelInterval = Math.max(1, Math.ceil(data.length / 6));
+
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent<SVGSVGElement>) => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      // Find nearest point
+      let closest = 0;
+      let closestDist = Infinity;
+      for (let i = 0; i < data.length; i++) {
+        const dist = Math.abs(toX(i) - mouseX);
+        if (dist < closestDist) {
+          closestDist = dist;
+          closest = i;
+        }
+      }
+      setHoverIndex(closestDist < 40 ? closest : null);
+    },
+    [data.length, svgWidth],
+  );
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="text-sm font-medium text-warm-500">{title}</h4>
+        <span className="text-xs text-warm-400 tabular-nums">{total.toLocaleString()} total</span>
+      </div>
+
+      <div ref={containerRef} className="relative w-full group">
+        <svg
+          width="100%"
+          height={height}
+          viewBox={`0 0 ${svgWidth} ${height}`}
+          preserveAspectRatio="none"
+          className="overflow-visible"
+          onMouseMove={handleMouseMove}
+          onMouseLeave={() => setHoverIndex(null)}
+        >
+          <defs>
+            <linearGradient id={gId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={color} stopOpacity={0.25} />
+              <stop offset="100%" stopColor={color} stopOpacity={0.02} />
+            </linearGradient>
+          </defs>
+
+          {/* Horizontal grid lines */}
+          {showGrid &&
+            gridValues.map((gv, i) => (
+              <line
+                key={i}
+                x1={padLeft}
+                y1={toY(gv)}
+                x2={svgWidth - padRight}
+                y2={toY(gv)}
+                stroke="#F5F5F0"
+                strokeWidth={1}
+              />
+            ))}
+
+          {/* Area fill */}
+          <path d={areaPath} fill={`url(#${gId})`} />
+
+          {/* Line */}
+          <polyline
+            points={polylinePoints}
+            fill="none"
+            stroke={color}
+            strokeWidth={2}
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+
+          {/* Hover dots */}
+          {data.map((d, i) => (
+            <circle
+              key={i}
+              cx={toX(i)}
+              cy={toY(d.value)}
+              r={hoverIndex === i ? 4 : 3}
+              fill={hoverIndex === i ? color : 'transparent'}
+              stroke={hoverIndex === i ? 'white' : 'transparent'}
+              strokeWidth={2}
+              className="transition-all duration-150"
+            />
+          ))}
+
+          {/* Y-axis labels */}
+          <text
+            x={padLeft - 4}
+            y={toY(maxVal)}
+            textAnchor="end"
+            dominantBaseline="central"
+            className="fill-warm-400"
+            fontSize={9}
+          >
+            {maxVal}
+          </text>
+          <text
+            x={padLeft - 4}
+            y={toY(minVal)}
+            textAnchor="end"
+            dominantBaseline="central"
+            className="fill-warm-400"
+            fontSize={9}
+          >
+            {minVal}
+          </text>
+
+          {/* X-axis labels */}
+          {data.map((d, i) => {
+            if (i % labelInterval !== 0 && i !== data.length - 1) return null;
+            return (
+              <text
+                key={i}
+                x={toX(i)}
+                y={height - 1}
+                textAnchor="middle"
+                className="fill-warm-400"
+                fontSize={9}
+              >
+                {d.label}
+              </text>
+            );
+          })}
+        </svg>
+
+        {/* Tooltip */}
+        {hoverIndex !== null && data[hoverIndex] != null && (
+          <div
+            className="absolute bg-warm-900 text-white text-xs px-2.5 py-1.5 rounded-lg pointer-events-none z-10 shadow-lg whitespace-nowrap"
+            style={{
+              left: toX(hoverIndex),
+              top: toY(data[hoverIndex].value) - 36,
+              transform: 'translateX(-50%)',
+            }}
+          >
+            <span className="font-medium">{data[hoverIndex].value}</span>
+            <span className="text-warm-300 ml-1">{data[hoverIndex].label}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// AdminSparkline (new)
+// ---------------------------------------------------------------------------
+
+interface AdminSparklineProps {
+  data: number[];
+  color?: string;
+  width?: number;
+  height?: number;
+}
+
+export function AdminSparkline({
+  data,
+  color = '#16A34A',
+  width = 80,
+  height = 24,
+}: AdminSparklineProps) {
+  const sparkId = useId();
+
+  if (data.length < 2) return null;
+
+  const maxVal = Math.max(...data, 1);
+  const pad = 2;
+  const chartH = height - pad * 2;
+
+  const toX = (i: number) => (i / (data.length - 1)) * width;
+  const toY = (v: number) => pad + chartH - (v / maxVal) * chartH;
+
+  const linePoints = data.map((v, i) => `${toX(i)},${toY(v)}`).join(' ');
+
+  const firstVal = data[0] ?? 0;
+  const lastVal = data[data.length - 1] ?? 0;
+  const areaPath = [
+    `M${toX(0)},${toY(firstVal)}`,
+    ...data.slice(1).map((v, i) => `L${toX(i + 1)},${toY(v)}`),
+    `L${toX(data.length - 1)},${height - pad}`,
+    `L${toX(0)},${height - pad}`,
+    'Z',
+  ].join(' ');
+
+  const lastX = toX(data.length - 1);
+  const lastY = toY(lastVal);
+
+  return (
+    <svg width={width} height={height} className="inline-block align-middle">
+      <defs>
+        <linearGradient id={`spark-${sparkId}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity={0.2} />
+          <stop offset="100%" stopColor={color} stopOpacity={0} />
+        </linearGradient>
+      </defs>
+      <path d={areaPath} fill={`url(#spark-${sparkId})`} />
+      <polyline
+        points={linePoints}
+        fill="none"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+      <circle cx={lastX} cy={lastY} r={2} fill={color} />
+    </svg>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// AdminFunnelChart (new)
+// ---------------------------------------------------------------------------
+
+interface FunnelStage {
+  label: string;
+  value: number;
+  color: string;
+}
+
+interface AdminFunnelChartProps {
+  stages: FunnelStage[];
+  height?: number;
+}
+
+export function AdminFunnelChart({ stages, height = 200 }: AdminFunnelChartProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const timer = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(timer);
+  }, []);
+
+  if (stages.length === 0) {
+    return <p className="text-sm text-warm-400">No data</p>;
+  }
+
+  const maxValue = (stages[0]?.value) || 1;
+
+  return (
+    <div className="flex flex-col" style={{ minHeight: height }}>
+      {stages.map((stage, i) => {
+        const widthPct = (stage.value / maxValue) * 100;
+        const prevStage = stages[i - 1];
+        const conversionPct =
+          i > 0 && prevStage && prevStage.value > 0
+            ? Math.round((stage.value / prevStage.value) * 100)
+            : null;
+
+        return (
+          <div key={i}>
+            {/* Conversion rate label between bars */}
+            {conversionPct !== null && (
+              <div className="flex items-center gap-2 py-1 pl-2">
+                <svg
+                  width={12}
+                  height={12}
+                  viewBox="0 0 12 12"
+                  className="shrink-0 text-warm-300"
+                >
+                  <path
+                    d="M6 2 L6 10 M3 7 L6 10 L9 7"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={1.5}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <span className="text-[10px] text-warm-400 tabular-nums font-medium">
+                  {conversionPct}% conversion
+                </span>
+              </div>
+            )}
+
+            {/* Funnel bar */}
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-warm-500 w-24 truncate shrink-0 text-right">
+                {stage.label}
+              </span>
+              <div className="flex-1 h-8 relative">
+                <div
+                  className="h-full rounded-lg transition-all duration-700 ease-out flex items-center justify-end pr-3"
+                  style={{
+                    width: mounted ? `${Math.max(widthPct, 8)}%` : '0%',
+                    backgroundImage: `linear-gradient(to right, ${stage.color}, ${stage.color}cc)`,
+                    transitionDelay: `${i * 100}ms`,
+                  }}
+                >
+                  <span className="text-xs font-medium text-white tabular-nums drop-shadow-sm">
+                    {stage.value.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

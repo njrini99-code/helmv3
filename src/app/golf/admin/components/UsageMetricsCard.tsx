@@ -1,7 +1,7 @@
 'use client';
 
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
-import { AdminBarChart, AdminDonutChart, AdminProgressBar } from './AdminChart';
+import { AdminAreaChart, AdminDonutChart, AdminProgressBar, AdminFunnelChart } from './AdminChart';
 import { IconChart } from '@/components/icons';
 
 const ROUND_TYPE_COLORS: Record<string, string> = {
@@ -14,9 +14,30 @@ const ROUND_TYPE_COLORS: Record<string, string> = {
 
 interface Props {
   usage: AdminDashboardData['usage'];
+  dataQuality?: AdminDashboardData['dataQuality'];
+  funnel?: AdminDashboardData['funnel'];
 }
 
-export function UsageMetricsCard({ usage }: Props) {
+function QualityGauge({ label, percentage, color }: { label: string; percentage: number; color: string }) {
+  return (
+    <div className="bg-white/50 rounded-xl p-3">
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="text-xs text-warm-600">{label}</span>
+        <span className="text-sm font-semibold tabular-nums" style={{ color }}>
+          {percentage}%
+        </span>
+      </div>
+      <div className="h-2 bg-warm-100 rounded-full overflow-hidden">
+        <div
+          className="h-full rounded-full transition-all duration-500"
+          style={{ width: `${percentage}%`, backgroundColor: color }}
+        />
+      </div>
+    </div>
+  );
+}
+
+export function UsageMetricsCard({ usage, dataQuality, funnel }: Props) {
   const roundTypeData = usage.roundsByType.map((r) => ({
     label: r.type.charAt(0).toUpperCase() + r.type.slice(1),
     value: r.count,
@@ -29,6 +50,14 @@ export function UsageMetricsCard({ usage }: Props) {
   }));
 
   const maxFeature = Math.max(...usage.featureAdoption.map((f) => f.count), 1);
+
+  const funnelStages = funnel ? [
+    { label: 'Started', value: funnel.roundsStarted, color: '#3B82F6' },
+    { label: 'Completed', value: funnel.roundsCompleted, color: '#2563EB' },
+    { label: 'Scored', value: funnel.roundsWithScore, color: '#16A34A' },
+    { label: 'Reviewed', value: funnel.roundsReviewed, color: '#8B5CF6' },
+    { label: 'With Insights', value: funnel.roundsWithInsights, color: '#F59E0B' },
+  ] : [];
 
   return (
     <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6 transition-all duration-200 hover:bg-white/80 hover:shadow-card-hover">
@@ -55,33 +84,37 @@ export function UsageMetricsCard({ usage }: Props) {
         </div>
       </div>
 
-      {/* Data quality */}
-      <div className="grid grid-cols-2 gap-3 mb-5">
-        <div className="bg-white/50 rounded-xl p-3">
-          <div className="flex justify-between text-sm mb-1">
-            <span className="text-warm-600">Completion</span>
-            <span className="text-warm-500 tabular-nums">{usage.roundsCompletionRate}%</span>
-          </div>
-          <div className="h-1.5 bg-warm-100 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-primary-500 rounded-full transition-all duration-500"
-              style={{ width: `${usage.roundsCompletionRate}%` }}
+      {/* Shot data quality gauges */}
+      {dataQuality && dataQuality.totalShots > 0 && (
+        <div className="mb-5">
+          <h4 className="text-sm font-medium text-warm-500 mb-2.5">Shot Data Quality</h4>
+          <div className="grid grid-cols-3 gap-2">
+            <QualityGauge
+              label="GPS"
+              percentage={dataQuality.gpsPercentage}
+              color={dataQuality.gpsPercentage > 70 ? '#16A34A' : dataQuality.gpsPercentage > 40 ? '#F59E0B' : '#EF4444'}
+            />
+            <QualityGauge
+              label="Lie Type"
+              percentage={dataQuality.lieTypePercentage}
+              color={dataQuality.lieTypePercentage > 70 ? '#16A34A' : dataQuality.lieTypePercentage > 40 ? '#F59E0B' : '#EF4444'}
+            />
+            <QualityGauge
+              label="Club"
+              percentage={dataQuality.clubPercentage}
+              color={dataQuality.clubPercentage > 70 ? '#16A34A' : dataQuality.clubPercentage > 40 ? '#F59E0B' : '#EF4444'}
             />
           </div>
         </div>
-        <div className="bg-white/50 rounded-xl p-3">
-          <div className="flex justify-between text-sm mb-1">
-            <span className="text-warm-600">Verified</span>
-            <span className="text-warm-500 tabular-nums">{usage.verifiedRoundsRate}%</span>
-          </div>
-          <div className="h-1.5 bg-warm-100 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-blue-500 rounded-full transition-all duration-500"
-              style={{ width: `${usage.verifiedRoundsRate}%` }}
-            />
-          </div>
+      )}
+
+      {/* Round completion funnel */}
+      {funnel && funnel.roundsStarted > 0 && (
+        <div className="mb-5">
+          <h4 className="text-sm font-medium text-warm-500 mb-2.5">Round Completion Funnel</h4>
+          <AdminFunnelChart stages={funnelStages} height={180} />
         </div>
-      </div>
+      )}
 
       {/* Rounds by type donut */}
       {roundTypeData.length > 0 && (
@@ -90,10 +123,10 @@ export function UsageMetricsCard({ usage }: Props) {
         </div>
       )}
 
-      {/* Rounds over time */}
+      {/* Rounds over time - area chart */}
       {roundsWeeklyData.length > 0 && (
         <div className="mb-5">
-          <AdminBarChart data={roundsWeeklyData} title="Rounds per Week (12 Weeks)" color="#2563EB" />
+          <AdminAreaChart data={roundsWeeklyData} title="Rounds per Week (12 Weeks)" color="#2563EB" height={140} />
         </div>
       )}
 

@@ -17,12 +17,26 @@ function formatLabel(text: string): string {
     .replace(/\b\w/g, c => c.toUpperCase());
 }
 
+/** Strip NaN artifacts from generated text */
+function sanitizeNaN(text: string): string {
+  return text
+    .replace(/This occurs in NaN% of rounds with NaN% reliability\.?\s*/gi, '')
+    .replace(/\bNaN%/g, '')
+    .replace(/\bNaN\b/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
 export function V2ReviewSummary({ review }: V2ReviewSummaryProps) {
   const { composedReview, reasoning, focusAreas, practicePriority } = review;
   const rawConfidence = reasoning.calibratedConfidence ?? reasoning.confidence;
   const calibratedConfidence = Number.isFinite(rawConfidence) ? rawConfidence : 0;
 
-  if (!composedReview?.headline || !composedReview?.body) return null;
+  const headline = composedReview?.headline ? sanitizeNaN(composedReview.headline) : '';
+  const body = composedReview?.body ? sanitizeNaN(composedReview.body) : '';
+  const takeaway = review.primaryTakeaway ? sanitizeNaN(review.primaryTakeaway) : '';
+
+  if (!headline || !body) return null;
 
   return (
     <motion.div
@@ -67,7 +81,7 @@ export function V2ReviewSummary({ review }: V2ReviewSummaryProps) {
             transition={{ delay: 0.35, duration: 0.4 }}
             className="text-base font-semibold text-warm-900 mb-2"
           >
-            {composedReview.headline}
+            {headline}
           </motion.h4>
           <motion.p
             initial={{ opacity: 0 }}
@@ -75,7 +89,7 @@ export function V2ReviewSummary({ review }: V2ReviewSummaryProps) {
             transition={{ delay: 0.45, duration: 0.4 }}
             className="text-sm text-warm-600 leading-relaxed"
           >
-            {composedReview.body}
+            {body}
           </motion.p>
         </div>
       </div>
@@ -96,7 +110,7 @@ export function V2ReviewSummary({ review }: V2ReviewSummaryProps) {
             <span className="text-[11px] font-semibold text-green-700 uppercase tracking-wider">Key Takeaway</span>
           </div>
           <p className="text-sm font-medium text-green-900 leading-relaxed">
-            {review.primaryTakeaway}
+            {takeaway}
           </p>
         </motion.div>
 

@@ -17,6 +17,15 @@ function formatLabel(text: string): string {
     .replace(/\b\w/g, c => c.toUpperCase());
 }
 
+/** Strip NaN artifacts from text */
+function sanitizeNaN(text: string): string {
+  return text
+    .replace(/\bNaN%/g, '')
+    .replace(/\bNaN\b/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
 const trendLabels: Record<string, string> = {
   strengthening: 'Strengthening',
   stable: 'Stable',
@@ -47,7 +56,9 @@ export function V2PatternsSection({ patterns }: V2PatternsSectionProps) {
 
       <div className="p-4 space-y-2.5">
         {patterns.map((pattern, index) => {
-          const isNegative = pattern.strokeImpact > 0;
+          const strokeImpact = Number.isFinite(pattern.strokeImpact) ? pattern.strokeImpact : 0;
+          const confidence = Number.isFinite(pattern.confidence) ? pattern.confidence : 0;
+          const isNegative = strokeImpact > 0;
 
           return (
             <motion.div
@@ -74,7 +85,7 @@ export function V2PatternsSection({ patterns }: V2PatternsSectionProps) {
                     </div>
                   )}
                   <span className="text-sm font-semibold text-warm-900">
-                    {pattern.description || `${formatLabel(pattern.patternType)} Pattern`}
+                    {pattern.description ? sanitizeNaN(pattern.description) : `${formatLabel(pattern.patternType)} Pattern`}
                   </span>
                 </div>
 
@@ -89,24 +100,24 @@ export function V2PatternsSection({ patterns }: V2PatternsSectionProps) {
                       : 'bg-green-100 text-green-700 border border-green-200/50'
                   )}
                 >
-                  {isNegative ? '+' : ''}{pattern.strokeImpact.toFixed(1)}
+                  {isNegative ? '+' : ''}{strokeImpact.toFixed(1)}
                 </motion.span>
               </div>
 
               {pattern.recommendation && (
                 <p className="text-[13px] text-warm-600 leading-relaxed mb-3 ml-[30px]">
-                  {pattern.recommendation}
+                  {sanitizeNaN(pattern.recommendation)}
                 </p>
               )}
 
               {/* Metrics row */}
               <div className="flex items-center gap-3 text-[11px] ml-[30px]">
                 <span className="text-warm-500 tabular-nums">
-                  {Math.round(pattern.confidence * 100)}% confidence
+                  {Math.round(confidence * 100)}% confidence
                 </span>
                 <span className="text-warm-200">|</span>
                 <span className="text-warm-500 tabular-nums">
-                  {pattern.occurrenceCount} occurrence{pattern.occurrenceCount !== 1 ? 's' : ''}
+                  {pattern.occurrenceCount ?? 0} occurrence{pattern.occurrenceCount !== 1 ? 's' : ''}
                 </span>
                 <span className="text-warm-200">|</span>
                 <span className={cn(

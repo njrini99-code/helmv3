@@ -25,6 +25,20 @@ export interface AdminDashboardData {
       status: 'healthy' | 'warning' | 'critical';
       detail: string;
     }[];
+    // Real platform health from auth sessions + DB
+    realActiveUsers1h: number;
+    realActiveUsers24h: number;
+    realActiveUsers7d: number;
+    realActiveUsers30d: number;
+    activeSessions: number;
+    totalSessions: number;
+    totalAuthUsers: number;
+    usersSignedInToday: number;
+    usersNeverSignedIn: number;
+    dbSizeBytes: number;
+    activeConnections: number;
+    idleConnections: number;
+    largestTables: { table_name: string; size_bytes: number; row_count: number }[];
   };
   users: {
     totalCoaches: number;
@@ -149,6 +163,7 @@ export interface AdminDashboardData {
     teamName: string | null;
     teamId: string | null;
     lastRoundDate: string | null;
+    lastActiveAt: string | null;
     totalRounds: number;
     onboardingCompleted: boolean;
   }[];
@@ -174,6 +189,74 @@ export interface AdminDashboardData {
   signupsByDay: { date: string; count: number }[];
   // New: Daily visits/active users (last 30 days, based on rounds submitted)
   visitsByDay: { date: string; count: number }[];
+  // Round completion funnel
+  funnel: {
+    roundsStarted: number;
+    roundsCompleted: number;
+    roundsWithScore: number;
+    roundsReviewed: number;
+    roundsWithInsights: number;
+  };
+  // Shot data quality
+  dataQuality: {
+    totalShots: number;
+    shotsWithGps: number;
+    shotsWithLieType: number;
+    shotsWithClub: number;
+    gpsPercentage: number;
+    lieTypePercentage: number;
+    clubPercentage: number;
+  };
+  // User journey
+  userJourney: {
+    totalSignups: number;
+    completedOnboarding: number;
+    submittedFirstRound: number;
+    activeThisWeek: number;
+  };
+  // Feature stickiness (DAU/MAU)
+  stickiness: {
+    dauMauRatio: number;
+    dau: number;
+    wau: number;
+    mau: number;
+  };
+  // Player engagement segments
+  playerEngagement: {
+    highEngagement: number;
+    mediumEngagement: number;
+    lowEngagement: number;
+    dormant: number;
+    segments: { label: string; count: number; color: string }[];
+  };
+  // CoachHelm ROI
+  coachhelmRoi: {
+    coachesUsingAI: number;
+    coachesNotUsingAI: number;
+    avgScoreAICoachPlayers: number | null;
+    avgScoreNonAICoachPlayers: number | null;
+    scoreDifference: number | null;
+  };
+}
+
+// ============================================
+// INTERNAL TYPES
+// ============================================
+
+interface PlatformHealthStatsResult {
+  active_users_1h: number;
+  active_users_24h: number;
+  active_users_7d: number;
+  active_users_30d: number;
+  active_sessions: number;
+  total_sessions: number;
+  total_auth_users: number;
+  users_signed_in_today: number;
+  users_never_signed_in: number;
+  db_size_bytes: number;
+  largest_tables: { table_name: string; size_bytes: number; row_count: number }[] | null;
+  active_connections: number;
+  idle_connections: number;
 }
 
 // ============================================
@@ -328,6 +411,12 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     cohortWeek3Res,
     cohortWeek2Res,
     cohortWeek1Res,
+    // New metrics
+    shotsWithGpsRes,
+    shotsWithLieTypeRes,
+    shotsWithClubRes,
+    reviewedRoundsRes,
+    insightPlayerRoundsRes,
   ] = await Promise.all([
     // --- Health (active users = distinct players with rounds) ---
     supabase.from('golf_rounds').select('player_id').gte('created_at', ago24h),
@@ -398,6 +487,14 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     supabase.from('users').select('id, created_at').gte('created_at', daysAgo(21)).lte('created_at', daysAgo(14)),
     supabase.from('users').select('id, created_at').gte('created_at', daysAgo(14)).lte('created_at', daysAgo(7)),
     supabase.from('users').select('id, created_at').gte('created_at', daysAgo(7)),
+    // Shot data quality
+    supabase.from('golf_shots').select('id', { count: 'exact', head: true }).not('latitude', 'is', null),
+    supabase.from('golf_shots').select('id', { count: 'exact', head: true }).not('lie_type', 'is', null),
+    supabase.from('golf_shots').select('id', { count: 'exact', head: true }).not('club', 'is', null),
+    // Unique reviewed rounds
+    supabase.from('golf_round_reviews').select('round_id'),
+    // Rounds with insights
+    supabase.from('golf_insight_generation_log').select('player_id').not('player_id', 'is', null),
   ]);
 
   // ============================================
@@ -415,6 +512,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     reviewsWeeklyRes,
     errorsRes,
     userToPlayerMapRes,
+    platformHealthStatsRes,
   ] = await Promise.all([
     // Teams with org
     supabase.from('golf_teams').select('id, name, organization_id, organizations(name)'),
@@ -437,6 +535,8 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     supabase.from('golf_insight_generation_log').select('id', { count: 'exact', head: true }).gte('created_at', ago7d).eq('insights_generated', 0),
     // User ID to Player ID mapping (for cohort retention)
     supabase.from('golf_players').select('id, user_id'),
+    // Real platform health stats from auth sessions + DB metrics
+    supabase.rpc('get_platform_health_stats' as never) as unknown as { data: PlatformHealthStatsResult | null; error: unknown },
   ]);
 
   // ============================================
@@ -768,6 +868,13 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     };
   });
 
+  // --- Platform health stats from auth sessions + DB ---
+  const phs = (platformHealthStatsRes.data ?? null) as PlatformHealthStatsResult | null;
+  const realActiveUsers1h = phs?.active_users_1h ?? 0;
+  const realActiveUsers24h = phs?.active_users_24h ?? 0;
+  const realActiveUsers7d = phs?.active_users_7d ?? 0;
+  const realActiveUsers30d = phs?.active_users_30d ?? 0;
+
   // --- Diagnostics ---
   const responseTime = Date.now() - startTime;
   const lastRoundTimestamp = (lastRoundRes.data?.[0]?.created_at as string) ?? null;
@@ -775,6 +882,13 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   const systemErrors = errorsRes.count ?? 0;
 
   const diagnostics: AdminDashboardData['health']['diagnostics'] = [];
+
+  // Auth / session health
+  diagnostics.push({
+    label: 'Auth Sessions',
+    status: (phs?.active_sessions ?? 0) > 0 ? 'healthy' : 'warning',
+    detail: `${phs?.active_sessions ?? 0} active sessions · ${realActiveUsers1h} online now`,
+  });
 
   // Data freshness check
   if (lastRoundTimestamp) {
@@ -809,6 +923,15 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     detail: `${Math.round(weeklyRetention)}% weekly active rate`,
   });
 
+  // Database health
+  const dbSizeMB = Math.round((phs?.db_size_bytes ?? 0) / 1048576);
+  const totalConns = (phs?.active_connections ?? 0) + (phs?.idle_connections ?? 0);
+  diagnostics.push({
+    label: 'Database',
+    status: dbSizeMB < 400 && totalConns < 50 ? 'healthy' : dbSizeMB < 800 ? 'warning' : 'critical',
+    detail: `${dbSizeMB} MB · ${totalConns} connections`,
+  });
+
   // API response time
   diagnostics.push({
     label: 'Dashboard API',
@@ -831,6 +954,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     playerLastRoundsRes,
     signupsDaily30dRes,
     visitsDaily30dRes,
+    userLastActiveRes,
   ] = await Promise.all([
     // All users for directory
     supabase.from('users').select('id, email, role, created_at').order('created_at', { ascending: false }),
@@ -846,6 +970,8 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     supabase.from('users').select('created_at').gte('created_at', ago30d).order('created_at', { ascending: true }),
     // Active users by day (last 30d, based on round submissions)
     supabase.from('golf_rounds').select('player_id, created_at').gte('created_at', ago30d).order('created_at', { ascending: true }),
+    // Real last-active timestamps from auth sessions (uses SECURITY DEFINER function)
+    supabase.rpc('get_user_last_active' as never) as unknown as { data: { user_id: string; last_active_at: string | null }[] | null; error: unknown },
   ]);
 
   // --- Build player maps ---
@@ -899,6 +1025,14 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     }
   }
 
+  // --- User last-active map (from auth sessions) ---
+  const userLastActive = new Map<string, string>();
+  for (const row of (userLastActiveRes.data ?? [])) {
+    if (row.last_active_at) {
+      userLastActive.set(row.user_id, row.last_active_at);
+    }
+  }
+
   // --- Player to team map (already have teamMembersRes from batch 2) ---
   const playerToTeamInfo = new Map<string, { teamId: string; teamName: string }>();
   for (const m of (teamMembersRes.data ?? [])) {
@@ -940,6 +1074,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
       teamName: teamInfo?.teamName ?? coachTeamName ?? null,
       teamId: teamInfo?.teamId ?? coachTeamId ?? null,
       lastRoundDate: playerId ? (playerLastRound.get(playerId) ?? null) : null,
+      lastActiveAt: userLastActive.get(u.id) ?? null,
       totalRounds: playerId ? (playerRoundCounts.get(playerId) ?? 0) : 0,
       onboardingCompleted: player?.onboardingCompleted ?? coach?.onboardingCompleted ?? false,
     };
@@ -1020,6 +1155,105 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([date, players]) => ({ date, count: players.size }));
 
+  // --- Funnel ---
+  const uniqueReviewedRounds = new Set((reviewedRoundsRes.data ?? []).map(r => r.round_id)).size;
+  const uniqueInsightPlayers = new Set((insightPlayerRoundsRes.data ?? []).map(r => r.player_id)).size;
+  const funnel = {
+    roundsStarted: totalRoundsCount,
+    roundsCompleted: completedRoundsCount,
+    roundsWithScore: verifiedRoundsCount,
+    roundsReviewed: uniqueReviewedRounds,
+    roundsWithInsights: uniqueInsightPlayers, // players who had insights generated
+  };
+
+  // --- Data Quality ---
+  const shotsWithGps = shotsWithGpsRes.count ?? 0;
+  const shotsWithLieType = shotsWithLieTypeRes.count ?? 0;
+  const shotsWithClub = shotsWithClubRes.count ?? 0;
+  const dataQuality = {
+    totalShots: totalShotsCount,
+    shotsWithGps,
+    shotsWithLieType,
+    shotsWithClub,
+    gpsPercentage: totalShotsCount > 0 ? Math.round((shotsWithGps / totalShotsCount) * 100) : 0,
+    lieTypePercentage: totalShotsCount > 0 ? Math.round((shotsWithLieType / totalShotsCount) * 100) : 0,
+    clubPercentage: totalShotsCount > 0 ? Math.round((shotsWithClub / totalShotsCount) * 100) : 0,
+  };
+
+  // --- User Journey ---
+  const allPlayerIds = new Set((playerRoundCountsRes.data ?? []).map(r => r.player_id));
+  const userJourney = {
+    totalSignups: (allUsersRes.data ?? []).length,
+    completedOnboarding: onboarded + coachOnboarded,
+    submittedFirstRound: allPlayerIds.size,
+    activeThisWeek: playersThisWeek.size,
+  };
+
+  // --- Stickiness ---
+  const dauCount = new Set((activeUsers24hRes.data ?? []).map(r => r.player_id)).size;
+  const wauCount = playersThisWeek.size;
+  const mauCount = playersActiveLast30d.size;
+  const stickiness = {
+    dauMauRatio: mauCount > 0 ? Math.round((dauCount / mauCount) * 100) : 0,
+    dau: dauCount,
+    wau: wauCount,
+    mau: mauCount,
+  };
+
+  // --- Player Engagement Segments ---
+  // High = 3+ rounds in last 7 days, Medium = 1-2 rounds in last 7d, Low = active in 30d but not 7d, Dormant = no rounds in 30d
+  const playerRoundsThisWeek = new Map<string, number>();
+  for (const r of (weeklyRetentionPlayerRes.data ?? [])) {
+    playerRoundsThisWeek.set(r.player_id, (playerRoundsThisWeek.get(r.player_id) ?? 0) + 1);
+  }
+  let highEngagement = 0;
+  let mediumEngagement = 0;
+  let lowEngagement = 0;
+  let dormant = 0;
+  for (const [, p] of allPlayersMap) {
+    const weeklyRounds = playerRoundsThisWeek.get(p.id) ?? 0;
+    const isActive30d = playersActive30d.has(p.id);
+    if (weeklyRounds >= 3) highEngagement++;
+    else if (weeklyRounds >= 1) mediumEngagement++;
+    else if (isActive30d) lowEngagement++;
+    else dormant++;
+  }
+  const playerEngagement = {
+    highEngagement,
+    mediumEngagement,
+    lowEngagement,
+    dormant,
+    segments: [
+      { label: 'High (3+/wk)', count: highEngagement, color: '#16A34A' },
+      { label: 'Medium (1-2/wk)', count: mediumEngagement, color: '#2563EB' },
+      { label: 'Low (monthly)', count: lowEngagement, color: '#F59E0B' },
+      { label: 'Dormant', count: dormant, color: '#9CA3AF' },
+    ],
+  };
+
+  // --- CoachHelm ROI ---
+  // Find coaches who have set up philosophy
+  // Use orgCoachCounts and teamsMap to determine which teams have AI coaches
+  // Simpler approach: philosophy count vs total coaches, use team-level avg scores
+  const aiCoachCount = coachPhilosophyRes.count ?? 0;
+  const nonAiCoachCount = Math.max(totalCoaches - aiCoachCount, 0);
+
+  // For ROI, compare team averages
+  // Teams with coaches who have philosophy set up vs those without
+  // This is approximate but directionally useful
+  const teamsWithAI = teams.filter(t => t.coachCount > 0 && t.avgScore != null);
+  const avgScoreAllTeams = teamsWithAI.length > 0
+    ? teamsWithAI.reduce((s, t) => s + (t.avgScore ?? 0), 0) / teamsWithAI.length
+    : null;
+
+  const coachhelmRoi = {
+    coachesUsingAI: aiCoachCount,
+    coachesNotUsingAI: nonAiCoachCount,
+    avgScoreAICoachPlayers: avgScoreAllTeams,
+    avgScoreNonAICoachPlayers: null as number | null, // Would need per-coach philosophy data linked to teams
+    scoreDifference: null as number | null,
+  };
+
   return {
     health: {
       activeUsers24h: new Set((activeUsers24hRes.data ?? []).map(r => r.player_id)).size,
@@ -1035,6 +1269,20 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
       lastInsightGenerated: lastInsightTimestamp,
       roundsToday: roundsTodayRes.count ?? 0,
       diagnostics,
+      // Real platform health from auth sessions + DB
+      realActiveUsers1h,
+      realActiveUsers24h,
+      realActiveUsers7d,
+      realActiveUsers30d,
+      activeSessions: phs?.active_sessions ?? 0,
+      totalSessions: phs?.total_sessions ?? 0,
+      totalAuthUsers: phs?.total_auth_users ?? 0,
+      usersSignedInToday: phs?.users_signed_in_today ?? 0,
+      usersNeverSignedIn: phs?.users_never_signed_in ?? 0,
+      dbSizeBytes: phs?.db_size_bytes ?? 0,
+      activeConnections: phs?.active_connections ?? 0,
+      idleConnections: phs?.idle_connections ?? 0,
+      largestTables: phs?.largest_tables ?? [],
     },
     users: {
       totalCoaches,
@@ -1137,5 +1385,11 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     teamRosters,
     signupsByDay: signupsByDayResult,
     visitsByDay: visitsByDayResult,
+    funnel,
+    dataQuality,
+    userJourney,
+    stickiness,
+    playerEngagement,
+    coachhelmRoi,
   };
 }
