@@ -185,7 +185,7 @@ export async function loginAction(
   if (adminAllowlist.includes(normalizedEmail)) {
     return {
       success: true,
-      redirectTo: '/admin/command-center',
+      redirectTo: '/golf/admin',
     };
   }
 

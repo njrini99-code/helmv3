@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
@@ -22,6 +22,11 @@ import { UserActivityTable } from './components/UserActivityTable';
 import { TeamRosterCard } from './components/TeamRosterCard';
 import { DailyCharts } from './components/DailyCharts';
 import { InsightCallout } from './components/InsightCallout';
+import { NeedsAttention } from './components/NeedsAttention';
+import { HealthCheckGrid } from './components/HealthCheckGrid';
+import { ErrorFeed } from './components/ErrorFeed';
+import { AuditFeed } from './components/AuditFeed';
+import { BaseballOps } from './components/BaseballOps';
 import {
   IconUsers,
   IconTarget,
@@ -32,22 +37,24 @@ import {
   IconActivity,
   IconTrendingUp,
   IconChart,
-  IconEye,
+  IconShield,
 } from '@/components/icons';
 
 // ============================================
-// TAB DEFINITIONS — Condensed from 7 → 4
+// TAB DEFINITIONS — 6 tabs
 // ============================================
 const TABS = [
-  { id: 'dashboard', label: 'Dashboard', icon: IconActivity },
-  { id: 'visibility', label: 'Users & Teams', icon: IconEye },
-  { id: 'performance', label: 'Performance', icon: IconTarget },
-  { id: 'growth', label: 'Growth & AI', icon: IconTrendingUp },
+  { id: 'command', label: 'Command Center', icon: IconActivity, shortcut: '1' },
+  { id: 'users', label: 'Users & Activity', icon: IconUsers, shortcut: '2' },
+  { id: 'health', label: 'Health & Issues', icon: IconWarning, shortcut: '3' },
+  { id: 'analytics', label: 'Analytics & Growth', icon: IconTrendingUp, shortcut: '4' },
+  { id: 'sports', label: 'Sport Operations', icon: IconTarget, shortcut: '5' },
+  { id: 'audit', label: 'Audit & Security', icon: IconShield, shortcut: '6' },
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
 
-const AUTO_REFRESH_INTERVAL = 60000; // 60 seconds
+const AUTO_REFRESH_INTERVAL = 60000;
 
 // ============================================
 // SKELETON LOADERS
@@ -76,46 +83,138 @@ function CardSkeleton() {
 }
 
 // ============================================
-// QUICK PULSE PILLS — Persistent in nav bar
+// PERSISTENT STATUS BAR
 // ============================================
-function QuickPulse({ data }: { data: AdminDashboardData }) {
-  const totalUsers = data.users.totalCoaches + data.users.totalPlayers + data.users.totalAdmins;
-  const pills = [
-    {
-      label: 'Users',
-      value: `${totalUsers}`,
-      color: 'bg-warm-100 text-warm-700',
-    },
-    {
-      label: 'Growth',
-      value: `${data.growth.userGrowthRate > 0 ? '+' : ''}${data.growth.userGrowthRate}%`,
-      color: data.growth.userGrowthRate > 0 ? 'bg-emerald-50 text-emerald-700' : data.growth.userGrowthRate < 0 ? 'bg-red-50 text-red-700' : 'bg-warm-100 text-warm-600',
-    },
-    {
-      label: 'Retention',
-      value: `${data.engagement.weeklyRetention}%`,
-      color: data.engagement.weeklyRetention > 30 ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700',
-    },
-    {
-      label: 'AI',
-      value: `${data.coachhelm.coachPhilosophyAdoption}%`,
-      color: data.coachhelm.coachPhilosophyAdoption > 50 ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700',
-    },
-    {
-      label: 'Health',
-      value: `${data.growth.platformHealthScore}/100`,
-      color: data.growth.platformHealthScore >= 50 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700',
-    },
-  ];
+function StatusBar({
+  data,
+  isRefreshing,
+  lastRefresh,
+  onTabClick,
+}: {
+  data: AdminDashboardData;
+  isRefreshing: boolean;
+  lastRefresh: Date | null;
+  onTabClick: (tab: TabId) => void;
+}) {
+  const overallHealth = data.health.diagnostics.some((d) => d.status === 'critical')
+    ? 'critical'
+    : data.health.diagnostics.some((d) => d.status === 'warning')
+      ? 'warning'
+      : 'healthy';
+
+  const healthDot = {
+    healthy: 'bg-emerald-500',
+    warning: 'bg-amber-500',
+    critical: 'bg-red-500',
+  };
+
+  const healthLabel = {
+    healthy: 'Platform Healthy',
+    warning: 'Needs Attention',
+    critical: 'Issues Detected',
+  };
+
+  const healthText = {
+    healthy: 'text-emerald-700',
+    warning: 'text-amber-700',
+    critical: 'text-red-700',
+  };
+
+  const activeNow = data.health.realActiveUsers1h;
+  const errorCount = data.errorLogs.totalErrors7d;
+  const criticalCount = data.errorLogs.criticalErrors7d;
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
-      {pills.map((p) => (
-        <div key={p.label} className={cn('inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium', p.color)}>
-          <span className="text-[10px] opacity-70 uppercase tracking-wide">{p.label}</span>
-          <span className="font-semibold tabular-nums">{p.value}</span>
-        </div>
-      ))}
+    <div className="flex items-center justify-between px-4 sm:px-6 lg:px-8 py-2 text-xs">
+      <div className="flex items-center gap-4">
+        {/* Health status */}
+        <button
+          onClick={() => onTabClick('health')}
+          className="flex items-center gap-1.5 hover:opacity-80 transition-opacity"
+        >
+          <div className="relative">
+            <div className={cn('w-2 h-2 rounded-full', healthDot[overallHealth])} />
+            <div className={cn('absolute inset-0 w-2 h-2 rounded-full animate-ping opacity-75', healthDot[overallHealth])} />
+          </div>
+          <span className={cn('font-medium', healthText[overallHealth])}>
+            {healthLabel[overallHealth]}
+          </span>
+        </button>
+
+        <span className="text-warm-300 hidden sm:inline">|</span>
+
+        {/* Active users */}
+        <span className="text-warm-500 hidden sm:inline">
+          <span className="font-semibold text-warm-700 tabular-nums">{activeNow}</span> active now
+        </span>
+
+        <span className="text-warm-300 hidden sm:inline">|</span>
+
+        {/* Error count */}
+        <button
+          onClick={() => onTabClick('health')}
+          className={cn(
+            'hidden sm:flex items-center gap-1 transition-opacity hover:opacity-80',
+            criticalCount > 0 ? 'text-red-600' : errorCount > 0 ? 'text-amber-600' : 'text-warm-500'
+          )}
+        >
+          <span className="font-semibold tabular-nums">{errorCount}</span>
+          <span>error{errorCount !== 1 ? 's' : ''} (7d)</span>
+          {criticalCount > 0 && (
+            <span className="ml-1 px-1.5 py-0.5 bg-red-100 text-red-700 rounded-full text-[10px] font-medium tabular-nums">
+              {criticalCount} critical
+            </span>
+          )}
+        </button>
+      </div>
+
+      <div className="flex items-center gap-3">
+        {lastRefresh && (
+          <span className="text-warm-400 tabular-nums hidden sm:inline">
+            Updated {lastRefresh.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        )}
+        {isRefreshing && (
+          <IconRefresh size={12} className="text-primary-500 animate-spin" />
+        )}
+        <span className="text-warm-300 hidden md:inline">
+          Auto-refresh 60s
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// SPORT TOGGLE for Sport Operations tab
+// ============================================
+function SportToggle({ sport, onToggle }: { sport: 'golf' | 'baseball'; onToggle: (s: 'golf' | 'baseball') => void }) {
+  return (
+    <div className="flex gap-1 bg-white/50 backdrop-blur-sm rounded-lg p-0.5 border border-white/20">
+      <button
+        onClick={() => onToggle('golf')}
+        className={cn(
+          'flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200',
+          sport === 'golf'
+            ? 'bg-white shadow-sm text-warm-900'
+            : 'text-warm-500 hover:text-warm-700 hover:bg-white/40'
+        )}
+      >
+        <span className="text-base">&#9971;</span>
+        Golf
+      </button>
+      <button
+        onClick={() => onToggle('baseball')}
+        className={cn(
+          'flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200',
+          sport === 'baseball'
+            ? 'bg-white shadow-sm text-warm-900'
+            : 'text-warm-500 hover:text-warm-700 hover:bg-white/40'
+        )}
+      >
+        <span className="text-base">&#9918;</span>
+        Baseball
+      </button>
     </div>
   );
 }
@@ -125,13 +224,24 @@ function QuickPulse({ data }: { data: AdminDashboardData }) {
 // ============================================
 export default function AdminDashboardPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [data, setData] = useState<AdminDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<TabId>('dashboard');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
+  const [sportView, setSportView] = useState<'golf' | 'baseball'>('golf');
   const refreshTimerRef = useRef<ReturnType<typeof setInterval>>(undefined);
+
+  // URL-driven tab state
+  const urlTab = searchParams.get('tab') as TabId | null;
+  const activeTab: TabId = TABS.some((t) => t.id === urlTab) ? urlTab! : 'command';
+
+  function setActiveTab(tab: TabId) {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tab', tab);
+    router.replace(`/golf/admin?${params.toString()}`, { scroll: false });
+  }
 
   const loadData = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -155,6 +265,7 @@ export default function AdminDashboardPage() {
     loadData();
   }, [loadData]);
 
+  // Auto-refresh
   useEffect(() => {
     refreshTimerRef.current = setInterval(() => {
       loadData(true);
@@ -162,14 +273,30 @@ export default function AdminDashboardPage() {
     return () => clearInterval(refreshTimerRef.current);
   }, [loadData]);
 
+  // Keyboard shortcuts: 1-6 to switch tabs, R to refresh
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      // Skip if user is typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      const tabIndex = parseInt(e.key) - 1;
+      if (tabIndex >= 0 && tabIndex < TABS.length) {
+        setActiveTab(TABS[tabIndex]!.id);
+        return;
+      }
+      if (e.key === 'r' || e.key === 'R') {
+        loadData(true);
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
   async function handleSignOut() {
     const supabase = createClient();
     await supabase.auth.signOut();
     router.push('/golf/login');
-  }
-
-  function handleManualRefresh() {
-    loadData(true);
   }
 
   return (
@@ -205,7 +332,7 @@ export default function AdminDashboardPage() {
             <div className="flex items-center gap-3">
               <Image
                 src="/helm-golf-logo-transparent.png"
-                alt="GolfHelm"
+                alt="Helm Sports Labs"
                 width={32}
                 height={32}
                 className="w-8 h-8 object-contain"
@@ -213,7 +340,7 @@ export default function AdminDashboardPage() {
               />
               <div>
                 <h1 className="text-lg font-bold text-warm-900">Command Center</h1>
-                <p className="text-xs text-warm-400">GolfHelm Admin</p>
+                <p className="text-xs text-warm-400">Helm Sports Labs</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -233,10 +360,10 @@ export default function AdminDashboardPage() {
                   </div>
                 )}
                 <button
-                  onClick={handleManualRefresh}
+                  onClick={() => loadData(true)}
                   disabled={isRefreshing}
                   className="p-2 rounded-lg text-warm-500 hover:text-warm-700 hover:bg-white/50 transition-all disabled:opacity-50"
-                  title="Refresh data"
+                  title="Refresh data (R)"
                 >
                   <IconRefresh size={16} />
                 </button>
@@ -259,11 +386,20 @@ export default function AdminDashboardPage() {
         </div>
       </header>
 
-      {/* Tab navigation + pulse pills */}
+      {/* Persistent status bar + Tab navigation */}
       {data && !loading && (
-        <nav className="relative z-10 border-b border-white/20 bg-white/30 backdrop-blur-md sticky top-16">
-          <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between py-2">
+        <div className="relative z-10 border-b border-white/20 bg-white/30 backdrop-blur-md sticky top-16">
+          <div className="max-w-[1440px] mx-auto">
+            {/* Status bar */}
+            <StatusBar
+              data={data}
+              isRefreshing={isRefreshing}
+              lastRefresh={lastRefresh}
+              onTabClick={setActiveTab}
+            />
+
+            {/* Tab nav */}
+            <div className="px-4 sm:px-6 lg:px-8 pb-2">
               <div className="flex gap-1 overflow-x-auto no-scrollbar">
                 {TABS.map((tab) => {
                   const Icon = tab.icon;
@@ -280,17 +416,16 @@ export default function AdminDashboardPage() {
                       )}
                     >
                       <Icon size={15} />
-                      {tab.label}
+                      <span className="hidden sm:inline">{tab.label}</span>
+                      <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
+                      <span className="hidden lg:inline text-[10px] text-warm-300 ml-1">{tab.shortcut}</span>
                     </button>
                   );
                 })}
               </div>
-              <div className="hidden lg:block">
-                <QuickPulse data={data} />
-              </div>
             </div>
           </div>
-        </nav>
+        </div>
       )}
 
       {/* Content */}
@@ -330,25 +465,18 @@ export default function AdminDashboardPage() {
             >
 
               {/* ============================================ */}
-              {/* DASHBOARD — Health, KPIs, Daily Charts, Activity */}
+              {/* TAB 1: COMMAND CENTER */}
               {/* ============================================ */}
-              {activeTab === 'dashboard' && (
+              {activeTab === 'command' && (
                 <>
-                  {/* Mobile-only pulse */}
-                  <div className="lg:hidden">
-                    <QuickPulse data={data} />
-                  </div>
-
-                  <InsightCallout data={data} tab="dashboard" />
-
                   {/* Top KPIs */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
                     <AdminStatCard
-                      label="Active Users (7d)"
-                      value={data.health.activeUsers7d}
+                      label="Total Users"
+                      value={data.users.totalCoaches + data.users.totalPlayers + data.users.totalAdmins + data.baseball.totalPlayers + data.baseball.totalCoaches}
                       icon={<IconUsers size={20} />}
                       trend={{ value: data.growth.userGrowthRate, label: 'vs last week' }}
-                      detail={`${data.health.activeUsers24h} in 24h / ${data.health.activeUsers30d} in 30d`}
+                      detail={`${data.users.newUsersThisWeek} new this week`}
                       accentColor="green"
                     />
                     <AdminStatCard
@@ -360,35 +488,46 @@ export default function AdminDashboardPage() {
                       accentColor="blue"
                     />
                     <AdminStatCard
-                      label="AI Reviews & Insights"
+                      label="AI Activity"
                       value={data.health.roundReviewsThisWeek + data.health.insightsThisWeek}
                       icon={<IconSparkles size={20} />}
                       detail={`${data.health.roundReviewsThisWeek} reviews, ${data.health.insightsThisWeek} insights`}
                       accentColor="green"
                     />
                     <AdminStatCard
-                      label="Churned (30d)"
-                      value={data.growth.churnedPlayers30d}
+                      label="Errors (7d)"
+                      value={data.errorLogs.totalErrors7d}
                       icon={<IconWarning size={20} />}
-                      detail="players went inactive"
-                      accentColor={data.growth.churnedPlayers30d > 0 ? 'amber' : 'green'}
+                      accentColor={data.errorLogs.criticalErrors7d > 0 ? 'red' : data.errorLogs.totalErrors7d > 0 ? 'amber' : 'green'}
+                      detail={data.errorLogs.criticalErrors7d > 0 ? `${data.errorLogs.criticalErrors7d} critical` : 'no critical'}
                     />
                     <AdminStatCard
-                      label="System Errors (7d)"
-                      value={data.health.systemErrors7d}
-                      icon={<IconWarning size={20} />}
-                      accentColor={data.health.systemErrors7d > 0 ? 'red' : 'green'}
-                      detail={`${data.health.avgResponseTimeMs}ms API`}
+                      label="Growth Rate"
+                      value={`${data.growth.userGrowthRate > 0 ? '+' : ''}${data.growth.userGrowthRate}`}
+                      suffix="%"
+                      icon={<IconTrendingUp size={20} />}
+                      accentColor={data.growth.userGrowthRate > 0 ? 'green' : data.growth.userGrowthRate < 0 ? 'red' : 'blue'}
+                      detail="user growth vs last week"
+                    />
+                    <AdminStatCard
+                      label="Health Score"
+                      value={data.growth.platformHealthScore}
+                      suffix="/100"
+                      icon={<IconActivity size={20} />}
+                      accentColor={data.growth.platformHealthScore >= 50 ? 'green' : 'red'}
                     />
                   </div>
 
-                  {/* Daily signups + visits charts */}
+                  {/* Needs Attention */}
+                  <NeedsAttention items={data.needsAttention} />
+
+                  {/* 30-Day Trends + Activity Feed */}
                   <DailyCharts
                     signupsByDay={data.signupsByDay}
                     visitsByDay={data.visitsByDay}
                   />
 
-                  {/* Health + Activity + Users in 3-col grid */}
+                  {/* Health + Activity + Users */}
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <PlatformHealthCard health={data.health} />
                     <ActivityFeed activity={data.activity} />
@@ -398,9 +537,9 @@ export default function AdminDashboardPage() {
               )}
 
               {/* ============================================ */}
-              {/* USERS & TEAMS — Full visibility */}
+              {/* TAB 2: USERS & ACTIVITY */}
               {/* ============================================ */}
-              {activeTab === 'visibility' && (
+              {activeTab === 'users' && (
                 <>
                   <InsightCallout data={data} tab="visibility" />
 
@@ -444,68 +583,58 @@ export default function AdminDashboardPage() {
               )}
 
               {/* ============================================ */}
-              {/* PERFORMANCE — Scoring, Usage, Team stats */}
+              {/* TAB 3: HEALTH & ISSUES */}
               {/* ============================================ */}
-              {activeTab === 'performance' && (
+              {activeTab === 'health' && (
                 <>
-                  <InsightCallout data={data} tab="performance" />
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+                  {/* KPIs */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <AdminStatCard
-                      label="Scoring Avg"
-                      value={data.scoring.platformScoringAvg?.toFixed(1) ?? '\u2014'}
-                      icon={<IconTarget size={20} />}
-                      detail={`${data.usage.totalRounds.toLocaleString()} total rounds`}
-                      accentColor="green"
+                      label="Total Errors (7d)"
+                      value={data.errorLogs.totalErrors7d}
+                      icon={<IconWarning size={20} />}
+                      accentColor={data.errorLogs.totalErrors7d > 10 ? 'red' : data.errorLogs.totalErrors7d > 0 ? 'amber' : 'green'}
                     />
                     <AdminStatCard
-                      label="Fairway %"
-                      value={data.scoring.platformFairwayPct != null ? `${data.scoring.platformFairwayPct.toFixed(0)}` : '\u2014'}
-                      suffix="%"
-                      icon={<IconChart size={20} />}
-                      accentColor="blue"
+                      label="Critical Errors"
+                      value={data.errorLogs.criticalErrors7d}
+                      icon={<IconWarning size={20} />}
+                      accentColor={data.errorLogs.criticalErrors7d > 0 ? 'red' : 'green'}
+                      detail={data.errorLogs.criticalErrors7d > 0 ? 'Immediate attention needed' : 'All clear'}
                     />
                     <AdminStatCard
-                      label="GIR %"
-                      value={data.scoring.platformGirPct != null ? `${data.scoring.platformGirPct.toFixed(0)}` : '\u2014'}
-                      suffix="%"
-                      icon={<IconChart size={20} />}
-                      accentColor="green"
+                      label="Failed Logins (7d)"
+                      value={data.loginSecurity.failedLogins7d}
+                      icon={<IconShield size={20} />}
+                      accentColor={data.loginSecurity.failedLogins7d > 5 ? 'amber' : 'green'}
                     />
                     <AdminStatCard
-                      label="Putts / Round"
-                      value={data.scoring.platformPuttsPerRound?.toFixed(1) ?? '\u2014'}
-                      icon={<IconTarget size={20} />}
-                      accentColor="blue"
-                    />
-                    <AdminStatCard
-                      label="Total Shots"
-                      value={data.usage.totalShots.toLocaleString()}
-                      icon={<IconTarget size={20} />}
-                      detail={`${data.usage.avgShotsPerRound} avg/round`}
-                      accentColor="green"
-                    />
-                    <AdminStatCard
-                      label="Data Quality"
-                      value={`${data.usage.roundsCompletionRate}%`}
-                      icon={<IconChart size={20} />}
-                      detail={`${data.usage.verifiedRoundsRate}% verified`}
-                      accentColor={data.usage.roundsCompletionRate > 80 ? 'green' : 'amber'}
+                      label="Locked Accounts"
+                      value={data.loginSecurity.lockedAccounts}
+                      icon={<IconShield size={20} />}
+                      accentColor={data.loginSecurity.lockedAccounts > 0 ? 'red' : 'green'}
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <ScoringIntelligenceCard scoring={data.scoring} />
-                    <TeamIntelligenceCard teams={data.teams} />
-                    <UsageMetricsCard usage={data.usage} dataQuality={data.dataQuality} funnel={data.funnel} />
+                  {/* System Health Grid + Error Feed */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <HealthCheckGrid
+                      health={data.health}
+                      errorLogs={data.errorLogs}
+                      loginSecurity={data.loginSecurity}
+                    />
+                    <ErrorFeed errorLogs={data.errorLogs} />
                   </div>
+
+                  {/* CoachHelm AI Health */}
+                  <CoachHelmHealthCard coachhelm={data.coachhelm} coachhelmRoi={data.coachhelmRoi} />
                 </>
               )}
 
               {/* ============================================ */}
-              {/* GROWTH & AI — Business intel, engagement, CoachHelm */}
+              {/* TAB 4: ANALYTICS & GROWTH */}
               {/* ============================================ */}
-              {activeTab === 'growth' && (
+              {activeTab === 'analytics' && (
                 <>
                   <InsightCallout data={data} tab="growth" />
 
@@ -533,22 +662,25 @@ export default function AdminDashboardPage() {
                       accentColor={data.engagement.weeklyRetention > 30 ? 'green' : 'amber'}
                     />
                     <AdminStatCard
-                      label="AI Reviews"
-                      value={data.coachhelm.totalReviewsAllTime.toLocaleString()}
-                      icon={<IconSparkles size={20} />}
-                      accentColor="green"
+                      label="Stickiness"
+                      value={`${data.stickiness.dauMauRatio}`}
+                      suffix="%"
+                      icon={<IconChart size={20} />}
+                      detail={`DAU/MAU · ${data.stickiness.dau}/${data.stickiness.mau}`}
+                      accentColor={data.stickiness.dauMauRatio > 20 ? 'green' : 'amber'}
                     />
                     <AdminStatCard
-                      label="Patterns"
-                      value={data.coachhelm.totalPatternsDetected.toLocaleString()}
-                      icon={<IconActivity size={20} />}
-                      accentColor="blue"
+                      label="Churned (30d)"
+                      value={data.growth.churnedPlayers30d}
+                      icon={<IconWarning size={20} />}
+                      detail="players went inactive"
+                      accentColor={data.growth.churnedPlayers30d > 0 ? 'amber' : 'green'}
                     />
                     <AdminStatCard
                       label="AI Adoption"
                       value={`${data.coachhelm.coachPhilosophyAdoption}`}
                       suffix="%"
-                      icon={<IconChart size={20} />}
+                      icon={<IconSparkles size={20} />}
                       accentColor={data.coachhelm.coachPhilosophyAdoption > 50 ? 'green' : 'amber'}
                     />
                   </div>
@@ -570,9 +702,113 @@ export default function AdminDashboardPage() {
                       stickiness={data.stickiness}
                     />
                   </div>
+                </>
+              )}
 
-                  {/* CoachHelm AI Detail — full width */}
-                  <CoachHelmHealthCard coachhelm={data.coachhelm} coachhelmRoi={data.coachhelmRoi} />
+              {/* ============================================ */}
+              {/* TAB 5: SPORT OPERATIONS */}
+              {/* ============================================ */}
+              {activeTab === 'sports' && (
+                <>
+                  <SportToggle sport={sportView} onToggle={setSportView} />
+
+                  {sportView === 'golf' ? (
+                    <>
+                      <InsightCallout data={data} tab="performance" />
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+                        <AdminStatCard
+                          label="Scoring Avg"
+                          value={data.scoring.platformScoringAvg?.toFixed(1) ?? '\u2014'}
+                          icon={<IconTarget size={20} />}
+                          detail={`${data.usage.totalRounds.toLocaleString()} total rounds`}
+                          accentColor="green"
+                        />
+                        <AdminStatCard
+                          label="Fairway %"
+                          value={data.scoring.platformFairwayPct != null ? `${data.scoring.platformFairwayPct.toFixed(0)}` : '\u2014'}
+                          suffix="%"
+                          icon={<IconChart size={20} />}
+                          accentColor="blue"
+                        />
+                        <AdminStatCard
+                          label="GIR %"
+                          value={data.scoring.platformGirPct != null ? `${data.scoring.platformGirPct.toFixed(0)}` : '\u2014'}
+                          suffix="%"
+                          icon={<IconChart size={20} />}
+                          accentColor="green"
+                        />
+                        <AdminStatCard
+                          label="Putts / Round"
+                          value={data.scoring.platformPuttsPerRound?.toFixed(1) ?? '\u2014'}
+                          icon={<IconTarget size={20} />}
+                          accentColor="blue"
+                        />
+                        <AdminStatCard
+                          label="Total Shots"
+                          value={data.usage.totalShots.toLocaleString()}
+                          icon={<IconTarget size={20} />}
+                          detail={`${data.usage.avgShotsPerRound} avg/round`}
+                          accentColor="green"
+                        />
+                        <AdminStatCard
+                          label="Data Quality"
+                          value={`${data.usage.roundsCompletionRate}%`}
+                          icon={<IconChart size={20} />}
+                          detail={`${data.usage.verifiedRoundsRate}% verified`}
+                          accentColor={data.usage.roundsCompletionRate > 80 ? 'green' : 'amber'}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <ScoringIntelligenceCard scoring={data.scoring} />
+                        <TeamIntelligenceCard teams={data.teams} />
+                        <UsageMetricsCard usage={data.usage} dataQuality={data.dataQuality} funnel={data.funnel} />
+                      </div>
+                    </>
+                  ) : (
+                    <BaseballOps baseball={data.baseball} />
+                  )}
+                </>
+              )}
+
+              {/* ============================================ */}
+              {/* TAB 6: AUDIT & SECURITY */}
+              {/* ============================================ */}
+              {activeTab === 'audit' && (
+                <>
+                  {/* KPIs */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <AdminStatCard
+                      label="Audit Events (7d)"
+                      value={data.auditLog.totalEvents7d}
+                      icon={<IconShield size={20} />}
+                      accentColor="blue"
+                    />
+                    <AdminStatCard
+                      label="Failed Logins (7d)"
+                      value={data.loginSecurity.failedLogins7d}
+                      icon={<IconWarning size={20} />}
+                      accentColor={data.loginSecurity.failedLogins7d > 5 ? 'amber' : 'green'}
+                    />
+                    <AdminStatCard
+                      label="Locked Accounts"
+                      value={data.loginSecurity.lockedAccounts}
+                      icon={<IconShield size={20} />}
+                      accentColor={data.loginSecurity.lockedAccounts > 0 ? 'red' : 'green'}
+                    />
+                    <AdminStatCard
+                      label="Total Errors (7d)"
+                      value={data.errorLogs.totalErrors7d}
+                      icon={<IconWarning size={20} />}
+                      accentColor={data.errorLogs.totalErrors7d > 0 ? 'amber' : 'green'}
+                    />
+                  </div>
+
+                  <AuditFeed
+                    auditLog={data.auditLog}
+                    loginSecurity={data.loginSecurity}
+                  />
                 </>
               )}
 

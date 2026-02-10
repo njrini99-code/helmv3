@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 // ============================================
 // TYPES
@@ -237,6 +238,85 @@ export interface AdminDashboardData {
     avgScoreNonAICoachPlayers: number | null;
     scoreDifference: number | null;
   };
+  // Error tracking
+  errorLogs: {
+    totalErrors7d: number;
+    criticalErrors7d: number;
+    recentErrors: {
+      id: string;
+      message: string;
+      severity: string;
+      stack: string | null;
+      url: string | null;
+      userId: string | null;
+      userEmail: string | null;
+      createdAt: string;
+      occurrences: number;
+    }[];
+    errorsByDay: { date: string; count: number }[];
+    bySeverity: { severity: string; count: number }[];
+    topErrors: {
+      message: string;
+      severity: string;
+      occurrences: number;
+      firstSeen: string;
+      lastSeen: string;
+      affectedUsers: number;
+    }[];
+  };
+  // Audit log
+  auditLog: {
+    totalEvents7d: number;
+    recentEvents: {
+      id: string;
+      userId: string | null;
+      userEmail: string | null;
+      action: string;
+      tableName: string | null;
+      recordId: string | null;
+      oldData: Record<string, unknown> | null;
+      newData: Record<string, unknown> | null;
+      createdAt: string;
+    }[];
+  };
+  // Login security
+  loginSecurity: {
+    failedLogins7d: number;
+    lockedAccounts: number;
+    recentAttempts: {
+      email: string;
+      failedAttempts: number;
+      lastAttempt: string | null;
+      lockedUntil: string | null;
+    }[];
+  };
+  // Baseball data (merged from command center)
+  baseball: {
+    totalPlayers: number;
+    totalCoaches: number;
+    watchlistStages: Record<string, number>;
+    recruitingActivePlayers: number;
+    commitments: number;
+    videos30d: number;
+    engagementEvents30d: number;
+    messages7d: number;
+    conversations30d: number;
+    playersOnboarded: number;
+    coachesOnboarded: number;
+  };
+  // Needs attention items
+  needsAttention: {
+    label: string;
+    severity: 'info' | 'warning' | 'critical';
+    detail: string;
+    tab: string;
+  }[];
+  // User auth details (last login from auth.users)
+  userAuthDetails: {
+    userId: string;
+    lastSignInAt: string | null;
+    lastSeen: string | null;
+  }[];
 }
 
 // ============================================
@@ -337,6 +417,9 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
 
   if ((userData?.role as string) !== 'admin') throw new Error('Forbidden');
 
+  // Use admin client (service role) for all data queries — bypasses RLS
+  const adminDb = createAdminClient();
+
   const ago24h = daysAgo(1);
   const ago7d = daysAgo(7);
   const ago14d = daysAgo(14);
@@ -419,82 +502,82 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     insightPlayerRoundsRes,
   ] = await Promise.all([
     // --- Health (active users = distinct players with rounds) ---
-    supabase.from('golf_rounds').select('player_id').gte('created_at', ago24h),
-    supabase.from('golf_rounds').select('player_id').gte('created_at', ago7d),
-    supabase.from('golf_rounds').select('player_id').gte('created_at', ago30d),
-    supabase.from('golf_rounds').select('id', { count: 'exact', head: true }).gte('created_at', ago7d),
-    supabase.from('golf_round_reviews').select('id', { count: 'exact', head: true }).gte('created_at', ago7d),
-    supabase.from('golf_insight_generation_log').select('id', { count: 'exact', head: true }).gte('created_at', ago7d),
-    supabase.from('golf_rounds').select('id', { count: 'exact', head: true }).gte('created_at', today),
-    supabase.from('golf_rounds').select('created_at').order('created_at', { ascending: false }).limit(1),
-    supabase.from('golf_insight_generation_log').select('created_at').order('created_at', { ascending: false }).limit(1),
+    adminDb.from('golf_rounds').select('player_id').gte('created_at', ago24h),
+    adminDb.from('golf_rounds').select('player_id').gte('created_at', ago7d),
+    adminDb.from('golf_rounds').select('player_id').gte('created_at', ago30d),
+    adminDb.from('golf_rounds').select('id', { count: 'exact', head: true }).gte('created_at', ago7d),
+    adminDb.from('golf_round_reviews').select('id', { count: 'exact', head: true }).gte('created_at', ago7d),
+    adminDb.from('golf_insight_generation_log').select('id', { count: 'exact', head: true }).gte('created_at', ago7d),
+    adminDb.from('golf_rounds').select('id', { count: 'exact', head: true }).gte('created_at', today),
+    adminDb.from('golf_rounds').select('created_at').order('created_at', { ascending: false }).limit(1),
+    adminDb.from('golf_insight_generation_log').select('created_at').order('created_at', { ascending: false }).limit(1),
 
     // --- Users ---
-    supabase.from('golf_coaches').select('id', { count: 'exact', head: true }),
-    supabase.from('golf_players').select('id', { count: 'exact', head: true }),
-    supabase.from('users').select('id', { count: 'exact', head: true }).filter('role', 'eq', 'admin'),
-    supabase.from('golf_coaches').select('id', { count: 'exact', head: true }).eq('onboarding_completed', true),
-    supabase.from('golf_players').select('id', { count: 'exact', head: true }).eq('onboarding_completed', true),
-    supabase.from('golf_team_members').select('team_id').eq('status', 'active'),
-    supabase.from('users').select('created_at').gte('created_at', ago12w).order('created_at', { ascending: true }),
-    supabase.from('users').select('id', { count: 'exact', head: true }).gte('created_at', ago7d),
-    supabase.from('users').select('id', { count: 'exact', head: true }).gte('created_at', ago14d).lt('created_at', ago7d),
-    supabase.from('golf_players').select('onboarding_completed'),
+    adminDb.from('golf_coaches').select('id', { count: 'exact', head: true }),
+    adminDb.from('golf_players').select('id', { count: 'exact', head: true }),
+    adminDb.from('users').select('id', { count: 'exact', head: true }).filter('role', 'eq', 'admin'),
+    adminDb.from('golf_coaches').select('id', { count: 'exact', head: true }).eq('onboarding_completed', true),
+    adminDb.from('golf_players').select('id', { count: 'exact', head: true }).eq('onboarding_completed', true),
+    adminDb.from('golf_team_members').select('team_id').eq('status', 'active'),
+    adminDb.from('users').select('created_at').gte('created_at', ago12w).order('created_at', { ascending: true }),
+    adminDb.from('users').select('id', { count: 'exact', head: true }).gte('created_at', ago7d),
+    adminDb.from('users').select('id', { count: 'exact', head: true }).gte('created_at', ago14d).lt('created_at', ago7d),
+    adminDb.from('golf_players').select('onboarding_completed'),
 
     // --- Usage ---
-    supabase.from('golf_rounds').select('round_type, created_at').gte('created_at', ago12w).order('created_at', { ascending: true }),
-    supabase.from('golf_shots').select('id', { count: 'exact', head: true }),
-    supabase.from('golf_rounds').select('id', { count: 'exact', head: true }),
-    supabase.from('golf_rounds').select('id', { count: 'exact', head: true }).eq('status', 'completed'),
-    supabase.from('golf_rounds').select('id', { count: 'exact', head: true }).not('total_score', 'is', null),
-    supabase.from('golf_qualifiers').select('id', { count: 'exact', head: true }),
-    supabase.from('golf_events').select('id', { count: 'exact', head: true }),
-    supabase.from('golf_tasks').select('id', { count: 'exact', head: true }),
-    supabase.from('golf_announcements').select('id', { count: 'exact', head: true }),
-    supabase.from('golf_messages').select('id', { count: 'exact', head: true }),
-    supabase.from('golf_documents').select('id', { count: 'exact', head: true }),
-    supabase.from('golf_travel_itineraries').select('id', { count: 'exact', head: true }),
+    adminDb.from('golf_rounds').select('round_type, created_at').gte('created_at', ago12w).order('created_at', { ascending: true }),
+    adminDb.from('golf_shots').select('id', { count: 'exact', head: true }),
+    adminDb.from('golf_rounds').select('id', { count: 'exact', head: true }),
+    adminDb.from('golf_rounds').select('id', { count: 'exact', head: true }).eq('status', 'completed'),
+    adminDb.from('golf_rounds').select('id', { count: 'exact', head: true }).not('total_score', 'is', null),
+    adminDb.from('golf_qualifiers').select('id', { count: 'exact', head: true }),
+    adminDb.from('golf_events').select('id', { count: 'exact', head: true }),
+    adminDb.from('golf_tasks').select('id', { count: 'exact', head: true }),
+    adminDb.from('golf_announcements').select('id', { count: 'exact', head: true }),
+    adminDb.from('golf_messages').select('id', { count: 'exact', head: true }),
+    adminDb.from('golf_documents').select('id', { count: 'exact', head: true }),
+    adminDb.from('golf_travel_itineraries').select('id', { count: 'exact', head: true }),
 
     // --- CoachHelm ---
-    supabase.from('golf_prediction_model_performance').select('model_type, accuracy_rate, calibration_score, predictions_made').order('period_end', { ascending: false }).limit(10),
-    supabase.from('golf_insight_effectiveness').select('insight_type, action_rate, improvement_rate, effectiveness_score').order('period_end', { ascending: false }).limit(10),
-    supabase.from('golf_patterns_v2').select('id', { count: 'exact', head: true }),
-    supabase.from('golf_predictions').select('id', { count: 'exact', head: true }),
-    supabase.from('golf_round_reviews').select('id', { count: 'exact', head: true }),
-    supabase.from('golf_insight_generation_log').select('insights_generated, created_at').gte('created_at', ago12w).order('created_at', { ascending: true }),
-    supabase.from('golf_coach_philosophy').select('id', { count: 'exact', head: true }),
+    adminDb.from('golf_prediction_model_performance').select('model_type, accuracy_rate, calibration_score, predictions_made').order('period_end', { ascending: false }).limit(10),
+    adminDb.from('golf_insight_effectiveness').select('insight_type, action_rate, improvement_rate, effectiveness_score').order('period_end', { ascending: false }).limit(10),
+    adminDb.from('golf_patterns_v2').select('id', { count: 'exact', head: true }),
+    adminDb.from('golf_predictions').select('id', { count: 'exact', head: true }),
+    adminDb.from('golf_round_reviews').select('id', { count: 'exact', head: true }),
+    adminDb.from('golf_insight_generation_log').select('insights_generated, created_at').gte('created_at', ago12w).order('created_at', { ascending: true }),
+    adminDb.from('golf_coach_philosophy').select('id', { count: 'exact', head: true }),
 
     // --- Activity ---
-    supabase.from('users').select('id, email, role, created_at').order('created_at', { ascending: false }).limit(10),
-    supabase.from('golf_rounds').select('id, total_score, score_to_par, round_type, course_name, created_at, golf_players(first_name, last_name)').order('created_at', { ascending: false }).limit(10),
-    supabase.from('golf_insight_generation_log').select('id, insight_type, insights_generated, created_at').order('created_at', { ascending: false }).limit(10),
+    adminDb.from('users').select('id, email, role, created_at').order('created_at', { ascending: false }).limit(10),
+    adminDb.from('golf_rounds').select('id, total_score, score_to_par, round_type, course_name, created_at, golf_players(first_name, last_name)').order('created_at', { ascending: false }).limit(10),
+    adminDb.from('golf_insight_generation_log').select('id, insight_type, insights_generated, created_at').order('created_at', { ascending: false }).limit(10),
 
     // --- Engagement ---
-    supabase.from('golf_rounds').select('created_at').gte('created_at', ago30d).order('created_at', { ascending: true }),
-    supabase.from('golf_rounds').select('player_id').gte('created_at', ago7d),
-    supabase.from('golf_players').select('id'),
-    supabase.from('golf_coach_insights').select('coach_id').gte('created_at', ago30d),
-    supabase.from('golf_attendance_summary').select('attendance_percentage'),
+    adminDb.from('golf_rounds').select('created_at').gte('created_at', ago30d).order('created_at', { ascending: true }),
+    adminDb.from('golf_rounds').select('player_id').gte('created_at', ago7d),
+    adminDb.from('golf_players').select('id'),
+    adminDb.from('golf_coach_insights').select('coach_id').gte('created_at', ago30d),
+    adminDb.from('golf_attendance_summary').select('attendance_percentage'),
     // --- Growth / Demographics ---
-    supabase.from('golf_team_members').select('status, golf_players(graduation_year)').not('status', 'is', null),
-    supabase.from('golf_players').select('graduation_year'),
-    supabase.from('golf_rounds').select('id', { count: 'exact', head: true }).gte('created_at', ago14d).lt('created_at', ago7d),
-    supabase.from('golf_teams').select('id', { count: 'exact', head: true }).gte('created_at', ago30d),
-    supabase.from('golf_rounds').select('player_id').gte('created_at', ago30d),
-    supabase.from('golf_rounds').select('player_id').gte('created_at', daysAgo(60)).lt('created_at', ago30d),
+    adminDb.from('golf_team_members').select('status, golf_players(graduation_year)').not('status', 'is', null),
+    adminDb.from('golf_players').select('graduation_year'),
+    adminDb.from('golf_rounds').select('id', { count: 'exact', head: true }).gte('created_at', ago14d).lt('created_at', ago7d),
+    adminDb.from('golf_teams').select('id', { count: 'exact', head: true }).gte('created_at', ago30d),
+    adminDb.from('golf_rounds').select('player_id').gte('created_at', ago30d),
+    adminDb.from('golf_rounds').select('player_id').gte('created_at', daysAgo(60)).lt('created_at', ago30d),
     // Cohort retention: players who signed up in each of last 4 weeks
-    supabase.from('users').select('id, created_at').gte('created_at', daysAgo(28)).lte('created_at', daysAgo(21)),
-    supabase.from('users').select('id, created_at').gte('created_at', daysAgo(21)).lte('created_at', daysAgo(14)),
-    supabase.from('users').select('id, created_at').gte('created_at', daysAgo(14)).lte('created_at', daysAgo(7)),
-    supabase.from('users').select('id, created_at').gte('created_at', daysAgo(7)),
+    adminDb.from('users').select('id, created_at').gte('created_at', daysAgo(28)).lte('created_at', daysAgo(21)),
+    adminDb.from('users').select('id, created_at').gte('created_at', daysAgo(21)).lte('created_at', daysAgo(14)),
+    adminDb.from('users').select('id, created_at').gte('created_at', daysAgo(14)).lte('created_at', daysAgo(7)),
+    adminDb.from('users').select('id, created_at').gte('created_at', daysAgo(7)),
     // Shot data quality
-    supabase.from('golf_shots').select('id', { count: 'exact', head: true }).not('latitude', 'is', null),
-    supabase.from('golf_shots').select('id', { count: 'exact', head: true }).not('lie_type', 'is', null),
-    supabase.from('golf_shots').select('id', { count: 'exact', head: true }).not('club', 'is', null),
+    adminDb.from('golf_shots').select('id', { count: 'exact', head: true }).not('latitude', 'is', null),
+    adminDb.from('golf_shots').select('id', { count: 'exact', head: true }).not('lie_type', 'is', null),
+    adminDb.from('golf_shots').select('id', { count: 'exact', head: true }).not('club', 'is', null),
     // Unique reviewed rounds
-    supabase.from('golf_round_reviews').select('round_id'),
+    adminDb.from('golf_round_reviews').select('round_id'),
     // Rounds with insights
-    supabase.from('golf_insight_generation_log').select('player_id').not('player_id', 'is', null),
+    adminDb.from('golf_insight_generation_log').select('player_id').not('player_id', 'is', null),
   ]);
 
   // ============================================
@@ -515,28 +598,28 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     platformHealthStatsRes,
   ] = await Promise.all([
     // Teams with org
-    supabase.from('golf_teams').select('id, name, organization_id, organizations(name)'),
+    adminDb.from('golf_teams').select('id, name, organization_id, organizations(name)'),
     // Team membership counts
-    supabase.from('golf_team_members').select('team_id, player_id, golf_players(first_name, last_name)').eq('status', 'active'),
+    adminDb.from('golf_team_members').select('team_id, player_id, golf_players(first_name, last_name)').eq('status', 'active'),
     // Rounds per team this week
-    supabase.from('golf_rounds').select('player_id, team_id').gte('created_at', ago7d),
+    adminDb.from('golf_rounds').select('player_id, team_id').gte('created_at', ago7d),
     // Player stats cache for platform averages and top performers
-    supabase.from('golf_player_stats_cache').select('player_id, scoring_average, driving_accuracy_percentage, gir_percentage, putts_per_round, rounds_played, golf_players(first_name, last_name)').not('scoring_average', 'is', null).order('scoring_average', { ascending: true }).limit(50),
+    adminDb.from('golf_player_stats_cache').select('player_id, scoring_average, driving_accuracy_percentage, gir_percentage, putts_per_round, rounds_played, golf_players(first_name, last_name)').not('scoring_average', 'is', null).order('scoring_average', { ascending: true }).limit(50),
     // Player-to-team mapping for team name resolution
-    supabase.from('golf_team_members').select('player_id, golf_teams(id, name)').eq('status', 'active'),
+    adminDb.from('golf_team_members').select('player_id, golf_teams(id, name)').eq('status', 'active'),
     // Scoring distribution
-    supabase.from('golf_rounds').select('total_score').not('total_score', 'is', null).eq('status', 'completed'),
+    adminDb.from('golf_rounds').select('total_score').not('total_score', 'is', null).eq('status', 'completed'),
     // Best recent rounds
-    supabase.from('golf_rounds').select('total_score, score_to_par, course_name, round_date, golf_players(first_name, last_name)').not('total_score', 'is', null).eq('status', 'completed').order('score_to_par', { ascending: true }).limit(5),
+    adminDb.from('golf_rounds').select('total_score, score_to_par, course_name, round_date, golf_players(first_name, last_name)').not('total_score', 'is', null).eq('status', 'completed').order('score_to_par', { ascending: true }).limit(5),
     // CoachHelm weekly
-    supabase.from('golf_insight_generation_log').select('created_at').gte('created_at', ago12w).order('created_at', { ascending: true }),
-    supabase.from('golf_round_reviews').select('created_at').gte('created_at', ago12w).order('created_at', { ascending: true }),
+    adminDb.from('golf_insight_generation_log').select('created_at').gte('created_at', ago12w).order('created_at', { ascending: true }),
+    adminDb.from('golf_round_reviews').select('created_at').gte('created_at', ago12w).order('created_at', { ascending: true }),
     // System errors
-    supabase.from('golf_insight_generation_log').select('id', { count: 'exact', head: true }).gte('created_at', ago7d).eq('insights_generated', 0),
+    adminDb.from('golf_insight_generation_log').select('id', { count: 'exact', head: true }).gte('created_at', ago7d).eq('insights_generated', 0),
     // User ID to Player ID mapping (for cohort retention)
-    supabase.from('golf_players').select('id, user_id'),
+    adminDb.from('golf_players').select('id, user_id'),
     // Real platform health stats from auth sessions + DB metrics
-    supabase.rpc('get_platform_health_stats' as never) as unknown as { data: PlatformHealthStatsResult | null; error: unknown },
+    adminDb.rpc('get_platform_health_stats' as never) as unknown as { data: PlatformHealthStatsResult | null; error: unknown },
   ]);
 
   // ============================================
@@ -681,7 +764,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   // Count coaches per team (coaches are linked via organization, not directly via team_id)
   const teamCoachCounts: Record<string, number> = {};
   // Approximate: count coaches per org, then map to teams
-  const coachOrgRes = await supabase.from('golf_coaches').select('organization_id');
+  const coachOrgRes = await adminDb.from('golf_coaches').select('organization_id');
   const orgCoachCounts: Record<string, number> = {};
   for (const c of (coachOrgRes.data ?? [])) {
     if (c.organization_id) {
@@ -957,21 +1040,21 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     userLastActiveRes,
   ] = await Promise.all([
     // All users for directory
-    supabase.from('users').select('id, email, role, created_at').order('created_at', { ascending: false }),
+    adminDb.from('users').select('id, email, role, created_at, last_seen').order('created_at', { ascending: false }),
     // All players with user_id, names, onboarding, grad year
-    supabase.from('golf_players').select('id, user_id, first_name, last_name, graduation_year, onboarding_completed'),
+    adminDb.from('golf_players').select('id, user_id, first_name, last_name, graduation_year, onboarding_completed'),
     // All coaches with user_id, names, org
-    supabase.from('golf_coaches').select('id, user_id, full_name, email, organization_id, onboarding_completed'),
+    adminDb.from('golf_coaches').select('id, user_id, full_name, email, organization_id, onboarding_completed'),
     // Round counts per player
-    supabase.from('golf_rounds').select('player_id'),
+    adminDb.from('golf_rounds').select('player_id'),
     // Latest round date per player (get all rounds, process in JS)
-    supabase.from('golf_rounds').select('player_id, created_at').order('created_at', { ascending: false }),
+    adminDb.from('golf_rounds').select('player_id, created_at').order('created_at', { ascending: false }),
     // Signups by day (last 30d)
-    supabase.from('users').select('created_at').gte('created_at', ago30d).order('created_at', { ascending: true }),
+    adminDb.from('users').select('created_at').gte('created_at', ago30d).order('created_at', { ascending: true }),
     // Active users by day (last 30d, based on round submissions)
-    supabase.from('golf_rounds').select('player_id, created_at').gte('created_at', ago30d).order('created_at', { ascending: true }),
-    // Real last-active timestamps from auth sessions (uses SECURITY DEFINER function)
-    supabase.rpc('get_user_last_active' as never) as unknown as { data: { user_id: string; last_active_at: string | null }[] | null; error: unknown },
+    adminDb.from('golf_rounds').select('player_id, created_at').gte('created_at', ago30d).order('created_at', { ascending: true }),
+    // User auth details (last_sign_in_at from auth.users via RPC)
+    adminDb.rpc('get_users_with_auth' as never) as unknown as { data: { id: string; last_sign_in_at: string | null; last_seen: string | null }[] | null; error: unknown },
   ]);
 
   // --- Build player maps ---
@@ -1025,12 +1108,19 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     }
   }
 
-  // --- User last-active map (from auth sessions) ---
-  const userLastActive = new Map<string, string>();
+  // --- User auth details map (last_sign_in_at + last_seen from RPC) ---
+  const userAuthDetailsMap = new Map<string, { lastSignInAt: string | null; lastSeen: string | null }>();
   for (const row of (userLastActiveRes.data ?? [])) {
-    if (row.last_active_at) {
-      userLastActive.set(row.user_id, row.last_active_at);
-    }
+    userAuthDetailsMap.set(row.id, {
+      lastSignInAt: row.last_sign_in_at ?? null,
+      lastSeen: row.last_seen ?? null,
+    });
+  }
+  // Build last-active map for user directory (prefer last_seen, fallback to last_sign_in)
+  const userLastActive = new Map<string, string>();
+  for (const [uid, details] of userAuthDetailsMap) {
+    const ts = details.lastSeen ?? details.lastSignInAt;
+    if (ts) userLastActive.set(uid, ts);
   }
 
   // --- Player to team map (already have teamMembersRes from batch 2) ---
@@ -1254,6 +1344,208 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     scoreDifference: null as number | null,
   };
 
+  // ============================================
+  // BATCH 4: Error logs, audit log, login security, baseball (parallel)
+  // ============================================
+  const [
+    errorLogsRecentRes,
+    errorLogs7dCountRes,
+    errorLogsCriticalRes,
+    errorSummaryRes,
+    auditLogRecentRes,
+    auditLog7dCountRes,
+    loginAttemptsRes,
+    lockedAccountsRes,
+    // Baseball
+    bbPlayersRes,
+    bbCoachesRes,
+    bbWatchlistRes,
+    bbVideos30dRes,
+    bbEngagement30dRes,
+    bbMessages7dRes,
+    bbConversations30dRes,
+    bbPlayersOnboardedRes,
+    bbCoachesOnboardedRes,
+  ] = await Promise.all([
+    // Error logs: recent entries
+    adminDb.from('error_logs').select('id, message, severity, stack, url, user_id, created_at').order('created_at', { ascending: false }).limit(50),
+    // Error logs: 7d count
+    adminDb.from('error_logs').select('id', { count: 'exact', head: true }).gte('created_at', ago7d),
+    // Error logs: critical 7d
+    adminDb.from('error_logs').select('id', { count: 'exact', head: true }).gte('created_at', ago7d).eq('severity', 'critical'),
+    // Error summary from RPC
+    (adminDb.rpc as unknown as (fn: string, params: Record<string, number>) => PromiseLike<{ data: unknown }>)('get_error_summary', { days_back: 7 }) as unknown as { data: { by_severity: { severity: string; count: number }[]; top_errors: { message: string; severity: string; occurrences: number; first_seen: string; last_seen: string; affected_users: number }[]; daily_rate: { day: string; count: number }[]; total_count: number; critical_count: number } | null; error: unknown },
+    // Audit log: recent entries via RPC
+    (adminDb.rpc as unknown as (fn: string, params: Record<string, number>) => PromiseLike<{ data: unknown }>)('get_audit_log_recent', { limit_count: 50 }) as unknown as { data: { id: string; user_id: string | null; user_email: string | null; action: string; table_name: string | null; record_id: string | null; old_data: Record<string, unknown> | null; new_data: Record<string, unknown> | null; created_at: string }[] | null; error: unknown },
+    // Audit log: 7d count
+    adminDb.from('audit_log').select('id', { count: 'exact', head: true }).gte('created_at', ago7d),
+    // Login attempts
+    adminDb.from('login_attempts').select('email, failed_attempts, last_attempt, locked_until').order('last_attempt', { ascending: false }).limit(20),
+    // Locked accounts
+    adminDb.from('login_attempts').select('id', { count: 'exact', head: true }).gte('locked_until', new Date().toISOString()),
+    // Baseball data
+    adminDb.from('baseball_players').select('id', { count: 'exact', head: true }),
+    adminDb.from('baseball_coaches').select('id', { count: 'exact', head: true }),
+    adminDb.from('baseball_watchlists').select('pipeline_stage'),
+    adminDb.from('baseball_videos').select('id', { count: 'exact', head: true }).gte('created_at', ago30d),
+    adminDb.from('baseball_player_engagement_events').select('id', { count: 'exact', head: true }).gte('created_at', ago30d),
+    adminDb.from('baseball_messages').select('id', { count: 'exact', head: true }).gte('created_at', ago7d),
+    adminDb.from('baseball_conversations').select('id', { count: 'exact', head: true }).gte('created_at', ago30d),
+    adminDb.from('baseball_players').select('id', { count: 'exact', head: true }).eq('onboarding_completed', true),
+    adminDb.from('baseball_coaches').select('id', { count: 'exact', head: true }).eq('onboarding_completed', true),
+  ]);
+
+  // --- Process error logs ---
+  const errorEmailMap = new Map<string, string>();
+  for (const u of (allUsersRes.data ?? [])) {
+    errorEmailMap.set(u.id, u.email);
+  }
+
+  const errorSummary = (errorSummaryRes.data ?? null) as {
+    by_severity: { severity: string; count: number }[];
+    top_errors: { message: string; severity: string; occurrences: number; first_seen: string; last_seen: string; affected_users: number }[];
+    daily_rate: { day: string; count: number }[];
+    total_count: number;
+    critical_count: number;
+  } | null;
+
+  const recentErrors = (errorLogsRecentRes.data ?? []).map((e) => ({
+    id: e.id,
+    message: e.message,
+    severity: e.severity ?? 'error',
+    stack: e.stack,
+    url: e.url,
+    userId: e.user_id,
+    userEmail: e.user_id ? (errorEmailMap.get(e.user_id) ?? null) : null,
+    createdAt: e.created_at ?? new Date().toISOString(),
+    occurrences: 1,
+  }));
+
+  const errorsByDay = (errorSummary?.daily_rate ?? []).map((d) => ({
+    date: new Date(d.day).toISOString().slice(0, 10),
+    count: d.count,
+  }));
+
+  // --- Process audit log ---
+  const auditLogData = ((auditLogRecentRes.data ?? []) as {
+    id: string; user_id: string | null; user_email: string | null; action: string;
+    table_name: string | null; record_id: string | null;
+    old_data: Record<string, unknown> | null; new_data: Record<string, unknown> | null;
+    created_at: string;
+  }[]).map((a) => ({
+    id: a.id,
+    userId: a.user_id,
+    userEmail: a.user_email ?? (a.user_id ? (errorEmailMap.get(a.user_id) ?? null) : null),
+    action: a.action,
+    tableName: a.table_name,
+    recordId: a.record_id,
+    oldData: a.old_data,
+    newData: a.new_data,
+    createdAt: a.created_at,
+  }));
+
+  // --- Process login security ---
+  const loginAttempts = (loginAttemptsRes.data ?? []).map((l) => ({
+    email: l.email,
+    failedAttempts: l.failed_attempts ?? 0,
+    lastAttempt: l.last_attempt,
+    lockedUntil: l.locked_until,
+  }));
+  const failedLogins7d = loginAttempts.reduce((s, l) => s + l.failedAttempts, 0);
+
+  // --- Process baseball data ---
+  const watchlistStages: Record<string, number> = {};
+  for (const w of (bbWatchlistRes.data ?? [])) {
+    const stage = (w.pipeline_stage as string) || 'unknown';
+    watchlistStages[stage] = (watchlistStages[stage] || 0) + 1;
+  }
+  const commitments = watchlistStages['committed'] ?? 0;
+
+  // --- Build needs-attention items ---
+  const needsAttention: AdminDashboardData['needsAttention'] = [];
+
+  // Players stuck in onboarding > 7 days
+  const stuckInOnboarding = (allUsersRes.data ?? []).filter((u) => {
+    if (!u.created_at) return false;
+    const daysSinceSignup = (Date.now() - new Date(u.created_at).getTime()) / 86400000;
+    const player = userIdToPlayerDetail.get(u.id);
+    return daysSinceSignup > 7 && player && !player.onboardingCompleted;
+  });
+  if (stuckInOnboarding.length > 0) {
+    needsAttention.push({
+      label: `${stuckInOnboarding.length} player${stuckInOnboarding.length > 1 ? 's' : ''} stuck in onboarding > 7 days`,
+      severity: 'warning',
+      detail: 'Consider sending a reminder or checking for UX issues',
+      tab: 'users',
+    });
+  }
+
+  // Coaches inactive > 14 days
+  const inactiveCoaches = (allUsersRes.data ?? []).filter((u) => {
+    if (u.role !== 'coach') return false;
+    const lastActive = userLastActive.get(u.id);
+    if (!lastActive) return true;
+    return (Date.now() - new Date(lastActive).getTime()) / 86400000 > 14;
+  });
+  if (inactiveCoaches.length > 0) {
+    needsAttention.push({
+      label: `${inactiveCoaches.length} coach${inactiveCoaches.length > 1 ? 'es' : ''} inactive > 14 days`,
+      severity: 'warning',
+      detail: 'Coaches who haven\'t logged in recently',
+      tab: 'users',
+    });
+  }
+
+  // Critical errors
+  const criticalCount = errorLogsCriticalRes.count ?? 0;
+  if (criticalCount > 0) {
+    needsAttention.push({
+      label: `${criticalCount} critical error${criticalCount > 1 ? 's' : ''} in last 7 days`,
+      severity: 'critical',
+      detail: 'Check Health & Issues tab for details',
+      tab: 'health',
+    });
+  }
+
+  // Error count > 10
+  const totalErrors7d = errorLogs7dCountRes.count ?? 0;
+  if (totalErrors7d > 10 && criticalCount === 0) {
+    needsAttention.push({
+      label: `${totalErrors7d} errors logged in last 7 days`,
+      severity: 'warning',
+      detail: 'Elevated error rate — review in Health tab',
+      tab: 'health',
+    });
+  }
+
+  // Locked accounts
+  const lockedAccountCount = lockedAccountsRes.count ?? 0;
+  if (lockedAccountCount > 0) {
+    needsAttention.push({
+      label: `${lockedAccountCount} locked account${lockedAccountCount > 1 ? 's' : ''}`,
+      severity: 'warning',
+      detail: 'Users locked out due to failed login attempts',
+      tab: 'audit',
+    });
+  }
+
+  // No errors = good news
+  if (totalErrors7d === 0 && lockedAccountCount === 0 && stuckInOnboarding.length === 0) {
+    needsAttention.push({
+      label: 'All clear — no issues detected',
+      severity: 'info',
+      detail: 'Platform is running smoothly',
+      tab: 'dashboard',
+    });
+  }
+
+  // --- Build user auth details for UI ---
+  const userAuthDetails = Array.from(userAuthDetailsMap.entries()).map(([uid, d]) => ({
+    userId: uid,
+    lastSignInAt: d.lastSignInAt,
+    lastSeen: d.lastSeen,
+  }));
+
   return {
     health: {
       activeUsers24h: new Set((activeUsers24hRes.data ?? []).map(r => r.player_id)).size,
@@ -1391,5 +1683,44 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     stickiness,
     playerEngagement,
     coachhelmRoi,
+    errorLogs: {
+      totalErrors7d,
+      criticalErrors7d: criticalCount,
+      recentErrors,
+      errorsByDay,
+      bySeverity: errorSummary?.by_severity ?? [],
+      topErrors: (errorSummary?.top_errors ?? []).map((e) => ({
+        message: e.message,
+        severity: e.severity,
+        occurrences: e.occurrences,
+        firstSeen: e.first_seen,
+        lastSeen: e.last_seen,
+        affectedUsers: e.affected_users,
+      })),
+    },
+    auditLog: {
+      totalEvents7d: auditLog7dCountRes.count ?? 0,
+      recentEvents: auditLogData,
+    },
+    loginSecurity: {
+      failedLogins7d,
+      lockedAccounts: lockedAccountCount,
+      recentAttempts: loginAttempts,
+    },
+    baseball: {
+      totalPlayers: bbPlayersRes.count ?? 0,
+      totalCoaches: bbCoachesRes.count ?? 0,
+      watchlistStages,
+      recruitingActivePlayers: Object.values(watchlistStages).reduce((s, v) => s + v, 0),
+      commitments,
+      videos30d: bbVideos30dRes.count ?? 0,
+      engagementEvents30d: bbEngagement30dRes.count ?? 0,
+      messages7d: bbMessages7dRes.count ?? 0,
+      conversations30d: bbConversations30dRes.count ?? 0,
+      playersOnboarded: bbPlayersOnboardedRes.count ?? 0,
+      coachesOnboarded: bbCoachesOnboardedRes.count ?? 0,
+    },
+    needsAttention,
+    userAuthDetails,
   };
 }

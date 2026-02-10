@@ -11,6 +11,7 @@ import { PageLoading } from '@/components/ui/loading';
 import { MobileBottomNav, type MobileNavItem } from '@/components/layout/mobile-bottom-nav';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
+import { LastSeenUpdater } from '@/components/admin/LastSeenUpdater';
 import { cn } from '@/lib/utils';
 import {
   IconHome,
@@ -188,6 +189,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <SidebarProvider>
       <ToastProvider>
         <SessionActivityProvider>
+          <LastSeenUpdater />
           <DashboardContent>{children}</DashboardContent>
         </SessionActivityProvider>
       </ToastProvider>

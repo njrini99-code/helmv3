@@ -51,10 +51,8 @@ export function logError(
     console.groupEnd();
   }
 
-  // Send to error monitoring service in production
-  if (process.env.NODE_ENV === 'production') {
-    sendToMonitoringService(logEntry);
-  }
+  // Send to error_logs table via API route
+  sendToMonitoringService(logEntry);
 }
 
 /**
@@ -84,31 +82,22 @@ export function logWarning(message: string, context?: ErrorContext): void {
  * Replace this with your actual error monitoring service integration
  */
 function sendToMonitoringService(logEntry: ErrorLogEntry): void {
-  // Example: Sentry integration
-  // if (typeof window !== 'undefined' && window.Sentry) {
-  //   window.Sentry.captureException(logEntry.error, {
-  //     level: logEntry.severity,
-  //     extra: logEntry.context,
-  //   });
-  // }
+  if (typeof window === 'undefined') return;
 
-  // Example: Custom API endpoint
-  // fetch('/api/log-error', {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({
-  //     message: logEntry.error.message,
-  //     stack: logEntry.error.stack,
-  //     context: logEntry.context,
-  //     severity: logEntry.severity,
-  //     timestamp: logEntry.timestamp,
-  //   }),
-  // }).catch(() => {
-  //   // Silently fail - don't let logging errors break the app
-  // });
-
-  // For now, just log to console in production
-  console.error('[Error Monitor]', logEntry);
+  fetch('/api/log-error', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      message: logEntry.error.message,
+      stack: logEntry.error.stack,
+      context: logEntry.context,
+      severity: logEntry.severity,
+      timestamp: logEntry.timestamp,
+      url: window.location.href,
+    }),
+  }).catch(() => {
+    // Silently fail - don't let logging errors break the app
+  });
 }
 
 /**
