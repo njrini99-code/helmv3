@@ -35,16 +35,13 @@ import {
 } from '@/components/icons';
 
 // ============================================
-// TAB DEFINITIONS
+// TAB DEFINITIONS — Condensed from 7 → 4
 // ============================================
 const TABS = [
-  { id: 'business', label: 'Business', icon: IconChart },
+  { id: 'dashboard', label: 'Dashboard', icon: IconActivity },
   { id: 'visibility', label: 'Users & Teams', icon: IconEye },
-  { id: 'overview', label: 'Overview', icon: IconActivity },
-  { id: 'teams', label: 'Teams & Scoring', icon: IconTarget },
-  { id: 'users', label: 'Users & Usage', icon: IconUsers },
-  { id: 'ai', label: 'CoachHelm AI', icon: IconSparkles },
-  { id: 'engagement', label: 'Engagement', icon: IconTrendingUp },
+  { id: 'performance', label: 'Performance', icon: IconTarget },
+  { id: 'growth', label: 'Growth & AI', icon: IconTrendingUp },
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
@@ -78,10 +75,16 @@ function CardSkeleton() {
 }
 
 // ============================================
-// QUICK PULSE PILLS
+// QUICK PULSE PILLS — Persistent in nav bar
 // ============================================
 function QuickPulse({ data }: { data: AdminDashboardData }) {
+  const totalUsers = data.users.totalCoaches + data.users.totalPlayers + data.users.totalAdmins;
   const pills = [
+    {
+      label: 'Users',
+      value: `${totalUsers}`,
+      color: 'bg-warm-100 text-warm-700',
+    },
     {
       label: 'Growth',
       value: `${data.growth.userGrowthRate > 0 ? '+' : ''}${data.growth.userGrowthRate}%`,
@@ -93,7 +96,7 @@ function QuickPulse({ data }: { data: AdminDashboardData }) {
       color: data.engagement.weeklyRetention > 30 ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700',
     },
     {
-      label: 'AI Adoption',
+      label: 'AI',
       value: `${data.coachhelm.coachPhilosophyAdoption}%`,
       color: data.coachhelm.coachPhilosophyAdoption > 50 ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700',
     },
@@ -124,7 +127,7 @@ export default function AdminDashboardPage() {
   const [data, setData] = useState<AdminDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<TabId>('business');
+  const [activeTab, setActiveTab] = useState<TabId>('dashboard');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const refreshTimerRef = useRef<ReturnType<typeof setInterval>>(undefined);
@@ -147,12 +150,10 @@ export default function AdminDashboardPage() {
     }
   }, []);
 
-  // Initial load
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  // Auto-refresh every 60s
   useEffect(() => {
     refreshTimerRef.current = setInterval(() => {
       loadData(true);
@@ -215,7 +216,6 @@ export default function AdminDashboardPage() {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              {/* Live indicator + refresh */}
               <div className="flex items-center gap-2">
                 {isRefreshing && (
                   <div className="w-4 h-4">
@@ -258,30 +258,35 @@ export default function AdminDashboardPage() {
         </div>
       </header>
 
-      {/* Tab navigation */}
+      {/* Tab navigation + pulse pills */}
       {data && !loading && (
         <nav className="relative z-10 border-b border-white/20 bg-white/30 backdrop-blur-md sticky top-16">
           <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex gap-1 overflow-x-auto py-2 no-scrollbar">
-              {TABS.map((tab) => {
-                const Icon = tab.icon;
-                const isActive = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={cn(
-                      'flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all duration-200',
-                      isActive
-                        ? 'bg-white/70 text-warm-900 shadow-sm'
-                        : 'text-warm-500 hover:text-warm-700 hover:bg-white/40'
-                    )}
-                  >
-                    <Icon size={15} />
-                    {tab.label}
-                  </button>
-                );
-              })}
+            <div className="flex items-center justify-between py-2">
+              <div className="flex gap-1 overflow-x-auto no-scrollbar">
+                {TABS.map((tab) => {
+                  const Icon = tab.icon;
+                  const isActive = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={cn(
+                        'flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all duration-200',
+                        isActive
+                          ? 'bg-white/70 text-warm-900 shadow-sm'
+                          : 'text-warm-500 hover:text-warm-700 hover:bg-white/40'
+                      )}
+                    >
+                      <Icon size={15} />
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="hidden lg:block">
+                <QuickPulse data={data} />
+              </div>
             </div>
           </div>
         </nav>
@@ -301,13 +306,12 @@ export default function AdminDashboardPage() {
           </div>
         ) : loading ? (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {Array.from({ length: 4 }).map((_, i) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              {Array.from({ length: 5 }).map((_, i) => (
                 <StatSkeleton key={i} />
               ))}
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <CardSkeleton />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <CardSkeleton />
               <CardSkeleton />
               <CardSkeleton />
@@ -323,102 +327,18 @@ export default function AdminDashboardPage() {
               transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
               className="space-y-6"
             >
-              {/* ============================================ */}
-              {/* BUSINESS TAB */}
-              {/* ============================================ */}
-              {activeTab === 'business' && (
-                <>
-                  {/* Quick Pulse */}
-                  <QuickPulse data={data} />
 
-                  {/* Business KPIs */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                    <AdminStatCard
-                      label="Total Users"
-                      value={data.users.totalCoaches + data.users.totalPlayers + data.users.totalAdmins}
-                      icon={<IconUsers size={20} />}
-                      trend={{ value: data.growth.userGrowthRate, label: 'vs last week' }}
-                      accentColor="green"
-                    />
-                    <AdminStatCard
-                      label="Rounds This Week"
-                      value={data.health.roundsThisWeek}
-                      icon={<IconTarget size={20} />}
-                      trend={{ value: data.growth.roundGrowthRate, label: 'vs last week' }}
-                      accentColor="blue"
-                    />
-                    <AdminStatCard
-                      label="Churned (30d)"
-                      value={data.growth.churnedPlayers30d}
-                      icon={<IconWarning size={20} />}
-                      detail="players went inactive"
-                      accentColor={data.growth.churnedPlayers30d > 0 ? 'amber' : 'green'}
-                    />
-                    <AdminStatCard
-                      label="Power Users"
-                      value={`${data.growth.npsProxy}`}
-                      suffix="%"
-                      icon={<IconSparkles size={20} />}
-                      detail="coaches fully engaged"
-                      accentColor={data.growth.npsProxy > 30 ? 'green' : 'amber'}
-                    />
-                    <AdminStatCard
-                      label="Health Score"
-                      value={data.growth.platformHealthScore}
-                      suffix="/100"
-                      icon={<IconActivity size={20} />}
-                      accentColor={data.growth.platformHealthScore >= 50 ? 'green' : 'red'}
-                    />
+              {/* ============================================ */}
+              {/* DASHBOARD — Health, KPIs, Daily Charts, Activity */}
+              {/* ============================================ */}
+              {activeTab === 'dashboard' && (
+                <>
+                  {/* Mobile-only pulse */}
+                  <div className="lg:hidden">
+                    <QuickPulse data={data} />
                   </div>
 
-                  {/* Business cards */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <GrowthCard
-                      growth={data.growth}
-                      users={data.users}
-                      usage={data.usage}
-                      coachhelm={data.coachhelm}
-                    />
-                    <div className="space-y-6">
-                      <EngagementCard
-                        engagement={data.engagement}
-                        totalPlayers={data.users.totalPlayers}
-                        totalCoaches={data.users.totalCoaches}
-                      />
-                      <ActivityFeed activity={data.activity} />
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* ============================================ */}
-              {/* USERS & TEAMS VISIBILITY TAB */}
-              {/* ============================================ */}
-              {activeTab === 'visibility' && (
-                <>
-                  {/* Daily charts: signups + active users */}
-                  <DailyCharts
-                    signupsByDay={data.signupsByDay}
-                    visitsByDay={data.visitsByDay}
-                  />
-
-                  {/* Team Rosters - full visibility */}
-                  <TeamRosterCard teamRosters={data.teamRosters} />
-
-                  {/* Full User Directory */}
-                  <UserActivityTable users={data.userDirectory} />
-                </>
-              )}
-
-              {/* ============================================ */}
-              {/* OVERVIEW TAB */}
-              {/* ============================================ */}
-              {activeTab === 'overview' && (
-                <>
-                  {/* Quick Pulse */}
-                  <QuickPulse data={data} />
-
-                  {/* Health KPIs */}
+                  {/* Top KPIs */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                     <AdminStatCard
                       label="Active Users (7d)"
@@ -444,11 +364,11 @@ export default function AdminDashboardPage() {
                       accentColor="green"
                     />
                     <AdminStatCard
-                      label="Platform Scoring Avg"
-                      value={data.scoring.platformScoringAvg?.toFixed(1) ?? '\u2014'}
-                      icon={<IconChart size={20} />}
-                      detail={`${data.usage.totalRounds.toLocaleString()} total rounds`}
-                      accentColor="blue"
+                      label="Churned (30d)"
+                      value={data.growth.churnedPlayers30d}
+                      icon={<IconWarning size={20} />}
+                      detail="players went inactive"
+                      accentColor={data.growth.churnedPlayers30d > 0 ? 'amber' : 'green'}
                     />
                     <AdminStatCard
                       label="System Errors (7d)"
@@ -459,26 +379,76 @@ export default function AdminDashboardPage() {
                     />
                   </div>
 
-                  {/* Main overview grid */}
+                  {/* Daily signups + visits charts */}
+                  <DailyCharts
+                    signupsByDay={data.signupsByDay}
+                    visitsByDay={data.visitsByDay}
+                  />
+
+                  {/* Health + Activity + Users in 3-col grid */}
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <PlatformHealthCard health={data.health} />
-                    <ScoringIntelligenceCard scoring={data.scoring} />
                     <ActivityFeed activity={data.activity} />
+                    <UserBreakdownCard users={data.users} />
                   </div>
                 </>
               )}
 
               {/* ============================================ */}
-              {/* TEAMS & SCORING TAB */}
+              {/* USERS & TEAMS — Full visibility */}
               {/* ============================================ */}
-              {activeTab === 'teams' && (
+              {activeTab === 'visibility' && (
                 <>
-                  {/* Scoring KPIs */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <AdminStatCard
-                      label="Platform Scoring Avg"
+                      label="Total Users"
+                      value={data.users.totalCoaches + data.users.totalPlayers + data.users.totalAdmins}
+                      icon={<IconUsers size={20} />}
+                      trend={{ value: data.growth.userGrowthRate, label: 'vs last week' }}
+                      detail={`${data.users.newUsersThisWeek} new this week`}
+                      accentColor="green"
+                    />
+                    <AdminStatCard
+                      label="Active Teams"
+                      value={data.users.activeTeams}
+                      icon={<IconUsers size={20} />}
+                      detail={`${data.teamRosters.length} total teams`}
+                      accentColor="blue"
+                    />
+                    <AdminStatCard
+                      label="Coach Onboarding"
+                      value={`${data.users.coachOnboardingRate}`}
+                      suffix="%"
+                      icon={<IconChart size={20} />}
+                      detail={`${data.users.totalCoaches} coaches`}
+                      accentColor={data.users.coachOnboardingRate > 60 ? 'green' : 'amber'}
+                    />
+                    <AdminStatCard
+                      label="Player Onboarding"
+                      value={`${data.users.playerOnboardingRate}`}
+                      suffix="%"
+                      icon={<IconChart size={20} />}
+                      detail={`${data.users.totalPlayers} players`}
+                      accentColor={data.users.playerOnboardingRate > 60 ? 'green' : 'amber'}
+                    />
+                  </div>
+
+                  <TeamRosterCard teamRosters={data.teamRosters} />
+                  <UserActivityTable users={data.userDirectory} />
+                </>
+              )}
+
+              {/* ============================================ */}
+              {/* PERFORMANCE — Scoring, Usage, Team stats */}
+              {/* ============================================ */}
+              {activeTab === 'performance' && (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+                    <AdminStatCard
+                      label="Scoring Avg"
                       value={data.scoring.platformScoringAvg?.toFixed(1) ?? '\u2014'}
                       icon={<IconTarget size={20} />}
+                      detail={`${data.usage.totalRounds.toLocaleString()} total rounds`}
                       accentColor="green"
                     />
                     <AdminStatCard
@@ -496,42 +466,13 @@ export default function AdminDashboardPage() {
                       accentColor="green"
                     />
                     <AdminStatCard
-                      label="Putts per Round"
+                      label="Putts / Round"
                       value={data.scoring.platformPuttsPerRound?.toFixed(1) ?? '\u2014'}
                       icon={<IconTarget size={20} />}
                       accentColor="blue"
                     />
-                  </div>
-
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <TeamIntelligenceCard teams={data.teams} />
-                    <ScoringIntelligenceCard scoring={data.scoring} />
-                  </div>
-                </>
-              )}
-
-              {/* ============================================ */}
-              {/* USERS & USAGE TAB */}
-              {/* ============================================ */}
-              {activeTab === 'users' && (
-                <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <AdminStatCard
-                      label="Total Users"
-                      value={data.users.totalCoaches + data.users.totalPlayers + data.users.totalAdmins}
-                      icon={<IconUsers size={20} />}
-                      trend={{ value: data.growth.userGrowthRate, label: 'vs last week' }}
-                      detail={`${data.users.newUsersThisWeek} new this week`}
-                      accentColor="green"
-                    />
-                    <AdminStatCard
-                      label="Active Teams"
-                      value={data.users.activeTeams}
-                      icon={<IconUsers size={20} />}
-                      accentColor="blue"
-                    />
-                    <AdminStatCard
-                      label="Total Shots Tracked"
+                      label="Total Shots"
                       value={data.usage.totalShots.toLocaleString()}
                       icon={<IconTarget size={20} />}
                       detail={`${data.usage.avgShotsPerRound} avg/round`}
@@ -546,104 +487,82 @@ export default function AdminDashboardPage() {
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <UserBreakdownCard users={data.users} />
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <ScoringIntelligenceCard scoring={data.scoring} />
+                    <TeamIntelligenceCard teams={data.teams} />
                     <UsageMetricsCard usage={data.usage} />
                   </div>
                 </>
               )}
 
               {/* ============================================ */}
-              {/* COACHHELM AI TAB */}
+              {/* GROWTH & AI — Business intel, engagement, CoachHelm */}
               {/* ============================================ */}
-              {activeTab === 'ai' && (
+              {activeTab === 'growth' && (
                 <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
                     <AdminStatCard
-                      label="Reviews (All Time)"
-                      value={data.coachhelm.totalReviewsAllTime.toLocaleString()}
-                      icon={<IconSparkles size={20} />}
-                      accentColor="green"
-                    />
-                    <AdminStatCard
-                      label="Patterns Detected"
-                      value={data.coachhelm.totalPatternsDetected.toLocaleString()}
+                      label="Health Score"
+                      value={data.growth.platformHealthScore}
+                      suffix="/100"
                       icon={<IconActivity size={20} />}
-                      accentColor="blue"
+                      accentColor={data.growth.platformHealthScore >= 50 ? 'green' : 'red'}
                     />
                     <AdminStatCard
-                      label="Predictions Made"
-                      value={data.coachhelm.totalPredictionsMade.toLocaleString()}
-                      icon={<IconTrendingUp size={20} />}
-                      accentColor="green"
-                    />
-                    <AdminStatCard
-                      label="Philosophy Adoption"
-                      value={`${data.coachhelm.coachPhilosophyAdoption}`}
+                      label="Power Users"
+                      value={`${data.growth.npsProxy}`}
                       suffix="%"
-                      icon={<IconChart size={20} />}
-                      accentColor={data.coachhelm.coachPhilosophyAdoption > 50 ? 'green' : 'amber'}
-                    />
-                    <AdminStatCard
-                      label="Avg Insights/Gen"
-                      value={data.coachhelm.avgInsightsPerGeneration}
                       icon={<IconSparkles size={20} />}
-                      accentColor="blue"
+                      detail="coaches fully engaged"
+                      accentColor={data.growth.npsProxy > 30 ? 'green' : 'amber'}
                     />
-                  </div>
-
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <CoachHelmHealthCard coachhelm={data.coachhelm} />
-                    <ActivityFeed activity={data.activity} />
-                  </div>
-                </>
-              )}
-
-              {/* ============================================ */}
-              {/* ENGAGEMENT TAB */}
-              {/* ============================================ */}
-              {activeTab === 'engagement' && (
-                <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <AdminStatCard
-                      label="Weekly Active Rate"
+                      label="Weekly Active"
                       value={`${data.engagement.weeklyRetention}`}
                       suffix="%"
                       icon={<IconTrendingUp size={20} />}
                       accentColor={data.engagement.weeklyRetention > 30 ? 'green' : 'amber'}
                     />
                     <AdminStatCard
-                      label="Avg Rounds / Player"
-                      value={data.engagement.avgRoundsPerPlayer}
-                      icon={<IconTarget size={20} />}
+                      label="AI Reviews"
+                      value={data.coachhelm.totalReviewsAllTime.toLocaleString()}
+                      icon={<IconSparkles size={20} />}
+                      accentColor="green"
+                    />
+                    <AdminStatCard
+                      label="Patterns"
+                      value={data.coachhelm.totalPatternsDetected.toLocaleString()}
+                      icon={<IconActivity size={20} />}
                       accentColor="blue"
                     />
                     <AdminStatCard
-                      label="Inactive Players"
-                      value={data.engagement.playersWithNoRounds}
-                      icon={<IconWarning size={20} />}
-                      detail={`of ${data.users.totalPlayers} total`}
-                      accentColor={data.engagement.playersWithNoRounds > 0 ? 'amber' : 'green'}
-                    />
-                    <AdminStatCard
-                      label="Coaches Using AI"
-                      value={data.engagement.coachesUsingInsights}
-                      icon={<IconSparkles size={20} />}
-                      detail={`of ${data.users.totalCoaches} total`}
-                      accentColor="green"
+                      label="AI Adoption"
+                      value={`${data.coachhelm.coachPhilosophyAdoption}`}
+                      suffix="%"
+                      icon={<IconChart size={20} />}
+                      accentColor={data.coachhelm.coachPhilosophyAdoption > 50 ? 'green' : 'amber'}
                     />
                   </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <GrowthCard
+                      growth={data.growth}
+                      users={data.users}
+                      usage={data.usage}
+                      coachhelm={data.coachhelm}
+                    />
                     <EngagementCard
                       engagement={data.engagement}
                       totalPlayers={data.users.totalPlayers}
                       totalCoaches={data.users.totalCoaches}
                     />
-                    <ActivityFeed activity={data.activity} />
                   </div>
+
+                  {/* CoachHelm AI Detail — full width */}
+                  <CoachHelmHealthCard coachhelm={data.coachhelm} />
                 </>
               )}
+
             </motion.div>
           </AnimatePresence>
         ) : null}
