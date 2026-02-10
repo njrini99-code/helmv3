@@ -8,6 +8,7 @@ interface HoleConfigurationFormProps {
   onSave: (holes: HoleConfig[]) => void;
   onBack: () => void;
   courseName: string;
+  holesPerRound?: 9 | 18;
 }
 
 // Default par distribution for a standard course
@@ -21,13 +22,14 @@ export function HoleConfigurationForm({
   initialHoles,
   onSave,
   onBack,
-  courseName
+  courseName,
+  holesPerRound = 18,
 }: HoleConfigurationFormProps) {
   const [holes, setHoles] = useState<HoleConfig[]>(() => {
-    if (initialHoles && initialHoles.length === 18) {
+    if (initialHoles && initialHoles.length === holesPerRound) {
       return initialHoles;
     }
-    return Array.from({ length: 18 }, (_, i) => ({
+    return Array.from({ length: holesPerRound }, (_, i) => ({
       holeNumber: i + 1,
       par: DEFAULT_PARS[i]!,
       yardage: DEFAULT_YARDAGES[i]!,
@@ -36,9 +38,11 @@ export function HoleConfigurationForm({
 
   const [activeTab, setActiveTab] = useState<'front' | 'back'>('front');
 
+  const is9Hole = holesPerRound === 9;
+
   // Calculate totals
   const frontNine = holes.slice(0, 9);
-  const backNine = holes.slice(9, 18);
+  const backNine = is9Hole ? [] : holes.slice(9, 18);
   const frontPar = frontNine.reduce((sum, h) => sum + h.par, 0);
   const backPar = backNine.reduce((sum, h) => sum + h.par, 0);
   const frontYards = frontNine.reduce((sum, h) => sum + h.yardage, 0);
@@ -62,7 +66,8 @@ export function HoleConfigurationForm({
     onSave(holes);
   }
 
-  const displayHoles = activeTab === 'front' ? frontNine : backNine;
+  // For 9-hole rounds, always show all holes (no tabs)
+  const displayHoles = is9Hole ? holes : (activeTab === 'front' ? frontNine : backNine);
 
   return (
     <div className="space-y-6">
@@ -95,34 +100,36 @@ export function HoleConfigurationForm({
           <div className="text-xs font-bold text-warm-500 uppercase tracking-wider">Total Yards</div>
         </div>
         <div className="bg-white rounded-lg p-4 border border-warm-200 shadow-sm shadow-emerald-950/5 ring-1 ring-warm-100 text-center">
-          <div className="text-2xl font-bold text-warm-600">18</div>
+          <div className="text-2xl font-bold text-warm-600">{holesPerRound}</div>
           <div className="text-xs font-bold text-warm-500 uppercase tracking-wider">Holes</div>
         </div>
       </div>
 
-      {/* Front/Back Nine Tabs */}
-      <div className="flex bg-warm-100 rounded-lg p-1">
-        <button
-          onClick={() => setActiveTab('front')}
-          className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all
-            ${activeTab === 'front'
-              ? 'bg-white text-warm-900 shadow-sm'
-              : 'text-warm-600 hover:text-warm-900'
-            }`}
-        >
-          Front 9 <span className="text-warm-400">({frontPar} par)</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('back')}
-          className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all
-            ${activeTab === 'back'
-              ? 'bg-white text-warm-900 shadow-sm'
-              : 'text-warm-600 hover:text-warm-900'
-            }`}
-        >
-          Back 9 <span className="text-warm-400">({backPar} par)</span>
-        </button>
-      </div>
+      {/* Front/Back Nine Tabs — only for 18-hole rounds */}
+      {!is9Hole && (
+        <div className="flex bg-warm-100 rounded-lg p-1">
+          <button
+            onClick={() => setActiveTab('front')}
+            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all
+              ${activeTab === 'front'
+                ? 'bg-white text-warm-900 shadow-sm'
+                : 'text-warm-600 hover:text-warm-900'
+              }`}
+          >
+            Front 9 <span className="text-warm-400">({frontPar} par)</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('back')}
+            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all
+              ${activeTab === 'back'
+                ? 'bg-white text-warm-900 shadow-sm'
+                : 'text-warm-600 hover:text-warm-900'
+              }`}
+          >
+            Back 9 <span className="text-warm-400">({backPar} par)</span>
+          </button>
+        </div>
+      )}
 
       {/* Hole Configuration Grid */}
       <div className="bg-white rounded-lg border border-warm-200 overflow-hidden shadow-sm shadow-emerald-950/5 ring-1 ring-warm-100">
@@ -200,13 +207,13 @@ export function HoleConfigurationForm({
         {/* Nine Total */}
         <div className="grid grid-cols-[60px_1fr_1fr] gap-0 bg-warm-100 border-t border-warm-200">
           <div className="px-3 py-3 text-sm font-bold text-warm-700">
-            {activeTab === 'front' ? 'OUT' : 'IN'}
+            {is9Hole ? 'TOTAL' : (activeTab === 'front' ? 'OUT' : 'IN')}
           </div>
           <div className="px-3 py-3 text-center text-sm font-bold text-warm-900 border-l border-warm-200">
-            {activeTab === 'front' ? frontPar : backPar}
+            {is9Hole ? totalPar : (activeTab === 'front' ? frontPar : backPar)}
           </div>
           <div className="px-3 py-3 text-center text-sm font-bold text-warm-900 border-l border-warm-200">
-            {(activeTab === 'front' ? frontYards : backYards).toLocaleString()}
+            {(is9Hole ? totalYards : (activeTab === 'front' ? frontYards : backYards)).toLocaleString()}
           </div>
         </div>
       </div>

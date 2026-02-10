@@ -123,8 +123,8 @@ export async function createGolfTravelItinerary(input: CreateTravelItineraryInpu
 
     const supabase = await createClient();
 
-    // Note: golf_travel_itineraries doesn't have check_in_date and check_out_date columns
-    // We omit them and use (supabase as any) for schema flexibility
+    // DB column types: flight_info=jsonb, room_assignments=jsonb, gear_list=text[]
+    // check_in_date and check_out_date don't exist in the database
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
       .from('golf_travel_itineraries')
@@ -139,15 +139,14 @@ export async function createGolfTravelItinerary(input: CreateTravelItineraryInpu
         departure_location: validatedData.departure_location,
         return_date: validatedData.return_date,
         return_time: validatedData.return_time,
-        flight_info: validatedData.flight_info,
+        flight_info: validatedData.flight_info ? { text: validatedData.flight_info } : null,
         hotel_name: validatedData.hotel_name,
         hotel_address: validatedData.hotel_address,
         hotel_phone: validatedData.hotel_phone,
         hotel_confirmation: validatedData.hotel_confirmation,
-        // check_in_date and check_out_date don't exist in the database
-        room_assignments: validatedData.room_assignments,
+        room_assignments: validatedData.room_assignments ? { text: validatedData.room_assignments } : null,
         uniform_requirements: validatedData.uniform_requirements,
-        gear_list: validatedData.gear_list,
+        gear_list: validatedData.gear_list ? validatedData.gear_list.split(',').map((s: string) => s.trim()).filter(Boolean) : null,
         notes: validatedData.notes,
         created_by: validatedData.created_by,
       })
@@ -191,8 +190,19 @@ export async function updateGolfTravelItinerary(input: UpdateTravelItineraryInpu
     const supabase = await createClient();
 
     // Extract update data (omit id and fields that don't exist in the database)
-     
-    const { id, check_in_date: _checkIn, check_out_date: _checkOut, ...updateData } = validatedData;
+    const { id, check_in_date: _checkIn, check_out_date: _checkOut, ...rawUpdateData } = validatedData;
+
+    // Convert types to match DB schema: flight_info=jsonb, room_assignments=jsonb, gear_list=text[]
+    const updateData: Record<string, unknown> = { ...rawUpdateData };
+    if ('flight_info' in updateData && typeof updateData.flight_info === 'string') {
+      updateData.flight_info = updateData.flight_info ? { text: updateData.flight_info } : null;
+    }
+    if ('room_assignments' in updateData && typeof updateData.room_assignments === 'string') {
+      updateData.room_assignments = updateData.room_assignments ? { text: updateData.room_assignments } : null;
+    }
+    if ('gear_list' in updateData && typeof updateData.gear_list === 'string') {
+      updateData.gear_list = updateData.gear_list ? (updateData.gear_list as string).split(',').map((s: string) => s.trim()).filter(Boolean) : null;
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)

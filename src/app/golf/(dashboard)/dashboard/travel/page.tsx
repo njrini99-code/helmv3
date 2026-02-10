@@ -85,14 +85,14 @@ export default async function GolfTravelPage() {
     departure_location: item.departure_location,
     return_date: item.return_date,
     return_time: item.return_time,
-    flight_info: typeof item.flight_info === 'string' ? item.flight_info : (item.flight_info ? JSON.stringify(item.flight_info) : null),
+    flight_info: typeof item.flight_info === 'string' ? item.flight_info : (item.flight_info && typeof item.flight_info === 'object' && !Array.isArray(item.flight_info) && 'text' in item.flight_info ? String(item.flight_info.text) : (item.flight_info ? JSON.stringify(item.flight_info) : null)),
     hotel_name: item.hotel_name,
     hotel_address: item.hotel_address,
     hotel_phone: item.hotel_phone,
     hotel_confirmation: item.hotel_confirmation,
     check_in_date: null, // Not in database schema
     check_out_date: null, // Not in database schema
-    room_assignments: typeof item.room_assignments === 'string' ? item.room_assignments : (item.room_assignments ? JSON.stringify(item.room_assignments) : null),
+    room_assignments: typeof item.room_assignments === 'string' ? item.room_assignments : (item.room_assignments && typeof item.room_assignments === 'object' && !Array.isArray(item.room_assignments) && 'text' in item.room_assignments ? String(item.room_assignments.text) : (item.room_assignments ? JSON.stringify(item.room_assignments) : null)),
     uniform_requirements: item.uniform_requirements,
     gear_list: Array.isArray(item.gear_list) ? item.gear_list.join(', ') : (item.gear_list as string | null),
     notes: item.notes,

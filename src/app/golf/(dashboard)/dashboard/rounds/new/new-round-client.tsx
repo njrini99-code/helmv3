@@ -182,6 +182,7 @@ export default function NewRoundClient() {
   const [showExitModal, setShowExitModal] = useState(false);
   const [savedRoundId, setSavedRoundId] = useState<string | null>(null);
   const [inProgressShotsByHole, setInProgressShotsByHole] = useState<Record<number, ShotRecord[]>>({});
+  const [holesPerRound, setHolesPerRound] = useState<9 | 18>(18);
 
   // Resume draft modal state
   const [showResumeDraftModal, setShowResumeDraftModal] = useState(false);
@@ -306,6 +307,10 @@ export default function NewRoundClient() {
       }));
       // Store hole configs to use in next step
       setPreloadedHoleConfigs(course.holeConfigs);
+      // Auto-set holes per round from saved course
+      if (course.holesPerRound === 9 || course.holesPerRound === 18) {
+        setHolesPerRound(course.holesPerRound);
+      }
       // Update last used timestamp
       touchSavedCourse(courseId);
     }
@@ -422,7 +427,9 @@ export default function NewRoundClient() {
 
     // If using a saved course with hole configs, skip the hole configuration step
     if (preloadedHoleConfigs && preloadedHoleConfigs.length > 0) {
-      const initialHoles: Hole[] = preloadedHoleConfigs.map((h) => ({
+      // Slice to match selected hole count (e.g. user picks 9 on a saved 18-hole course)
+      const configs = preloadedHoleConfigs.slice(0, holesPerRound);
+      const initialHoles: Hole[] = configs.map((h) => ({
         number: h.holeNumber,
         par: h.par,
         yardage: h.yardage,
@@ -1138,34 +1145,67 @@ export default function NewRoundClient() {
               {/* Round Info */}
               <div>
                 <h2 className="text-lg font-medium text-slate-900 mb-4">Round Details</h2>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="roundType" className="text-sm font-medium text-slate-700 block mb-2">
-                      Round Type
-                    </label>
-                    <select
-                      id="roundType"
-                      value={setupData.roundType}
-                      onChange={(e) => setSetupData({ ...setupData, roundType: e.target.value as 'practice' | 'tournament' | 'qualifier' })}
-                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none"
-                    >
-                      <option value="practice">Practice</option>
-                      <option value="tournament">Tournament</option>
-                      <option value="qualifier">Qualifier</option>
-                    </select>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label htmlFor="roundType" className="text-sm font-medium text-slate-700 block mb-2">
+                        Round Type
+                      </label>
+                      <select
+                        id="roundType"
+                        value={setupData.roundType}
+                        onChange={(e) => setSetupData({ ...setupData, roundType: e.target.value as 'practice' | 'tournament' | 'qualifier' })}
+                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none"
+                      >
+                        <option value="practice">Practice</option>
+                        <option value="tournament">Tournament</option>
+                        <option value="qualifier">Qualifier</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label htmlFor="roundDate" className="text-sm font-medium text-slate-700 block mb-2">
+                        Date
+                      </label>
+                      <input
+                        id="roundDate"
+                        type="date"
+                        value={setupData.roundDate}
+                        onChange={(e) => setSetupData({ ...setupData, roundDate: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none"
+                        required
+                      />
+                    </div>
                   </div>
+
+                  {/* Holes per round toggle */}
                   <div>
-                    <label htmlFor="roundDate" className="text-sm font-medium text-slate-700 block mb-2">
-                      Date
+                    <label className="text-sm font-medium text-slate-700 block mb-2">
+                      Holes
                     </label>
-                    <input
-                      id="roundDate"
-                      type="date"
-                      value={setupData.roundDate}
-                      onChange={(e) => setSetupData({ ...setupData, roundDate: e.target.value })}
-                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none"
-                      required
-                    />
+                    <div className="flex items-center rounded-lg bg-slate-100/80 p-1 w-fit">
+                      <button
+                        type="button"
+                        onClick={() => setHolesPerRound(9)}
+                        className={`px-5 py-2 rounded-md text-sm font-semibold transition-all ${
+                          holesPerRound === 9
+                            ? 'bg-white text-slate-900 shadow-sm'
+                            : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                      >
+                        9 Holes
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setHolesPerRound(18)}
+                        className={`px-5 py-2 rounded-md text-sm font-semibold transition-all ${
+                          holesPerRound === 18
+                            ? 'bg-white text-slate-900 shadow-sm'
+                            : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                      >
+                        18 Holes
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1324,6 +1364,7 @@ export default function NewRoundClient() {
               courseName={setupData.courseName}
               onSave={handleHolesSave}
               onBack={() => setStep('setup')}
+              holesPerRound={holesPerRound}
             />
           </div>
         </div>
