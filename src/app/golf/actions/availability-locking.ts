@@ -60,8 +60,6 @@ interface AvailabilityConflict {
   block_end_date: string;
 }
 
-type GolfEventType = 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other' | 'class';
-type GolfEventStatus = 'draft' | 'confirmed' | 'cancelled';
 
 // ============================================================================
 // CHECK FOR CONFLICTS
@@ -188,14 +186,14 @@ export async function createEventWithConflictCheck(eventData: {
       .insert({
         title: eventData.title,
         description: eventData.description,
-        event_type: eventData.eventType as GolfEventType,
+        event_type: eventData.eventType,
         start_time: startDateTime,
         end_time: endDateTime,
         location: eventData.location,
         created_by: coach.id,
         team_id: eventData.teamId,
-        status: 'confirmed' as GolfEventStatus,
-      } as any)
+        status: 'confirmed',
+      })
       .select('id')
       .single();
 

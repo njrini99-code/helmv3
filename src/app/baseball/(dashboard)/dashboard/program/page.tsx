@@ -17,6 +17,7 @@ import {
   IconUpload,
 } from '@/components/icons';
 import Link from 'next/link';
+import Image from 'next/image';
 
 const DIVISIONS = ['D1', 'D2', 'D3', 'NAIA', 'JUCO', 'High School', 'Showcase'];
 
@@ -256,10 +257,13 @@ export default function ProgramPage() {
               {/* Logo Preview */}
               <div className="flex items-start gap-6 p-4 bg-slate-50 rounded-xl">
                 {formData.logo_url ? (
-                  <img
+                  <Image
                     src={formData.logo_url}
                     alt="Program logo"
+                    width={96}
+                    height={96}
                     className="w-24 h-24 rounded-xl object-cover border-2 border-white shadow-lg"
+                    unoptimized
                   />
                 ) : (
                   <div className="w-24 h-24 rounded-xl bg-green-600 flex items-center justify-center">

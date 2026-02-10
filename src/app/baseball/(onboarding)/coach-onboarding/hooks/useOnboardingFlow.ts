@@ -56,6 +56,7 @@ export function useOnboardingFlow() {
         console.error('Failed to parse stored onboarding data');
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally runs only on mount to restore from localStorage
   }, []);
 
   // Save to localStorage on change

@@ -172,7 +172,7 @@ export function useAttendanceRealtime(eventId: string | null): UseAttendanceReal
     } finally {
       setLoading(false);
     }
-  }, [eventId]);
+  }, [eventId, supabase]);
 
   useEffect(() => {
     fetchEventAttendance();
@@ -214,7 +214,7 @@ export function useAttendanceRealtime(eventId: string | null): UseAttendanceReal
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [eventId, fetchEventAttendance]);
+  }, [eventId, fetchEventAttendance, supabase]);
 
   return {
     event,
@@ -341,7 +341,7 @@ export function useTeamEventsAttendanceRealtime(
     } finally {
       setLoading(false);
     }
-  }, [teamId, options?.startDate, options?.endDate]);
+  }, [teamId, options?.startDate, options?.endDate, supabase]);
 
   useEffect(() => {
     fetchEvents();
@@ -395,7 +395,7 @@ export function useTeamEventsAttendanceRealtime(
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [teamId, fetchEvents]);
+  }, [teamId, fetchEvents, supabase]);
 
   return {
     events,

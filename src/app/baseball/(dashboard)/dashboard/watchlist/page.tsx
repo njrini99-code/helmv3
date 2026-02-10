@@ -71,6 +71,7 @@ export default function WatchlistPage() {
     } else if (!authLoading && !routeLoading && !coach) {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- coach?.id covers the coach dependency; fetchWatchlist only uses coach.id
   }, [authLoading, routeLoading, isAllowed, coach?.id]);
 
   // Route protection - show loading while checking or redirecting

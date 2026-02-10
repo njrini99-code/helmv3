@@ -117,7 +117,7 @@ interface ImageAttachmentProps {
   className?: string;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 function ImageAttachment({ url, fileName, width, height, isOwnMessage: _isOwnMessage, className }: ImageAttachmentProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -182,7 +182,7 @@ function VideoAttachment({
   thumbnailUrl,
   fileName,
   durationSeconds,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   isOwnMessage: _isOwnMessage,
   className,
 }: VideoAttachmentProps) {

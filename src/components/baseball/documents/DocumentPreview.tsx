@@ -91,9 +91,9 @@ export function DocumentPreview({
     storage_path: '',
   } : null);
 
-  const mimeType = (activeFile as any)?.mime_type || (activeFile as any)?.file_type || '';
-  const fileName = (activeFile as any)?.file_name || (activeFile as any)?.title || '';
-  const fileSize = (activeFile as any)?.file_size || 0;
+  const mimeType = activeFile?.mime_type || '';
+  const fileName = activeFile?.file_name || (baseballDocument?.title ?? '');
+  const fileSize = activeFile?.file_size || 0;
 
   const previewStrategy = getPreviewStrategy(mimeType);
 

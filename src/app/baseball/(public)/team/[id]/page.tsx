@@ -11,6 +11,7 @@ import {
   IconShield,
 } from '@/components/icons';
 import { Metadata } from 'next';
+import Image from 'next/image';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -331,10 +332,13 @@ export default async function TeamProfilePage({ params }: PageProps) {
               <div className="bg-gradient-to-br from-green-50 to-white p-8 border-b border-slate-200">
                 <div className="flex items-start gap-6">
                   {org?.logo_url ? (
-                    <img
+                    <Image
                       src={org.logo_url}
                       alt={team.name}
+                      width={96}
+                      height={96}
                       className="w-24 h-24 rounded-lg object-cover border-2 border-white shadow-lg"
+                      unoptimized
                     />
                   ) : (
                     <div className="w-24 h-24 rounded-lg bg-green-600 flex items-center justify-center shadow-lg">
@@ -478,10 +482,13 @@ export default async function TeamProfilePage({ params }: PageProps) {
                       >
                         <div className="flex items-start gap-4">
                           {member.headshot_url ? (
-                            <img
+                            <Image
                               src={member.headshot_url}
                               alt={member.name}
+                              width={64}
+                              height={64}
                               className="w-16 h-16 rounded-full object-cover"
+                              unoptimized
                             />
                           ) : (
                             <Avatar
@@ -523,10 +530,13 @@ export default async function TeamProfilePage({ params }: PageProps) {
                         className="bg-white rounded-lg border border-slate-200 overflow-hidden"
                       >
                         {facility.image_url ? (
-                          <img
+                          <Image
                             src={facility.image_url}
                             alt={facility.name}
+                            width={400}
+                            height={160}
                             className="w-full h-40 object-cover"
+                            unoptimized
                           />
                         ) : (
                           <div className="w-full h-40 bg-slate-100 flex items-center justify-center">
@@ -556,10 +566,13 @@ export default async function TeamProfilePage({ params }: PageProps) {
                 <div className="p-6 border-b border-slate-200 bg-white">
                   <h2 className="text-lg font-semibold tracking-tight text-slate-900">Team Facility</h2>
                 </div>
-                <img
+                <Image
                   src={facilities[0]?.image_url ?? ''}
                   alt={`${team.name} Facilities`}
+                  width={800}
+                  height={256}
                   className="w-full h-64 object-cover"
+                  unoptimized
                 />
               </Card>
             )}
@@ -687,10 +700,13 @@ function RosterPlayerRow({
     <>
       {/* Avatar */}
       {isRecruiting && player.avatar_url ? (
-        <img
+        <Image
           src={player.avatar_url}
           alt={displayName}
+          width={48}
+          height={48}
           className="w-12 h-12 rounded-full object-cover"
+          unoptimized
         />
       ) : (
         <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">

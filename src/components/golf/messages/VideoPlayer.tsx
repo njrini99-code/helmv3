@@ -109,7 +109,44 @@ export function VideoPlayer({
     };
   }, []);
 
-  // Keyboard controls
+  const togglePlay = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (isPlaying) {
+      video.pause();
+    } else {
+      video.play();
+    }
+    resetControlsTimeout();
+  }, [isPlaying, resetControlsTimeout]);
+
+  const toggleMute = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = !video.muted;
+    setIsMuted(!isMuted);
+  }, [isMuted]);
+
+  const toggleFullscreen = useCallback(async () => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    try {
+      if (!document.fullscreenElement) {
+        await container.requestFullscreen();
+        setIsFullscreen(true);
+      } else {
+        await document.exitFullscreen();
+        setIsFullscreen(false);
+      }
+    } catch (err) {
+      console.warn('Fullscreen not supported:', err);
+    }
+    resetControlsTimeout();
+  }, [resetControlsTimeout]);
+
+    // Keyboard controls
   useEffect(() => {
     if (!isFullscreen) return;
 
@@ -156,7 +193,7 @@ export function VideoPlayer({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isFullscreen, duration, volume, onClose, resetControlsTimeout]);
+  }, [isFullscreen, duration, volume, onClose, resetControlsTimeout, togglePlay, toggleMute, toggleFullscreen]);
 
   // Fullscreen change detection
   useEffect(() => {
@@ -167,25 +204,6 @@ export function VideoPlayer({
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
-
-  const togglePlay = () => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    if (isPlaying) {
-      video.pause();
-    } else {
-      video.play();
-    }
-    resetControlsTimeout();
-  };
-
-  const toggleMute = () => {
-    const video = videoRef.current;
-    if (!video) return;
-    video.muted = !video.muted;
-    setIsMuted(!isMuted);
-  };
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const video = videoRef.current;
@@ -204,24 +222,6 @@ export function VideoPlayer({
     const rect = progress.getBoundingClientRect();
     const pos = (e.clientX - rect.left) / rect.width;
     video.currentTime = pos * duration;
-    resetControlsTimeout();
-  };
-
-  const toggleFullscreen = async () => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    try {
-      if (!document.fullscreenElement) {
-        await container.requestFullscreen();
-        setIsFullscreen(true);
-      } else {
-        await document.exitFullscreen();
-        setIsFullscreen(false);
-      }
-    } catch (err) {
-      console.warn('Fullscreen not supported:', err);
-    }
     resetControlsTimeout();
   };
 

@@ -64,17 +64,17 @@ export default function NewRoundClient() {
   // Auto-save hook with database persistence
   const {
     scheduleSave,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     saveNow: _saveNow, // Available for manual save if needed
     loadDraft,
     clearDraft,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     saveStatus: _saveStatus, // Draft indicator removed
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     isOnline: _isOnline, // Using connectionStatus.isOnline instead
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     roundId: _draftRoundId, // Reserved for future offline storage integration
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     getTimeSinceLastSave: _getTimeSinceLastSave, // Draft indicator removed
   } = useAutoSaveRound(null);
 
@@ -125,7 +125,6 @@ export default function NewRoundClient() {
       syncEngine.unregisterCallback('new-round-client');
       syncEngine.stop();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run only on mount
 
   // Update connection status in store and show/hide warning

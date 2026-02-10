@@ -48,7 +48,7 @@ export function useNotifications() {
       setNotifications(mapped);
     }
     setLoading(false);
-  }, [user]);
+  }, [user, supabase]);
 
   useEffect(() => {
     fetchNotifications();
@@ -76,7 +76,7 @@ export function useNotifications() {
       };
     }
     return undefined;
-  }, [user, fetchNotifications]);
+  }, [user, fetchNotifications, supabase]);
 
   const markAsRead = async (id: string) => {
     await supabase

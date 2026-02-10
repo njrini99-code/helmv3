@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { GolfTeam, GolfPlayer, GolfCoach } from '@/lib/types/golf';
 
@@ -21,7 +21,7 @@ export function useGolfTeam(teamId?: string): UseGolfTeamResult {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchTeam = async () => {
+  const fetchTeam = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -133,11 +133,12 @@ export function useGolfTeam(teamId?: string): UseGolfTeamResult {
     } finally {
       setLoading(false);
     }
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- supabase client is stable; only re-fetch when teamId changes
+  }, [teamId]);
 
   useEffect(() => {
     fetchTeam();
-  }, [teamId]);
+  }, [fetchTeam]);
 
   return {
     team,

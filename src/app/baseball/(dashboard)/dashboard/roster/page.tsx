@@ -61,6 +61,7 @@ export default function RosterPage() {
     } else {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchRoster only depends on selectedTeamId which is already in deps
   }, [selectedTeamId]);
 
   async function fetchRoster() {

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { X, Trash2, MapPin, Calendar, Clock, Users, AlertCircle, UserPlus, Dumbbell, Trophy, ClipboardList, Plane, MoreHorizontal } from 'lucide-react';
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { RSVPStatusSection } from './RSVPStatusSection';
@@ -674,7 +675,7 @@ export function EventDetailModal({
                         )}
                       >
                         {player.avatar_url ? (
-                          <img src={player.avatar_url} alt="" className="w-5 h-5 rounded-full object-cover" />
+                          <Image src={player.avatar_url} alt="" width={20} height={20} className="w-5 h-5 rounded-full object-cover" unoptimized />
                         ) : (
                           <div className={cn(
                             'w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold',

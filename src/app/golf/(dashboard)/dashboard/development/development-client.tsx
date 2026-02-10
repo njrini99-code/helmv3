@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import {
   IconPlus,
@@ -958,7 +959,7 @@ export function DevelopmentPlansClient({
                 <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-5 mb-4">
                   <div className="flex items-center gap-4">
                     {p.avatar_url ? (
-                      <img src={p.avatar_url} alt="" className="w-12 h-12 rounded-full object-cover" />
+                      <Image src={p.avatar_url} alt="" width={48} height={48} className="w-12 h-12 rounded-full object-cover" unoptimized />
                     ) : (
                       <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center">
                         <span className="text-white font-bold text-base">{p.first_name?.[0]}{p.last_name?.[0]}</span>
@@ -1008,7 +1009,7 @@ export function DevelopmentPlansClient({
                 <div className="flex items-center justify-between p-5 pb-0">
                   <div className="flex items-center gap-3">
                     {player.avatar_url ? (
-                      <img src={player.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" />
+                      <Image src={player.avatar_url} alt="" width={40} height={40} className="w-10 h-10 rounded-full object-cover" unoptimized />
                     ) : (
                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center">
                         <span className="text-white font-semibold text-sm">{player.first_name?.[0]}{player.last_name?.[0]}</span>

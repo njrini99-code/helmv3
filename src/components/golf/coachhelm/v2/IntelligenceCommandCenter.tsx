@@ -1264,7 +1264,6 @@ function TabEmptyState({ icon, title, description, variant = 'widget' }: { icon:
 // ============================================================================
 
 export function IntelligenceCommandCenter({
-  teamId: _teamId,
   coachId,
   initialInsights = [],
   initialPatterns = [],

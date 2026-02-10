@@ -279,6 +279,35 @@ export function AdminAreaChart({
 
   const total = data.reduce((s, d) => s + d.value, 0);
 
+  const padTop = 16;
+  const padBottom = 4;
+  const padLeft = 28;
+  const padRight = 8;
+  const chartW = svgWidth - padLeft - padRight;
+  const chartH = height - padTop - padBottom;
+
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent<SVGSVGElement>) => {
+      if (data.length === 0) return;
+      const cW = svgWidth - 28 - 8;
+      const toXFn = (i: number) =>
+        28 + (data.length === 1 ? cW / 2 : (i / (data.length - 1)) * cW);
+      const rect = e.currentTarget.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      let closest = 0;
+      let closestDist = Infinity;
+      for (let i = 0; i < data.length; i++) {
+        const dist = Math.abs(toXFn(i) - mouseX);
+        if (dist < closestDist) {
+          closestDist = dist;
+          closest = i;
+        }
+      }
+      setHoverIndex(closestDist < 40 ? closest : null);
+    },
+    [data.length, svgWidth],
+  );
+
   if (data.length === 0) {
     return (
       <div>
@@ -289,13 +318,6 @@ export function AdminAreaChart({
       </div>
     );
   }
-
-  const padTop = 16;
-  const padBottom = 4;
-  const padLeft = 28;
-  const padRight = 8;
-  const chartW = svgWidth - padLeft - padRight;
-  const chartH = height - padTop - padBottom;
 
   const values = data.map((d) => d.value);
   const maxVal = Math.max(...values, 1);
@@ -321,25 +343,6 @@ export function AdminAreaChart({
 
   // X-axis label interval
   const labelInterval = Math.max(1, Math.ceil(data.length / 6));
-
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent<SVGSVGElement>) => {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left;
-      // Find nearest point
-      let closest = 0;
-      let closestDist = Infinity;
-      for (let i = 0; i < data.length; i++) {
-        const dist = Math.abs(toX(i) - mouseX);
-        if (dist < closestDist) {
-          closestDist = dist;
-          closest = i;
-        }
-      }
-      setHoverIndex(closestDist < 40 ? closest : null);
-    },
-    [data.length, svgWidth],
-  );
 
   return (
     <div>

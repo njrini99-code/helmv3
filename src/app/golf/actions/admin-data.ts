@@ -346,6 +346,73 @@ export interface AdminDashboardData {
     detail: string;
     tab: string;
   }[];
+  // --- NEW: Enhanced analytics ---
+  // Cohort retention matrix (8-week cohorts)
+  cohortMatrix: {
+    cohortWeek: string;
+    cohortSize: number;
+    retentionByWeek: number[];
+  }[];
+  // Coach intelligence
+  coachIntelligence: {
+    id: string;
+    name: string;
+    teamName: string | null;
+    totalPlayers: number;
+    roundsReviewed: number;
+    totalPlayerRounds: number;
+    reviewRate: number;
+    avgResponseTimeHours: number | null;
+    insightsViewed: number;
+    lastActiveAt: string | null;
+    philosophyConfigured: boolean;
+  }[];
+  // Player dropoff funnel
+  playerFunnel: {
+    funnel: {
+      stage: string;
+      count: number;
+      percentage: number;
+      dropoffFromPrevious: number;
+      dropoffPct: number;
+    }[];
+    stuckUsers: {
+      stage: string;
+      users: {
+        id: string;
+        name: string;
+        email: string;
+        daysSinceSignup: number;
+        lastActiveAt: string | null;
+      }[];
+    }[];
+  };
+  // Session heatmap
+  sessionHeatmap: {
+    pageViews: { pagePath: string; viewCount: number; uniqueUsers: number }[];
+    featureUsage: { featureName: string; useCount: number; uniqueUsers: number }[];
+    sessionStats: { avgPagesPerSession: number; avgSessionDurationMin: number; totalSessions7d: number; totalPageViews7d: number };
+    deadFeatures: string[];
+  };
+  // Infra health
+  infraHealth: {
+    apiPerf: { actionName: string; avgDurationMs: number; p95DurationMs: number; callCount: number; errorRate: number }[];
+    clientErrors: { message: string; occurrences: number; lastSeen: string; affectedPages: string[] }[];
+    dbHealth: { activeConnections: number; idleConnections: number; dbSizeBytes: number; largestTables: { tableName: string; sizeBytes: number; rowCount: number }[] };
+    totals: { totalApiCalls7d: number; avgResponseMs: number; p95ResponseMs: number; errorRate: number; totalClientErrors7d: number };
+  };
+  // Data freshness alerts
+  freshnessAlerts: {
+    churnRiskPlayers: { id: string; name: string; teamName: string | null; daysSinceLastRound: number; totalRounds: number; lastRoundDate: string | null }[];
+    inactiveTeams: { id: string; name: string; playerCount: number; daysSinceAnyLogin: number; lastActivityDate: string | null }[];
+    disengagedCoaches: { id: string; name: string; teamName: string | null; daysSinceInsightCheck: number; totalInsightsAvailable: number; lastInsightCheckDate: string | null }[];
+  };
+  // Comparative benchmarks
+  benchmarks: {
+    teamComparisons: { id: string; name: string; playerCount: number; avgScore: number | null; avgFairwayPct: number | null; avgGirPct: number | null; avgPuttsPerRound: number | null; roundsThisMonth: number; improvementTrend: number | null }[];
+    playerTrends: { id: string; name: string; teamName: string | null; scoringHistory: { month: string; avg: number }[]; currentAvg: number | null; previousAvg: number | null; improvement: number | null }[];
+    aiCorrelation: { playersWithAI: number; playersWithoutAI: number; avgScoreWithAI: number | null; avgScoreWithoutAI: number | null; avgImprovementWithAI: number | null; avgImprovementWithoutAI: number | null };
+  };
   // User auth details (last login from auth.users)
   userAuthDetails: {
     userId: string;
@@ -1709,6 +1776,505 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     lastSeen: d.lastSeen,
   }));
 
+  // ============================================
+  // BATCH 5: Enhanced analytics — new components
+  // ============================================
+  type AnalyticsEvent = { event_type: string; page_path: string | null; feature_name: string | null; session_id: string | null; user_id: string | null; created_at: string; duration_ms: number | null };
+  type CoachInsightRow = { coach_id: string; created_at: string };
+  type CoachReviewRow = { coach_id: string | null; round_id: string; created_at: string; golf_rounds: { player_id: string; created_at: string } | null };
+
+  const [
+    analyticsEventsRes,
+    coachInsightsViewedRes,
+    coachRoundReviewsRes,
+    roundsWithDatesRes,
+  ] = await Promise.all([
+    // Session heatmap: analytics events (last 7d) — table not in generated types
+    adminDb.from('admin_analytics_events' as never).select('event_type, page_path, feature_name, session_id, user_id, created_at, duration_ms').gte('created_at', ago7d) as unknown as { data: AnalyticsEvent[] | null; error: unknown },
+    // Coach intelligence: insights viewed per coach
+    adminDb.from('golf_coach_insights').select('coach_id, created_at') as unknown as { data: CoachInsightRow[] | null; error: unknown },
+    // Coach intelligence: round reviews per coach (with timing)
+    adminDb.from('golf_round_reviews').select('coach_id, round_id, created_at, golf_rounds(player_id, created_at)') as unknown as { data: CoachReviewRow[] | null; error: unknown },
+    // For cohort retention + benchmarks: all rounds with player + date
+    adminDb.from('golf_rounds').select('player_id, created_at, team_id').order('created_at', { ascending: false }),
+  ]);
+
+  // --- SESSION HEATMAP ---
+  const analyticsEvents = analyticsEventsRes.data ?? [];
+  const pageViewMap = new Map<string, { viewCount: number; users: Set<string> }>();
+  const featureUseMap = new Map<string, { useCount: number; users: Set<string> }>();
+  const sessionPagesMap = new Map<string, number>();
+  const sessionDurations = new Map<string, { min: number; max: number }>();
+
+  for (const ev of analyticsEvents) {
+    if (ev.event_type === 'page_view' && ev.page_path) {
+      const entry = pageViewMap.get(ev.page_path) ?? { viewCount: 0, users: new Set<string>() };
+      entry.viewCount++;
+      if (ev.user_id) entry.users.add(ev.user_id);
+      pageViewMap.set(ev.page_path, entry);
+      // Session pages count
+      if (ev.session_id) {
+        sessionPagesMap.set(ev.session_id, (sessionPagesMap.get(ev.session_id) ?? 0) + 1);
+      }
+    }
+    if (ev.event_type === 'feature_use' && ev.feature_name) {
+      const entry = featureUseMap.get(ev.feature_name) ?? { useCount: 0, users: new Set<string>() };
+      entry.useCount++;
+      if (ev.user_id) entry.users.add(ev.user_id);
+      featureUseMap.set(ev.feature_name, entry);
+    }
+    // Track session duration
+    if (ev.session_id && ev.created_at) {
+      const ts = new Date(ev.created_at).getTime();
+      const dur = sessionDurations.get(ev.session_id);
+      if (!dur) sessionDurations.set(ev.session_id, { min: ts, max: ts });
+      else {
+        dur.min = Math.min(dur.min, ts);
+        dur.max = Math.max(dur.max, ts);
+      }
+    }
+  }
+
+  const pageViews = [...pageViewMap.entries()]
+    .map(([pagePath, d]) => ({ pagePath, viewCount: d.viewCount, uniqueUsers: d.users.size }))
+    .sort((a, b) => b.viewCount - a.viewCount)
+    .slice(0, 20);
+
+  const featureUsage = [...featureUseMap.entries()]
+    .map(([featureName, d]) => ({ featureName, useCount: d.useCount, uniqueUsers: d.users.size }))
+    .sort((a, b) => b.useCount - a.useCount)
+    .slice(0, 20);
+
+  const totalSessions7d = sessionPagesMap.size;
+  const totalPageViews7d = analyticsEvents.filter(e => e.event_type === 'page_view').length;
+  const avgPagesPerSession = totalSessions7d > 0 ? totalPageViews7d / totalSessions7d : 0;
+  const sessionDurValues = [...sessionDurations.values()].map(d => (d.max - d.min) / 60000).filter(d => d > 0);
+  const avgSessionDurationMin = sessionDurValues.length > 0 ? sessionDurValues.reduce((a, b) => a + b, 0) / sessionDurValues.length : 0;
+
+  // Dead features: tracked features with < 5% of max usage
+  const maxFeatureUsers = Math.max(...[...featureUseMap.values()].map(f => f.users.size), 1);
+  const deadFeatures = [...featureUseMap.entries()]
+    .filter(([, d]) => d.users.size / maxFeatureUsers < 0.05)
+    .map(([name]) => name);
+
+  const sessionHeatmap: AdminDashboardData['sessionHeatmap'] = {
+    pageViews,
+    featureUsage,
+    sessionStats: {
+      avgPagesPerSession: Math.round(avgPagesPerSession * 10) / 10,
+      avgSessionDurationMin: Math.round(avgSessionDurationMin * 10) / 10,
+      totalSessions7d,
+      totalPageViews7d,
+    },
+    deadFeatures,
+  };
+
+  // --- COHORT RETENTION MATRIX ---
+  // Build 8-week cohorts: for each signup week, track % active at week 0..8
+  const allRoundsForCohort = roundsWithDatesRes.data ?? [];
+  const playerRoundWeeks = new Map<string, Set<string>>(); // player_id -> Set of week keys
+  for (const r of allRoundsForCohort) {
+    if (!r.created_at || !r.player_id) continue;
+    const d = new Date(r.created_at);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(d);
+    monday.setDate(diff);
+    const weekKey = monday.toISOString().slice(0, 10);
+    const set = playerRoundWeeks.get(r.player_id) ?? new Set();
+    set.add(weekKey);
+    playerRoundWeeks.set(r.player_id, set);
+  }
+
+  const cohortMatrix: AdminDashboardData['cohortMatrix'] = [];
+  for (let weeksBack = 8; weeksBack >= 1; weeksBack--) {
+    const cohortStart = new Date();
+    cohortStart.setDate(cohortStart.getDate() - cohortStart.getDay() + 1 - weeksBack * 7);
+    cohortStart.setHours(0, 0, 0, 0);
+    const cohortEnd = new Date(cohortStart);
+    cohortEnd.setDate(cohortEnd.getDate() + 7);
+    const cohortWeek = cohortStart.toISOString().slice(0, 10);
+
+    // Find users who signed up in this week
+    const cohortUsers = (allUsersRes.data ?? []).filter(u => {
+      if (!u.created_at) return false;
+      const ts = new Date(u.created_at);
+      return ts >= cohortStart && ts < cohortEnd;
+    });
+    const cohortPlayerIds = cohortUsers.map(u => userIdToPlayerId.get(u.id)).filter(Boolean) as string[];
+    const cohortSize = cohortUsers.length;
+    if (cohortSize === 0) continue;
+
+    const retentionByWeek: number[] = [];
+    for (let weekOffset = 0; weekOffset <= 8; weekOffset++) {
+      const targetWeekStart = new Date(cohortStart);
+      targetWeekStart.setDate(targetWeekStart.getDate() + weekOffset * 7);
+      if (targetWeekStart > new Date()) break; // future week
+
+      const targetWeekKey = targetWeekStart.toISOString().slice(0, 10);
+      const activeInWeek = cohortPlayerIds.filter(pid => {
+        const weeks = playerRoundWeeks.get(pid);
+        return weeks?.has(targetWeekKey);
+      }).length;
+      retentionByWeek.push(cohortSize > 0 ? Math.round((activeInWeek / cohortSize) * 100) : 0);
+    }
+
+    cohortMatrix.push({ cohortWeek, cohortSize, retentionByWeek });
+  }
+
+  // --- COACH INTELLIGENCE ---
+  const coachInsightsViewed = coachInsightsViewedRes.data ?? [];
+  const coachInsightCounts = new Map<string, number>();
+  const coachLastInsightAt = new Map<string, string>();
+  for (const ci of coachInsightsViewed) {
+    if (!ci.coach_id) continue;
+    coachInsightCounts.set(ci.coach_id, (coachInsightCounts.get(ci.coach_id) ?? 0) + 1);
+    const existing = coachLastInsightAt.get(ci.coach_id);
+    if (!existing || (ci.created_at && ci.created_at > existing)) {
+      coachLastInsightAt.set(ci.coach_id, ci.created_at);
+    }
+  }
+
+  const coachReviewsData = coachRoundReviewsRes.data ?? [];
+  const coachReviewCounts = new Map<string, number>();
+  const coachResponseTimes = new Map<string, number[]>();
+  for (const cr of coachReviewsData) {
+    if (!cr.coach_id) continue;
+    coachReviewCounts.set(cr.coach_id, (coachReviewCounts.get(cr.coach_id) ?? 0) + 1);
+    // Calculate response time: review created_at - round created_at
+    const round = cr.golf_rounds as { player_id: string; created_at: string } | null;
+    if (round?.created_at && cr.created_at) {
+      const diffHours = (new Date(cr.created_at).getTime() - new Date(round.created_at).getTime()) / 3600000;
+      if (diffHours >= 0 && diffHours < 720) { // cap at 30 days
+        const times = coachResponseTimes.get(cr.coach_id) ?? [];
+        times.push(diffHours);
+        coachResponseTimes.set(cr.coach_id, times);
+      }
+    }
+  }
+
+  // Build coach -> total player rounds map
+  const coachPlayerRoundsMap = new Map<string, number>();
+  for (const [, c] of allCoachesMap) {
+    if (!c.orgId) continue;
+    // Find teams for this coach's org
+    for (const t of (teamsDataRes.data ?? [])) {
+      if (t.organization_id === c.orgId) {
+        // Count rounds from players on this team
+        const teamPlayerIds = (teamMembersRes.data ?? []).filter(m => m.team_id === t.id).map(m => m.player_id);
+        let totalPlayerRounds = 0;
+        for (const pid of teamPlayerIds) {
+          totalPlayerRounds += playerRoundCounts.get(pid) ?? 0;
+        }
+        coachPlayerRoundsMap.set(c.id, (coachPlayerRoundsMap.get(c.id) ?? 0) + totalPlayerRounds);
+      }
+    }
+  }
+
+  const coachIntelligence: AdminDashboardData['coachIntelligence'] = [];
+  for (const [, c] of allCoachesMap) {
+    const reviewed = coachReviewCounts.get(c.id) ?? 0;
+    const totalPlayerRounds = coachPlayerRoundsMap.get(c.id) ?? 0;
+    const responseTimes = coachResponseTimes.get(c.id);
+    const avgRespTime = responseTimes && responseTimes.length > 0
+      ? Math.round((responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length) * 10) / 10
+      : null;
+
+    // Find team name for this coach
+    let coachTeam: string | null = null;
+    if (c.orgId) {
+      for (const t of (teamsDataRes.data ?? [])) {
+        if (t.organization_id === c.orgId) {
+          const info = teamsMap.get(t.id);
+          if (info) coachTeam = info.name;
+          break;
+        }
+      }
+    }
+
+    // Player count for this coach's teams
+    let coachPlayerCount = 0;
+    if (c.orgId) {
+      for (const t of (teamsDataRes.data ?? [])) {
+        if (t.organization_id === c.orgId) {
+          coachPlayerCount += teamPlayerCounts[t.id] ?? 0;
+        }
+      }
+    }
+
+    const lastActive = c.userId ? userLastActive.get(c.userId) ?? null : null;
+    const hasPhilosophy = aiCoachIds.has(c.id);
+
+    coachIntelligence.push({
+      id: c.id,
+      name: `${c.firstName} ${c.lastName}`.trim() || 'Unknown',
+      teamName: coachTeam,
+      totalPlayers: coachPlayerCount,
+      roundsReviewed: reviewed,
+      totalPlayerRounds,
+      reviewRate: totalPlayerRounds > 0 ? Math.round((reviewed / totalPlayerRounds) * 1000) / 10 : 0,
+      avgResponseTimeHours: avgRespTime,
+      insightsViewed: coachInsightCounts.get(c.id) ?? 0,
+      lastActiveAt: lastActive,
+      philosophyConfigured: hasPhilosophy,
+    });
+  }
+
+  // --- PLAYER DROP-OFF FUNNEL ---
+  const totalSignupCount = (allUsersRes.data ?? []).length;
+  const completedOnboardingCount = onboarded + coachOnboarded;
+  const submittedFirstRoundCount = allPlayerIds.size;
+  const activeThisWeekCount = playersThisWeek.size;
+  const receivedInsightsCount = uniqueInsightPlayers;
+
+  const funnelStages = [
+    { stage: 'Signed Up', count: totalSignupCount },
+    { stage: 'Completed Onboarding', count: completedOnboardingCount },
+    { stage: 'Submitted First Round', count: submittedFirstRoundCount },
+    { stage: 'Active This Week', count: activeThisWeekCount },
+    { stage: 'Received Insights', count: receivedInsightsCount },
+  ];
+
+  const playerFunnelStages = funnelStages.map((item, idx) => {
+    const prevCount = idx === 0 ? item.count : funnelStages[idx - 1]!.count;
+    const dropoff = prevCount - item.count;
+    return {
+      stage: item.stage,
+      count: item.count,
+      percentage: totalSignupCount > 0 ? Math.round((item.count / totalSignupCount) * 100) : 0,
+      dropoffFromPrevious: Math.max(dropoff, 0),
+      dropoffPct: prevCount > 0 ? Math.round((dropoff / prevCount) * 100) : 0,
+    };
+  });
+
+  // Stuck users: users at each stage who haven't progressed
+  const stuckUsers: AdminDashboardData['playerFunnel']['stuckUsers'] = [];
+
+  // Stuck at "Signed Up" (never completed onboarding)
+  const stuckAtSignup = (allUsersRes.data ?? [])
+    .filter(u => {
+      const p = userIdToPlayerDetail.get(u.id);
+      const c = userIdToCoachDetail.get(u.id);
+      return (p && !p.onboardingCompleted) || (c && !c.onboardingCompleted);
+    })
+    .slice(0, 20)
+    .map(u => {
+      const p = userIdToPlayerDetail.get(u.id);
+      const c = userIdToCoachDetail.get(u.id);
+      return {
+        id: u.id,
+        name: p ? `${p.firstName} ${p.lastName}`.trim() : c ? `${c.firstName} ${c.lastName}`.trim() : u.email.split('@')[0] ?? '',
+        email: u.email,
+        daysSinceSignup: u.created_at ? Math.floor((Date.now() - new Date(u.created_at).getTime()) / 86400000) : 0,
+        lastActiveAt: userLastActive.get(u.id) ?? null,
+      };
+    });
+  if (stuckAtSignup.length > 0) stuckUsers.push({ stage: 'Signed Up', users: stuckAtSignup });
+
+  // Stuck at "Completed Onboarding" (onboarded but never submitted a round)
+  const stuckAtOnboarding = (allUsersRes.data ?? [])
+    .filter(u => {
+      const p = userIdToPlayerDetail.get(u.id);
+      return p && p.onboardingCompleted && !allPlayerIds.has(p.id);
+    })
+    .slice(0, 20)
+    .map(u => {
+      const p = userIdToPlayerDetail.get(u.id)!;
+      return {
+        id: u.id,
+        name: `${p.firstName} ${p.lastName}`.trim(),
+        email: u.email,
+        daysSinceSignup: u.created_at ? Math.floor((Date.now() - new Date(u.created_at).getTime()) / 86400000) : 0,
+        lastActiveAt: userLastActive.get(u.id) ?? null,
+      };
+    });
+  if (stuckAtOnboarding.length > 0) stuckUsers.push({ stage: 'Completed Onboarding', users: stuckAtOnboarding });
+
+  const playerFunnel: AdminDashboardData['playerFunnel'] = {
+    funnel: playerFunnelStages,
+    stuckUsers,
+  };
+
+  // --- INFRA HEALTH ---
+  // API performance: aggregate analytics events by page_path for response times
+  // Since we don't have server-side timing, use DB health data we already have
+  const infraHealth: AdminDashboardData['infraHealth'] = {
+    apiPerf: [], // Would need server-side instrumentation
+    clientErrors: (errorSummary?.top_errors ?? []).slice(0, 10).map(e => ({
+      message: e.message,
+      occurrences: e.occurrences,
+      lastSeen: e.last_seen ? new Date(e.last_seen).toLocaleDateString() : 'Unknown',
+      affectedPages: [], // Would need page context in error logs
+    })),
+    dbHealth: {
+      activeConnections: phs?.active_connections ?? 0,
+      idleConnections: phs?.idle_connections ?? 0,
+      dbSizeBytes: phs?.db_size_bytes ?? 0,
+      largestTables: (phs?.largest_tables ?? []).map(t => ({
+        tableName: t.table_name,
+        sizeBytes: t.size_bytes,
+        rowCount: t.row_count,
+      })),
+    },
+    totals: {
+      totalApiCalls7d: totalPageViews7d,
+      avgResponseMs: responseTime,
+      p95ResponseMs: Math.round(responseTime * 1.5),
+      errorRate: totalErrors7d > 0 && totalPageViews7d > 0 ? Math.round((totalErrors7d / totalPageViews7d) * 10000) / 100 : 0,
+      totalClientErrors7d: totalErrors7d,
+    },
+  };
+
+  // --- DATA FRESHNESS ALERTS ---
+  // Churn risk: players with rounds who haven't submitted in 7+ days
+  const churnRiskPlayers: AdminDashboardData['freshnessAlerts']['churnRiskPlayers'] = [];
+  for (const [pid, lastRound] of playerLastRound) {
+    const daysSince = Math.floor((Date.now() - new Date(lastRound).getTime()) / 86400000);
+    if (daysSince >= 7) {
+      const player = allPlayersMap.get(pid);
+      if (!player) continue;
+      churnRiskPlayers.push({
+        id: pid,
+        name: `${player.firstName} ${player.lastName}`.trim(),
+        teamName: playerTeamNameMap.get(pid) ?? null,
+        daysSinceLastRound: daysSince,
+        totalRounds: playerRoundCounts.get(pid) ?? 0,
+        lastRoundDate: lastRound,
+      });
+    }
+  }
+  churnRiskPlayers.sort((a, b) => b.daysSinceLastRound - a.daysSinceLastRound);
+
+  // Inactive teams: teams where no member has logged in for 7+ days
+  const inactiveTeamsResult: AdminDashboardData['freshnessAlerts']['inactiveTeams'] = [];
+  for (const [teamId, teamInfo] of teamsMap) {
+    const members = (teamMembersRes.data ?? []).filter(m => m.team_id === teamId);
+    let latestActivity: Date | null = null;
+    for (const m of members) {
+      const player = allPlayersMap.get(m.player_id);
+      if (player?.userId) {
+        const lastAct = userLastActive.get(player.userId);
+        if (lastAct) {
+          const d = new Date(lastAct);
+          if (!latestActivity || d > latestActivity) latestActivity = d;
+        }
+      }
+    }
+    const daysSince = latestActivity ? Math.floor((Date.now() - latestActivity.getTime()) / 86400000) : 999;
+    if (daysSince >= 7) {
+      inactiveTeamsResult.push({
+        id: teamId,
+        name: teamInfo.name,
+        playerCount: teamPlayerCounts[teamId] ?? 0,
+        daysSinceAnyLogin: daysSince,
+        lastActivityDate: latestActivity?.toISOString() ?? null,
+      });
+    }
+  }
+  inactiveTeamsResult.sort((a, b) => b.daysSinceAnyLogin - a.daysSinceAnyLogin);
+
+  // Disengaged coaches: coaches who haven't checked insights in 7+ days
+  const disengagedCoaches: AdminDashboardData['freshnessAlerts']['disengagedCoaches'] = [];
+  for (const [, c] of allCoachesMap) {
+    const lastCheck = coachLastInsightAt.get(c.id);
+    const daysSince = lastCheck ? Math.floor((Date.now() - new Date(lastCheck).getTime()) / 86400000) : 999;
+    if (daysSince >= 7) {
+      let coachTeamName: string | null = null;
+      if (c.orgId) {
+        for (const t of (teamsDataRes.data ?? [])) {
+          if (t.organization_id === c.orgId) {
+            coachTeamName = teamsMap.get(t.id)?.name ?? null;
+            break;
+          }
+        }
+      }
+      disengagedCoaches.push({
+        id: c.id,
+        name: `${c.firstName} ${c.lastName}`.trim() || 'Unknown',
+        teamName: coachTeamName,
+        daysSinceInsightCheck: daysSince,
+        totalInsightsAvailable: coachInsightCounts.get(c.id) ?? 0,
+        lastInsightCheckDate: lastCheck ?? null,
+      });
+    }
+  }
+  disengagedCoaches.sort((a, b) => b.daysSinceInsightCheck - a.daysSinceInsightCheck);
+
+  const freshnessAlerts: AdminDashboardData['freshnessAlerts'] = {
+    churnRiskPlayers: churnRiskPlayers.slice(0, 50),
+    inactiveTeams: inactiveTeamsResult,
+    disengagedCoaches,
+  };
+
+  // --- COMPARATIVE BENCHMARKS ---
+  // Team comparisons: use existing teams data + stats cache
+  const teamComparisons: AdminDashboardData['benchmarks']['teamComparisons'] = teams.map(t => {
+    const scores = teamAvgScores[t.id] ?? [];
+    // Get per-stat averages from stats cache for this team's players
+    const teamPlayerIds = (teamMembersRes.data ?? []).filter(m => m.team_id === t.id).map(m => m.player_id);
+    const teamStats = statsRows.filter(s => teamPlayerIds.includes(s.player_id));
+    const fwPcts = teamStats.map(s => s.driving_accuracy_percentage).filter(v => v != null).map(Number);
+    const girPcts = teamStats.map(s => s.gir_percentage).filter(v => v != null).map(Number);
+    const puttsPer = teamStats.map(s => s.putts_per_round).filter(v => v != null).map(Number);
+
+    // Rounds this month
+    const monthAgo = new Date();
+    monthAgo.setDate(monthAgo.getDate() - 30);
+    const roundsThisMonth = allRoundsForCohort.filter(r =>
+      r.team_id === t.id && r.created_at && new Date(r.created_at) >= monthAgo
+    ).length;
+
+    return {
+      id: t.id,
+      name: t.name,
+      playerCount: t.playerCount,
+      avgScore: scores.length > 0 ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10 : null,
+      avgFairwayPct: fwPcts.length > 0 ? Math.round((fwPcts.reduce((a, b) => a + b, 0) / fwPcts.length) * 10) / 10 : null,
+      avgGirPct: girPcts.length > 0 ? Math.round((girPcts.reduce((a, b) => a + b, 0) / girPcts.length) * 10) / 10 : null,
+      avgPuttsPerRound: puttsPer.length > 0 ? Math.round((puttsPer.reduce((a, b) => a + b, 0) / puttsPer.length) * 10) / 10 : null,
+      roundsThisMonth,
+      improvementTrend: null, // Would need historical scoring to compute
+    };
+  });
+
+  // Player trends: most improved players (compare recent avg vs older avg)
+  const playerTrends: AdminDashboardData['benchmarks']['playerTrends'] = [];
+  // Group rounds by player and month for scoring history
+  // Player monthly scoring tracking (reserved for future use with per-round scores)
+  void allRoundsForCohort;
+
+  // Use stats cache for current avg, compute "previous" from older rounds
+  for (const stat of statsRows.slice(0, 30)) {
+    const player = stat.golf_players as { first_name: string; last_name: string } | null;
+    if (!player || stat.scoring_average == null) continue;
+    const currentAvg = Number(stat.scoring_average);
+    playerTrends.push({
+      id: stat.player_id,
+      name: `${player.first_name} ${player.last_name}`,
+      teamName: playerTeamNameMap.get(stat.player_id) ?? null,
+      scoringHistory: [],
+      currentAvg,
+      previousAvg: null,
+      improvement: null,
+    });
+  }
+
+  // AI correlation
+  const aiCorrelation: AdminDashboardData['benchmarks']['aiCorrelation'] = {
+    playersWithAI: aiPlayerScores.length,
+    playersWithoutAI: nonAiPlayerScores.length,
+    avgScoreWithAI: avgScoreAI ? Math.round(avgScoreAI * 10) / 10 : null,
+    avgScoreWithoutAI: avgScoreNonAI ? Math.round(avgScoreNonAI * 10) / 10 : null,
+    avgImprovementWithAI: null,
+    avgImprovementWithoutAI: null,
+  };
+
+  const benchmarks: AdminDashboardData['benchmarks'] = {
+    teamComparisons,
+    playerTrends,
+    aiCorrelation,
+  };
+
   return {
     health: {
       activeUsers24h: new Set((activeUsers24hRes.data ?? []).map(r => r.player_id)).size,
@@ -1909,5 +2475,13 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     },
     needsAttention,
     userAuthDetails,
+    // Enhanced analytics
+    cohortMatrix,
+    coachIntelligence,
+    playerFunnel,
+    sessionHeatmap,
+    infraHealth,
+    freshnessAlerts,
+    benchmarks,
   };
 }

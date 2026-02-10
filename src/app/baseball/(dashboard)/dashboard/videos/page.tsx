@@ -120,6 +120,7 @@ export default function VideosPage() {
     } else if (isCoach && selectedTeamId) {
       fetchVideos();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchVideos depends on player, isCoach, selectedTeamId which are already in deps
   }, [player, isCoach, selectedTeamId]);
 
   const handleDeleteConfirm = async () => {

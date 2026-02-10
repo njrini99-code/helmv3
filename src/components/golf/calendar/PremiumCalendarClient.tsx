@@ -132,7 +132,8 @@ export function PremiumCalendarClient({
       // Only switch back to week if not viewing any player's schedule
       setView('week');
     }
-  }, [showMobileUI]); // Only run when mobile state changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- Only run when mobile/desktop state changes, not on every view change
+  }, [showMobileUI]);
 
   // Handle RSVP for a specific event (used by mobile list view)
   const handleRsvp = useCallback(async (eventId: string, response: RSVPResponse): Promise<{ success: boolean; error?: string }> => {

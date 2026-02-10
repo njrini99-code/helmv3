@@ -198,14 +198,6 @@ export default function ShotTrackingComprehensive({
     };
   }, [hide, show]);
 
-  if (!currentHole) {
-    return (
-      <div className="min-h-full flex items-center justify-center">
-        <p className="text-lg text-warm-600">Invalid hole data</p>
-      </div>
-    );
-  }
-
   // ============================================================================
   // STATE & REFS
   // ============================================================================
@@ -224,12 +216,12 @@ export default function ShotTrackingComprehensive({
         const parsed = typeof lastShot.distanceToHoleAfter === 'string' 
           ? parseFloat(lastShot.distanceToHoleAfter) 
           : lastShot.distanceToHoleAfter;
-        return isNaN(parsed) ? currentHole.yardage : parsed;
+        return isNaN(parsed) ? (currentHole?.yardage ?? 0) : parsed;
       }
     }
-    return currentHole.yardage;
+    return currentHole?.yardage ?? 0;
   };
-  
+
   const getInitialDistanceUnit = (): 'yards' | 'feet' => {
     if (initialShots.length > 0) {
       const lastShot = initialShots[initialShots.length - 1];
@@ -310,9 +302,29 @@ export default function ShotTrackingComprehensive({
     hydratedHoleIndexRef.current = currentHoleIndex;
 
     const hasSavedShots = initialShots.length > 0;
-    const initialLie = hasSavedShots ? getInitialLie() : 'tee';
-    const initialDistance = hasSavedShots ? getInitialDistance() : currentHole.yardage;
-    const initialUnit = hasSavedShots ? getInitialDistanceUnit() : 'yards';
+
+    // Inline the getInitial* helpers to satisfy exhaustive-deps
+    let initialLie: 'tee' | 'fairway' | 'rough' | 'sand' | 'green' | 'other' = 'tee';
+    let initialDistance = currentHole?.yardage ?? 0;
+    let initialUnit: 'yards' | 'feet' = 'yards';
+
+    if (hasSavedShots) {
+      const lastShot = initialShots[initialShots.length - 1];
+      // getInitialLie
+      if (lastShot?.result === 'green') initialLie = 'green';
+      else if (lastShot?.result === 'rough') initialLie = 'rough';
+      else if (lastShot?.result === 'sand') initialLie = 'sand';
+      else if (lastShot?.result === 'fairway') initialLie = 'fairway';
+      // getInitialDistance
+      if (lastShot?.distanceToHoleAfter) {
+        const parsed = typeof lastShot.distanceToHoleAfter === 'string'
+          ? parseFloat(lastShot.distanceToHoleAfter)
+          : lastShot.distanceToHoleAfter;
+        if (!isNaN(parsed)) initialDistance = parsed;
+      }
+      // getInitialDistanceUnit
+      initialUnit = (lastShot?.distanceUnitAfter || 'yards') as 'yards' | 'feet';
+    }
     const nextShotNumber = hasSavedShots ? initialShotNumber : 1;
 
     setCurrentShot(nextShotNumber);
@@ -334,7 +346,7 @@ export default function ShotTrackingComprehensive({
     setApproachMissDirection(null);
     setApproachMissLieType(undefined);
     setSelectedShotNumber(null);
-  }, [currentHoleIndex, currentHole.yardage, initialShots, initialShotNumber]);
+  }, [currentHoleIndex, currentHole?.yardage, initialShots, initialShotNumber]);
 
   // ============================================================================
   // AUTO-SAVE EFFECT
@@ -447,7 +459,8 @@ export default function ShotTrackingComprehensive({
     return () => {
       clearTimeout(quickSaveTimeout);
     };
-  }, [shotHistory.length]); // Only trigger on shot count change
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentionally only watches shot count to debounce, full deps in primary autosave effect above
+  }, [shotHistory.length]);
 
   // ============================================================================
   // DERIVED VALUES
@@ -455,11 +468,11 @@ export default function ShotTrackingComprehensive({
   
   const getShotType = useCallback((): 'tee' | 'approach' | 'around_green' | 'putting' => {
     if (currentLie === 'green') return 'putting';
-    if (currentShot === 1 && currentHole.par === 3) return 'approach';
-    if (currentShot === 1 && currentHole.par !== 3) return 'tee';
+    if (currentShot === 1 && currentHole?.par === 3) return 'approach';
+    if (currentShot === 1 && currentHole?.par !== 3) return 'tee';
     if (distanceUnit === 'feet' || distanceToHole <= 30) return 'around_green';
     return 'approach';
-  }, [currentLie, currentShot, currentHole.par, distanceUnit, distanceToHole]);
+  }, [currentLie, currentShot, currentHole?.par, distanceUnit, distanceToHole]);
 
   const shotType = getShotType();
   const isPutting = shotType === 'putting';
@@ -468,7 +481,7 @@ export default function ShotTrackingComprehensive({
 
   const getClubType = (): 'driver' | 'non_driver' | 'putter' => {
     if (isPutting) return 'putter';
-    if (isTeeShot && currentHole.par !== 3 && usedDriver) return 'driver';
+    if (isTeeShot && currentHole?.par !== 3 && usedDriver) return 'driver';
     return 'non_driver';
   };
 
@@ -504,6 +517,15 @@ export default function ShotTrackingComprehensive({
       }
     }
   }, [resultOfShot, missDirection, isTeeShot, isApproachOrAroundGreen, isPutting]);
+
+  // Early return for invalid hole data - must be after all hooks
+  if (!currentHole) {
+    return (
+      <div className="min-h-full flex items-center justify-center">
+        <p className="text-lg text-warm-600">Invalid hole data</p>
+      </div>
+    );
+  }
 
   // ============================================================================
   // VALIDATION

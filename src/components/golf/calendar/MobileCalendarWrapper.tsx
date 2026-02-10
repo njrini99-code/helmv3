@@ -87,15 +87,10 @@ export function MobileCalendarWrapper({
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [isCreatingEvent, setIsCreatingEvent] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   const [_isSaving, setIsSaving] = useState(false);
   // Track initial event type for pre-filling from quick-add FAB
   const [initialEventType, setInitialEventType] = useState<string | undefined>(undefined);
-
-  // If not mobile, don't render this component - let parent handle desktop view
-  if (!showMobileUI) {
-    return null;
-  }
 
   // Event click handler
   const handleEventClick = useCallback((event: CalendarEvent) => {
@@ -162,6 +157,11 @@ export function MobileCalendarWrapper({
     if (!selectedEvent || !userRsvpStatuses) return null;
     return userRsvpStatuses.get(selectedEvent.id) || null;
   }, [selectedEvent, userRsvpStatuses]);
+
+  // If not mobile, don't render this component - let parent handle desktop view
+  if (!showMobileUI) {
+    return null;
+  }
 
   return (
     <div className={cn('flex flex-col h-full', className)}>

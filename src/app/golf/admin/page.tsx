@@ -27,6 +27,14 @@ import { HealthCheckGrid } from './components/HealthCheckGrid';
 import { ErrorFeed } from './components/ErrorFeed';
 import { AuditFeed } from './components/AuditFeed';
 import { BaseballOps } from './components/BaseballOps';
+import CoachIntelligenceCard from './components/CoachIntelligenceCard';
+import CohortRetentionMatrix from './components/CohortRetentionMatrix';
+import ComparativeBenchmarks from './components/ComparativeBenchmarks';
+import DataFreshnessAlerts from './components/DataFreshnessAlerts';
+import InfraHealthCard from './components/InfraHealthCard';
+import PlayerDropoffFunnel from './components/PlayerDropoffFunnel';
+import SessionHeatmap from './components/SessionHeatmap';
+import { useAnalyticsTracking } from '@/hooks/useAnalyticsTracking';
 import {
   IconUsers,
   IconTarget,
@@ -232,6 +240,7 @@ export default function AdminDashboardPage() {
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const [sportView, setSportView] = useState<'golf' | 'baseball'>('golf');
   const refreshTimerRef = useRef<ReturnType<typeof setInterval>>(undefined);
+  const { trackFeature } = useAnalyticsTracking();
 
   // URL-driven tab state
   const urlTab = searchParams.get('tab') as TabId | null;
@@ -241,6 +250,7 @@ export default function AdminDashboardPage() {
     const params = new URLSearchParams(searchParams.toString());
     params.set('tab', tab);
     router.replace(`/golf/admin?${params.toString()}`, { scroll: false });
+    trackFeature('tab_switch', { tab });
   }
 
   const loadData = useCallback(async (silent = false) => {
@@ -577,6 +587,13 @@ export default function AdminDashboardPage() {
                     />
                   </div>
 
+                  <CoachIntelligenceCard coaches={data.coachIntelligence} />
+                  <PlayerDropoffFunnel funnel={data.playerFunnel.funnel} stuckUsers={data.playerFunnel.stuckUsers} />
+                  <DataFreshnessAlerts
+                    churnRiskPlayers={data.freshnessAlerts.churnRiskPlayers}
+                    inactiveTeams={data.freshnessAlerts.inactiveTeams}
+                    disengagedCoaches={data.freshnessAlerts.disengagedCoaches}
+                  />
                   <TeamRosterCard teamRosters={data.teamRosters} />
                   <UserActivityTable users={data.userDirectory} />
                 </>
@@ -628,6 +645,14 @@ export default function AdminDashboardPage() {
 
                   {/* CoachHelm AI Health */}
                   <CoachHelmHealthCard coachhelm={data.coachhelm} coachhelmRoi={data.coachhelmRoi} />
+
+                  {/* Infrastructure Health */}
+                  <InfraHealthCard
+                    apiPerf={data.infraHealth.apiPerf}
+                    clientErrors={data.infraHealth.clientErrors}
+                    dbHealth={data.infraHealth.dbHealth}
+                    totals={data.infraHealth.totals}
+                  />
                 </>
               )}
 
@@ -702,6 +727,15 @@ export default function AdminDashboardPage() {
                       stickiness={data.stickiness}
                     />
                   </div>
+
+                  <CohortRetentionMatrix cohorts={data.cohortMatrix} />
+
+                  <SessionHeatmap
+                    pageViews={data.sessionHeatmap.pageViews}
+                    featureUsage={data.sessionHeatmap.featureUsage}
+                    sessionStats={data.sessionHeatmap.sessionStats}
+                    deadFeatures={data.sessionHeatmap.deadFeatures}
+                  />
                 </>
               )}
 
@@ -765,6 +799,12 @@ export default function AdminDashboardPage() {
                         <TeamIntelligenceCard teams={data.teams} />
                         <UsageMetricsCard usage={data.usage} dataQuality={data.dataQuality} funnel={data.funnel} />
                       </div>
+
+                      <ComparativeBenchmarks
+                        teamComparisons={data.benchmarks.teamComparisons}
+                        playerTrends={data.benchmarks.playerTrends}
+                        aiCorrelation={data.benchmarks.aiCorrelation}
+                      />
 
                       {/* Strokes Gained + Communication */}
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

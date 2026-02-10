@@ -12,7 +12,7 @@ export function useStandaloneMode(): boolean {
   useEffect(() => {
     const standalone =
       window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as any).standalone === true;
+      (window.navigator as unknown as { standalone?: boolean }).standalone === true;
     setIsStandalone(standalone);
 
     // Listen for changes (e.g., if user installs while using)

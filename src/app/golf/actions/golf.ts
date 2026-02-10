@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import type { HoleStats, ShotRecord } from '@/components/golf/ShotTrackingComprehensive';
@@ -1751,7 +1752,7 @@ export async function createAnnouncement(data: {
 // ============================================================================
 
 export async function invitePlayerToTeam(
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   _email: string // Email parameter reserved for future email invitations
 ): Promise<ActionResult<{ inviteCode: string; inviteLink: string }>> {
   try {
@@ -3031,9 +3032,10 @@ export async function getPlayerQualifiers(): Promise<ActionResult<PlayerQualifie
     }> | null;
 
     // Build result with progress info
-    const qualifiers: PlayerQualifierInfo[] = (entries as any[])
-      .filter((e: any) => e.qualifier && typeof e.qualifier === 'object' && !('error' in e.qualifier))
-      .map((entry: any) => {
+    type QualifierEntry = { qualifier_id: string; qualifier: { id: string; name: string; description: string | null; course_name: string | null; location: string | null; num_rounds: number; holes_per_round: number; start_date: string; end_date: string | null; status: string; show_live_leaderboard: boolean | null } | null };
+    const qualifiers: PlayerQualifierInfo[] = (entries as unknown as QualifierEntry[])
+      .filter((e) => e.qualifier && typeof e.qualifier === 'object' && !('error' in e.qualifier))
+      .map((entry) => {
         const q = entry.qualifier as {
           id: string;
           name: string;
@@ -3049,14 +3051,14 @@ export async function getPlayerQualifiers(): Promise<ActionResult<PlayerQualifie
         };
 
         // Get rounds for this qualifier
-        const qualifierRounds = (rounds || []).filter((r: any) => r.qualifier_id === q.id);
+        const qualifierRounds = (rounds || []).filter((r) => r.qualifier_id === q.id);
         const completedRoundNumbers = qualifierRounds
-          .filter((r: any) => r.qualifier_round_number !== null)
-          .map((r: any) => r.qualifier_round_number as number)
+          .filter((r) => r.qualifier_round_number !== null)
+          .map((r) => r.qualifier_round_number as number)
           .sort((a, b) => a - b);
 
-        const totalScore = qualifierRounds.reduce((sum: number, r: any) => sum + (r.total_score || 0), 0);
-        const totalToPar = qualifierRounds.reduce((sum: number, r: any) => sum + (r.score_to_par || 0), 0);
+        const totalScore = qualifierRounds.reduce((sum, r) => sum + (r.total_score || 0), 0);
+        const totalToPar = qualifierRounds.reduce((sum, r) => sum + (r.score_to_par || 0), 0);
 
         return {
           id: q.id,
@@ -3296,9 +3298,10 @@ export async function getQualifierLeaderboard(
     }> | null;
 
     // Build leaderboard
-    const leaderboard: QualifierLeaderboardEntry[] = (entries as any[])
-      .filter((e: any) => e.player && typeof e.player === 'object' && !('error' in e.player))
-      .map((entry: any) => {
+    type LeaderboardEntry = { player_id: string; player: { id: string; first_name: string; last_name: string; avatar_url: string | null } | null };
+    const leaderboard: QualifierLeaderboardEntry[] = (entries as unknown as LeaderboardEntry[])
+      .filter((e) => e.player && typeof e.player === 'object' && !('error' in e.player))
+      .map((entry) => {
         const player = entry.player as {
           id: string;
           first_name: string;
@@ -3306,16 +3309,16 @@ export async function getQualifierLeaderboard(
           avatar_url: string | null;
         };
 
-        const playerRounds = ((rounds || []) as any[])
-          .filter((r: any) => r.player_id === entry.player_id)
-          .sort((a: any, b: any) => (a.qualifier_round_number || 0) - (b.qualifier_round_number || 0));
+        const playerRounds = (rounds || [])
+          .filter((r) => r.player_id === entry.player_id)
+          .sort((a, b) => (a.qualifier_round_number || 0) - (b.qualifier_round_number || 0));
 
-        const totalScore = playerRounds.reduce((sum: number, r: any) => sum + (r.total_score || 0), 0);
-        const totalToPar = playerRounds.reduce((sum: number, r: any) => sum + (r.score_to_par || 0), 0);
+        const totalScore = playerRounds.reduce((sum, r) => sum + (r.total_score || 0), 0);
+        const totalToPar = playerRounds.reduce((sum, r) => sum + (r.score_to_par || 0), 0);
         const roundsCompleted = playerRounds.length;
         const averageScore = roundsCompleted > 0 ? totalScore / roundsCompleted : 0;
 
-        const roundScores = playerRounds.map((r: any) => ({
+        const roundScores = playerRounds.map((r) => ({
           roundNumber: r.qualifier_round_number || 0,
           score: r.total_score || 0,
           toPar: r.score_to_par || 0,
@@ -3466,6 +3469,22 @@ export interface SavedCourse {
   createdAt: string;
 }
 
+/** DB row shape for golf_player_courses (not yet in generated types) */
+interface SavedCourseRow {
+  id: string;
+  course_name: string;
+  course_city: string | null;
+  course_state: string | null;
+  course_rating: string | null;
+  course_slope: number | null;
+  tees_played: string | null;
+  holes_per_round: number;
+  hole_configs: SavedCourseHoleConfig[];
+  last_used_at: string;
+  last_played_at: string | null;
+  created_at: string;
+}
+
 /** Input for saving a course configuration */
 export interface SaveCourseInput {
   courseName: string;
@@ -3477,6 +3496,7 @@ export interface SaveCourseInput {
   holesPerRound: number;
   holeConfigs: SavedCourseHoleConfig[];
 }
+
 
 /**
  * Get all saved courses for the current player
@@ -3502,8 +3522,8 @@ export async function getPlayerSavedCourses(): Promise<ActionResult<SavedCourse[
     return { success: false, error: 'Player profile not found' };
   }
 
-  // Fetch saved courses
-  const { data: courses, error } = await supabase.from('golf_player_courses')
+  // Fetch saved courses (table has extended columns not in generated types)
+  const { data: courses, error } = await fromUntyped(supabase, 'golf_player_courses')
     .select('*')
     .eq('player_id', player.id)
     .order('last_played_at', { ascending: false });
@@ -3513,7 +3533,7 @@ export async function getPlayerSavedCourses(): Promise<ActionResult<SavedCourse[
   }
 
   // Transform to client format
-  const savedCourses: SavedCourse[] = ((courses as any) || []).map((course: any) => ({
+  const savedCourses: SavedCourse[] = ((courses || []) as SavedCourseRow[]).map((course) => ({
     id: course.id,
     courseName: course.course_name,
     courseCity: course.course_city,
@@ -3521,10 +3541,10 @@ export async function getPlayerSavedCourses(): Promise<ActionResult<SavedCourse[
     courseRating: course.course_rating ? parseFloat(course.course_rating) : null,
     courseSlope: course.course_slope,
     teesPlayed: course.tees_played,
-    holesPerRound: course.holes_per_round,
-    holeConfigs: (course.hole_configs as SavedCourseHoleConfig[]) || [],
-    lastUsedAt: course.last_used_at,
-    createdAt: course.created_at,
+    holesPerRound: course.holes_per_round ?? 18,
+    holeConfigs: course.hole_configs || [],
+    lastUsedAt: course.last_used_at ?? '',
+    createdAt: course.created_at ?? '',
   }));
 
   return { success: true, data: savedCourses };
@@ -3555,8 +3575,7 @@ export async function savePlayerCourse(input: SaveCourseInput): Promise<ActionRe
 
   // Check if course with same name already exists
   // Note: The code expects extended columns (course_city, course_state, etc.) that may not exist in all deployments
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: existing } = await (supabase.from('golf_player_courses') as any)
+  const { data: existing } = await fromUntyped(supabase, 'golf_player_courses')
     .select('id')
     .eq('player_id', player.id)
     .ilike('course_name', input.courseName)
@@ -3579,20 +3598,17 @@ export async function savePlayerCourse(input: SaveCourseInput): Promise<ActionRe
     updated_at: new Date().toISOString(),
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let result: { data: any; error: any };
+  let result: { data: Record<string, unknown> | null; error: { message: string } | null };
   if (existing) {
     // Update existing course
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    result = await (supabase.from('golf_player_courses') as any)
+    result = await fromUntyped(supabase, 'golf_player_courses')
       .update(courseData)
       .eq('id', existing.id)
       .select()
       .single();
   } else {
     // Insert new course
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    result = await (supabase.from('golf_player_courses') as any)
+    result = await fromUntyped(supabase, 'golf_player_courses')
       .insert(courseData)
       .select()
       .single();
@@ -3602,7 +3618,7 @@ export async function savePlayerCourse(input: SaveCourseInput): Promise<ActionRe
     return { success: false, error: 'Failed to save course configuration' };
   }
 
-  const course = result.data as any;
+  const course = result.data as unknown as SavedCourseRow;
   const savedCourse: SavedCourse = {
     id: course.id,
     courseName: course.course_name,
@@ -3611,10 +3627,10 @@ export async function savePlayerCourse(input: SaveCourseInput): Promise<ActionRe
     courseRating: course.course_rating ? parseFloat(course.course_rating) : null,
     courseSlope: course.course_slope,
     teesPlayed: course.tees_played,
-    holesPerRound: course.holes_per_round,
-    holeConfigs: (course.hole_configs as SavedCourseHoleConfig[]) || [],
-    lastUsedAt: course.last_used_at,
-    createdAt: course.created_at,
+    holesPerRound: course.holes_per_round ?? 18,
+    holeConfigs: course.hole_configs || [],
+    lastUsedAt: course.last_used_at ?? '',
+    createdAt: course.created_at ?? '',
   };
 
   return { success: true, data: savedCourse };

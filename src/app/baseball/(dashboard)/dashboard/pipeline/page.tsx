@@ -114,6 +114,7 @@ export default function PipelinePage() {
       params.delete('view');
     }
     router.replace(`/baseball/dashboard/pipeline?${params.toString()}`, { scroll: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally only re-runs when viewMode changes; adding router/searchParams would cause loop
   }, [viewMode]);
 
   // Filter watchlist by grad year (for pipeline view)

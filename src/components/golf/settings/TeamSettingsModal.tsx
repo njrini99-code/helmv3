@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/toast';
 import { Modal } from '@/components/ui/modal';
@@ -35,13 +35,7 @@ export function TeamSettingsModal({ isOpen, onClose, onUpdate }: TeamSettingsMod
 
   const { showToast } = useToast();
 
-  useEffect(() => {
-    if (isOpen) {
-      loadTeamData();
-    }
-  }, [isOpen]);
-
-  async function loadTeamData() {
+  const loadTeamData = useCallback(async () => {
     setLoadingData(true);
     const supabase = createClient();
 
@@ -94,7 +88,13 @@ export function TeamSettingsModal({ isOpen, onClose, onUpdate }: TeamSettingsMod
     } finally {
       setLoadingData(false);
     }
-  }
+  }, [showToast]);
+
+  useEffect(() => {
+    if (isOpen) {
+      loadTeamData();
+    }
+  }, [isOpen, loadTeamData]);
 
   async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];

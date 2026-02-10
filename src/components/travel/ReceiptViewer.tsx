@@ -162,7 +162,7 @@ interface ReceiptUploadProps {
 }
 
 export function ReceiptUpload({
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   expenseId: _expenseId,
   currentUrl,
   onUpload,

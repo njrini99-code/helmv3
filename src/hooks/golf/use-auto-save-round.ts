@@ -108,6 +108,7 @@ export function useAutoSaveRound(
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Event listeners set up once on mount; performSave is accessed via pendingSaveRef to avoid re-subscribing
   }, []);
 
   // Cleanup on unmount

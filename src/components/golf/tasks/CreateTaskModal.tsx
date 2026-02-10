@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import { useToast } from '@/components/ui/toast';
 import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
@@ -56,9 +57,8 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
 
       if (!coach) throw new Error('Coach not found');
 
-      // Create task - cast to any to break type inference chain
-      const taskResult = await (supabase
-        .from('golf_tasks' as any)
+      // Create task via untyped helper (table not in generated types)
+      const taskResult = await fromUntyped(supabase, 'golf_tasks')
         .insert({
           team_id: teamId,
           created_by: coach.id,
@@ -70,7 +70,7 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
           status: 'active'
         })
         .select()
-        .single()) as unknown as { data: { id: string } | null; error: { message?: string } | null };
+        .single() as { data: { id: string } | null; error: { message?: string } | null };
       
       const { data: task, error: taskError } = taskResult;
 
@@ -86,10 +86,9 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
         assigned_at: new Date().toISOString()
       }));
 
-      // Cast to any to break type inference chain
-      const assignResult = await (supabase
-        .from('golf_task_assignments' as any)
-        .insert(assignments)) as unknown as { error: { message?: string } | null };
+      // Table not in generated types - use untyped helper
+      const assignResult = await fromUntyped(supabase, 'golf_task_assignments')
+        .insert(assignments) as { error: { message?: string } | null };
       
       const { error: assignError } = assignResult;
 

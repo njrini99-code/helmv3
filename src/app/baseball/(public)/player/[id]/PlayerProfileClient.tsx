@@ -27,6 +27,7 @@ import {
   IconTarget,
   IconUser,
 } from '@/components/icons';
+import Image from 'next/image';
 import { formatHeight, cn } from '@/lib/utils';
 import { toggleWatchlistPlayer } from '@/app/baseball/actions/watchlist';
 import { toast } from 'sonner';
@@ -231,10 +232,12 @@ export function PlayerProfileClient({
           {player.banner_url ? (
             <>
               {/* Custom cover photo */}
-              <img
+              <Image
                 src={player.banner_url}
                 alt="Profile banner"
+                fill
                 className="absolute inset-0 w-full h-full object-cover"
+                unoptimized
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-black/10" />
             </>
@@ -656,10 +659,13 @@ function OverviewTab({
                     <span className="text-xs font-bold text-white">{idx + 1}</span>
                   </div>
                   {interest.organization?.logo_url ? (
-                    <img
+                    <Image
                       src={interest.organization.logo_url}
                       alt={interest.organization.name}
+                      width={32}
+                      height={32}
                       className="w-8 h-8 rounded-lg object-cover"
+                      unoptimized
                     />
                   ) : (
                     <div className="w-8 h-8 rounded-lg bg-slate-200 flex items-center justify-center">
@@ -859,7 +865,7 @@ function TeamsTab({ teamHistory }: { teamHistory: TeamMembership[] }) {
                   membership.status === 'active' ? "bg-green-100" : "bg-slate-100"
                 )}>
                   {org.logo_url ? (
-                    <img src={org.logo_url} alt={org.name} className="w-10 h-10 rounded-lg object-cover" />
+                    <Image src={org.logo_url} alt={org.name} width={40} height={40} className="w-10 h-10 rounded-lg object-cover" unoptimized />
                   ) : (
                     <IconUsers size={24} className={membership.status === 'active' ? "text-green-600" : "text-slate-400"} />
                   )}
@@ -1009,10 +1015,12 @@ function VideoCard({ video, large }: { video: PlayerVideo; large?: boolean }) {
     >
       {video.thumbnail_url ? (
         <div className={cn("relative", large ? "aspect-video" : "aspect-[16/10]")}>
-          <img
+          <Image
             src={video.thumbnail_url}
             alt={video.title}
+            fill
             className="w-full h-full object-cover"
+            unoptimized
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">

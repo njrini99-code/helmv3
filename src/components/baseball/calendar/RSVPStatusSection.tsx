@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { Users, Search } from 'lucide-react';
 
@@ -162,10 +163,13 @@ export function RSVPStatusSection({ records, className, compact = false }: RSVPS
               <div key={record.id} className="flex items-center gap-3 p-3 hover:bg-slate-50 transition-colors">
                 {/* Avatar */}
                 {record.player?.avatar_url ? (
-                  <img
+                  <Image
                     src={record.player.avatar_url}
                     alt={`${firstName} ${lastName}`}
+                    width={36}
+                    height={36}
                     className="w-9 h-9 rounded-full object-cover flex-shrink-0"
+                    unoptimized
                   />
                 ) : (
                   <div className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center text-xs font-medium text-slate-600 flex-shrink-0">

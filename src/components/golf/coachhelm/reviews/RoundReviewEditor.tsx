@@ -190,7 +190,7 @@ interface InsightsSectionProps {
 
 function InsightsSection({
   insights,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   coachId: _coachId,
   onInsightFeedback,
   onToggleHighlight,
@@ -344,7 +344,7 @@ interface CreateFocusAreaModalProps {
 function CreateFocusAreaModal({
   insight,
   reviewId,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   coachId: _coachId,
   onClose,
   onCreated,

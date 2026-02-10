@@ -90,17 +90,17 @@ export function useStats(options: UseStatsOptions): UseStatsResult {
     autoRefresh = false,
     refreshInterval = 5 * 60 * 1000, // 5 minutes default
     // These options are currently unused but kept for API compatibility
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     includeStrokesGained: _includeStrokesGained = true,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     includeComparison: _includeComparison = false,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     includeWeakAreas: _includeWeakAreas = false,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     roundTypes: _roundTypes,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     limit: _limit,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     teamId: _teamId,
   } = options;
 
@@ -386,7 +386,7 @@ interface UseTeamStatsResult {
 }
 
 export function useTeamStats(options: UseTeamStatsOptions): UseTeamStatsResult {
-  const { teamId, roundTypes } = options;
+  const { teamId } = options;
 
   const [teamStats, setTeamStats] = useState<UseTeamStatsResult['teamStats']>(null);
   const [loading, setLoading] = useState(true);
@@ -478,7 +478,7 @@ export function useTeamStats(options: UseTeamStatsOptions): UseTeamStatsResult {
         setLoading(false);
       }
     }
-  }, [teamId, roundTypes]);
+  }, [teamId]);
 
   useEffect(() => {
     mounted.current = true;

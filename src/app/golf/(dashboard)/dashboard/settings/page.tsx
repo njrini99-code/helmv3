@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { m, AnimatePresence } from 'framer-motion';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import { createClient } from '@/lib/supabase/client';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { cn } from '@/lib/utils';
 import { Avatar } from '@/components/ui/avatar';
@@ -1163,9 +1164,8 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
   useEffect(() => {
     (async () => {
       const supabase = createClient();
-      // Cast needed: sg_benchmark_level column was added after type generation
-      const { data } = await (supabase as any)
-        .from('golf_team_settings')
+      // sg_benchmark_level column was added after type generation
+      const { data } = await fromUntyped(supabase, 'golf_team_settings')
         .select('scoring_format, handicap_system, default_tees, timezone, sg_benchmark_level')
         .eq('team_id', teamId)
         .maybeSingle();
@@ -1186,9 +1186,8 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
     const supabase = createClient();
     try {
       // Upsert — create if doesn't exist
-      // Cast needed: sg_benchmark_level column was added after type generation
-      const { error } = await (supabase as any)
-        .from('golf_team_settings')
+      // sg_benchmark_level column was added after type generation
+      const { error } = await fromUntyped(supabase, 'golf_team_settings')
         .upsert({
           team_id: teamId,
           scoring_format: scoringFormat,

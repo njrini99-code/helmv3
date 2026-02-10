@@ -39,7 +39,7 @@ export function useColleges(options: UseCollegesOptions = {}) {
     const { data } = await query;
     setColleges(data || []);
     setLoading(false);
-  }, [options.division, options.state, options.conference, options.search]);
+  }, [options.division, options.state, options.conference, options.search, supabase]);
 
   const fetchInterests = useCallback(async () => {
     if (!user) return;
@@ -63,7 +63,7 @@ export function useColleges(options: UseCollegesOptions = {}) {
       const interestIds = new Set(interestsData.map(i => i.organization_id).filter(Boolean) as string[]);
       setInterests(interestIds);
     }
-  }, [user]);
+  }, [user, supabase]);
 
   useEffect(() => {
     fetchColleges();
@@ -110,7 +110,7 @@ export function useStates() {
       setLoading(false);
     }
     fetchStates();
-  }, []);
+  }, [supabase]);
 
   return { states, loading };
 }
@@ -136,7 +136,7 @@ export function useConferences() {
       setLoading(false);
     }
     fetchConferences();
-  }, []);
+  }, [supabase]);
 
   return { conferences, loading };
 }

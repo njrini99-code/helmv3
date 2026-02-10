@@ -215,7 +215,7 @@ export function useAnalytics() {
     }
 
     fetchAnalytics();
-  }, [user]);
+  }, [user, supabase]);
 
   return { data, loading };
 }

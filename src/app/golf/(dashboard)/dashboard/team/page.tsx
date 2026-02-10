@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import { redirect } from 'next/navigation';
 import { TeamSettingsClient } from './team-settings-client';
 import { TeamInfoPlayer } from './team-info-player';
@@ -158,18 +159,14 @@ export default async function TeamSettingsPage() {
   }));
 
   // Get player's task assignments
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: taskAssignments } = await (supabase as any)
-    .from('golf_task_assignments')
+  const { data: taskAssignments } = await fromUntyped(supabase, 'golf_task_assignments')
     .select('id, task_id, status, completed_at')
     .eq('player_id', player.id) as { data: Array<{ id: string; task_id: string; status: string | null; completed_at: string | null }> | null };
 
   const taskIds = (taskAssignments ?? []).map(ta => ta.task_id);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: tasksRaw } = taskIds.length > 0
-    ? await (supabase as any)
-        .from('golf_tasks')
+    ? await fromUntyped(supabase, 'golf_tasks')
         .select('id, title, description, due_date, priority')
         .in('id', taskIds)
         .order('created_at', { ascending: false }) as { data: Array<{ id: string; title: string; description: string | null; due_date: string | null; priority: string | null }> | null }

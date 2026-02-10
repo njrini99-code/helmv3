@@ -77,7 +77,6 @@ export function Sparkline({
   data,
   width = 80,
   height = 24,
-  color: _color = '#16A34A',
   showDots = false,
   lowerIsBetter = false,
 }: SparklineProps) {

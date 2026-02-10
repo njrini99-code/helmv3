@@ -516,7 +516,7 @@ export async function generateTeamCorrelations(
 
 export async function dismissInsight(
   insightId: string,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   _reason?: string
 ): Promise<{ success: boolean; error?: string }> {
   try {

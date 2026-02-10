@@ -12,6 +12,7 @@ import {
   IconBuilding,
 } from '@/components/icons';
 import { Metadata } from 'next';
+import Image from 'next/image';
 import { ProgramTabs } from '@/components/baseball/program/ProgramTabs';
 import { ProgramRoster } from '@/components/baseball/program/ProgramRoster';
 
@@ -149,10 +150,13 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
               <div className="bg-gradient-to-br from-green-50 to-white p-8 border-b border-slate-200">
                 <div className="flex items-start gap-6">
                   {organization.logo_url ? (
-                    <img
+                    <Image
                       src={organization.logo_url}
                       alt={organization.name}
+                      width={96}
+                      height={96}
                       className="w-24 h-24 rounded-lg object-cover border-2 border-white shadow-lg"
+                      unoptimized
                     />
                   ) : (
                     <div className="w-24 h-24 rounded-lg bg-green-600 flex items-center justify-center shadow-lg">
@@ -215,10 +219,13 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
                             >
                               <div className="flex items-start gap-4">
                                 {member.headshot_url ? (
-                                  <img
+                                  <Image
                                     src={member.headshot_url}
                                     alt={member.name}
+                                    width={64}
+                                    height={64}
                                     className="w-16 h-16 rounded-full object-cover"
+                                    unoptimized
                                   />
                                 ) : (
                                   <Avatar
@@ -260,10 +267,13 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
                               className="bg-white rounded-lg border border-slate-200 overflow-hidden"
                             >
                               {facility.image_url ? (
-                                <img
+                                <Image
                                   src={facility.image_url}
                                   alt={facility.name}
+                                  width={400}
+                                  height={160}
                                   className="w-full h-40 object-cover"
+                                  unoptimized
                                 />
                               ) : (
                                 <div className="w-full h-40 bg-slate-100 flex items-center justify-center">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/toast';
 import { Modal } from '@/components/ui/modal';
@@ -20,13 +20,37 @@ export function InviteSettingsModal({ isOpen, onClose }: InviteSettingsModalProp
   const [copied, setCopied] = useState(false);
   const { showToast } = useToast();
 
-  useEffect(() => {
-    if (isOpen) {
-      loadInviteCode();
-    }
-  }, [isOpen]);
+  const generateNewCode = useCallback(async (teamIdParam?: string) => {
+    const targetTeamId = teamIdParam || teamId;
+    if (!targetTeamId) return;
 
-  async function loadInviteCode() {
+    setLoading(true);
+    const supabase = createClient();
+
+    try {
+      // Generate random 8-character code
+      const newCode = Math.random().toString(36).substring(2, 10).toUpperCase();
+
+      const { error } = await supabase
+        .from('golf_teams')
+        .update({
+          join_code: newCode,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', targetTeamId);
+
+      if (error) throw error;
+
+      setInviteCode(newCode);
+      showToast('New invite code generated', 'success');
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Failed to generate code', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [teamId, showToast]);
+
+  const loadInviteCode = useCallback(async () => {
     setLoadingData(true);
     const supabase = createClient();
 
@@ -65,37 +89,13 @@ export function InviteSettingsModal({ isOpen, onClose }: InviteSettingsModalProp
     } finally {
       setLoadingData(false);
     }
-  }
+  }, [generateNewCode, showToast]);
 
-  async function generateNewCode(teamIdParam?: string) {
-    const targetTeamId = teamIdParam || teamId;
-    if (!targetTeamId) return;
-
-    setLoading(true);
-    const supabase = createClient();
-
-    try {
-      // Generate random 8-character code
-      const newCode = Math.random().toString(36).substring(2, 10).toUpperCase();
-
-      const { error } = await supabase
-        .from('golf_teams')
-        .update({
-          join_code: newCode,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', targetTeamId);
-
-      if (error) throw error;
-
-      setInviteCode(newCode);
-      showToast('New invite code generated', 'success');
-    } catch (error) {
-      showToast(error instanceof Error ? error.message : 'Failed to generate code', 'error');
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    if (isOpen) {
+      loadInviteCode();
     }
-  }
+  }, [isOpen, loadInviteCode]);
 
   async function copyInviteLink() {
     const inviteUrl = `${window.location.origin}/golf/join/${inviteCode}`;
@@ -166,7 +166,7 @@ export function InviteSettingsModal({ isOpen, onClose }: InviteSettingsModalProp
               <li>Share the invite code or link with your players</li>
               <li>Players enter the code or click the link to join</li>
               <li>You can generate a new code anytime to revoke old invites</li>
-              <li>There's no limit to how many players can use the code</li>
+              <li>There is no limit to how many players can use the code</li>
             </ul>
           </div>
 

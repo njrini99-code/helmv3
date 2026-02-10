@@ -18,6 +18,7 @@ import {
   type WorstHoleResponse,
   type TrendAnalysisResponse,
 } from '@/app/golf/actions/stats-data';
+import Image from 'next/image';
 import GolfStatsDisplay, { Sparkline } from '@/components/golf/stats/GolfStatsDisplay';
 import { generateStatisticalStrengthsWeaknesses } from '@/lib/golf/strokes-gained';
 import { DetailedStatsSkeleton } from '@/components/golf/GolfSkeletons';
@@ -83,8 +84,8 @@ function AvatarWithRing({
   return (
     <div className="relative flex-shrink-0">
       {avatarUrl ? (
-        <div className="w-12 h-12 rounded-2xl overflow-hidden ring-1 ring-slate-200 shadow-sm">
-          <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+        <div className="relative w-12 h-12 rounded-2xl overflow-hidden ring-1 ring-slate-200 shadow-sm">
+          <Image src={avatarUrl} alt="" fill className="object-cover" unoptimized />
         </div>
       ) : (
         <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center ring-1 ring-slate-200">
@@ -274,7 +275,6 @@ export default function StatsClient({
   initialUserRole,
   initialPlayerId,
   initialPlayerName = '',
-  initialSummary: _initialSummary,
   initialRounds = [],
 }: StatsClientProps) {
   // Core state
@@ -298,7 +298,7 @@ export default function StatsClient({
   const [loading, setLoading] = useState(!initialUserRole);
   const [loadingDetailed, setLoadingDetailed] = useState(false);
   const [statsError, setStatsError] = useState<string | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   const [activeTab, _setActiveTab] = useState<StatsCategory>('scoring');
 
   // Filter state

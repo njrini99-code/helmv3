@@ -213,7 +213,7 @@ export function useJourney() {
     setEvents(timelineEvents);
     setStats(journeyStats);
     setLoading(false);
-  }, [user]);
+  }, [user, supabase]);
 
   useEffect(() => {
     fetchJourneyData();

@@ -60,6 +60,7 @@ export default function TeamDashboardClient() {
     } else {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetch functions only depend on selectedTeamId, coach.id, player.id which are already in deps
   }, [selectedTeamId, coach?.id, player?.id, user?.role]);
 
   async function fetchCoachTeamData() {

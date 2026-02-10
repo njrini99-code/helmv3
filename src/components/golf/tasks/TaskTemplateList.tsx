@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IconPlus, IconTrash, IconEdit, IconCheck, IconX } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -46,11 +46,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
   const [formAssigneeType, setFormAssigneeType] = useState('all_players');
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    loadTemplates();
-  }, [teamId]);
-
-  async function loadTemplates() {
+  const loadTemplates = useCallback(async () => {
     setLoading(true);
 
     // First seed defaults if needed
@@ -61,7 +57,11 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
       setTemplates(result.data);
     }
     setLoading(false);
-  }
+  }, [teamId]);
+
+  useEffect(() => {
+    loadTemplates();
+  }, [loadTemplates]);
 
   function resetForm() {
     setFormTitle('');

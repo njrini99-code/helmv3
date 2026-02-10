@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import {
@@ -33,11 +33,7 @@ export function RecentActivityFeed({
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadActivities();
-  }, [teamId, playerId]);
-
-  async function loadActivities() {
+  const loadActivities = useCallback(async () => {
     const supabase = createClient();
     const items: ActivityItem[] = [];
 
@@ -154,7 +150,11 @@ export function RecentActivityFeed({
     items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     setActivities(items.slice(0, limit));
     setLoading(false);
-  }
+  }, [teamId, playerId, limit]);
+
+  useEffect(() => {
+    loadActivities();
+  }, [loadActivities]);
 
   const getIcon = (type: ActivityItem['type']) => {
     switch (type) {

@@ -55,6 +55,7 @@ function CompareContent() {
     }
 
     fetchPlayers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- playerIds is derived from searchParams (in deps); supabase client is functionally stable
   }, [searchParams]);
 
   const MAX_PLAYERS = 4;

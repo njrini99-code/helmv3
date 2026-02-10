@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { AlertCircle, CheckCircle2, Mail } from 'lucide-react';
+import Image from 'next/image';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -136,9 +137,11 @@ export default function ForgotPasswordPage() {
             <div className="relative">
               <div className="absolute inset-0 bg-amber-500/30 rounded-2xl blur-xl scale-150" />
               <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center mb-3 sm:mb-4 shadow-lg overflow-hidden">
-                <img
+                <Image
                   src="/helm-baseball-logo.png"
                   alt="BaseballHelm"
+                  width={56}
+                  height={56}
                   className="w-full h-full object-cover"
                 />
               </div>

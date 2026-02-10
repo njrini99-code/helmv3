@@ -32,6 +32,7 @@ export function useMessagesSubscription({
     } else {
       loadMessages();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentionally only re-run when conversationId changes; initialMessages and loadMessages are used for the initial load only
   }, [conversationId]);
 
   // Load messages from database

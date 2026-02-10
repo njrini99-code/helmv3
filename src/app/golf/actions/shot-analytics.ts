@@ -253,7 +253,7 @@ function toFeet(distance: number | null, unit: string | null): number | null {
   return unit === 'yards' ? distance * 3 : distance;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 function determineTrend(current: number, previous: number, _higherIsBetter: boolean): TrendData['direction'] {
   const diff = current - previous;
   const threshold = 0.5; // 0.5% threshold for "flat"

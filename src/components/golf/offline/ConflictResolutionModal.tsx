@@ -387,7 +387,7 @@ export function useConflictResolution() {
     setIsModalOpen(false);
   };
 
-  const handleResolve = async (_results: ConflictResolutionResult[]) => {
+  const handleResolve = async () => {
     // The actual resolution logic would be handled by the sync engine
     // This hook provides the UI layer
     clearConflicts();

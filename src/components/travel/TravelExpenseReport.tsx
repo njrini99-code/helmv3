@@ -287,7 +287,7 @@ export function TravelExpenseReport({
               <h3 className="font-semibold text-warm-900 mb-3">By Category</h3>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 {Object.entries(summary.by_category)
-                  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                   
                   .filter(([_, amount]) => amount > 0)
                   .map(([category, amount]) => (
                     <div

@@ -798,7 +798,7 @@ class SyncEngine {
     }
 
     // Notify registered callbacks
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     this.callbacks.forEach((callback, _id) => {
       if (callback[event]) {
         try {

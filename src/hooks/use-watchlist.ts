@@ -39,7 +39,7 @@ export function useWatchlist() {
 
     setWatchlist((data || []) as WatchlistWithPlayer[]);
     setLoading(false);
-  }, [coach]);
+  }, [coach, supabase]);
 
   useEffect(() => {
     fetchWatchlist();

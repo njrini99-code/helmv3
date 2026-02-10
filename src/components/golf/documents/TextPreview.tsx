@@ -38,7 +38,7 @@ export function TextPreview({
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [wordWrap, setWordWrap] = useState(true);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   const [lineNumbers, _setLineNumbers] = useState(true);
 
   const isJson = mimeType === 'application/json';

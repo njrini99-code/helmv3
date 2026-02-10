@@ -57,7 +57,7 @@ export function useGolfMessages(conversationId: string) {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [supabase.auth]);
 
   // Fetch other participant's last_read_at for read receipts
   const fetchOtherParticipantReadStatus = useCallback(async () => {
@@ -74,7 +74,7 @@ export function useGolfMessages(conversationId: string) {
         setOtherParticipantLastReadAt(otherParticipant.last_read_at);
       }
     }
-  }, [conversationId, currentUserId]);
+  }, [conversationId, currentUserId, supabase]);
 
   const fetchMessages = useCallback(async () => {
     if (!conversationId) {
@@ -98,7 +98,7 @@ export function useGolfMessages(conversationId: string) {
 
     // Fetch read receipt status
     fetchOtherParticipantReadStatus();
-  }, [conversationId, fetchOtherParticipantReadStatus]);
+  }, [conversationId, fetchOtherParticipantReadStatus, supabase]);
 
   // Compute read status for messages when otherParticipantLastReadAt changes
   useEffect(() => {
@@ -219,7 +219,7 @@ export function useGolfMessages(conversationId: string) {
         clearTimeout(typingTimeoutRef.current);
       }
     };
-  }, [conversationId, fetchMessages, currentUserId]);
+  }, [conversationId, fetchMessages, currentUserId, supabase]);
 
   // Function to broadcast typing status (debounced to avoid spam)
   const sendTypingStatus = useCallback((isTyping: boolean) => {
@@ -236,7 +236,7 @@ export function useGolfMessages(conversationId: string) {
       event: 'typing',
       payload: { userId: currentUserId, isTyping },
     });
-  }, [conversationId, currentUserId]);
+  }, [conversationId, currentUserId, supabase]);
 
   const sendMessage = async (content: string) => {
     // Clear typing indicator when sending
@@ -335,7 +335,7 @@ export function useGolfConversations() {
       }
     };
     getUser();
-  }, []);
+  }, [supabase.auth]);
 
   const fetchConversations = useCallback(async () => {
     if (!userId) {
@@ -610,7 +610,7 @@ export function useGolfConversations() {
 
     setConversations(transformedConversations);
     setLoading(false);
-  }, [userId]);
+  }, [userId, supabase]);
 
   // Fetch conversations when userId is set
   useEffect(() => {
@@ -666,7 +666,7 @@ export function useGolfConversations() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [userId, fetchConversations]);
+  }, [userId, fetchConversations, supabase]);
 
   return { conversations, loading, refetch: fetchConversations };
 }

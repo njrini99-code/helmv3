@@ -213,6 +213,7 @@ function DiscoverContent() {
         playersAbortRef.current.abort();
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- players.length is used for loading state only; adding it would cause an infinite re-fetch loop
   }, [authLoading, coach?.id, coach?.coach_type, filters.mode, filters.gradYear, filters.position, filters.states, filters.minVelo, filters.maxVelo, filters.minExit, filters.maxExit, filters.hasVideo, debouncedSearch, page, perPage]);
 
   // Fetch teams - only when in teams mode
@@ -290,7 +291,8 @@ function DiscoverContent() {
         teamsAbortRef.current.abort();
       }
     };
-  }, [authLoading, coach?.id, filters.mode, filters.teamType, filters.states, debouncedSearch, page, perPage]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- teams.length is used for loading state only; adding it would cause an infinite re-fetch loop
+  }, [authLoading, coach?.id, coach?.coach_type, filters.mode, filters.teamType, filters.states, debouncedSearch, page, perPage]);
 
   // Fetch watchlist
   useEffect(() => {

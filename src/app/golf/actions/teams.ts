@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import { revalidatePath } from 'next/cache';
 
 // ============================================================================
@@ -241,8 +242,8 @@ export async function joinGolfTeam(playerId: string, teamId: string) {
           read: false,
         }));
 
-        // Cast needed: notification shape includes metadata field not in generated types
-        await supabase.from('notifications').insert(notifications as any);
+        // Notification shape includes metadata field not in generated types
+        await fromUntyped(supabase, 'notifications').insert(notifications);
       }
     } catch (notifyError) {
       // Don't fail the join if notification fails - just log it
@@ -587,9 +588,7 @@ export async function createTeamJoinRequest(
   }
 
   // Check for existing pending request to this team
-  // Note: golf_team_join_requests is a new table - cast to any until types are regenerated
-  const { data: existingRequest } = await (supabase as any)
-    .from('golf_team_join_requests')
+  const { data: existingRequest } = await fromUntyped(supabase, 'golf_team_join_requests')
     .select('id, status')
     .eq('player_id', playerId)
     .eq('team_id', team.id)
@@ -601,9 +600,7 @@ export async function createTeamJoinRequest(
   }
 
   // Create the join request
-  // Note: golf_team_join_requests is a new table - cast to any until types are regenerated
-  const { data: request, error: requestError } = await (supabase as any)
-    .from('golf_team_join_requests')
+  const { data: request, error: requestError } = await fromUntyped(supabase, 'golf_team_join_requests')
     .insert({
       team_id: team.id,
       player_id: playerId,
@@ -645,8 +642,8 @@ export async function createTeamJoinRequest(
           read: false,
         }));
 
-        // Cast needed: notification shape includes metadata field not in generated types
-        await supabase.from('notifications').insert(notifications as any);
+        // Notification shape includes metadata field not in generated types
+        await fromUntyped(supabase, 'notifications').insert(notifications);
       }
     } catch (notifyError) {
       console.error('Failed to notify coaches:', notifyError);
@@ -692,9 +689,7 @@ export async function getTeamJoinRequests(): Promise<TeamActionResult<JoinReques
   }
 
   // Get pending requests with player details
-  // Note: golf_team_join_requests is a new table - cast to any until types are regenerated
-  const { data: requests, error: requestsError } = await (supabase as any)
-    .from('golf_team_join_requests')
+  const { data: requests, error: requestsError } = await fromUntyped(supabase, 'golf_team_join_requests')
     .select(`
       id,
       team_id,
@@ -723,7 +718,7 @@ export async function getTeamJoinRequests(): Promise<TeamActionResult<JoinReques
 
   return {
     success: true,
-    data: requests as JoinRequestData[],
+    data: requests as unknown as JoinRequestData[],
   };
 }
 
@@ -753,9 +748,7 @@ export async function acceptJoinRequest(
   }
 
   // Get the request with player and team details
-  // Note: golf_team_join_requests is a new table - cast to any until types are regenerated
-  const { data: request, error: requestError } = await (supabase as any)
-    .from('golf_team_join_requests')
+  const { data: request, error: requestError } = await fromUntyped(supabase, 'golf_team_join_requests')
     .select(`
       id,
       team_id,
@@ -799,8 +792,7 @@ export async function acceptJoinRequest(
 
   if (existingMembership) {
     // Update request to rejected since they're already on a team
-    await (supabase as any)
-      .from('golf_team_join_requests')
+    await fromUntyped(supabase, 'golf_team_join_requests')
       .update({
         status: 'rejected',
         rejection_reason: 'Player is already on another team',
@@ -827,8 +819,7 @@ export async function acceptJoinRequest(
   }
 
   // Update request status
-  const { error: updateError } = await (supabase as any)
-    .from('golf_team_join_requests')
+  const { error: updateError } = await fromUntyped(supabase, 'golf_team_join_requests')
     .update({
       status: 'approved',
       reviewed_by: coach.id,
@@ -841,15 +832,15 @@ export async function acceptJoinRequest(
   }
 
   // Notify player of approval
-  const player = request.player as { id: string; first_name: string; last_name: string; user_id: string } | null;
-  const team = request.team as { id: string; name: string; organization_id: string } | null;
+  const player = request.player as unknown as { id: string; first_name: string; last_name: string; user_id: string } | null;
+  const team = request.team as unknown as { id: string; name: string; organization_id: string } | null;
 
   if (player?.user_id && team) {
     try {
-      // Cast needed: notification shape includes 'data' and custom 'type' not in generated types
-      await supabase.from('notifications').insert({
+      // Notification shape includes 'data' and custom 'type' not in generated types
+      await fromUntyped(supabase, 'notifications').insert({
         user_id: player.user_id,
-        type: 'team_join_approved' as const,
+        type: 'team_join_approved',
         title: 'Request Approved!',
         body: `Your request to join ${team.name} has been approved. Welcome to the team!`,
         action_url: '/golf/dashboard',
@@ -858,7 +849,7 @@ export async function acceptJoinRequest(
           team_name: team.name,
         },
         read: false,
-      } as any);
+      });
     } catch (notifyError) {
       console.error('Failed to notify player:', notifyError);
     }
@@ -897,9 +888,7 @@ export async function rejectJoinRequest(
   }
 
   // Get the request
-  // Note: golf_team_join_requests is a new table - cast to any until types are regenerated
-  const { data: request, error: requestError } = await (supabase as any)
-    .from('golf_team_join_requests')
+  const { data: request, error: requestError } = await fromUntyped(supabase, 'golf_team_join_requests')
     .select(`
       id,
       team_id,
@@ -934,8 +923,7 @@ export async function rejectJoinRequest(
   }
 
   // Update request status
-  const { error: updateError } = await (supabase as any)
-    .from('golf_team_join_requests')
+  const { error: updateError } = await fromUntyped(supabase, 'golf_team_join_requests')
     .update({
       status: 'rejected',
       rejection_reason: reason?.trim() || null,
@@ -950,15 +938,15 @@ export async function rejectJoinRequest(
   }
 
   // Notify player of rejection
-  const player = request.player as { id: string; first_name: string; last_name: string; user_id: string } | null;
-  const team = request.team as { id: string; name: string } | null;
+  const player = request.player as unknown as { id: string; first_name: string; last_name: string; user_id: string } | null;
+  const team = request.team as unknown as { id: string; name: string } | null;
 
   if (player?.user_id && team) {
     try {
-      // Cast needed: notification shape includes 'data' and custom 'type' not in generated types
-      await supabase.from('notifications').insert({
+      // Notification shape includes 'data' and custom 'type' not in generated types
+      await fromUntyped(supabase, 'notifications').insert({
         user_id: player.user_id,
-        type: 'team_join_rejected' as const,
+        type: 'team_join_rejected',
         title: 'Request Not Approved',
         body: reason
           ? `Your request to join ${team.name} was not approved: ${reason}`
@@ -970,7 +958,7 @@ export async function rejectJoinRequest(
           reason: reason || null,
         },
         read: false,
-      } as any);
+      });
     } catch (notifyError) {
       console.error('Failed to notify player:', notifyError);
     }
@@ -996,9 +984,7 @@ export async function cancelJoinRequest(
   }
 
   // Get the request
-  // Note: golf_team_join_requests is a new table - cast to any until types are regenerated
-  const { data: request, error: requestError } = await (supabase as any)
-    .from('golf_team_join_requests')
+  const { data: request, error: requestError } = await fromUntyped(supabase, 'golf_team_join_requests')
     .select('id, player_id, status, player:golf_players(user_id)')
     .eq('id', requestId)
     .single();
@@ -1008,7 +994,7 @@ export async function cancelJoinRequest(
   }
 
   // Verify user owns this request
-  const player = request.player as { user_id: string } | null;
+  const player = request.player as unknown as { user_id: string } | null;
   if (player?.user_id !== user.id) {
     return { success: false, error: 'You can only cancel your own requests' };
   }
@@ -1018,8 +1004,7 @@ export async function cancelJoinRequest(
   }
 
   // Delete the request
-  const { error: deleteError } = await (supabase as any)
-    .from('golf_team_join_requests')
+  const { error: deleteError } = await fromUntyped(supabase, 'golf_team_join_requests')
     .delete()
     .eq('id', requestId);
 
@@ -1069,9 +1054,7 @@ export async function getPlayerJoinRequests(
   }
 
   // Get requests with team details
-  // Note: golf_team_join_requests is a new table - cast to any until types are regenerated
-  const { data: requests, error: requestsError } = await (supabase as any)
-    .from('golf_team_join_requests')
+  const { data: requests, error: requestsError } = await fromUntyped(supabase, 'golf_team_join_requests')
     .select(`
       id,
       status,
@@ -1096,7 +1079,7 @@ export async function getPlayerJoinRequests(
 
   return {
     success: true,
-    data: requests as Array<{
+    data: requests as unknown as Array<{
       id: string;
       status: string;
       message: string | null;

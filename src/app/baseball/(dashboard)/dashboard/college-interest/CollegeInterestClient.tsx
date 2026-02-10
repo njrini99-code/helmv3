@@ -65,12 +65,14 @@ export default function CollegeInterestClient() {
     if (coach?.id) {
       fetchCoachTeam();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchCoachTeam only depends on coach.id which is already in deps
   }, [coach?.id]);
 
   useEffect(() => {
     if (teamId) {
       fetchInterests();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchInterests only depends on teamId which is already in deps
   }, [teamId, filter]);
 
   async function fetchCoachTeam() {

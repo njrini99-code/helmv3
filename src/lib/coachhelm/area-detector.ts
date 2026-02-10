@@ -39,9 +39,9 @@ interface RoundWithHoles {
 
 export function detectAreasToReview(
   round: RoundWithHoles,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   _roundStats: RoundStats,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   _playerAverages: RoundStats
 ): AreaToReview[] {
   const areas: AreaToReview[] = [];

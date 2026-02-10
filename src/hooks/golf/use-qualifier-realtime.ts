@@ -192,7 +192,7 @@ export function useQualifierRealtime(qualifierId: string | null): UseQualifierRe
     } finally {
       setLoading(false);
     }
-  }, [qualifierId]);
+  }, [qualifierId, supabase]);
 
   useEffect(() => {
     fetchQualifierData();
@@ -262,7 +262,7 @@ export function useQualifierRealtime(qualifierId: string | null): UseQualifierRe
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [qualifierId, fetchQualifierData]);
+  }, [qualifierId, fetchQualifierData, supabase]);
 
   return {
     qualifier,
@@ -312,7 +312,7 @@ export function useTeamQualifiersRealtime(teamId: string | null) {
     } finally {
       setLoading(false);
     }
-  }, [teamId]);
+  }, [teamId, supabase]);
 
   useEffect(() => {
     fetchQualifiers();
@@ -338,7 +338,7 @@ export function useTeamQualifiersRealtime(teamId: string | null) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [teamId, fetchQualifiers]);
+  }, [teamId, fetchQualifiers, supabase]);
 
   return {
     qualifiers,

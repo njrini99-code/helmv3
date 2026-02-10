@@ -125,7 +125,7 @@ export function OfflineProvider({
           onSyncStart: () => {
             useOfflineSyncStore.getState().startSync();
           },
-          onSyncProgress: (_progress) => {
+          onSyncProgress: () => {
             // Could update progress in store if needed
           },
           onSyncComplete: (result) => {
@@ -187,7 +187,7 @@ export function OfflineProvider({
 
   // Listen for service worker sync requests
   useEffect(() => {
-    const handleSyncRequest = async (_event: Event) => {
+    const handleSyncRequest = async () => {
       try {
         const syncEngine = getSyncEngine();
         await syncEngine.syncAll();

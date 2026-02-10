@@ -531,7 +531,7 @@ export class CrossLearner {
    * Calculates how pattern impact varies by handicap
    */
   private async calculateVariationByHandicap(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     _patterns: MinedPattern[]
   ): Promise<Record<string, number>> {
     // Similar logic to tier but using handicap brackets

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { GolfRound, GolfPlayerStats } from '@/lib/types/golf';
 
@@ -19,7 +19,7 @@ export function useGolfRounds(playerId?: string): UseGolfRoundsResult {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchRounds = async () => {
+  const fetchRounds = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -147,11 +147,12 @@ export function useGolfRounds(playerId?: string): UseGolfRoundsResult {
     } finally {
       setLoading(false);
     }
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- supabase client is stable; only re-fetch when playerId changes
+  }, [playerId]);
 
   useEffect(() => {
     fetchRounds();
-  }, [playerId]);
+  }, [fetchRounds]);
 
   return {
     rounds,

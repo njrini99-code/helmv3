@@ -668,7 +668,7 @@ export async function saveCoachFeedback(
  */
 export async function shareReviewWithPlayer(
   reviewId: string,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   _includeCoachNotes: boolean = true
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient();
@@ -800,7 +800,7 @@ export async function getTeamReviews(
 /**
  * Get reviews pending coach action
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 export async function getPendingCoachReviews(_coachId?: string): Promise<{
   success: boolean;
   reviews?: RoundReviewWithDetails[];

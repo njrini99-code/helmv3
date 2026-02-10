@@ -245,7 +245,7 @@ function detectTournamentPressure(
 function detectPlateau(
   player: PlayerData,
   rounds: PlayerRoundData[],
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   _philosophy: CoachPhilosophy
 ): GeneratedInsight | null {
   // Need at least 15 rounds to detect plateau
@@ -343,7 +343,7 @@ function detectBubblePlayer(
 function detectSurgePlayer(
   player: PlayerData,
   rounds: PlayerRoundData[],
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   _philosophy: CoachPhilosophy
 ): GeneratedInsight | null {
   if (rounds.length < 10) return null;
@@ -383,7 +383,7 @@ function detectSurgePlayer(
 function detectStreak(
   player: PlayerData,
   rounds: PlayerRoundData[],
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   _philosophy: CoachPhilosophy
 ): GeneratedInsight | null {
   if (rounds.length < 5) return null;
@@ -444,7 +444,7 @@ function detectStreak(
 function detectStatRegression(
   player: PlayerData,
   rounds: PlayerRoundData[],
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   _philosophy: CoachPhilosophy
 ): GeneratedInsight[] {
   const insights: GeneratedInsight[] = [];

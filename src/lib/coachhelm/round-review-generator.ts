@@ -409,7 +409,7 @@ function calculateGoalImpacts(
   goals: PlayerGoal[],
   roundStats: RoundStats,
   playerAverages: RoundStats,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   _player: unknown
 ): GoalImpact[] {
   return goals.map(goal => {

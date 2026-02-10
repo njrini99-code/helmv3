@@ -76,23 +76,6 @@ export function AttachmentUploader({
     e.stopPropagation();
   }, []);
 
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      setIsDragging(false);
-      dragCountRef.current = 0;
-
-      if (disabled) return;
-
-      const files = e.dataTransfer.files;
-      if (!files || files.length === 0) return;
-
-      processFiles(Array.from(files));
-    },
-    [disabled]
-  );
-
   const processFiles = useCallback(
     (files: File[]) => {
       setError(null);
@@ -123,6 +106,23 @@ export function AttachmentUploader({
       }
     },
     [maxFiles, onFilesSelected, onClose]
+  );
+
+    const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
+      dragCountRef.current = 0;
+
+      if (disabled) return;
+
+      const files = e.dataTransfer.files;
+      if (!files || files.length === 0) return;
+
+      processFiles(Array.from(files));
+    },
+    [disabled, processFiles]
   );
 
   const handleFileChange = useCallback(

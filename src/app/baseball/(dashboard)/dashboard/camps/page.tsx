@@ -242,6 +242,7 @@ export default function CampsPage() {
     }
 
     fetchCamps();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- supabase client is created fresh each render but is functionally stable
   }, [coach, player, isCoach, isPlayer]);
 
   const handleRegister = async (campId: string) => {

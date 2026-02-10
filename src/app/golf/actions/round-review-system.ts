@@ -1036,7 +1036,7 @@ export async function getRoundReview(roundId: string): Promise<{
     };
 
     return { success: true, review };
-  } catch (error) {
+  } catch {
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -1234,7 +1234,7 @@ export async function generateAndStoreRoundReview(
     };
 
     return { success: true, review };
-  } catch (error) {
+  } catch {
     return { success: false, error: 'An unexpected error occurred' };
   }
 }

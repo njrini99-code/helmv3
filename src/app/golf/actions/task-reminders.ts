@@ -195,7 +195,7 @@ export async function markReminderSent(
   try {
     const supabase = await createClient();
 
-    const updateData: any = {
+    const updateData: { sent: boolean; sent_at: string; error?: string } = {
       sent: true,
       sent_at: new Date().toISOString(),
     };
@@ -640,9 +640,8 @@ async function sendWebPush(
 
     // Check if we're in a Node.js environment that supports the web-push library
     // The import will fail gracefully if web-push is not installed
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     // @ts-expect-error - web-push may not be installed, handled by .catch()
-    const webpush: any = await import('web-push').catch(() => null);
+    const webpush: { setVapidDetails: (subject: string, publicKey: string, privateKey: string) => void; sendNotification: (sub: Record<string, unknown>, payload: string) => Promise<unknown> } | null = await import('web-push').catch(() => null);
 
     if (webpush) {
       // Configure web-push with VAPID credentials

@@ -43,7 +43,7 @@ export function TrendLineChart({
   data,
   analysis,
   title,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   metric: _metric, // prefixed to indicate intentionally unused
   color = '#22c55e',
   height = 200,
@@ -60,13 +60,15 @@ export function TrendLineChart({
     return [...data].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [data]);
 
-  if (sortedData.length === 0) {
-    return (
-      <div className={cn('flex items-center justify-center bg-gray-50 rounded-lg', className)} style={{ height }}>
-        <p className="text-gray-500 text-sm">No data available</p>
-      </div>
-    );
-  }
+  // Calculate moving average (5-point)
+  const movingAverages = useMemo(() => {
+    const window = 5;
+    return sortedData.map((_, i) => {
+      const start = Math.max(0, i - window + 1);
+      const slice = sortedData.slice(start, i + 1);
+      return slice.reduce((sum, d) => sum + d.value, 0) / slice.length;
+    });
+  }, [sortedData]);
 
   // Calculate chart dimensions
   const padding = { top: 20, right: 20, bottom: 40, left: 50 };
@@ -76,12 +78,32 @@ export function TrendLineChart({
 
   // Calculate value range with padding
   const values = sortedData.map(d => d.value);
-  const minValue = Math.min(...values);
-  const maxValue = Math.max(...values);
+  const minValue = sortedData.length > 0 ? Math.min(...values) : 0;
+  const maxValue = sortedData.length > 0 ? Math.max(...values) : 1;
   const valueRange = maxValue - minValue || 1;
   const valuePadding = valueRange * 0.1;
   const yMin = minValue - valuePadding;
   const yMax = maxValue + valuePadding;
+
+  // Generate Y-axis ticks
+  const yTicks = useMemo(() => {
+    const tickCount = 5;
+    const ticks = [];
+    for (let i = 0; i <= tickCount; i++) {
+      const value = yMin + (i / tickCount) * (yMax - yMin);
+      const y = padding.top + chartHeight - ((value - yMin) / (yMax - yMin)) * chartHeight;
+      ticks.push({ value, y });
+    }
+    return ticks;
+  }, [yMin, yMax, padding.top, chartHeight]);
+
+  if (sortedData.length === 0) {
+    return (
+      <div className={cn('flex items-center justify-center bg-gray-50 rounded-lg', className)} style={{ height }}>
+        <p className="text-gray-500 text-sm">No data available</p>
+      </div>
+    );
+  }
 
   // Scale functions
   const xScale = (i: number) => padding.left + (i / (sortedData.length - 1 || 1)) * chartWidth;
@@ -94,16 +116,6 @@ export function TrendLineChart({
 
   // Generate area path for fill
   const areaPath = `${linePath} L ${xScale(sortedData.length - 1)},${yScale(yMin)} L ${xScale(0)},${yScale(yMin)} Z`;
-
-  // Calculate moving average (5-point)
-  const movingAverages = useMemo(() => {
-    const window = 5;
-    return sortedData.map((_, i) => {
-      const start = Math.max(0, i - window + 1);
-      const slice = sortedData.slice(start, i + 1);
-      return slice.reduce((sum, d) => sum + d.value, 0) / slice.length;
-    });
-  }, [sortedData]);
 
   const maLinePath = movingAverages
     .map((v, i) => `${i === 0 ? 'M' : 'L'} ${xScale(i)},${yScale(v)}`)
@@ -121,17 +133,6 @@ export function TrendLineChart({
         value: predictionValue,
       }
     : null;
-
-  // Generate Y-axis ticks
-  const yTicks = useMemo(() => {
-    const tickCount = 5;
-    const ticks = [];
-    for (let i = 0; i <= tickCount; i++) {
-      const value = yMin + (i / tickCount) * (yMax - yMin);
-      ticks.push({ value, y: yScale(value) });
-    }
-    return ticks;
-  }, [yMin, yMax, yScale]);
 
   // Get trend indicator
   const getTrendIndicator = (trend?: TrendDirection) => {
@@ -655,11 +656,9 @@ export function MultiTrendLineChart({
       for (const m of sorted) {
         const maKey = `${m.key}_ma`;
         // For each date, compute MA from that metric's values up to this date
-        let metricIdx = 0;
         for (let i = 0; i < rows.length; i++) {
           const row = rows[i]!;
           if (row[m.key] === undefined) continue;
-          metricIdx++;
 
           // Collect the last windowSize values of this metric
           const lookback: number[] = [];

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { InsightCard } from './InsightCard';
 import { EmptyState } from '@/components/ui/empty-state';
 import { IconSparkles, IconRefresh } from '@/components/icons';
@@ -19,7 +19,7 @@ export function InsightsFeed({ limit = 5, showGenerateButton = true, coachId }: 
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadInsights = async () => {
+  const loadInsights = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -32,11 +32,11 @@ export function InsightsFeed({ limit = 5, showGenerateButton = true, coachId }: 
     }
 
     setLoading(false);
-  };
+  }, [limit]);
 
   useEffect(() => {
     loadInsights();
-  }, [limit]);
+  }, [loadInsights]);
 
   const handleGenerate = async () => {
     setGenerating(true);

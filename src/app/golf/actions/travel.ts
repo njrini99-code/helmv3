@@ -191,7 +191,7 @@ export async function updateGolfTravelItinerary(input: UpdateTravelItineraryInpu
     const supabase = await createClient();
 
     // Extract update data (omit id and fields that don't exist in the database)
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     const { id, check_in_date: _checkIn, check_out_date: _checkOut, ...updateData } = validatedData;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

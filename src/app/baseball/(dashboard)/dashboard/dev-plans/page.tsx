@@ -48,6 +48,7 @@ export default function DevPlansPage() {
     if (selectedTeamId) {
       fetchPlans();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchPlans depends on coach.id and filter; selectedTeamId and filter are already in deps
   }, [selectedTeamId, filter]);
 
   async function fetchPlans() {

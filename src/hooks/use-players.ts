@@ -53,7 +53,7 @@ export function usePlayers(options: UsePlayersOptions = {}) {
     }
 
     setLoading(false);
-  }, [options.gradYear, options.position, options.state, options.search, options.limit, options.excludeCommitted]);
+  }, [options.gradYear, options.position, options.state, options.search, options.limit, options.excludeCommitted, supabase]);
 
   useEffect(() => {
     fetchPlayers();
@@ -74,7 +74,7 @@ export function usePlayer(id: string) {
       setLoading(false);
     };
     if (id) fetchPlayer();
-  }, [id]);
+  }, [id, supabase]);
 
   return { player, loading };
 }

@@ -66,6 +66,7 @@ export default function AcademicsPage() {
     } else if (!authLoading && !routeLoading && isAllowed && !selectedTeamId) {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchStudentAthletes only depends on selectedTeamId already in deps
   }, [authLoading, routeLoading, isAllowed, selectedTeamId]);
 
   async function fetchStudentAthletes() {

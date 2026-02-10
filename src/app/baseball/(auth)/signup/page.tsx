@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { BaseballSignUpForm } from '@/components/auth/baseball-sign-up-form';
+import Image from 'next/image';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -107,9 +108,11 @@ export default function SignupPage() {
             <div className="relative">
               <div className="absolute inset-0 bg-helm-amber-500/30 rounded-2xl blur-xl scale-150" />
               <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-helm-amber-500 to-helm-amber-600 flex items-center justify-center mb-3 sm:mb-4 shadow-lg overflow-hidden">
-                <img
+                <Image
                   src="/helm-baseball-logo.png"
                   alt="BaseballHelm"
+                  width={56}
+                  height={56}
                   className="w-full h-full object-cover"
                 />
               </div>

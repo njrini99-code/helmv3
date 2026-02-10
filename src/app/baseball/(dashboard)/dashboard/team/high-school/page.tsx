@@ -78,6 +78,7 @@ export default function HSCoachDashboardPage() {
     if (coach?.id) {
       fetchDashboardData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchDashboardData only depends on coach.id which is already in deps
   }, [coach?.id]);
 
   async function fetchDashboardData() {

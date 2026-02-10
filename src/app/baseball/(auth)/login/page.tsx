@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { BaseballSignInForm } from '@/components/auth/baseball-sign-in-form';
+import Image from 'next/image';
 
 function LoginContent() {
   const searchParams = useSearchParams();
@@ -108,9 +109,11 @@ function LoginContent() {
             <div className="relative">
               <div className="absolute inset-0 bg-helm-amber-500/30 rounded-2xl blur-xl scale-150" />
               <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-helm-amber-500 to-helm-amber-600 flex items-center justify-center mb-4 shadow-lg overflow-hidden">
-                <img
+                <Image
                   src="/helm-baseball-logo.png"
                   alt="BaseballHelm"
+                  width={56}
+                  height={56}
                   className="w-full h-full object-cover"
                 />
               </div>

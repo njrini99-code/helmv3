@@ -31,7 +31,7 @@ export function useMessages(conversationId: string) {
 
     // Mark messages as read
     markMessagesAsRead(conversationId);
-  }, [conversationId]);
+  }, [conversationId, supabase]);
 
   useEffect(() => {
     fetchMessages();
@@ -56,7 +56,7 @@ export function useMessages(conversationId: string) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [conversationId, fetchMessages]);
+  }, [conversationId, fetchMessages, supabase]);
 
   const sendMessage = async (content: string) => {
     try {
@@ -225,7 +225,7 @@ export function useConversations() {
 
     setConversations(transformedConversations as unknown as ConversationWithMeta[]);
     setLoading(false);
-  }, [user]);
+  }, [user, supabase]);
 
   useEffect(() => {
     fetchConversations();
@@ -252,7 +252,7 @@ export function useConversations() {
       };
     }
     return undefined;
-  }, [user, fetchConversations]);
+  }, [user, fetchConversations, supabase]);
 
   return { conversations, loading, refetch: fetchConversations };
 }

@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import { cached, golfCache, invalidateGolf } from './index';
 
 /**
@@ -177,9 +178,8 @@ export async function getCachedTeamSettings(teamId: string) {
     golfCache.teamSettings.key(teamId),
     async () => {
       const supabase = await createClient();
-      // Query as any to bypass type generation issues
-      const { data, error } = await (supabase as any)
-        .from('golf_team_settings')
+      // Use fromUntyped for columns not in generated types (e.g. sg_benchmark_level)
+      const { data, error } = await fromUntyped(supabase, 'golf_team_settings')
         .select('*')
         .eq('team_id', teamId)
         .single();

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { processTeamInvitation } from '@/app/baseball/actions/teams';
+import Image from 'next/image';
 
 interface JoinTeamClientProps {
   inviteCode: string;
@@ -56,10 +57,13 @@ export function JoinTeamClient({
         {/* Header */}
         <div className="bg-gradient-to-br from-green-50 to-white border-b border-slate-200 p-8 text-center">
           {team.organization?.logoUrl ? (
-            <img
+            <Image
               src={team.organization.logoUrl}
               alt={team.organization.name}
+              width={80}
+              height={80}
               className="w-20 h-20 object-contain mx-auto mb-4 rounded-lg"
+              unoptimized
             />
           ) : (
             <div className="w-20 h-20 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-4">

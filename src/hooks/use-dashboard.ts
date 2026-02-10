@@ -83,7 +83,7 @@ export function useActivityFeed(limit = 10) {
     }
 
     fetchActivity();
-  }, [coach?.id, limit]);
+  }, [coach?.id, limit, supabase]);
 
   return { activities, loading };
 }
@@ -241,7 +241,7 @@ export function useUpcomingEvents(limit = 5) {
     }
 
     fetchUpcoming();
-  }, [coach?.id, player?.id, limit]);
+  }, [coach?.id, player?.id, limit, supabase]);
 
   return { events, camps, loading };
 }
@@ -311,7 +311,7 @@ export function useEngagementChart(days = 7) {
     }
 
     fetchChartData();
-  }, [coach?.id, days]);
+  }, [coach?.id, days, supabase]);
 
   return { chartData, loading };
 }

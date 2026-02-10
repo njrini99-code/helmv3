@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { CheckCircle, Circle, Loader2, Users } from 'lucide-react';
 import { checkInBaseballPlayer, uncheckInBaseballPlayer } from '@/app/baseball/actions/calendar';
@@ -160,10 +161,13 @@ export function AttendanceCheckIn({
 
               {/* Avatar */}
               {member.avatar_url ? (
-                <img
+                <Image
                   src={member.avatar_url}
                   alt={`${member.first_name} ${member.last_name}`}
+                  width={32}
+                  height={32}
                   className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                  unoptimized
                 />
               ) : (
                 <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-medium text-slate-600 flex-shrink-0">

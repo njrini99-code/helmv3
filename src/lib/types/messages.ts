@@ -54,7 +54,7 @@ export interface ConversationWithParticipant extends ConversationWithMeta {
 export function getParticipantDetails(
   conversation: ConversationWithMeta,
   // currentUserId parameter reserved for filtering logic
-  _currentUserId: string // eslint-disable-line @typescript-eslint/no-unused-vars
+  _currentUserId: string  
 ): ParticipantDetails | null {
   const otherUser = conversation.other_user;
 

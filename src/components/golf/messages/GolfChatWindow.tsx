@@ -58,7 +58,7 @@ export function GolfChatWindow({
   messages,
   participant,
   currentUserId,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   conversationId: _conversationId, // Reserved for future use
   loading,
   onSend,

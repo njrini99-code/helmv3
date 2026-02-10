@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/use-auth';
 import { useRouteProtection } from '@/hooks/use-route-protection';
+import Image from 'next/image';
 import {
   IconPlus,
   IconUsers,
@@ -281,10 +282,13 @@ export default function TeamsPage() {
                   >
                     <div className="absolute -bottom-8 left-4">
                       {team.logo_url ? (
-                        <img
+                        <Image
                           src={team.logo_url}
                           alt={team.name}
+                          width={64}
+                          height={64}
                           className="w-16 h-16 rounded-xl border-4 border-white object-cover"
+                          unoptimized
                         />
                       ) : (
                         <div

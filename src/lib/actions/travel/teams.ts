@@ -350,7 +350,7 @@ export async function getTeamMembers(
 export async function addTeamMember(
   teamId: string,
   playerId: string,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   _role?: string  // Kept for API compatibility, but not used (no role column)
 ): Promise<ActionResult<TravelTeamMember>> {
   const supabase = await createClient();
@@ -446,7 +446,7 @@ export async function updateTeamMemberStatus(
  */
 export async function updateTeamMemberRole(
   memberId: string,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   _role: string
 ): Promise<ActionResult<TravelTeamMember>> {
   // Role column doesn't exist, just return the current member

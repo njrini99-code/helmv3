@@ -212,7 +212,7 @@ export function useTaskRealtime(
     } finally {
       setLoading(false);
     }
-  }, [teamId, options?.playerId, options?.incompleteOnly, options?.assignedToPlayerOnly]);
+  }, [teamId, options?.playerId, options?.incompleteOnly, options?.assignedToPlayerOnly, supabase]);
 
   useEffect(() => {
     fetchTasks();
@@ -240,7 +240,7 @@ export function useTaskRealtime(
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [teamId, fetchTasks]);
+  }, [teamId, fetchTasks, supabase]);
 
   return {
     tasks,
@@ -323,7 +323,7 @@ export function useSingleTaskRealtime(taskId: string | null) {
     } finally {
       setLoading(false);
     }
-  }, [taskId]);
+  }, [taskId, supabase]);
 
   useEffect(() => {
     fetchTask();
@@ -350,7 +350,7 @@ export function useSingleTaskRealtime(taskId: string | null) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [taskId, fetchTask]);
+  }, [taskId, fetchTask, supabase]);
 
   return {
     task,
@@ -443,7 +443,7 @@ export function useTaskCountsRealtime(teamId: string | null, playerId?: string |
     } finally {
       setLoading(false);
     }
-  }, [teamId, playerId]);
+  }, [teamId, playerId, supabase]);
 
   useEffect(() => {
     fetchCounts();
@@ -469,7 +469,7 @@ export function useTaskCountsRealtime(teamId: string | null, playerId?: string |
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [teamId, fetchCounts]);
+  }, [teamId, fetchCounts, supabase]);
 
   return { counts, loading, refetch: fetchCounts };
 }

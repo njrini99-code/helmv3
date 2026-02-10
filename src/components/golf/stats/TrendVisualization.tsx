@@ -459,7 +459,6 @@ export function TrendVisualization({
 export function TrendIndicator({
   trend,
   value,
-  isHigherBetter: _isHigherBetter = false,
   showValue = true,
   className,
 }: {

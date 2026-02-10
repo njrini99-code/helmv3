@@ -45,7 +45,7 @@ export async function GET(
 ) {
   try {
     // Note: token validation not implemented yet - would need calendar_feed_token column on golf_coaches
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     const { token: _token } = await params;
     const supabase = await createClient();
 

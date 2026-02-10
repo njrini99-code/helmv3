@@ -35,6 +35,10 @@ interface ProgramRosterProps {
 }
 
 export function ProgramRoster({ organizationId, organizationType, coachType }: ProgramRosterProps) {
+  const router = useRouter();
+  const [players, setPlayers] = useState<RosterPlayer[]>([]);
+  const [loading, setLoading] = useState(true);
+
   // ============================================================
   // ROSTER VISIBILITY: Coaches can only view rosters based on org type
   // - College coaches: can view HS and Showcase org rosters
@@ -50,6 +54,13 @@ export function ProgramRoster({ organizationId, organizationType, coachType }: P
     }
     return false;
   })();
+
+  useEffect(() => {
+    if (canViewRoster) {
+      fetchRoster();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchRoster only depends on organizationId and organizationType which are already in deps
+  }, [organizationId, organizationType, canViewRoster]);
 
   // If coach can't view this roster, show restricted message
   if (!canViewRoster) {
@@ -69,13 +80,6 @@ export function ProgramRoster({ organizationId, organizationType, coachType }: P
       </Card>
     );
   }
-  const router = useRouter();
-  const [players, setPlayers] = useState<RosterPlayer[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchRoster();
-  }, [organizationId, organizationType]);
 
   const fetchRoster = async () => {
     setLoading(true);

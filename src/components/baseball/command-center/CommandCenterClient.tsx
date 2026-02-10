@@ -35,7 +35,7 @@ export function CommandCenterClient({
   team,
   players,
   insights,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   coachName: _coachName,
 }: CommandCenterClientProps) {
   const [searchQuery, setSearchQuery] = useState('');
