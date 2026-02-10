@@ -14,6 +14,15 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
 
+/** Build timezone offset string from minutes (e.g. 360 → "-06:00") */
+function formatTimezoneOffset(offsetMinutes: number): string {
+  const sign = offsetMinutes <= 0 ? '+' : '-';
+  const absMinutes = Math.abs(offsetMinutes);
+  const hours = Math.floor(absMinutes / 60);
+  const minutes = absMinutes % 60;
+  return `${sign}${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+}
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -289,6 +298,7 @@ export async function createDraftEvent(eventData: {
   endTime?: string;
   location?: string;
   teamId?: string;
+  timezoneOffset?: number;
 }): Promise<ActionResult<{ eventId: string }>> {
   try {
     const supabase = await createClient();
@@ -325,11 +335,12 @@ export async function createDraftEvent(eventData: {
 
     // Create event in draft state
     // golf_events schema: start_time (required ISO timestamp), end_time (nullable)
+    const tz = eventData.timezoneOffset !== undefined ? formatTimezoneOffset(eventData.timezoneOffset) : '';
     const startTime = eventData.startTime
-      ? `${eventData.startDate}T${eventData.startTime}`
-      : `${eventData.startDate}T00:00:00`;
+      ? `${eventData.startDate}T${eventData.startTime}${tz}`
+      : `${eventData.startDate}T00:00:00${tz}`;
     const endTime = eventData.endDate && eventData.endTime
-      ? `${eventData.endDate}T${eventData.endTime}`
+      ? `${eventData.endDate}T${eventData.endTime}${tz}`
       : eventData.endTime || null;
 
     const { data: event, error: createError } = await supabase

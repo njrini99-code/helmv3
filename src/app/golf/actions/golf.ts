@@ -55,6 +55,30 @@ interface ApproachMissDetail {
 // Golf event types: 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other' | 'class'
 
 /**
+ * Build a timezone offset string from minutes offset (from Date.getTimezoneOffset()).
+ * getTimezoneOffset() returns positive for west of UTC (e.g. 360 for UTC-6).
+ * We need the ISO 8601 format: "-06:00" for UTC-6, "+05:30" for UTC+5:30.
+ */
+function formatTimezoneOffset(offsetMinutes: number): string {
+  // getTimezoneOffset returns positive for behind UTC, negative for ahead
+  const sign = offsetMinutes <= 0 ? '+' : '-';
+  const absMinutes = Math.abs(offsetMinutes);
+  const hours = Math.floor(absMinutes / 60);
+  const minutes = absMinutes % 60;
+  return `${sign}${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+}
+
+/**
+ * Build a full ISO datetime string from date, time, and optional timezone offset.
+ * If timezoneOffset is not provided, no offset is appended (Supabase treats as UTC).
+ */
+function buildDateTimeString(date: string, time: string | undefined, timezoneOffset?: number): string {
+  if (!time) return date;
+  const tz = timezoneOffset !== undefined ? formatTimezoneOffset(timezoneOffset) : '';
+  return `${date}T${time}${tz}`;
+}
+
+/**
  * Golf event insert data
  * Note: Maps to the actual golf_events table which uses:
  * - start_time (required string) as the primary date/time field
@@ -366,6 +390,8 @@ const golfEventSchema = z.object({
   rsvpDeadline: z.string().optional(),
   maxAttendees: z.number().int().positive().optional(),
   attendeeIds: z.array(z.string().uuid()).optional(),
+  // Timezone offset from client (minutes from UTC, e.g. 360 for UTC-6)
+  timezoneOffset: z.number().int().optional(),
 });
 
 const golfQualifierSchema = z.object({
@@ -492,6 +518,8 @@ interface GolfEventInput {
   rsvpDeadline?: string;
   maxAttendees?: number;
   attendeeIds?: string[];
+  // Timezone offset from client (minutes from UTC, e.g. 360 for UTC-6)
+  timezoneOffset?: number;
 }
 
 interface GolfQualifierInput {
@@ -1247,16 +1275,15 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
 
     // Build insert data matching the actual golf_events table schema
     // Note: golf_events uses start_time as the primary datetime field (not start_date)
+    const tz = validatedData.timezoneOffset;
     const insertData: GolfEventInsertData = {
       team_id: teamId,
       title: validatedData.title,
       event_type: validatedData.eventType,
-      // Use startDate as start_time if no specific time provided
-      start_time: validatedData.startTime
-        ? `${validatedData.startDate}T${validatedData.startTime}`
-        : validatedData.startDate,
+      // Build datetime with timezone offset so Supabase stores the correct instant
+      start_time: buildDateTimeString(validatedData.startDate, validatedData.startTime, tz),
       end_time: validatedData.endTime
-        ? `${validatedData.endDate || validatedData.startDate}T${validatedData.endTime}`
+        ? buildDateTimeString(validatedData.endDate || validatedData.startDate, validatedData.endTime, tz)
         : validatedData.endDate || null,
       all_day: validatedData.allDay ?? true,
       location: validatedData.location || null,
@@ -1319,6 +1346,7 @@ const golfEventUpdateSchema = z.object({
   rsvpDeadline: z.string().optional(),
   maxAttendees: z.number().int().optional(),
   attendeeIds: z.array(z.string()).optional(),
+  timezoneOffset: z.number().int().optional(),
 });
 
 export async function updateGolfEvent(
@@ -1388,16 +1416,15 @@ export async function updateGolfEvent(
 
     if (validatedData.title) updateData.title = validatedData.title;
     if (validatedData.eventType) updateData.event_type = validatedData.eventType;
-    // Combine date+time into start_time/end_time timestamptz (matching createGolfEvent pattern)
+    // Combine date+time into start_time/end_time timestamptz with timezone offset
+    const tz = validatedData.timezoneOffset;
     if (validatedData.startDate) {
-      updateData.start_time = validatedData.startTime
-        ? `${validatedData.startDate}T${validatedData.startTime}`
-        : validatedData.startDate;
+      updateData.start_time = buildDateTimeString(validatedData.startDate, validatedData.startTime, tz);
     }
     if (validatedData.endDate || validatedData.endTime) {
       const endDate = validatedData.endDate || validatedData.startDate;
       updateData.end_time = validatedData.endTime && endDate
-        ? `${endDate}T${validatedData.endTime}`
+        ? buildDateTimeString(endDate, validatedData.endTime, tz)
         : endDate || null;
     }
     if (validatedData.allDay !== undefined) updateData.all_day = validatedData.allDay;

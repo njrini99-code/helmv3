@@ -369,6 +369,7 @@ export function PremiumCalendarClient({
   // Save event (create or update)
   const handleSaveEvent = async (data: GolfEventFormData) => {
     setIsSavingEvent(true);
+    const timezoneOffset = new Date().getTimezoneOffset();
     try {
       if (isCreatingEvent) {
         const result = await actionHandlers.createEvent({
@@ -387,6 +388,7 @@ export function PremiumCalendarClient({
           rsvpDeadline: data.rsvpDeadline || undefined,
           maxAttendees: data.maxAttendees || undefined,
           attendeeIds: data.attendeeIds.length > 0 ? data.attendeeIds : undefined,
+          timezoneOffset,
         });
         if (!result.success) {
           throw new Error(result.error || 'Failed to create event');
@@ -408,6 +410,7 @@ export function PremiumCalendarClient({
           rsvpDeadline: data.rsvpDeadline || undefined,
           maxAttendees: data.maxAttendees || undefined,
           attendeeIds: data.attendeeIds.length > 0 ? data.attendeeIds : undefined,
+          timezoneOffset,
         });
         if (!result.success) {
           throw new Error(result.error || 'Failed to update event');
@@ -494,6 +497,7 @@ export function PremiumCalendarClient({
         startDate: newDate,
         startTime: newStartTime,
         endTime: newEndTime,
+        timezoneOffset: new Date().getTimezoneOffset(),
       });
 
       if (!result.success) {
@@ -764,6 +768,7 @@ export function PremiumCalendarClient({
         isCoach={isCoach}
         onSave={async (data: MobileEventFormData) => {
           setIsSavingEvent(true);
+          const timezoneOffset = new Date().getTimezoneOffset();
           try {
             if (isCreatingEvent) {
               const result = await actionHandlers.createEvent({
@@ -776,6 +781,7 @@ export function PremiumCalendarClient({
                 allDay: data.allDay,
                 location: data.location || undefined,
                 description: data.description || undefined,
+                timezoneOffset,
               });
               if (!result.success) {
                 throw new Error(result.error || 'Failed to create event');
@@ -791,6 +797,7 @@ export function PremiumCalendarClient({
                 allDay: data.allDay,
                 location: data.location || undefined,
                 description: data.description || undefined,
+                timezoneOffset,
               });
               if (!result.success) {
                 throw new Error(result.error || 'Failed to update event');

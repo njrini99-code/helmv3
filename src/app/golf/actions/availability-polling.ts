@@ -14,6 +14,15 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
 
+/** Build timezone offset string from minutes (e.g. 360 → "-06:00") */
+function formatTimezoneOffset(offsetMinutes: number): string {
+  const sign = offsetMinutes <= 0 ? '+' : '-';
+  const absMinutes = Math.abs(offsetMinutes);
+  const hours = Math.floor(absMinutes / 60);
+  const minutes = absMinutes % 60;
+  return `${sign}${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+}
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -276,6 +285,7 @@ export async function scheduleEventFromPoll(
     description?: string;
     location?: string;
     eventType: string;
+    timezoneOffset?: number;
   }
 ): Promise<ActionResult<{ eventId: string }>> {
   try {
@@ -314,14 +324,15 @@ export async function scheduleEventFromPoll(
     const endTime = `${String(endDateObj.getHours()).padStart(2, '0')}:${String(endDateObj.getMinutes()).padStart(2, '0')}`;
 
     // Create event - golf_events uses start_time (required ISO timestamp), end_time (nullable)
+    const tz = eventData.timezoneOffset !== undefined ? formatTimezoneOffset(eventData.timezoneOffset) : '';
     const { data: event, error: createError } = await supabase
       .from('golf_events')
       .insert({
         title: eventData.title || poll.title,
         description: eventData.description || poll.description,
         event_type: eventData.eventType as GolfEventType,
-        start_time: `${selectedDate}T${selectedTime}`,
-        end_time: `${selectedDate}T${endTime}`,
+        start_time: `${selectedDate}T${selectedTime}${tz}`,
+        end_time: `${selectedDate}T${endTime}${tz}`,
         location: eventData.location,
         created_by: coach.id,
         team_id: poll.team_id,

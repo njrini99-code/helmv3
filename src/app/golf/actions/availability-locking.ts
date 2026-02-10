@@ -13,6 +13,15 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
 
+/** Build timezone offset string from minutes (e.g. 360 → "-06:00") */
+function formatTimezoneOffset(offsetMinutes: number): string {
+  const sign = offsetMinutes <= 0 ? '+' : '-';
+  const absMinutes = Math.abs(offsetMinutes);
+  const hours = Math.floor(absMinutes / 60);
+  const minutes = absMinutes % 60;
+  return `${sign}${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+}
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -128,6 +137,7 @@ export async function createEventWithConflictCheck(eventData: {
   teamId: string;
   ignoreConflicts?: boolean;
   conflictOverrideReason?: string;
+  timezoneOffset?: number;
 }): Promise<ActionResult<{ eventId?: string; conflicts?: EventConflict[] }>> {
   try {
     const supabase = await createClient();
@@ -171,14 +181,15 @@ export async function createEventWithConflictCheck(eventData: {
     }
 
     // Create event
-    // Build start_time and end_time as ISO datetime strings
+    // Build start_time and end_time as ISO datetime strings with timezone offset
+    const tz = eventData.timezoneOffset !== undefined ? formatTimezoneOffset(eventData.timezoneOffset) : '';
     const startDateTime = eventData.startTime
-      ? `${eventData.startDate}T${eventData.startTime}:00`
-      : `${eventData.startDate}T00:00:00`;
+      ? `${eventData.startDate}T${eventData.startTime}:00${tz}`
+      : `${eventData.startDate}T00:00:00${tz}`;
     const endDateTime = eventData.endTime
-      ? `${eventData.endDate || eventData.startDate}T${eventData.endTime}:00`
+      ? `${eventData.endDate || eventData.startDate}T${eventData.endTime}:00${tz}`
       : eventData.endDate
-        ? `${eventData.endDate}T23:59:59`
+        ? `${eventData.endDate}T23:59:59${tz}`
         : null;
 
     const { data: event, error: createError } = await supabase

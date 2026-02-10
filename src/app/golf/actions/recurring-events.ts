@@ -18,6 +18,15 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
+
+/** Build timezone offset string from minutes (e.g. 360 → "-06:00") */
+function formatTimezoneOffset(offsetMinutes: number): string {
+  const sign = offsetMinutes <= 0 ? '+' : '-';
+  const absMinutes = Math.abs(offsetMinutes);
+  const hours = Math.floor(absMinutes / 60);
+  const minutes = absMinutes % 60;
+  return `${sign}${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+}
 import { fromRRULE, type ExpandedEvent } from '@/lib/calendar/recurrence';
 import { parseISO, format, addDays, addWeeks, addMonths, isBefore } from 'date-fns';
 
@@ -68,12 +77,14 @@ interface CreateRecurringEventInput {
   rsvpDeadline?: string;
   maxAttendees?: number;
   teamId?: string;
+  timezoneOffset?: number; // Minutes from UTC (from Date.getTimezoneOffset())
 }
 
 interface EditRecurringEventInput {
   eventId: string;
   originalStartDate: string; // ISO date - identifies which instance
   scope: RecurringEditScope;
+  timezoneOffset?: number; // Minutes from UTC (from Date.getTimezoneOffset())
   updates: {
     title?: string;
     description?: string;
@@ -174,12 +185,13 @@ export async function createRecurringEvent(
     // Create individual events for each occurrence
     // golf_events schema: start_time (required), end_time (nullable), no start_date/end_date
     const teamId = input.teamId || coachTeamId;
+    const tz = input.timezoneOffset !== undefined ? formatTimezoneOffset(input.timezoneOffset) : '';
     const events = occurrenceDates.map(date => ({
       title: input.title,
       description: input.description || null,
       event_type: input.eventType,
-      start_time: input.startTime ? `${date}T${input.startTime}` : `${date}T00:00:00`,
-      end_time: input.endTime ? `${date}T${input.endTime}` : null,
+      start_time: input.startTime ? `${date}T${input.startTime}${tz}` : `${date}T00:00:00${tz}`,
+      end_time: input.endTime ? `${date}T${input.endTime}${tz}` : null,
       location: input.location || null,
       created_by: coach.id,
       team_id: teamId,
@@ -252,16 +264,17 @@ export async function editRecurringEvent(
 
     // Build update object from provided fields
     // golf_events uses start_time/end_time (ISO timestamps), no start_date/end_date
+    const tz = input.timezoneOffset !== undefined ? formatTimezoneOffset(input.timezoneOffset) : '';
     const updates: Record<string, unknown> = {};
     if (input.updates.title) updates.title = input.updates.title;
     if (input.updates.description !== undefined) updates.description = input.updates.description;
     if (input.updates.startDate && input.updates.startTime) {
-      updates.start_time = `${input.updates.startDate}T${input.updates.startTime}`;
+      updates.start_time = `${input.updates.startDate}T${input.updates.startTime}${tz}`;
     } else if (input.updates.startDate) {
-      updates.start_time = `${input.updates.startDate}T00:00:00`;
+      updates.start_time = `${input.updates.startDate}T00:00:00${tz}`;
     }
     if (input.updates.endDate !== undefined && input.updates.endTime) {
-      updates.end_time = `${input.updates.endDate}T${input.updates.endTime}`;
+      updates.end_time = `${input.updates.endDate}T${input.updates.endTime}${tz}`;
     } else if (input.updates.endTime !== undefined) {
       updates.end_time = input.updates.endTime;
     }

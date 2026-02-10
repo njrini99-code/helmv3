@@ -258,15 +258,29 @@ export function EventDetailModal({
     if (isOpen) {
       if (event && !isCreating) {
         // Edit mode - populate from event
-        // Extract date and time from datetime strings
+        // Parse datetime strings using Date object to get correct local time
         const startDateTime = event.start_date || '';
         const endDateTime = event.end_date || '';
 
-        const startDate = startDateTime.split('T')[0] || getTodayDate();
-        const startTime = startDateTime.includes('T') ? startDateTime.split('T')[1]?.substring(0, 5) ?? null : null;
+        let startDate = getTodayDate();
+        let startTime: string | null = null;
+        if (startDateTime) {
+          const startD = new Date(startDateTime);
+          if (!isNaN(startD.getTime())) {
+            startDate = `${startD.getFullYear()}-${String(startD.getMonth() + 1).padStart(2, '0')}-${String(startD.getDate()).padStart(2, '0')}`;
+            startTime = `${String(startD.getHours()).padStart(2, '0')}:${String(startD.getMinutes()).padStart(2, '0')}`;
+          }
+        }
 
-        const endDate = endDateTime ? endDateTime.split('T')[0] ?? null : null;
-        const endTime = endDateTime?.includes('T') ? endDateTime.split('T')[1]?.substring(0, 5) ?? null : null;
+        let endDate: string | null = null;
+        let endTime: string | null = null;
+        if (endDateTime) {
+          const endD = new Date(endDateTime);
+          if (!isNaN(endD.getTime())) {
+            endDate = `${endD.getFullYear()}-${String(endD.getMonth() + 1).padStart(2, '0')}-${String(endD.getDate()).padStart(2, '0')}`;
+            endTime = `${String(endD.getHours()).padStart(2, '0')}:${String(endD.getMinutes()).padStart(2, '0')}`;
+          }
+        }
 
         const hasTime = startTime !== null || endTime !== null;
         const rsvpDeadline = event.rsvp_deadline
