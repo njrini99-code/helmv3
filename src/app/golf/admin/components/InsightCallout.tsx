@@ -84,9 +84,9 @@ function generateInsights(data: AdminDashboardData, tab: TabId): Insight[] {
   }
 
   if (tab === 'performance') {
-    if (data.dataQuality.gpsPercentage < 50) {
+    if (data.dataQuality.distancePercentage < 50) {
       insights.push({
-        text: `Only ${data.dataQuality.gpsPercentage}% of shots have GPS data — encourage players to enable location`,
+        text: `Only ${data.dataQuality.distancePercentage}% of shots have distance data — encourage players to track shot distances`,
         severity: 'warning',
       });
     }

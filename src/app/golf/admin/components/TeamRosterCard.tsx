@@ -4,23 +4,10 @@ import { useState } from 'react';
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { cn } from '@/lib/utils';
 import { IconUsers, IconChevronDown, IconChevronRight } from '@/components/icons';
+import { timeAgo } from './admin-utils';
 
 interface Props {
   teamRosters: AdminDashboardData['teamRosters'];
-}
-
-function timeAgo(dateStr: string | null): string {
-  if (!dateStr) return 'Never';
-  const now = Date.now();
-  const then = new Date(dateStr).getTime();
-  const diffMin = Math.floor((now - then) / 60000);
-  if (diffMin < 1) return 'just now';
-  if (diffMin < 60) return `${diffMin}m ago`;
-  const diffHr = Math.floor(diffMin / 60);
-  if (diffHr < 24) return `${diffHr}h ago`;
-  const diffDay = Math.floor(diffHr / 24);
-  if (diffDay < 7) return `${diffDay}d ago`;
-  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 export function TeamRosterCard({ teamRosters }: Props) {

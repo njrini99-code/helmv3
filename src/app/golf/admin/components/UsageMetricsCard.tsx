@@ -90,14 +90,14 @@ export function UsageMetricsCard({ usage, dataQuality, funnel }: Props) {
           <h4 className="text-sm font-medium text-warm-500 mb-2.5">Shot Data Quality</h4>
           <div className="grid grid-cols-3 gap-2">
             <QualityGauge
-              label="GPS"
-              percentage={dataQuality.gpsPercentage}
-              color={dataQuality.gpsPercentage > 70 ? '#16A34A' : dataQuality.gpsPercentage > 40 ? '#F59E0B' : '#EF4444'}
+              label="Distance"
+              percentage={dataQuality.distancePercentage}
+              color={dataQuality.distancePercentage > 70 ? '#16A34A' : dataQuality.distancePercentage > 40 ? '#F59E0B' : '#EF4444'}
             />
             <QualityGauge
-              label="Lie Type"
-              percentage={dataQuality.lieTypePercentage}
-              color={dataQuality.lieTypePercentage > 70 ? '#16A34A' : dataQuality.lieTypePercentage > 40 ? '#F59E0B' : '#EF4444'}
+              label="Lie"
+              percentage={dataQuality.liePercentage}
+              color={dataQuality.liePercentage > 70 ? '#16A34A' : dataQuality.liePercentage > 40 ? '#F59E0B' : '#EF4444'}
             />
             <QualityGauge
               label="Club"

@@ -201,11 +201,11 @@ export interface AdminDashboardData {
   // Shot data quality
   dataQuality: {
     totalShots: number;
-    shotsWithGps: number;
-    shotsWithLieType: number;
+    shotsWithDistance: number;
+    shotsWithLie: number;
     shotsWithClub: number;
-    gpsPercentage: number;
-    lieTypePercentage: number;
+    distancePercentage: number;
+    liePercentage: number;
     clubPercentage: number;
   };
   // User journey
@@ -299,10 +299,45 @@ export interface AdminDashboardData {
     commitments: number;
     videos30d: number;
     engagementEvents30d: number;
-    messages7d: number;
+    messages30d: number;
     conversations30d: number;
     playersOnboarded: number;
     coachesOnboarded: number;
+    totalTeams: number;
+    totalEvents: number;
+    totalCamps: number;
+    recruitingActivatedPlayers: number;
+  };
+  // Total platform users (from users table — single source of truth)
+  totalPlatformUsers: number;
+  // Demo requests
+  demoRequests: {
+    total: number;
+    pending: number;
+    contacted: number;
+    recentRequests: {
+      name: string;
+      email: string;
+      organization: string | null;
+      interestType: string | null;
+      status: string;
+      createdAt: string;
+    }[];
+  };
+  // Golf communication metrics
+  golfCommunication: {
+    totalAnnouncements: number;
+    announcementAckRate: number | null;
+    totalGolfMessages: number;
+    totalConversations: number;
+  };
+  // Platform strokes gained averages
+  strokesGained: {
+    sgTotal: number | null;
+    sgTee: number | null;
+    sgApproach: number | null;
+    sgAroundGreen: number | null;
+    sgPutting: number | null;
   };
   // Needs attention items
   needsAttention: {
@@ -571,8 +606,8 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     adminDb.from('users').select('id, created_at').gte('created_at', daysAgo(14)).lte('created_at', daysAgo(7)),
     adminDb.from('users').select('id, created_at').gte('created_at', daysAgo(7)),
     // Shot data quality
-    adminDb.from('golf_shots').select('id', { count: 'exact', head: true }).not('latitude', 'is', null),
-    adminDb.from('golf_shots').select('id', { count: 'exact', head: true }).not('lie_type', 'is', null),
+    adminDb.from('golf_shots').select('id', { count: 'exact', head: true }).not('distance_to_hole_before', 'is', null),
+    adminDb.from('golf_shots').select('id', { count: 'exact', head: true }).not('lie_before', 'is', null),
     adminDb.from('golf_shots').select('id', { count: 'exact', head: true }).not('club', 'is', null),
     // Unique reviewed rounds
     adminDb.from('golf_round_reviews').select('round_id'),
@@ -1257,16 +1292,16 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   };
 
   // --- Data Quality ---
-  const shotsWithGps = shotsWithGpsRes.count ?? 0;
-  const shotsWithLieType = shotsWithLieTypeRes.count ?? 0;
+  const shotsWithDistance = shotsWithGpsRes.count ?? 0;
+  const shotsWithLie = shotsWithLieTypeRes.count ?? 0;
   const shotsWithClub = shotsWithClubRes.count ?? 0;
   const dataQuality = {
     totalShots: totalShotsCount,
-    shotsWithGps,
-    shotsWithLieType,
+    shotsWithDistance,
+    shotsWithLie,
     shotsWithClub,
-    gpsPercentage: totalShotsCount > 0 ? Math.round((shotsWithGps / totalShotsCount) * 100) : 0,
-    lieTypePercentage: totalShotsCount > 0 ? Math.round((shotsWithLieType / totalShotsCount) * 100) : 0,
+    distancePercentage: totalShotsCount > 0 ? Math.round((shotsWithDistance / totalShotsCount) * 100) : 0,
+    liePercentage: totalShotsCount > 0 ? Math.round((shotsWithLie / totalShotsCount) * 100) : 0,
     clubPercentage: totalShotsCount > 0 ? Math.round((shotsWithClub / totalShotsCount) * 100) : 0,
   };
 
@@ -1328,22 +1363,6 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   const aiCoachCount = coachPhilosophyRes.count ?? 0;
   const nonAiCoachCount = Math.max(totalCoaches - aiCoachCount, 0);
 
-  // For ROI, compare team averages
-  // Teams with coaches who have philosophy set up vs those without
-  // This is approximate but directionally useful
-  const teamsWithAI = teams.filter(t => t.coachCount > 0 && t.avgScore != null);
-  const avgScoreAllTeams = teamsWithAI.length > 0
-    ? teamsWithAI.reduce((s, t) => s + (t.avgScore ?? 0), 0) / teamsWithAI.length
-    : null;
-
-  const coachhelmRoi = {
-    coachesUsingAI: aiCoachCount,
-    coachesNotUsingAI: nonAiCoachCount,
-    avgScoreAICoachPlayers: avgScoreAllTeams,
-    avgScoreNonAICoachPlayers: null as number | null, // Would need per-coach philosophy data linked to teams
-    scoreDifference: null as number | null,
-  };
-
   // ============================================
   // BATCH 4: Error logs, audit log, login security, baseball (parallel)
   // ============================================
@@ -1362,10 +1381,24 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     bbWatchlistRes,
     bbVideos30dRes,
     bbEngagement30dRes,
-    bbMessages7dRes,
+    bbMessages30dRes,
     bbConversations30dRes,
     bbPlayersOnboardedRes,
     bbCoachesOnboardedRes,
+    bbTeamsRes,
+    bbEventsRes,
+    bbCampsRes,
+    bbRecruitingActivatedRes,
+    // New: Demo requests, notifications, golf communication, strokes gained
+    demoRequestsAllRes,
+    demoRequestsPendingRes,
+    demoRequestsRecentRes,
+    golfAnnouncementsAllRes,
+    golfAnnouncementAcksRes,
+    golfMessagesAllRes,
+    golfConversationsAllRes,
+    strokesGainedRes,
+    totalPlatformUsersRes,
   ] = await Promise.all([
     // Error logs: recent entries
     adminDb.from('error_logs').select('id, message, severity, stack, url, user_id, created_at').order('created_at', { ascending: false }).limit(50),
@@ -1389,10 +1422,27 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     adminDb.from('baseball_watchlists').select('pipeline_stage'),
     adminDb.from('baseball_videos').select('id', { count: 'exact', head: true }).gte('created_at', ago30d),
     adminDb.from('baseball_player_engagement_events').select('id', { count: 'exact', head: true }).gte('created_at', ago30d),
-    adminDb.from('baseball_messages').select('id', { count: 'exact', head: true }).gte('created_at', ago7d),
+    adminDb.from('baseball_messages').select('id', { count: 'exact', head: true }).gte('created_at', ago30d),
     adminDb.from('baseball_conversations').select('id', { count: 'exact', head: true }).gte('created_at', ago30d),
     adminDb.from('baseball_players').select('id', { count: 'exact', head: true }).eq('onboarding_completed', true),
     adminDb.from('baseball_coaches').select('id', { count: 'exact', head: true }).eq('onboarding_completed', true),
+    adminDb.from('baseball_teams').select('id', { count: 'exact', head: true }),
+    adminDb.from('baseball_events').select('id', { count: 'exact', head: true }),
+    adminDb.from('baseball_camps').select('id', { count: 'exact', head: true }),
+    adminDb.from('baseball_players').select('id', { count: 'exact', head: true }).eq('recruiting_activated', true),
+    // Demo requests
+    adminDb.from('demo_requests').select('id', { count: 'exact', head: true }),
+    adminDb.from('demo_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+    adminDb.from('demo_requests').select('name, email, organization, interest_type, status, created_at').order('created_at', { ascending: false }).limit(10),
+    // Golf communication
+    adminDb.from('golf_announcements').select('id', { count: 'exact', head: true }),
+    adminDb.from('golf_announcement_acknowledgements').select('id', { count: 'exact', head: true }),
+    adminDb.from('golf_messages').select('id', { count: 'exact', head: true }),
+    adminDb.from('golf_conversations').select('id', { count: 'exact', head: true }),
+    // Strokes gained from stats cache
+    adminDb.from('golf_player_stats_cache').select('strokes_gained_total, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting').not('strokes_gained_total', 'is', null),
+    // Total platform users (source of truth)
+    adminDb.from('users').select('id', { count: 'exact', head: true }),
   ]);
 
   // --- Process error logs ---
@@ -1529,8 +1579,46 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     });
   }
 
+  // Coaches stuck in onboarding > 7 days
+  const stuckCoachesOnboarding = (allUsersRes.data ?? []).filter((u) => {
+    if (!u.created_at) return false;
+    const daysSinceSignup = (Date.now() - new Date(u.created_at).getTime()) / 86400000;
+    const coach = userIdToCoachDetail.get(u.id);
+    return daysSinceSignup > 7 && coach && !coach.onboardingCompleted;
+  });
+  if (stuckCoachesOnboarding.length > 0) {
+    needsAttention.push({
+      label: `${stuckCoachesOnboarding.length} coach${stuckCoachesOnboarding.length > 1 ? 'es' : ''} haven't completed onboarding`,
+      severity: 'warning',
+      detail: 'Signed up > 7 days ago but never finished setup',
+      tab: 'users',
+    });
+  }
+
+  // Pending demo requests
+  const pendingDemoCount = demoRequestsPendingRes.count ?? 0;
+  if (pendingDemoCount > 0) {
+    needsAttention.push({
+      label: `${pendingDemoCount} pending demo request${pendingDemoCount > 1 ? 's' : ''}`,
+      severity: 'info',
+      detail: 'New inbound leads waiting for follow-up',
+      tab: 'command',
+    });
+  }
+
+  // New users this week (positive signal)
+  const newUsersCount = newUsersThisWeekRes.count ?? 0;
+  if (newUsersCount > 0 && totalErrors7d === 0 && criticalCount === 0) {
+    needsAttention.push({
+      label: `${newUsersCount} new user${newUsersCount > 1 ? 's' : ''} signed up this week`,
+      severity: 'info',
+      detail: 'Growth is happening!',
+      tab: 'users',
+    });
+  }
+
   // No errors = good news
-  if (totalErrors7d === 0 && lockedAccountCount === 0 && stuckInOnboarding.length === 0) {
+  if (totalErrors7d === 0 && lockedAccountCount === 0 && stuckInOnboarding.length === 0 && stuckCoachesOnboarding.length === 0) {
     needsAttention.push({
       label: 'All clear — no issues detected',
       severity: 'info',
@@ -1538,6 +1626,81 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
       tab: 'dashboard',
     });
   }
+
+  // --- Process strokes gained averages ---
+  const sgRows = strokesGainedRes.data ?? [];
+  const sgTotal = sgRows.length > 0 ? sgRows.reduce((s, r) => s + Number(r.strokes_gained_total ?? 0), 0) / sgRows.length : null;
+  const sgTee = sgRows.length > 0 ? sgRows.reduce((s, r) => s + Number(r.strokes_gained_tee ?? 0), 0) / sgRows.length : null;
+  const sgApproach = sgRows.length > 0 ? sgRows.reduce((s, r) => s + Number(r.strokes_gained_approach ?? 0), 0) / sgRows.length : null;
+  const sgAroundGreen = sgRows.length > 0 ? sgRows.reduce((s, r) => s + Number(r.strokes_gained_around_green ?? 0), 0) / sgRows.length : null;
+  const sgPutting = sgRows.length > 0 ? sgRows.reduce((s, r) => s + Number(r.strokes_gained_putting ?? 0), 0) / sgRows.length : null;
+
+  // --- Process golf communication metrics ---
+  const totalAnnouncementsCount = golfAnnouncementsAllRes.count ?? 0;
+  const totalAckCount = golfAnnouncementAcksRes.count ?? 0;
+  // Ack rate: approximate by total acknowledgements / (announcements * avg team size)
+  // Simple approximation: if we have announcements and acks, ackRate = acks / announcements
+  const announcementAckRate = totalAnnouncementsCount > 0 ? Math.round((totalAckCount / totalAnnouncementsCount) * 10) / 10 : null;
+
+  // --- Process demo requests ---
+  const demoRequestsRecent = (demoRequestsRecentRes.data ?? []).map((d) => ({
+    name: (d.name as string) ?? '',
+    email: (d.email as string) ?? '',
+    organization: (d.organization as string | null) ?? null,
+    interestType: (d.interest_type as string | null) ?? null,
+    status: (d.status as string) ?? 'pending',
+    createdAt: (d.created_at as string) ?? new Date().toISOString(),
+  }));
+
+  // --- CoachHelm ROI: proper AI vs non-AI comparison ---
+  // Get coaches who HAVE philosophy set (AI-using coaches)
+  // Query their team's players' scoring averages vs players whose coach has NO philosophy
+  const aiCoachPhilosophyRes = await adminDb.from('golf_coach_philosophy').select('coach_id');
+  const aiCoachIds = new Set((aiCoachPhilosophyRes.data ?? []).map(c => c.coach_id));
+
+  // Map coach_id -> org_id to find which teams use AI
+  const aiOrgIds = new Set<string>();
+  const nonAiOrgIds = new Set<string>();
+  for (const c of (coachOrgRes.data ?? [])) {
+    if (c.organization_id) {
+      // Check if this coach has philosophy
+      const coachEntry = [...allCoachesMap.values()].find(cm => cm.orgId === c.organization_id);
+      if (coachEntry && aiCoachIds.has(coachEntry.id)) {
+        aiOrgIds.add(c.organization_id);
+      } else if (coachEntry) {
+        nonAiOrgIds.add(c.organization_id);
+      }
+    }
+  }
+
+  // Get team IDs for AI vs non-AI orgs
+  const aiTeamIds = new Set<string>();
+  const nonAiTeamIds = new Set<string>();
+  for (const t of (teamsDataRes.data ?? [])) {
+    if (t.organization_id && aiOrgIds.has(t.organization_id)) aiTeamIds.add(t.id);
+    else if (t.organization_id && nonAiOrgIds.has(t.organization_id)) nonAiTeamIds.add(t.id);
+  }
+
+  // Get avg scores for players on AI teams vs non-AI teams
+  const aiPlayerScores: number[] = [];
+  const nonAiPlayerScores: number[] = [];
+  for (const r of statsRows) {
+    if (r.scoring_average == null) continue;
+    const tid = playerToTeamId.get(r.player_id);
+    if (tid && aiTeamIds.has(tid)) aiPlayerScores.push(Number(r.scoring_average));
+    else if (tid && nonAiTeamIds.has(tid)) nonAiPlayerScores.push(Number(r.scoring_average));
+  }
+
+  const avgScoreAI = aiPlayerScores.length > 0 ? aiPlayerScores.reduce((a, b) => a + b, 0) / aiPlayerScores.length : null;
+  const avgScoreNonAI = nonAiPlayerScores.length > 0 ? nonAiPlayerScores.reduce((a, b) => a + b, 0) / nonAiPlayerScores.length : null;
+
+  const updatedCoachhelmRoi = {
+    coachesUsingAI: aiCoachCount,
+    coachesNotUsingAI: nonAiCoachCount,
+    avgScoreAICoachPlayers: avgScoreAI ? Math.round(avgScoreAI * 10) / 10 : null,
+    avgScoreNonAICoachPlayers: avgScoreNonAI ? Math.round(avgScoreNonAI * 10) / 10 : null,
+    scoreDifference: avgScoreAI != null && avgScoreNonAI != null ? Math.round((avgScoreNonAI - avgScoreAI) * 10) / 10 : null,
+  };
 
   // --- Build user auth details for UI ---
   const userAuthDetails = Array.from(userAuthDetailsMap.entries()).map(([uid, d]) => ({
@@ -1682,7 +1845,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     userJourney,
     stickiness,
     playerEngagement,
-    coachhelmRoi,
+    coachhelmRoi: updatedCoachhelmRoi,
     errorLogs: {
       totalErrors7d,
       criticalErrors7d: criticalCount,
@@ -1715,10 +1878,34 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
       commitments,
       videos30d: bbVideos30dRes.count ?? 0,
       engagementEvents30d: bbEngagement30dRes.count ?? 0,
-      messages7d: bbMessages7dRes.count ?? 0,
+      messages30d: bbMessages30dRes.count ?? 0,
       conversations30d: bbConversations30dRes.count ?? 0,
       playersOnboarded: bbPlayersOnboardedRes.count ?? 0,
       coachesOnboarded: bbCoachesOnboardedRes.count ?? 0,
+      totalTeams: bbTeamsRes.count ?? 0,
+      totalEvents: bbEventsRes.count ?? 0,
+      totalCamps: bbCampsRes.count ?? 0,
+      recruitingActivatedPlayers: bbRecruitingActivatedRes.count ?? 0,
+    },
+    totalPlatformUsers: totalPlatformUsersRes.count ?? 0,
+    demoRequests: {
+      total: demoRequestsAllRes.count ?? 0,
+      pending: pendingDemoCount,
+      contacted: (demoRequestsAllRes.count ?? 0) - pendingDemoCount,
+      recentRequests: demoRequestsRecent,
+    },
+    golfCommunication: {
+      totalAnnouncements: totalAnnouncementsCount,
+      announcementAckRate,
+      totalGolfMessages: golfMessagesAllRes.count ?? 0,
+      totalConversations: golfConversationsAllRes.count ?? 0,
+    },
+    strokesGained: {
+      sgTotal: sgTotal != null ? Math.round(sgTotal * 100) / 100 : null,
+      sgTee: sgTee != null ? Math.round(sgTee * 100) / 100 : null,
+      sgApproach: sgApproach != null ? Math.round(sgApproach * 100) / 100 : null,
+      sgAroundGreen: sgAroundGreen != null ? Math.round(sgAroundGreen * 100) / 100 : null,
+      sgPutting: sgPutting != null ? Math.round(sgPutting * 100) / 100 : null,
     },
     needsAttention,
     userAuthDetails,

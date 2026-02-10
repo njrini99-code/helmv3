@@ -2,6 +2,7 @@
 
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { cn } from '@/lib/utils';
+import { formatBytes } from './admin-utils';
 
 interface Props {
   health: AdminDashboardData['health'];
@@ -26,13 +27,6 @@ const statusText = {
   warning: 'text-amber-700',
   critical: 'text-red-700',
 };
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1048576) return `${(bytes / 1024).toFixed(0)} KB`;
-  if (bytes < 1073741824) return `${(bytes / 1048576).toFixed(1)} MB`;
-  return `${(bytes / 1073741824).toFixed(2)} GB`;
-}
 
 export function HealthCheckGrid({ health, errorLogs, loginSecurity }: Props) {
   // Build comprehensive health checks

@@ -473,7 +473,7 @@ export default function AdminDashboardPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
                     <AdminStatCard
                       label="Total Users"
-                      value={data.users.totalCoaches + data.users.totalPlayers + data.users.totalAdmins + data.baseball.totalPlayers + data.baseball.totalCoaches}
+                      value={data.totalPlatformUsers}
                       icon={<IconUsers size={20} />}
                       trend={{ value: data.growth.userGrowthRate, label: 'vs last week' }}
                       detail={`${data.users.newUsersThisWeek} new this week`}
@@ -546,10 +546,10 @@ export default function AdminDashboardPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <AdminStatCard
                       label="Total Users"
-                      value={data.users.totalCoaches + data.users.totalPlayers + data.users.totalAdmins}
+                      value={data.totalPlatformUsers}
                       icon={<IconUsers size={20} />}
                       trend={{ value: data.growth.userGrowthRate, label: 'vs last week' }}
-                      detail={`${data.users.newUsersThisWeek} new this week`}
+                      detail={`${data.users.totalCoaches} coaches · ${data.users.totalPlayers} players · ${data.users.totalAdmins} admin`}
                       accentColor="green"
                     />
                     <AdminStatCard
@@ -764,6 +764,73 @@ export default function AdminDashboardPage() {
                         <ScoringIntelligenceCard scoring={data.scoring} />
                         <TeamIntelligenceCard teams={data.teams} />
                         <UsageMetricsCard usage={data.usage} dataQuality={data.dataQuality} funnel={data.funnel} />
+                      </div>
+
+                      {/* Strokes Gained + Communication */}
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Strokes Gained Averages */}
+                        {data.strokesGained.sgTotal != null && (
+                          <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6">
+                            <h3 className="text-lg font-semibold text-warm-900 mb-4">Platform Strokes Gained</h3>
+                            <div className="space-y-3">
+                              {[
+                                { label: 'Total', value: data.strokesGained.sgTotal, color: '#16A34A' },
+                                { label: 'Off the Tee', value: data.strokesGained.sgTee, color: '#2563EB' },
+                                { label: 'Approach', value: data.strokesGained.sgApproach, color: '#8B5CF6' },
+                                { label: 'Around Green', value: data.strokesGained.sgAroundGreen, color: '#F59E0B' },
+                                { label: 'Putting', value: data.strokesGained.sgPutting, color: '#EF4444' },
+                              ].map((sg) => (
+                                <div key={sg.label} className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: sg.color }} />
+                                    <span className="text-sm text-warm-600">{sg.label}</span>
+                                  </div>
+                                  <span className={`text-sm font-semibold tabular-nums ${(sg.value ?? 0) > 0 ? 'text-emerald-600' : (sg.value ?? 0) < 0 ? 'text-red-600' : 'text-warm-700'}`}>
+                                    {sg.value != null ? (sg.value > 0 ? `+${sg.value.toFixed(2)}` : sg.value.toFixed(2)) : '\u2014'}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                            <p className="text-[10px] text-warm-400 mt-3">Average across all players with strokes gained data</p>
+                          </div>
+                        )}
+
+                        {/* Communication Metrics */}
+                        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6">
+                          <h3 className="text-lg font-semibold text-warm-900 mb-4">Communication</h3>
+                          <div className="grid grid-cols-2 gap-3 mb-4">
+                            <div className="bg-white/50 rounded-xl p-3 text-center">
+                              <p className="text-2xl font-semibold text-warm-900 tabular-nums">{data.golfCommunication.totalAnnouncements}</p>
+                              <p className="text-xs text-warm-500 mt-0.5">Announcements</p>
+                            </div>
+                            <div className="bg-white/50 rounded-xl p-3 text-center">
+                              <p className="text-2xl font-semibold text-warm-900 tabular-nums">{data.golfCommunication.totalGolfMessages}</p>
+                              <p className="text-xs text-warm-500 mt-0.5">Messages</p>
+                            </div>
+                            <div className="bg-white/50 rounded-xl p-3 text-center">
+                              <p className="text-2xl font-semibold text-warm-900 tabular-nums">{data.golfCommunication.totalConversations}</p>
+                              <p className="text-xs text-warm-500 mt-0.5">Conversations</p>
+                            </div>
+                            <div className="bg-white/50 rounded-xl p-3 text-center">
+                              <p className="text-2xl font-semibold text-warm-900 tabular-nums">
+                                {data.golfCommunication.announcementAckRate != null ? `${data.golfCommunication.announcementAckRate}` : '\u2014'}
+                              </p>
+                              <p className="text-xs text-warm-500 mt-0.5">Avg Acks / Announce</p>
+                            </div>
+                          </div>
+                          {data.demoRequests.total > 0 && (
+                            <div className="pt-3 border-t border-warm-100">
+                              <span className="text-[10px] text-warm-400 uppercase tracking-wider font-medium">Demo Requests</span>
+                              <div className="flex items-center gap-4 mt-2">
+                                <span className="text-sm text-warm-700"><span className="font-semibold tabular-nums">{data.demoRequests.total}</span> total</span>
+                                {data.demoRequests.pending > 0 && (
+                                  <span className="text-sm text-amber-600"><span className="font-semibold tabular-nums">{data.demoRequests.pending}</span> pending</span>
+                                )}
+                                <span className="text-sm text-emerald-600"><span className="font-semibold tabular-nums">{data.demoRequests.contacted}</span> contacted</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </>
                   ) : (

@@ -94,6 +94,29 @@ export function BaseballOps({ baseball }: Props) {
         </div>
       )}
 
+      {/* Platform stats */}
+      <div className="pt-4 border-t border-warm-100">
+        <span className="text-[10px] text-warm-400 uppercase tracking-wider font-medium">Platform</span>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2.5">
+          <div className="bg-white/40 rounded-lg px-3 py-2 flex items-center justify-between">
+            <span className="text-xs text-warm-500">Teams</span>
+            <span className="text-xs font-medium text-warm-700 tabular-nums">{baseball.totalTeams}</span>
+          </div>
+          <div className="bg-white/40 rounded-lg px-3 py-2 flex items-center justify-between">
+            <span className="text-xs text-warm-500">Events</span>
+            <span className="text-xs font-medium text-warm-700 tabular-nums">{baseball.totalEvents}</span>
+          </div>
+          <div className="bg-white/40 rounded-lg px-3 py-2 flex items-center justify-between">
+            <span className="text-xs text-warm-500">Camps</span>
+            <span className="text-xs font-medium text-warm-700 tabular-nums">{baseball.totalCamps}</span>
+          </div>
+          <div className="bg-white/40 rounded-lg px-3 py-2 flex items-center justify-between">
+            <span className="text-xs text-warm-500">Recruiting</span>
+            <span className="text-xs font-medium text-warm-700 tabular-nums">{baseball.recruitingActivatedPlayers}</span>
+          </div>
+        </div>
+      </div>
+
       {/* Activity stats */}
       <div className="pt-4 border-t border-warm-100">
         <span className="text-[10px] text-warm-400 uppercase tracking-wider font-medium">Activity (30d)</span>
@@ -104,7 +127,7 @@ export function BaseballOps({ baseball }: Props) {
           </div>
           <div className="bg-white/40 rounded-lg px-3 py-2 flex items-center justify-between">
             <span className="text-xs text-warm-500">Messages</span>
-            <span className="text-xs font-medium text-warm-700 tabular-nums">{baseball.messages7d}</span>
+            <span className="text-xs font-medium text-warm-700 tabular-nums">{baseball.messages30d}</span>
           </div>
           <div className="bg-white/40 rounded-lg px-3 py-2 flex items-center justify-between">
             <span className="text-xs text-warm-500">Engagement</span>
