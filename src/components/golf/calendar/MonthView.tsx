@@ -1,6 +1,7 @@
 'use client';
 
 import { useDroppable } from '@dnd-kit/core';
+import { Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { isToday } from '@/lib/calendar/event-styles';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
@@ -41,18 +42,14 @@ function DayCellContent({
               ? 'text-stone-800'
               : 'text-stone-350'
           )}
-          style={!isCurrentDay && !isCurrentMonth ? { color: 'rgba(168, 162, 158, 0.6)' } : undefined}
+          style={!isCurrentDay && !isCurrentMonth ? { color: 'rgb(168 162 158 / 0.6)' } : undefined}
         >
           {date.getDate()}
         </div>
         {/* Event count badge for days with many events */}
         {dayEvents.length > 3 && (
           <span
-            className="text-xs font-semibold px-1.5 py-0.5 rounded-full"
-            style={{
-              background: 'rgba(22, 163, 74, 0.08)',
-              color: 'rgba(22, 163, 74, 0.7)',
-            }}
+            className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-green-600/[0.08] text-green-600/70"
           >
             {dayEvents.length}
           </span>
@@ -64,9 +61,19 @@ function DayCellContent({
         {dayEvents.slice(0, 3).map((event) => (
           <div
             key={event.id}
+            role="button"
+            tabIndex={0}
+            aria-label={`${event.title}${event.start_time ? `, ${event.start_time}` : ''}`}
             onClick={(e) => {
               e.stopPropagation();
               onEventClick?.(event);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                e.stopPropagation();
+                onEventClick?.(event);
+              }
             }}
           >
             <PremiumEventBlock
@@ -126,7 +133,16 @@ function DroppableDayCell({
   return (
     <div
       ref={setNodeRef}
+      role="button"
+      tabIndex={0}
+      aria-label={`${date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}${dayEvents.length > 0 ? `, ${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''}` : ''}`}
       onClick={() => onDateClick?.(date)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onDateClick?.(date);
+        }
+      }}
       className={cn(
         'min-h-[110px] p-2.5 cursor-pointer transition-all duration-200 relative rounded-xl',
         isCurrentMonth ? 'bg-white/60' : 'bg-stone-50/30',
@@ -136,7 +152,7 @@ function DroppableDayCell({
       )}
     >
       {isOver && (
-        <div className="absolute inset-1 border-2 border-dashed border-green-400 rounded-lg bg-green-50/40 pointer-events-none" />
+        <div className="absolute inset-1 border-2 border-dashed border-green-400 rounded-lg bg-green-50/40 pointer-events-none" aria-hidden="true" />
       )}
       <DayCellContent
         date={date}
@@ -176,21 +192,16 @@ export function MonthView({ month, events, onDateClick, onEventClick, isDraggabl
   };
 
   return (
-    <div className="flex-1 overflow-auto px-4 md:px-5 pt-2 pb-4 overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }} data-scroll-container>
+    <div className="flex-1 overflow-auto px-4 md:px-5 pt-2 pb-4 overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]" data-scroll-container>
       {/* Container-based grid with soft gaps instead of hard lines */}
       <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(7, 1fr)',
-          gap: '3px',
-        }}
+        className="grid grid-cols-7 gap-[3px]"
       >
         {/* Day Headers */}
         {DAYS.map((day) => (
           <div
             key={day}
-            className="px-3 py-2.5 text-center text-xs font-semibold uppercase tracking-wider rounded-lg"
-            style={{ color: 'rgba(120, 113, 108, 0.6)' }}
+            className="px-3 py-2.5 text-center text-xs font-semibold uppercase tracking-wider rounded-lg text-stone-500/60"
           >
             {day}
           </div>
@@ -215,7 +226,16 @@ export function MonthView({ month, events, onDateClick, onEventClick, isDraggabl
           ) : (
             <div
               key={index}
+              role="button"
+              tabIndex={0}
+              aria-label={`${date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}${dayEvents.length > 0 ? `, ${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''}` : ''}`}
               onClick={() => onDateClick?.(date)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onDateClick?.(date);
+                }
+              }}
               className={cn(
                 'min-h-[110px] p-2.5 cursor-pointer transition-all duration-200 rounded-xl',
                 isCurrentMonth ? 'bg-white/60' : 'bg-stone-50/30',
@@ -234,6 +254,21 @@ export function MonthView({ month, events, onDateClick, onEventClick, isDraggabl
           );
         })}
       </div>
+
+      {/* Empty state for no events this month */}
+      {events.length === 0 && (
+        <div className="mt-12 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-stone-100/80 mx-auto flex items-center justify-center mb-4">
+            <Calendar className="w-7 h-7 text-stone-400" />
+          </div>
+          <h3 className="text-lg font-semibold text-stone-900 mb-2">
+            No events this month
+          </h3>
+          <p className="text-sm text-stone-500 max-w-xs mx-auto">
+            Click &ldquo;Add Event&rdquo; or tap a date to schedule something
+          </p>
+        </div>
+      )}
     </div>
   );
 }

@@ -12,7 +12,7 @@
  * - Backdrop blur when expanded
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import {
   Plus,
@@ -86,20 +86,42 @@ export function QuickAddEventFAB({
   disabled = false,
 }: QuickAddEventFABProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [focusedIndex, setFocusedIndex] = useState(-1);
+  const menuRef = useRef<HTMLDivElement>(null);
   const { bottom: safeAreaBottom } = useSafeAreaInsets();
   const { triggerHaptic } = useHapticFeedback();
 
-  // Close menu on escape key
+  const allActions = [...QUICK_ACTIONS, { type: 'other' as QuickEventType, label: 'Other Event', icon: Calendar, color: 'text-warm-700', bgColor: 'bg-warm-100' }];
+
+  // Close menu on escape key + arrow key navigation
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isExpanded) {
         setIsExpanded(false);
+        setFocusedIndex(-1);
+      }
+      if (isExpanded) {
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          setFocusedIndex((i) => (i <= 0 ? allActions.length - 1 : i - 1));
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          setFocusedIndex((i) => (i >= allActions.length - 1 ? 0 : i + 1));
+        }
       }
     };
 
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [isExpanded]);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isExpanded, allActions.length]);
+
+  // Focus the active menu item when focusedIndex changes
+  useEffect(() => {
+    if (isExpanded && focusedIndex >= 0 && menuRef.current) {
+      const buttons = menuRef.current.querySelectorAll<HTMLButtonElement>('[role="menuitem"]');
+      buttons[focusedIndex]?.focus();
+    }
+  }, [focusedIndex, isExpanded]);
 
   // Prevent body scroll when expanded
   useEffect(() => {
@@ -156,6 +178,9 @@ export function QuickAddEventFAB({
       >
         {/* Quick actions menu */}
         <div
+          ref={menuRef}
+          role="menu"
+          aria-label="Quick add event"
           className={cn(
             'absolute bottom-20 right-0 flex flex-col gap-3',
             'transition-all duration-300 ease-out origin-bottom-right',
@@ -170,13 +195,15 @@ export function QuickAddEventFAB({
               <button
                 key={action.type}
                 type="button"
+                role="menuitem"
                 onClick={() => handleQuickAction(action.type)}
                 className={cn(
                   'flex items-center gap-3 pr-4 pl-3 py-2.5 rounded-full',
                   'bg-white shadow-lg',
                   'transition-all duration-200',
                   'hover:shadow-xl active:scale-95',
-                  'touch-manipulation'
+                  'touch-manipulation',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40'
                 )}
                 style={{
                   transitionDelay: isExpanded ? `${(QUICK_ACTIONS.length - 1 - index) * 50}ms` : '0ms',
@@ -185,7 +212,7 @@ export function QuickAddEventFAB({
                 <div className={cn(
                   'w-10 h-10 rounded-full flex items-center justify-center',
                   action.bgColor
-                )}>
+                )} aria-hidden="true">
                   <Icon className={cn('w-5 h-5', action.color)} />
                 </div>
                 <span className="text-sm font-semibold text-warm-900 whitespace-nowrap">
@@ -198,19 +225,21 @@ export function QuickAddEventFAB({
           {/* Generic "New Event" option */}
           <button
             type="button"
+            role="menuitem"
             onClick={handleGenericAdd}
             className={cn(
               'flex items-center gap-3 pr-4 pl-3 py-2.5 rounded-full',
               'bg-white shadow-lg',
               'transition-all duration-200',
               'hover:shadow-xl active:scale-95',
-              'touch-manipulation'
+              'touch-manipulation',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40'
             )}
             style={{
               transitionDelay: isExpanded ? `${QUICK_ACTIONS.length * 50}ms` : '0ms',
             }}
           >
-            <div className="w-10 h-10 rounded-full bg-warm-100 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-warm-100 flex items-center justify-center" aria-hidden="true">
               <Calendar className="w-5 h-5 text-warm-700" />
             </div>
             <span className="text-sm font-semibold text-warm-900">
@@ -224,6 +253,9 @@ export function QuickAddEventFAB({
           type="button"
           onClick={handleToggle}
           disabled={disabled}
+          aria-label={isExpanded ? 'Close menu' : 'Add new event'}
+          aria-expanded={isExpanded}
+          aria-haspopup="menu"
           className={cn(
             'relative w-14 h-14 rounded-2xl',
             'flex items-center justify-center',
@@ -231,12 +263,11 @@ export function QuickAddEventFAB({
             'touch-manipulation',
             'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-300',
             isExpanded
-              ? 'bg-warm-900 rotate-0 rounded-xl'
+              ? 'bg-emerald-800 rotate-0 rounded-xl'
               : 'bg-emerald-600 hover:bg-emerald-500 hover:scale-105 shadow-lg shadow-emerald-600/40',
             'active:scale-95',
             disabled && 'opacity-50 cursor-not-allowed'
           )}
-          aria-label={isExpanded ? 'Close menu' : 'Add new event'}
         >
           <div className={cn(
             'transition-all duration-300',

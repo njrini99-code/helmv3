@@ -82,16 +82,16 @@ export function CalendarHeader({
         </button>
 
         {/* Title — larger, bolder */}
-        <h1 className="text-lg md:text-xl font-bold text-stone-900 tracking-tight">
+        <h2 className="text-lg md:text-xl font-bold text-stone-900 tracking-tight">
           {getTitle()}
-        </h1>
+        </h2>
 
         {/* Navigation — minimal glass arrows */}
         <div className="flex items-center gap-0.5 ml-1">
           <button
             type="button"
             onClick={() => onNavigate('prev')}
-            aria-label="Previous"
+            aria-label={`Previous ${view}`}
             className={cn(
               'rounded-lg transition-all duration-150 active:scale-95',
               'text-stone-500 hover:text-stone-700 hover:bg-stone-100/60',
@@ -104,7 +104,7 @@ export function CalendarHeader({
           <button
             type="button"
             onClick={() => onNavigate('next')}
-            aria-label="Next"
+            aria-label={`Next ${view}`}
             className={cn(
               'rounded-lg transition-all duration-150 active:scale-95',
               'text-stone-500 hover:text-stone-700 hover:bg-stone-100/60',
@@ -136,16 +136,16 @@ export function CalendarHeader({
         {/* View Toggle — glass segment control (hidden on mobile) */}
         {!isMobile && (
           <div
-            className="inline-flex rounded-xl p-1"
-            style={{
-              background: 'rgba(245, 243, 240, 0.6)',
-              border: '1px solid rgba(214, 211, 209, 0.2)',
-            }}
+            role="radiogroup"
+            aria-label="Calendar view"
+            className="inline-flex rounded-xl p-1 bg-stone-100/60 border border-stone-300/20"
           >
             {(['day', 'week', 'month'] as const).map((v) => (
               <button
                 type="button"
                 key={v}
+                role="radio"
+                aria-checked={view === v}
                 onClick={() => onViewChange(v)}
                 className={cn(
                   'px-3.5 py-1.5 text-[13px] font-medium rounded-lg transition-all duration-200',
@@ -165,11 +165,7 @@ export function CalendarHeader({
           <button
             type="button"
             onClick={onAddEvent}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white active:scale-95 transition-all duration-150"
-            style={{
-              background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
-              boxShadow: '0 2px 10px rgba(22, 163, 74, 0.3), inset 0 1px 0 rgba(255,255,255,0.2)',
-            }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white active:scale-95 transition-all duration-150 bg-gradient-to-br from-green-500 to-green-600 shadow-[0_2px_10px_rgba(22,163,74,0.3),inset_0_1px_0_rgba(255,255,255,0.2)]"
           >
             <Plus className="w-4 h-4" />
             Add Event

@@ -1,6 +1,13 @@
 /**
  * Schedule Parser Utility
- * Parses class schedule text (from PDF or manual input) into structured data
+ * Parses class schedule text (from PDF or manual input) into structured data.
+ *
+ * Supports many university schedule formats:
+ *   - Tab-separated table exports (most registrar PDFs)
+ *   - Space-separated columnar layouts
+ *   - Multi-line free-form text (course code + details on subsequent lines)
+ *   - Single-line compact formats (code + name + days + time all on one line)
+ *   - Comma/pipe/dash delimited rows
  */
 
 export interface ParsedClass {
@@ -16,650 +23,877 @@ export interface ParsedClass {
   room: string;
   credits: number | null;
   semester: string;
-  semesterStartDate?: string; // Custom semester start date (YYYY-MM-DD)
+  semesterStartDate?: string;
   color?: string;
 }
 
-// Common day patterns
+// ============================================================================
+// CONSTANTS
+// ============================================================================
+
 const DAY_PATTERNS: Record<string, string[]> = {
-  'MWF': ['M', 'W', 'F'],
-  'MW': ['M', 'W'],
-  'MF': ['M', 'F'],
-  'WF': ['W', 'F'],
-  'TTH': ['T', 'Th'],
-  'TTh': ['T', 'Th'],
-  'TR': ['T', 'Th'],
-  'TUTH': ['T', 'Th'],
-  'TuTh': ['T', 'Th'],
-  'M': ['M'],
-  'T': ['T'],
-  'W': ['W'],
-  'TH': ['Th'],
-  'Th': ['Th'],
-  'F': ['F'],
-  'SA': ['Sa'],
-  'Sa': ['Sa'],
-  'SU': ['Su'],
-  'Su': ['Su'],
+  'MWF':    ['M', 'W', 'F'],
+  'MW':     ['M', 'W'],
+  'MF':     ['M', 'F'],
+  'WF':     ['W', 'F'],
+  'TTH':    ['T', 'Th'],
+  'TTh':    ['T', 'Th'],
+  'TR':     ['T', 'Th'],
+  'TUTH':   ['T', 'Th'],
+  'TuTh':   ['T', 'Th'],
+  'M':      ['M'],
+  'T':      ['T'],
+  'W':      ['W'],
+  'TH':     ['Th'],
+  'Th':     ['Th'],
+  'R':      ['Th'],
+  'F':      ['F'],
+  'SA':     ['Sa'],
+  'Sa':     ['Sa'],
+  'SU':     ['Su'],
+  'Su':     ['Su'],
   'MTWTHF': ['M', 'T', 'W', 'Th', 'F'],
-  'MTWHF': ['M', 'T', 'W', 'Th', 'F'],
-  'MTWRF': ['M', 'T', 'W', 'Th', 'F'],
+  'MTWHF':  ['M', 'T', 'W', 'Th', 'F'],
+  'MTWRF':  ['M', 'T', 'W', 'Th', 'F'],
+  'MTWR':   ['M', 'T', 'W', 'Th'],
+  'MTWF':   ['M', 'T', 'W', 'F'],
+  'TWTH':   ['T', 'W', 'Th'],
+  'TWR':    ['T', 'W', 'Th'],
+  'MWT':    ['M', 'W', 'T'],
 };
 
-// Invalid course code prefixes (common false positives)
 const INVALID_COURSE_PREFIXES = [
   'FALL', 'SPRING', 'SUMMER', 'WINTER',
   'TIME', 'ROOM', 'BLDG', 'BUILDING',
   'PAGE', 'TOTAL', 'SCHEDULE', 'GRID',
-  'WEEKLY', 'DAILY', 'CREDITS',
+  'WEEKLY', 'DAILY', 'CREDITS', 'CREDIT',
+  'DATE', 'TERM', 'CAMPUS', 'STATUS',
+  'NOTES', 'UNITS', 'GRADE', 'FINAL',
 ];
 
-// Generate unique ID
+// Lines that indicate section headers, not data
+const SKIP_LINE_PATTERNS = [
+  /weekly\s*time\s*grid/i,
+  /schedule\s*summary/i,
+  /^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s*$/i,
+  /^total\s*(credits?|units?|hours?)/i,
+  /^page\s+\d/i,
+  /^(note|disclaimer|legend)/i,
+  /printed\s*(on|at|:)/i,
+  /^\*{2,}/,
+  /^-{3,}$/,
+  /^={3,}$/,
+];
+
+// ============================================================================
+// HELPERS
+// ============================================================================
+
 function generateId(): string {
   return `class_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 }
 
-// Check if a course code is valid (not a false positive)
+function isSkippableLine(line: string): boolean {
+  return SKIP_LINE_PATTERNS.some(p => p.test(line));
+}
+
+// ============================================================================
+// COURSE CODE PARSING
+// ============================================================================
+
+/** Match patterns like BUAD 123, BUAD123, CS 4301, MATH 2413H */
+const COURSE_CODE_RE = /\b([A-Z]{2,5})\s*(\d{3,4}[A-Z]{0,2})\b/i;
+
 function isValidCourseCode(code: string): boolean {
   if (!code) return false;
-  
   const prefix = code.split(/\s+/)[0]?.toUpperCase();
   if (!prefix) return false;
-  
-  // Check against invalid prefixes
-  if (INVALID_COURSE_PREFIXES.includes(prefix)) {
-    return false;
-  }
-  
-  // Must have letters followed by numbers
-  if (!code.match(/^[A-Z]{2,5}\s*\d{3,4}[A-Z]?$/i)) {
-    return false;
-  }
-  
+  if (INVALID_COURSE_PREFIXES.includes(prefix)) return false;
+  // Must have 2-5 letters then 3-4 digits, optional trailing letter(s)
+  if (!code.match(/^[A-Z]{2,5}\s*\d{3,4}[A-Z]{0,2}$/i)) return false;
   return true;
 }
 
-// Parse days string into array
+export function parseCourseCode(text: string): string {
+  const match = text.match(COURSE_CODE_RE);
+  if (!match || !match[1] || !match[2]) return '';
+  const code = `${match[1].toUpperCase()} ${match[2].toUpperCase()}`;
+  return isValidCourseCode(code) ? code : '';
+}
+
+// ============================================================================
+// DAY PARSING
+// ============================================================================
+
+/**
+ * Regex that matches day patterns in the middle of a line.
+ * Handles: MWF, TTh, TR, MW, M, T, W, Th, F, MTWTHF, etc.
+ * Also handles full day names separated by / or , (Mon/Wed/Fri, Monday, Wednesday)
+ */
+const DAYS_INLINE_RE = /\b((?:M|Tu?|W|Th?|R|F|Sa?|Su?)(?:(?:M|Tu?|W|Th?|R|F|Sa?|Su?))*)\b/;
+const FULL_DAY_RE = /\b((?:Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|Sat(?:urday)?|Sun(?:day)?)(?:\s*[/,&]\s*(?:Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|Sat(?:urday)?|Sun(?:day)?))*)\b/i;
+
 export function parseDays(daysStr: string): string[] {
-  const normalized = daysStr.trim().toUpperCase().replace(/\s+/g, '');
-  
-  // Check for exact matches first
+  const normalized = daysStr.trim();
+
+  // Try full day names first (Monday, Tuesday...)
+  if (/monday|tuesday|wednesday|thursday|friday|saturday|sunday/i.test(normalized)) {
+    const days: string[] = [];
+    if (/mon/i.test(normalized)) days.push('M');
+    if (/tue/i.test(normalized)) days.push('T');
+    if (/wed/i.test(normalized)) days.push('W');
+    if (/thu/i.test(normalized)) days.push('Th');
+    if (/fri/i.test(normalized)) days.push('F');
+    if (/sat/i.test(normalized)) days.push('Sa');
+    if (/sun/i.test(normalized)) days.push('Su');
+    return sortDays(days);
+  }
+
+  const upper = normalized.toUpperCase().replace(/\s+/g, '');
+
+  // Exact match against known patterns
   for (const [pattern, days] of Object.entries(DAY_PATTERNS)) {
-    if (normalized === pattern.toUpperCase()) {
+    if (upper === pattern.toUpperCase()) {
       return days;
     }
   }
-  
-  // Try to parse individual days
+
+  // Character-by-character parse (handles arbitrary combos like MTWF)
   const days: string[] = [];
-  let remaining = normalized;
-  
-  // Check for Thursday first (TH before T)
+  let remaining = upper;
+
+  // 'TH' and 'R' both mean Thursday — check multi-char tokens first
   if (remaining.includes('TH')) {
     days.push('Th');
     remaining = remaining.replace(/TH/g, '');
   }
-  
-  // Check remaining days
+  if (remaining.includes('SU')) {
+    days.push('Su');
+    remaining = remaining.replace(/SU/g, '');
+  }
+  if (remaining.includes('SA')) {
+    days.push('Sa');
+    remaining = remaining.replace(/SA/g, '');
+  }
+
   if (remaining.includes('M')) days.push('M');
+  // 'T' means Tuesday unless already consumed as part of TH
   if (remaining.includes('T')) days.push('T');
   if (remaining.includes('W')) days.push('W');
+  if (remaining.includes('R') && !days.includes('Th')) days.push('Th'); // R = Thursday
   if (remaining.includes('F')) days.push('F');
-  if (remaining.includes('SA')) days.push('Sa');
-  if (remaining.includes('SU')) days.push('Su');
-  
-  // Sort days in order
-  const dayOrder = ['Su', 'M', 'T', 'W', 'Th', 'F', 'Sa'];
-  return days.sort((a, b) => dayOrder.indexOf(a) - dayOrder.indexOf(b));
+
+  return sortDays(days);
 }
 
-// Parse time string to 24-hour format (HH:MM)
+function sortDays(days: string[]): string[] {
+  const order = ['Su', 'M', 'T', 'W', 'Th', 'F', 'Sa'];
+  const unique = [...new Set(days)];
+  return unique.sort((a, b) => order.indexOf(a) - order.indexOf(b));
+}
+
+/** Try to extract day pattern from a line of text (not greedy) */
+function extractDays(line: string): string[] | null {
+  // Try full day names first
+  const fullMatch = line.match(FULL_DAY_RE);
+  if (fullMatch && fullMatch[0]) {
+    const parsed = parseDays(fullMatch[0]);
+    if (parsed.length > 0) return parsed;
+  }
+
+  // Try abbreviation patterns — must be surrounded by word boundaries or separators
+  // Look for standalone groups like "MWF", "TTh", "TR", "MW"
+  const abbrMatch = line.match(/(?:^|\s|[|,;:\t])([MTWRF]{1,5}h?(?:Th)?)(?:\s|[|,;:\t]|$)/i);
+  if (abbrMatch && abbrMatch[1]) {
+    const parsed = parseDays(abbrMatch[1]);
+    if (parsed.length > 0) return parsed;
+  }
+
+  // Fallback: general inline match
+  const inlineMatch = line.match(DAYS_INLINE_RE);
+  if (inlineMatch && inlineMatch[0] && inlineMatch[0].length >= 1 && inlineMatch[0].length <= 7) {
+    const parsed = parseDays(inlineMatch[0]);
+    if (parsed.length > 0 && parsed.length <= 7) return parsed;
+  }
+
+  return null;
+}
+
+// ============================================================================
+// TIME PARSING
+// ============================================================================
+
+/** Parse a single time value to 24-hour HH:MM */
 export function parseTime(timeStr: string, inferredPeriod?: string): string {
   const cleaned = timeStr.trim().toUpperCase().replace(/\s+/g, '');
-  
-  // Match patterns like "9:30AM", "09:30 AM", "1:00PM", "13:00"
-  const match = cleaned.match(/(\d{1,2}):?(\d{2})?\s*(AM|PM)?/i);
 
+  // Match "9:30AM", "09:30 AM", "1:00PM", "13:00", "900", "0930"
+  const match = cleaned.match(/(\d{1,2}):?(\d{2})?\s*(AM|PM|A|P)?\.?/i);
   if (!match || !match[1]) return '';
 
   let hours = parseInt(match[1], 10);
   const minutes = match[2] ? parseInt(match[2], 10) : 0;
-  let period = match[3]?.toUpperCase() || inferredPeriod;
-  
-  // If no period and hours <= 12, we need context
-  // If inferredPeriod is provided, use it
+  let period = match[3]?.toUpperCase()?.replace(/[^AP]/, '') || inferredPeriod;
+
+  // Normalize A/P to AM/PM
+  if (period === 'A') period = 'AM';
+  if (period === 'P') period = 'PM';
+
+  // Already in 24-hour format
+  if (hours >= 13 && hours <= 23) {
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+  }
+
+  // Smart inference when no AM/PM given
   if (!period && hours <= 12 && hours >= 1) {
-    // Default logic: if hour is 8-11, likely AM; if 12 or 1-7, likely PM
-    // But prefer inferredPeriod if available
     if (inferredPeriod) {
       period = inferredPeriod;
+    } else {
+      // College class heuristic: 8-11 = AM, 12 = PM, 1-7 = PM
+      period = (hours >= 8 && hours <= 11) ? 'AM' : 'PM';
     }
   }
-  
-  // Convert to 24-hour format
+
   if (period === 'PM' && hours !== 12) {
     hours += 12;
   } else if (period === 'AM' && hours === 12) {
     hours = 0;
   }
-  
+
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
 }
 
-// Parse time range (e.g., "9:30AM - 10:45AM" or "1:00 - 1:50 PM")
+/** Parse a time range like "9:30AM - 10:45AM" or "1:00 - 1:50 PM" */
 export function parseTimeRange(rangeStr: string): { start: string; end: string } {
-  const parts = rangeStr.split(/[-–—to]/i).map(s => s.trim());
+  // Split on dash, en-dash, em-dash, or "to"
+  const parts = rangeStr.split(/\s*[-–—]\s*|\s+to\s+/i).map(s => s.trim());
 
   if (parts.length < 2) {
-    return {
-      start: parts[0] ? parseTime(parts[0]) : '',
-      end: '',
-    };
+    return { start: parts[0] ? parseTime(parts[0]) : '', end: '' };
   }
 
-  // Parse both times
-  const startTimeStr = parts[0] || '';
-  const endTimeStr = parts[1] || '';
+  const startStr = parts[0] || '';
+  const endStr = parts[1] || '';
 
-  // Check if start/end have explicit AM/PM
-  const startPeriodMatch = startTimeStr.match(/(AM|PM)/i);
-  const endPeriodMatch = endTimeStr.match(/(AM|PM)/i);
+  const startPeriod = startStr.match(/(AM|PM|A\.?M\.?|P\.?M\.?)/i)?.[1]?.replace(/\./g, '').toUpperCase();
+  const endPeriod = endStr.match(/(AM|PM|A\.?M\.?|P\.?M\.?)/i)?.[1]?.replace(/\./g, '').toUpperCase();
 
-  const startPeriod = startPeriodMatch ? startPeriodMatch[1]?.toUpperCase() : undefined;
-  const endPeriod = endPeriodMatch ? endPeriodMatch[1]?.toUpperCase() : undefined;
+  // Parse end time first (more likely to have AM/PM)
+  const endTime = parseTime(endStr);
 
-  // Parse end time first (it usually has AM/PM)
-  const endTime = parseTime(endTimeStr);
-
-  // Smart period inference for start time
+  // Infer start period from end period
   let inferredStartPeriod = startPeriod;
-
   if (!startPeriod && endPeriod) {
-    // Extract hour values to determine if we're crossing meridiem
-    const startHourMatch = startTimeStr.match(/(\d{1,2})/);
-    const endHourMatch = endTimeStr.match(/(\d{1,2})/);
+    const startHour = parseInt(startStr.match(/(\d{1,2})/)?.[1] || '0', 10);
+    const endHour = parseInt(endStr.match(/(\d{1,2})/)?.[1] || '0', 10);
 
-    if (startHourMatch && endHourMatch) {
-      const startHour = parseInt(startHourMatch[1] || '0', 10);
-      const endHour = parseInt(endHourMatch[1] || '0', 10);
+    const normalizedEnd = endPeriod === 'A' ? 'AM' : endPeriod === 'P' ? 'PM' : endPeriod;
 
-      console.log('[TimeRange] Parsing:', rangeStr);
-      console.log('[TimeRange] Start hour:', startHour, 'End hour:', endHour, 'End period:', endPeriod);
-
-      // Special case: "11:00 - 12:15 PM" means 11 AM to 12:15 PM (crossing noon)
-      // If end is 12 PM and start is 11, it's likely AM to PM
-      if (endPeriod === 'PM' && endHour === 12 && startHour === 11) {
-        inferredStartPeriod = 'AM';
-        console.log('[TimeRange] Detected noon crossing, setting start to AM');
-      }
-      // If end hour is less than start hour (in 12-hour format), likely crossing meridiem
-      else if (endHour < startHour && endPeriod === 'PM') {
-        inferredStartPeriod = 'AM';
-        console.log('[TimeRange] End < start, setting start to AM');
-      }
-      // Otherwise use the end period
-      else {
-        inferredStartPeriod = endPeriod;
-        console.log('[TimeRange] Using end period:', endPeriod);
-      }
+    // "11:00 - 12:15 PM" → 11 AM to 12:15 PM (crossing noon)
+    if (normalizedEnd === 'PM' && endHour === 12 && startHour >= 8 && startHour <= 11) {
+      inferredStartPeriod = 'AM';
+    }
+    // "10:00 - 11:15 AM" → both AM
+    // "1:00 - 2:15 PM" → both PM
+    // End hour < start hour → crossing meridiem
+    else if (endHour < startHour && normalizedEnd === 'PM') {
+      inferredStartPeriod = 'AM';
     } else {
-      inferredStartPeriod = endPeriod;
+      inferredStartPeriod = normalizedEnd;
     }
   }
 
-  const startTime = parseTime(startTimeStr, inferredStartPeriod);
-  console.log('[TimeRange] Result:', { start: startTime, end: endTime });
-
+  const startTime = parseTime(startStr, inferredStartPeriod);
   return { start: startTime, end: endTime };
 }
 
-// Parse course code (e.g., "BUAD 123" or "BUAD123")
-export function parseCourseCode(text: string): string {
-  const match = text.match(/([A-Z]{2,5})\s*(\d{3,4}[A-Z]?)/i);
-  if (!match || !match[1] || !match[2]) return '';
-  
-  const code = `${match[1].toUpperCase()} ${match[2]}`;
-  
-  // Validate the code
-  if (!isValidCourseCode(code)) {
-    return '';
+/** Time range regex for matching inside longer strings */
+const TIME_RANGE_RE = /(\d{1,2}:\d{2}\s*(?:AM|PM|A\.?M\.?|P\.?M\.?)?)\s*[-–—to]+\s*(\d{1,2}:\d{2}\s*(?:AM|PM|A\.?M\.?|P\.?M\.?)?)/i;
+const SINGLE_TIME_RE = /\b(\d{1,2}:\d{2}\s*(?:AM|PM|A\.?M\.?|P\.?M\.?)?)\b/i;
+
+function extractTimeRange(line: string): { start: string; end: string } | null {
+  const match = line.match(TIME_RANGE_RE);
+  if (match && match[0]) {
+    const range = parseTimeRange(match[0]);
+    if (range.start) return range;
   }
-  
-  return code;
+  return null;
 }
 
-// Parse location into building and room
+// ============================================================================
+// LOCATION PARSING
+// ============================================================================
+
 export function parseLocation(location: string): { building: string; room: string } {
   const cleaned = location.trim();
-  
-  // Common patterns: "HAL 101", "Hall Building 101", "Room 305"
-  const match = cleaned.match(/^([A-Za-z\s]+?)\s*(\d+[A-Za-z]?)$/);
 
+  // "HAL 101", "ENGR 203B", "Room 305"
+  const match = cleaned.match(/^([A-Za-z\s.]+?)\s+(\d+[A-Za-z]?)$/);
   if (match && match[1] && match[2]) {
-    return {
-      building: match[1].trim(),
-      room: match[2].trim(),
-    };
+    return { building: match[1].trim(), room: match[2].trim() };
   }
-  
+
   return { building: cleaned, room: '' };
 }
 
-// Parse table format (tab or multiple-space separated)
-function parseTableFormat(lines: string[], semester: string): ParsedClass[] {
-  console.log('[TableParser] Starting with', lines.length, 'lines');
+/** Try to find a location pattern in a line */
+const LOCATION_RE = /\b([A-Z]{2,6})\s+(\d{3,4}[A-Za-z]?)\b/;
+
+function extractLocation(line: string): { location: string; building: string; room: string } | null {
+  const match = line.match(LOCATION_RE);
+  if (match && match[0] && match[1] && match[2]) {
+    // Make sure this isn't a course code
+    if (isValidCourseCode(`${match[1]} ${match[2]}`)) return null;
+    return {
+      location: match[0],
+      building: match[1],
+      room: match[2],
+    };
+  }
+  return null;
+}
+
+// ============================================================================
+// CREDIT PARSING
+// ============================================================================
+
+const CREDITS_RE = /\b(\d(?:\.\d{1,2})?)\s*(?:credits?|units?|hrs?|hours?|cr\.?|crs?\.?)\b/i;
+const STANDALONE_CREDITS_RE = /^\s*(\d(?:\.\d)?)\s*$/; // Single digit on its own (in a column)
+
+function extractCredits(line: string): number | null {
+  const match = line.match(CREDITS_RE);
+  if (match && match[1]) return parseFloat(match[1]);
+  return null;
+}
+
+// ============================================================================
+// INSTRUCTOR PARSING
+// ============================================================================
+
+const INSTRUCTOR_RE = /(?:Prof\.?|Dr\.?|Professor|Instructor|Staff|Faculty|TA)\s*[:\s]+([A-Za-z][A-Za-z\s.,'-]+?)(?:\s*[|;]|$)/i;
+
+function extractInstructor(line: string): string | null {
+  const match = line.match(INSTRUCTOR_RE);
+  if (match && match[1]) return match[1].trim();
+  return null;
+}
+
+// ============================================================================
+// FORMAT DETECTION
+// ============================================================================
+
+interface FormatHints {
+  isTabDelimited: boolean;
+  isCommaDelimited: boolean;
+  isPipeDelimited: boolean;
+  isSpaceColumnar: boolean;
+  hasHeaders: boolean;
+  delimiter: string;
+}
+
+function detectFormat(lines: string[]): FormatHints {
+  let tabCount = 0;
+  let commaCount = 0;
+  let pipeCount = 0;
+  let wideSpaceCount = 0;
+
+  const sampleLines = lines.slice(0, Math.min(lines.length, 15));
+
+  for (const line of sampleLines) {
+    if (line.includes('\t')) tabCount++;
+    // Only count commas between fields, not within names
+    if ((line.match(/,/g) || []).length >= 2) commaCount++;
+    if (line.includes('|')) pipeCount++;
+    // Multiple runs of 3+ spaces suggest columnar layout
+    if ((line.match(/\s{3,}/g) || []).length >= 2) wideSpaceCount++;
+  }
+
+  const total = sampleLines.length || 1;
+  const isTabDelimited = tabCount / total > 0.3;
+  const isCommaDelimited = !isTabDelimited && commaCount / total > 0.3;
+  const isPipeDelimited = !isTabDelimited && !isCommaDelimited && pipeCount / total > 0.3;
+  const isSpaceColumnar = !isTabDelimited && !isCommaDelimited && !isPipeDelimited && wideSpaceCount / total > 0.3;
+
+  // Check for header row
+  const headerKeywords = ['course', 'title', 'name', 'days', 'time', 'location', 'instructor', 'credits', 'room', 'building', 'section', 'type', 'status', 'crn'];
+  const hasHeaders = sampleLines.some(line => {
+    const lower = line.toLowerCase();
+    return headerKeywords.filter(kw => lower.includes(kw)).length >= 2;
+  });
+
+  const delimiter = isTabDelimited ? '\t'
+    : isCommaDelimited ? ','
+    : isPipeDelimited ? '|'
+    : isSpaceColumnar ? '  ' // double-space
+    : '\t'; // fallback
+
+  return { isTabDelimited, isCommaDelimited, isPipeDelimited, isSpaceColumnar, hasHeaders, delimiter };
+}
+
+// ============================================================================
+// TABLE FORMAT PARSER
+// ============================================================================
+
+interface ColumnMap {
+  course?: number;
+  title?: number;
+  days?: number;
+  time?: number;
+  startTime?: number;
+  endTime?: number;
+  location?: number;
+  building?: number;
+  room?: number;
+  instructor?: number;
+  credits?: number;
+}
+
+function detectColumns(headerLine: string, delimiter: string): ColumnMap {
+  const cols = splitRow(headerLine, delimiter);
+  const map: ColumnMap = {};
+
+  cols.forEach((col, idx) => {
+    const lower = col.toLowerCase().trim();
+    if (lower.includes('course') || lower === 'code' || lower === 'crn' || lower.includes('subj')) map.course = idx;
+    else if (lower.includes('title') || lower === 'name' || lower.includes('description')) map.title = idx;
+    else if (lower.includes('day') && !lower.includes('today')) map.days = idx;
+    else if (lower === 'time' || lower.includes('times') || lower.includes('meeting time')) map.time = idx;
+    else if (lower.includes('start') && lower.includes('time')) map.startTime = idx;
+    else if (lower.includes('end') && lower.includes('time')) map.endTime = idx;
+    else if (lower.includes('location') || lower === 'where') map.location = idx;
+    else if (lower.includes('building') || lower === 'bldg') map.building = idx;
+    else if (lower.includes('room') || lower === 'rm') map.room = idx;
+    else if (lower.includes('instructor') || lower.includes('professor') || lower.includes('prof') || lower.includes('faculty')) map.instructor = idx;
+    else if (lower.includes('credit') || lower.includes('unit') || lower.includes('hr') || lower === 'cr') map.credits = idx;
+  });
+
+  return map;
+}
+
+function splitRow(line: string, delimiter: string): string[] {
+  if (delimiter === '  ') {
+    // Space-columnar: split on 2+ spaces
+    return line.split(/\s{2,}/).map(s => s.trim()).filter(Boolean);
+  }
+  return line.split(delimiter === '\t' ? /\t+/ : delimiter).map(s => s.trim());
+}
+
+function parseTableFormat(lines: string[], semester: string, hints: FormatHints): ParsedClass[] {
   const classes: ParsedClass[] = [];
-  
-  // Find header row to understand column order
+  const { delimiter } = hints;
+
+  // Find header row
   let headerIndex = -1;
-  const columnMap: Record<string, number> = {};
-  
-  const headerKeywords = ['course', 'title', 'name', 'days', 'time', 'location', 'instructor', 'credits', 'room', 'building'];
-  
-  for (let i = 0; i < lines.length; i++) {
-    const lineText = lines[i];
-    if (!lineText) continue;
-    const line = lineText.toLowerCase();
-    const matchCount = headerKeywords.filter(kw => line.includes(kw)).length;
+  let columnMap: ColumnMap = {};
+
+  for (let i = 0; i < Math.min(lines.length, 10); i++) {
+    const line = lines[i];
+    if (!line) continue;
+    const lower = line.toLowerCase();
+    const headerKeywords = ['course', 'title', 'name', 'days', 'time', 'location', 'instructor', 'credits', 'room', 'section'];
+    const matchCount = headerKeywords.filter(kw => lower.includes(kw)).length;
     if (matchCount >= 2) {
       headerIndex = i;
-      // Map columns
-      const cols = lineText.split(/\t+/);
-      cols.forEach((col, idx) => {
-        if (!col) return;
-        const lower = col.toLowerCase().trim();
-        if (lower.includes('course') || lower === 'code') columnMap['course'] = idx;
-        if (lower.includes('title') || lower.includes('name')) columnMap['title'] = idx;
-        if (lower.includes('day')) columnMap['days'] = idx;
-        if (lower.includes('time')) columnMap['time'] = idx;
-        if (lower.includes('location') || lower.includes('room') || lower.includes('building')) columnMap['location'] = idx;
-        if (lower.includes('instructor') || lower.includes('professor') || lower.includes('prof')) columnMap['instructor'] = idx;
-        if (lower.includes('credit') || lower.includes('unit') || lower.includes('hr')) columnMap['credits'] = idx;
-      });
-      console.log('[TableParser] Found header at line', i, 'columns:', columnMap);
+      columnMap = detectColumns(line, delimiter);
       break;
     }
   }
-  
-  // Parse data rows
+
   const startRow = headerIndex >= 0 ? headerIndex + 1 : 0;
-  
+  const hasColumnMap = Object.keys(columnMap).length > 0;
+
   for (let i = startRow; i < lines.length; i++) {
     const line = lines[i];
-    if (!line) continue;
-    
-    // Skip lines that look like section headers or grid headers
-    if (line.toLowerCase().includes('weekly time grid') ||
-        line.toLowerCase().includes('schedule summary') ||
-        line.toLowerCase().includes('monday') ||
-        line.toLowerCase().includes('tuesday')) {
-      console.log('[TableParser] Skipping header line:', line.substring(0, 50));
-      continue;
-    }
-    
-    const cols = line.split(/\t+/);
+    if (!line || isSkippableLine(line)) continue;
 
-    // Skip if not enough columns or no course code found
+    const cols = splitRow(line, delimiter);
     if (cols.length < 2) continue;
 
-    // Try to find course code in any column
+    // Find a course code in any column
     let courseCode = '';
     let courseCodeIdx = -1;
 
-    for (let j = 0; j < cols.length; j++) {
-      const colValue = cols[j];
-      if (!colValue) continue;
-      const code = parseCourseCode(colValue);
+    // If we have a header map, try the course column first
+    if (hasColumnMap && columnMap.course !== undefined && cols[columnMap.course]) {
+      const code = parseCourseCode(cols[columnMap.course]!);
       if (code) {
         courseCode = code;
-        courseCodeIdx = j;
-        break;
+        courseCodeIdx = columnMap.course;
+      }
+    }
+
+    // Fallback: scan all columns
+    if (!courseCode) {
+      for (let j = 0; j < cols.length; j++) {
+        const colVal = cols[j];
+        if (!colVal) continue;
+        const code = parseCourseCode(colVal);
+        if (code) {
+          courseCode = code;
+          courseCodeIdx = j;
+          break;
+        }
       }
     }
 
     if (!courseCode) continue;
 
-    // Build class object
     const classData: Partial<ParsedClass> = {
       id: generateId(),
       course_code: courseCode,
       semester,
     };
 
-    // If we have header mapping, use it
-    if (Object.keys(columnMap).length > 0) {
-      const titleCol = columnMap['title'];
-      if (titleCol !== undefined && cols[titleCol]) {
-        classData.course_name = cols[titleCol]?.trim();
-      }
-      const daysCol = columnMap['days'];
-      if (daysCol !== undefined && cols[daysCol]) {
-        classData.days = parseDays(cols[daysCol]);
-      }
-      const timeCol = columnMap['time'];
-      if (timeCol !== undefined && cols[timeCol]) {
-        const times = parseTimeRange(cols[timeCol]);
+    if (hasColumnMap) {
+      // Use header-mapped columns
+      if (columnMap.title !== undefined) classData.course_name = cols[columnMap.title]?.trim() || '';
+      if (columnMap.days !== undefined && cols[columnMap.days]) classData.days = parseDays(cols[columnMap.days]!);
+      if (columnMap.time !== undefined && cols[columnMap.time]) {
+        const times = parseTimeRange(cols[columnMap.time]!);
         classData.start_time = times.start;
         classData.end_time = times.end;
       }
-      const locCol = columnMap['location'];
-      if (locCol !== undefined && cols[locCol]) {
-        const locValue = cols[locCol];
-        if (locValue) {
-          const loc = parseLocation(locValue);
-          classData.location = locValue.trim();
-          classData.building = loc.building;
-          classData.room = loc.room;
-        }
+      if (columnMap.startTime !== undefined && cols[columnMap.startTime]) {
+        classData.start_time = parseTime(cols[columnMap.startTime]!);
       }
-      const instrCol = columnMap['instructor'];
-      if (instrCol !== undefined && cols[instrCol]) {
-        classData.instructor = cols[instrCol]?.trim();
+      if (columnMap.endTime !== undefined && cols[columnMap.endTime]) {
+        classData.end_time = parseTime(cols[columnMap.endTime]!);
       }
-      const creditsCol = columnMap['credits'];
-      if (creditsCol !== undefined && cols[creditsCol]) {
-        const credValue = cols[creditsCol];
-        if (credValue) {
-          const cred = parseFloat(credValue);
-          if (!isNaN(cred)) classData.credits = cred;
-        }
+      if (columnMap.location !== undefined && cols[columnMap.location]) {
+        const loc = parseLocation(cols[columnMap.location]!);
+        classData.location = cols[columnMap.location]!.trim();
+        classData.building = loc.building;
+        classData.room = loc.room;
+      }
+      if (columnMap.building !== undefined) classData.building = cols[columnMap.building]?.trim() || '';
+      if (columnMap.room !== undefined) classData.room = cols[columnMap.room]?.trim() || '';
+      if (columnMap.instructor !== undefined) classData.instructor = cols[columnMap.instructor]?.trim() || '';
+      if (columnMap.credits !== undefined && cols[columnMap.credits]) {
+        const cred = parseFloat(cols[columnMap.credits]!);
+        if (!isNaN(cred) && cred > 0 && cred <= 12) classData.credits = cred;
       }
     } else {
-      // No header - try to infer from position and content
-      for (let j = 0; j < cols.length; j++) {
-        if (j === courseCodeIdx) continue;
-        const colValue = cols[j];
-        if (!colValue) continue;
-        const col = colValue.trim();
-        if (!col) continue;
-        
-        // Check what type of data this column contains
-        if (!classData.course_name && col.length > 3 && !col.match(/^\d/) && !col.match(/^[MTWFS]/)) {
-          // Likely course name
-          classData.course_name = col;
-        } else if (!classData.days?.length && col.match(/^[MTWThFSaSu]+$/i)) {
-          // Days pattern
-          classData.days = parseDays(col);
-        } else if (!classData.start_time && col.match(/\d{1,2}:\d{2}/)) {
-          // Time pattern
-          const times = parseTimeRange(col);
-          classData.start_time = times.start;
-          classData.end_time = times.end;
-        } else if (!classData.location && col.match(/[A-Za-z]+\s*\d{2,4}/)) {
-          // Location pattern (building + room)
-          const loc = parseLocation(col);
-          classData.location = col;
-          classData.building = loc.building;
-          classData.room = loc.room;
-        } else if (!classData.instructor && col.match(/^(Dr\.|Prof\.|Mr\.|Ms\.|Mrs\.|TA\s)/i)) {
-          // Instructor
-          classData.instructor = col;
-        } else if (!classData.credits && col.match(/^\d(\.\d)?$/)) {
-          // Credits (single digit, possibly with decimal)
-          classData.credits = parseFloat(col);
-        }
-      }
+      // No header — infer from content
+      inferColumnsFromContent(cols, courseCodeIdx, classData);
     }
-    
-    // Only add if we have meaningful data (course name or time)
+
     if (classData.course_name || classData.start_time || classData.location) {
-      classes.push({
-        id: classData.id || generateId(),
-        course_code: classData.course_code || '',
-        course_name: classData.course_name || '',
-        instructor: classData.instructor || '',
-        days: classData.days || [],
-        start_time: classData.start_time || '',
-        end_time: classData.end_time || '',
-        location: classData.location || '',
-        building: classData.building || '',
-        room: classData.room || '',
-        credits: classData.credits || null,
-        semester,
-      });
+      classes.push(fillDefaults(classData));
     }
   }
-  
+
   return classes;
 }
 
-// Deduplicate classes by course_code, keeping the one with more data
-function deduplicateClasses(classes: ParsedClass[]): ParsedClass[] {
-  const classMap = new Map<string, ParsedClass>();
-  
-  for (const cls of classes) {
-    const existing = classMap.get(cls.course_code);
-    
-    if (!existing) {
-      classMap.set(cls.course_code, cls);
-    } else {
-      // Count how much data each has
-      const existingScore = scoreClass(existing);
-      const newScore = scoreClass(cls);
-      
-      if (newScore > existingScore) {
-        classMap.set(cls.course_code, cls);
+/** Infer column meanings from the content itself (no header row) */
+function inferColumnsFromContent(cols: string[], courseCodeIdx: number, classData: Partial<ParsedClass>): void {
+  for (let j = 0; j < cols.length; j++) {
+    if (j === courseCodeIdx) continue;
+    const col = cols[j]?.trim();
+    if (!col) continue;
+
+    // Time range
+    if (!classData.start_time && TIME_RANGE_RE.test(col)) {
+      const times = parseTimeRange(col);
+      classData.start_time = times.start;
+      classData.end_time = times.end;
+      continue;
+    }
+
+    // Single time value (might be start or end)
+    if (!classData.start_time && SINGLE_TIME_RE.test(col) && col.match(/\d{1,2}:\d{2}/)) {
+      classData.start_time = parseTime(col);
+      continue;
+    }
+
+    // Days pattern (short: MWF, TTh)
+    if ((!classData.days || classData.days.length === 0) && /^[MTWRFSauhe]{1,7}$/i.test(col)) {
+      const days = parseDays(col);
+      if (days.length > 0) {
+        classData.days = days;
+        continue;
       }
     }
+
+    // Credits (standalone number 1-6)
+    if (!classData.credits && STANDALONE_CREDITS_RE.test(col)) {
+      const n = parseFloat(col);
+      if (n >= 0.5 && n <= 6) {
+        classData.credits = n;
+        continue;
+      }
+    }
+
+    // Location (BLDG 123 pattern, but not a course code)
+    if (!classData.location && LOCATION_RE.test(col)) {
+      const loc = extractLocation(col);
+      if (loc) {
+        classData.location = loc.location;
+        classData.building = loc.building;
+        classData.room = loc.room;
+        continue;
+      }
+    }
+
+    // Instructor (contains Dr., Prof., or looks like a name)
+    if (!classData.instructor && INSTRUCTOR_RE.test(col)) {
+      classData.instructor = col;
+      continue;
+    }
+
+    // Course name — longer string without digits at start, not days
+    if (!classData.course_name && col.length > 3 && !/^\d/.test(col) && !/^[MTWRF]{1,5}h?$/i.test(col)) {
+      classData.course_name = col;
+    }
   }
-  
-  return Array.from(classMap.values());
 }
 
-// Score a class by how much data it has
-function scoreClass(cls: ParsedClass): number {
-  let score = 0;
-  if (cls.course_name) score += 2;
-  if (cls.instructor) score += 1;
-  if (cls.days.length > 0) score += 1;
-  if (cls.start_time) score += 2;
-  if (cls.end_time) score += 1;
-  if (cls.location) score += 1;
-  if (cls.credits) score += 1;
-  return score;
-}
+// ============================================================================
+// MULTI-LINE FORMAT PARSER
+// ============================================================================
 
-// Detect semester from text
-export function detectSemester(text: string): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth();
-  
-  // Check for explicit semester mentions
-  const springMatch = text.match(/spring\s*(\d{4})?/i);
-  const fallMatch = text.match(/fall\s*(\d{4})?/i);
-  const summerMatch = text.match(/summer\s*(\d{4})?/i);
-  
-  if (springMatch) return `Spring ${springMatch[1] || year}`;
-  if (fallMatch) return `Fall ${fallMatch[1] || year}`;
-  if (summerMatch) return `Summer ${summerMatch[1] || year}`;
-  
-  // Default based on current month
-  if (month >= 0 && month <= 4) return `Spring ${year}`;
-  if (month >= 5 && month <= 7) return `Summer ${year}`;
-  return `Fall ${year}`;
-}
-
-// Main parser function for schedule text
-export function parseScheduleText(text: string): ParsedClass[] {
-  console.log('[Parser] Starting to parse text, length:', text.length);
-  
-  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-  const semester = detectSemester(text);
-  
-  console.log('[Parser] Lines after split:', lines.length);
-  console.log('[Parser] Detected semester:', semester);
-  console.log('[Parser] First 5 lines:', lines.slice(0, 5));
-  
-  // First, try to detect if this is a table format (tab-separated)
-  const isTableFormat = lines.some(line => line.includes('\t'));
-  console.log('[Parser] Is table format:', isTableFormat);
-  
-  let classes: ParsedClass[] = [];
-  
-  if (isTableFormat) {
-    // Parse as table - each row is a potential class
-    classes = parseTableFormat(lines, semester);
-    console.log('[Parser] Table format result:', classes.length, 'classes (before dedup)');
-  } else {
-    // Parse as multi-line format
-    classes = parseMultiLineFormat(lines, semester);
-    console.log('[Parser] Multi-line format result:', classes.length, 'classes (before dedup)');
-  }
-  
-  // Deduplicate by course code
-  const dedupedClasses = deduplicateClasses(classes);
-  console.log('[Parser] After deduplication:', dedupedClasses.length, 'classes');
-  
-  return dedupedClasses;
-}
-
-// Parse multi-line format (course code on one line, details on following lines)
 function parseMultiLineFormat(lines: string[], semester: string): ParsedClass[] {
   const classes: ParsedClass[] = [];
   let currentClass: Partial<ParsedClass> | null = null;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    if (!line) continue;
+    if (!line || isSkippableLine(line)) continue;
 
-    // Try to find course code
     const courseCode = parseCourseCode(line);
-    
+
     if (courseCode) {
-      // Save previous class if exists
-      if (currentClass && currentClass.course_code) {
-        classes.push({
-          id: generateId(),
-          course_code: currentClass.course_code || '',
-          course_name: currentClass.course_name || '',
-          instructor: currentClass.instructor || '',
-          days: currentClass.days || [],
-          start_time: currentClass.start_time || '',
-          end_time: currentClass.end_time || '',
-          location: currentClass.location || '',
-          building: currentClass.building || '',
-          room: currentClass.room || '',
-          credits: currentClass.credits || null,
-          semester,
-        });
+      // Flush previous class
+      if (currentClass?.course_code) {
+        classes.push(fillDefaults(currentClass));
       }
-      
-      // Start new class
+
       currentClass = { course_code: courseCode };
-      
-      // Try to extract course name (text after course code)
-      const codeIndex = line.search(/[A-Z]{2,5}\s*\d{3,4}/i);
-      if (codeIndex !== -1) {
-        const afterCode = line.substring(codeIndex + courseCode.replace(/\s/g, '').length);
-        const nameMatch = afterCode.match(/[-–—|]?\s*([A-Za-z][A-Za-z\s&,]+?)(?=\s*[-–—|]|\s*[MTWThFSaSu]+|\s*\d{1,2}:|$)/);
-        if (nameMatch && nameMatch[1]) {
+
+      // Extract course name (text after code, before time/days)
+      const codeEndIdx = line.search(COURSE_CODE_RE);
+      if (codeEndIdx !== -1) {
+        const codeLen = courseCode.replace(/\s/g, '').length;
+        const afterCode = line.substring(codeEndIdx + codeLen).trim();
+        // Take text before any time pattern, day pattern, or credits
+        const nameMatch = afterCode.match(/^[-–—|:,]?\s*([A-Za-z][A-Za-z\s&,()/']+?)(?=\s*[-–—|]|\s+[MTWRF]{1,5}|\s+\d{1,2}:\d{2}|\s+\d\s*(?:cr|unit|hr)|$)/i);
+        if (nameMatch && nameMatch[1] && nameMatch[1].trim().length > 1) {
           currentClass.course_name = nameMatch[1].trim();
         }
       }
-      
-      // Try to find days in same line
-      const daysMatch = line.match(/\b(M?T?W?(Th)?F?|MWF|TTh|TR|MW)\b/);
-      if (daysMatch && daysMatch[0] && daysMatch[0].length >= 1) {
-        currentClass.days = parseDays(daysMatch[0]);
-      }
 
-      // Try to find time in same line
-      const timeMatch = line.match(/(\d{1,2}:\d{2}\s*(AM|PM)?)\s*[-–—to]+\s*(\d{1,2}:\d{2}\s*(AM|PM)?)/i);
-      if (timeMatch && timeMatch[0]) {
-        const times = parseTimeRange(timeMatch[0]);
-        currentClass.start_time = times.start;
-        currentClass.end_time = times.end;
-      }
-
-      // Try to find instructor
-      const instrMatch = line.match(/(?:Prof\.?|Dr\.?|Professor|Instructor)[:\s]+([A-Za-z\s.]+?)(?=\s*[-–—|]|$)/i);
-      if (instrMatch && instrMatch[1]) {
-        currentClass.instructor = instrMatch[1].trim();
-      }
-
-      // Try to find credits
-      const creditsMatch = line.match(/(\d+(?:\.\d+)?)\s*(?:credits?|units?|hrs?|hours?)/i);
-      if (creditsMatch && creditsMatch[1]) {
-        currentClass.credits = parseFloat(creditsMatch[1]);
-      }
+      // Extract everything else from same line
+      extractInlineDetails(line, currentClass);
     } else if (currentClass) {
-      // Continue parsing details for current class
-      
-      // Days
-      if (!currentClass.days || currentClass.days.length === 0) {
-        const daysMatch = line.match(/\b(M?T?W?(Th)?F?|MWF|TTh|TR|MW)\b/);
-        if (daysMatch && daysMatch[0] && daysMatch[0].length >= 1) {
-          currentClass.days = parseDays(daysMatch[0]);
-        }
-      }
+      // Continue extracting details for current class from subsequent lines
+      extractInlineDetails(line, currentClass);
 
-      // Time
-      if (!currentClass.start_time) {
-        const timeMatch = line.match(/(\d{1,2}:\d{2}\s*(AM|PM)?)\s*[-–—to]+\s*(\d{1,2}:\d{2}\s*(AM|PM)?)/i);
-        if (timeMatch && timeMatch[0]) {
-          const times = parseTimeRange(timeMatch[0]);
-          currentClass.start_time = times.start;
-          currentClass.end_time = times.end;
+      // Course name fallback: if still missing, use a descriptive line
+      if (!currentClass.course_name && line.length > 5 && !/^\d/.test(line) && !TIME_RANGE_RE.test(line)) {
+        // Make sure it's not a day line or location-only line
+        if (!(/^[MTWRF]{1,5}h?\s*$/i.test(line)) && !LOCATION_RE.test(line)) {
+          currentClass.course_name = line;
         }
       }
-
-      // Instructor
-      if (!currentClass.instructor) {
-        const instrMatch = line.match(/(?:Prof\.?|Dr\.?|Professor|Instructor|Staff|TA)[:\s]+([A-Za-z\s.]+?)(?=\s*[-–—|]|$)/i);
-        if (instrMatch && instrMatch[1]) {
-          currentClass.instructor = instrMatch[1].trim();
-        }
-      }
-
-      // Location
-      if (!currentClass.location) {
-        const locMatch = line.match(/([A-Z]{2,4})\s*(\d{3,4}[A-Za-z]?)/);
-        if (locMatch && locMatch[0]) {
-          const loc = parseLocation(locMatch[0]);
-          currentClass.location = locMatch[0];
-          currentClass.building = loc.building;
-          currentClass.room = loc.room;
-        }
-      }
-      
-      // Course name (if still missing)
-      if (!currentClass.course_name && line.length > 5 && !line.match(/^\d/) && !line.match(/^[MTWThFSaSu]+$/)) {
-        currentClass.course_name = line;
+    } else {
+      // No current class and no course code — try to start one from a compact single-line
+      const compactClass = tryParseCompactLine(line, semester);
+      if (compactClass) {
+        classes.push(fillDefaults(compactClass));
       }
     }
   }
-  
-  // Don't forget the last class
-  if (currentClass && currentClass.course_code) {
-    classes.push({
-      id: generateId(),
-      course_code: currentClass.course_code || '',
-      course_name: currentClass.course_name || '',
-      instructor: currentClass.instructor || '',
-      days: currentClass.days || [],
-      start_time: currentClass.start_time || '',
-      end_time: currentClass.end_time || '',
-      location: currentClass.location || '',
-      building: currentClass.building || '',
-      room: currentClass.room || '',
-      credits: currentClass.credits || null,
-      semester,
-    });
+
+  // Flush last class
+  if (currentClass?.course_code) {
+    classes.push(fillDefaults(currentClass));
   }
-  
+
   return classes;
 }
 
-// Format time for display (e.g., "09:30" -> "9:30 AM")
+/** Extract days, time, instructor, location, credits from a line into classData */
+function extractInlineDetails(line: string, classData: Partial<ParsedClass>): void {
+  // Time range
+  if (!classData.start_time) {
+    const time = extractTimeRange(line);
+    if (time) {
+      classData.start_time = time.start;
+      classData.end_time = time.end;
+    }
+  }
+
+  // Days
+  if (!classData.days || classData.days.length === 0) {
+    const days = extractDays(line);
+    if (days && days.length > 0) classData.days = days;
+  }
+
+  // Instructor
+  if (!classData.instructor) {
+    const instr = extractInstructor(line);
+    if (instr) classData.instructor = instr;
+  }
+
+  // Location
+  if (!classData.location) {
+    const loc = extractLocation(line);
+    if (loc) {
+      classData.location = loc.location;
+      classData.building = loc.building;
+      classData.room = loc.room;
+    }
+  }
+
+  // Credits
+  if (!classData.credits) {
+    const creds = extractCredits(line);
+    if (creds) classData.credits = creds;
+  }
+}
+
+/** Try to parse a single compact line that may contain everything */
+function tryParseCompactLine(line: string, semester: string): Partial<ParsedClass> | null {
+  // Must have at least a time range to be a class line
+  const time = extractTimeRange(line);
+  if (!time) return null;
+
+  const days = extractDays(line);
+  if (!days || days.length === 0) return null;
+
+  const classData: Partial<ParsedClass> = {
+    course_code: parseCourseCode(line) || '',
+    days,
+    start_time: time.start,
+    end_time: time.end,
+    semester,
+  };
+
+  const loc = extractLocation(line);
+  if (loc) {
+    classData.location = loc.location;
+    classData.building = loc.building;
+    classData.room = loc.room;
+  }
+
+  const creds = extractCredits(line);
+  if (creds) classData.credits = creds;
+
+  return classData;
+}
+
+// ============================================================================
+// DEDUPLICATION & SCORING
+// ============================================================================
+
+function deduplicateClasses(classes: ParsedClass[]): ParsedClass[] {
+  const classMap = new Map<string, ParsedClass>();
+
+  for (const cls of classes) {
+    // Key by course code if available, otherwise by name + time
+    const key = cls.course_code
+      || `${cls.course_name}|${cls.start_time}`;
+
+    const existing = classMap.get(key);
+    if (!existing || scoreClass(cls) > scoreClass(existing)) {
+      classMap.set(key, cls);
+    }
+  }
+
+  return Array.from(classMap.values());
+}
+
+function scoreClass(cls: ParsedClass): number {
+  let score = 0;
+  if (cls.course_code) score += 2;
+  if (cls.course_name) score += 2;
+  if (cls.instructor) score += 1;
+  if (cls.days.length > 0) score += 2;
+  if (cls.start_time) score += 2;
+  if (cls.end_time) score += 1;
+  if (cls.location) score += 1;
+  if (cls.building) score += 1;
+  if (cls.credits) score += 1;
+  return score;
+}
+
+function fillDefaults(partial: Partial<ParsedClass>): ParsedClass {
+  return {
+    id: partial.id || generateId(),
+    course_code: partial.course_code || '',
+    course_name: partial.course_name || '',
+    instructor: partial.instructor || '',
+    days: partial.days || [],
+    start_time: partial.start_time || '',
+    end_time: partial.end_time || '',
+    location: partial.location || '',
+    building: partial.building || '',
+    room: partial.room || '',
+    credits: partial.credits ?? null,
+    semester: partial.semester || '',
+  };
+}
+
+// ============================================================================
+// SEMESTER DETECTION
+// ============================================================================
+
+export function detectSemester(text: string): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+
+  const springMatch = text.match(/spring\s*(\d{4})?/i);
+  const fallMatch = text.match(/fall\s*(\d{4})?/i);
+  const summerMatch = text.match(/summer\s*(\d{4})?/i);
+  const winterMatch = text.match(/winter\s*(\d{4})?/i);
+
+  if (springMatch) return `Spring ${springMatch[1] || year}`;
+  if (fallMatch) return `Fall ${fallMatch[1] || year}`;
+  if (summerMatch) return `Summer ${summerMatch[1] || year}`;
+  if (winterMatch) return `Winter ${winterMatch[1] || year}`;
+
+  if (month >= 0 && month <= 4) return `Spring ${year}`;
+  if (month >= 5 && month <= 7) return `Summer ${year}`;
+  return `Fall ${year}`;
+}
+
+// ============================================================================
+// MAIN ENTRY POINT
+// ============================================================================
+
+export function parseScheduleText(text: string): ParsedClass[] {
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  const semester = detectSemester(text);
+  const hints = detectFormat(lines);
+
+  let classes: ParsedClass[];
+
+  if (hints.isTabDelimited || hints.isCommaDelimited || hints.isPipeDelimited || hints.isSpaceColumnar) {
+    classes = parseTableFormat(lines, semester, hints);
+
+    // If table parsing found nothing, fall back to multi-line
+    if (classes.length === 0) {
+      classes = parseMultiLineFormat(lines, semester);
+    }
+  } else {
+    classes = parseMultiLineFormat(lines, semester);
+  }
+
+  return deduplicateClasses(classes);
+}
+
+// ============================================================================
+// DISPLAY HELPERS
+// ============================================================================
+
 export function formatTimeDisplay(time: string): string {
   if (!time) return '';
-
   const parts = time.split(':');
   if (parts.length < 2 || !parts[0] || !parts[1]) return time;
 
-  const [hoursStr, minutes] = parts;
-  let hours = parseInt(hoursStr, 10);
+  let hours = parseInt(parts[0], 10);
+  const minutes = parts[1];
   const period = hours >= 12 ? 'PM' : 'AM';
 
   if (hours > 12) hours -= 12;
@@ -668,45 +902,42 @@ export function formatTimeDisplay(time: string): string {
   return `${hours}:${minutes} ${period}`;
 }
 
-// Format days array for display (e.g., ['M', 'W', 'F'] -> "MWF")
 export function formatDaysDisplay(days: string[]): string {
   return days.join('');
 }
 
-// Get day name from abbreviation
 export function getDayName(abbrev: string): string {
   const names: Record<string, string> = {
-    'Su': 'Sunday',
-    'M': 'Monday',
-    'T': 'Tuesday',
-    'W': 'Wednesday',
-    'Th': 'Thursday',
-    'F': 'Friday',
-    'Sa': 'Saturday',
+    'Su': 'Sunday', 'M': 'Monday', 'T': 'Tuesday',
+    'W': 'Wednesday', 'Th': 'Thursday', 'F': 'Friday', 'Sa': 'Saturday',
   };
   return names[abbrev] || abbrev;
 }
 
-// Convert day abbreviation to day of week number (0 = Sunday)
 export function dayToNumber(day: string): number {
   const map: Record<string, number> = {
-    'Su': 0, 'M': 1, 'T': 2, 'W': 3, 'Th': 4, 'F': 5, 'Sa': 6
+    'Su': 0, 'M': 1, 'T': 2, 'W': 3, 'Th': 4, 'F': 5, 'Sa': 6,
   };
   return map[day] ?? -1;
 }
 
-// Generate random color for class (for calendar)
+// Curated palette — muted, non-clashing tones that look great on white/cream
+const CLASS_COLORS = [
+  '#3B82F6', // blue
+  '#8B5CF6', // violet
+  '#EC4899', // pink
+  '#F97316', // orange
+  '#0EA5E9', // sky
+  '#14B8A6', // teal
+  '#EF4444', // red
+  '#A855F7', // purple
+  '#06B6D4', // cyan
+  '#F59E0B', // amber
+];
+let colorIndex = 0;
+
 export function generateClassColor(): string {
-  const colors = [
-    '#16A34A', // green
-    '#2563EB', // blue
-    '#DC2626', // red
-    '#9333EA', // purple
-    '#EA580C', // orange
-    '#0891B2', // cyan
-    '#4F46E5', // indigo
-    '#DB2777', // pink
-  ];
-  const randomIndex = Math.floor(Math.random() * colors.length);
-  return colors[randomIndex] || '#16A34A';
+  const color = CLASS_COLORS[colorIndex % CLASS_COLORS.length] || '#3B82F6';
+  colorIndex++;
+  return color;
 }

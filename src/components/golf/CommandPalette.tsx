@@ -386,11 +386,12 @@ export function CommandPaletteTrigger() {
         // Dispatch a keyboard event to open the palette
         window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }));
       }}
+      aria-label="Search commands"
       className="flex items-center gap-2 px-3 py-1.5 text-sm text-warm-500 bg-warm-100 hover:bg-warm-200 rounded-lg transition-colors"
     >
-      <IconSearch size={14} />
+      <IconSearch size={14} aria-hidden="true" />
       <span className="hidden sm:inline">Search</span>
-      <kbd className="hidden sm:inline text-xs text-warm-400 ml-2">⌘K</kbd>
+      <kbd className="hidden sm:inline text-xs text-warm-400 ml-2" aria-hidden="true">⌘K</kbd>
     </button>
   );
 }

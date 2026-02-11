@@ -163,6 +163,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
           <div className="relative h-14 flex items-center">
             {/* Icon version (shown when collapsed OR as fallback) */}
             <div
+              aria-hidden={!isCollapsed}
               className={cn(
                 'w-14 h-14 flex items-center justify-center flex-shrink-0',
                 'transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
@@ -171,7 +172,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
             >
               <Image
                 src="/helm-golf-logo-transparent.png"
-                alt="GolfHelm Logo"
+                alt="GolfHelm"
                 width={56}
                 height={56}
                 className="w-14 h-14 object-contain"
@@ -181,6 +182,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
             </div>
             {/* Full logo + text (shown when expanded) */}
             <div
+              aria-hidden={isCollapsed}
               className={cn(
                 'flex items-center gap-3 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
                 isCollapsed ? 'opacity-0 scale-75 absolute' : 'opacity-100 scale-100'
@@ -189,7 +191,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
               <div className="w-14 h-14 flex items-center justify-center flex-shrink-0 mt-0.5">
                 <Image
                   src="/helm-golf-logo-transparent.png"
-                  alt="GolfHelm Logo"
+                  alt=""
                   width={56}
                   height={56}
                   className="w-14 h-14 object-contain"
@@ -299,7 +301,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
         </div>
 
         {/* Divider */}
-        <div className="my-4 mx-3 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+        <div className="my-4 mx-3 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" aria-hidden="true" />
 
         {/* Secondary Navigation */}
         <div className="space-y-0.5">

@@ -269,6 +269,9 @@ export function MobileEventSheet({
       {/* Bottom Sheet */}
       <div
         ref={sheetRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={isCreating ? 'New Event' : isViewMode ? 'Event Details' : 'Edit Event'}
         className={cn(
           'fixed inset-x-0 bottom-0 z-50',
           'bg-white rounded-t-3xl shadow-2xl',
@@ -279,8 +282,8 @@ export function MobileEventSheet({
         style={{ paddingBottom: safeAreaBottom }}
       >
         {/* Drag handle */}
-        <div className="flex justify-center py-3">
-          <div className="w-10 h-1.5 bg-warm-300 rounded-full" />
+        <div className="flex justify-center py-3" aria-hidden="true">
+          <div className="w-10 h-1.5 bg-warm-400 rounded-full" />
         </div>
 
         {/* Header with close */}
@@ -291,9 +294,10 @@ export function MobileEventSheet({
           <button
             type="button"
             onClick={handleClose}
+            aria-label="Close"
             className="p-2 -mr-2 rounded-full hover:bg-warm-100 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
           >
-            <X className="w-5 h-5 text-warm-500" />
+            <X className="w-5 h-5 text-warm-500" aria-hidden="true" />
           </button>
         </div>
 
@@ -301,8 +305,8 @@ export function MobileEventSheet({
         <div className="overflow-y-auto max-h-[calc(92vh-180px)] overscroll-contain">
           {/* Error message */}
           {error && (
-            <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 mx-5 rounded-xl mb-3">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <div role="alert" id="event-form-error" className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 mx-5 rounded-xl mb-3">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
               <span className="text-sm">{error}</span>
             </div>
           )}
@@ -310,7 +314,7 @@ export function MobileEventSheet({
           {/* Event Type Pills - scrollable row */}
           {canEdit && (
             <div className="px-5 pb-4">
-              <div className="pills-scroll pb-1 -mx-1 px-1">
+              <div className="pills-scroll pb-1 -mx-1 px-1" role="radiogroup" aria-label="Event type">
                 {MOBILE_EVENT_TYPE_PILLS.map((pill) => {
                   const Icon = pill.icon;
                   const isActive = formData.eventType === pill.type;
@@ -318,6 +322,8 @@ export function MobileEventSheet({
                     <button
                       key={pill.type}
                       type="button"
+                      role="radio"
+                      aria-checked={isActive}
                       onClick={() => {
                         triggerHaptic('light');
                         setFormData({ ...formData, eventType: pill.type });
@@ -332,7 +338,7 @@ export function MobileEventSheet({
                           : cn(pill.inactiveBg, pill.inactiveText)
                       )}
                     >
-                      <Icon className="w-4 h-4" />
+                      <Icon className="w-4 h-4" aria-hidden="true" />
                       {pill.label}
                     </button>
                   );
@@ -362,6 +368,8 @@ export function MobileEventSheet({
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               disabled={isViewMode || isSaving}
               placeholder="Event title..."
+              aria-label="Event title"
+              aria-describedby={error ? 'event-form-error' : undefined}
               className={cn(
                 'w-full text-xl font-semibold text-warm-900 placeholder:text-warm-300',
                 'bg-transparent border-0 outline-none p-0',
@@ -384,6 +392,7 @@ export function MobileEventSheet({
                   value={formData.startDate}
                   onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                   disabled={isViewMode || isSaving}
+                  aria-label="Event date"
                   className={cn(
                     'flex-1 bg-transparent text-base text-warm-900 border-0 outline-none',
                     'disabled:text-warm-600 min-h-[40px]'
@@ -393,22 +402,26 @@ export function MobileEventSheet({
 
               {/* All Day Toggle */}
               <div className="flex items-center justify-between pl-12">
-                <span className="text-sm text-warm-600">All day</span>
+                <span id="all-day-label" className="text-sm text-warm-600">All day</span>
                 <button
                   type="button"
+                  role="switch"
+                  aria-checked={formData.allDay}
+                  aria-labelledby="all-day-label"
                   onClick={() => {
                     if (!isViewMode && !isSaving) {
                       triggerHaptic('light');
                       setFormData({ ...formData, allDay: !formData.allDay });
                     }
                   }}
+                  disabled={isViewMode || isSaving}
                   className={cn(
                     'relative w-11 h-6 rounded-full transition-colors duration-200',
-                    formData.allDay ? 'bg-green-500' : 'bg-warm-300',
+                    formData.allDay ? 'bg-emerald-500' : 'bg-warm-300',
                     (isViewMode || isSaving) && 'opacity-50'
                   )}
                 >
-                  <span className={cn(
+                  <span aria-hidden="true" className={cn(
                     'absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200',
                     formData.allDay && 'translate-x-5'
                   )} />
@@ -427,21 +440,25 @@ export function MobileEventSheet({
                       value={formData.startTime || ''}
                       onChange={(e) => setFormData({ ...formData, startTime: e.target.value || null })}
                       disabled={isViewMode || isSaving}
+                      aria-label="Start time"
                       className={cn(
                         'flex-1 bg-white rounded-xl px-3 py-2 text-base text-warm-900',
                         'border border-warm-200 outline-none min-h-[40px]',
+                        'focus-visible:ring-2 focus-visible:ring-emerald-500/40 focus-visible:border-emerald-300',
                         'disabled:text-warm-600 disabled:bg-warm-50'
                       )}
                     />
-                    <span className="text-warm-400 text-sm">to</span>
+                    <span className="text-warm-400 text-sm" aria-hidden="true">to</span>
                     <input
                       type="time"
                       value={formData.endTime || ''}
                       onChange={(e) => setFormData({ ...formData, endTime: e.target.value || null })}
                       disabled={isViewMode || isSaving}
+                      aria-label="End time"
                       className={cn(
                         'flex-1 bg-white rounded-xl px-3 py-2 text-base text-warm-900',
                         'border border-warm-200 outline-none min-h-[40px]',
+                        'focus-visible:ring-2 focus-visible:ring-emerald-500/40 focus-visible:border-emerald-300',
                         'disabled:text-warm-600 disabled:bg-warm-50'
                       )}
                     />
@@ -454,13 +471,14 @@ export function MobileEventSheet({
           {/* Location - inline icon input */}
           <div className="px-5 pb-4">
             <div className="flex items-center gap-3 bg-warm-50 rounded-2xl px-4 py-3">
-              <MapPin className="w-5 h-5 text-warm-400 flex-shrink-0" />
+              <MapPin className="w-5 h-5 text-warm-400 flex-shrink-0" aria-hidden="true" />
               <input
                 type="text"
                 value={formData.location || ''}
                 onChange={(e) => setFormData({ ...formData, location: e.target.value || null })}
                 disabled={isViewMode || isSaving}
                 placeholder="Add location..."
+                aria-label="Location"
                 className={cn(
                   'flex-1 bg-transparent text-base text-warm-900 placeholder:text-warm-400',
                   'border-0 outline-none min-h-[40px]',
@@ -478,6 +496,7 @@ export function MobileEventSheet({
               disabled={isViewMode || isSaving}
               rows={2}
               placeholder="Add notes..."
+              aria-label="Description"
               className={cn(
                 'w-full bg-warm-50 rounded-2xl px-4 py-3 text-base text-warm-900',
                 'placeholder:text-warm-400 border-0 outline-none resize-none',
@@ -633,8 +652,8 @@ export function MobileEventSheet({
               disabled={isSaving}
               className={cn(
                 'w-full py-4 rounded-2xl font-semibold text-base',
-                'bg-gradient-to-r from-green-600 to-green-500 text-white',
-                'shadow-lg shadow-green-600/25',
+                'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white',
+                'shadow-lg shadow-emerald-600/25',
                 'active:scale-[0.98] transition-all min-h-[52px]',
                 isSaving && 'opacity-50'
               )}

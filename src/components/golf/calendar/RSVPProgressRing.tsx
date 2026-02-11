@@ -114,12 +114,13 @@ export function RSVPProgressRing({
             cy={config.diameter / 2}
             r={radius}
             fill="none"
-            stroke="rgb(203, 213, 225)" // warm-300
+            stroke="var(--rsvp-pending)"
             strokeWidth={config.strokeWidth}
             strokeDasharray={`${pendingArc} ${circumference - pendingArc}`}
             strokeDashoffset={-pendingOffset}
             strokeLinecap="round"
             className={animated ? 'transition-all duration-500' : ''}
+            style={animated ? { transitionDelay: '450ms' } : undefined}
           />
         )}
 
@@ -130,12 +131,13 @@ export function RSVPProgressRing({
             cy={config.diameter / 2}
             r={radius}
             fill="none"
-            stroke="rgb(251, 113, 133)" // rose-400
+            stroke="var(--rsvp-declined)"
             strokeWidth={config.strokeWidth}
             strokeDasharray={`${declinedArc} ${circumference - declinedArc}`}
             strokeDashoffset={-declinedOffset}
             strokeLinecap="round"
             className={animated ? 'transition-all duration-500' : ''}
+            style={animated ? { transitionDelay: '300ms' } : undefined}
           />
         )}
 
@@ -146,12 +148,13 @@ export function RSVPProgressRing({
             cy={config.diameter / 2}
             r={radius}
             fill="none"
-            stroke="rgb(251, 191, 36)" // amber-500
+            stroke="var(--rsvp-maybe)"
             strokeWidth={config.strokeWidth}
             strokeDasharray={`${maybeArc} ${circumference - maybeArc}`}
             strokeDashoffset={-maybeOffset}
             strokeLinecap="round"
             className={animated ? 'transition-all duration-500' : ''}
+            style={animated ? { transitionDelay: '150ms' } : undefined}
           />
         )}
 
@@ -162,7 +165,7 @@ export function RSVPProgressRing({
             cy={config.diameter / 2}
             r={radius}
             fill="none"
-            stroke="rgb(16, 185, 129)" // emerald-500
+            stroke="var(--rsvp-confirmed)"
             strokeWidth={config.strokeWidth}
             strokeDasharray={`${confirmedArc} ${circumference - confirmedArc}`}
             strokeDashoffset={0}
@@ -261,7 +264,7 @@ export function CompactRSVPRing({
         cy={config.diameter / 2}
         r={radius}
         fill="none"
-        stroke="rgb(241, 245, 249)"
+        stroke="var(--rsvp-pending)"
         strokeWidth={config.strokeWidth}
       />
 
@@ -271,7 +274,7 @@ export function CompactRSVPRing({
         cy={config.diameter / 2}
         r={radius}
         fill="none"
-        stroke="rgb(16, 185, 129)"
+        stroke="var(--rsvp-confirmed)"
         strokeWidth={config.strokeWidth}
         strokeDasharray={`${arcLength} ${circumference - arcLength}`}
         strokeLinecap="round"

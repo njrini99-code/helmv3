@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useDroppable } from '@dnd-kit/core';
+import { Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PremiumEventBlock } from './PremiumEventBlock';
 import { calculateEventTop, calculateEventHeight, isToday } from '@/lib/calendar/event-styles';
@@ -59,16 +60,13 @@ function DroppableTimeSlot({
       ref={setNodeRef}
       className={cn(
         'h-16 relative transition-all duration-200',
+        'border-b border-stone-200/[0.12]',
         // Subtle alternating row tint instead of hard borders
         isEvenHour ? 'bg-white/30' : 'bg-stone-50/20',
         isCurrentDay && 'bg-green-50/25',
         'hover:bg-white/50',
         isOver && 'bg-green-100/50'
       )}
-      style={{
-        // Soft bottom border only (no left border - column gaps handle separation)
-        borderBottom: '1px solid rgba(214, 211, 209, 0.12)',
-      }}
     >
       {isOver && (
         <div className="absolute inset-1 border-2 border-dashed border-green-400 rounded-lg bg-green-50/40" />
@@ -175,6 +173,7 @@ export function WeekView({
   selectedPlayerName,
 }: WeekViewProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -182,6 +181,17 @@ export function WeekView({
     }, 60000);
 
     return () => clearInterval(interval);
+  }, []);
+
+  // Auto-scroll to current time on mount
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const hour = new Date().getHours();
+    if (hour >= 6 && hour < 22) {
+      const targetScroll = (hour - 6) * 64 - 64; // one row above current time
+      el.scrollTop = Math.max(0, targetScroll);
+    }
   }, []);
 
   const weekDates = Array.from({ length: 7 }, (_, i) => {
@@ -249,25 +259,14 @@ export function WeekView({
 
   return (
     <div
-      className="flex-1 overflow-auto overscroll-contain touch-pan-y"
-      style={{ WebkitOverflowScrolling: 'touch', background: 'transparent' }}
+      ref={scrollRef}
+      className="flex-1 overflow-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]"
       data-scroll-container
     >
-      <div className="min-w-[800px] px-3 md:px-5 pt-2" style={{ background: 'transparent' }}>
+      <div className="min-w-[800px] px-3 md:px-5 pt-2">
         {/* Header row - Day names and dates */}
         <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '56px repeat(7, 1fr)',
-            position: 'sticky',
-            top: 0,
-            zIndex: 20,
-            background: 'rgba(255, 254, 250, 0.85)',
-            backdropFilter: 'blur(16px)',
-            WebkitBackdropFilter: 'blur(16px)',
-            borderBottom: '1px solid rgba(214, 211, 209, 0.15)',
-            gap: '2px',
-          }}
+          className="grid grid-cols-[56px_repeat(7,1fr)] sticky top-0 z-20 bg-[#fffefa]/85 backdrop-blur-xl border-b border-stone-200/[0.15] gap-0.5"
         >
           <div className="h-16" />
           {weekDates.map((date, index) => {
@@ -307,11 +306,7 @@ export function WeekView({
         {/* Time grid — container-based with subtle gaps */}
         <div className="relative">
           <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '56px repeat(7, 1fr)',
-              gap: '0 2px',
-            }}
+            className="grid grid-cols-[56px_repeat(7,1fr)] gap-x-0.5"
           >
             {HOURS.map((hour) => {
               const isEvenHour = hour % 2 === 0;
@@ -319,12 +314,9 @@ export function WeekView({
                 <div key={hour} className="contents">
                   {/* Time label column — clean typography */}
                   <div
-                    className="h-16 flex items-start justify-end pr-3 pt-1 select-none"
-                    style={{
-                      borderBottom: '1px solid rgba(214, 211, 209, 0.08)',
-                    }}
+                    className="h-16 flex items-start justify-end pr-3 pt-1 select-none border-b border-stone-200/[0.08]"
                   >
-                    <span className="text-xs font-medium text-stone-350 tabular-nums" style={{ color: 'rgba(120, 113, 108, 0.7)' }}>
+                    <span className="text-xs font-medium tabular-nums text-stone-500/70">
                       {hour === 0
                         ? '12 AM'
                         : hour < 12
@@ -353,14 +345,11 @@ export function WeekView({
                         className={cn(
                           'h-16 relative',
                           'transition-colors duration-150',
-                          // Subtle alternating row tint
+                          'border-b border-stone-200/[0.12]',
                           isEvenHour ? 'bg-white/30' : 'bg-stone-50/20',
                           isCurrentDay && 'bg-green-50/25',
                           'hover:bg-white/50',
                         )}
-                        style={{
-                          borderBottom: '1px solid rgba(214, 211, 209, 0.12)',
-                        }}
                       />
                     );
                   })}
@@ -371,7 +360,7 @@ export function WeekView({
 
           {/* Player Busy Periods overlay (classes, blocked time) - supports multi-player colors */}
           {playerBusyPeriods.length > 0 && (
-            <div className="absolute inset-0 pointer-events-none" style={{ display: 'grid', gridTemplateColumns: '56px repeat(7, 1fr)', gap: '0 2px' }}>
+            <div className="absolute inset-0 pointer-events-none grid grid-cols-[56px_repeat(7,1fr)] gap-x-0.5">
               <div />
               {busyPeriodsByDay.map((dayPeriods, dayIndex) => (
                 <div key={dayIndex} className="relative pointer-events-none">
@@ -422,7 +411,7 @@ export function WeekView({
           )}
 
           {/* Events overlay */}
-          <div className="absolute inset-0 pointer-events-none" style={{ display: 'grid', gridTemplateColumns: '56px repeat(7, 1fr)', gap: '0 2px' }}>
+          <div className="absolute inset-0 pointer-events-none grid grid-cols-[56px_repeat(7,1fr)] gap-x-0.5">
             <div />
             {layoutByDay.map((dayLayout, dayIndex) => (
               <div key={dayIndex} className="relative pointer-events-none">
@@ -467,14 +456,7 @@ export function WeekView({
           {/* Selected player indicator */}
           {selectedPlayerName && (
             <div
-              className="absolute top-3 left-16 z-20 px-3 py-1.5 rounded-full"
-              style={{
-                background: 'rgba(255, 255, 255, 0.8)',
-                backdropFilter: 'blur(12px)',
-                WebkitBackdropFilter: 'blur(12px)',
-                border: '1px solid rgba(22, 163, 74, 0.2)',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-              }}
+              className="absolute top-3 left-16 z-20 px-3 py-1.5 rounded-full bg-white/80 backdrop-blur-md border border-green-600/20 shadow-sm"
             >
               <p className="text-xs font-medium text-green-700">
                 Viewing {selectedPlayerName}&apos;s schedule
@@ -496,24 +478,31 @@ export function WeekView({
               <div className="flex items-center -ml-1.5">
                 {/* Green dot with white border */}
                 <div
-                  className="w-3 h-3 rounded-full flex-shrink-0"
-                  style={{
-                    background: '#16a34a',
-                    border: '2px solid white',
-                    boxShadow: '0 0 8px rgba(22, 163, 74, 0.5), 0 2px 4px rgba(0,0,0,0.1)',
-                  }}
+                  className="w-3 h-3 rounded-full flex-shrink-0 bg-green-600 border-2 border-white shadow-[0_0_8px_rgba(22,163,74,0.5),0_2px_4px_rgba(0,0,0,0.1)]"
                 />
                 {/* Green line */}
                 <div
-                  className="h-[2px] flex-1"
-                  style={{
-                    background: 'linear-gradient(90deg, #16a34a, rgba(22, 163, 74, 0.4))',
-                  }}
+                  className="h-[2px] flex-1 bg-gradient-to-r from-green-600 to-green-600/40"
                 />
               </div>
             </div>
           )}
         </div>
+
+        {/* Empty state for no events this week */}
+        {events.length === 0 && (
+          <div className="mt-16 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-stone-100/80 mx-auto flex items-center justify-center mb-4">
+              <Calendar className="w-7 h-7 text-stone-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-stone-900 mb-2">
+              No events this week
+            </h3>
+            <p className="text-sm text-stone-500 max-w-xs mx-auto">
+              Click &ldquo;Add Event&rdquo; to schedule something for this week
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

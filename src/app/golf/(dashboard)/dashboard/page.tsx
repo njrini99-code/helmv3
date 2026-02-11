@@ -7,6 +7,12 @@ import type { GolfCoach, GolfPlayer, GolfTeam } from '@/lib/types/golf';
 import type { CalendarEvent } from '@/lib/types/calendar';
 import { CoachDashboard, type CoachDashboardData } from './components/CoachDashboard';
 import { PlayerDashboard, type PlayerDashboardData } from './components/PlayerDashboard';
+import {
+    getCoachDashboardData,
+    getPlayerDashboardData,
+    type CoachDashboardPayload,
+    type PlayerDashboardPayload,
+} from '@/app/golf/actions/dashboard-data';
 
 // Local types for dashboard data
 interface RecentRound {
@@ -86,6 +92,8 @@ export default function GolfDashboardPage() {
     const [error, setError] = useState<string | null>(null);
     const [coachData, setCoachData] = useState<CoachDashboardData | null>(null);
     const [playerData, setPlayerData] = useState<PlayerDashboardData | null>(null);
+    const [coachEnhanced, setCoachEnhanced] = useState<CoachDashboardPayload | null>(null);
+    const [playerEnhanced, setPlayerEnhanced] = useState<PlayerDashboardPayload | null>(null);
     const [retryCount, setRetryCount] = useState(0);
 
     // PERF: Destructure primitive values for stable useEffect dependencies
@@ -274,6 +282,11 @@ export default function GolfDashboardPage() {
                             teamScoringTrend: teamScoringTrend.length > 0 ? teamScoringTrend : undefined
                         });
                         setLoading(false);
+
+                        // Non-blocking: fetch enhanced data (sparklines, action items, today events, team pulse)
+                        getCoachDashboardData(coachId, userId, teamId!)
+                            .then(payload => { if (mounted) setCoachEnhanced(payload); })
+                            .catch(() => { /* silently ignore — dashboard still works with base data */ });
                     }
                     return;
                 }
@@ -343,6 +356,11 @@ export default function GolfDashboardPage() {
                             }))
                         });
                         setLoading(false);
+
+                        // Non-blocking: fetch enhanced data (sparklines, action items, strokes gained, etc.)
+                        getPlayerDashboardData(playerId, userId, teamId || null)
+                            .then(payload => { if (mounted) setPlayerEnhanced(payload); })
+                            .catch(() => { /* silently ignore — dashboard still works with base data */ });
                     }
                     return;
                 }
@@ -440,11 +458,11 @@ export default function GolfDashboardPage() {
     }
 
     if (role === 'coach' && coachData) {
-        return <CoachDashboard data={coachData} />;
+        return <CoachDashboard data={coachData} enhancedData={coachEnhanced} />;
     }
 
     if (role === 'player' && playerData) {
-        return <PlayerDashboard data={playerData} />;
+        return <PlayerDashboard data={playerData} enhancedData={playerEnhanced} />;
     }
 
     return (

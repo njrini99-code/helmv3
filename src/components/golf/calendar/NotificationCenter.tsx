@@ -87,6 +87,7 @@ export function NotificationCenter() {
         onClick={() => setIsOpen(!isOpen)}
         className="relative p-2 rounded-lg text-warm-600 hover:text-warm-900 hover:bg-warm-100 transition-colors"
         aria-label="Notifications"
+        aria-expanded={isOpen}
       >
         <Bell className="w-5 h-5" />
 
@@ -115,7 +116,7 @@ export function NotificationCenter() {
               {unreadCount > 0 && (
                 <button
                   onClick={handleMarkAllRead}
-                  className="text-xs text-green-600 hover:text-green-700 font-medium flex items-center gap-1"
+                  className="text-xs text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-1"
                 >
                   <Check className="w-3 h-3" />
                   Mark all read
@@ -124,7 +125,7 @@ export function NotificationCenter() {
             </div>
 
             {/* Notification List */}
-            <div className="max-h-[min(480px,60vh)] overflow-y-auto overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }} data-scroll-container>
+            <div className="max-h-[min(480px,60vh)] overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]" data-scroll-container>
               {loading ? (
                 <div className="p-4 space-y-3">
                   {[1, 2, 3].map(i => (
@@ -146,46 +147,47 @@ export function NotificationCenter() {
                   <p className="text-xs text-warm-500 mt-1">No new notifications</p>
                 </div>
               ) : (
-                <div className="divide-y divide-warm-100">
+                <ul role="list" className="divide-y divide-warm-100">
                   {notifications.map(notification => (
-                    <button
-                      key={notification.id}
-                      onClick={() => handleNotificationClick(notification)}
-                      className={`w-full px-4 py-3 flex gap-3 hover:bg-warm-50 transition-colors text-left ${
-                        !notification.read ? 'bg-green-50/30' : ''
-                      }`}
-                    >
-                      {/* Icon */}
-                      <div className="flex-shrink-0 mt-0.5">
-                        {getNotificationIcon(notification.type)}
-                      </div>
-
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-medium ${
-                          !notification.read ? 'text-warm-900' : 'text-warm-700'
-                        }`}>
-                          {notification.title}
-                        </p>
-                        {notification.message && (
-                          <p className="text-xs text-warm-500 mt-0.5 line-clamp-2">
-                            {notification.message}
-                          </p>
-                        )}
-                        <p className="text-xs text-warm-400 mt-1">
-                          {formatTimeAgo(notification.created_at)}
-                        </p>
-                      </div>
-
-                      {/* Unread Indicator */}
-                      {!notification.read && (
-                        <div className="flex-shrink-0">
-                          <span className="w-2 h-2 bg-green-500 rounded-full inline-block"></span>
+                    <li key={notification.id}>
+                      <button
+                        onClick={() => handleNotificationClick(notification)}
+                        className={`w-full px-4 py-3 flex gap-3 hover:bg-warm-50 transition-colors text-left ${
+                          !notification.read ? 'bg-emerald-50/30' : ''
+                        }`}
+                      >
+                        {/* Icon */}
+                        <div className="flex-shrink-0 mt-0.5">
+                          {getNotificationIcon(notification.type)}
                         </div>
-                      )}
-                    </button>
+
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm font-medium ${
+                            !notification.read ? 'text-warm-900' : 'text-warm-700'
+                          }`}>
+                            {notification.title}
+                          </p>
+                          {notification.message && (
+                            <p className="text-xs text-warm-500 mt-0.5 line-clamp-2">
+                              {notification.message}
+                            </p>
+                          )}
+                          <p className="text-xs text-warm-400 mt-1">
+                            {formatTimeAgo(notification.created_at)}
+                          </p>
+                        </div>
+
+                        {/* Unread Indicator */}
+                        {!notification.read && (
+                          <div className="flex-shrink-0">
+                            <span className="w-2 h-2 bg-emerald-500 rounded-full inline-block"></span>
+                          </div>
+                        )}
+                      </button>
+                    </li>
                   ))}
-                </div>
+                </ul>
               )}
             </div>
           </div>

@@ -98,6 +98,7 @@ export function LiveScorecard({
         {/* Shine effect */}
         <div
           className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
+          aria-hidden="true"
           style={{
             background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
           }}
@@ -110,17 +111,17 @@ export function LiveScorecard({
             </div>
             <div className="text-xs text-warm-500">TO PAR</div>
           </div>
-          <div className="h-8 w-px bg-warm-200" />
+          <div className="h-8 w-px bg-warm-200" aria-hidden="true" />
           <div className="text-center">
             <div className="text-lg font-bold text-warm-900">{stats.totalScore}</div>
             <div className="text-xs text-warm-500">{stats.holesPlayed} HOLES</div>
           </div>
-          <div className="h-8 w-px bg-warm-200" />
+          <div className="h-8 w-px bg-warm-200" aria-hidden="true" />
           <div className="text-center">
             <div className="text-lg font-bold text-warm-900">{stats.putts}</div>
             <div className="text-xs text-warm-500">PUTTS</div>
           </div>
-          <div className="h-8 w-px bg-warm-200" />
+          <div className="h-8 w-px bg-warm-200" aria-hidden="true" />
           <div className="text-center">
             <div className="text-lg font-bold text-warm-900">{stats.gir}</div>
             <div className="text-xs text-warm-500">GIR</div>
@@ -193,27 +194,27 @@ export function LiveScorecard({
       </div>
 
       {/* Score Distribution */}
-      <div className="flex border-b border-warm-200">
+      <div className="flex border-b border-warm-200" role="group" aria-label="Score distribution">
         <div className="flex-1 py-2 text-center border-r border-warm-200">
           <span className="inline-flex items-center justify-center w-6 h-6 rounded-full
-                         bg-red-500 text-white text-xs font-bold mr-1">
+                         bg-red-500 text-white text-xs font-bold mr-1" aria-hidden="true">
             {stats.birdies}
           </span>
-          <span className="text-xs text-warm-500">Birdies</span>
+          <span className="text-xs text-warm-500">{stats.birdies} Birdie{stats.birdies !== 1 ? 's' : ''}</span>
         </div>
         <div className="flex-1 py-2 text-center border-r border-warm-200">
           <span className="inline-flex items-center justify-center w-6 h-6 rounded-full
-                         bg-green-500 text-white text-xs font-bold mr-1">
+                         bg-green-500 text-white text-xs font-bold mr-1" aria-hidden="true">
             {stats.pars}
           </span>
-          <span className="text-xs text-warm-500">Pars</span>
+          <span className="text-xs text-warm-500">{stats.pars} Par{stats.pars !== 1 ? 's' : ''}</span>
         </div>
         <div className="flex-1 py-2 text-center">
           <span className="inline-flex items-center justify-center w-6 h-6 rounded-full
-                         bg-warm-300 text-warm-700 text-xs font-bold mr-1">
+                         bg-warm-300 text-warm-700 text-xs font-bold mr-1" aria-hidden="true">
             {stats.bogeys}
           </span>
-          <span className="text-xs text-warm-500">Bogeys</span>
+          <span className="text-xs text-warm-500">{stats.bogeys} Bogey{stats.bogeys !== 1 ? 's' : ''}</span>
         </div>
       </div>
 

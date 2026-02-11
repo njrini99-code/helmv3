@@ -1108,10 +1108,11 @@ export default function ShotTrackingComprehensive({
   // CALCULATIONS FOR DISPLAY
   // ============================================================================
   
+  const is9Hole = holes.length <= 9;
   const front9Score = holes.slice(0, 9).reduce((sum, h) => sum + (h.score || 0), 0);
-  const back9Score = holes.slice(9, 18).reduce((sum, h) => sum + (h.score || 0), 0);
+  const back9Score = is9Hole ? 0 : holes.slice(9).reduce((sum, h) => sum + (h.score || 0), 0);
   const front9HasScores = holes.slice(0, 9).some(h => h.score !== null);
-  const back9HasScores = holes.slice(9, 18).some(h => h.score !== null);
+  const back9HasScores = is9Hole ? false : holes.slice(9).some(h => h.score !== null);
   const totalPar = holes.reduce((sum, h) => sum + h.par, 0);
   
   // For sidebar visualization
@@ -1231,15 +1232,15 @@ export default function ShotTrackingComprehensive({
               </span>
             )}
             <span className="text-xs font-bold text-emerald-400 uppercase tracking-wide">
-              Hole {currentHole.number} of 18
+              Hole {currentHole.number} of {holes.length}
             </span>
           </div>
           <button
             onClick={() => {
-              const element = document.getElementById(`hole-${Math.min(18, currentHole.number + 1)}`);
+              const element = document.getElementById(`hole-${Math.min(holes.length, currentHole.number + 1)}`);
               element?.scrollIntoView({ behavior: 'smooth', inline: 'center' });
             }}
-            disabled={currentHoleIndex === 17}
+            disabled={currentHoleIndex === holes.length - 1}
             className="px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-30 disabled:cursor-not-allowed transition-opacity uppercase tracking-wide">
             Next →
           </button>
@@ -1288,15 +1289,15 @@ export default function ShotTrackingComprehensive({
                 </button>
               );
             })}
-            {/* OUT */}
+            {/* OUT (or TOTAL for 9-hole) */}
             <div className="min-w-[75px] py-3 px-2 text-center bg-[#334155] border-r-2 border-warm-500">
-              <div className="text-xs font-semibold text-amber-400">OUT</div>
+              <div className="text-xs font-semibold text-amber-400">{is9Hole ? 'TOTAL' : 'OUT'}</div>
               <div className="text-xs text-warm-400">Par {holes.slice(0, 9).reduce((s, h) => s + h.par, 0)}</div>
               <div className="text-xs text-warm-500">{holes.slice(0, 9).reduce((s, h) => s + h.yardage, 0)}</div>
               <div className="mt-1 text-lg font-bold text-amber-400">{front9HasScores ? front9Score : '-'}</div>
             </div>
-            {/* Back 9 */}
-            {holes.slice(9, 18).map((hole, idx) => {
+            {/* Back 9 — only for 18-hole rounds */}
+            {!is9Hole && holes.slice(9).map((hole, idx) => {
               const actualIdx = idx + 9;
               const isCurrent = actualIdx === currentHoleIndex;
               const hasScore = hole.score !== null;
@@ -1337,20 +1338,24 @@ export default function ShotTrackingComprehensive({
                 </button>
               );
             })}
-            {/* IN */}
-            <div className="min-w-[75px] py-3 px-2 text-center bg-[#334155] border-r-2 border-warm-500">
-              <div className="text-xs font-semibold text-amber-400">IN</div>
-              <div className="text-xs text-warm-400">Par {holes.slice(9, 18).reduce((s, h) => s + h.par, 0)}</div>
-              <div className="text-xs text-warm-500">{holes.slice(9, 18).reduce((s, h) => s + h.yardage, 0)}</div>
-              <div className="mt-1 text-lg font-bold text-amber-400">{back9HasScores ? back9Score : '-'}</div>
-            </div>
-            {/* TOTAL */}
-            <div className="min-w-[85px] py-3 px-2 text-center bg-[#0f172a]">
-              <div className="text-xs font-semibold text-white">TOTAL</div>
-              <div className="text-xs text-warm-400">Par {totalPar}</div>
-              <div className="text-xs text-warm-500">{holes.reduce((s, h) => s + h.yardage, 0)}</div>
-              <div className="mt-1 text-lg font-bold text-white">{(front9HasScores || back9HasScores) ? front9Score + back9Score : '-'}</div>
-            </div>
+            {/* IN — only for 18-hole rounds */}
+            {!is9Hole && (
+              <div className="min-w-[75px] py-3 px-2 text-center bg-[#334155] border-r-2 border-warm-500">
+                <div className="text-xs font-semibold text-amber-400">IN</div>
+                <div className="text-xs text-warm-400">Par {holes.slice(9).reduce((s, h) => s + h.par, 0)}</div>
+                <div className="text-xs text-warm-500">{holes.slice(9).reduce((s, h) => s + h.yardage, 0)}</div>
+                <div className="mt-1 text-lg font-bold text-amber-400">{back9HasScores ? back9Score : '-'}</div>
+              </div>
+            )}
+            {/* TOTAL — only show separate total for 18-hole rounds (9-hole already shows total in OUT) */}
+            {!is9Hole && (
+              <div className="min-w-[85px] py-3 px-2 text-center bg-[#0f172a]">
+                <div className="text-xs font-semibold text-white">TOTAL</div>
+                <div className="text-xs text-warm-400">Par {totalPar}</div>
+                <div className="text-xs text-warm-500">{holes.reduce((s, h) => s + h.yardage, 0)}</div>
+                <div className="mt-1 text-lg font-bold text-white">{(front9HasScores || back9HasScores) ? front9Score + back9Score : '-'}</div>
+              </div>
+            )}
           </div>
         </div>
       </div>

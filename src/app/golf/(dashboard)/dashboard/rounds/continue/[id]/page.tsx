@@ -225,12 +225,11 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
   }
 
   // Create hole configuration for remaining holes
-  // Determine total holes from existing hole data or round metadata
-  // If we have holes 10+ in the data, it's an 18-hole round, otherwise check front/back nine scores
+  // Use holes_played from the round record (set at creation), with heuristic fallback
   const maxHoleNumber = (holes || []).reduce((max: number, h: GolfHoleRow) => Math.max(max, h.hole_number), 0);
   const hasBackNineHoles = maxHoleNumber > 9;
   const isLikely18HoleRound = hasBackNineHoles || (round.back_nine !== null);
-  const totalHoles = isLikely18HoleRound ? 18 : 9;
+  const totalHoles = round.holes_played ?? (isLikely18HoleRound ? 18 : 9);
   // Try to load hole configs from draft data stored in notes field
   let draftHoleConfigs: Array<{ number: number; par: number; yardage: number }> | null = null;
   if (round.notes) {

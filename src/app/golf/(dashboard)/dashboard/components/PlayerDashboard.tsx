@@ -5,18 +5,14 @@ import Link from 'next/link';
 import { m } from 'framer-motion';
 import {
     IconUsers,
-    IconCalendar,
-    IconFlag,
     IconChartBar,
     IconGolf,
     IconPlus,
     IconArrowRight,
-    IconMessage,
     IconSparkles,
     IconSettings,
     IconTarget,
     IconMenu,
-    IconClipboardList,
     IconBell,
 } from '@/components/icons';
 import dynamic from 'next/dynamic';
@@ -25,21 +21,24 @@ import { ShineEffect } from '@/components/ui/shine-effect';
 import { useSidebar } from '@/contexts/sidebar-context';
 import { PlayerFocusAreas } from '@/components/golf/coachhelm/insights';
 
-// PERF: Code-split TrendChart (depends on recharts ~120KB) — only load when player has rounds
 const TrendChart = dynamic(() => import('./TrendChart').then(mod => ({ default: mod.TrendChart })), {
     loading: () => <div className="h-[200px] bg-white/45 backdrop-blur-[20px] rounded-2xl border border-white/30 animate-pulse" />,
     ssr: false
 });
 import {
     PremiumGlassCard,
-    PremiumStatCard,
-    QuickActionCard,
     SectionHeader,
     RoundRow,
+    TodayTimeline,
+    StatCardSparkline,
+    ActionItemsCard,
+    PerformanceRadar,
+    QuickStatRow,
     containerVariants,
     itemVariants
 } from '@/components/golf/dashboard';
 import type { GolfPlayer, GolfTeam } from '@/lib/types/golf';
+import type { PlayerDashboardPayload } from '@/app/golf/actions/dashboard-data';
 
 // ============================================================================
 // TYPES
@@ -65,7 +64,7 @@ export interface PlayerDashboardData {
 }
 
 // ============================================================================
-// LOCAL HELPER COMPONENTS (Shared components imported from @/components/golf/dashboard)
+// LOCAL HELPERS
 // ============================================================================
 
 function JoinTeamBanner() {
@@ -82,19 +81,15 @@ function JoinTeamBanner() {
                 'border border-primary-500/50',
                 'shadow-[0_8px_32px_rgba(22,163,74,0.2),inset_0_1px_0_rgba(255,255,255,0.2)]'
             )}>
-                {/* Ambient glows - hidden on mobile */}
                 <div className="hidden md:block absolute right-0 top-0 w-40 h-40 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
                 <div className="hidden md:block absolute left-0 bottom-0 w-32 h-32 bg-white/5 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2" />
-
                 <div className="relative flex items-start gap-3 md:gap-4">
                     <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0 shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]">
                         <IconUsers size={20} className="text-white md:hidden" />
                         <IconUsers size={24} className="text-white hidden md:block" />
                     </div>
                     <div className="flex-1 min-w-0">
-                        <h3 className="text-base md:text-lg font-bold text-white mb-1">
-                            Join Your Team
-                        </h3>
+                        <h3 className="text-base md:text-lg font-bold text-white mb-1">Join Your Team</h3>
                         <p className="text-white/80 text-xs md:text-sm mb-3 md:mb-4">
                             Get your invite code from your coach to access team features.
                         </p>
@@ -122,15 +117,18 @@ function JoinTeamBanner() {
 }
 
 // ============================================================================
-// MAIN COMPONENT
+// MAIN COMPONENT — BENTO LAYOUT
 // ============================================================================
 
-export function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
+interface PlayerDashboardProps {
+    data: PlayerDashboardData;
+    enhancedData?: PlayerDashboardPayload | null;
+}
+
+export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
     const { player, team, stats, recentRounds } = data;
     const { toggleMobile } = useSidebar();
 
-    // Greeting is computed once on mount. Acceptable since users rarely keep
-    // the dashboard open long enough for the time-of-day to change.
     const greeting = useMemo(() => {
         const hour = new Date().getHours();
         if (hour < 12) return 'Good morning';
@@ -138,7 +136,6 @@ export function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
         return 'Good evening';
     }, []);
 
-    // Prepare chart data from recent rounds (reverse so time goes left to right)
     const chartData = useMemo(() => {
         const sortedRounds = [...recentRounds].reverse();
         return sortedRounds.map(r => ({
@@ -149,18 +146,15 @@ export function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
 
     return (
         <div className="min-h-full bg-transparent">
-            {/* Header Section - Enhanced Premium Glass Panel */}
-            <div
-                className={cn(
-                    'sticky top-0 z-20',
-                    'bg-white/60 backdrop-blur-[24px]',
-                    'border-b border-white/30',
-                    'shadow-[0_1px_3px_rgba(0,0,0,0.02)]'
-                )}
-            >
+            {/* STICKY HEADER */}
+            <div className={cn(
+                'sticky top-0 z-20',
+                'bg-white/60 backdrop-blur-[24px]',
+                'border-b border-white/30',
+                'shadow-[0_1px_3px_rgba(0,0,0,0.02)]'
+            )}>
                 <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
                     <div className="flex items-center gap-3">
-                        {/* Mobile hamburger menu */}
                         <button
                             onClick={toggleMobile}
                             className={cn(
@@ -173,7 +167,6 @@ export function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
                         >
                             <IconMenu size={22} />
                         </button>
-
                         <div className="flex-1 min-w-0">
                             <h1 className="text-lg md:text-2xl font-bold tracking-tight text-slate-900 truncate">
                                 {greeting}, {player.first_name}
@@ -181,7 +174,7 @@ export function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
                             <p className="text-slate-500 mt-0.5 flex items-center gap-1.5 md:gap-2 text-xs md:text-sm">
                                 <span className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-primary-500 animate-pulse flex-shrink-0" />
                                 <span className="truncate">{team?.name || 'Your Team'}</span>
-                                <span className="text-slate-300 hidden sm:inline">•</span>
+                                <span className="text-slate-300 hidden sm:inline">&middot;</span>
                                 <span className="capitalize hidden sm:inline">{player.graduation_year ? `Class of ${player.graduation_year}` : 'Player'}</span>
                             </p>
                         </div>
@@ -189,37 +182,32 @@ export function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
                 </div>
             </div>
 
-            {/* Main Content */}
+            {/* MAIN CONTENT */}
             <m.div
                 className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-8"
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
             >
-                {/* Join Team Banner - show if player has no team */}
                 {!team && <JoinTeamBanner />}
 
                 {stats.roundsPlayed === 0 ? (
-                    /* ============================================================
-                     * EMPTY STATE — player has no rounds yet
-                     * Show a welcoming getting-started experience
-                     * ============================================================ */
+                    /* ═══════════════════════════════════════════
+                       EMPTY STATE — no rounds yet
+                       ═══════════════════════════════════════════ */
                     <>
+                        {/* Hero empty state */}
                         <m.div className="mb-5 md:mb-8" variants={itemVariants}>
                             <PremiumGlassCard glow className="!p-0 overflow-hidden">
                                 <div className="relative p-6 md:p-10 text-center">
-                                    {/* Ambient glow */}
                                     <div className="absolute right-0 top-0 w-48 h-48 bg-primary-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none" />
                                     <div className="absolute left-0 bottom-0 w-36 h-36 bg-violet-500/8 rounded-full blur-2xl translate-y-1/3 -translate-x-1/4 pointer-events-none" />
-
                                     <div className="relative z-10">
                                         <div className="w-16 h-16 md:w-20 md:h-20 mx-auto mb-4 md:mb-5 rounded-2xl bg-gradient-to-br from-primary-50 to-emerald-50 flex items-center justify-center shadow-sm">
                                             <IconGolf size={32} className="text-primary-500 md:hidden" />
                                             <IconGolf size={40} className="text-primary-500 hidden md:block" />
                                         </div>
-                                        <h3 className="text-lg md:text-xl font-bold text-slate-900 mb-2">
-                                            Ready to Track Your Game
-                                        </h3>
+                                        <h3 className="text-lg md:text-xl font-bold text-slate-900 mb-2">Ready to Track Your Game</h3>
                                         <p className="text-sm md:text-base text-slate-500 max-w-md mx-auto mb-6 leading-relaxed">
                                             Submit your first round to unlock scoring averages, performance trends, and AI-powered coaching insights.
                                         </p>
@@ -235,18 +223,16 @@ export function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
                                             <IconPlus size={16} />
                                             Submit Your First Round
                                         </Link>
-
-                                        {/* What you'll unlock */}
                                         <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                                             {[
                                                 { icon: <IconChartBar size={18} />, label: 'Scoring Average' },
-                                                { icon: <IconFlag size={18} />, label: 'Best Round' },
+                                                { icon: <IconTarget size={18} />, label: 'Best Round' },
                                                 { icon: <IconTarget size={18} />, label: 'Performance Trends' },
                                                 { icon: <IconSparkles size={18} />, label: 'AI Coaching' },
                                             ].map((item) => (
                                                 <div key={item.label} className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl bg-white/40 border border-white/30">
                                                     <div className="text-slate-400">{item.icon}</div>
-                                                    <span className="text-xs md:text-xs font-medium text-slate-500">{item.label}</span>
+                                                    <span className="text-xs font-medium text-slate-500">{item.label}</span>
                                                 </div>
                                             ))}
                                         </div>
@@ -255,207 +241,169 @@ export function PlayerDashboard({ data }: { data: PlayerDashboardData }) {
                             </PremiumGlassCard>
                         </m.div>
 
-                        {/* Quick Actions + Focus Areas below the empty state */}
-                        <div className="grid lg:grid-cols-3 gap-4 md:gap-6">
-                            <m.div className="space-y-4 md:space-y-6" variants={itemVariants}>
-                                <div>
-                                    <SectionHeader title="Quick Actions" />
-                                    <div className="space-y-2">
-                                        <QuickActionCard
-                                            icon={<IconPlus size={18} className="text-white" />}
-                                            label="Submit Round"
-                                            description="Log your score"
-                                            href="/golf/dashboard/rounds/new"
-                                            variant="primary"
-                                        />
-                                        <QuickActionCard
-                                            icon={<IconClipboardList size={18} className="text-slate-600" />}
-                                            label="My Tasks"
-                                            description="Pending assignments"
-                                            href="/golf/dashboard/tasks"
-                                        />
-                                        <QuickActionCard
-                                            icon={<IconBell size={18} className="text-slate-600" />}
-                                            label="Announcements"
-                                            description="Team updates"
-                                            href="/golf/dashboard/announcements"
-                                        />
-                                        <QuickActionCard
-                                            icon={<IconCalendar size={18} className="text-slate-600" />}
-                                            label="View Calendar"
-                                            description="Upcoming events"
-                                            href="/golf/dashboard/calendar"
-                                        />
-                                        <QuickActionCard
-                                            icon={<IconMessage size={18} className="text-slate-600" />}
-                                            label="Messages"
-                                            description="Chat with coaches"
-                                            href="/golf/dashboard/messages"
-                                        />
-                                    </div>
-                                </div>
+                        {/* Today's schedule even when no rounds */}
+                        {enhancedData && enhancedData.todayEvents.length > 0 && (
+                            <m.div className="mb-5 md:mb-8" variants={itemVariants}>
+                                <TodayTimeline events={enhancedData.todayEvents} role="player" />
                             </m.div>
+                        )}
 
-                            <m.div className="lg:col-span-2 space-y-4 md:space-y-6" variants={itemVariants}>
-                                <div>
-                                    <SectionHeader
-                                        title="My Focus Areas"
-                                        icon={<IconTarget size={14} />}
-                                    />
-                                    <PremiumGlassCard glow>
-                                        <ShineEffect />
-                                        <PlayerFocusAreas playerId={player.id} />
-                                    </PremiumGlassCard>
-                                </div>
-                            </m.div>
-                        </div>
+                        {/* Focus Areas */}
+                        <m.div variants={itemVariants}>
+                            <SectionHeader title="My Focus Areas" icon={<IconTarget size={14} />} />
+                            <PremiumGlassCard glow>
+                                <ShineEffect />
+                                <PlayerFocusAreas playerId={player.id} />
+                            </PremiumGlassCard>
+                        </m.div>
                     </>
                 ) : (
-                    /* ============================================================
-                     * NORMAL STATE — player has rounds
-                     * Show full stats grid, charts, and recent rounds
-                     * ============================================================ */
+                    /* ═══════════════════════════════════════════
+                       NORMAL STATE — has rounds (BENTO LAYOUT)
+                       ═══════════════════════════════════════════ */
                     <>
-                        {/* Stats Grid */}
+                        {/* HERO ROW: Today's Schedule + Performance Radar */}
+                        <m.div className="grid md:grid-cols-5 gap-4 md:gap-6 mb-5 md:mb-8" variants={itemVariants}>
+                            <div className="md:col-span-3">
+                                <TodayTimeline
+                                    events={enhancedData?.todayEvents || []}
+                                    role="player"
+                                />
+                            </div>
+                            <div className="md:col-span-2">
+                                <PerformanceRadar
+                                    data={enhancedData?.strokesGained || {
+                                        sg_total: null,
+                                        sg_off_tee: null,
+                                        sg_approach: null,
+                                        sg_around_green: null,
+                                        sg_putting: null,
+                                    }}
+                                />
+                            </div>
+                        </m.div>
+
+                        {/* STAT ROW: 4 sparkline cards */}
                         <m.div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 md:gap-4 mb-5 md:mb-8" variants={itemVariants}>
-                            <PremiumStatCard
-                                icon={<IconGolf size={20} />}
+                            <StatCardSparkline
+                                label="Scoring Avg"
+                                value={enhancedData?.sparklines.scoringAvg.value ?? stats.scoringAverage}
+                                sparkline={enhancedData?.sparklines.scoringAvg.sparkline || []}
+                                icon={<IconChartBar size={20} />}
                                 iconColor="text-primary-600"
                                 iconBg="bg-primary-50"
-                                label="Rounds Played"
-                                value={stats.roundsPlayed}
-                                href="/golf/dashboard/rounds"
+                                href="/golf/dashboard/stats"
+                                trend={enhancedData?.sparklines.scoringAvg.trend || stats.recentTrend}
+                                reverseColor
                                 accent
                             />
-                            <PremiumStatCard
-                                icon={<IconChartBar size={20} />}
+                            <StatCardSparkline
+                                label="GIR%"
+                                value={enhancedData?.sparklines.girPct.value ?? null}
+                                sparkline={enhancedData?.sparklines.girPct.sparkline || []}
+                                icon={<IconTarget size={20} />}
                                 iconColor="text-slate-600"
                                 iconBg="bg-slate-100"
-                                label="Scoring Average"
-                                value={stats.scoringAverage ? stats.scoringAverage.toFixed(1) : '--'}
-                                trend={stats.recentTrend === 'declining'
-                                    ? { value: 0.5, positive: false }
-                                    : stats.recentTrend === 'improving'
-                                        ? { value: 0.5, positive: true }
-                                        : null}
                                 href="/golf/dashboard/stats"
+                                suffix="%"
                             />
-                            <PremiumStatCard
-                                icon={<IconFlag size={20} />}
+                            <StatCardSparkline
+                                label="Putts/Rd"
+                                value={enhancedData?.sparklines.puttsPerRound.value ?? null}
+                                sparkline={enhancedData?.sparklines.puttsPerRound.sparkline || []}
+                                icon={<IconGolf size={20} />}
                                 iconColor="text-amber-600"
                                 iconBg="bg-amber-50"
-                                label="Best Round"
-                                value={stats.bestRound ?? '--'}
-                                href="/golf/dashboard/rounds"
+                                href="/golf/dashboard/stats"
+                                reverseColor
                             />
-                            <PremiumStatCard
+                            <StatCardSparkline
+                                label="Handicap"
+                                value={enhancedData?.sparklines.handicap.value ?? (stats.handicap !== null ? Number(Number(stats.handicap).toFixed(1)) : null)}
+                                sparkline={[]}
                                 icon={<IconSparkles size={20} />}
                                 iconColor="text-violet-600"
                                 iconBg="bg-violet-50"
-                                label="Handicap"
-                                value={stats.handicap !== null ? stats.handicap.toFixed(1) : '--'}
                                 href="/golf/dashboard/stats"
                             />
                         </m.div>
 
-                        {/* Two Column Layout */}
-                        <div className="grid lg:grid-cols-3 gap-4 md:gap-6">
-                            {/* Left Column - Quick Actions & Focus Areas */}
-                            <m.div className="space-y-4 md:space-y-6" variants={itemVariants}>
-                                <div>
-                                    <SectionHeader title="Quick Actions" />
-                                    <div className="space-y-2">
-                                        <QuickActionCard
-                                            icon={<IconPlus size={18} className="text-white" />}
-                                            label="Submit Round"
-                                            description="Log your score"
-                                            href="/golf/dashboard/rounds/new"
-                                            variant="primary"
-                                        />
-                                        <QuickActionCard
-                                            icon={<IconChartBar size={18} className="text-slate-600" />}
-                                            label="View My Stats"
-                                            description="Performance analytics"
-                                            href="/golf/dashboard/stats"
-                                        />
-                                        <QuickActionCard
-                                            icon={<IconClipboardList size={18} className="text-slate-600" />}
-                                            label="My Tasks"
-                                            description="Pending assignments"
-                                            href="/golf/dashboard/tasks"
-                                        />
-                                        <QuickActionCard
-                                            icon={<IconBell size={18} className="text-slate-600" />}
-                                            label="Announcements"
-                                            description="Team updates"
-                                            href="/golf/dashboard/announcements"
-                                        />
-                                        <QuickActionCard
-                                            icon={<IconCalendar size={18} className="text-slate-600" />}
-                                            label="View Calendar"
-                                            description="Upcoming events"
-                                            href="/golf/dashboard/calendar"
-                                        />
-                                        <QuickActionCard
-                                            icon={<IconMessage size={18} className="text-slate-600" />}
-                                            label="Messages"
-                                            description="Chat with coaches"
-                                            href="/golf/dashboard/messages"
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Focus Areas */}
-                                <div>
-                                    <SectionHeader
-                                        title="My Focus Areas"
-                                        icon={<IconTarget size={14} />}
-                                    />
-                                    <PremiumGlassCard glow>
-                                        <ShineEffect />
-                                        <PlayerFocusAreas playerId={player.id} />
-                                    </PremiumGlassCard>
-                                </div>
-                            </m.div>
-
-                            {/* Right Column - Recent Rounds & Charts */}
-                            <m.div className="lg:col-span-2 space-y-4 md:space-y-6" variants={itemVariants}>
-                                {/* Scoring Trend Chart */}
+                        {/* MAIN BENTO: Trend + Action Items */}
+                        <m.div className="grid lg:grid-cols-5 gap-4 md:gap-6 mb-5 md:mb-8" variants={itemVariants}>
+                            <div className="lg:col-span-3">
                                 {chartData.length >= 2 && (
-                                    <div>
+                                    <>
                                         <SectionHeader title="Scoring Trend" />
                                         <PremiumGlassCard glow>
-                                            <TrendChart
-                                                data={chartData}
-                                                reverse={true}
-                                            />
+                                            <TrendChart data={chartData} reverse={true} />
                                         </PremiumGlassCard>
-                                    </div>
+                                    </>
                                 )}
+                            </div>
+                            <div className="lg:col-span-2">
+                                <SectionHeader title="Action Items" icon={<IconBell size={14} />} />
+                                <ActionItemsCard items={enhancedData?.actionItems || []} role="player" />
+                            </div>
+                        </m.div>
 
-                                {/* Recent Rounds */}
-                                <div>
-                                    <SectionHeader
-                                        title="My Recent Rounds"
-                                        action={{ label: 'View All', href: '/golf/dashboard/rounds' }}
-                                    />
-                                    <PremiumGlassCard noPadding>
-                                        <ShineEffect />
-                                        <div className="divide-y divide-white/20">
-                                            {recentRounds.map((round) => (
-                                                <RoundRow
-                                                    key={round.id}
-                                                    courseName={round.course_name}
-                                                    score={round.total_score}
-                                                    toPar={round.total_to_par}
-                                                    date={round.round_date}
-                                                />
-                                            ))}
-                                        </div>
-                                    </PremiumGlassCard>
-                                </div>
+                        {/* BOTTOM BENTO: Focus Areas + Recent Rounds */}
+                        <m.div className="grid lg:grid-cols-5 gap-4 md:gap-6 mb-5 md:mb-8" variants={itemVariants}>
+                            <div className="lg:col-span-2">
+                                <SectionHeader title="My Focus Areas" icon={<IconTarget size={14} />} />
+                                <PremiumGlassCard glow>
+                                    <ShineEffect />
+                                    <PlayerFocusAreas playerId={player.id} />
+                                </PremiumGlassCard>
+                            </div>
+                            <div className="lg:col-span-3">
+                                <SectionHeader
+                                    title="My Recent Rounds"
+                                    action={{ label: 'View All', href: '/golf/dashboard/rounds' }}
+                                />
+                                <PremiumGlassCard noPadding>
+                                    <ShineEffect />
+                                    <div className="divide-y divide-white/20">
+                                        {recentRounds.map((round) => (
+                                            <RoundRow
+                                                key={round.id}
+                                                courseName={round.course_name}
+                                                score={round.total_score}
+                                                toPar={round.total_to_par}
+                                                date={round.round_date}
+                                            />
+                                        ))}
+                                    </div>
+                                </PremiumGlassCard>
+                            </div>
+                        </m.div>
+
+                        {/* SECONDARY STATS ROW */}
+                        {enhancedData?.secondaryStats && (
+                            <m.div className="mb-5 md:mb-8" variants={itemVariants}>
+                                <QuickStatRow stats={[
+                                    { label: 'FIR%', value: enhancedData.secondaryStats.firPct, suffix: '%' },
+                                    { label: 'Scrambling', value: enhancedData.secondaryStats.scramblingPct, suffix: '%' },
+                                    { label: 'Birdies/Rd', value: enhancedData.secondaryStats.birdiesPerRound },
+                                    { label: 'Best Round', value: enhancedData.secondaryStats.bestRound },
+                                ]} />
                             </m.div>
-                        </div>
+                        )}
+
+                        {/* CTA: Submit Round */}
+                        <m.div variants={itemVariants}>
+                            <Link
+                                href="/golf/dashboard/rounds/new"
+                                className={cn(
+                                    'flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl text-sm font-semibold',
+                                    'bg-primary-600 hover:bg-primary-700 text-white',
+                                    'shadow-[0_4px_16px_rgba(22,163,74,0.25)]',
+                                    'transition-all duration-200 active:scale-[0.98]'
+                                )}
+                            >
+                                <IconPlus size={16} />
+                                Submit New Round
+                            </Link>
+                        </m.div>
                     </>
                 )}
             </m.div>

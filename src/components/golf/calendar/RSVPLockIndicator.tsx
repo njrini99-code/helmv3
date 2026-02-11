@@ -84,6 +84,7 @@ export function RSVPLockIndicator({
 
   const isUrgent = countdown.urgency === 'urgent';
   const isWarning = countdown.urgency === 'warning';
+  const isCritical = countdown.minutesRemaining <= 10;
 
   return (
     <div
@@ -91,7 +92,7 @@ export function RSVPLockIndicator({
         'flex items-center gap-2 px-3 py-2 rounded-lg border',
         'transition-all duration-200',
         isUrgent && 'bg-rose-50 border-rose-300',
-        isUrgent && 'animate-pulse',
+        isCritical && 'animate-pulse',
         isWarning && 'bg-amber-50 border-amber-300',
         !isUrgent && !isWarning && 'bg-warm-50 border-warm-200',
         compact && 'px-2 py-1',
@@ -255,7 +256,8 @@ export function RSVPLockBadge({ lockTime }: Pick<RSVPLockIndicatorProps, 'lockTi
     <span
       className={cn(
         'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium',
-        isUrgent && 'bg-rose-100 text-rose-700 animate-pulse',
+        isUrgent && 'bg-rose-100 text-rose-700',
+        isUrgent && countdown.minutesRemaining <= 10 && 'animate-pulse',
         isWarning && !isUrgent && 'bg-amber-100 text-amber-700',
         !isUrgent && !isWarning && 'bg-warm-100 text-warm-600'
       )}

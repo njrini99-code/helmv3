@@ -15,6 +15,7 @@
  */
 
 import { useState } from 'react';
+import { m, AnimatePresence, LazyMotion, domAnimation } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { formatTime } from '@/lib/calendar/premium-utils';
 import { StatusBadge, type StatusBadgeProps } from './StatusBadge';
@@ -285,13 +286,23 @@ export function PlayerRSVPCard({
             )}
 
             {/* Confirmation message */}
-            {selectedResponse && (
-              <div className="mt-4 p-3.5 bg-emerald-50 border border-emerald-200 rounded-lg">
-                <p className="text-sm text-emerald-800 text-center font-medium">
-                  ✓ Response saved! You can change this anytime before the deadline.
-                </p>
-              </div>
-            )}
+            <LazyMotion features={domAnimation}>
+              <AnimatePresence>
+                {selectedResponse && (
+                  <m.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                    className="mt-4 p-3.5 bg-emerald-50 border border-emerald-200 rounded-lg"
+                  >
+                    <p className="text-sm text-emerald-800 text-center font-medium">
+                      ✓ Response saved! You can change this anytime before the deadline.
+                    </p>
+                  </m.div>
+                )}
+              </AnimatePresence>
+            </LazyMotion>
           </>
         )}
       </div>

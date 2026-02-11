@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -28,9 +28,13 @@ function DroppableTimeSlot({ date, hour }: { date: Date; hour: number }) {
     },
   });
 
+  const formatHour = (h: number) =>
+    h === 0 ? '12 AM' : h < 12 ? `${h} AM` : h === 12 ? '12 PM' : `${h - 12} PM`;
+
   return (
     <div
       ref={setNodeRef}
+      aria-label={`Drop zone: ${formatHour(hour)}`}
       className={cn(
         'h-16 relative transition-all duration-200',
         'border-l border-t border-stone-100/30',
@@ -39,7 +43,7 @@ function DroppableTimeSlot({ date, hour }: { date: Date; hour: number }) {
       )}
     >
       {isOver && (
-        <div className="absolute inset-1 border-2 border-dashed border-green-400 rounded-lg bg-green-50/40" />
+        <div className="absolute inset-1 border-2 border-dashed border-green-400 rounded-lg bg-green-50/40" aria-hidden="true" />
       )}
     </div>
   );
@@ -135,6 +139,7 @@ function layoutOverlappingEvents(events: CalendarEvent[]): LayoutEvent[] {
 
 export function DayView({ date, events, onEventClick, isDraggable = false }: DayViewProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -142,6 +147,17 @@ export function DayView({ date, events, onEventClick, isDraggable = false }: Day
     }, 60000);
 
     return () => clearInterval(interval);
+  }, []);
+
+  // Auto-scroll to current time on mount
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const hour = new Date().getHours();
+    if (hour >= 6 && hour < 22) {
+      const targetScroll = (hour - 6) * 64 - 64;
+      el.scrollTop = Math.max(0, targetScroll);
+    }
   }, []);
 
   const dayEvents = events.filter((event) => {
@@ -170,7 +186,7 @@ export function DayView({ date, events, onEventClick, isDraggable = false }: Day
   const isCurrentDay = isToday(date.toISOString());
 
   return (
-    <div className="flex-1 overflow-auto overscroll-contain touch-pan-y [--day-gutter:48px] md:[--day-gutter:80px]" style={{ WebkitOverflowScrolling: 'touch' }} data-scroll-container>
+    <div ref={scrollRef} className="flex-1 overflow-auto overscroll-contain touch-pan-y [--day-gutter:48px] md:[--day-gutter:80px] [-webkit-overflow-scrolling:touch]" data-scroll-container>
       <div className="max-w-4xl mx-auto p-3 md:p-6">
         <div className="relative">
           <div className="grid grid-cols-[48px_1fr] md:grid-cols-[80px_1fr]">
@@ -259,6 +275,7 @@ export function DayView({ date, events, onEventClick, isDraggable = false }: Day
           {/* Current Time Indicator — brand green line with glowing dot */}
           {currentTimeTop !== null && isCurrentDay && (
             <div
+              aria-hidden="true"
               className="absolute pointer-events-none z-10"
               style={{
                 top: `${currentTimeTop}px`,
@@ -269,19 +286,11 @@ export function DayView({ date, events, onEventClick, isDraggable = false }: Day
               <div className="flex items-center -ml-1.5">
                 {/* Green dot with white border */}
                 <div
-                  className="w-3 h-3 rounded-full flex-shrink-0"
-                  style={{
-                    background: '#16a34a',
-                    border: '2px solid white',
-                    boxShadow: '0 0 8px rgba(22, 163, 74, 0.5), 0 2px 4px rgba(0,0,0,0.1)',
-                  }}
+                  className="w-3 h-3 rounded-full flex-shrink-0 bg-green-600 border-2 border-white shadow-[0_0_8px_rgba(22,163,74,0.5),0_2px_4px_rgba(0,0,0,0.1)]"
                 />
                 {/* Green line */}
                 <div
-                  className="h-[2px] flex-1"
-                  style={{
-                    background: 'linear-gradient(90deg, #16a34a, rgba(22, 163, 74, 0.4))',
-                  }}
+                  className="h-[2px] flex-1 bg-gradient-to-r from-green-600 to-green-600/40"
                 />
               </div>
             </div>

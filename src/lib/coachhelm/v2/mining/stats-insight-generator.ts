@@ -189,6 +189,17 @@ export class StatsInsightGenerator {
   }
 
   /**
+   * Get average holes per round (handles 9-hole rounds correctly).
+   * Falls back to 18 only when no data is available.
+   */
+  private getHolesPerRound(stats: GolfStats): number {
+    if (stats.roundsPlayed > 0 && stats.holesPlayed > 0) {
+      return stats.holesPlayed / stats.roundsPlayed;
+    }
+    return 18;
+  }
+
+  /**
    * Analyze trend for a specific metric
    */
   private analyzeTrend(
@@ -433,7 +444,7 @@ export class StatsInsightGenerator {
           body: isAboveAvg
             ? `Your ${stats.girPercentage.toFixed(0)}% GIR leads the team (avg: ${girComparison.teamAvg.toFixed(0)}%). Strong iron play is a competitive advantage.`
             : `Your ${stats.girPercentage.toFixed(0)}% GIR is below the team average of ${girComparison.teamAvg.toFixed(0)}%. Focus on approach consistency.`,
-          strokeImpact: isAboveAvg ? 0 : Math.abs(gapToAvg) / 100 * 18 * 0.3,
+          strokeImpact: isAboveAvg ? 0 : Math.abs(gapToAvg) / 100 * this.getHolesPerRound(stats) * 0.3,
           recommendation: isAboveAvg
             ? 'Your approach shots are a strength. Consider helping teammates with iron play.'
             : 'Study what top team performers do on approaches. Focus on distance control.',
@@ -514,7 +525,7 @@ export class StatsInsightGenerator {
         body: isImproving
           ? `Your greens in regulation improved from ${girTrend.baselineValue.toFixed(0)}% to ${girTrend.currentValue.toFixed(0)}%. Better approach shots lead to more birdie opportunities.`
           : `Your greens in regulation dropped from ${girTrend.baselineValue.toFixed(0)}% to ${girTrend.currentValue.toFixed(0)}%. This puts more pressure on your short game.`,
-        strokeImpact: isImproving ? 0 : Math.abs(girTrend.magnitude) / 100 * 18 * 0.3,
+        strokeImpact: isImproving ? 0 : Math.abs(girTrend.magnitude) / 100 * this.getHolesPerRound(stats) * 0.3,
         recommendation: isImproving
           ? 'Your iron play is improving. Keep working on distance control.'
           : 'Focus on approach shot consistency. Consider club selection and commit to your targets.',
@@ -869,7 +880,7 @@ export class StatsInsightGenerator {
     if (stats.girPercentage !== null && stats.girPercentage < BENCHMARKS.girPct - 10) {
       const girDeficit = BENCHMARKS.girPct - stats.girPercentage;
       // Each GIR miss typically costs ~0.5 strokes (scrambling vs 2-putt birdie chance)
-      const strokesLost = (girDeficit / 100) * 18 * 0.5;
+      const strokesLost = (girDeficit / 100) * this.getHolesPerRound(stats) * 0.5;
 
       insights.push({
         id: 'approach-gir-overall',
@@ -1386,7 +1397,7 @@ export class StatsInsightGenerator {
 
       if (girSolid && puttingWeak) {
         const excessPuttsPerGir = stats.puttsPerGir - 1.75;
-        const girsPerRound = stats.girPerRound ?? (stats.girPercentage / 100 * 18);
+        const girsPerRound = stats.girPerRound ?? (stats.girPercentage / 100 * this.getHolesPerRound(stats));
         const strokesWasted = excessPuttsPerGir * girsPerRound;
 
         const bodyParts: string[] = [];
@@ -1820,7 +1831,7 @@ export class StatsInsightGenerator {
         currentValue: stats.girPercentage,
         benchmark: BENCHMARKS.girPct,
         unit: '%',
-        strokesLostPerRound: deficit / 100 * 18 * 0.5,
+        strokesLostPerRound: deficit / 100 * this.getHolesPerRound(stats) * 0.5,
         fixDescription: `Improve GIR from ${stats.girPercentage.toFixed(0)}% to ${BENCHMARKS.girPct}%`,
         practiceAction: 'Approach shot distance control — know your exact carry numbers',
       });

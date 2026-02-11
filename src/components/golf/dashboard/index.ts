@@ -31,3 +31,11 @@ export {
     itemVariants
 } from './premium-components';
 export type { RecentRoundCardProps } from './premium-components';
+
+// New bento dashboard components
+export { TodayTimeline } from './today-timeline';
+export { StatCardSparkline } from './stat-card-sparkline';
+export { ActionItemsCard } from './action-items-card';
+export { TeamPulseCard } from './team-pulse-card';
+export { PerformanceRadar } from './performance-radar';
+export { QuickStatRow } from './quick-stat-row';

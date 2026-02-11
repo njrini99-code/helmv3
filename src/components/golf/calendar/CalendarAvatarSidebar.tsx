@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { ChevronLeft, ChevronUp, ChevronDown, Settings2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { Tooltip } from '@/components/ui/tooltip';
 import { CalendarSyncButton } from './CalendarSyncButton';
 
@@ -77,11 +78,17 @@ export function CalendarAvatarSidebar({
     onPlayerSelect([]);
   };
 
+  const [maxSelectionShake, setMaxSelectionShake] = useState(false);
+
   const handleMemberClick = (memberId: string) => {
     if (selectedPlayerIds.includes(memberId)) {
       onPlayerSelect(selectedPlayerIds.filter(id => id !== memberId));
     } else if (selectedPlayerIds.length < 8) {
       onPlayerSelect([...selectedPlayerIds, memberId]);
+    } else {
+      // Max selection reached - show feedback
+      setMaxSelectionShake(true);
+      setTimeout(() => setMaxSelectionShake(false), 600);
     }
   };
 
@@ -115,11 +122,11 @@ export function CalendarAvatarSidebar({
     .filter((m): m is TeamMember => m !== undefined);
 
   return (
-    <aside className="w-[80px] px-3 pt-4 pb-3 flex flex-col items-center gap-2.5 bg-glass backdrop-blur-xl border border-white/40 rounded-2xl shadow-glass flex-shrink-0 relative overflow-visible z-20 min-h-0">
+    <aside aria-label="Player filter" className="w-[80px] px-3 pt-4 pb-3 flex flex-col items-center gap-2.5 bg-glass backdrop-blur-xl border border-white/40 rounded-2xl shadow-glass flex-shrink-0 relative overflow-visible z-20 min-h-0">
       {/* Collapse Handle */}
       <button
         onClick={() => setIsCollapsed(true)}
-        title="Collapse sidebar"
+        aria-label="Collapse player filter"
         className="absolute -right-3 top-4 w-6 h-12 bg-white/90 border border-white/40 rounded-r-xl flex items-center justify-center text-warm-400 cursor-pointer shadow-sm"
       >
         <ChevronLeft className="w-4 h-4" />
@@ -129,24 +136,25 @@ export function CalendarAvatarSidebar({
       <Tooltip content="Show all team events" side="right">
         <button
           onClick={handleAllClick}
-          className={`w-12 h-12 rounded-[14px] flex items-center justify-center font-bold text-[11px] tracking-wide cursor-pointer transition-all duration-200 border-none flex-shrink-0 ${
+          className={cn(
+            'w-12 h-12 rounded-[14px] flex items-center justify-center font-bold text-[11px] tracking-wide cursor-pointer transition-all duration-200 border-none flex-shrink-0',
             isAllSelected
               ? 'bg-gradient-to-br from-green-500 to-green-600 text-white shadow-[0_4px_14px_rgba(22,163,74,0.4)]'
               : 'bg-warm-100/90 text-warm-500'
-          }`}
+          )}
         >
           ALL
         </button>
       </Tooltip>
 
       {/* Divider */}
-      <div className="w-8 h-px bg-gradient-to-r from-transparent via-warm-300 to-transparent flex-shrink-0" />
+      <div className="w-8 h-px bg-gradient-to-r from-transparent via-warm-300 to-transparent flex-shrink-0" aria-hidden="true" />
 
       {/* Scrollable Avatar List with Gradient Masks */}
       <div className="flex-1 min-h-0 w-full relative">
         {/* Top scroll fade indicator */}
         {canScrollUp && (
-          <div className="absolute top-0 left-0 right-0 h-7 bg-gradient-to-b from-white/95 to-transparent z-[2] pointer-events-none flex items-start justify-center pt-0.5 rounded-t-lg">
+          <div aria-hidden="true" className="absolute top-0 left-0 right-0 h-7 bg-gradient-to-b from-white/95 to-transparent z-[2] pointer-events-none flex items-start justify-center pt-0.5 rounded-t-lg">
             <ChevronUp className="w-3 h-3 text-warm-400 pointer-events-none" />
           </div>
         )}
@@ -154,7 +162,13 @@ export function CalendarAvatarSidebar({
         {/* Avatar scroll container */}
         <div
           ref={scrollRef}
-          className="h-full flex flex-col gap-3 overflow-y-auto overflow-x-hidden w-full items-center py-1 scrollbar-none"
+          role="listbox"
+          aria-label="Team members"
+          aria-multiselectable="true"
+          className={cn(
+            'h-full flex flex-col gap-3 overflow-y-auto overflow-x-hidden w-full items-center py-1 scrollbar-none',
+            maxSelectionShake && 'animate-shake',
+          )}
         >
           {teamMembers.length === 0 ? (
             <div className="py-6 text-center">
@@ -180,22 +194,23 @@ export function CalendarAvatarSidebar({
                   delayMs={300}
                 >
                   <button
+                    role="option"
+                    aria-selected={selected}
                     onClick={() => handleMemberClick(member.id)}
-                    title={getFullName(member)}
-                    className="w-12 h-12 rounded-[14px] flex items-center justify-center text-sm font-semibold cursor-pointer transition-all duration-200 border-none flex-shrink-0 relative overflow-visible"
+                    aria-label={getFullName(member)}
+                    className={cn(
+                      'w-12 h-12 rounded-[14px] flex items-center justify-center text-sm font-semibold cursor-pointer transition-all duration-200 border-none flex-shrink-0 relative overflow-visible',
+                      !selected && 'bg-gradient-to-br from-stone-50 to-stone-200 text-stone-600 shadow-sm',
+                      selected && 'scale-[1.08]',
+                    )}
                     style={
                       selected && playerColor
                         ? {
                             background: `linear-gradient(135deg, ${playerColor.bg} 0%, ${playerColor.bg}dd 100%)`,
                             color: 'white',
                             boxShadow: `0 0 0 3px ${playerColor.border}, 0 4px 14px ${playerColor.border}`,
-                            transform: 'scale(1.08)',
                           }
-                        : {
-                            background: 'linear-gradient(135deg, var(--tw-gradient-from, #fafaf9) 0%, var(--tw-gradient-to, #e7e5e4) 100%)',
-                            color: '#57534e',
-                            boxShadow: '0 2px 4px rgba(0,0,0,0.06)',
-                          }
+                        : undefined
                     }
                   >
                     {member.avatar_url ? (
@@ -211,6 +226,7 @@ export function CalendarAvatarSidebar({
                     {/* Selection indicator with color number */}
                     {selected && playerColor && (
                       <span
+                        aria-hidden="true"
                         className="absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-white shadow-sm flex items-center justify-center text-white text-[9px] font-bold"
                         style={{ background: playerColor.bg }}
                       >
@@ -226,7 +242,7 @@ export function CalendarAvatarSidebar({
 
         {/* Bottom scroll fade indicator */}
         {canScrollDown && (
-          <div className="absolute bottom-0 left-0 right-0 h-7 bg-gradient-to-t from-white/95 to-transparent z-[2] pointer-events-none flex items-end justify-center pb-0.5 rounded-b-lg">
+          <div aria-hidden="true" className="absolute bottom-0 left-0 right-0 h-7 bg-gradient-to-t from-white/95 to-transparent z-[2] pointer-events-none flex items-end justify-center pb-0.5 rounded-b-lg">
             <ChevronDown className="w-3 h-3 text-warm-400 pointer-events-none" />
           </div>
         )}

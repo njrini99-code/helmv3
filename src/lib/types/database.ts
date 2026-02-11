@@ -14,6 +14,108 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_analytics_events: {
+        Row: {
+          created_at: string
+          duration_ms: number | null
+          event_type: string
+          feature_name: string | null
+          id: string
+          metadata: Json | null
+          page_path: string | null
+          session_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number | null
+          event_type: string
+          feature_name?: string | null
+          id?: string
+          metadata?: Json | null
+          page_path?: string | null
+          session_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number | null
+          event_type?: string
+          feature_name?: string | null
+          id?: string
+          metadata?: Json | null
+          page_path?: string | null
+          session_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      admin_api_perf_log: {
+        Row: {
+          action_name: string
+          created_at: string
+          duration_ms: number
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          action_name: string
+          created_at?: string
+          duration_ms: number
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          status: string
+          user_id?: string | null
+        }
+        Update: {
+          action_name?: string
+          created_at?: string
+          duration_ms?: number
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      admin_client_errors: {
+        Row: {
+          created_at: string
+          error_message: string
+          error_stack: string | null
+          id: string
+          metadata: Json | null
+          page_url: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_message: string
+          error_stack?: string | null
+          id?: string
+          metadata?: Json | null
+          page_url?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string
+          error_stack?: string | null
+          id?: string
+          metadata?: Json | null
+          page_url?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       approach_miss_details: {
         Row: {
           created_at: string | null
@@ -3929,6 +4031,8 @@ export type Database = {
           auto_insights: boolean | null
           coach_id: string
           created_at: string | null
+          disabled_at: string | null
+          disabled_reason: string | null
           enabled: boolean | null
           focus_areas: string[] | null
           id: string
@@ -3937,12 +4041,15 @@ export type Database = {
           team_id: string | null
           trend_alerts: boolean | null
           updated_at: string | null
+          user_id: string | null
           weekly_summary: boolean | null
         }
         Insert: {
           auto_insights?: boolean | null
           coach_id: string
           created_at?: string | null
+          disabled_at?: string | null
+          disabled_reason?: string | null
           enabled?: boolean | null
           focus_areas?: string[] | null
           id?: string
@@ -3951,12 +4058,15 @@ export type Database = {
           team_id?: string | null
           trend_alerts?: boolean | null
           updated_at?: string | null
+          user_id?: string | null
           weekly_summary?: boolean | null
         }
         Update: {
           auto_insights?: boolean | null
           coach_id?: string
           created_at?: string | null
+          disabled_at?: string | null
+          disabled_reason?: string | null
           enabled?: boolean | null
           focus_areas?: string[] | null
           id?: string
@@ -3965,6 +4075,7 @@ export type Database = {
           team_id?: string | null
           trend_alerts?: boolean | null
           updated_at?: string | null
+          user_id?: string | null
           weekly_summary?: boolean | null
         }
         Relationships: [
@@ -3980,6 +4091,13 @@ export type Database = {
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "golf_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_coachhelm_settings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -8163,6 +8281,44 @@ export type Database = {
         }
         Relationships: []
       }
+      page_views: {
+        Row: {
+          created_at: string | null
+          id: string
+          path: string
+          referrer: string | null
+          sport: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          path: string
+          referrer?: string | null
+          sport?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          path?: string
+          referrer?: string | null
+          sport?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_views_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_dream_schools: {
         Row: {
           created_at: string | null
@@ -8395,6 +8551,7 @@ export type Database = {
           sg_total: number
         }[]
       }
+      get_audit_log_recent: { Args: { limit_count?: number }; Returns: Json }
       get_baseball_conversations_with_details: {
         Args: { p_user_id: string }
         Returns: {
@@ -8411,6 +8568,7 @@ export type Database = {
         }[]
       }
       get_current_golf_player_id: { Args: never; Returns: string }
+      get_error_summary: { Args: { days_back?: number }; Returns: Json }
       get_expected_strokes: {
         Args: { p_distance: number; p_is_putting?: boolean; p_lie: string }
         Returns: number
@@ -8463,6 +8621,7 @@ export type Database = {
           title: string
         }[]
       }
+      get_platform_health_stats: { Args: never; Returns: Json }
       get_player_stats_summary: {
         Args: { p_player_id: string }
         Returns: {
@@ -8484,6 +8643,14 @@ export type Database = {
       }
       get_user_golf_organization_id: { Args: never; Returns: string }
       get_user_golf_team_ids: { Args: never; Returns: string[] }
+      get_user_last_active: {
+        Args: never
+        Returns: {
+          last_active_at: string
+          user_id: string
+        }[]
+      }
+      get_users_with_auth: { Args: never; Returns: Json }
       heartbeat: { Args: never; Returns: undefined }
       is_admin: { Args: never; Returns: boolean }
       is_baseball_team_coach: { Args: { team_uuid: string }; Returns: boolean }
@@ -8512,6 +8679,10 @@ export type Database = {
       }
       update_qualifier_leaderboard: {
         Args: { p_qualifier_id: string }
+        Returns: undefined
+      }
+      update_user_last_seen: {
+        Args: { target_user_id: string }
         Returns: undefined
       }
       user_conversation_ids: { Args: { p_user_id: string }; Returns: string[] }
