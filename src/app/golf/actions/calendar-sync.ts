@@ -34,12 +34,16 @@ interface ClassFormData {
 }
 
 /**
- * Sync a class to the golf calendar by creating event entries.
- * Creates one event per class occurrence (for each day the class meets).
+ * Sync a class to the golf calendar by creating individual event rows
+ * for each weekly occurrence throughout the semester.
  *
- * NOTE: golf_events does NOT have a `class_id` column.
- * We use the description field to tag class events for identification,
- * and delete/recreate when syncing.
+ * The actual golf_events table uses:
+ *   - start_time (timestamptz, NOT NULL) — full datetime for event start
+ *   - end_time (timestamptz, nullable) — full datetime for event end
+ *   - NO start_date/end_date columns
+ *
+ * We tag class events with [class:<id>] in the description field
+ * so they can be identified and deleted/recreated when syncing.
  */
 export async function syncClassToCalendar(
   classData: ClassFormData,
@@ -65,7 +69,6 @@ export async function syncClassToCalendar(
     return { success: false, error: 'Not authorized to sync this calendar' };
   }
 
-  // Verify the provided teamId matches the player's team membership
   if (!teamId) {
     return { success: false, error: 'Player must be on a team to sync calendar' };
   }
@@ -86,11 +89,10 @@ export async function syncClassToCalendar(
   const semesterDates = parseSemesterDates(classData.semester, classData.semesterStartDate);
 
   if (!semesterDates) {
-    return { success: true, skipped: true };
+    return { success: false, error: 'Could not determine semester dates. Please set a semester start date.' };
   }
 
   // Delete existing calendar events for this class (identified by description tag)
-  // Since there's no class_id column, we use a description marker
   const classTag = `[class:${classId}]`;
   await supabase
     .from('golf_events')
@@ -98,47 +100,68 @@ export async function syncClassToCalendar(
     .eq('team_id', teamId)
     .like('description', `%${classTag}%`);
 
-  // Create calendar events for each day the class meets
-  // golf_events schema: start_date (DATE), end_date (DATE), start_time (TIME), end_time (TIME)
-  const events = classData.days.map(day => {
-    const dayOfWeek = getDayOfWeek(day);
-    const firstOccurrence = getFirstOccurrenceDate(semesterDates.start, dayOfWeek);
+  // Build shared event fields
+  const title = classData.course_code
+    ? `${classData.course_code}: ${classData.course_name}`
+    : classData.course_name || 'Class';
+  const location = [classData.building, classData.room].filter(Boolean).join(' - ') || classData.location || null;
+  const description = [
+    classData.instructor && `Instructor: ${classData.instructor}`,
+    classData.credits && `Credits: ${classData.credits}`,
+    classData.notes,
+    classTag,
+  ].filter(Boolean).join('\n') || classTag;
 
-    return {
-      team_id: teamId,
-      title: `${classData.course_code}: ${classData.course_name}`,
-      event_type: 'other' as const, // 'class' is not in golf_event_type enum; use 'other'
-      start_date: firstOccurrence,
-      end_date: semesterDates.end, // Classes recur until end of semester
-      start_time: classData.start_time,
-      end_time: classData.end_time,
-      all_day: false,
-      location: [classData.building, classData.room].filter(Boolean).join(' - ') || classData.location || null,
-      description: [
-        classData.instructor && `Instructor: ${classData.instructor}`,
-        classData.credits && `Credits: ${classData.credits}`,
-        classData.notes,
-        classTag, // Tag to identify class events for future sync/delete
-      ].filter(Boolean).join('\n') || null,
-      is_mandatory: false,
-      created_by: null, // Players can create events directly without coach
-      status: 'confirmed' as const,
-    };
-  });
+  // Generate one event row per weekly occurrence for each day the class meets.
+  // The calendar UI matches events by comparing start_time to the displayed date,
+  // so each week needs its own row.
+  const semesterEnd = new Date(semesterDates.end + 'T23:59:59');
+  const events: Array<Record<string, unknown>> = [];
+
+  for (const day of classData.days) {
+    const dayOfWeek = getDayOfWeek(day);
+    const firstDateStr = getFirstOccurrenceDate(semesterDates.start, dayOfWeek);
+    const cursor = new Date(firstDateStr + 'T00:00:00');
+
+    while (cursor <= semesterEnd) {
+      const dateStr = cursor.toISOString().split('T')[0];
+      events.push({
+        team_id: teamId,
+        title,
+        event_type: 'other',
+        // start_time/end_time are timestamptz — combine date + class time
+        start_time: `${dateStr}T${classData.start_time || '08:00'}:00`,
+        end_time: `${dateStr}T${classData.end_time || '09:00'}:00`,
+        all_day: false,
+        location,
+        description,
+        status: 'confirmed',
+      });
+      // Advance by 7 days for next weekly occurrence
+      cursor.setDate(cursor.getDate() + 7);
+    }
+  }
 
   if (events.length === 0) {
     return { success: true, eventsCreated: 0 };
   }
 
-  const { error } = await supabase.from('golf_events').insert(events);
+  // Insert in batches of 100 to stay within Supabase limits
+  const BATCH_SIZE = 100;
+  let totalInserted = 0;
 
-  if (error) {
-    console.error('Failed to sync class to calendar:', error);
-    return { success: false, error: 'Failed to sync class to calendar. Please try again.' };
+  for (let i = 0; i < events.length; i += BATCH_SIZE) {
+    const batch = events.slice(i, i + BATCH_SIZE);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any).from('golf_events').insert(batch);
+    if (error) {
+      return { success: false, error: 'Failed to sync class to calendar. Please try again.' };
+    }
+    totalInserted += batch.length;
   }
 
   revalidatePath('/golf/dashboard/calendar');
-  return { success: true, eventsCreated: events.length };
+  return { success: true, eventsCreated: totalInserted };
 }
 
 /**
@@ -166,7 +189,6 @@ export async function removeClassFromCalendar(classId: string, teamId?: string):
   const { error } = await query;
 
   if (error) {
-    console.error('Failed to remove class from calendar:', error);
     return { success: false, error: 'Failed to remove class from calendar. Please try again.' };
   }
 

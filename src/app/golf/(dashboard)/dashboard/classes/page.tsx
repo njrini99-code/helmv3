@@ -230,43 +230,39 @@ export default function GolfClassesPage() {
         throw error;
       }
 
-      // Sync all classes to calendar
+      // Sync all classes to calendar in parallel
       if (data && teamId) {
-        for (let i = 0; i < data.length; i++) {
-          const insertedClass = data[i];
+        const syncPromises = data.map((insertedClass, i) => {
           const confirmedClass = confirmed[i];
+          if (!insertedClass || !confirmedClass) return Promise.resolve();
 
-          if (insertedClass && confirmedClass) {
-            try {
-              await syncClassToCalendar({
-                id: insertedClass.id,
-                course_code: confirmedClass.course_code || '',
-                course_name: confirmedClass.course_name || confirmedClass.course_code || 'Untitled Class',
-                instructor: confirmedClass.instructor || '',
-                days: confirmedClass.days || [],
-                start_time: confirmedClass.start_time || '',
-                end_time: confirmedClass.end_time || '',
-                location: confirmedClass.location || '',
-                building: confirmedClass.building || '',
-                room: confirmedClass.room || '',
-                credits: confirmedClass.credits,
-                semester: confirmedClass.semester || 'Fall 2025',
-                semesterStartDate: confirmedClass.semesterStartDate, // Custom start date from modal
-                color: confirmedClass.color || generateClassColor(),
-                notes: '',
-              }, insertedClass.id, playerId, teamId);
-            } catch (err) {
-              console.error('[GolfHelm] Calendar sync error for class:', err);
-            }
-          }
-        }
+          return syncClassToCalendar({
+            id: insertedClass.id,
+            course_code: confirmedClass.course_code || '',
+            course_name: confirmedClass.course_name || confirmedClass.course_code || 'Untitled Class',
+            instructor: confirmedClass.instructor || '',
+            days: confirmedClass.days || [],
+            start_time: confirmedClass.start_time || '',
+            end_time: confirmedClass.end_time || '',
+            location: confirmedClass.location || '',
+            building: confirmedClass.building || '',
+            room: confirmedClass.room || '',
+            credits: confirmedClass.credits,
+            semester: confirmedClass.semester || 'Spring 2026',
+            semesterStartDate: confirmedClass.semesterStartDate,
+            color: confirmedClass.color || generateClassColor(),
+            notes: '',
+          }, insertedClass.id, playerId, teamId);
+        });
+
+        await Promise.all(syncPromises);
       }
 
       await fetchClasses();
       setShowConfirmModal(false);
       setParsedClasses([]);
-    } catch (err) {
-      console.error('[GolfHelm] Error saving classes:', err);
+    } catch {
+      // Error handled by alert above
     }
   };
 
