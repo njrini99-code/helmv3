@@ -176,7 +176,7 @@ export function GolfDashboardShell({
           <ToastProvider>
             <SessionActivityProvider>
               <GolfUserProvider userData={userData}>
-                <LazyMotion features={domAnimation} strict>
+                <LazyMotion features={domAnimation}>
                   <OfflineProvider showSyncStatus={false} showWarningBanner={false}>
                     <LastSeenUpdater />
                     <GolfDashboardContent userData={userData}>
