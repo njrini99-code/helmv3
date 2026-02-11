@@ -14,6 +14,8 @@ import { GolfUserProvider, type GolfUserData } from '@/contexts/golf-user-contex
 import { OfflineProvider } from '@/components/golf/OfflineProvider';
 import { LastSeenUpdater } from '@/components/admin/LastSeenUpdater';
 import { LazyMotion, domAnimation } from 'framer-motion';
+import { TamboProvider } from '@tambo-ai/react';
+import { components as tamboComponents } from '@/lib/tambo';
 import { cn } from '@/lib/utils';
 
 // PERF: Lazy-load CommandPalette — only shown on Cmd+K
@@ -165,23 +167,28 @@ export function GolfDashboardShell({
   userData: GolfUserData;
 }) {
   return (
-    <MobileNavProvider>
-      <SidebarProvider>
-        <ToastProvider>
-          <SessionActivityProvider>
-            <GolfUserProvider userData={userData}>
-              <LazyMotion features={domAnimation} strict>
-                <OfflineProvider showSyncStatus={false} showWarningBanner={false}>
-                  <LastSeenUpdater />
-                  <GolfDashboardContent userData={userData}>
-                    {children}
-                  </GolfDashboardContent>
-                </OfflineProvider>
-              </LazyMotion>
-            </GolfUserProvider>
-          </SessionActivityProvider>
-        </ToastProvider>
-      </SidebarProvider>
-    </MobileNavProvider>
+    <TamboProvider
+      apiKey={process.env.NEXT_PUBLIC_TAMBO_API_KEY!}
+      components={tamboComponents}
+    >
+      <MobileNavProvider>
+        <SidebarProvider>
+          <ToastProvider>
+            <SessionActivityProvider>
+              <GolfUserProvider userData={userData}>
+                <LazyMotion features={domAnimation} strict>
+                  <OfflineProvider showSyncStatus={false} showWarningBanner={false}>
+                    <LastSeenUpdater />
+                    <GolfDashboardContent userData={userData}>
+                      {children}
+                    </GolfDashboardContent>
+                  </OfflineProvider>
+                </LazyMotion>
+              </GolfUserProvider>
+            </SessionActivityProvider>
+          </ToastProvider>
+        </SidebarProvider>
+      </MobileNavProvider>
+    </TamboProvider>
   );
 }
