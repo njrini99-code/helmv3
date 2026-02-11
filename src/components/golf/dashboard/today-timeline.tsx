@@ -1,27 +1,27 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { m } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { IconCalendar, IconMapPin, IconUsers, IconClock, IconArrowRight } from '@/components/icons';
+import { IconCalendar, IconMapPin, IconClock, IconArrowRight } from '@/components/icons';
 import type { TodayEvent } from '@/app/golf/actions/dashboard-data';
 
 // ============================================================================
 // EVENT TYPE CONFIG
 // ============================================================================
 
-const EVENT_TYPE_CONFIG: Record<string, { dot: string; bg: string; text: string; label: string; accent: string }> = {
-    practice: { dot: 'bg-blue-500', bg: 'bg-blue-500/10', text: 'text-blue-300', label: 'Practice', accent: 'border-l-blue-400' },
-    tournament: { dot: 'bg-amber-500', bg: 'bg-amber-500/10', text: 'text-amber-300', label: 'Tournament', accent: 'border-l-amber-400' },
-    qualifier: { dot: 'bg-violet-500', bg: 'bg-violet-500/10', text: 'text-violet-300', label: 'Qualifier', accent: 'border-l-violet-400' },
-    meeting: { dot: 'bg-slate-400', bg: 'bg-slate-400/10', text: 'text-slate-400', label: 'Meeting', accent: 'border-l-slate-400' },
-    travel: { dot: 'bg-cyan-500', bg: 'bg-cyan-500/10', text: 'text-cyan-300', label: 'Travel', accent: 'border-l-cyan-400' },
-    workout: { dot: 'bg-orange-500', bg: 'bg-orange-500/10', text: 'text-orange-300', label: 'Workout', accent: 'border-l-orange-400' },
-    game: { dot: 'bg-emerald-500', bg: 'bg-emerald-500/10', text: 'text-emerald-300', label: 'Match', accent: 'border-l-emerald-400' },
-    scrimmage: { dot: 'bg-teal-500', bg: 'bg-teal-500/10', text: 'text-teal-300', label: 'Scrimmage', accent: 'border-l-teal-400' },
-    class: { dot: 'bg-indigo-500', bg: 'bg-indigo-500/10', text: 'text-indigo-300', label: 'Class', accent: 'border-l-indigo-400' },
-    other: { dot: 'bg-slate-400', bg: 'bg-slate-400/10', text: 'text-slate-400', label: 'Event', accent: 'border-l-slate-400' },
+const EVENT_TYPE_CONFIG: Record<string, { dot: string; bg: string; text: string; label: string; border: string }> = {
+    practice: { dot: 'bg-blue-500', bg: 'bg-blue-50', text: 'text-blue-700', label: 'Practice', border: 'border-blue-200' },
+    tournament: { dot: 'bg-amber-500', bg: 'bg-amber-50', text: 'text-amber-700', label: 'Tournament', border: 'border-amber-200' },
+    qualifier: { dot: 'bg-violet-500', bg: 'bg-violet-50', text: 'text-violet-700', label: 'Qualifier', border: 'border-violet-200' },
+    meeting: { dot: 'bg-warm-400', bg: 'bg-warm-50', text: 'text-warm-600', label: 'Meeting', border: 'border-warm-200' },
+    travel: { dot: 'bg-cyan-500', bg: 'bg-cyan-50', text: 'text-cyan-700', label: 'Travel', border: 'border-cyan-200' },
+    workout: { dot: 'bg-orange-500', bg: 'bg-orange-50', text: 'text-orange-700', label: 'Workout', border: 'border-orange-200' },
+    game: { dot: 'bg-emerald-500', bg: 'bg-emerald-50', text: 'text-emerald-700', label: 'Match', border: 'border-emerald-200' },
+    scrimmage: { dot: 'bg-teal-500', bg: 'bg-teal-50', text: 'text-teal-700', label: 'Scrimmage', border: 'border-teal-200' },
+    class: { dot: 'bg-indigo-500', bg: 'bg-indigo-50', text: 'text-indigo-700', label: 'Class', border: 'border-indigo-200' },
+    other: { dot: 'bg-warm-400', bg: 'bg-warm-50', text: 'text-warm-600', label: 'Event', border: 'border-warm-200' },
 };
 
 function formatTime(iso: string): string {
@@ -38,6 +38,12 @@ function getTimeUntil(iso: string): string {
     return remainMins > 0 ? `in ${hrs}h ${remainMins}m` : `in ${hrs}h`;
 }
 
+/** Convert an ISO date to decimal hours (e.g. 2:30 PM = 14.5) */
+function toDecimalHour(iso: string): number {
+    const d = new Date(iso);
+    return d.getHours() + d.getMinutes() / 60;
+}
+
 // ============================================================================
 // COMPONENT
 // ============================================================================
@@ -48,47 +54,72 @@ interface TodayTimelineProps {
 }
 
 export function TodayTimeline({ events, role }: TodayTimelineProps) {
-    const currentEventIndex = useMemo(() => {
-        const now = Date.now();
-        return events.findIndex(e => {
-            const start = new Date(e.start_time).getTime();
-            const end = e.end_time ? new Date(e.end_time).getTime() : start + 3600000;
-            return now >= start && now <= end;
-        });
+    const scrollRef = useRef<HTMLDivElement>(null);
+    const nowRef = useRef<HTMLDivElement>(null);
+    const [, setTick] = useState(0);
+
+    // Re-render every 60s to move the "now" indicator
+    useEffect(() => {
+        const interval = setInterval(() => setTick(t => t + 1), 60_000);
+        return () => clearInterval(interval);
+    }, []);
+
+    // Scroll to the current time indicator on mount
+    useEffect(() => {
+        if (nowRef.current && scrollRef.current) {
+            const container = scrollRef.current;
+            const indicator = nowRef.current;
+            const offset = indicator.offsetLeft - container.clientWidth / 3;
+            container.scrollTo({ left: Math.max(0, offset), behavior: 'smooth' });
+        }
+    }, []);
+
+    const now = new Date();
+    const currentHour = now.getHours() + now.getMinutes() / 60;
+
+    // Determine the visible hour range (6 AM to 10 PM, or expand to fit events)
+    const { startHour, endHour, hours } = useMemo(() => {
+        let minH = 6;
+        let maxH = 22;
+        for (const e of events) {
+            const s = toDecimalHour(e.start_time);
+            const end = e.end_time ? toDecimalHour(e.end_time) : s + 1;
+            if (s < minH) minH = Math.floor(s);
+            if (end > maxH) maxH = Math.ceil(end);
+        }
+        const hrs: number[] = [];
+        for (let h = minH; h <= maxH; h++) hrs.push(h);
+        return { startHour: minH, endHour: maxH, hours: hrs };
     }, [events]);
 
-    const nextEventIndex = useMemo(() => {
-        if (currentEventIndex >= 0) return -1;
-        const now = Date.now();
-        return events.findIndex(e => new Date(e.start_time).getTime() > now);
-    }, [events, currentEventIndex]);
+    const totalHours = endHour - startHour;
+    // Each hour = 120px for a nice spread
+    const HOUR_WIDTH = 120;
+    const totalWidth = totalHours * HOUR_WIDTH;
+
+    const hourToX = (h: number) => ((h - startHour) / totalHours) * totalWidth;
+    const nowX = hourToX(currentHour);
 
     if (events.length === 0) {
         return (
             <div className={cn(
-                'relative overflow-hidden rounded-2xl h-full min-h-[200px]',
-                'bg-gradient-to-br from-[#0f1419] via-[#151d27] to-[#0f1419]',
-                'border border-white/[0.06]',
-                'shadow-[0_8px_32px_rgba(0,0,0,0.4)]',
+                'relative overflow-hidden rounded-2xl h-full min-h-[180px]',
+                'bg-white/60 backdrop-blur-xl',
+                'border border-white/40',
+                'shadow-[0_2px_12px_rgba(0,0,0,0.04)]',
             )}>
-                <div className="absolute inset-0 opacity-[0.03]" style={{
-                    backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
-                    backgroundSize: '24px 24px'
-                }} />
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[280px] h-[120px] bg-primary-500/[0.06] rounded-full blur-[60px] pointer-events-none" />
-
                 <div className="relative z-10 flex flex-col items-center justify-center text-center p-6 md:p-10 h-full">
-                    <div className="w-11 h-11 rounded-xl bg-white/[0.06] border border-white/[0.08] flex items-center justify-center mb-4">
-                        <IconCalendar size={20} className="text-white/30" />
+                    <div className="w-11 h-11 rounded-xl bg-warm-50 border border-warm-100 flex items-center justify-center mb-4">
+                        <IconCalendar size={20} className="text-warm-300" />
                     </div>
-                    <p className="text-white/60 text-sm font-medium mb-1">Clear schedule today</p>
-                    <p className="text-white/30 text-xs mb-5 max-w-[220px]">No events scheduled. Use this time for practice or recovery.</p>
+                    <p className="text-warm-600 text-sm font-medium mb-1">Clear schedule today</p>
+                    <p className="text-warm-400 text-xs mb-5 max-w-[220px]">No events scheduled. Use this time for practice or recovery.</p>
                     <Link
                         href="/golf/dashboard/calendar"
                         className={cn(
                             'inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-medium',
-                            'bg-white/[0.07] hover:bg-white/[0.12] border border-white/[0.08]',
-                            'text-white/60 hover:text-white/80 transition-all duration-200'
+                            'bg-primary-50 hover:bg-primary-100 border border-primary-200/60',
+                            'text-primary-700 transition-all duration-200'
                         )}
                     >
                         <IconCalendar size={13} />
@@ -101,135 +132,198 @@ export function TodayTimeline({ events, role }: TodayTimelineProps) {
 
     return (
         <div className={cn(
-            'relative overflow-hidden rounded-2xl h-full',
-            'bg-gradient-to-br from-[#0f1419] via-[#151d27] to-[#0f1419]',
-            'border border-white/[0.06]',
-            'shadow-[0_8px_32px_rgba(0,0,0,0.4)]',
+            'relative overflow-hidden rounded-2xl',
+            'bg-white/60 backdrop-blur-xl',
+            'border border-white/40',
+            'shadow-[0_2px_12px_rgba(0,0,0,0.04)]',
         )}>
-            <div className="absolute inset-0 opacity-[0.03]" style={{
-                backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
-                backgroundSize: '24px 24px'
-            }} />
-            <div className="absolute top-0 right-0 w-[200px] h-[160px] bg-primary-500/[0.04] rounded-full blur-[60px] -translate-y-1/3 translate-x-1/4 pointer-events-none" />
-
-            <div className="relative z-10 p-5 md:p-6">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-5">
-                    <div className="flex items-center gap-2.5">
-                        <div className="w-1.5 h-1.5 rounded-full bg-primary-400 animate-pulse" />
-                        <h3 className="text-[13px] font-semibold text-white/80 tracking-wide">
-                            Today&apos;s Schedule
-                        </h3>
-                        <span className="px-1.5 py-0.5 rounded-md bg-white/[0.06] text-[11px] font-medium text-white/40 tabular-nums border border-white/[0.05]">
-                            {events.length}
-                        </span>
-                    </div>
-                    <Link
-                        href="/golf/dashboard/calendar"
-                        className="flex items-center gap-1 text-[11px] text-white/30 hover:text-white/50 transition-colors"
-                    >
-                        Calendar <IconArrowRight size={10} />
-                    </Link>
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 pt-4 pb-2">
+                <div className="flex items-center gap-2.5">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse" />
+                    <h3 className="text-[13px] font-semibold text-warm-600 tracking-wide">
+                        Today&apos;s Schedule
+                    </h3>
+                    <span className="px-1.5 py-0.5 rounded-md bg-warm-100 text-[11px] font-medium text-warm-500 tabular-nums">
+                        {events.length}
+                    </span>
                 </div>
+                <Link
+                    href="/golf/dashboard/calendar"
+                    className="flex items-center gap-1 text-[11px] text-warm-400 hover:text-primary-600 transition-colors"
+                >
+                    Calendar <IconArrowRight size={10} />
+                </Link>
+            </div>
 
-                {/* Events */}
-                <div className="space-y-2">
-                    {events.map((event, i) => {
-                        const config = EVENT_TYPE_CONFIG[event.event_type] ?? EVENT_TYPE_CONFIG['other']!;
-                        const isCurrent = i === currentEventIndex;
-                        const isNext = i === nextEventIndex;
-                        const isPast = !isCurrent && new Date(event.end_time || event.start_time).getTime() < Date.now();
-
-                        return (
-                            <m.div
-                                key={event.id}
-                                initial={{ opacity: 0, y: 8 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: i * 0.06, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                                className={cn(
-                                    'relative rounded-xl border-l-[3px] transition-all duration-200',
-                                    config.accent,
-                                    isCurrent
-                                        ? 'bg-white/[0.08] border border-white/[0.1] border-l-[3px]'
-                                        : isPast
-                                            ? 'bg-white/[0.02] opacity-40'
-                                            : 'bg-white/[0.03] hover:bg-white/[0.06]',
-                                    'p-3.5'
-                                )}
-                            >
-                                <div className="flex items-start justify-between gap-3">
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 mb-1.5">
-                                            <p className={cn(
-                                                'text-[13px] font-semibold truncate',
-                                                isCurrent ? 'text-white' : 'text-white/70'
-                                            )}>
-                                                {event.title}
-                                            </p>
-                                            {isCurrent && (
-                                                <span className="flex-shrink-0 flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-primary-500/20 text-primary-400 border border-primary-500/20">
-                                                    <span className="w-1 h-1 rounded-full bg-primary-400 animate-pulse" />
-                                                    Live
-                                                </span>
-                                            )}
-                                        </div>
-
-                                        <div className="flex items-center gap-3 text-[11px] text-white/40">
-                                            <span className="flex items-center gap-1 tabular-nums">
-                                                <IconClock size={10} className="text-white/30" />
-                                                {formatTime(event.start_time)}
-                                                {event.end_time && ` – ${formatTime(event.end_time)}`}
-                                            </span>
-                                            {event.location && (
-                                                <span className="flex items-center gap-1 truncate">
-                                                    <IconMapPin size={10} className="text-white/30" />
-                                                    <span className="truncate">{event.location}</span>
-                                                </span>
-                                            )}
-                                        </div>
-
-                                        {role === 'coach' && event.rsvp_total !== undefined && (
-                                            <div className="flex items-center gap-1.5 mt-2">
-                                                <IconUsers size={10} className="text-white/30" />
-                                                <span className="text-[10px] text-white/40 tabular-nums">
-                                                    {event.rsvp_yes}/{event.rsvp_total} confirmed
-                                                </span>
-                                            </div>
-                                        )}
-                                        {role === 'player' && event.my_status && (
-                                            <div className="mt-2">
-                                                <span className={cn(
-                                                    'inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium',
-                                                    event.my_status === 'attending' || event.my_status === 'yes'
-                                                        ? 'bg-primary-500/20 text-primary-400'
-                                                        : event.my_status === 'declined' || event.my_status === 'no'
-                                                            ? 'bg-red-500/20 text-red-400'
-                                                            : 'bg-amber-500/20 text-amber-400'
-                                                )}>
-                                                    {event.my_status === 'attending' || event.my_status === 'yes' ? 'Attending' :
-                                                     event.my_status === 'declined' || event.my_status === 'no' ? 'Declined' : 'Pending'}
-                                                </span>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-                                        <span className={cn(
-                                            'px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider',
-                                            config.bg, config.text
-                                        )}>
-                                            {config.label}
-                                        </span>
-                                        {isNext && (
-                                            <span className="text-[10px] text-primary-400/80 font-medium tabular-nums">
-                                                {getTimeUntil(event.start_time)}
-                                            </span>
-                                        )}
-                                    </div>
+            {/* Horizontal scrolling timeline */}
+            <div
+                ref={scrollRef}
+                className="overflow-x-auto scrollbar-thin scrollbar-thumb-warm-200 scrollbar-track-transparent pb-4 px-2"
+            >
+                <div className="relative" style={{ width: totalWidth + 40, minHeight: 140 }}>
+                    {/* Hour markers */}
+                    <div className="flex items-end" style={{ width: totalWidth + 40, height: 28 }}>
+                        {hours.map(h => {
+                            const x = hourToX(h);
+                            const label = h === 0 ? '12 AM' : h < 12 ? `${h} AM` : h === 12 ? '12 PM' : `${h - 12} PM`;
+                            return (
+                                <div key={h} className="absolute" style={{ left: x + 20 }}>
+                                    <span className="text-[10px] font-medium text-warm-300 tabular-nums whitespace-nowrap">
+                                        {label}
+                                    </span>
                                 </div>
-                            </m.div>
+                            );
+                        })}
+                    </div>
+
+                    {/* Tick lines */}
+                    {hours.map(h => {
+                        const x = hourToX(h);
+                        return (
+                            <div
+                                key={`tick-${h}`}
+                                className="absolute top-7 bottom-0"
+                                style={{ left: x + 20, width: 1 }}
+                            >
+                                <div className="w-px h-full bg-warm-100" />
+                            </div>
                         );
                     })}
+
+                    {/* Current time indicator */}
+                    <div
+                        ref={nowRef}
+                        className="absolute top-6 bottom-0 z-20"
+                        style={{ left: nowX + 20 }}
+                    >
+                        <div className="relative">
+                            <div className="w-2 h-2 rounded-full bg-primary-500 shadow-[0_0_8px_rgba(22,163,74,0.4)] -translate-x-[3px]" />
+                            <div className="w-px h-[calc(100%+40px)] bg-primary-500/40" style={{ marginLeft: 0 }} />
+                        </div>
+                    </div>
+
+                    {/* Event blocks - positioned by time, stacked into rows to avoid overlap */}
+                    {(() => {
+                        const ROW_HEIGHT = 82; // px per row
+                        const ROW_GAP = 6;
+                        // Assign events to rows using a greedy algorithm
+                        const rowEnds: number[] = []; // tracks the rightmost pixel end of each row
+                        const eventRows: number[] = [];
+                        for (const event of events) {
+                            const startH = toDecimalHour(event.start_time);
+                            const endH = event.end_time ? toDecimalHour(event.end_time) : startH + 1;
+                            const leftPx = hourToX(startH);
+                            const widthPx = Math.max((endH - startH) / totalHours * totalWidth, 100);
+                            const rightPx = leftPx + widthPx;
+
+                            let assignedRow = -1;
+                            for (let r = 0; r < rowEnds.length; r++) {
+                                if (leftPx >= (rowEnds[r] ?? 0) + 4) { // 4px gap between events
+                                    assignedRow = r;
+                                    break;
+                                }
+                            }
+                            if (assignedRow === -1) {
+                                assignedRow = rowEnds.length;
+                                rowEnds.push(0);
+                            }
+                            rowEnds[assignedRow] = rightPx;
+                            eventRows.push(assignedRow);
+                        }
+                        const totalRows = Math.max(rowEnds.length, 1);
+                        const containerHeight = totalRows * ROW_HEIGHT + (totalRows - 1) * ROW_GAP;
+
+                        // Find the first upcoming event index
+                        const nextIdx = events.findIndex(e => toDecimalHour(e.start_time) > currentHour);
+
+                        return (
+                            <div className="relative" style={{ marginTop: 8, paddingLeft: 20, paddingRight: 20, height: containerHeight }}>
+                                {events.map((event, i) => {
+                                    const config = EVENT_TYPE_CONFIG[event.event_type] ?? EVENT_TYPE_CONFIG['other']!;
+                                    const startH = toDecimalHour(event.start_time);
+                                    const endH = event.end_time ? toDecimalHour(event.end_time) : startH + 1;
+                                    const leftPx = hourToX(startH);
+                                    const widthPx = Math.max((endH - startH) / totalHours * totalWidth, 100);
+                                    const row = eventRows[i] ?? 0;
+                                    const topPx = row * (ROW_HEIGHT + ROW_GAP);
+
+                                    const isPast = endH < currentHour;
+                                    const isCurrent = currentHour >= startH && currentHour <= endH;
+                                    const isNext = !isCurrent && i === nextIdx;
+
+                                    return (
+                                        <m.div
+                                            key={event.id}
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: i * 0.06, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                                            className="absolute"
+                                            style={{ left: leftPx, width: widthPx, top: topPx }}
+                                        >
+                                            <div className={cn(
+                                                'rounded-xl border p-3 transition-all duration-200 h-full',
+                                                config.border,
+                                                isCurrent
+                                                    ? cn('bg-white/90 shadow-[0_2px_12px_rgba(0,0,0,0.08)]', 'ring-1 ring-primary-200')
+                                                    : isPast
+                                                        ? 'bg-warm-50/60 opacity-50'
+                                                        : 'bg-white/70 hover:bg-white/90 hover:shadow-sm',
+                                            )}>
+                                                <div className="flex items-start justify-between gap-2 mb-1">
+                                                    <p className={cn(
+                                                        'text-[12px] font-semibold truncate',
+                                                        isCurrent ? 'text-warm-900' : 'text-warm-700'
+                                                    )}>
+                                                        {event.title}
+                                                    </p>
+                                                    {isCurrent && (
+                                                        <span className="flex-shrink-0 flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-primary-50 text-primary-600 border border-primary-200/60">
+                                                            <span className="w-1 h-1 rounded-full bg-primary-500 animate-pulse" />
+                                                            Live
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                <div className="flex items-center gap-2 text-[10px] text-warm-400">
+                                                    <span className="flex items-center gap-1 tabular-nums">
+                                                        <IconClock size={9} className="text-warm-300" />
+                                                        {formatTime(event.start_time)}
+                                                        {event.end_time && ` – ${formatTime(event.end_time)}`}
+                                                    </span>
+                                                    {event.location && (
+                                                        <span className="flex items-center gap-1 truncate">
+                                                            <IconMapPin size={9} className="text-warm-300" />
+                                                            <span className="truncate">{event.location}</span>
+                                                        </span>
+                                                    )}
+                                                </div>
+
+                                                <div className="flex items-center gap-2 mt-1.5">
+                                                    <span className={cn(
+                                                        'px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider',
+                                                        config.bg, config.text
+                                                    )}>
+                                                        {config.label}
+                                                    </span>
+                                                    {isNext && (
+                                                        <span className="text-[10px] text-primary-600 font-medium tabular-nums">
+                                                            {getTimeUntil(event.start_time)}
+                                                        </span>
+                                                    )}
+                                                    {role === 'coach' && event.rsvp_total !== undefined && (
+                                                        <span className="text-[10px] text-warm-400 tabular-nums">
+                                                            {event.rsvp_yes}/{event.rsvp_total} confirmed
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </m.div>
+                                    );
+                                })}
+                            </div>
+                        );
+                    })()}
                 </div>
             </div>
         </div>

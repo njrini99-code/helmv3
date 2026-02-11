@@ -22,6 +22,7 @@ interface StatCardSparklineProps {
     href?: string;
     suffix?: string;
     trend?: 'improving' | 'declining' | 'stable';
+    /** @deprecated No longer used — sparkline color now derived from trend directly */
     reverseColor?: boolean;
     accent?: boolean;
 }
@@ -40,7 +41,6 @@ export const StatCardSparkline = memo(function StatCardSparkline({
     href,
     suffix = '',
     trend,
-    reverseColor = false,
     accent = false,
 }: StatCardSparklineProps) {
     const hasSparkline = sparkline.length >= 2;
@@ -50,9 +50,7 @@ export const StatCardSparkline = memo(function StatCardSparkline({
     const trendIsPositive = trend === 'improving';
     const trendColor = trendIsPositive ? 'text-primary-700 bg-primary-50' : trend === 'declining' ? 'text-red-600 bg-red-50' : '';
 
-    const sparkColor = reverseColor
-        ? (trend === 'improving' ? '#16A34A' : trend === 'declining' ? '#DC2626' : '#94A3B8')
-        : (trend === 'improving' ? '#16A34A' : trend === 'declining' ? '#DC2626' : '#16A34A');
+    const sparkColor = trend === 'improving' ? '#16A34A' : trend === 'declining' ? '#DC2626' : '#94A3B8';
 
     const CardContent = (
         <motion.div

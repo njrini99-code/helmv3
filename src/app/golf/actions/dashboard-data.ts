@@ -163,12 +163,23 @@ function getTodayRange(): { start: string; end: string } {
     return { start: start.toISOString(), end: end.toISOString() };
 }
 
+/** Trend for metrics where lower is better (scoring avg, putts) */
 function computeTrend(scores: number[]): 'improving' | 'declining' | 'stable' {
     if (scores.length < 6) return 'stable';
     const recent5 = scores.slice(0, 5).reduce((a, b) => a + b, 0) / 5;
     const prev5 = scores.slice(5, 10).reduce((a, b) => a + b, 0) / Math.min(5, scores.length - 5);
     if (recent5 < prev5 - 0.5) return 'improving';
     if (recent5 > prev5 + 0.5) return 'declining';
+    return 'stable';
+}
+
+/** Trend for metrics where higher is better (GIR%, FIR%) */
+function computeTrendHigherIsBetter(values: number[], threshold = 1.5): 'improving' | 'declining' | 'stable' {
+    if (values.length < 6) return 'stable';
+    const recent5 = values.slice(0, 5).reduce((a, b) => a + b, 0) / 5;
+    const prev5 = values.slice(5, 10).reduce((a, b) => a + b, 0) / Math.min(5, values.length - 5);
+    if (recent5 > prev5 + threshold) return 'improving';  // GIR went UP = good
+    if (recent5 < prev5 - threshold) return 'declining';   // GIR went DOWN = bad
     return 'stable';
 }
 
@@ -436,6 +447,12 @@ export async function getCoachDashboardData(
             const recentPutts = allRounds.slice(0, 20).map(r => r.total_putts).filter((p): p is number => p !== null);
             const avgPutts = recentPutts.length > 0 ? recentPutts.reduce((a, b) => a + b, 0) / recentPutts.length : null;
 
+            // Compute GIR% and Putts trends (need arrays sorted newest-first)
+            const girTrendValues = allRounds.slice(0, 20)
+                .filter(r => r.total_gir !== null && r.total_gir_possible && r.total_gir_possible > 0)
+                .map(r => (r.total_gir! / r.total_gir_possible!) * 100);
+            const puttsTrendValues = allRounds.slice(0, 20).map(r => r.total_putts).filter((p): p is number => p !== null);
+
             sparklines = {
                 scoringAvg: {
                     label: 'Team Scoring Avg',
@@ -448,11 +465,13 @@ export async function getCoachDashboardData(
                     value: avgGir !== null ? Number(avgGir.toFixed(1)) : null,
                     sparkline: girSparkline,
                     suffix: '%',
+                    trend: computeTrendHigherIsBetter(girTrendValues),
                 },
                 puttsPerRound: {
                     label: 'Team Putts/Rd',
                     value: avgPutts !== null ? Number(avgPutts.toFixed(1)) : null,
                     sparkline: puttsSparkline,
+                    trend: computeTrend(puttsTrendValues),
                 },
                 rosterSize: {
                     label: 'Roster Size',
@@ -461,12 +480,15 @@ export async function getCoachDashboardData(
                 },
             };
 
-            // Team pulse — per-player trend
+            // Team pulse — per-player trend (only count players with 6+ rounds for meaningful trends)
             let bestDelta = 0;
             let bestMoverName = '';
+            let playersWithEnoughData = 0;
             players.forEach(p => {
                 const pRounds = allRounds.filter(r => r.player_id === p.id);
                 const pScores = pRounds.map(r => r.total_score).filter((s): s is number => s !== null);
+                if (pScores.length < 6) return; // Skip players without enough data for trend
+                playersWithEnoughData++;
                 const trend = computeTrend(pScores);
                 if (trend === 'improving') teamPulse.improving++;
                 else if (trend === 'declining') teamPulse.declining++;
@@ -764,11 +786,13 @@ export async function getPlayerDashboardData(
                 value: avgGir !== null ? Number(avgGir.toFixed(1)) : null,
                 sparkline: girSparkline,
                 suffix: '%',
+                trend: computeTrendHigherIsBetter(girValues),
             },
             puttsPerRound: {
                 label: 'Putts/Rd',
                 value: avgPutts !== null ? Number(avgPutts.toFixed(1)) : null,
                 sparkline: puttsSparkline,
+                trend: computeTrend(puttsValues),
             },
             handicap: {
                 label: 'Handicap',

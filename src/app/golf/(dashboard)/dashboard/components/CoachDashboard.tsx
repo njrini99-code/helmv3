@@ -119,41 +119,40 @@ const InviteCodeCard = memo(function InviteCodeCard({ inviteCode }: { inviteCode
         <m.div
             className={cn(
                 'relative overflow-hidden rounded-2xl',
-                'bg-gradient-to-r from-warm-900 via-warm-800 to-warm-900',
-                'border border-white/[0.06]',
-                'shadow-[0_2px_12px_rgba(0,0,0,0.15)]'
+                'bg-gradient-to-r from-primary-50 via-primary-50/80 to-emerald-50',
+                'border border-primary-200/40',
+                'shadow-[0_1px_4px_rgba(0,0,0,0.04)]'
             )}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
         >
-            <div className="absolute inset-0 bg-gradient-to-r from-primary-500/[0.04] via-transparent to-primary-500/[0.04]" />
             <div className="relative z-10 flex items-center justify-between gap-3 px-4 py-3 md:px-5 md:py-3.5">
                 <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-7 h-7 rounded-lg bg-white/[0.06] flex items-center justify-center flex-shrink-0">
-                        <IconUsers size={13} className="text-primary-400" />
+                    <div className="w-7 h-7 rounded-lg bg-primary-100 flex items-center justify-center flex-shrink-0">
+                        <IconUsers size={13} className="text-primary-600" />
                     </div>
-                    <p className="text-white/70 text-xs font-medium">Share invite code with players</p>
+                    <p className="text-primary-700 text-xs font-medium">Share invite code with players</p>
                 </div>
                 <m.button
                     onClick={handleCopy}
                     className={cn(
                         'flex items-center gap-2 px-3 py-1.5 rounded-lg',
-                        'bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08]',
-                        'text-xs font-mono tracking-widest text-white/80',
+                        'bg-white/80 hover:bg-white border border-primary-200/60',
+                        'text-xs font-mono tracking-widest text-primary-700',
                         'transition-all duration-200 active:scale-95'
                     )}
                     whileTap={{ scale: 0.97 }}
                 >
                     {copied ? (
                         <>
-                            <IconCheck size={13} className="text-primary-400" />
-                            <span className="text-primary-400">Copied</span>
+                            <IconCheck size={13} className="text-primary-600" />
+                            <span className="text-primary-600">Copied</span>
                         </>
                     ) : (
                         <>
                             <span>{inviteCode}</span>
-                            <IconCopy size={11} className="text-white/40" />
+                            <IconCopy size={11} className="text-primary-400" />
                         </>
                     )}
                 </m.button>
@@ -374,7 +373,15 @@ export function CoachDashboard({ data, enhancedData }: CoachDashboardProps) {
                     </div>
                 )}
 
-                {/* ROW 1: Quick Stats */}
+                {/* ROW 1: Horizontal Day Timeline (full width) */}
+                <m.div className="mb-5 md:mb-6" variants={itemVariants}>
+                    <TodayTimeline
+                        events={enhancedData?.todayEvents || []}
+                        role="coach"
+                    />
+                </m.div>
+
+                {/* ROW 2: Quick Stats */}
                 <m.div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 mb-5 md:mb-6" variants={itemVariants}>
                     <StatCardSparkline
                         label="Scoring Avg"
@@ -397,6 +404,7 @@ export function CoachDashboard({ data, enhancedData }: CoachDashboardProps) {
                         iconBg="bg-warm-100"
                         href="/golf/dashboard/stats/team"
                         suffix="%"
+                        trend={enhancedData?.sparklines.girPct.trend}
                     />
                     <StatCardSparkline
                         label="Putts/Rd"
@@ -406,7 +414,7 @@ export function CoachDashboard({ data, enhancedData }: CoachDashboardProps) {
                         iconColor="text-amber-600"
                         iconBg="bg-amber-50"
                         href="/golf/dashboard/stats/team"
-                        reverseColor
+                        trend={enhancedData?.sparklines.puttsPerRound.trend}
                     />
                     <StatCardSparkline
                         label="Roster"
@@ -419,21 +427,50 @@ export function CoachDashboard({ data, enhancedData }: CoachDashboardProps) {
                     />
                 </m.div>
 
-                {/* ROW 2: Schedule + Team Pulse + Action Items */}
-                <m.div className="grid lg:grid-cols-5 gap-4 md:gap-5 mb-5 md:mb-6" variants={itemVariants}>
-                    <div className="lg:col-span-3">
-                        <TodayTimeline
-                            events={enhancedData?.todayEvents || []}
-                            role="coach"
-                        />
+                {/* ROW 3: Recent Rounds + Notifications/Actions side by side */}
+                <m.div className="grid lg:grid-cols-3 gap-4 md:gap-5 mb-5 md:mb-6" variants={itemVariants}>
+                    <div className="lg:col-span-2">
+                        <SectionHeader title="Recent Rounds" action={{ label: 'View All', href: '/golf/dashboard/rounds' }} />
+                        <PremiumGlassCard noPadding>
+                            <ShineEffect />
+                            {filteredRounds.length === 0 ? (
+                                <EmptyState
+                                    type="rounds"
+                                    variant="compact"
+                                    description={dateRange !== 'all' ? 'No rounds in the selected time period.' : 'Players can submit rounds from their dashboard'}
+                                    action={null}
+                                />
+                            ) : (
+                                <div className="divide-y divide-white/15">
+                                    {filteredRounds.slice(0, 6).map((round) => (
+                                        <RecentRoundCard
+                                            key={round.id}
+                                            id={round.id}
+                                            playerId={round.player_id}
+                                            playerName={round.player_name}
+                                            playerAvatarUrl={round.player_avatar_url}
+                                            courseName={round.course_name}
+                                            score={round.total_score}
+                                            toPar={round.total_to_par}
+                                            date={round.round_date}
+                                            roundType={round.round_type}
+                                            totalPutts={round.total_putts}
+                                            totalFairwaysHit={round.total_fairways_hit}
+                                            totalFairways={round.total_fairways}
+                                            totalGir={round.total_gir}
+                                            totalGirPossible={round.total_gir_possible}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+                        </PremiumGlassCard>
                     </div>
-                    <div className="lg:col-span-2 flex flex-col gap-4 md:gap-5">
-                        <TeamPulseCard data={enhancedData?.teamPulse || { improving: 0, stable: 0, declining: 0, roundsThisWeek: 0 }} />
+                    <div className="flex flex-col gap-4 md:gap-5">
                         <ActionItemsCard items={enhancedData?.actionItems || []} role="coach" />
                     </div>
                 </m.div>
 
-                {/* ROW 3: Trend + Top Performers */}
+                {/* ROW 4: Trend + Team Pulse + Top Performers */}
                 <m.div className="grid lg:grid-cols-5 gap-4 md:gap-5 mb-5 md:mb-6" variants={itemVariants}>
                     <div className="lg:col-span-3">
                         <SectionHeader title="Performance Trend" />
@@ -466,62 +503,27 @@ export function CoachDashboard({ data, enhancedData }: CoachDashboardProps) {
                             </PremiumGlassCard>
                         )}
                     </div>
-                    <div className="lg:col-span-2">
-                        <SectionHeader
-                            title="Top Performers"
-                            action={{ label: 'Full Rankings', href: '/golf/dashboard/stats/team' }}
-                        />
-                        <PremiumGlassCard noPadding>
-                            <ShineEffect />
-                            {topPlayers.length > 0 ? (
-                                <div className="divide-y divide-white/20">
-                                    {topPlayers.slice(0, 5).map((player, i) => (
-                                        <TopPerformerRow key={player.id} rank={i + 1} name={player.name} avgScore={player.avg_score} rounds={player.rounds} />
-                                    ))}
-                                </div>
-                            ) : (
-                                <EmptyState type="stats" variant="compact" />
-                            )}
-                        </PremiumGlassCard>
-                    </div>
-                </m.div>
-
-                {/* ROW 4: Recent Rounds (full width) */}
-                <m.div className="mb-5 md:mb-6" variants={itemVariants}>
-                    <SectionHeader title="Recent Rounds" action={{ label: 'View All', href: '/golf/dashboard/rounds' }} />
-                    <PremiumGlassCard noPadding>
-                        <ShineEffect />
-                        {filteredRounds.length === 0 ? (
-                            <EmptyState
-                                type="rounds"
-                                variant="compact"
-                                description={dateRange !== 'all' ? 'No rounds in the selected time period.' : 'Players can submit rounds from their dashboard'}
-                                action={null}
+                    <div className="lg:col-span-2 flex flex-col gap-4 md:gap-5">
+                        <TeamPulseCard data={enhancedData?.teamPulse || { improving: 0, stable: 0, declining: 0, roundsThisWeek: 0 }} />
+                        <div>
+                            <SectionHeader
+                                title="Top Performers"
+                                action={{ label: 'Full Rankings', href: '/golf/dashboard/stats/team' }}
                             />
-                        ) : (
-                            <div className="divide-y divide-white/15">
-                                {filteredRounds.slice(0, 8).map((round) => (
-                                    <RecentRoundCard
-                                        key={round.id}
-                                        id={round.id}
-                                        playerId={round.player_id}
-                                        playerName={round.player_name}
-                                        playerAvatarUrl={round.player_avatar_url}
-                                        courseName={round.course_name}
-                                        score={round.total_score}
-                                        toPar={round.total_to_par}
-                                        date={round.round_date}
-                                        roundType={round.round_type}
-                                        totalPutts={round.total_putts}
-                                        totalFairwaysHit={round.total_fairways_hit}
-                                        totalFairways={round.total_fairways}
-                                        totalGir={round.total_gir}
-                                        totalGirPossible={round.total_gir_possible}
-                                    />
-                                ))}
-                            </div>
-                        )}
-                    </PremiumGlassCard>
+                            <PremiumGlassCard noPadding>
+                                <ShineEffect />
+                                {topPlayers.length > 0 ? (
+                                    <div className="divide-y divide-white/20">
+                                        {topPlayers.slice(0, 5).map((player, i) => (
+                                            <TopPerformerRow key={player.id} rank={i + 1} name={player.name} avgScore={player.avg_score} rounds={player.rounds} />
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <EmptyState type="stats" variant="compact" />
+                                )}
+                            </PremiumGlassCard>
+                        </div>
+                    </div>
                 </m.div>
 
                 {/* QUICK ACTIONS */}
@@ -529,7 +531,7 @@ export function CoachDashboard({ data, enhancedData }: CoachDashboardProps) {
                     <div className="flex flex-wrap items-center gap-2">
                         <Link href="/golf/dashboard/roster" className={cn(
                             'inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium',
-                            'bg-warm-900 text-white hover:bg-warm-800 transition-colors shadow-sm active:scale-95'
+                            'bg-primary-600 text-white hover:bg-primary-700 transition-colors shadow-sm active:scale-95'
                         )}>
                             <IconPlus size={14} />
                             Add Player

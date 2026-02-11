@@ -270,6 +270,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                                 iconBg="bg-warm-100"
                                 href="/golf/dashboard/stats"
                                 suffix="%"
+                                trend={enhancedData?.sparklines.girPct.trend}
                             />
                             <StatCardSparkline
                                 label="Putts/Rd"
@@ -279,7 +280,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                                 iconColor="text-amber-600"
                                 iconBg="bg-amber-50"
                                 href="/golf/dashboard/stats"
-                                reverseColor
+                                trend={enhancedData?.sparklines.puttsPerRound.trend}
                             />
                             <StatCardSparkline
                                 label="Handicap"

@@ -107,7 +107,7 @@ export const TeamPulseCard = memo(function TeamPulseCard({ data }: TeamPulseCard
                                         Top Mover: {topMover.name}
                                     </p>
                                     <p className="text-[11px] text-primary-600">
-                                        {topMover.delta} stroke improvement
+                                        {topMover.delta} {topMover.delta === 1 ? 'stroke' : 'strokes'} lower avg
                                     </p>
                                 </div>
                             </div>
