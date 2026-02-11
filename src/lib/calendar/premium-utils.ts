@@ -187,8 +187,22 @@ export function isPreDawn(time: string, sunriseTime: string = '06:00'): boolean 
  */
 export function formatTime(time: string | null): string {
   if (!time) return '';
+
+  // Full datetime strings (ISO with 'T' or Supabase timestamptz with space)
+  if (time.includes('T') || time.includes(' ')) {
+    const date = new Date(time);
+    if (!isNaN(date.getTime())) {
+      return date.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      });
+    }
+  }
+
+  // Time-only strings (HH:MM or HH:MM:SS)
   const [hours, minutes] = time.split(':').map(Number);
-  if (hours === undefined || minutes === undefined) return time;
+  if (hours === undefined || minutes === undefined || isNaN(hours)) return time;
   const period = hours >= 12 ? 'PM' : 'AM';
   const displayHours = hours % 12 || 12;
   return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;

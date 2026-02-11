@@ -265,6 +265,7 @@ export function DayView({ date, events, onEventClick, isDraggable = false }: Day
                       }}
                       onClick={() => onEventClick?.(item.event)}
                       compact={height < 80}
+                      className="h-full"
                     />
                   </div>
                 );

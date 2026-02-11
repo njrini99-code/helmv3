@@ -445,6 +445,7 @@ export function WeekView({
                         }}
                         onClick={() => onEventClick?.(item.event)}
                         compact={height < 80}
+                        className="h-full"
                       />
                     </div>
                   );
