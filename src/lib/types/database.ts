@@ -7722,6 +7722,7 @@ export type Database = {
           primary_color: string | null
           season: string | null
           secondary_color: string | null
+          timezone: string
           updated_at: string | null
         }
         Insert: {
@@ -7736,6 +7737,7 @@ export type Database = {
           primary_color?: string | null
           season?: string | null
           secondary_color?: string | null
+          timezone?: string
           updated_at?: string | null
         }
         Update: {
@@ -7750,6 +7752,7 @@ export type Database = {
           primary_color?: string | null
           season?: string | null
           secondary_color?: string | null
+          timezone?: string
           updated_at?: string | null
         }
         Relationships: [
