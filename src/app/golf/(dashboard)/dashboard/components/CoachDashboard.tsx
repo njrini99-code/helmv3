@@ -31,17 +31,32 @@ import {
     StatCardSparkline,
     ActionItemsCard,
     TeamPulseCard,
+    DashboardErrorBoundary,
     containerVariants,
     itemVariants
 } from '@/components/golf/dashboard';
 import { JoinRequestAlert } from '@/components/golf/roster/JoinRequestAlert';
-import type { CoachDashboardPayload } from '@/app/golf/actions/dashboard-data';
+import type { CoachDashboardPayload, TodayEvent, ActionItem, TeamPulseData } from '@/app/golf/actions/dashboard-data';
 import type { CalendarEvent } from '@/lib/types/calendar';
 
 const TrendChart = dynamic(() => import('./TrendChart').then(mod => ({ default: mod.TrendChart })), {
     loading: () => <div className="h-[200px] bg-white/45 backdrop-blur-[20px] rounded-2xl border border-white/30 animate-pulse" />,
     ssr: false
 });
+
+// ============================================================================
+// STABLE REFERENCES (prevents memoization breaks in child components)
+// ============================================================================
+
+const EMPTY_SPARKLINE: number[] = [];
+const EMPTY_EVENTS: TodayEvent[] = [];
+const EMPTY_ACTION_ITEMS: ActionItem[] = [];
+const EMPTY_TEAM_PULSE: TeamPulseData = {
+    improving: 0,
+    stable: 0,
+    declining: 0,
+    roundsThisWeek: 0,
+};
 
 // ============================================================================
 // TYPES
@@ -375,30 +390,33 @@ export function CoachDashboard({ data, enhancedData }: CoachDashboardProps) {
 
                 {/* ROW 1: Horizontal Day Timeline (full width) */}
                 <m.div className="mb-5 md:mb-6" variants={itemVariants}>
-                    <TodayTimeline
-                        events={enhancedData?.todayEvents || []}
-                        role="coach"
-                    />
+                    <DashboardErrorBoundary name="Schedule">
+                        <TodayTimeline
+                            events={enhancedData?.todayEvents ?? EMPTY_EVENTS}
+                            role="coach"
+                            timezone={enhancedData?.timezone}
+                        />
+                    </DashboardErrorBoundary>
                 </m.div>
 
                 {/* ROW 2: Quick Stats */}
+                <DashboardErrorBoundary name="Stats">
                 <m.div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 mb-5 md:mb-6" variants={itemVariants}>
                     <StatCardSparkline
                         label="Scoring Avg"
                         value={enhancedData?.sparklines.scoringAvg.value ?? (stats.teamScoringAverage ? Number(stats.teamScoringAverage.toFixed(1)) : null)}
-                        sparkline={enhancedData?.sparklines.scoringAvg.sparkline || []}
+                        sparkline={enhancedData?.sparklines.scoringAvg.sparkline ?? EMPTY_SPARKLINE}
                         icon={<IconChartBar size={18} />}
                         iconColor="text-primary-600"
                         iconBg="bg-primary-50"
                         href="/golf/dashboard/stats/team"
                         trend={enhancedData?.sparklines.scoringAvg.trend}
-                        reverseColor
                         accent
                     />
                     <StatCardSparkline
                         label="GIR%"
                         value={enhancedData?.sparklines.girPct.value ?? null}
-                        sparkline={enhancedData?.sparklines.girPct.sparkline || []}
+                        sparkline={enhancedData?.sparklines.girPct.sparkline ?? EMPTY_SPARKLINE}
                         icon={<IconTarget size={18} />}
                         iconColor="text-warm-600"
                         iconBg="bg-warm-100"
@@ -409,7 +427,7 @@ export function CoachDashboard({ data, enhancedData }: CoachDashboardProps) {
                     <StatCardSparkline
                         label="Putts/Rd"
                         value={enhancedData?.sparklines.puttsPerRound.value ?? null}
-                        sparkline={enhancedData?.sparklines.puttsPerRound.sparkline || []}
+                        sparkline={enhancedData?.sparklines.puttsPerRound.sparkline ?? EMPTY_SPARKLINE}
                         icon={<IconGolf size={18} />}
                         iconColor="text-amber-600"
                         iconBg="bg-amber-50"
@@ -419,15 +437,17 @@ export function CoachDashboard({ data, enhancedData }: CoachDashboardProps) {
                     <StatCardSparkline
                         label="Roster"
                         value={stats.rosterSize}
-                        sparkline={[]}
+                        sparkline={EMPTY_SPARKLINE}
                         icon={<IconUsers size={18} />}
                         iconColor="text-violet-600"
                         iconBg="bg-violet-50"
                         href="/golf/dashboard/roster"
                     />
                 </m.div>
+                </DashboardErrorBoundary>
 
                 {/* ROW 3: Recent Rounds + Notifications/Actions side by side */}
+                <DashboardErrorBoundary name="Recent Rounds">
                 <m.div className="grid lg:grid-cols-3 gap-4 md:gap-5 mb-5 md:mb-6" variants={itemVariants}>
                     <div className="lg:col-span-2">
                         <SectionHeader title="Recent Rounds" action={{ label: 'View All', href: '/golf/dashboard/rounds' }} />
@@ -466,11 +486,13 @@ export function CoachDashboard({ data, enhancedData }: CoachDashboardProps) {
                         </PremiumGlassCard>
                     </div>
                     <div className="flex flex-col gap-4 md:gap-5">
-                        <ActionItemsCard items={enhancedData?.actionItems || []} role="coach" />
+                        <ActionItemsCard items={enhancedData?.actionItems ?? EMPTY_ACTION_ITEMS} role="coach" />
                     </div>
                 </m.div>
+                </DashboardErrorBoundary>
 
                 {/* ROW 4: Trend + Team Pulse + Top Performers */}
+                <DashboardErrorBoundary name="Performance Trend">
                 <m.div className="grid lg:grid-cols-5 gap-4 md:gap-5 mb-5 md:mb-6" variants={itemVariants}>
                     <div className="lg:col-span-3">
                         <SectionHeader title="Performance Trend" />
@@ -504,7 +526,7 @@ export function CoachDashboard({ data, enhancedData }: CoachDashboardProps) {
                         )}
                     </div>
                     <div className="lg:col-span-2 flex flex-col gap-4 md:gap-5">
-                        <TeamPulseCard data={enhancedData?.teamPulse || { improving: 0, stable: 0, declining: 0, roundsThisWeek: 0 }} />
+                        <TeamPulseCard data={enhancedData?.teamPulse ?? EMPTY_TEAM_PULSE} />
                         <div>
                             <SectionHeader
                                 title="Top Performers"
@@ -525,6 +547,7 @@ export function CoachDashboard({ data, enhancedData }: CoachDashboardProps) {
                         </div>
                     </div>
                 </m.div>
+                </DashboardErrorBoundary>
 
                 {/* QUICK ACTIONS */}
                 <m.div variants={itemVariants}>

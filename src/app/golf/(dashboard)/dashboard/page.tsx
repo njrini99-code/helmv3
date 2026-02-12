@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useReducer, useState, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useGolfUser } from '@/contexts/golf-user-context';
 import type { GolfCoach, GolfPlayer, GolfTeam } from '@/lib/types/golf';
@@ -85,15 +85,60 @@ interface PlayerRound {
     round_date: string;
 }
 
+// ---------------------------------------------------------------------------
+// State machine — discriminated union eliminates impossible states
+// ---------------------------------------------------------------------------
+
+type DashboardState =
+    | { status: 'loading' }
+    | { status: 'coach'; data: CoachDashboardData; enhanced: CoachDashboardPayload | null }
+    | { status: 'player'; data: PlayerDashboardData; enhanced: PlayerDashboardPayload | null }
+    | { status: 'error'; message: string }
+    | { status: 'unavailable' };
+
+type DashboardAction =
+    | { type: 'COACH_LOADED'; data: CoachDashboardData }
+    | { type: 'COACH_ENHANCED'; enhanced: CoachDashboardPayload }
+    | { type: 'PLAYER_LOADED'; data: PlayerDashboardData }
+    | { type: 'PLAYER_ENHANCED'; enhanced: PlayerDashboardPayload }
+    | { type: 'ERROR'; message: string }
+    | { type: 'RETRY' }
+    | { type: 'UNAVAILABLE' };
+
+function dashboardReducer(state: DashboardState, action: DashboardAction): DashboardState {
+    switch (action.type) {
+        case 'COACH_LOADED':
+            return { status: 'coach', data: action.data, enhanced: null };
+        case 'COACH_ENHANCED':
+            if (state.status === 'coach') {
+                return { ...state, enhanced: action.enhanced };
+            }
+            return state;
+        case 'PLAYER_LOADED':
+            return { status: 'player', data: action.data, enhanced: null };
+        case 'PLAYER_ENHANCED':
+            if (state.status === 'player') {
+                return { ...state, enhanced: action.enhanced };
+            }
+            return state;
+        case 'ERROR':
+            return { status: 'error', message: action.message };
+        case 'RETRY':
+            return { status: 'loading' };
+        case 'UNAVAILABLE':
+            return { status: 'unavailable' };
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
 export default function GolfDashboardPage() {
     const golfUser = useGolfUser();
     const supabase = useMemo(() => createClient(), []);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [coachData, setCoachData] = useState<CoachDashboardData | null>(null);
-    const [playerData, setPlayerData] = useState<PlayerDashboardData | null>(null);
-    const [coachEnhanced, setCoachEnhanced] = useState<CoachDashboardPayload | null>(null);
-    const [playerEnhanced, setPlayerEnhanced] = useState<PlayerDashboardPayload | null>(null);
+    const [state, dispatch] = useReducer(dashboardReducer, { status: 'loading' });
+    // retryCount is orthogonal — only used to re-trigger the effect
     const [retryCount, setRetryCount] = useState(0);
 
     // PERF: Destructure primitive values for stable useEffect dependencies
@@ -272,20 +317,22 @@ export default function GolfDashboardPage() {
                     }
 
                     if (mounted) {
-                        setCoachData({
-                            coach: { id: coachId, user_id: userId, organization_id: organizationId || null, full_name: userName, avatar_url: userAvatar || null, created_at: '' } as GolfCoach,
-                            team,
-                            stats,
-                            recentRounds,
-                            topPlayers,
-                            calendarEvents: calendarEvents as CalendarEvent[],
-                            teamScoringTrend: teamScoringTrend.length > 0 ? teamScoringTrend : undefined
+                        dispatch({
+                            type: 'COACH_LOADED',
+                            data: {
+                                coach: { id: coachId, user_id: userId, organization_id: organizationId || null, full_name: userName, avatar_url: userAvatar || null, created_at: '' } as GolfCoach,
+                                team,
+                                stats,
+                                recentRounds,
+                                topPlayers,
+                                calendarEvents: calendarEvents as CalendarEvent[],
+                                teamScoringTrend: teamScoringTrend.length > 0 ? teamScoringTrend : undefined
+                            },
                         });
-                        setLoading(false);
 
                         // Non-blocking: fetch enhanced data (sparklines, action items, today events, team pulse)
                         getCoachDashboardData(coachId, userId, teamId!)
-                            .then(payload => { if (mounted) setCoachEnhanced(payload); })
+                            .then(payload => { if (mounted) dispatch({ type: 'COACH_ENHANCED', enhanced: payload }); })
                             .catch(() => { /* silently ignore — dashboard still works with base data */ });
                     }
                     return;
@@ -324,7 +371,7 @@ export default function GolfDashboardPage() {
                     const playerRounds = rounds || [];
                     const scores = playerRounds.map((r) => r.total_score).filter((s): s is number => s !== null);
 
-                    const stats = {
+                    const playerStats = {
                         roundsPlayed: playerRounds.length,
                         scoringAverage: scores.length > 0 ? scores.reduce((a: number, b: number) => a + b, 0) / scores.length : null,
                         bestRound: scores.length > 0 ? Math.min(...scores) : null,
@@ -336,30 +383,32 @@ export default function GolfDashboardPage() {
                         const recent5 = scores.slice(0, 5).reduce((a: number, b: number) => a + b, 0) / 5;
                         const prev5 = scores.slice(5, 10).reduce((a: number, b: number) => a + b, 0) / Math.min(5, scores.length - 5);
                         // In golf, lower scores = improving
-                        if (recent5 < prev5 - 0.5) stats.recentTrend = 'improving';
-                        else if (recent5 > prev5 + 0.5) stats.recentTrend = 'declining';
-                        else stats.recentTrend = 'stable';
+                        if (recent5 < prev5 - 0.5) playerStats.recentTrend = 'improving';
+                        else if (recent5 > prev5 + 0.5) playerStats.recentTrend = 'declining';
+                        else playerStats.recentTrend = 'stable';
                     }
 
                     if (mounted) {
                         const nameParts = userName.split(' ');
-                        setPlayerData({
-                            player: { id: playerId, user_id: userId, first_name: nameParts[0] || '', last_name: nameParts.slice(1).join(' ') || '', avatar_url: userAvatar || null, handicap: playerHandicap, created_at: '' } as GolfPlayer,
-                            team,
-                            stats,
-                            recentRounds: playerRounds.slice(0, 5).map((r) => ({
-                                id: r.id,
-                                course_name: r.course_name,
-                                total_score: r.total_score ?? 0,
-                                total_to_par: r.score_to_par ?? 0,
-                                round_date: r.round_date,
-                            }))
+                        dispatch({
+                            type: 'PLAYER_LOADED',
+                            data: {
+                                player: { id: playerId, user_id: userId, first_name: nameParts[0] || '', last_name: nameParts.slice(1).join(' ') || '', avatar_url: userAvatar || null, handicap: playerHandicap, created_at: '' } as GolfPlayer,
+                                team,
+                                stats: playerStats,
+                                recentRounds: playerRounds.slice(0, 5).map((r) => ({
+                                    id: r.id,
+                                    course_name: r.course_name,
+                                    total_score: r.total_score ?? 0,
+                                    total_to_par: r.score_to_par ?? 0,
+                                    round_date: r.round_date,
+                                }))
+                            },
                         });
-                        setLoading(false);
 
                         // Non-blocking: fetch enhanced data (sparklines, action items, strokes gained, etc.)
                         getPlayerDashboardData(playerId, userId, teamId || null)
-                            .then(payload => { if (mounted) setPlayerEnhanced(payload); })
+                            .then(payload => { if (mounted) dispatch({ type: 'PLAYER_ENHANCED', enhanced: payload }); })
                             .catch(() => { /* silently ignore — dashboard still works with base data */ });
                     }
                     return;
@@ -367,12 +416,11 @@ export default function GolfDashboardPage() {
 
                 // Fallthrough: role/ID mismatch — stop loading
                 if (mounted) {
-                    setLoading(false);
+                    dispatch({ type: 'UNAVAILABLE' });
                 }
             } catch (err) {
                 if (mounted) {
-                    setError(err instanceof Error ? err.message : 'Failed to load dashboard');
-                    setLoading(false);
+                    dispatch({ type: 'ERROR', message: err instanceof Error ? err.message : 'Failed to load dashboard' });
                 }
             }
         }
@@ -389,94 +437,92 @@ export default function GolfDashboardPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [supabase, role, userId, coachId, playerId, teamId, organizationId, retryCount]);
 
-    if (loading) {
-        return (
-            <div className="min-h-full bg-transparent">
-                <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6">
-                    {/* Header skeleton */}
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <div className="h-7 w-48 bg-slate-200/60 rounded-lg animate-pulse" />
-                            <div className="h-4 w-32 bg-slate-200/40 rounded-md animate-pulse mt-2" />
-                        </div>
-                        <div className="h-9 w-24 bg-slate-200/50 rounded-lg animate-pulse" />
-                    </div>
-                    {/* Stats grid skeleton */}
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-                        {[...Array(4)].map((_, i) => (
-                            <div key={i} className="bg-white/70 backdrop-blur-sm rounded-2xl border border-white/20 p-4 md:p-6">
-                                <div className="h-3 w-20 bg-slate-200/50 rounded animate-pulse mb-3" />
-                                <div className="h-8 w-16 bg-slate-200/60 rounded-lg animate-pulse" />
+    switch (state.status) {
+        case 'loading':
+            return (
+                <div className="min-h-full bg-transparent">
+                    <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6">
+                        {/* Header skeleton */}
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <div className="h-7 w-48 bg-slate-200/60 rounded-lg animate-pulse" />
+                                <div className="h-4 w-32 bg-slate-200/40 rounded-md animate-pulse mt-2" />
                             </div>
-                        ))}
-                    </div>
-                    {/* Content skeleton */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div className="lg:col-span-2 space-y-4">
-                            {[...Array(3)].map((_, i) => (
-                                <div key={i} className="bg-white/70 backdrop-blur-sm rounded-2xl border border-white/20 p-5">
-                                    <div className="flex items-center gap-3 mb-3">
-                                        <div className="h-10 w-10 bg-slate-200/50 rounded-full animate-pulse" />
-                                        <div>
-                                            <div className="h-4 w-32 bg-slate-200/50 rounded animate-pulse" />
-                                            <div className="h-3 w-24 bg-slate-200/40 rounded animate-pulse mt-1.5" />
-                                        </div>
-                                    </div>
-                                    <div className="h-3 w-full bg-slate-200/30 rounded animate-pulse" />
+                            <div className="h-9 w-24 bg-slate-200/50 rounded-lg animate-pulse" />
+                        </div>
+                        {/* Stats grid skeleton */}
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+                            {[...Array(4)].map((_, i) => (
+                                <div key={i} className="bg-white/70 backdrop-blur-sm rounded-2xl border border-white/20 p-4 md:p-6">
+                                    <div className="h-3 w-20 bg-slate-200/50 rounded animate-pulse mb-3" />
+                                    <div className="h-8 w-16 bg-slate-200/60 rounded-lg animate-pulse" />
                                 </div>
                             ))}
                         </div>
-                        <div className="space-y-4">
-                            <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-white/20 p-5 h-48 animate-pulse" />
-                            <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-white/20 p-5 h-36 animate-pulse" />
+                        {/* Content skeleton */}
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <div className="lg:col-span-2 space-y-4">
+                                {[...Array(3)].map((_, i) => (
+                                    <div key={i} className="bg-white/70 backdrop-blur-sm rounded-2xl border border-white/20 p-5">
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <div className="h-10 w-10 bg-slate-200/50 rounded-full animate-pulse" />
+                                            <div>
+                                                <div className="h-4 w-32 bg-slate-200/50 rounded animate-pulse" />
+                                                <div className="h-3 w-24 bg-slate-200/40 rounded animate-pulse mt-1.5" />
+                                            </div>
+                                        </div>
+                                        <div className="h-3 w-full bg-slate-200/30 rounded animate-pulse" />
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="space-y-4">
+                                <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-white/20 p-5 h-48 animate-pulse" />
+                                <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-white/20 p-5 h-36 animate-pulse" />
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        );
-    }
+            );
 
-    if (error) {
-        return (
-            <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
-                <div className="text-center">
-                    <h2 className="text-xl font-semibold text-slate-900 mb-2">Error Loading Dashboard</h2>
-                    <p className="text-slate-600 mb-4">{error}</p>
-                    <button
-                        onClick={() => {
-                            setError(null);
-                            setLoading(true);
-                            setRetryCount(c => c + 1);
-                        }}
-                        className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
-                    >
-                        Retry
-                    </button>
+        case 'error':
+            return (
+                <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
+                    <div className="text-center">
+                        <h2 className="text-xl font-semibold text-slate-900 mb-2">Error Loading Dashboard</h2>
+                        <p className="text-slate-600 mb-4">{state.message}</p>
+                        <button
+                            onClick={() => {
+                                dispatch({ type: 'RETRY' });
+                                setRetryCount(c => c + 1);
+                            }}
+                            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+                        >
+                            Retry
+                        </button>
+                    </div>
                 </div>
-            </div>
-        );
-    }
+            );
 
-    if (role === 'coach' && coachData) {
-        return <CoachDashboard data={coachData} enhancedData={coachEnhanced} />;
-    }
+        case 'coach':
+            return <CoachDashboard data={state.data} enhancedData={state.enhanced} />;
 
-    if (role === 'player' && playerData) {
-        return <PlayerDashboard data={playerData} enhancedData={playerEnhanced} />;
-    }
+        case 'player':
+            return <PlayerDashboard data={state.data} enhancedData={state.enhanced} />;
 
-    return (
-        <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
-            <div className="text-center">
-                <h2 className="text-xl font-semibold text-slate-900 mb-2">Dashboard Unavailable</h2>
-                <p className="text-slate-600 mb-4">Unable to load your dashboard. Please check your account setup.</p>
-                <a
-                    href="/golf"
-                    className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 inline-block"
-                >
-                    Go to Golf Home
-                </a>
-            </div>
-        </div>
-    );
+        case 'unavailable':
+            return (
+                <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
+                    <div className="text-center">
+                        <h2 className="text-xl font-semibold text-slate-900 mb-2">Dashboard Unavailable</h2>
+                        <p className="text-slate-600 mb-4">Unable to load your dashboard. Please check your account setup.</p>
+                        <a
+                            href="/golf"
+                            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 inline-block"
+                        >
+                            Go to Golf Home
+                        </a>
+                    </div>
+                </div>
+            );
+    }
 }

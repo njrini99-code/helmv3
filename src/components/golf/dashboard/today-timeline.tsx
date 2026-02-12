@@ -1,11 +1,12 @@
 'use client';
 
-import { useMemo, useEffect, useState, useRef } from 'react';
+import { useMemo, useEffect, useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { m } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconCalendar, IconMapPin, IconClock, IconArrowRight } from '@/components/icons';
 import type { TodayEvent } from '@/app/golf/actions/dashboard-data';
+import { formatTimeInTz, toDecimalHourInTz, getCurrentDecimalHourInTz } from '@/lib/utils/timezone';
 
 // ============================================================================
 // EVENT TYPE CONFIG
@@ -24,10 +25,6 @@ const EVENT_TYPE_CONFIG: Record<string, { dot: string; bg: string; text: string;
     other: { dot: 'bg-warm-400', bg: 'bg-warm-50', text: 'text-warm-600', label: 'Event', border: 'border-warm-200' },
 };
 
-function formatTime(iso: string): string {
-    return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-}
-
 function getTimeUntil(iso: string): string {
     const diff = new Date(iso).getTime() - Date.now();
     if (diff < 0) return 'Now';
@@ -38,12 +35,6 @@ function getTimeUntil(iso: string): string {
     return remainMins > 0 ? `in ${hrs}h ${remainMins}m` : `in ${hrs}h`;
 }
 
-/** Convert an ISO date to decimal hours (e.g. 2:30 PM = 14.5) */
-function toDecimalHour(iso: string): number {
-    const d = new Date(iso);
-    return d.getHours() + d.getMinutes() / 60;
-}
-
 // ============================================================================
 // COMPONENT
 // ============================================================================
@@ -51,9 +42,11 @@ function toDecimalHour(iso: string): number {
 interface TodayTimelineProps {
     events: TodayEvent[];
     role: 'coach' | 'player';
+    timezone?: string;
 }
 
-export function TodayTimeline({ events, role }: TodayTimelineProps) {
+export function TodayTimeline({ events, role, timezone }: TodayTimelineProps) {
+    const tz = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
     const scrollRef = useRef<HTMLDivElement>(null);
     const nowRef = useRef<HTMLDivElement>(null);
     const [, setTick] = useState(0);
@@ -74,23 +67,22 @@ export function TodayTimeline({ events, role }: TodayTimelineProps) {
         }
     }, []);
 
-    const now = new Date();
-    const currentHour = now.getHours() + now.getMinutes() / 60;
+    const currentHour = getCurrentDecimalHourInTz(tz);
 
     // Determine the visible hour range (6 AM to 10 PM, or expand to fit events)
     const { startHour, endHour, hours } = useMemo(() => {
         let minH = 6;
         let maxH = 22;
         for (const e of events) {
-            const s = toDecimalHour(e.start_time);
-            const end = e.end_time ? toDecimalHour(e.end_time) : s + 1;
+            const s = toDecimalHourInTz(e.start_time, tz);
+            const end = e.end_time ? toDecimalHourInTz(e.end_time, tz) : s + 1;
             if (s < minH) minH = Math.floor(s);
             if (end > maxH) maxH = Math.ceil(end);
         }
         const hrs: number[] = [];
         for (let h = minH; h <= maxH; h++) hrs.push(h);
         return { startHour: minH, endHour: maxH, hours: hrs };
-    }, [events]);
+    }, [events, tz]);
 
     const totalHours = endHour - startHour;
     // Each hour = 120px for a nice spread
@@ -99,6 +91,18 @@ export function TodayTimeline({ events, role }: TodayTimelineProps) {
 
     const hourToX = (h: number) => ((h - startHour) / totalHours) * totalWidth;
     const nowX = hourToX(currentHour);
+
+    const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+        if (!scrollRef.current) return;
+        const scrollAmount = 200;
+        if (e.key === 'ArrowRight') {
+            e.preventDefault();
+            scrollRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+        } else if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            scrollRef.current.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+        }
+    }, []);
 
     if (events.length === 0) {
         return (
@@ -131,12 +135,17 @@ export function TodayTimeline({ events, role }: TodayTimelineProps) {
     }
 
     return (
-        <div className={cn(
-            'relative overflow-hidden rounded-2xl',
-            'bg-white/60 backdrop-blur-xl',
-            'border border-white/40',
-            'shadow-[0_2px_12px_rgba(0,0,0,0.04)]',
-        )}>
+        <div
+            role="region"
+            aria-label="Today's schedule"
+            aria-roledescription="timeline"
+            className={cn(
+                'relative overflow-hidden rounded-2xl',
+                'bg-white/60 backdrop-blur-xl',
+                'border border-white/40',
+                'shadow-[0_2px_12px_rgba(0,0,0,0.04)]',
+            )}
+        >
             {/* Header */}
             <div className="flex items-center justify-between px-5 pt-4 pb-2">
                 <div className="flex items-center gap-2.5">
@@ -159,7 +168,11 @@ export function TodayTimeline({ events, role }: TodayTimelineProps) {
             {/* Horizontal scrolling timeline */}
             <div
                 ref={scrollRef}
-                className="overflow-x-auto scrollbar-thin scrollbar-thumb-warm-200 scrollbar-track-transparent pb-4 px-2"
+                tabIndex={0}
+                role="group"
+                aria-label="Timeline events, use left and right arrow keys to scroll"
+                onKeyDown={handleKeyDown}
+                className="overflow-x-auto scrollbar-thin scrollbar-thumb-warm-200 scrollbar-track-transparent pb-4 px-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 rounded-lg"
             >
                 <div className="relative" style={{ width: totalWidth + 40, minHeight: 140 }}>
                     {/* Hour markers */}
@@ -211,8 +224,8 @@ export function TodayTimeline({ events, role }: TodayTimelineProps) {
                         const rowEnds: number[] = []; // tracks the rightmost pixel end of each row
                         const eventRows: number[] = [];
                         for (const event of events) {
-                            const startH = toDecimalHour(event.start_time);
-                            const endH = event.end_time ? toDecimalHour(event.end_time) : startH + 1;
+                            const startH = toDecimalHourInTz(event.start_time, tz);
+                            const endH = event.end_time ? toDecimalHourInTz(event.end_time, tz) : startH + 1;
                             const leftPx = hourToX(startH);
                             const widthPx = Math.max((endH - startH) / totalHours * totalWidth, 100);
                             const rightPx = leftPx + widthPx;
@@ -235,14 +248,14 @@ export function TodayTimeline({ events, role }: TodayTimelineProps) {
                         const containerHeight = totalRows * ROW_HEIGHT + (totalRows - 1) * ROW_GAP;
 
                         // Find the first upcoming event index
-                        const nextIdx = events.findIndex(e => toDecimalHour(e.start_time) > currentHour);
+                        const nextIdx = events.findIndex(e => toDecimalHourInTz(e.start_time, tz) > currentHour);
 
                         return (
                             <div className="relative" style={{ marginTop: 8, paddingLeft: 20, paddingRight: 20, height: containerHeight }}>
                                 {events.map((event, i) => {
                                     const config = EVENT_TYPE_CONFIG[event.event_type] ?? EVENT_TYPE_CONFIG['other']!;
-                                    const startH = toDecimalHour(event.start_time);
-                                    const endH = event.end_time ? toDecimalHour(event.end_time) : startH + 1;
+                                    const startH = toDecimalHourInTz(event.start_time, tz);
+                                    const endH = event.end_time ? toDecimalHourInTz(event.end_time, tz) : startH + 1;
                                     const leftPx = hourToX(startH);
                                     const widthPx = Math.max((endH - startH) / totalHours * totalWidth, 100);
                                     const row = eventRows[i] ?? 0;
@@ -252,6 +265,8 @@ export function TodayTimeline({ events, role }: TodayTimelineProps) {
                                     const isCurrent = currentHour >= startH && currentHour <= endH;
                                     const isNext = !isCurrent && i === nextIdx;
 
+                                    const eventLabel = `${event.title}, ${config.label}, ${formatTimeInTz(event.start_time, tz)}${event.end_time ? ` to ${formatTimeInTz(event.end_time, tz)}` : ''}${event.location ? `, ${event.location}` : ''}${isCurrent ? ', happening now' : ''}`;
+
                                     return (
                                         <m.div
                                             key={event.id}
@@ -260,6 +275,7 @@ export function TodayTimeline({ events, role }: TodayTimelineProps) {
                                             transition={{ delay: i * 0.06, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                                             className="absolute"
                                             style={{ left: leftPx, width: widthPx, top: topPx }}
+                                            aria-label={eventLabel}
                                         >
                                             <div className={cn(
                                                 'rounded-xl border p-3 transition-all duration-200 h-full',
@@ -288,8 +304,8 @@ export function TodayTimeline({ events, role }: TodayTimelineProps) {
                                                 <div className="flex items-center gap-2 text-[10px] text-warm-400">
                                                     <span className="flex items-center gap-1 tabular-nums">
                                                         <IconClock size={9} className="text-warm-300" />
-                                                        {formatTime(event.start_time)}
-                                                        {event.end_time && ` – ${formatTime(event.end_time)}`}
+                                                        {formatTimeInTz(event.start_time, tz)}
+                                                        {event.end_time && ` – ${formatTimeInTz(event.end_time, tz)}`}
                                                     </span>
                                                     {event.location && (
                                                         <span className="flex items-center gap-1 truncate">

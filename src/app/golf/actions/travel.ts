@@ -9,6 +9,7 @@ import { formatSafeErrorResponse } from '@/lib/validation/server-action-validato
 // VALIDATION SCHEMAS (Zod)
 // ============================================================================
 
+const uuidSchema = z.string().uuid();
 const transportationTypeSchema = z.enum(['bus', 'van', 'fly', 'carpool']);
 
 const createTravelItinerarySchema = z.object({
@@ -154,7 +155,6 @@ export async function createGolfTravelItinerary(input: CreateTravelItineraryInpu
       .single();
 
     if (error) {
-      console.error('[Golf Travel Error]', error);
       return {
         success: false,
         error: 'Operation failed. Please try again.',
@@ -174,7 +174,6 @@ export async function createGolfTravelItinerary(input: CreateTravelItineraryInpu
         error: 'Invalid travel itinerary data. Please check your inputs.',
       };
     }
-    console.error('[Golf Travel Error]', error);
     return formatSafeErrorResponse(error);
   }
 }
@@ -213,7 +212,6 @@ export async function updateGolfTravelItinerary(input: UpdateTravelItineraryInpu
       .single();
 
     if (error) {
-      console.error('[Golf Travel Error]', error);
       return {
         success: false,
         error: 'Operation failed. Please try again.',
@@ -233,7 +231,6 @@ export async function updateGolfTravelItinerary(input: UpdateTravelItineraryInpu
         error: 'Invalid travel itinerary data. Please check your inputs.',
       };
     }
-    console.error('[Golf Travel Error]', error);
     return formatSafeErrorResponse(error);
   }
 }
@@ -242,15 +239,19 @@ export async function updateGolfTravelItinerary(input: UpdateTravelItineraryInpu
  * Delete a golf travel itinerary
  */
 export async function deleteGolfTravelItinerary(itineraryId: string) {
+  const parsed = uuidSchema.safeParse(itineraryId);
+  if (!parsed.success) {
+    return { success: false, error: 'Invalid itinerary ID.' };
+  }
+
   const supabase = await createClient();
 
   const { error } = await supabase
     .from('golf_travel_itineraries')
     .delete()
-    .eq('id', itineraryId);
+    .eq('id', parsed.data);
 
   if (error) {
-    console.error('[Golf Travel Delete Error]', error);
     return {
       success: false,
       error: 'Failed to delete travel itinerary. Please try again.',
@@ -279,7 +280,7 @@ const createExpenseSchema = z.object({
   team_id: z.string().uuid(),
   category: expenseCategorySchema,
   description: z.string().min(1).max(500),
-  amount: z.number().positive(),
+  amount: z.number().positive().max(1_000_000),
   receipt_url: z.string().url().max(1000).optional().nullable(),
   paid_by: expensePaidBySchema,
   vendor_name: z.string().max(200).optional().nullable(),
@@ -291,7 +292,7 @@ const updateExpenseSchema = z.object({
   id: z.string().uuid(),
   category: expenseCategorySchema.optional(),
   description: z.string().min(1).max(500).optional(),
-  amount: z.number().positive().optional(),
+  amount: z.number().positive().max(1_000_000).optional(),
   receipt_url: z.string().url().max(1000).optional().nullable(),
   paid_by: expensePaidBySchema.optional(),
   vendor_name: z.string().max(200).optional().nullable(),
@@ -381,7 +382,6 @@ export async function createTravelExpense(input: CreateExpenseInput) {
       .single();
 
     if (error) {
-      console.error('[Golf Expense Error]', error);
       return { success: false, error: 'Failed to create expense. Please try again.' };
     }
 
@@ -391,7 +391,6 @@ export async function createTravelExpense(input: CreateExpenseInput) {
     if (error instanceof z.ZodError) {
       return { success: false, error: 'Invalid expense data. Please check your inputs.' };
     }
-    console.error('[Golf Expense Error]', error);
     return formatSafeErrorResponse(error);
   }
 }
@@ -415,7 +414,6 @@ export async function updateTravelExpense(input: UpdateExpenseInput) {
       .single();
 
     if (error) {
-      console.error('[Golf Expense Error]', error);
       return { success: false, error: 'Failed to update expense. Please try again.' };
     }
 
@@ -425,7 +423,6 @@ export async function updateTravelExpense(input: UpdateExpenseInput) {
     if (error instanceof z.ZodError) {
       return { success: false, error: 'Invalid expense data. Please check your inputs.' };
     }
-    console.error('[Golf Expense Error]', error);
     return formatSafeErrorResponse(error);
   }
 }
@@ -434,16 +431,20 @@ export async function updateTravelExpense(input: UpdateExpenseInput) {
  * Delete a travel expense
  */
 export async function deleteTravelExpense(expenseId: string) {
+  const parsed = uuidSchema.safeParse(expenseId);
+  if (!parsed.success) {
+    return { success: false, error: 'Invalid expense ID.' };
+  }
+
   const supabase = await createClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any)
     .from('golf_travel_expenses')
     .delete()
-    .eq('id', expenseId);
+    .eq('id', parsed.data);
 
   if (error) {
-    console.error('[Golf Expense Delete Error]', error);
     return { success: false, error: 'Failed to delete expense. Please try again.' };
   }
 
@@ -455,17 +456,21 @@ export async function deleteTravelExpense(expenseId: string) {
  * Get expenses for an itinerary
  */
 export async function getExpensesForItinerary(itineraryId: string): Promise<{ success: boolean; data?: TravelExpense[]; error?: string }> {
+  const parsed = uuidSchema.safeParse(itineraryId);
+  if (!parsed.success) {
+    return { success: false, error: 'Invalid itinerary ID.' };
+  }
+
   const supabase = await createClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from('golf_travel_expenses')
     .select('*')
-    .eq('itinerary_id', itineraryId)
+    .eq('itinerary_id', parsed.data)
     .order('expense_date', { ascending: false, nullsFirst: false });
 
   if (error) {
-    console.error('[Golf Expense Fetch Error]', error);
     return { success: false, error: 'Failed to fetch expenses.' };
   }
 
@@ -476,17 +481,21 @@ export async function getExpensesForItinerary(itineraryId: string): Promise<{ su
  * Get all expenses for a team
  */
 export async function getExpensesForTeam(teamId: string): Promise<{ success: boolean; data?: TravelExpense[]; error?: string }> {
+  const parsed = uuidSchema.safeParse(teamId);
+  if (!parsed.success) {
+    return { success: false, error: 'Invalid team ID.' };
+  }
+
   const supabase = await createClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from('golf_travel_expenses')
     .select('*')
-    .eq('team_id', teamId)
+    .eq('team_id', parsed.data)
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('[Golf Expense Fetch Error]', error);
     return { success: false, error: 'Failed to fetch expenses.' };
   }
 
@@ -497,16 +506,20 @@ export async function getExpensesForTeam(teamId: string): Promise<{ success: boo
  * Get expense summary for an itinerary
  */
 export async function getExpenseSummary(itineraryId: string): Promise<{ success: boolean; data?: ExpenseSummary; error?: string }> {
+  const parsed = uuidSchema.safeParse(itineraryId);
+  if (!parsed.success) {
+    return { success: false, error: 'Invalid itinerary ID.' };
+  }
+
   const supabase = await createClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from('golf_travel_expenses')
     .select('category, amount, paid_by')
-    .eq('itinerary_id', itineraryId);
+    .eq('itinerary_id', parsed.data);
 
   if (error) {
-    console.error('[Golf Expense Summary Error]', error);
     return { success: false, error: 'Failed to fetch expense summary.' };
   }
 
@@ -547,11 +560,35 @@ export async function getExpenseSummary(itineraryId: string): Promise<{ success:
 /**
  * Upload receipt to Supabase Storage
  */
+const ALLOWED_RECEIPT_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'pdf', 'heic']);
+const MAX_RECEIPT_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+
 export async function uploadExpenseReceipt(
   file: File,
   teamId: string,
   expenseId?: string
 ): Promise<{ success: boolean; url?: string; error?: string }> {
+  const parsedTeamId = uuidSchema.safeParse(teamId);
+  if (!parsedTeamId.success) {
+    return { success: false, error: 'Invalid team ID.' };
+  }
+  if (expenseId !== undefined) {
+    const parsedExpenseId = uuidSchema.safeParse(expenseId);
+    if (!parsedExpenseId.success) {
+      return { success: false, error: 'Invalid expense ID.' };
+    }
+  }
+
+  if (file.size > MAX_RECEIPT_SIZE_BYTES) {
+    return { success: false, error: 'File too large. Maximum size is 10MB.' };
+  }
+
+  const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const fileExt = sanitizedName.split('.').pop()?.toLowerCase();
+  if (!fileExt || !ALLOWED_RECEIPT_EXTENSIONS.has(fileExt)) {
+    return { success: false, error: 'Invalid file type. Allowed: jpg, jpeg, png, pdf, heic.' };
+  }
+
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -559,9 +596,7 @@ export async function uploadExpenseReceipt(
     return { success: false, error: 'Unauthorized' };
   }
 
-  // Generate unique filename
-  const fileExt = file.name.split('.').pop();
-  const fileName = `${teamId}/${expenseId || 'new'}_${Date.now()}.${fileExt}`;
+  const fileName = `${parsedTeamId.data}/${expenseId || 'new'}_${Date.now()}.${fileExt}`;
 
   const { data, error } = await supabase.storage
     .from('expense-receipts')
@@ -571,11 +606,9 @@ export async function uploadExpenseReceipt(
     });
 
   if (error) {
-    console.error('[Receipt Upload Error]', error);
     return { success: false, error: 'Failed to upload receipt.' };
   }
 
-  // Get public URL
   const { data: urlData } = supabase.storage
     .from('expense-receipts')
     .getPublicUrl(data.path);
@@ -587,24 +620,28 @@ export async function uploadExpenseReceipt(
  * Export expenses to CSV format
  */
 export async function exportExpensesToCSV(itineraryId: string): Promise<{ success: boolean; csv?: string; error?: string }> {
+  const parsed = uuidSchema.safeParse(itineraryId);
+  if (!parsed.success) {
+    return { success: false, error: 'Invalid itinerary ID.' };
+  }
+
   const supabase = await createClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: itinerary } = await (supabase as any)
     .from('golf_travel_itineraries')
     .select('event_name, destination, departure_date')
-    .eq('id', itineraryId)
+    .eq('id', parsed.data)
     .single();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: expenses, error } = await (supabase as any)
     .from('golf_travel_expenses')
     .select('*')
-    .eq('itinerary_id', itineraryId)
+    .eq('itinerary_id', parsed.data)
     .order('expense_date', { ascending: true });
 
   if (error) {
-    console.error('[Golf Expense Export Error]', error);
     return { success: false, error: 'Failed to export expenses.' };
   }
 
@@ -637,7 +674,7 @@ export async function exportExpensesToCSV(itineraryId: string): Promise<{ succes
 const budgetSchema = z.object({
   itinerary_id: z.string().uuid(),
   category: expenseCategorySchema,
-  budgeted_amount: z.number().nonnegative(),
+  budgeted_amount: z.number().nonnegative().max(10_000_000),
 });
 
 export interface TravelBudget {
@@ -669,7 +706,6 @@ export async function setBudget(input: { itinerary_id: string; category: Expense
       .single();
 
     if (error) {
-      console.error('[Golf Budget Error]', error);
       return { success: false, error: 'Failed to set budget. Please try again.' };
     }
 
@@ -679,7 +715,6 @@ export async function setBudget(input: { itinerary_id: string; category: Expense
     if (error instanceof z.ZodError) {
       return { success: false, error: 'Invalid budget data.' };
     }
-    console.error('[Golf Budget Error]', error);
     return formatSafeErrorResponse(error);
   }
 }
@@ -688,16 +723,20 @@ export async function setBudget(input: { itinerary_id: string; category: Expense
  * Get budgets for an itinerary
  */
 export async function getBudgetsForItinerary(itineraryId: string): Promise<{ success: boolean; data?: TravelBudget[]; error?: string }> {
+  const parsed = uuidSchema.safeParse(itineraryId);
+  if (!parsed.success) {
+    return { success: false, error: 'Invalid itinerary ID.' };
+  }
+
   const supabase = await createClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from('golf_travel_budgets')
     .select('*')
-    .eq('itinerary_id', itineraryId);
+    .eq('itinerary_id', parsed.data);
 
   if (error) {
-    console.error('[Golf Budget Fetch Error]', error);
     return { success: false, error: 'Failed to fetch budgets.' };
   }
 

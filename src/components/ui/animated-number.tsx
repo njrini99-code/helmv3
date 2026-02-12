@@ -39,9 +39,14 @@ export function AnimatedNumber({
     }
   }, [isInView, value, spring, hasAnimated]);
 
+  const finalDisplay = `${prefix}${value.toFixed(decimals)}${suffix}`;
+
   return (
-    <motion.span ref={ref} className={className}>
-      {display}
-    </motion.span>
+    <>
+      <motion.span ref={ref} className={className} aria-hidden="true">
+        {display}
+      </motion.span>
+      <span className="sr-only">{finalDisplay}</span>
+    </>
   );
 }

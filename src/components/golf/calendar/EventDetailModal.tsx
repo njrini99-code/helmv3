@@ -110,6 +110,7 @@ interface EventDetailModalProps {
   isSaving: boolean;
   teamPlayers?: TeamPlayer[]; // Available for RSVP invitations
   currentUserId?: string; // Current user's player/coach ID to exclude from attendee list
+  timezone?: string; // Team timezone for display purposes
 }
 
 // Premium event type pill configuration
@@ -203,9 +204,15 @@ export function EventDetailModal({
   isSaving,
   teamPlayers = [],
   currentUserId,
+  timezone,
 }: EventDetailModalProps) {
   // Filter out current user from attendee list - you shouldn't be able to add yourself
   const availablePlayers = teamPlayers.filter(p => p.id !== currentUserId);
+  const tzAbbrev = useMemo(() => {
+    if (!timezone) return null;
+    const parts = new Intl.DateTimeFormat('en-US', { timeZone: timezone, timeZoneName: 'short' }).formatToParts(new Date());
+    return parts.find(p => p.type === 'timeZoneName')?.value ?? null;
+  }, [timezone]);
   const [formData, setFormData] = useState<GolfEventFormData>({
     title: '',
     eventType: 'practice',
@@ -584,6 +591,11 @@ export function EventDetailModal({
                   />
                 </div>
               </div>
+            )}
+
+            {/* Timezone indicator */}
+            {tzAbbrev && !formData.allDay && (
+              <p className="text-[11px] text-warm-400 pl-[52px]">Times shown in {tzAbbrev}</p>
             )}
 
             {/* All Day Toggle - inline */}

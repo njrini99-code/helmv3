@@ -101,9 +101,15 @@ export function Sparkline({
 
   if (data.length < 2) return null;
 
+  const first = data[0]!;
+  const last = data[data.length - 1]!;
+  const trendDirection = last > first ? 'trending up' : last < first ? 'trending down' : 'flat';
+
   return (
     <canvas
       ref={canvasRef}
+      role="img"
+      aria-label={`Sparkline chart: ${data.length} data points, ${trendDirection}`}
       className={cn('transition-opacity duration-500', isVisible ? 'opacity-100' : 'opacity-0', className)}
     />
   );

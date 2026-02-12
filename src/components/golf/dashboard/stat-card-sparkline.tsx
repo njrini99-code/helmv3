@@ -22,8 +22,6 @@ interface StatCardSparklineProps {
     href?: string;
     suffix?: string;
     trend?: 'improving' | 'declining' | 'stable';
-    /** @deprecated No longer used — sparkline color now derived from trend directly */
-    reverseColor?: boolean;
     accent?: boolean;
 }
 
@@ -75,7 +73,7 @@ export const StatCardSparkline = memo(function StatCardSparkline({
             <div className="relative flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
                     <p className="text-[11px] md:text-xs font-medium text-warm-400 uppercase tracking-wider mb-1.5">{label}</p>
-                    <div className="flex items-baseline gap-1.5">
+                    <div className="flex items-baseline gap-1.5" aria-live="polite">
                         <p className="text-2xl md:text-3xl font-bold tracking-tight text-warm-900 tabular-nums">
                             {isNumeric ? (
                                 <AnimatedNumber value={value} decimals={suffix === '%' ? 0 : 1} suffix={suffix} />

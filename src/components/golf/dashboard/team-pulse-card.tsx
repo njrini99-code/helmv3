@@ -50,7 +50,11 @@ export const TeamPulseCard = memo(function TeamPulseCard({ data }: TeamPulseCard
                 {/* Segmented bar */}
                 {total > 0 ? (
                     <>
-                        <div className="h-3 rounded-full overflow-hidden flex bg-warm-100 mb-3">
+                        <div
+                            role="img"
+                            aria-label={`Team pulse: ${improving} improving, ${stable} stable, ${declining} declining`}
+                            className="h-3 rounded-full overflow-hidden flex bg-warm-100 mb-3"
+                        >
                             <m.div
                                 className="bg-primary-500 rounded-l-full"
                                 initial={{ width: 0 }}

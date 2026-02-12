@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { getTodayRangeForTz } from '@/lib/utils/timezone';
 
 // ============================================================================
 // TYPES
@@ -116,6 +117,7 @@ export interface CoachDashboardPayload {
     }>;
     teamName: string | null;
     joinCode: string | null;
+    timezone: string;
 }
 
 export interface PlayerDashboardPayload {
@@ -150,13 +152,17 @@ export interface PlayerDashboardPayload {
     }>;
     scoringTrend: ScoringTrend[];
     teamName: string | null;
+    timezone: string;
 }
 
 // ============================================================================
 // HELPERS
 // ============================================================================
 
-function getTodayRange(): { start: string; end: string } {
+function getTodayRange(tz?: string): { start: string; end: string } {
+    if (tz) {
+        return getTodayRangeForTz(tz);
+    }
     const now = new Date();
     const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const end = new Date(start.getTime() + 86400000);
@@ -207,7 +213,16 @@ export async function getCoachDashboardData(
     teamId: string
 ): Promise<CoachDashboardPayload> {
     const supabase = await createClient();
-    const { start: todayStart, end: todayEnd } = getTodayRange();
+
+    // Fetch team timezone (column added via migration, cast to avoid generated-type mismatch)
+    const { data: teamTzRow } = await supabase
+        .from('golf_teams')
+        .select('timezone')
+        .eq('id', teamId)
+        .single() as { data: { timezone?: string } | null };
+    const teamTimezone = teamTzRow?.timezone || 'America/New_York';
+
+    const { start: todayStart, end: todayEnd } = getTodayRange(teamTimezone);
     const now = new Date().toISOString();
     const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
 
@@ -584,6 +599,7 @@ export async function getCoachDashboardData(
         calendarEvents,
         teamName: team?.name || null,
         joinCode: team?.join_code || null,
+        timezone: teamTimezone,
     };
 }
 
@@ -597,7 +613,19 @@ export async function getPlayerDashboardData(
     teamId: string | null
 ): Promise<PlayerDashboardPayload> {
     const supabase = await createClient();
-    const { start: todayStart, end: todayEnd } = getTodayRange();
+
+    // Fetch team timezone (column added via migration, cast to avoid generated-type mismatch)
+    let playerTeamTimezone = 'America/New_York';
+    if (teamId) {
+        const { data: playerTeamTzRow } = await supabase
+            .from('golf_teams')
+            .select('timezone')
+            .eq('id', teamId)
+            .single() as { data: { timezone?: string } | null };
+        playerTeamTimezone = playerTeamTzRow?.timezone || 'America/New_York';
+    }
+
+    const { start: todayStart, end: todayEnd } = getTodayRange(playerTeamTimezone);
     const today = new Date().toISOString().split('T')[0] ?? '';
 
     // ── Parallel batch: team, rounds, handicap, today events, tasks, announcements ──
@@ -817,5 +845,6 @@ export async function getPlayerDashboardData(
         })),
         scoringTrend,
         teamName: team?.name || null,
+        timezone: playerTeamTimezone,
     };
 }

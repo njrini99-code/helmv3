@@ -32,11 +32,27 @@ import {
     ActionItemsCard,
     PerformanceRadar,
     QuickStatRow,
+    DashboardErrorBoundary,
     containerVariants,
     itemVariants
 } from '@/components/golf/dashboard';
 import type { GolfPlayer, GolfTeam } from '@/lib/types/golf';
-import type { PlayerDashboardPayload } from '@/app/golf/actions/dashboard-data';
+import type { PlayerDashboardPayload, TodayEvent, ActionItem, StrokesGainedSnapshot } from '@/app/golf/actions/dashboard-data';
+
+// ============================================================================
+// STABLE REFERENCES (prevents memoization breaks in child components)
+// ============================================================================
+
+const EMPTY_SPARKLINE: number[] = [];
+const EMPTY_EVENTS: TodayEvent[] = [];
+const EMPTY_ACTION_ITEMS: ActionItem[] = [];
+const EMPTY_STROKES_GAINED: StrokesGainedSnapshot = {
+    sg_total: null,
+    sg_off_tee: null,
+    sg_approach: null,
+    sg_around_green: null,
+    sg_putting: null,
+};
 
 // ============================================================================
 // TYPES
@@ -232,39 +248,43 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
 
                         {enhancedData && enhancedData.todayEvents.length > 0 && (
                             <m.div className="mb-5 md:mb-6" variants={itemVariants}>
-                                <TodayTimeline events={enhancedData.todayEvents} role="player" />
+                                <DashboardErrorBoundary name="Schedule">
+                                    <TodayTimeline events={enhancedData.todayEvents} role="player" timezone={enhancedData.timezone} />
+                                </DashboardErrorBoundary>
                             </m.div>
                         )}
 
                         <m.div variants={itemVariants}>
-                            <SectionHeader title="My Focus Areas" icon={<IconTarget size={14} />} />
-                            <PremiumGlassCard glow>
-                                <ShineEffect />
-                                <PlayerFocusAreas playerId={player.id} />
-                            </PremiumGlassCard>
+                            <DashboardErrorBoundary name="Focus Areas">
+                                <SectionHeader title="My Focus Areas" icon={<IconTarget size={14} />} />
+                                <PremiumGlassCard glow>
+                                    <ShineEffect />
+                                    <PlayerFocusAreas playerId={player.id} />
+                                </PremiumGlassCard>
+                            </DashboardErrorBoundary>
                         </m.div>
                     </>
                 ) : (
                     /* NORMAL STATE */
                     <>
                         {/* ROW 1: Stat Cards */}
+                        <DashboardErrorBoundary name="Stats">
                         <m.div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 mb-5 md:mb-6" variants={itemVariants}>
                             <StatCardSparkline
                                 label="Scoring Avg"
                                 value={enhancedData?.sparklines.scoringAvg.value ?? stats.scoringAverage}
-                                sparkline={enhancedData?.sparklines.scoringAvg.sparkline || []}
+                                sparkline={enhancedData?.sparklines.scoringAvg.sparkline ?? EMPTY_SPARKLINE}
                                 icon={<IconChartBar size={18} />}
                                 iconColor="text-primary-600"
                                 iconBg="bg-primary-50"
                                 href="/golf/dashboard/stats"
                                 trend={enhancedData?.sparklines.scoringAvg.trend || stats.recentTrend}
-                                reverseColor
                                 accent
                             />
                             <StatCardSparkline
                                 label="GIR%"
                                 value={enhancedData?.sparklines.girPct.value ?? null}
-                                sparkline={enhancedData?.sparklines.girPct.sparkline || []}
+                                sparkline={enhancedData?.sparklines.girPct.sparkline ?? EMPTY_SPARKLINE}
                                 icon={<IconTarget size={18} />}
                                 iconColor="text-warm-600"
                                 iconBg="bg-warm-100"
@@ -275,7 +295,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                             <StatCardSparkline
                                 label="Putts/Rd"
                                 value={enhancedData?.sparklines.puttsPerRound.value ?? null}
-                                sparkline={enhancedData?.sparklines.puttsPerRound.sparkline || []}
+                                sparkline={enhancedData?.sparklines.puttsPerRound.sparkline ?? EMPTY_SPARKLINE}
                                 icon={<IconGolf size={18} />}
                                 iconColor="text-amber-600"
                                 iconBg="bg-amber-50"
@@ -285,37 +305,36 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                             <StatCardSparkline
                                 label="Handicap"
                                 value={enhancedData?.sparklines.handicap.value ?? (stats.handicap !== null ? Number(Number(stats.handicap).toFixed(1)) : null)}
-                                sparkline={[]}
+                                sparkline={EMPTY_SPARKLINE}
                                 icon={<IconSparkles size={18} />}
                                 iconColor="text-violet-600"
                                 iconBg="bg-violet-50"
                                 href="/golf/dashboard/stats"
                             />
                         </m.div>
+                        </DashboardErrorBoundary>
 
                         {/* ROW 2: Schedule + Strokes Gained */}
+                        <DashboardErrorBoundary name="Schedule & Performance">
                         <m.div className="grid lg:grid-cols-5 gap-4 md:gap-5 mb-5 md:mb-6" variants={itemVariants}>
                             <div className="lg:col-span-3">
                                 <TodayTimeline
-                                    events={enhancedData?.todayEvents || []}
+                                    events={enhancedData?.todayEvents ?? EMPTY_EVENTS}
                                     role="player"
+                                    timezone={enhancedData?.timezone}
                                 />
                             </div>
                             <div className="lg:col-span-2 flex flex-col gap-4 md:gap-5">
                                 <PerformanceRadar
-                                    data={enhancedData?.strokesGained || {
-                                        sg_total: null,
-                                        sg_off_tee: null,
-                                        sg_approach: null,
-                                        sg_around_green: null,
-                                        sg_putting: null,
-                                    }}
+                                    data={enhancedData?.strokesGained ?? EMPTY_STROKES_GAINED}
                                 />
-                                <ActionItemsCard items={enhancedData?.actionItems || []} role="player" />
+                                <ActionItemsCard items={enhancedData?.actionItems ?? EMPTY_ACTION_ITEMS} role="player" />
                             </div>
                         </m.div>
+                        </DashboardErrorBoundary>
 
                         {/* ROW 3: Trend + Focus Areas */}
+                        <DashboardErrorBoundary name="Scoring Trend">
                         <m.div className="grid lg:grid-cols-5 gap-4 md:gap-5 mb-5 md:mb-6" variants={itemVariants}>
                             <div className="lg:col-span-3">
                                 {chartData.length >= 2 ? (
@@ -348,8 +367,10 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                                 </PremiumGlassCard>
                             </div>
                         </m.div>
+                        </DashboardErrorBoundary>
 
                         {/* ROW 4: Recent Rounds (full width) */}
+                        <DashboardErrorBoundary name="Recent Rounds">
                         <m.div className="mb-5 md:mb-6" variants={itemVariants}>
                             <SectionHeader
                                 title="Recent Rounds"
@@ -370,6 +391,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                                 </div>
                             </PremiumGlassCard>
                         </m.div>
+                        </DashboardErrorBoundary>
 
                         {/* Secondary Stats */}
                         {enhancedData?.secondaryStats && (

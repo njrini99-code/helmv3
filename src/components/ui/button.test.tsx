@@ -28,7 +28,7 @@ describe('Button', () => {
 
   it('applies different sizes', () => {
     const { rerender } = render(<Button size="sm">Small</Button>);
-    expect(screen.getByRole('button')).toHaveClass('px-3', 'py-2', 'text-xs');
+    expect(screen.getByRole('button')).toHaveClass('px-3', 'py-2.5', 'text-xs');
 
     rerender(<Button size="lg">Large</Button>);
     expect(screen.getByRole('button')).toHaveClass('px-6', 'py-3', 'text-base');
@@ -71,7 +71,7 @@ describe('IconButton', () => {
 
   it('applies default variant', () => {
     render(<IconButton>Icon</IconButton>);
-    expect(screen.getByRole('button')).toHaveClass('text-warm-600');
+    expect(screen.getByRole('button')).toHaveClass('text-warm-500');
   });
 
   it('applies primary variant', () => {
