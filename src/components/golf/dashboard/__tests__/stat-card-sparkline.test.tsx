@@ -6,50 +6,53 @@ import React from 'react';
 // Mocks
 // ---------------------------------------------------------------------------
 
-vi.mock('framer-motion', () => ({
-  motion: {
-    div: React.forwardRef(
-      (
-        {
-          children,
-          className,
-          role: roleProp,
-          ...rest
-        }: {
-          children?: React.ReactNode;
-          className?: string;
-          role?: string;
-          'aria-label'?: string;
-          [key: string]: unknown;
-        },
-        ref: React.ForwardedRef<HTMLDivElement>,
-      ) => (
-        <div ref={ref} className={className} role={roleProp} aria-label={rest['aria-label'] as string}>
-          {children}
-        </div>
-      ),
+vi.mock('framer-motion', async () => {
+  const _React = await import('react');
+  const _mockDiv = _React.forwardRef(
+    (
+      {
+        children,
+        className,
+        role: roleProp,
+        ...rest
+      }: {
+        children?: React.ReactNode;
+        className?: string;
+        role?: string;
+        'aria-label'?: string;
+        [key: string]: unknown;
+      },
+      ref: React.ForwardedRef<HTMLDivElement>,
+    ) => (
+      <div ref={ref} className={className} role={roleProp} aria-label={rest['aria-label'] as string}>
+        {children}
+      </div>
     ),
-    span: React.forwardRef(
-      (
-        {
-          children,
-          className,
-        }: {
-          children?: React.ReactNode;
-          className?: string;
-        },
-        ref: React.ForwardedRef<HTMLSpanElement>,
-      ) => (
-        <span ref={ref} className={className}>
-          {children}
-        </span>
-      ),
+  );
+  const _mockSpan = _React.forwardRef(
+    (
+      {
+        children,
+        className,
+      }: {
+        children?: React.ReactNode;
+        className?: string;
+      },
+      ref: React.ForwardedRef<HTMLSpanElement>,
+    ) => (
+      <span ref={ref} className={className}>
+        {children}
+      </span>
     ),
-  },
-  useSpring: () => ({ set: vi.fn() }),
-  useTransform: (_spring: unknown, fn: (v: number) => string) => fn(0),
-  useInView: () => true,
-}));
+  );
+  return {
+    motion: { div: _mockDiv, span: _mockSpan },
+    m: { div: _mockDiv, span: _mockSpan },
+    useSpring: () => ({ set: vi.fn() }),
+    useTransform: (_spring: unknown, fn: (v: number) => string) => fn(0),
+    useInView: () => true,
+  };
+});
 
 vi.mock('next/link', () => ({
   default: ({

@@ -55,10 +55,11 @@ async function getCoachTeamId(
  * Must match the format used in onboarding.ts
  */
 function generateJoinCode(): string {
+  const { randomInt } = require('crypto');
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = '';
-  for (let i = 0; i < 6; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  for (let i = 0; i < 8; i++) {
+    code += chars.charAt(randomInt(chars.length));
   }
   return code;
 }
@@ -245,9 +246,8 @@ export async function joinGolfTeam(playerId: string, teamId: string) {
         // Notification shape includes metadata field not in generated types
         await fromUntyped(supabase, 'notifications').insert(notifications);
       }
-    } catch (notifyError) {
-      // Don't fail the join if notification fails - just log it
-      console.error('Failed to notify coaches:', notifyError);
+    } catch {
+      // Don't fail the join if notification fails
     }
   }
 
@@ -341,7 +341,6 @@ export async function createTeam(
     .single();
 
   if (teamError) {
-    console.error('Failed to create team:', teamError);
     return { success: false, error: 'Failed to create team. Please try again.' };
   }
 
@@ -356,7 +355,6 @@ export async function createTeam(
     });
 
   if (staffError) {
-    console.error('Failed to add coach to team staff:', staffError);
     // Clean up the team we just created since the coach can't manage it without staff record
     await supabase.from('golf_teams').delete().eq('id', newTeam.id);
     return { success: false, error: 'Failed to create team. Please try again.' };
@@ -432,7 +430,6 @@ export async function updateTeam(
     .single();
 
   if (updateError) {
-    console.error('Failed to update team:', updateError);
     return { success: false, error: 'Failed to update team. Please try again.' };
   }
 
@@ -490,7 +487,6 @@ export async function regenerateJoinCode(
     .eq('id', teamId);
 
   if (updateError) {
-    console.error('Failed to regenerate join code:', updateError);
     return { success: false, error: 'Failed to regenerate join code. Please try again.' };
   }
 
@@ -611,7 +607,6 @@ export async function createTeamJoinRequest(
     .single();
 
   if (requestError) {
-    console.error('Failed to create join request:', requestError);
     return { success: false, error: 'Failed to submit request. Please try again.' };
   }
 
@@ -645,8 +640,8 @@ export async function createTeamJoinRequest(
         // Notification shape includes metadata field not in generated types
         await fromUntyped(supabase, 'notifications').insert(notifications);
       }
-    } catch (notifyError) {
-      console.error('Failed to notify coaches:', notifyError);
+    } catch {
+      // Don't fail the request if notification fails
     }
   }
 
@@ -712,7 +707,6 @@ export async function getTeamJoinRequests(): Promise<TeamActionResult<JoinReques
     .order('created_at', { ascending: false });
 
   if (requestsError) {
-    console.error('Failed to fetch join requests:', requestsError);
     return { success: false, error: 'Failed to fetch requests' };
   }
 
@@ -814,7 +808,6 @@ export async function acceptJoinRequest(
     });
 
   if (memberError) {
-    console.error('Failed to add player to team:', memberError);
     return { success: false, error: 'Failed to add player to team' };
   }
 
@@ -828,7 +821,7 @@ export async function acceptJoinRequest(
     .eq('id', requestId);
 
   if (updateError) {
-    console.error('Failed to update request status:', updateError);
+    return { success: false, error: 'Failed to update request status' };
   }
 
   // Notify player of approval
@@ -850,8 +843,8 @@ export async function acceptJoinRequest(
         },
         read: false,
       });
-    } catch (notifyError) {
-      console.error('Failed to notify player:', notifyError);
+    } catch {
+      // Don't fail the approval if notification fails
     }
   }
 
@@ -933,7 +926,6 @@ export async function rejectJoinRequest(
     .eq('id', requestId);
 
   if (updateError) {
-    console.error('Failed to reject request:', updateError);
     return { success: false, error: 'Failed to reject request' };
   }
 
@@ -959,8 +951,8 @@ export async function rejectJoinRequest(
         },
         read: false,
       });
-    } catch (notifyError) {
-      console.error('Failed to notify player:', notifyError);
+    } catch {
+      // Don't fail the rejection if notification fails
     }
   }
 
@@ -1009,7 +1001,6 @@ export async function cancelJoinRequest(
     .eq('id', requestId);
 
   if (deleteError) {
-    console.error('Failed to cancel request:', deleteError);
     return { success: false, error: 'Failed to cancel request' };
   }
 
@@ -1073,7 +1064,6 @@ export async function getPlayerJoinRequests(
     .order('created_at', { ascending: false });
 
   if (requestsError) {
-    console.error('Failed to fetch requests:', requestsError);
     return { success: false, error: 'Failed to fetch requests' };
   }
 

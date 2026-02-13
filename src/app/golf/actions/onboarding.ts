@@ -36,7 +36,6 @@ const playerOnboardingSchema = z.object({
   hometown: z.string().max(100).optional(),
   state: z.string().max(2).optional(),
   gpa: z.number().min(0).max(5).optional(),
-  joinCode: z.string().max(20).optional(),
 });
 
 export type CoachOnboardingInput = z.infer<typeof coachOnboardingSchema>;
@@ -394,50 +393,10 @@ export async function completePlayerOnboarding(input: PlayerOnboardingInput) {
       playerId = newPlayer.id;
     }
 
-    // Auto-join team if joinCode was provided (from invite link flow)
-    let joinResult: { success: boolean; error?: string } | null = null;
-    if (validatedData.joinCode && playerId) {
-      const normalizedCode = validatedData.joinCode.toUpperCase();
-      const { data: team } = await supabase
-        .from('golf_teams')
-        .select('id')
-        .eq('join_code', normalizedCode)
-        .maybeSingle();
-
-      if (team) {
-        // Check if not already on a team
-        const { data: existingMembership } = await supabase
-          .from('golf_team_members')
-          .select('id')
-          .eq('player_id', playerId)
-          .maybeSingle();
-
-        if (!existingMembership) {
-          const { error: joinError } = await supabase
-            .from('golf_team_members')
-            .insert({
-              player_id: playerId,
-              team_id: team.id,
-              status: 'active',
-            });
-
-          if (joinError) {
-            console.error('[Onboarding] Auto-join team failed:', joinError);
-            // Don't fail onboarding over this - player can join later
-            joinResult = { success: false, error: 'Profile saved, but failed to auto-join team. You can join from the dashboard.' };
-          } else {
-            joinResult = { success: true };
-          }
-        }
-      }
-    }
-
     revalidatePath('/golf/dashboard');
-    revalidatePath('/golf/dashboard/roster');
 
     return {
       success: true,
-      joinResult,
     };
 
   } catch (error) {
@@ -454,10 +413,11 @@ export async function completePlayerOnboarding(input: PlayerOnboardingInput) {
  * Generate a random 6-character alphanumeric join code
  */
 function generateJoinCode(): string {
+  const { randomInt } = require('crypto');
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Removed I,O,0,1 for clarity
   let code = '';
-  for (let i = 0; i < 6; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  for (let i = 0; i < 8; i++) {
+    code += chars.charAt(randomInt(chars.length));
   }
   return code;
 }

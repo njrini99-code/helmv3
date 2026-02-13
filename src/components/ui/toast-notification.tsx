@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { IconCheck, IconX, IconInfo, IconWarning } from '@/components/icons';
 import { cn } from '@/lib/utils';
 
@@ -44,6 +44,13 @@ export function ToastNotification({ toast, onClose }: ToastNotificationProps) {
   const [isExiting, setIsExiting] = useState(false);
   const Icon = toastIcons[toast.type];
 
+  const handleClose = useCallback(() => {
+    setIsExiting(true);
+    setTimeout(() => {
+      onClose(toast.id);
+    }, 300);
+  }, [onClose, toast.id]);
+
   useEffect(() => {
     const duration = toast.duration || 5000;
     const timer = setTimeout(() => {
@@ -51,14 +58,7 @@ export function ToastNotification({ toast, onClose }: ToastNotificationProps) {
     }, duration);
 
     return () => clearTimeout(timer);
-  }, [toast.duration, toast.id]);
-
-  const handleClose = () => {
-    setIsExiting(true);
-    setTimeout(() => {
-      onClose(toast.id);
-    }, 300);
-  };
+  }, [toast.duration, toast.id, handleClose]);
 
   return (
     <div

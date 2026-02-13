@@ -261,46 +261,14 @@ export async function signupAction(
     };
   }
 
-  // If no session is returned, email confirmation might be enabled in Supabase.
-  // We handle this by immediately signing in the user after signup to create a session.
-  // This bypasses email confirmation at the application level while still creating the account.
+  // If no session returned, Supabase may not have auto-confirmed the user.
+  // Email confirmation should be DISABLED in Supabase dashboard settings.
+  // If we get here without a session, something is misconfigured.
   if (!data.session) {
-    // Auto-sign in the user immediately after signup to bypass email confirmation
-    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-      email: normalizedEmail,
-      password,
-    });
-
-    if (signInError) {
-      // If sign-in fails due to email confirmation requirement, the user was created
-      // but Supabase is blocking login. We need to handle this gracefully.
-      // Check if it's specifically an email confirmation error
-      if (signInError.message.includes('Email not confirmed') ||
-          signInError.message.includes('email_not_confirmed')) {
-        // The user account exists but email confirmation is required by Supabase
-        // Return success anyway - the user record is created, they just need to confirm
-        // OR the Supabase admin should disable email confirmation
-        return {
-          success: false,
-          error: 'Account created but email confirmation is required. Please check your email or contact support.',
-        };
-      }
-
-      // For other sign-in errors, log and return generic error
-      console.error('[Golf Auth] Auto sign-in after signup failed:', signInError);
-      return {
-        success: false,
-        error: 'Account created but automatic sign-in failed. Please try signing in manually.',
-      };
-    }
-
-    // Successfully signed in after signup
-    if (!signInData.session) {
-      return {
-        success: false,
-        error: 'Account created but session could not be established. Please try signing in.',
-      };
-    }
+    return {
+      success: false,
+      error: 'Account created but session could not be established. Please try signing in.',
+    };
   }
 
   // Redirect based on role - coaches go to coach onboarding, players go to player onboarding

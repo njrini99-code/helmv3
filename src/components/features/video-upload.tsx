@@ -62,7 +62,7 @@ export function VideoUpload({ onUploadComplete, onCancel }: VideoUploadProps) {
     return true;
   };
 
-  const handleFileSelect = (selectedFile: File) => {
+  const handleFileSelect = useCallback((selectedFile: File) => {
     if (!validateFile(selectedFile)) return;
     setFile(selectedFile);
     setError(null);
@@ -72,7 +72,7 @@ export function VideoUpload({ onUploadComplete, onCancel }: VideoUploadProps) {
       const name = selectedFile.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
       setForm(f => ({ ...f, title: name }));
     }
-  };
+  }, [form.title]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -84,7 +84,7 @@ export function VideoUpload({ onUploadComplete, onCancel }: VideoUploadProps) {
     setDragOver(false);
     const droppedFile = e.dataTransfer.files[0];
     if (droppedFile) handleFileSelect(droppedFile);
-  }, []);
+  }, [handleFileSelect]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();

@@ -112,7 +112,9 @@ export async function GET(request: NextRequest) {
         timestamp: new Date().toISOString(),
       });
 
-      return NextResponse.redirect(new URL('/baseball/login?error=auth_failed', requestUrl.origin));
+      // Detect sport from the `next` redirect parameter to send user to correct login page
+      const errorLoginPath = next.path.startsWith('/golf') ? '/golf/login' : '/baseball/login';
+      return NextResponse.redirect(new URL(`${errorLoginPath}?error=auth_failed`, requestUrl.origin));
     }
 
     if (data.user) {
@@ -173,13 +175,18 @@ export async function GET(request: NextRequest) {
           .single();
 
         if (golfCoach) {
-          const destination = !golfCoach.onboarding_completed ? '/golf/coach' : '/golf/dashboard';
+          // If onboarded and there's a specific golf destination (e.g. join link), honor it
+          const destination = !golfCoach.onboarding_completed
+            ? '/golf/coach'
+            : (next.path.startsWith('/golf/') ? next.path : '/golf/dashboard');
           console.info('[OAuth] Redirecting golf coach to:', { destination, userId: data.user.id });
           return NextResponse.redirect(new URL(destination, requestUrl.origin));
         }
 
         if (golfPlayer) {
-          const destination = !golfPlayer.onboarding_completed ? '/golf/player' : '/golf/dashboard';
+          const destination = !golfPlayer.onboarding_completed
+            ? '/golf/player'
+            : (next.path.startsWith('/golf/') ? next.path : '/golf/dashboard');
           console.info('[OAuth] Redirecting golf player to:', { destination, userId: data.user.id });
           return NextResponse.redirect(new URL(destination, requestUrl.origin));
         }

@@ -5,6 +5,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // ---------------------------------------------------------------------------
 
 const mockSingle = vi.fn();
+const mockMaybeSingle = vi.fn(() => ({ data: null, error: null }));
 const mockLimit = vi.fn(() => ({ data: [], error: null }));
 const mockOrder = vi.fn(() => ({ limit: mockLimit, data: [], error: null }));
 const mockNot = vi.fn(() => ({ order: mockOrder, limit: mockLimit, data: [], error: null }));
@@ -14,6 +15,7 @@ const mockGte = vi.fn(() => ({ lt: mockLt, gte: vi.fn(), order: mockOrder, data:
 const mockEq = vi.fn(() => ({
   eq: mockEq,
   single: mockSingle,
+  maybeSingle: mockMaybeSingle,
   in: mockIn,
   gte: mockGte,
   not: mockNot,
@@ -27,6 +29,7 @@ const mockSelect = vi.fn(() => ({
   in: mockIn,
   gte: mockGte,
   single: mockSingle,
+  maybeSingle: mockMaybeSingle,
   order: mockOrder,
   not: mockNot,
   limit: mockLimit,
@@ -72,6 +75,7 @@ describe('dashboard-data server actions', () => {
     vi.clearAllMocks();
     // Reset all chain mocks to return empty/default
     mockSingle.mockResolvedValue({ data: null, error: null });
+    mockMaybeSingle.mockResolvedValue({ data: null, error: null });
     mockLimit.mockReturnValue({ data: [], error: null });
     mockOrder.mockReturnValue({ limit: mockLimit, data: [], error: null });
   });

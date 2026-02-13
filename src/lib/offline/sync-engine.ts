@@ -38,7 +38,8 @@ import {
   type SyncStatus,
 } from './shot-storage';
 
-import { saveRoundDraft, type RoundDraftData } from '@/app/golf/actions/round-drafts';
+// Dynamic import to avoid lib/ → app/ circular dependency
+type RoundDraftData = import('@/app/golf/actions/round-drafts').RoundDraftData;
 
 // ============================================================================
 // TYPES
@@ -464,7 +465,8 @@ class SyncEngine {
         // Prepare draft data for server
         const draftData = this.prepareRoundDraftData(round);
 
-        // Sync to server
+        // Sync to server (dynamic import to avoid circular dependency)
+        const { saveRoundDraft } = await import('@/app/golf/actions/round-drafts');
         const result = await saveRoundDraft(draftData, round._server_id);
 
         if (result.success) {

@@ -19,7 +19,7 @@
 
 import { ReactNode, memo } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconArrowRight, IconTrendingUp, IconTrendingDown } from '@/components/icons';
 import { Avatar } from '@/components/ui/avatar';
@@ -71,7 +71,7 @@ export const PremiumGlassCard = memo(function PremiumGlassCard({
     noPadding = false,
     hover = true
 }: PremiumGlassCardProps) {
-    const Component = hover ? motion.div : 'div';
+    const Component = hover ? m.div : 'div';
     const hoverProps = hover ? {
         whileHover: { y: -2 },
         transition: { type: 'spring' as const, stiffness: 400, damping: 30 }
@@ -139,7 +139,7 @@ export const PremiumStatCard = memo(function PremiumStatCard({
     const accessibleLabel = ariaLabel || `${label}: ${value}${trend ? `, ${trend.positive ? 'up' : 'down'} ${Math.abs(trend.value)}` : ''}`;
 
     const CardContent = (
-        <motion.div
+        <m.div
             role={href ? "link" : "region"}
             aria-label={accessibleLabel}
             className={cn(
@@ -205,7 +205,7 @@ export const PremiumStatCard = memo(function PremiumStatCard({
                     <IconArrowRight size={14} className="text-primary-500" />
                 </div>
             )}
-        </motion.div>
+        </m.div>
     );
 
     if (href) {
@@ -235,7 +235,7 @@ export const QuickActionCard = memo(function QuickActionCard({
 }: QuickActionCardProps) {
     return (
         <Link href={href} prefetch={true} aria-label={`${label}${description ? `: ${description}` : ''}`}>
-            <motion.div
+            <m.div
                 className={cn(
                     'group flex items-center gap-4 p-4 rounded-2xl cursor-pointer', // Standardized: 16px
                     'transition-all duration-200 touch-manipulation hover:shadow-card-hover',
@@ -291,7 +291,7 @@ export const QuickActionCard = memo(function QuickActionCard({
                         variant === 'primary' ? 'text-white/60' : 'text-primary-500'
                     )}
                 />
-            </motion.div>
+            </m.div>
         </Link>
     );
 });
@@ -354,7 +354,7 @@ export function RoundRow({
         : `Score ${score} (${toParLabel}) at ${courseName}`;
 
     return (
-        <motion.div
+        <m.div
             role="button"
             tabIndex={0}
             aria-label={accessibleLabel}
@@ -398,7 +398,7 @@ export function RoundRow({
             <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                 <IconArrowRight size={16} className="text-primary-500" />
             </div>
-        </motion.div>
+        </m.div>
     );
 }
 
@@ -477,7 +477,7 @@ export const RecentRoundCard = memo(function RecentRoundCard({
 
     return (
         <Link href={`/golf/dashboard/rounds/${id}`} prefetch={false}>
-            <motion.div
+            <m.div
                 role="article"
                 aria-label={accessibleLabel}
                 className={cn(
@@ -578,7 +578,7 @@ export const RecentRoundCard = memo(function RecentRoundCard({
                         <IconArrowRight size={14} className="text-primary-500" />
                     </div>
                 </div>
-            </motion.div>
+            </m.div>
         </Link>
     );
 });
@@ -610,7 +610,7 @@ export function TopPerformerRow({
     const rankLabel = rank === 1 ? '1st' : rank === 2 ? '2nd' : rank === 3 ? '3rd' : `${rank}th`;
 
     return (
-        <motion.div
+        <m.div
             role="listitem"
             aria-label={`${rankLabel} place: ${name}, average score ${avgScore.toFixed(1)} over ${rounds} rounds`}
             className="flex items-center gap-3 px-4 py-4 hover:bg-white/30 rounded-lg transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2" // Standardized: 12px
@@ -632,6 +632,6 @@ export function TopPerformerRow({
                 <p className="font-bold text-warm-900 tabular-nums">{avgScore.toFixed(1)}</p>
                 <p className="text-xs text-warm-400 uppercase tracking-wide">avg</p>
             </div>
-        </motion.div>
+        </m.div>
     );
 }

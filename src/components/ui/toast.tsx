@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { CheckCircle, XCircle, AlertTriangle, Info, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -50,7 +50,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     }, 5000);
   }, []);
 
-  const contextValue = { toasts, addToast, removeToast, showToast };
+  const contextValue = useMemo(
+    () => ({ toasts, addToast, removeToast, showToast }),
+    [toasts, addToast, removeToast, showToast]
+  );
 
   useEffect(() => {
     toastApi = contextValue;

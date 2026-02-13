@@ -216,8 +216,6 @@ export default function GolfPlayerOnboarding() {
     setError('');
 
     try {
-      const joinCode = searchParams.get('joinCode') || undefined;
-
       const result = await completePlayerOnboarding({
         firstName,
         lastName,
@@ -226,7 +224,6 @@ export default function GolfPlayerOnboarding() {
         hometown: hometown || undefined,
         state: state || undefined,
         gpa: gpa ? parseFloat(gpa) : undefined,
-        joinCode,
       });
 
       if (!result.success) {

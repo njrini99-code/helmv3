@@ -19,7 +19,7 @@ export function LastSeenUpdater() {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return;
       try {
-        await (supabase.rpc as Function)('update_user_last_seen', { target_user_id: user.id });
+        await supabase.rpc('update_user_last_seen', { target_user_id: user.id });
       } catch {
         // Silently fail — presence is non-critical
       }

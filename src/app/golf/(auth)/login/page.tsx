@@ -11,7 +11,15 @@ import { createClient } from '@/lib/supabase/client';
 function LoginContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const successMessage = searchParams.get('message');
+  // Use predefined message codes to prevent content injection via query params
+  const LOGIN_MESSAGES: Record<string, string> = {
+    session_expired: 'Session expired. Please sign in again.',
+    password_reset: 'Password reset successfully. Please sign in with your new password.',
+    account_created: 'Account created successfully. Please sign in.',
+    signed_out: 'You have been signed out.',
+  };
+  const messageKey = searchParams.get('message');
+  const successMessage = messageKey ? LOGIN_MESSAGES[messageKey] ?? null : null;
   const returnTo = searchParams.get('returnTo');
   const signupHref = returnTo ? `/golf/signup?returnTo=${encodeURIComponent(returnTo)}` : '/golf/signup';
 
@@ -200,10 +208,10 @@ function LoginContent() {
                   You&apos;re already signed in
                 </div>
                 <button
-                  onClick={() => router.push('/golf/dashboard')}
+                  onClick={() => router.push(returnTo || '/golf/dashboard')}
                   className="w-full py-3 bg-primary-600 text-white font-medium text-sm rounded-[10px] shadow-sm transition-all duration-200 hover:bg-primary-700 hover:shadow-md"
                 >
-                  Continue to Dashboard
+                  {returnTo ? 'Continue' : 'Continue to Dashboard'}
                 </button>
                 <button
                   onClick={handleSignOut}

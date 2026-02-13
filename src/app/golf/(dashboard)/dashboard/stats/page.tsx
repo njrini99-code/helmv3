@@ -1,6 +1,9 @@
 import StatsClient from './stats-client';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 
+// Cache stats page for 2 minutes (stats update moderately often)
+export const revalidate = 120;
+
 /**
  * Golf Stats Page
  *

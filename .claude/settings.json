@@ -8,6 +8,11 @@
     ]
   },
   "enabledPlugins": {
-    "supabase@claude-plugins-official": false
+    "supabase@claude-plugins-official": false,
+    "performance-testing-review@claude-code-workflows": true,
+    "database-migrations@claude-code-workflows": true,
+    "data-validation-suite@claude-code-workflows": true,
+    "api-scaffolding@claude-code-workflows": true,
+    "backend-api-security@claude-code-workflows": true
   }
 }

@@ -15,6 +15,17 @@ import {
 } from '@/lib/golf/strokes-gained';
 
 // ============================================================================
+// AUTH GUARD
+// ============================================================================
+
+async function requireAuth() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Unauthorized');
+  return { supabase, user };
+}
+
+// ============================================================================
 // TYPES
 // ============================================================================
 
@@ -124,16 +135,15 @@ function getFilterConditions(filter?: StatsFilter): {
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function applyRoundTypeFilter<T extends { in: any; eq: any }>(
+function applyRoundTypeFilter<T extends { in(column: string, values: string[]): T; eq(column: string, value: string): T }>(
   query: T,
   roundType: string | null
 ): T {
   if (!roundType) return query;
   if (roundType === 'qualifier') {
-    return query.in('round_type', ['qualifier', 'qualifying']) as T;
+    return query.in('round_type', ['qualifier', 'qualifying']);
   }
-  return query.eq('round_type', roundType) as T;
+  return query.eq('round_type', roundType);
 }
 
 /**
@@ -167,7 +177,7 @@ export async function getStatsSummary(
   playerId: string,
   filter?: StatsFilter
 ): Promise<SummaryStatsResponse> {
-  const supabase = await createClient();
+  const { supabase } = await requireAuth();
   const conditions = getFilterConditions(filter);
 
   // Build query with filters
@@ -297,7 +307,7 @@ export async function getDetailedStats(
   roundId?: string | 'overall',
   filter?: StatsFilter
 ): Promise<GolfStats> {
-  const supabase = await createClient();
+  const { supabase } = await requireAuth();
   const conditions = getFilterConditions(filter);
 
   // Build query with filters
@@ -505,7 +515,7 @@ export interface TrendAnalysisResponse {
  * Includes round-by-round data, rolling averages, and period comparisons
  */
 export async function getTrendAnalysis(playerId: string): Promise<TrendAnalysisResponse> {
-  const supabase = await createClient();
+  const { supabase } = await requireAuth();
 
   // Fetch all completed rounds with stats
   const { data: roundsData, error } = await supabase
@@ -704,7 +714,7 @@ export async function getTeamComparison(
   playerId: string,
   teamId: string
 ): Promise<TeamComparisonResponse> {
-  const supabase = await createClient();
+  const { supabase } = await requireAuth();
 
   // Get all team members
   const { data: teamMembers } = await supabase
@@ -879,7 +889,7 @@ export interface FilterOptions {
  * Get available filter options for a player
  */
 export async function getFilterOptions(playerId: string): Promise<FilterOptions> {
-  const supabase = await createClient();
+  const { supabase } = await requireAuth();
 
   const { data: roundsData } = await supabase
     .from('golf_rounds')
@@ -939,7 +949,7 @@ export interface CourseBreakdownResponse {
  * Get stats broken down by course
  */
 export async function getCourseBreakdown(playerId: string): Promise<CourseBreakdownResponse> {
-  const supabase = await createClient();
+  const { supabase } = await requireAuth();
 
   const { data: roundsData } = await supabase
     .from('golf_rounds')
@@ -1055,7 +1065,7 @@ export interface WorstHoleResponse {
  * Get worst hole analysis
  */
 export async function getWorstHoleAnalysis(playerId: string): Promise<WorstHoleResponse> {
-  const supabase = await createClient();
+  const { supabase } = await requireAuth();
 
   // Get all holes with their scores
   const { data: holesData } = await supabase

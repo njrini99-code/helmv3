@@ -753,7 +753,6 @@ export async function getPlayerShotAnalytics(
     };
 
   } catch (error) {
-    console.error('[Shot Analytics Error]', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to analyze shot data',
@@ -789,20 +788,21 @@ export async function getTeamShotAnalytics(
       return { success: false, error: 'No players found on team' };
     }
 
-    // Get analytics for each player
-    const results: PlayerShotAnalytics[] = [];
+    // Get analytics for each player — parallelized for performance
+    const analyticsResults = await Promise.allSettled(
+      members.map(member => getPlayerShotAnalytics(member.player_id, periodDays))
+    );
 
-    for (const member of members) {
-      const result = await getPlayerShotAnalytics(member.player_id, periodDays);
-      if (result.success) {
-        results.push(result.data);
+    const results: PlayerShotAnalytics[] = [];
+    for (const settled of analyticsResults) {
+      if (settled.status === 'fulfilled' && settled.value.success) {
+        results.push(settled.value.data);
       }
     }
 
     return { success: true, data: results };
 
   } catch (error) {
-    console.error('[Team Shot Analytics Error]', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to analyze team shot data',

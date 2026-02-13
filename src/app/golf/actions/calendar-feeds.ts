@@ -33,7 +33,7 @@ interface UserContext {
 
 function buildFeedUrl(token: string): string {
   const baseUrl = getAppUrl();
-  return new URL(`/api/calendar/feed/${token}`, baseUrl).toString();
+  return new URL(`/api/calendar/feeds/${token}`, baseUrl).toString();
 }
 
 async function getUserContext(): Promise<ActionResult<UserContext>> {

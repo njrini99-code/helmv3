@@ -29,9 +29,51 @@ interface DocumentVersionRow {
 
 // Error handling helper
 function handleError(error: unknown): string {
-  console.error('Document action error:', error);
   if (error instanceof Error) return error.message;
   return 'An unexpected error occurred';
+}
+
+// Verify the authenticated user belongs to the team that owns the document
+async function verifyTeamAccess(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  teamId: string
+): Promise<boolean> {
+  // Check coach path: coach.organization_id matches team.organization_id
+  const { data: coach } = await supabase
+    .from('golf_coaches')
+    .select('organization_id')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (coach?.organization_id) {
+    const { data: team } = await supabase
+      .from('golf_teams')
+      .select('organization_id')
+      .eq('id', teamId)
+      .single();
+    if (team?.organization_id === coach.organization_id) return true;
+  }
+
+  // Check player path: player is an active member of the team
+  const { data: player } = await supabase
+    .from('golf_players')
+    .select('id')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (player) {
+    const { data: membership } = await supabase
+      .from('golf_team_members')
+      .select('id')
+      .eq('player_id', player.id)
+      .eq('team_id', teamId)
+      .eq('status', 'active')
+      .maybeSingle();
+    if (membership) return true;
+  }
+
+  return false;
 }
 
 // ============================================
@@ -41,6 +83,9 @@ function handleError(error: unknown): string {
 export async function getDocuments(teamId: string): Promise<{ data: GolfDocument[] | null; error: string | null }> {
   try {
     const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: 'Unauthorized' };
 
     const { data, error } = await supabase
       .from('golf_documents')
@@ -65,6 +110,9 @@ export async function getDocuments(teamId: string): Promise<{ data: GolfDocument
 export async function getDocument(documentId: string): Promise<{ data: GolfDocument | null; error: string | null }> {
   try {
     const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: 'Unauthorized' };
 
     const { data, error } = await (supabase as any)
       .from('golf_documents')
@@ -187,6 +235,21 @@ export async function updateDocument(
   try {
     const supabase = await createClient();
 
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: 'Unauthorized' };
+
+    // Verify user has access to this document's team
+    const { data: doc, error: docError } = await supabase
+      .from('golf_documents')
+      .select('team_id')
+      .eq('id', documentId)
+      .single();
+
+    if (docError || !doc) return { data: null, error: 'Document not found' };
+
+    const hasAccess = await verifyTeamAccess(supabase, user.id, doc.team_id);
+    if (!hasAccess) return { data: null, error: 'Not authorized to modify this document' };
+
     const updatePayload: {
       title?: string;
       description?: string;
@@ -220,8 +283,11 @@ export async function deleteDocument(documentId: string): Promise<{ success: boo
   try {
     const supabase = await createClient();
 
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Unauthorized' };
+
     // Get document to find storage paths
-     
+
     const { data: _document, error: fetchError } = await supabase
       .from('golf_documents')
       .select('file_url, team_id')
@@ -229,6 +295,10 @@ export async function deleteDocument(documentId: string): Promise<{ success: boo
       .single();
 
     if (fetchError) throw fetchError;
+
+    // Verify user has access to this document's team
+    const hasAccess = await verifyTeamAccess(supabase, user.id, _document.team_id);
+    if (!hasAccess) return { success: false, error: 'Not authorized to delete this document' };
 
     // Get all versions for cleanup
     const { data: versionsData } = await supabase
@@ -358,6 +428,9 @@ export async function getDocumentVersions(documentId: string): Promise<{ data: D
   try {
     const supabase = await createClient();
 
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: 'Unauthorized' };
+
     const { data: rawData, error } = await supabase
       .from('golf_document_versions' as any)
       .select(`
@@ -476,6 +549,9 @@ export async function compareVersions(
   try {
     const supabase = await createClient();
 
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: 'Unauthorized' };
+
     const { data: versionsData, error } = await supabase
       .from('golf_document_versions' as any)
       .select(`
@@ -525,6 +601,9 @@ export async function getPreviewUrl(
 ): Promise<{ data: { url: string; mimeType: string } | null; error: string | null }> {
   try {
     const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: 'Unauthorized' };
 
     if (versionNumber) {
       // Get specific version
@@ -668,8 +747,7 @@ export async function createGolfDocument(data: {
       });
 
     if (versionError) {
-      console.error('Failed to create version record:', versionError);
-      // Don't fail the whole operation if version record fails
+      // Version record creation failed but don't fail the whole operation
     }
 
     revalidatePath('/golf/dashboard/documents');
@@ -738,6 +816,21 @@ export async function deleteVersion(
   try {
     const supabase = await createClient();
 
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Unauthorized' };
+
+    // Verify user has access to this document's team
+    const { data: doc, error: docAccessError } = await supabase
+      .from('golf_documents')
+      .select('team_id')
+      .eq('id', documentId)
+      .single();
+
+    if (docAccessError || !doc) return { success: false, error: 'Document not found' };
+
+    const hasAccess = await verifyTeamAccess(supabase, user.id, doc.team_id);
+    if (!hasAccess) return { success: false, error: 'Not authorized to delete this version' };
+
     // Get the version to delete by ID
     const { data: versionData, error: fetchError } = await supabase
       .from('golf_document_versions' as any)
@@ -792,6 +885,9 @@ export async function getTextFileContent(
 ): Promise<{ data: string | null; error: string | null }> {
   try {
     const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { data: null, error: 'Unauthorized' };
 
     let storagePath: string;
 

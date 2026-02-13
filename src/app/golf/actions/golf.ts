@@ -860,7 +860,6 @@ export async function submitGolfRoundComprehensive(
         .select('id, hole_number, shot_number, shot_type');
 
       if (shotsError) {
-        console.error('[Golf Action] Shot insertion failed — round saved without shot data:', shotsError.message);
         shotsSaved = false;
       } else if (insertedShots) {
         // Create maps to find shot IDs for putt and approach miss details
@@ -916,7 +915,7 @@ export async function submitGolfRoundComprehensive(
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const { error: puttError } = await (supabase as any).from('putt_details').insert(puttDetails);
             if (puttError) {
-              console.error('[Golf Action] putt_details insert failed:', puttError.message);
+              // Non-critical — table may not be configured
             }
           } catch {
             // Table may not exist — non-critical
@@ -929,7 +928,7 @@ export async function submitGolfRoundComprehensive(
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const { error: approachError } = await (supabase as any).from('approach_miss_details').insert(approachMissDetails);
             if (approachError) {
-              console.error('[Golf Action] approach_miss_details insert failed:', approachError.message);
+              // Non-critical — table may not be configured
             }
           } catch {
             // Table may not exist — non-critical
@@ -946,28 +945,20 @@ export async function submitGolfRoundComprehensive(
     if (data.qualifierId) {
       revalidatePath('/golf/dashboard/qualifiers');
       revalidatePath(`/golf/dashboard/qualifiers/${data.qualifierId}`);
-      updateQualifierEntryStats(supabase, data.qualifierId, player.id).catch((err) => {
-        console.error('[Qualifier] Post-round entry stats update failed:', err);
-      });
+      updateQualifierEntryStats(supabase, data.qualifierId, player.id).catch(() => {});
     }
 
     // Fire-and-forget: invalidate stats cache for dashboard updates
     // Round is already saved — no need to block the response
-    invalidateOnRoundComplete(player.id, round.id).catch((err) => {
-      console.error('[Stats Cache] Post-round cache invalidation failed:', err);
-    });
+    invalidateOnRoundComplete(player.id, round.id).catch(() => {});
 
     // Fire-and-forget: trigger CoachHelm insight generation for this player
-    triggerPlayerInsightsAfterRound(player.id).catch((err) => {
-      console.error('[CoachHelm] Post-round insight trigger failed:', err);
-    });
+    triggerPlayerInsightsAfterRound(player.id).catch(() => {});
 
     // Fire-and-forget: start AI round review generation in the background
     // The review page also has lazy generation as a fallback, but starting
     // it here means it's likely ready by the time the player navigates there.
-    generateRoundReview(round.id).catch((err) => {
-      console.error('[CoachHelm] Post-round review generation failed:', err);
-    });
+    generateRoundReview(round.id).catch(() => {});
 
     return { success: true, data: { roundId: round.id, shotsSaved } };
 
@@ -975,7 +966,6 @@ export async function submitGolfRoundComprehensive(
     if (error instanceof z.ZodError) {
       return { success: false, error: 'Invalid round data. Please check your inputs.' };
     }
-    console.error('[Golf Action Error]', error);
     return formatSafeErrorResponse(error);
   }
 }
@@ -1087,19 +1077,13 @@ export async function submitGolfRound(data: GolfRoundInput): Promise<ActionResul
     revalidatePath('/golf/dashboard/stats');
 
     // Fire-and-forget: invalidate stats cache for dashboard updates
-    invalidateOnRoundComplete(player.id, round.id).catch((err) => {
-      console.error('[Stats Cache] Post-round cache invalidation failed:', err);
-    });
+    invalidateOnRoundComplete(player.id, round.id).catch(() => {});
 
     // Fire-and-forget: trigger CoachHelm insight generation
-    triggerPlayerInsightsAfterRound(player.id).catch((err) => {
-      console.error('[CoachHelm] Post-round insight trigger failed:', err);
-    });
+    triggerPlayerInsightsAfterRound(player.id).catch(() => {});
 
     // Fire-and-forget: start AI round review generation
-    generateRoundReview(round.id).catch((err) => {
-      console.error('[CoachHelm] Post-round review generation failed:', err);
-    });
+    generateRoundReview(round.id).catch(() => {});
 
     return { success: true, data: { roundId: round.id } };
 
@@ -1107,7 +1091,6 @@ export async function submitGolfRound(data: GolfRoundInput): Promise<ActionResul
     if (error instanceof z.ZodError) {
       return { success: false, error: 'Invalid round data. Please check your inputs.' };
     }
-    console.error('[Golf Action Error]', error);
     return formatSafeErrorResponse(error);
   }
 }
@@ -1157,8 +1140,7 @@ export async function deleteGolfRound(roundId: string): Promise<ActionResult> {
 
     return { success: true, data: undefined };
 
-  } catch (error) {
-    console.error('Unexpected error in golf action:', error);
+  } catch {
     return {
       success: false,
       error: 'An unexpected error occurred'
@@ -1214,7 +1196,6 @@ export async function verifyRound(roundId: string): Promise<ActionResult<void>> 
       .eq('id', roundId);
 
     if (updateError) {
-      console.error('[verifyRound Error]', updateError);
       return { success: false, error: 'Failed to verify round. Please try again.' };
     }
 
@@ -1228,7 +1209,6 @@ export async function verifyRound(roundId: string): Promise<ActionResult<void>> 
     if (error instanceof AuthorizationError) {
       return { success: false, error: error.message };
     }
-    console.error('Unexpected error in verifyRound:', error);
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -1311,9 +1291,8 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
       try {
         const { sendEventInvitations } = await import('@/lib/calendar/rsvp');
         await sendEventInvitations(event.id, validatedData.attendeeIds, supabase);
-      } catch (inviteError) {
+      } catch {
         // Don't fail the whole operation if invitations fail
-        console.error('Failed to send event invitations:', inviteError);
       }
     }
 
@@ -1326,7 +1305,6 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
     if (error instanceof z.ZodError) {
       return { success: false, error: 'Invalid event data. Please check your inputs.' };
     }
-    console.error('[Golf Action Error]', error);
     return formatSafeErrorResponse(error);
   }
 }
@@ -1467,9 +1445,8 @@ export async function updateGolfEvent(
         try {
           const { sendEventInvitations } = await import('@/lib/calendar/rsvp');
           await sendEventInvitations(eventId, toAdd, supabase);
-        } catch (inviteError) {
+        } catch {
           // Don't fail the whole update if invitations fail
-          console.error('Failed to send event invitations:', inviteError);
         }
       }
 
@@ -1573,8 +1550,7 @@ export async function deleteGolfEvent(
     revalidatePath('/golf/dashboard/calendar');
     return { success: true };
 
-  } catch (error) {
-    console.error('Unexpected error in golf action:', error);
+  } catch {
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -1667,7 +1643,6 @@ export async function createGolfQualifier(data: GolfQualifierInput): Promise<Act
     if (error instanceof z.ZodError) {
       return { success: false, error: 'Invalid qualifier data. Please check your inputs.' };
     }
-    console.error('[Golf Action Error]', error);
     return formatSafeErrorResponse(error);
   }
 }
@@ -1684,6 +1659,31 @@ export async function updateQualifierStatus(
       return { success: false, error: 'You must be signed in to update qualifier status' };
     }
 
+    // Verify coach owns this qualifier's team
+    const { data: qualifier } = await supabase
+      .from('golf_qualifiers')
+      .select('team_id')
+      .eq('id', qualifierId)
+      .single();
+
+    if (!qualifier) return { success: false, error: 'Qualifier not found' };
+
+    const { data: coach } = await supabase
+      .from('golf_coaches')
+      .select('organization_id')
+      .eq('user_id', user.id)
+      .single();
+
+    const { data: qualifierTeam } = await supabase
+      .from('golf_teams')
+      .select('organization_id')
+      .eq('id', qualifier.team_id)
+      .single();
+
+    if (!coach || !qualifierTeam || coach.organization_id !== qualifierTeam.organization_id) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
     const { error } = await supabase
       .from('golf_qualifiers')
       .update({ status })
@@ -1698,7 +1698,6 @@ export async function updateQualifierStatus(
     return { success: true, data: undefined };
 
   } catch (error) {
-    console.error('[Golf Action Error]', error);
     return formatSafeErrorResponse(error);
   }
 }
@@ -1769,7 +1768,6 @@ export async function createAnnouncement(data: {
     if (error instanceof z.ZodError) {
       return { success: false, error: 'Invalid announcement data. Please check your inputs.' };
     }
-    console.error('[Golf Action Error]', error);
     return formatSafeErrorResponse(error);
   }
 }
@@ -1818,10 +1816,11 @@ export async function invitePlayerToTeam(
     // Uses 8-char readable format (no confusing chars like 0/O, 1/I/L)
     let joinCode = team?.join_code;
     if (!joinCode || joinCode.length < 6) {
+      const { randomInt } = require('crypto');
       const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
       joinCode = '';
       for (let i = 0; i < 8; i++) {
-        joinCode += chars.charAt(Math.floor(Math.random() * chars.length));
+        joinCode += chars.charAt(randomInt(chars.length));
       }
       const { error: updateError } = await supabase
         .from('golf_teams')
@@ -1842,7 +1841,6 @@ export async function invitePlayerToTeam(
     };
 
   } catch (error) {
-    console.error('[Golf Action Error]', error);
     return formatSafeErrorResponse(error);
   }
 }
@@ -1928,8 +1926,7 @@ export async function respondToEvent(
     revalidatePath('/golf/dashboard/calendar');
     return { success: true, data: undefined };
 
-  } catch (error) {
-    console.error('Failed to update RSVP:', error);
+  } catch {
     return { success: false, error: 'Failed to update RSVP' };
   }
 }
@@ -1947,6 +1944,8 @@ export async function checkScheduleConflicts(
 ): Promise<ActionResult<ConflictResult>> {
   try {
     const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Unauthorized');
 
     const start = new Date(`${startDate}T${startTime}`);
     const end = new Date(`${endDate}T${endTime}`);
@@ -1962,8 +1961,7 @@ export async function checkScheduleConflicts(
 
     return { success: true, data: result as unknown as ConflictResult };
 
-  } catch (error) {
-    console.error('Failed to check conflicts:', error);
+  } catch {
     return { success: false, error: 'Failed to check conflicts' };
   }
 }
@@ -1979,6 +1977,8 @@ export async function getPlayerAvailability(
 ): Promise<ActionResult<SerializedBusyPeriod[]>> {
   try {
     const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Unauthorized');
 
     // First, check if this is a player
     const { data: player } = await supabase
@@ -2026,8 +2026,7 @@ export async function getPlayerAvailability(
 
     return { success: true, data: serialized };
 
-  } catch (error) {
-    console.error('Failed to get availability:', error);
+  } catch {
     return { success: false, error: 'Failed to get availability' };
   }
 }
@@ -2070,8 +2069,7 @@ export async function getCurrentUserBusyPeriods(
 
     return { success: true, data: serialized };
 
-  } catch (error) {
-    console.error('Failed to get availability:', error);
+  } catch {
     return { success: false, error: 'Failed to get availability' };
   }
 }
@@ -2103,8 +2101,7 @@ export async function getNotifications(limit: number = 50): Promise<ActionResult
 
     return { success: true, data: (data || []) as CalendarNotification[] };
 
-  } catch (error) {
-    console.error('Failed to fetch notifications:', error);
+  } catch {
     return { success: false, error: 'Failed to fetch notifications' };
   }
 }
@@ -2118,6 +2115,8 @@ export async function markNotificationRead(
 ): Promise<ActionResult> {
   try {
     const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Unauthorized');
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any)
@@ -2128,8 +2127,7 @@ export async function markNotificationRead(
     revalidatePath('/golf/dashboard');
     return { success: true, data: undefined };
 
-  } catch (error) {
-    console.error('Failed to mark notification read:', error);
+  } catch {
     return { success: false, error: 'Failed to mark notification read' };
   }
 }
@@ -2157,8 +2155,7 @@ export async function markAllNotificationsRead(): Promise<ActionResult> {
     revalidatePath('/golf/dashboard');
     return { success: true, data: undefined };
 
-  } catch (error) {
-    console.error('Failed to mark notifications read:', error);
+  } catch {
     return { success: false, error: 'Failed to mark notifications read' };
   }
 }
@@ -2191,8 +2188,7 @@ export async function getPendingInvitations(): Promise<ActionResult<EventInvitat
 
     return { success: true, data: invitations };
 
-  } catch (error) {
-    console.error('Failed to fetch invitations:', error);
+  } catch {
     return { success: false, error: 'Failed to fetch invitations' };
   }
 }
@@ -2240,8 +2236,7 @@ export async function getPlayerEventRSVP(
         respondedAt: attendance.rsvp_at ?? null,
       },
     };
-  } catch (error) {
-    console.error('Failed to fetch RSVP status:', error);
+  } catch {
     return { success: false, error: 'Failed to fetch RSVP status' };
   }
 }
@@ -2252,14 +2247,15 @@ export async function getPlayerEventRSVP(
 export async function getEventRSVP(eventId: string): Promise<ActionResult<RSVPStats>> {
   try {
     const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Unauthorized');
 
     const { getEventRSVPStats } = await import('@/lib/calendar/rsvp');
     const stats = await getEventRSVPStats(eventId, supabase);
 
     return { success: true, data: stats };
 
-  } catch (error) {
-    console.error('Failed to fetch RSVP data:', error);
+  } catch {
     return { success: false, error: 'Failed to fetch RSVP data' };
   }
 }
@@ -2336,7 +2332,6 @@ export async function addCoachBlockedTime(
     if (error instanceof z.ZodError) {
       return { success: false, error: 'Invalid blocked time data' };
     }
-    console.error('[Golf Action Error]', error);
     return formatSafeErrorResponse(error);
   }
 }
@@ -2380,7 +2375,6 @@ export async function deleteCoachBlockedTime(id: string): Promise<ActionResult<v
     return { success: true, data: undefined };
 
   } catch (error) {
-    console.error('[Golf Action Error]', error);
     return formatSafeErrorResponse(error);
   }
 }
@@ -2438,7 +2432,6 @@ export async function updateCoachBlockedTime(
     return { success: true, data: undefined };
 
   } catch (error) {
-    console.error('[Golf Action Error]', error);
     return formatSafeErrorResponse(error);
   }
 }
@@ -2485,7 +2478,6 @@ export async function getCoachBlockedTime(
     return { success: true, data: blockedTimes || [] };
 
   } catch (error) {
-    console.error('[Golf Action Error]', error);
     return formatSafeErrorResponse(error);
   }
 }
@@ -2793,8 +2785,7 @@ export async function savePartialRound(
 
     return { success: true, data: { roundId } };
 
-  } catch (err) {
-    console.error('[GolfHelm] Failed to save round:', err);
+  } catch {
     return {
       success: false,
       error: 'Failed to save round. Please try again.'
@@ -2846,8 +2837,7 @@ export async function getInProgressRounds(): Promise<ActionResult<InProgressRoun
 
     return { success: true, data: rounds || [] };
 
-  } catch (err) {
-    console.error('[GolfHelm] Failed to fetch in-progress rounds:', err);
+  } catch {
     return {
       success: false,
       error: 'Failed to fetch rounds. Please try again.'
@@ -2912,8 +2902,7 @@ export async function loadInProgressRound(roundId: string): Promise<ActionResult
       }
     };
 
-  } catch (err) {
-    console.error('[GolfHelm] Failed to load in-progress round:', err);
+  } catch {
     return {
       success: false,
       error: 'Failed to load round. Please try again.'
@@ -2959,8 +2948,7 @@ export async function deleteInProgressRound(roundId: string): Promise<ActionResu
 
     return { success: true, data: undefined };
 
-  } catch (err) {
-    console.error('[GolfHelm] Failed to delete in-progress round:', err);
+  } catch {
     return {
       success: false,
       error: 'Failed to delete round. Please try again.'
@@ -3108,8 +3096,7 @@ export async function getPlayerQualifiers(): Promise<ActionResult<PlayerQualifie
 
     return { success: true, data: qualifiers };
 
-  } catch (err) {
-    console.error('[GolfHelm] Failed to fetch player qualifiers:', err);
+  } catch {
     return {
       success: false,
       error: 'Failed to fetch qualifiers. Please try again.'
@@ -3197,8 +3184,7 @@ export async function getNextQualifierRoundNumber(
       data: { nextRoundNumber, availableRounds }
     };
 
-  } catch (err) {
-    console.error('[GolfHelm] Failed to get qualifier round number:', err);
+  } catch {
     return {
       success: false,
       error: 'Failed to get round number. Please try again.'
@@ -3418,8 +3404,7 @@ export async function getQualifierLeaderboard(
       }
     };
 
-  } catch (err) {
-    console.error('[GolfHelm] Failed to fetch qualifier leaderboard:', err);
+  } catch {
     return {
       success: false,
       error: 'Failed to fetch leaderboard. Please try again.'
@@ -3464,9 +3449,8 @@ async function updateQualifierEntryStats(
       .eq('qualifier_id', qualifierId)
       .eq('player_id', playerId);
 
-  } catch (error) {
-    // Non-critical operation - log but continue
-    console.error('Non-critical operation failed:', error);
+  } catch {
+    // Non-critical — continue
   }
 }
 
@@ -3780,7 +3764,6 @@ export async function deleteShot(shotId: string): Promise<ActionResult<void>> {
     return { success: true, data: undefined };
 
   } catch (error) {
-    console.error('[deleteShot Error]', error);
     return formatSafeErrorResponse(error);
   }
 }
@@ -3901,7 +3884,6 @@ export async function updateShot(
     return { success: true, data: undefined };
 
   } catch (error) {
-    console.error('[updateShot Error]', error);
     return formatSafeErrorResponse(error);
   }
 }
@@ -4183,7 +4165,6 @@ export async function getRoundShotDetails(
       },
     };
   } catch (error) {
-    console.error('[getRoundShotDetails Error]', error);
     return formatSafeErrorResponse(error);
   }
 }
@@ -4198,6 +4179,13 @@ export async function getRoundShotDetails(
  */
 export async function seedTestShotData(): Promise<ActionResult<{ shotsCreated: number }>> {
   try {
+    // Auth gate: admin only
+    const supabase_auth = await createClient();
+    const { data: { user } } = await supabase_auth.auth.getUser();
+    if (!user) return { success: false, error: 'Unauthorized' };
+    const { data: userData } = await supabase_auth.from('users').select('role').eq('id', user.id).single();
+    if (userData?.role !== 'admin') return { success: false, error: 'Admin access required' };
+
     // Use admin client to bypass RLS for seeding
     const supabase = createAdminClient();
 
@@ -4620,7 +4608,6 @@ export async function seedTestShotData(): Promise<ActionResult<{ shotsCreated: n
         .insert(batch);
 
       if (insertError) {
-        console.error(`Error inserting batch ${i / batchSize}:`, insertError);
         throw insertError;
       }
       totalInserted += batch.length;
@@ -4633,7 +4620,6 @@ export async function seedTestShotData(): Promise<ActionResult<{ shotsCreated: n
       data: { shotsCreated: totalInserted },
     };
   } catch (error) {
-    console.error('[seedTestShotData Error]', error);
     return formatSafeErrorResponse(error);
   }
 }

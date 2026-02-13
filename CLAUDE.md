@@ -15,16 +15,36 @@
 
 ---
 
-## Codebase Overview
+## CONTEXT ROUTING — Where to Look
 
-**Key Directories:**
-- `src/app/` - Routes: baseball/, golf/, api/
-- `src/components/` - React components: ui/, baseball/, golf/
-- `src/lib/` - Infrastructure: supabase/, types/, queries/, coachhelm/
-- `src/hooks/` - React hooks: use-auth, use-players, use-watchlist
-- `supabase/migrations/` - Production migrations with RLS
+> **Before starting any GolfHelm task, read the file(s) that match your task type.**
 
-**For detailed architecture, see [docs/CODEBASE_MAP.md](docs/CODEBASE_MAP.md).**
+### By Task Type
+
+| If you're working on... | Read this file FIRST |
+|------------------------|---------------------|
+| **Any golf feature** (understanding behavior, fixing bugs, adding to it) | `memory/context/golfhelm-features.md` — Find the feature by name, get data flow, files, tables, dependencies, gaps |
+| **Database queries** (writing SQL, adding columns, debugging data) | `memory/context/golfhelm-database.md` — Every column of every table |
+| **Table names or enums** (quick lookup, "what table stores X?") | `memory/glossary.md` — All 74 tables, all enums, all type locations |
+| **CoachHelm AI** (insights, patterns, predictions, reviews, philosophy) | `memory/context/coachhelm-ai.md` — V2 engine architecture, pipeline, components |
+| **Routes, actions, or file locations** ("where is the code for X?") | `memory/projects/golfhelm.md` — All routes, all 41 action files, component directories |
+| **Baseball features** | No deep reference yet — use `src/app/baseball/` directly |
+
+### By Role Context
+
+| If the task involves... | Key features to reference (in `golfhelm-features.md`) |
+|------------------------|------------------------------------------------------|
+| **Coach dashboard work** | #13 Alerts, #14 Patterns, #15 Insights, #16 Intelligence, #17 Analytics, #18 Coaching Settings, #25 Development Plans |
+| **Player dashboard work** | #19 Player Hub, #20 Player CoachHelm, #21 My Development, #22 My Qualifiers, #23 Round Review |
+| **Team management** | #4 Calendar, #5 Roster, #6 Tasks, #7 Messaging, #8 Announcements, #9 Documents, #10 Travel, #24 Team Info |
+| **Data/stats** | #1 Round Tracking, #2 Stats & Analytics, #3 Qualifiers |
+| **AI/CoachHelm** | #12 CoachHelm Engine + `memory/context/coachhelm-ai.md` for engine internals |
+| **Settings/config** | #26 Settings, #18 Coaching Intelligence Settings |
+| **Admin/platform** | #28 Admin Dashboard |
+
+### Quick Reference (no file read needed)
+
+These are embedded here for speed — the things you'll need on every task:
 
 ---
 
@@ -44,82 +64,67 @@ import type { Player, Coach, Organization } from '@/lib/types';
 
 ### 3. Table Names — ALWAYS Use Sport Prefix
 ```typescript
-// Baseball: baseball_coaches, baseball_players, baseball_teams, baseball_team_members,
-//   baseball_watchlists, baseball_videos, baseball_events, baseball_event_attendance,
-//   baseball_player_engagement_events, baseball_conversations, baseball_messages,
-//   baseball_announcements, baseball_tasks, baseball_documents, baseball_travel_itineraries
-// Golf: golf_coaches, golf_players, golf_teams, golf_rounds, golf_events, golf_shots
-// Shared: users, organizations, notifications
-// WRONG: coaches, players, teams, watchlists, recruit_watchlist (no prefix = doesn't exist)
+// WRONG: coaches, players, teams, rounds, events (no prefix = doesn't exist)
+// RIGHT: golf_coaches, golf_players, golf_teams, golf_rounds, golf_events
+// Full list of 74 golf tables: memory/glossary.md
+// Full column definitions: memory/context/golfhelm-database.md
 ```
 
-### 4. Pipeline Stages (Baseball - only 5 valid)
-```typescript
-type PipelineStage = 'watchlist' | 'high_priority' | 'offer_extended' | 'committed' | 'uninterested';
-```
-
-### 5. Client Components
+### 4. Client Components
 ```typescript
 // Any file using useState/useEffect/onClick MUST start with 'use client';
 ```
 
 ---
 
-## Baseball Product: User Types & Roles
+## COACH vs PLAYER vs TEAM — Feature Ownership
 
-### Coach Types
-| Type | Recruiting? | Team Mgmt? | Notes |
-|------|-------------|------------|-------|
-| **College** | Full suite | No | Primary recruiter |
-| **High School** | No | Yes | Develops players, facilitates recruiting |
-| **JUCO** | Toggle mode | Toggle mode | Recruit + prepare for transfer |
-| **Showcase** | No | Multi-team | Manages travel ball orgs |
+### Coach-Only Features
+| Feature | Route | Primary Table | Action File |
+|---------|-------|---------------|-------------|
+| Alerts | `/dashboard/alerts` | golf_coach_insights | alerts.ts |
+| Patterns | `/dashboard/patterns` | golf_patterns_v2 | pattern-management.ts |
+| Insights | `/dashboard/insights` | golf_coach_insights | insight-management.ts |
+| Intelligence Hub | `/dashboard/intelligence` | (multiple CoachHelm) | intelligence-dashboard.ts |
+| CoachHelm Analytics | `/dashboard/analytics/coachhelm` | golf_insight_effectiveness | coachhelm-analytics.ts |
+| Coaching Settings | `/dashboard/settings/coaching-intelligence` | golf_coach_philosophy | (in settings page) |
+| Development Plans | `/dashboard/development` | golf_player_focus_areas | development.ts |
+| Create Qualifier | `/dashboard/qualifiers/new` | golf_qualifiers | golf.ts |
+| Team Stats | `/dashboard/stats/team` | golf_player_stats_cache | stats.ts, stats-v2.ts |
 
-### Player Types
-| Type | Recruiting? | Teams | Notes |
-|------|-------------|-------|-------|
-| **High School** | Opt-in activate | HS + optional Showcase | Primary recruiting target |
-| **Showcase** | Opt-in activate | Showcase + optional HS | Travel ball |
-| **JUCO** | Opt-in activate | JUCO only | Transfer recruiting |
-| **College** | Never | College only | Team features only |
+### Player-Only Features
+| Feature | Route | Primary Table | Action File |
+|---------|-------|---------------|-------------|
+| Player Hub (home) | `/dashboard/hub` | (travel, tasks, events) | dashboard-data.ts |
+| Player CoachHelm | `/dashboard/coachhelm` | golf_predictions | shot-analytics.ts |
+| My Development | `/dashboard/my-development` | golf_player_focus_areas | development.ts |
+| My Qualifiers | `/dashboard/my-qualifiers` | golf_qualifier_entries | golf.ts |
+| Round Entry | `/dashboard/rounds/new` | golf_rounds | golf.ts |
+| Continue Round | `/dashboard/rounds/continue/[id]` | golf_shots | golf.ts |
+| Round Review | `/dashboard/rounds/[id]/review` | golf_round_reviews | round-reviews.ts, round-review-system.ts |
+| Classes | `/dashboard/classes` | golf_player_classes | (inline) |
+| My Insights (redirect) | `/dashboard/my-insights` → `/dashboard/coachhelm` | — | — |
 
-### Recruiting Activation Model
-Players must **opt-in** to recruiting. Before activation: anonymous interest ("A D1 coach viewed your profile"). After: identified ("Coach Davis from Texas A&M viewed your profile"). College players cannot activate.
+### Team Features (Both Coach + Player)
+| Feature | Route | Primary Table | Action File |
+|---------|-------|---------------|-------------|
+| Calendar & Events | `/dashboard/calendar` | golf_events | event-lifecycle.ts, attendance.ts |
+| Roster | `/dashboard/roster` | golf_team_members | roster.ts |
+| Messaging | `/dashboard/messages` | golf_messages | messages.ts |
+| Announcements | `/dashboard/announcements` | golf_announcements | announcements.ts |
+| Tasks | `/dashboard/tasks` | golf_tasks | tasks.ts |
+| Documents | `/dashboard/documents` | golf_documents | documents.ts |
+| Travel | `/dashboard/travel` | golf_travel_itineraries | travel.ts |
+| Qualifiers (view) | `/dashboard/qualifiers` | golf_qualifiers | golf.ts |
+| Stats (personal) | `/dashboard/stats` | golf_player_stats_cache | stats.ts |
+| Team Info | `/dashboard/team` | golf_teams | teams.ts |
+| Settings | `/dashboard/settings` | users, golf_coaches/players | (inline) |
 
-### Mode Toggles
-- **JUCO Coach**: Toggle between Recruiting Mode ↔ Team Mode (changes entire sidebar)
-- **HS/Showcase/JUCO Players**: If recruiting activated, toggle Recruiting ↔ Team mode
-
----
-
-## File Structure
-
-```
-src/
-├── app/
-│   ├── baseball/           # Baseball routes
-│   │   ├── (auth)/         # Login, signup, complete-signup
-│   │   ├── (onboarding)/   # Coach onboarding flow
-│   │   ├── (dashboard)/    # Dashboard pages
-│   │   └── actions/        # Server actions (auth, watchlist, calendar, etc.)
-│   ├── golf/               # Golf routes
-│   │   ├── (auth)/, (onboarding)/, (dashboard)/
-│   │   └── actions/        # Server actions
-│   └── api/                # API routes
-├── components/
-│   ├── ui/                 # Primitives (Button, Input, Card, Modal, GlassCard)
-│   ├── baseball/           # Baseball-specific components
-│   ├── golf/               # Golf-specific components
-│   └── landing/            # Landing page components
-├── lib/
-│   ├── supabase/           # server.ts, client.ts
-│   ├── types/              # ALL TYPES (index.ts exports everything)
-│   ├── queries/            # Server-side query functions
-│   ├── coachhelm/          # CoachHelm AI types & constants
-│   └── utils.ts            # cn(), formatters
-├── hooks/                  # Custom hooks
-└── stores/                 # Zustand stores
-```
+### Platform (Admin)
+| Feature | Route | Action File |
+|---------|-------|-------------|
+| Admin Dashboard | `/golf/admin` | admin-data.ts |
+| Join Team | `/golf/join/[code]` | roster.ts |
 
 ---
 
@@ -151,27 +156,7 @@ Premium SaaS quality — think Linear, Stripe, Vercel:
 
 ---
 
-## CoachHelm AI (Golf)
-
-Location: `src/lib/coachhelm/`
-
-```typescript
-interface CoachPhilosophy {
-  priorityBallStriking: number;    // 1-5 ranking
-  priorityShortGame: number;
-  priorityPutting: number;
-  priorityCourseManagement: number;
-  priorityMentalGame: number;
-  alertSensitivity: 'aggressive' | 'balanced' | 'conservative';
-  declineThreshold: number;        // 1.0-4.0
-  pressureGapThreshold: number;    // 1.0-4.0
-  bubbleZoneRange: number;         // 0.5-3.0
-}
-```
-
----
-
-## Key Patterns
+## Code Patterns
 
 ### Server Action
 ```typescript
@@ -184,7 +169,7 @@ export async function doThing(id: string) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Unauthorized');
   // ... mutation ...
-  revalidatePath('/baseball/dashboard');
+  revalidatePath('/golf/dashboard');
   return { success: true };
 }
 ```
@@ -205,6 +190,66 @@ export default async function Page() {
 import { createClient } from '@/lib/supabase/client';
 import { useState, useEffect } from 'react';
 // ... hooks and interactivity ...
+```
+
+---
+
+## File Structure (Key Paths)
+
+```
+src/app/golf/
+├── actions/              # 41 server action files (see memory/projects/golfhelm.md)
+├── (dashboard)/dashboard/  # All dashboard routes
+├── (auth)/               # Login, signup, forgot/reset password
+├── (onboarding)/         # Coach (3-step) + Player (4-step)
+├── join/[code]/          # Team join flow
+└── admin/                # Admin panel
+
+src/components/golf/      # 256+ components
+├── coachhelm/            # 80+ CoachHelm AI components
+├── calendar/             # 30+ Calendar components
+├── player-hub/           # Player Hub home
+└── ...                   # roster/, rounds/, messages/, tasks/, stats/, etc.
+
+src/lib/
+├── supabase/             # server.ts, client.ts
+├── types/                # ALL types (index.ts re-exports)
+│   ├── golf.ts           # Entity types
+│   └── golf-course.ts    # Course types
+├── coachhelm/            # AI engine (see memory/context/coachhelm-ai.md)
+│   └── v2/               # V2: orchestrator, mining, prediction, learning, NLG
+└── utils.ts              # cn(), formatters
+
+src/hooks/golf/           # 13 hooks (realtime, data, offline)
+src/stores/               # Zustand (golf-auth-store.ts)
+```
+
+---
+
+## Baseball Product: User Types & Roles
+
+### Coach Types
+| Type | Recruiting? | Team Mgmt? | Notes |
+|------|-------------|------------|-------|
+| **College** | Full suite | No | Primary recruiter |
+| **High School** | No | Yes | Develops players, facilitates recruiting |
+| **JUCO** | Toggle mode | Toggle mode | Recruit + prepare for transfer |
+| **Showcase** | No | Multi-team | Manages travel ball orgs |
+
+### Player Types
+| Type | Recruiting? | Teams | Notes |
+|------|-------------|-------|-------|
+| **High School** | Opt-in activate | HS + optional Showcase | Primary recruiting target |
+| **Showcase** | Opt-in activate | Showcase + optional HS | Travel ball |
+| **JUCO** | Opt-in activate | JUCO only | Transfer recruiting |
+| **College** | Never | College only | Team features only |
+
+### Recruiting Activation Model
+Players must **opt-in** to recruiting. Before activation: anonymous interest ("A D1 coach viewed your profile"). After: identified ("Coach Davis from Texas A&M viewed your profile"). College players cannot activate.
+
+### Pipeline Stages (Baseball - only 5 valid)
+```typescript
+type PipelineStage = 'watchlist' | 'high_priority' | 'offer_extended' | 'committed' | 'uninterested';
 ```
 
 ---
@@ -233,10 +278,13 @@ npm run build        # Production build
 
 ---
 
-## Additional Docs
+## GolfHelm Deep Reference (memory/)
 
-| File | Purpose |
-|------|---------|
-| `docs/CODEBASE_MAP.md` | Full architecture map |
-| `docs/DEVELOPMENT_RULES.md` | Architecture deep-dive |
-| `FEATURE_1_COACH_PHILOSOPHY_SETTINGS.md` | CoachHelm spec |
+| File | What's inside | When to read it |
+|------|--------------|-----------------|
+| `memory/glossary.md` | 74 table names, enums, TypeScript type locations | Need a table name, enum value, or type import path |
+| `memory/projects/golfhelm.md` | All routes, 41 action files, component tree, hooks | Need to find where code lives |
+| `memory/context/golfhelm-features.md` | 28 features: data flows, files, tables, deps, gaps | Working on any feature (the main reference) |
+| `memory/context/golfhelm-database.md` | Every column of every table (from production DB) | Writing SQL, adding columns, debugging data |
+| `memory/context/coachhelm-ai.md` | V2 engine: orchestrator, mining, predictions, NLG | Working on CoachHelm AI specifically |
+| `src/app/golf/README.md` | Golf platform overview | Quick orientation |

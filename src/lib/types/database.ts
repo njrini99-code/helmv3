@@ -3413,12 +3413,12 @@ export type Database = {
       golf_calendar_feeds: {
         Row: {
           created_at: string | null
-          feed_token: string | null
+          feed_token: string
           feed_type: string | null
           id: string
           is_active: boolean | null
           last_synced_at: string | null
-          name: string | null
+          name: string
           player_id: string | null
           team_id: string | null
           updated_at: string | null
@@ -3426,12 +3426,12 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
-          feed_token?: string | null
+          feed_token?: string
           feed_type?: string | null
           id?: string
           is_active?: boolean | null
           last_synced_at?: string | null
-          name?: string | null
+          name?: string
           player_id?: string | null
           team_id?: string | null
           updated_at?: string | null
@@ -3439,12 +3439,12 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
-          feed_token?: string | null
+          feed_token?: string
           feed_type?: string | null
           id?: string
           is_active?: boolean | null
           last_synced_at?: string | null
-          name?: string | null
+          name?: string
           player_id?: string | null
           team_id?: string | null
           updated_at?: string | null
@@ -5095,8 +5095,10 @@ export type Database = {
           content: string
           conversation_id: string
           created_at: string | null
+          edited_at: string | null
           has_attachments: boolean | null
           id: string
+          is_deleted: boolean | null
           read: boolean | null
           sender_id: string
         }
@@ -5104,8 +5106,10 @@ export type Database = {
           content: string
           conversation_id: string
           created_at?: string | null
+          edited_at?: string | null
           has_attachments?: boolean | null
           id?: string
+          is_deleted?: boolean | null
           read?: boolean | null
           sender_id: string
         }
@@ -5113,8 +5117,10 @@ export type Database = {
           content?: string
           conversation_id?: string
           created_at?: string | null
+          edited_at?: string | null
           has_attachments?: boolean | null
           id?: string
+          is_deleted?: boolean | null
           read?: boolean | null
           sender_id?: string
         }
@@ -5134,42 +5140,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      golf_organizations: {
-        Row: {
-          city: string | null
-          conference: string | null
-          created_at: string | null
-          division: string | null
-          id: string
-          logo_url: string | null
-          name: string
-          state: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          city?: string | null
-          conference?: string | null
-          created_at?: string | null
-          division?: string | null
-          id?: string
-          logo_url?: string | null
-          name: string
-          state?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          city?: string | null
-          conference?: string | null
-          created_at?: string | null
-          division?: string | null
-          id?: string
-          logo_url?: string | null
-          name?: string
-          state?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
       }
       golf_patterns_v2: {
         Row: {

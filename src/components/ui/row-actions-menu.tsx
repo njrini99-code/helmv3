@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { MoreHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { RowAction } from '@/types/table';
+import type { RowAction } from '@/lib/types/table';
 
 interface RowActionsMenuProps {
   actions: RowAction[];

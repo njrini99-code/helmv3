@@ -5,7 +5,7 @@
  * Locks accounts after 10 consecutive failed attempts.
  */
 
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 const MAX_FAILED_ATTEMPTS = 10;
 const LOCKOUT_DURATION_MS = 30 * 60 * 1000; // 30 minutes
@@ -30,7 +30,7 @@ export async function recordFailedLogin(
   ip: string | null,
   userAgent: string | null
 ): Promise<LoginAttemptResult> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const normalizedEmail = email.toLowerCase().trim();
 
   // Get current attempts
@@ -41,12 +41,26 @@ export async function recordFailedLogin(
     .maybeSingle();
 
   if (fetchError) {
-    console.error('Error fetching login attempts:', fetchError);
-    // Fail open - allow login attempt if database error
+    // Fail closed on query errors to prevent brute-force during DB issues.
+    // Only fail open for connection-level errors (e.g., network unreachable).
+    const isConnectionError = fetchError.message?.includes('fetch') ||
+      fetchError.message?.includes('network') ||
+      fetchError.message?.includes('ECONNREFUSED');
+
+    if (isConnectionError) {
+      // Fail open for connectivity issues to avoid DoS via DB outage
+      return {
+        locked: false,
+        attempts: 0,
+        remainingAttempts: MAX_FAILED_ATTEMPTS,
+      };
+    }
+
+    // Fail closed for query-level errors (safer default)
     return {
-      locked: false,
-      attempts: 0,
-      remainingAttempts: MAX_FAILED_ATTEMPTS,
+      locked: true,
+      attempts: MAX_FAILED_ATTEMPTS,
+      remainingAttempts: 0,
     };
   }
 
@@ -81,7 +95,7 @@ export async function recordFailedLogin(
     }
 
     // Update existing record
-    const { error: updateError } = await supabase
+    await supabase
       .from('login_attempts')
       .update({
         failed_attempts: attempts,
@@ -91,13 +105,9 @@ export async function recordFailedLogin(
         locked_until: lockedUntil?.toISOString() || null,
       })
       .eq('email', normalizedEmail);
-
-    if (updateError) {
-      console.error('Error updating login attempts:', updateError);
-    }
   } else {
     // Create new record
-    const { error: insertError } = await supabase
+    await supabase
       .from('login_attempts')
       .insert({
         email: normalizedEmail,
@@ -107,23 +117,9 @@ export async function recordFailedLogin(
         last_user_agent: userAgent,
         locked_until: null,
       });
-
-    if (insertError) {
-      console.error('Error inserting login attempt:', insertError);
-    }
   }
 
   const locked = !!lockedUntil;
-
-  // Log security event if account locked
-  if (locked) {
-    console.warn('[Security] Account locked due to failed attempts:', {
-      email: normalizedEmail,
-      attempts,
-      ip,
-      lockedUntil,
-    });
-  }
 
   return {
     locked,
@@ -142,7 +138,7 @@ export async function recordFailedLogin(
 export async function checkAccountLockout(
   email: string
 ): Promise<LoginAttemptResult> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const normalizedEmail = email.toLowerCase().trim();
 
   const { data, error } = await supabase
@@ -196,17 +192,13 @@ export async function checkAccountLockout(
  * @param email - User's email
  */
 export async function resetLoginAttempts(email: string): Promise<void> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const normalizedEmail = email.toLowerCase().trim();
 
-  const { error } = await supabase
+  await supabase
     .from('login_attempts')
     .delete()
     .eq('email', normalizedEmail);
-
-  if (error) {
-    console.error('Error resetting login attempts:', error);
-  }
 }
 
 /**

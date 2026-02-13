@@ -66,13 +66,23 @@ export function GolfSignInForm() {
       // Check for stored returnTo URL (from invite link flow)
       const storedReturnTo = sessionStorage.getItem('golf_login_returnTo');
 
-      if (storedReturnTo) {
-        // Clear the stored URL
+      // Validate returnTo to prevent open redirect attacks.
+      // Only allow relative paths starting with /golf/ or /baseball/
+      const isValidReturnTo = (path: string): boolean => {
+        return (path.startsWith('/golf/') || path.startsWith('/baseball/')) && !path.includes('//');
+      };
+
+      // Only use returnTo if the user is fully onboarded (redirectTo = dashboard).
+      // If they still need onboarding, send them there first — the join page will
+      // redirect to onboarding with the joinCode anyway.
+      const needsOnboarding = result.redirectTo === '/golf/coach' || result.redirectTo === '/golf/player';
+
+      if (storedReturnTo && !needsOnboarding && isValidReturnTo(storedReturnTo)) {
         sessionStorage.removeItem('golf_login_returnTo');
-        // Redirect to the invite join page
         router.push(storedReturnTo);
       } else {
-        // Navigate to the default destination
+        // Clear stale returnTo if present — onboarding takes priority
+        if (storedReturnTo) sessionStorage.removeItem('golf_login_returnTo');
         router.push(result.redirectTo || '/golf/dashboard');
       }
     } catch {

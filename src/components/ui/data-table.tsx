@@ -12,7 +12,7 @@ import { Checkbox } from './checkbox';
 import { Pagination } from './pagination';
 import { TableSkeleton } from './table-skeleton';
 import { useMediaQuery } from '@/hooks/use-media-query';
-import type { Column, TableProps, RowAction } from '@/types/table';
+import type { Column, TableProps, RowAction } from '@/lib/types/table';
 
 // ============================================
 // DEFAULT MOBILE CARD

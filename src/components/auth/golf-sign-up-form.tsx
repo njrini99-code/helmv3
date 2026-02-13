@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { signupAction } from '@/app/golf/actions/auth';
 import { Users, GraduationCap, AlertCircle } from 'lucide-react';
@@ -31,7 +31,6 @@ function getSignupErrorMessage(error: string): string {
 
 export function GolfSignUpForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [role, setRole] = useState<Role>('player');
   const [formData, setFormData] = useState({
     firstName: '',
@@ -42,15 +41,7 @@ export function GolfSignUpForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Get returnTo from URL params (e.g., /golf/signup?returnTo=/golf/join/ABC123)
-  const returnTo = searchParams.get('returnTo');
 
-  // Store returnTo in sessionStorage so it persists through signup
-  useEffect(() => {
-    if (returnTo) {
-      sessionStorage.setItem('golf_signup_returnTo', returnTo);
-    }
-  }, [returnTo]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -88,21 +79,12 @@ export function GolfSignUpForm() {
       // Using a slightly longer delay to ensure session is fully established
       await new Promise(resolve => setTimeout(resolve, 150));
 
-      // Check for stored returnTo URL (from invite link flow)
-      const storedReturnTo = sessionStorage.getItem('golf_signup_returnTo');
+      // After signup, user always needs onboarding first.
+      // Clear any stale returnTo — players join teams from dashboard after onboarding.
+      sessionStorage.removeItem('golf_signup_returnTo');
 
-      if (storedReturnTo) {
-        // Clear the stored URL
-        sessionStorage.removeItem('golf_signup_returnTo');
-        // Redirect to the invite join page
-        router.push(storedReturnTo);
-      } else if (result.redirectTo) {
-        // Default: redirect to onboarding
-        router.push(result.redirectTo);
-      } else {
-        // Fallback: redirect based on selected role
-        router.push(role === 'coach' ? '/golf/coach' : '/golf/player');
-      }
+      const onboardingPath = result.redirectTo || (role === 'coach' ? '/golf/coach' : '/golf/player');
+      router.push(onboardingPath);
     } catch (err) {
       setError(getSignupErrorMessage(err instanceof Error ? err.message : 'Signup failed'));
       setIsLoading(false);

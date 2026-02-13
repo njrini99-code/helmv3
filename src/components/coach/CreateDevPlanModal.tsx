@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -48,13 +48,7 @@ export function CreateDevPlanModal({ open, onClose, teamId }: CreateDevPlanModal
   });
   const [goals, setGoals] = useState<Goal[]>([]);
 
-  useEffect(() => {
-    if (open && teamId) {
-      fetchRosterPlayers();
-    }
-  }, [open, teamId]);
-
-  async function fetchRosterPlayers() {
+  const fetchRosterPlayers = useCallback(async () => {
     if (!teamId) return;
 
     setLoadingPlayers(true);
@@ -82,7 +76,13 @@ export function CreateDevPlanModal({ open, onClose, teamId }: CreateDevPlanModal
       setPlayers(playerList);
     }
     setLoadingPlayers(false);
-  }
+  }, [teamId]);
+
+  useEffect(() => {
+    if (open && teamId) {
+      fetchRosterPlayers();
+    }
+  }, [open, teamId, fetchRosterPlayers]);
 
   const addGoal = () => {
     setGoals([

@@ -186,7 +186,8 @@ export default async function RoundsPage() {
         .select(playerSelectFields)
         .eq('player_id', player.id)
         .eq('status', 'completed')
-        .order('round_date', { ascending: false }),
+        .order('round_date', { ascending: false })
+        .limit(50),
       supabase
         .from('golf_rounds')
         .select(inProgressSelectFields)

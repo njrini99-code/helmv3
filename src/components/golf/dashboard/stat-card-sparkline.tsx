@@ -2,7 +2,7 @@
 
 import { ReactNode, memo } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconArrowRight, IconTrendingUp, IconTrendingDown } from '@/components/icons';
 import { Sparkline } from '@/components/ui/sparkline';
@@ -51,7 +51,7 @@ export const StatCardSparkline = memo(function StatCardSparkline({
     const sparkColor = trend === 'improving' ? '#16A34A' : trend === 'declining' ? '#DC2626' : '#94A3B8';
 
     const CardContent = (
-        <motion.div
+        <m.div
             role={href ? 'link' : 'region'}
             aria-label={`${label}: ${displayValue}${suffix}`}
             className={cn(
@@ -118,7 +118,7 @@ export const StatCardSparkline = memo(function StatCardSparkline({
                     <IconArrowRight size={12} className="text-primary-500" />
                 </div>
             )}
-        </motion.div>
+        </m.div>
     );
 
     if (href) {

@@ -47,8 +47,6 @@ export function SchoolPeekPanel() {
   const [coaches, setCoaches] = useState<Coach[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const supabase = createClient();
-
   // Fetch school data when panel opens
   useEffect(() => {
     async function fetchSchool() {
@@ -59,6 +57,7 @@ export function SchoolPeekPanel() {
       }
 
       setLoading(true);
+      const supabase = createClient();
 
       // Fetch organization
       const { data: orgData, error: orgError } = await supabase

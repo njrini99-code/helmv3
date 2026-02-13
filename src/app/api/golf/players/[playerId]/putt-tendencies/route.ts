@@ -65,15 +65,24 @@ export async function GET(
         .single();
 
       if (teamMembership?.team_id) {
-        // Check if user is a coach on that team
-        const { data: coach } = await supabase
+        // Verify coach is on the same team as the player via organization_id
+        const { data: coachProfile } = await supabase
           .from('golf_coaches')
-          .select('id')
+          .select('organization_id')
           .eq('user_id', user.id)
           .single();
-        // Note: golf_coaches also doesn't have team_id, so we check if user is any golf coach
-        // This is a simplified check - ideally would need a golf_team_coaches join table
-        isTeamCoach = !!coach;
+
+        if (coachProfile) {
+          const { data: playerTeam } = await supabase
+            .from('golf_team_members')
+            .select('team_id, team:golf_teams(organization_id)')
+            .eq('player_id', playerId)
+            .eq('status', 'active')
+            .limit(1)
+            .single();
+
+          isTeamCoach = playerTeam?.team?.organization_id === coachProfile.organization_id;
+        }
       }
     }
 

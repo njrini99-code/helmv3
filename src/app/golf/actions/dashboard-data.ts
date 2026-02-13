@@ -330,7 +330,7 @@ export async function getCoachDashboardData(
         puttsPerRound: { label: 'Team Putts/Rd', value: null, sparkline: [] },
         rosterSize: { label: 'Roster Size', value: rosterSize, sparkline: [] },
     };
-    let teamPulse: TeamPulseData = { improving: 0, stable: 0, declining: 0, roundsThisWeek: 0 };
+    const teamPulse: TeamPulseData = { improving: 0, stable: 0, declining: 0, roundsThisWeek: 0 };
 
     if (playerIds.length > 0) {
         const [recentRoundsResult, allRoundsResult, weekRoundsResult] = await Promise.all([
@@ -498,12 +498,10 @@ export async function getCoachDashboardData(
             // Team pulse — per-player trend (only count players with 6+ rounds for meaningful trends)
             let bestDelta = 0;
             let bestMoverName = '';
-            let playersWithEnoughData = 0;
             players.forEach(p => {
                 const pRounds = allRounds.filter(r => r.player_id === p.id);
                 const pScores = pRounds.map(r => r.total_score).filter((s): s is number => s !== null);
                 if (pScores.length < 6) return; // Skip players without enough data for trend
-                playersWithEnoughData++;
                 const trend = computeTrend(pScores);
                 if (trend === 'improving') teamPulse.improving++;
                 else if (trend === 'declining') teamPulse.declining++;
