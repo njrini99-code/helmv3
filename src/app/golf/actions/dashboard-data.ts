@@ -214,13 +214,13 @@ export async function getCoachDashboardData(
 ): Promise<CoachDashboardPayload> {
     const supabase = await createClient();
 
-    // Fetch team timezone (column added via migration, cast to avoid generated-type mismatch)
-    const { data: teamTzRow } = await supabase
-        .from('golf_teams')
+    // Fetch team timezone from settings table (canonical source for timezone)
+    const { data: teamSettingsRow } = await supabase
+        .from('golf_team_settings')
         .select('timezone')
-        .eq('id', teamId)
-        .single() as { data: { timezone?: string } | null };
-    const teamTimezone = teamTzRow?.timezone || 'America/New_York';
+        .eq('team_id', teamId)
+        .maybeSingle();
+    const teamTimezone = (teamSettingsRow as { timezone?: string } | null)?.timezone || 'America/New_York';
 
     const { start: todayStart, end: todayEnd } = getTodayRange(teamTimezone);
     const now = new Date().toISOString();
@@ -614,15 +614,15 @@ export async function getPlayerDashboardData(
 ): Promise<PlayerDashboardPayload> {
     const supabase = await createClient();
 
-    // Fetch team timezone (column added via migration, cast to avoid generated-type mismatch)
+    // Fetch team timezone from settings table (canonical source for timezone)
     let playerTeamTimezone = 'America/New_York';
     if (teamId) {
-        const { data: playerTeamTzRow } = await supabase
-            .from('golf_teams')
+        const { data: playerTeamSettingsRow } = await supabase
+            .from('golf_team_settings')
             .select('timezone')
-            .eq('id', teamId)
-            .single() as { data: { timezone?: string } | null };
-        playerTeamTimezone = playerTeamTzRow?.timezone || 'America/New_York';
+            .eq('team_id', teamId)
+            .maybeSingle();
+        playerTeamTimezone = (playerTeamSettingsRow as { timezone?: string } | null)?.timezone || 'America/New_York';
     }
 
     const { start: todayStart, end: todayEnd } = getTodayRange(playerTeamTimezone);

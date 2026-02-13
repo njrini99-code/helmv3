@@ -88,6 +88,15 @@ export async function saveRoundDraft(
       return { success: false, error: 'Player profile not found' };
     }
 
+    // Look up team_id from active team membership (same pattern as getPlayerTeamId in golf.ts)
+    const { data: membership } = await supabase
+      .from('golf_team_members')
+      .select('team_id')
+      .eq('player_id', player.id)
+      .eq('status', 'active')
+      .maybeSingle();
+    const teamId = membership?.team_id ?? null;
+
     const now = new Date().toISOString();
 
     // Calculate total holes for the draft
@@ -106,6 +115,7 @@ export async function saveRoundDraft(
 
     const roundRecord: {
       player_id: string;
+      team_id: string | null;
       course_name: string;
       course_city: string | null;
       course_state: string | null;
@@ -123,6 +133,7 @@ export async function saveRoundDraft(
       total_putts: null;
     } = {
       player_id: player.id,
+      team_id: teamId,
       course_name: setupData?.courseName || 'Untitled Round',
       course_city: setupData?.courseCity || null,
       course_state: setupData?.courseState || null,
