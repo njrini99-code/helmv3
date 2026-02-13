@@ -12,6 +12,7 @@ import { KeyboardShortcutHint } from '@/components/golf/KeyboardShortcutHint';
 import { MobileNavProvider } from '@/contexts/mobile-nav-context';
 import { GolfUserProvider, type GolfUserData } from '@/contexts/golf-user-context';
 import { OfflineProvider } from '@/components/golf/OfflineProvider';
+import { NoTeamBanner } from '@/components/golf/NoTeamBanner';
 import { LastSeenUpdater } from '@/components/admin/LastSeenUpdater';
 import { LazyMotion, domAnimation } from 'framer-motion';
 import { TamboProvider } from '@tambo-ai/react';
@@ -142,6 +143,7 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
           overscrollBehaviorY: 'contain',
         }}
       >
+        <NoTeamBanner />
         <div className="min-h-full" style={{ background: 'transparent' }}>
           {children}
         </div>

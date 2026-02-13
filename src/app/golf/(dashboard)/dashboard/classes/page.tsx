@@ -384,6 +384,31 @@ export default function GolfClassesPage() {
   // Calculate total credits
   const totalCredits = classes.reduce((sum, cls) => sum + (cls.credits || 0), 0);
 
+  // No team — show helpful empty state instead of silently failing on add/edit
+  if (!teamId) {
+    return (
+      <AnimatedPage className="p-4 md:p-6 max-w-7xl mx-auto">
+        <AnimatedItem className="min-h-[60vh] flex items-center justify-center">
+          <div className="text-center max-w-md">
+            <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
+              <IconBook size={32} className="text-amber-500" />
+            </div>
+            <h2 className="text-xl font-semibold text-slate-900 mb-2">Join a Team First</h2>
+            <p className="text-slate-500 mb-6">
+              You need to be on a team before you can add your class schedule. Ask your coach for a join code.
+            </p>
+            <a
+              href="/golf/join"
+              className="inline-block px-6 py-2.5 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors"
+            >
+              Join a Team
+            </a>
+          </div>
+        </AnimatedItem>
+      </AnimatedPage>
+    );
+  }
+
   return (
     <AnimatedPage className="p-4 md:p-6 max-w-7xl mx-auto">
       {/* Header */}
