@@ -366,140 +366,122 @@ export default function CRMPage() {
   // RENDER
   // ============================================================================
   return (
-    <div className="min-h-screen bg-gradient-to-br from-warm-50 via-white to-warm-50/50 relative flex">
-      {/* Subtle Background Pattern */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-[500px] h-[500px] rounded-full bg-primary-100/30 blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-[400px] h-[400px] rounded-full bg-violet-100/20 blur-3xl" />
-      </div>
-
-      {/* Sidebar */}
+    <div className="min-h-screen bg-[#FFFEF8] flex">
+      {/* Sidebar - Dark theme matching admin dashboard */}
       <aside className={cn(
-        'relative z-10 flex flex-col transition-all duration-300',
-        'bg-white/65 backdrop-blur-[16px]',
-        'border-r border-white/30',
-        'shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)]',
-        sidebarCollapsed ? 'w-20' : 'w-72'
+        'fixed left-0 top-0 bottom-0 z-50',
+        'flex flex-col',
+        'bg-[#1C1917]',
+        'border-r border-white/5',
+        'transition-all duration-300 ease-in-out',
+        sidebarCollapsed ? 'w-[72px]' : 'w-[260px]',
+        'hidden lg:flex'
       )}>
         {/* Sidebar Header */}
-        <div className="p-4 border-b border-warm-100/50">
-          {/* Back to Dashboard */}
+        <div className={cn('flex items-center gap-3 px-4 h-16', sidebarCollapsed && 'justify-center px-0')}>
+          <div className="w-9 h-9 rounded-[10px] bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/25">
+            <span className="text-lg">🎯</span>
+          </div>
+          {!sidebarCollapsed && (
+            <span className="font-bold text-lg text-white tracking-tight">Coach CRM</span>
+          )}
+        </div>
+
+        {/* Back to Dashboard */}
+        <div className="px-3 mb-2">
           <a
             href="/golf/admin"
             className={cn(
-              'flex items-center gap-2 mb-4 px-2 py-1.5 -mx-1 rounded-xl text-sm',
-              'text-warm-500 hover:text-warm-700 hover:bg-white/50 transition-all'
+              'flex items-center gap-3 px-3 py-2 rounded-[10px]',
+              'text-warm-400 hover:bg-white/5 hover:text-white transition-colors',
+              sidebarCollapsed && 'justify-center'
             )}
           >
-            <span className="text-xs">←</span>
-            {!sidebarCollapsed && <span className="font-medium">Dashboard</span>}
+            <span className="text-sm">←</span>
+            {!sidebarCollapsed && <span className="text-sm font-medium">Dashboard</span>}
           </a>
-          
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
-              <span className="text-xl">🎯</span>
-            </div>
-            {!sidebarCollapsed && (
-              <div>
-                <h1 className="font-bold text-warm-900">Coach CRM</h1>
-                <p className="text-[11px] font-medium text-warm-400 uppercase tracking-wider">{stats.total} coaches</p>
-              </div>
-            )}
-          </div>
         </div>
 
         {/* Navigation Tabs */}
-        <nav className="flex-1 p-3 space-y-1.5">
-          {TABS.map((tab) => {
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={cn(
-                  'w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group',
-                  isActive
-                    ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/20'
-                    : 'text-warm-600 hover:bg-white/60 hover:text-warm-900'
-                )}
-              >
-                <span className="text-xl">{tab.icon}</span>
-                {!sidebarCollapsed && (
-                  <div className="flex-1 text-left">
-                    <div className="font-semibold text-sm">{tab.label}</div>
-                    <div className={cn('text-[11px]', isActive ? 'text-white/70' : 'text-warm-400')}>
-                      {tab.description}
+        <nav className="flex-1 overflow-y-auto px-3 py-2">
+          <div className="space-y-1">
+            {TABS.map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={cn(
+                    'group relative flex items-center gap-3 w-full rounded-[10px] transition-colors duration-200',
+                    sidebarCollapsed ? 'justify-center p-3' : 'px-3 py-2.5',
+                    isActive ? 'bg-white/10 text-white' : 'text-warm-400 hover:bg-white/5 hover:text-white'
+                  )}
+                >
+                  {isActive && (
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-primary-500 rounded-r-full" />
+                  )}
+                  <span className="text-lg">{tab.icon}</span>
+                  {!sidebarCollapsed && (
+                    <span className="text-sm font-medium flex-1 text-left">{tab.label}</span>
+                  )}
+                  {!sidebarCollapsed && (
+                    <span className={cn(
+                      'text-[10px] px-1.5 py-0.5 rounded font-mono',
+                      isActive ? 'bg-white/10 text-warm-300' : 'bg-white/5 text-warm-500'
+                    )}>
+                      {tab.shortcut}
+                    </span>
+                  )}
+                  {sidebarCollapsed && (
+                    <div className="absolute left-full ml-3 px-3 py-1.5 bg-warm-900 text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 shadow-xl">
+                      {tab.label}
                     </div>
-                  </div>
-                )}
-                {!sidebarCollapsed && (
-                  <span className={cn(
-                    'text-[10px] px-1.5 py-0.5 rounded-md font-mono',
-                    isActive ? 'bg-white/20 text-white' : 'bg-warm-100 text-warm-500'
-                  )}>
-                    {tab.shortcut}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </nav>
 
         {/* Stats Cards in Sidebar */}
         {!sidebarCollapsed && (
-          <div className="p-4 border-t border-warm-100/50 space-y-3">
+          <div className="p-3 border-t border-white/10 space-y-3">
+            <div className="text-[11px] font-semibold text-warm-500 uppercase tracking-wider px-1">Pipeline</div>
             <div className="grid grid-cols-2 gap-2">
-              <div className={cn(
-                'bg-white/65 backdrop-blur-[16px] rounded-xl p-3',
-                'border border-white/30',
-                'shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)]'
-              )}>
-                <div className="text-2xl font-bold text-emerald-700 tabular-nums">{stats.byStatus.customer || 0}</div>
-                <div className="text-[11px] font-medium text-warm-400 uppercase tracking-wider">Customers</div>
+              <div className="rounded-[10px] p-3 bg-white/5 border border-white/5">
+                <div className="text-xl font-bold text-primary-400 tabular-nums">{stats.byStatus.customer || 0}</div>
+                <div className="text-[10px] text-warm-500 font-medium uppercase tracking-wider mt-0.5">Customers</div>
               </div>
-              <div className={cn(
-                'bg-white/65 backdrop-blur-[16px] rounded-xl p-3',
-                'border border-white/30',
-                'shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)]'
-              )}>
-                <div className="text-2xl font-bold text-amber-700 tabular-nums">{stats.byStatus.demo_scheduled || 0}</div>
-                <div className="text-[11px] font-medium text-warm-400 uppercase tracking-wider">Demos Set</div>
+              <div className="rounded-[10px] p-3 bg-white/5 border border-white/5">
+                <div className="text-xl font-bold text-amber-400 tabular-nums">{stats.byStatus.demo_scheduled || 0}</div>
+                <div className="text-[10px] text-warm-500 font-medium uppercase tracking-wider mt-0.5">Demos Set</div>
               </div>
             </div>
             <div className="grid grid-cols-3 gap-2">
-              <div className={cn(
-                'bg-white/50 rounded-xl p-2.5 text-center',
-                'border border-white/30'
-              )}>
-                <div className="text-lg font-bold text-orange-600 tabular-nums">{stats.hot}</div>
-                <div className="text-[10px] text-warm-500 font-medium">🔥 Hot</div>
+              <div className="rounded-[10px] p-2 bg-white/5 border border-white/5 text-center">
+                <div className="text-sm font-bold text-orange-400 tabular-nums">{stats.hot}</div>
+                <div className="text-[9px] text-warm-500">🔥 Hot</div>
               </div>
-              <div className={cn(
-                'bg-white/50 rounded-xl p-2.5 text-center',
-                'border border-white/30'
-              )}>
-                <div className="text-lg font-bold text-amber-600 tabular-nums">{stats.followUpsDue}</div>
-                <div className="text-[10px] text-warm-500 font-medium">⏰ Due</div>
+              <div className="rounded-[10px] p-2 bg-white/5 border border-white/5 text-center">
+                <div className="text-sm font-bold text-amber-400 tabular-nums">{stats.followUpsDue}</div>
+                <div className="text-[9px] text-warm-500">⏰ Due</div>
               </div>
-              <div className={cn(
-                'bg-white/50 rounded-xl p-2.5 text-center',
-                'border border-white/30'
-              )}>
-                <div className="text-lg font-bold text-yellow-600 tabular-nums">{stats.starred}</div>
-                <div className="text-[10px] text-warm-500 font-medium">⭐ Starred</div>
+              <div className="rounded-[10px] p-2 bg-white/5 border border-white/5 text-center">
+                <div className="text-sm font-bold text-yellow-400 tabular-nums">{stats.starred}</div>
+                <div className="text-[9px] text-warm-500">⭐ Starred</div>
               </div>
             </div>
           </div>
         )}
 
         {/* Actions */}
-        <div className="p-4 border-t border-warm-100/50 space-y-2">
+        <div className="p-3 border-t border-white/10 space-y-2">
           <button
             onClick={() => setShowAddModal(true)}
             className={cn(
-              'w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold transition-all',
-              'bg-primary-600 text-white shadow-lg shadow-primary-500/20',
-              'hover:bg-primary-700 hover:shadow-xl active:scale-[0.98]'
+              'w-full flex items-center justify-center gap-2 py-2.5 rounded-[10px] font-medium transition-colors',
+              'bg-gradient-to-r from-primary-500 to-primary-600 text-white',
+              'hover:from-primary-600 hover:to-primary-700'
             )}
           >
             <span>+</span>
@@ -509,23 +491,15 @@ export default function CRMPage() {
             <div className="flex gap-2">
               <button
                 onClick={() => setShowImportModal(true)}
-                className={cn(
-                  'flex-1 py-2 rounded-xl text-sm font-medium transition-all',
-                  'bg-white/60 hover:bg-white/80 text-warm-700',
-                  'border border-white/40 shadow-sm'
-                )}
+                className="flex-1 py-2 rounded-[10px] text-sm font-medium bg-white/5 hover:bg-white/10 text-warm-400 transition-colors"
               >
-                📤 Import
+                Import
               </button>
               <button
                 onClick={exportToCSV}
-                className={cn(
-                  'flex-1 py-2 rounded-xl text-sm font-medium transition-all',
-                  'bg-white/60 hover:bg-white/80 text-warm-700',
-                  'border border-white/40 shadow-sm'
-                )}
+                className="flex-1 py-2 rounded-[10px] text-sm font-medium bg-white/5 hover:bg-white/10 text-warm-400 transition-colors"
               >
-                📥 Export
+                Export
               </button>
             </div>
           )}
@@ -534,20 +508,19 @@ export default function CRMPage() {
         {/* Collapse Toggle */}
         <button
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className="p-3 border-t border-warm-100/50 text-warm-400 hover:text-warm-600 hover:bg-white/50 transition-colors"
+          className="absolute -right-3 top-20 w-6 h-6 rounded-full bg-[#1C1917] border border-white/20 flex items-center justify-center text-warm-400 hover:text-white transition-colors shadow-lg"
         >
           {sidebarCollapsed ? '→' : '←'}
         </button>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 relative z-10 flex flex-col min-h-screen overflow-hidden">
+      {/* Main Content - with margin for fixed sidebar */}
+      <main className={cn(
+        'flex-1 flex flex-col min-h-screen transition-all duration-300',
+        sidebarCollapsed ? 'lg:ml-[72px]' : 'lg:ml-[260px]'
+      )}>
         {/* Top Bar */}
-        <header className={cn(
-          'px-6 py-4 border-b',
-          'bg-white/65 backdrop-blur-[16px]',
-          'border-white/30'
-        )}>
+        <header className="sticky top-0 z-30 bg-[#FFFEF8]/95 backdrop-blur-sm border-b border-warm-200/50 px-6 py-3">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold text-warm-900">

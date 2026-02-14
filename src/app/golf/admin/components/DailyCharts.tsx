@@ -2,7 +2,7 @@
 
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { AdminAreaChart } from './AdminChart';
-import { IconUsers, IconTrendingUp } from '@/components/icons';
+import { UsersIcon, TrendingUpIcon } from 'lucide-react';
 
 interface Props {
   signupsByDay: AdminDashboardData['signupsByDay'];
@@ -25,36 +25,42 @@ function DailyAreaChartCard({
   const total = data.reduce((s, d) => s + d.count, 0);
   const avg = data.length > 0 ? (total / data.length).toFixed(1) : '0';
   const todayCount = data[data.length - 1]?.count ?? 0;
+  const maxCount = Math.max(...data.map(d => d.count), 1);
 
   const chartData = data.map((d) => ({
     label: new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
     value: d.count,
   }));
 
+  // Calculate dynamic height based on data variance
+  // More variance = taller chart to show detail
+  const variance = data.length > 1 ? Math.max(...data.map(d => d.count)) - Math.min(...data.map(d => d.count)) : 0;
+  const chartHeight = Math.max(180, Math.min(280, 180 + variance * 2));
+
   return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6 transition-all duration-200 hover:bg-white/80 hover:shadow-card-hover">
+    <div className="bg-white rounded-2xl border border-warm-200/50 shadow-sm p-6">
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <div className="p-2 bg-white/50 rounded-lg text-warm-500">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-warm-100 rounded-xl text-warm-600">
             {icon}
           </div>
           <div>
             <h3 className="text-base font-semibold text-warm-900">{title}</h3>
-            <p className="text-xs text-warm-400">{subtitle}</p>
+            <p className="text-xs text-warm-500">{subtitle}</p>
           </div>
         </div>
-        <div className="flex items-center gap-4 text-right">
+        <div className="flex items-center gap-6 text-right">
           <div>
-            <p className="text-xl font-semibold text-warm-900 tabular-nums">{todayCount}</p>
-            <p className="text-[10px] text-warm-400">Today</p>
+            <p className="text-2xl font-bold text-warm-900 tabular-nums">{todayCount}</p>
+            <p className="text-[11px] text-warm-400 font-medium">Today</p>
           </div>
           <div>
             <p className="text-lg font-semibold text-warm-700 tabular-nums">{avg}</p>
-            <p className="text-[10px] text-warm-400">Daily Avg</p>
+            <p className="text-[11px] text-warm-400 font-medium">Avg/Day</p>
           </div>
           <div>
             <p className="text-lg font-semibold text-warm-700 tabular-nums">{total}</p>
-            <p className="text-[10px] text-warm-400">30d Total</p>
+            <p className="text-[11px] text-warm-400 font-medium">30d Total</p>
           </div>
         </div>
       </div>
@@ -63,7 +69,7 @@ function DailyAreaChartCard({
         data={chartData}
         title=""
         color={color}
-        height={120}
+        height={chartHeight}
       />
     </div>
   );
@@ -77,14 +83,14 @@ export function DailyCharts({ signupsByDay, visitsByDay }: Props) {
         title="User Signups by Day"
         subtitle="New account registrations"
         color="#16A34A"
-        icon={<IconUsers size={18} />}
+        icon={<UsersIcon className="w-5 h-5" />}
       />
       <DailyAreaChartCard
         data={visitsByDay}
         title="Active Users by Day"
         subtitle="Unique users with round activity"
         color="#2563EB"
-        icon={<IconTrendingUp size={18} />}
+        icon={<TrendingUpIcon className="w-5 h-5" />}
       />
     </div>
   );

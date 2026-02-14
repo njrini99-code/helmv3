@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
-import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { getAdminDashboardData } from '@/app/golf/actions/admin-data';
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
@@ -34,16 +34,22 @@ import PlayerDropoffFunnel from './components/PlayerDropoffFunnel';
 import SessionHeatmap from './components/SessionHeatmap';
 import { useAnalyticsTracking } from '@/hooks/useAnalyticsTracking';
 import {
-  IconUsers,
-  IconTarget,
-  IconSparkles,
-  IconWarning,
-  IconLogOut,
-  IconRefresh,
-  IconActivity,
-  IconTrendingUp,
-  IconChart,
-} from '@/components/icons';
+  HomeIcon,
+  UsersIcon,
+  HeartPulseIcon,
+  BarChart3Icon,
+  TargetIcon,
+  RefreshCwIcon,
+  LogOutIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  MenuIcon,
+  XIcon,
+  AlertTriangleIcon,
+  TrendingUpIcon,
+  SparklesIcon,
+  ActivityIcon,
+} from 'lucide-react';
 
 // Real-time components
 import { AdminRealtimeProvider, useAdminRealtimeContext } from './components/AdminRealtimeProvider';
@@ -66,34 +72,34 @@ interface CRMStats {
 }
 
 // ============================================================================
-// TAB DEFINITIONS — 4 consolidated tabs
+// TAB DEFINITIONS — 4 consolidated tabs with Lucide icons
 // ============================================================================
 const TABS = [
   { 
     id: 'command', 
     label: 'Command', 
-    icon: '🎯', 
+    Icon: HomeIcon, 
     shortcut: '1',
     description: 'Overview dashboard'
   },
   { 
     id: 'users', 
     label: 'Users', 
-    icon: '👥', 
+    Icon: UsersIcon, 
     shortcut: '2',
     description: 'User & team management'
   },
   { 
     id: 'health', 
     label: 'Health', 
-    icon: '🏥', 
+    Icon: HeartPulseIcon, 
     shortcut: '3',
     description: 'System health & errors'
   },
   { 
     id: 'analytics', 
     label: 'Analytics', 
-    icon: '📈', 
+    Icon: BarChart3Icon, 
     shortcut: '4',
     description: 'Growth & engagement'
   },
@@ -253,185 +259,125 @@ function AdminDashboardContent() {
       : 'healthy';
 
   return (
-    <div className="min-h-screen bg-[#FFFEFA] relative flex">
-      {/* Background Orbs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <motion.div
-          className="absolute w-[600px] h-[600px] -top-48 -right-48 rounded-full bg-gradient-to-br from-emerald-400/20 to-teal-500/10 blur-3xl"
-          animate={{ x: [0, 30, 0], y: [0, -20, 0], scale: [1, 1.05, 1] }}
-          transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut' }}
-        />
-        <motion.div
-          className="absolute w-[500px] h-[500px] -bottom-32 -left-32 rounded-full bg-gradient-to-tr from-violet-400/15 to-purple-400/10 blur-3xl"
-          animate={{ x: [0, -25, 0], y: [0, 25, 0], scale: [1, 0.95, 1] }}
-          transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-        />
-        <motion.div
-          className="absolute w-[400px] h-[400px] top-1/2 left-1/3 rounded-full bg-gradient-to-br from-amber-300/10 to-orange-400/5 blur-3xl"
-          animate={{ x: [0, 40, 0], y: [0, -30, 0] }}
-          transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut', delay: 4 }}
-        />
-      </div>
-
-      {/* Grid Pattern */}
-      <div
-        className="absolute inset-0 pointer-events-none opacity-[0.02]"
-        style={{
-          backgroundImage: `linear-gradient(rgba(16,185,129,0.5) 1px, transparent 1px),
-                           linear-gradient(90deg, rgba(16,185,129,0.5) 1px, transparent 1px)`,
-          backgroundSize: '60px 60px',
-        }}
-      />
-
+    <div className="min-h-screen bg-[#FFFEF8] flex">
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
         <div 
-          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 lg:hidden"
+          className="fixed inset-0 bg-black/20 z-40 lg:hidden"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar - Fixed position */}
       <aside className={cn(
-        'fixed lg:relative z-50 h-screen flex flex-col transition-all duration-300',
-        // Dark sidebar styling (matching coach/player dashboards)
+        'fixed left-0 top-0 bottom-0 z-50',
+        'flex flex-col',
         'bg-[#1C1917]',
         'border-r border-white/5',
-        sidebarCollapsed ? 'lg:w-20' : 'lg:w-72',
-        mobileMenuOpen ? 'w-72 translate-x-0' : 'w-72 -translate-x-full lg:translate-x-0'
+        'transition-all duration-300 ease-in-out',
+        sidebarCollapsed ? 'w-[72px]' : 'w-[260px]',
+        'hidden lg:flex'
       )}>
         {/* Sidebar Header */}
-        <div className="p-5 border-b border-white/10">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/25 overflow-hidden">
-              <Image
-                src="/helm-golf-logo-transparent.png"
-                alt="Helm"
-                width={28}
-                height={28}
-                className="w-7 h-7 object-contain"
-                unoptimized
-              />
-            </div>
-            {!sidebarCollapsed && (
-              <div>
-                <h1 className="font-bold text-white tracking-tight">Command Center</h1>
-                <p className="text-[11px] font-medium text-warm-500 uppercase tracking-wider">Helm Sports Labs</p>
-              </div>
-            )}
+        <div className={cn('flex items-center gap-3 px-4 h-16', sidebarCollapsed && 'justify-center px-0')}>
+          <div className="w-9 h-9 rounded-[10px] bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/25">
+            <Image
+              src="/helm-golf-logo-transparent.png"
+              alt="Helm"
+              width={24}
+              height={24}
+              className="w-6 h-6 object-contain"
+              unoptimized
+            />
           </div>
+          {!sidebarCollapsed && (
+            <span className="font-bold text-lg text-white tracking-tight">Command</span>
+          )}
         </div>
 
         {/* Navigation Tabs */}
-        <nav className="flex-1 p-3 space-y-1">
-          {TABS.map((tab) => {
-            const isActive = activeTab === tab.id;
-            // Show badge on health tab if there are unread alerts
-            const showBadge = tab.id === 'health' && alerts.unreadCount > 0;
-            const badgeCount = tab.id === 'health' ? alerts.unreadCount : 0;
-            const hasCritical = tab.id === 'health' && alerts.severityCounts.critical > 0;
-            
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={cn(
-                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-[10px] transition-all duration-200 group relative',
-                  isActive
-                    ? 'bg-white/10 text-white'
-                    : 'text-warm-400 hover:bg-white/5 hover:text-white'
-                )}
-              >
-                {/* Active indicator bar */}
-                {isActive && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-gradient-to-b from-primary-400 to-primary-600" />
-                )}
-                <span className="text-lg">{tab.icon}</span>
-                {!sidebarCollapsed && (
-                  <div className="flex-1 text-left">
-                    <div className="font-semibold text-sm flex items-center gap-2">
+        <nav className="flex-1 overflow-y-auto px-3 py-2">
+          <div className="space-y-1">
+            {TABS.map((tab) => {
+              const isActive = activeTab === tab.id;
+              const TabIcon = tab.Icon;
+              const showBadge = tab.id === 'health' && alerts.unreadCount > 0;
+              const badgeCount = alerts.unreadCount;
+              
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={cn(
+                    'group relative flex items-center gap-3 w-full rounded-[10px] transition-colors duration-200',
+                    sidebarCollapsed ? 'justify-center p-3' : 'px-3 py-2.5',
+                    isActive ? 'bg-white/10 text-white' : 'text-warm-400 hover:bg-white/5 hover:text-white'
+                  )}
+                >
+                  {isActive && (
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-primary-500 rounded-r-full" />
+                  )}
+                  <TabIcon className={cn(
+                    'w-5 h-5 flex-shrink-0 transition-colors duration-200',
+                    isActive ? 'text-primary-400' : 'text-warm-400 group-hover:text-white'
+                  )} />
+                  {!sidebarCollapsed && (
+                    <span className="text-sm font-medium flex-1 text-left">{tab.label}</span>
+                  )}
+                  {!sidebarCollapsed && (
+                    <span className={cn(
+                      'text-[10px] px-1.5 py-0.5 rounded font-mono',
+                      isActive ? 'bg-white/10 text-warm-300' : 'bg-white/5 text-warm-500'
+                    )}>
+                      {tab.shortcut}
+                    </span>
+                  )}
+                  {showBadge && (
+                    <span className={cn(
+                      'flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full',
+                      sidebarCollapsed && 'absolute -top-1 -right-1'
+                    )}>
+                      {badgeCount > 99 ? '99+' : badgeCount}
+                    </span>
+                  )}
+                  {sidebarCollapsed && (
+                    <div className="absolute left-full ml-3 px-3 py-1.5 bg-warm-900 text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 shadow-xl">
                       {tab.label}
-                      {showBadge && (
-                        <LiveEventBadge 
-                          count={badgeCount} 
-                          variant={hasCritical ? 'error' : 'warning'}
-                          pulse={hasCritical}
-                        />
-                      )}
                     </div>
-                    <div className={cn('text-[11px] mt-0.5', isActive ? 'text-warm-400' : 'text-warm-500')}>
-                      {tab.description}
-                    </div>
-                  </div>
-                )}
-                {!sidebarCollapsed && (
-                  <span className={cn(
-                    'text-[10px] px-1.5 py-0.5 rounded-md font-mono',
-                    isActive ? 'bg-white/10 text-warm-300' : 'bg-white/5 text-warm-500'
-                  )}>
-                    {tab.shortcut}
-                  </span>
-                )}
-                {/* Badge for collapsed sidebar */}
-                {sidebarCollapsed && showBadge && (
-                  <div className="absolute -top-1 -right-1">
-                    <LiveEventBadge 
-                      count={badgeCount} 
-                      variant={hasCritical ? 'error' : 'warning'}
-                      pulse={hasCritical}
-                    />
-                  </div>
-                )}
-              </button>
-            );
-          })}
+                  )}
+                </button>
+              );
+            })}
+          </div>
           
-          {/* CRM Button - Prominent */}
-          <div className="mt-4 pt-4 border-t border-white/10">
-            <a
+          {/* CRM Button */}
+          <div className="mt-6 pt-4 border-t border-white/10">
+            <Link
               href="/golf/admin/crm"
               className={cn(
-                'w-full flex items-center gap-3 px-3 py-2.5 rounded-[10px] transition-all duration-200 group',
-                'bg-gradient-to-r from-primary-500/20 to-primary-600/20 hover:from-primary-500 hover:to-primary-600',
-                'text-primary-400 hover:text-white',
-                'hover:shadow-lg hover:shadow-primary-500/25'
+                'group relative flex items-center gap-3 w-full rounded-[10px] transition-colors duration-200',
+                sidebarCollapsed ? 'justify-center p-3' : 'px-3 py-2.5',
+                'text-primary-400 hover:bg-white/5 hover:text-primary-300'
               )}
             >
-              <span className="text-xl">🎯</span>
+              <TargetIcon className="w-5 h-5 flex-shrink-0" />
               {!sidebarCollapsed && (
-                <div className="flex-1 text-left">
-                  <div className="font-semibold">Coach CRM</div>
-                  <div className="text-xs text-primary-500 group-hover:text-white/70">
-                    {crmStats ? `${crmStats.total} coaches` : 'Sales pipeline'}
+                <>
+                  <div className="flex-1 text-left">
+                    <div className="text-sm font-medium">Coach CRM</div>
+                    <div className="text-[11px] text-warm-500">
+                      {crmStats ? `${crmStats.total} coaches` : 'Sales pipeline'}
+                    </div>
                   </div>
+                  <span className="text-warm-500 group-hover:text-primary-400">→</span>
+                </>
+              )}
+              {sidebarCollapsed && (
+                <div className="absolute left-full ml-3 px-3 py-1.5 bg-warm-900 text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50 shadow-xl">
+                  Coach CRM
                 </div>
               )}
-              {!sidebarCollapsed && (
-                <span className="text-primary-400 group-hover:text-white">→</span>
-              )}
-            </a>
-            
-            {/* CRM Mini Stats */}
-            {!sidebarCollapsed && crmStats && (
-              <div className="mt-2 grid grid-cols-4 gap-1 px-1">
-                <div className="bg-white/5 rounded-lg p-1.5 text-center" title="New Leads">
-                  <div className="text-sm font-bold text-warm-300">{crmStats.newLeads}</div>
-                  <div className="text-[8px] text-warm-500">📋</div>
-                </div>
-                <div className="bg-white/5 rounded-lg p-1.5 text-center" title="Contacted">
-                  <div className="text-sm font-bold text-blue-400">{crmStats.contacted}</div>
-                  <div className="text-[8px] text-warm-500">💬</div>
-                </div>
-                <div className="bg-white/5 rounded-lg p-1.5 text-center" title="Demos Scheduled">
-                  <div className="text-sm font-bold text-violet-400">{crmStats.demosScheduled}</div>
-                  <div className="text-[8px] text-warm-500">📅</div>
-                </div>
-                <div className="bg-white/5 rounded-lg p-1.5 text-center" title="Customers">
-                  <div className="text-sm font-bold text-primary-400">{crmStats.customers}</div>
-                  <div className="text-[8px] text-warm-500">✅</div>
-                </div>
-              </div>
-            )}
+            </Link>
           </div>
         </nav>
 
@@ -492,32 +438,20 @@ function AdminDashboardContent() {
               </div>
             </div>
             
-            {/* Real-time Connection Status */}
+            {/* Connection Status - simplified, no animation */}
             <div className="rounded-[10px] p-2.5 flex items-center justify-between bg-white/5 border border-white/5">
               <div className="flex items-center gap-2">
-                <div className="relative">
-                  <div className={cn(
-                    'w-2 h-2 rounded-full',
-                    realtime.isConnected ? 'bg-primary-500' : 'bg-amber-500'
-                  )} />
-                  {realtime.isConnected && (
-                    <div className="absolute inset-0 w-2 h-2 rounded-full bg-primary-500 animate-ping opacity-75" />
-                  )}
-                </div>
+                <div className={cn(
+                  'w-2 h-2 rounded-full',
+                  realtime.isConnected ? 'bg-primary-500' : 'bg-amber-500'
+                )} />
                 <span className={cn(
                   'text-xs font-medium',
                   realtime.isConnected ? 'text-warm-400' : 'text-amber-400'
                 )}>
-                  {realtime.connectionState === 'connected' ? 'Live Updates' : 
-                   realtime.connectionState === 'connecting' ? 'Connecting...' : 
-                   realtime.connectionState === 'error' ? 'Reconnecting...' : 'Offline'}
+                  {realtime.isConnected ? 'Live' : 'Connecting'}
                 </span>
               </div>
-              {presence.onlineCount > 1 && (
-                <span className="text-[10px] text-warm-500 font-medium">
-                  {presence.onlineCount} admins
-                </span>
-              )}
             </div>
           </div>
         )}
@@ -525,80 +459,102 @@ function AdminDashboardContent() {
         {/* Collapse Toggle */}
         <button
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className="hidden lg:block p-3 border-t border-white/10 text-warm-500 hover:text-white hover:bg-white/5 transition-colors"
+          className="absolute -right-3 top-20 w-6 h-6 rounded-full bg-[#1C1917] border border-white/20 flex items-center justify-center text-warm-400 hover:text-white transition-colors shadow-lg"
         >
-          {sidebarCollapsed ? '→' : '←'}
+          {sidebarCollapsed ? <ChevronRightIcon className="w-3.5 h-3.5" /> : <ChevronLeftIcon className="w-3.5 h-3.5" />}
         </button>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 relative z-10 flex flex-col min-h-screen overflow-hidden">
-        {/* Top Bar / Header */}
-        <header className="bg-white/50 backdrop-blur-xl border-b border-white/20 px-4 sm:px-6 py-4">
+      {/* Mobile Sidebar */}
+      <aside className={cn(
+        'fixed left-0 top-0 bottom-0 z-50 w-[260px]',
+        'flex flex-col bg-[#1C1917] border-r border-white/5',
+        'transition-transform duration-300 ease-in-out lg:hidden',
+        mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+      )}>
+        <div className="flex items-center justify-between px-4 h-16">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-[10px] bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center">
+              <Image src="/helm-golf-logo-transparent.png" alt="Helm" width={24} height={24} className="w-6 h-6" unoptimized />
+            </div>
+            <span className="font-bold text-lg text-white">Command</span>
+          </div>
+          <button onClick={() => setMobileMenuOpen(false)} className="p-2 text-warm-400 hover:text-white">
+            <XIcon className="w-5 h-5" />
+          </button>
+        </div>
+        <nav className="flex-1 px-3 py-2 space-y-1">
+          {TABS.map((tab) => {
+            const isActive = activeTab === tab.id;
+            const TabIcon = tab.Icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-[10px] transition-colors',
+                  isActive ? 'bg-white/10 text-white' : 'text-warm-400 hover:bg-white/5 hover:text-white'
+                )}
+              >
+                <TabIcon className={cn('w-5 h-5', isActive && 'text-primary-400')} />
+                <span className="text-sm font-medium">{tab.label}</span>
+              </button>
+            );
+          })}
+          <Link href="/golf/admin/crm" className="flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-primary-400 hover:bg-white/5 mt-4 pt-4 border-t border-white/10">
+            <TargetIcon className="w-5 h-5" />
+            <span className="text-sm font-medium">Coach CRM</span>
+          </Link>
+        </nav>
+      </aside>
+
+      {/* Main Content - with margin for fixed sidebar */}
+      <main className={cn(
+        'flex-1 flex flex-col min-h-screen transition-all duration-300',
+        sidebarCollapsed ? 'lg:ml-[72px]' : 'lg:ml-[260px]'
+      )}>
+        {/* Top Bar */}
+        <header className="sticky top-0 z-30 bg-[#FFFEF8]/95 backdrop-blur-sm border-b border-warm-200/50 px-4 sm:px-6 py-3">
           <div className="flex items-center justify-between">
-            {/* Mobile menu button */}
-            <button
-              onClick={() => setMobileMenuOpen(true)}
-              className="lg:hidden p-2 -ml-2 rounded-lg text-warm-600 hover:bg-white/50"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
+            <button onClick={() => setMobileMenuOpen(true)} className="lg:hidden p-2 -ml-2 rounded-lg text-warm-600 hover:bg-warm-100">
+              <MenuIcon className="w-5 h-5" />
             </button>
 
             <div className="flex items-center gap-3">
-              {/* Live Event Counter */}
-              <LiveEventCounter
-                total={realtime.counts.total}
-                errors={realtime.counts.error + realtime.counts.critical}
-                critical={realtime.counts.critical}
-                isConnected={realtime.isConnected}
-                connectionState={realtime.connectionState}
-                onClick={() => setActiveTab('health')}
-              />
-
-              {/* Admin Online Indicator */}
-              <AdminOnlineIndicator
-                activeAdmins={presence.activeAdmins}
-                onlineCount={presence.onlineCount}
-                isConnected={presence.isConnected}
-                currentUserId={presence.activeAdmins[0]?.id}
-                className="hidden sm:block"
-              />
-
               {lastRefresh && (
                 <span className="text-xs text-warm-400 tabular-nums hidden md:block">
-                  {lastRefresh.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  Updated {lastRefresh.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
               )}
             </div>
 
-            <div className="flex items-center gap-2 sm:gap-3">
-              {/* Refresh Button */}
+            <div className="flex items-center gap-2">
               <button
                 onClick={() => loadData(true)}
                 disabled={isRefreshing}
-                className="p-2 rounded-lg text-warm-500 hover:text-warm-700 hover:bg-white/50 transition-all disabled:opacity-50"
-                title="Refresh data (R)"
+                className={cn(
+                  'p-2 rounded-lg text-warm-500 hover:text-warm-700 hover:bg-warm-100 transition-colors',
+                  isRefreshing && 'animate-spin'
+                )}
+                title="Refresh (R)"
               >
-                <IconRefresh size={18} />
+                <RefreshCwIcon className="w-4 h-4" />
               </button>
 
-              {/* CRM Link */}
-              <a
+              <Link
                 href="/golf/admin/crm"
-                className="flex items-center gap-2 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors px-3 py-2 rounded-lg bg-emerald-50 hover:bg-emerald-100"
+                className="flex items-center gap-2 text-sm font-medium text-primary-600 hover:text-primary-700 px-3 py-1.5 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors"
               >
-                🎯 <span className="hidden sm:inline">CRM</span>
-              </a>
+                <TargetIcon className="w-4 h-4" />
+                <span className="hidden sm:inline">CRM</span>
+              </Link>
 
-              {/* Sign Out */}
               <button
                 onClick={handleSignOut}
-                className="flex items-center gap-2 text-sm text-warm-500 hover:text-warm-700 transition-colors px-3 py-2 rounded-lg hover:bg-white/50"
+                className="p-2 rounded-lg text-warm-500 hover:text-warm-700 hover:bg-warm-100 transition-colors"
+                title="Sign Out"
               >
-                <IconLogOut size={16} />
-                <span className="hidden sm:inline">Sign Out</span>
+                <LogOutIcon className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -630,69 +586,60 @@ function AdminDashboardContent() {
               </div>
             </div>
           ) : data ? (
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeTab}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-                className="space-y-6"
-              >
-
-                {/* ============================================ */}
-                {/* TAB 1: COMMAND - Overview Dashboard */}
-                {/* ============================================ */}
-                {activeTab === 'command' && (
-                  <div className="space-y-6">
-                    {/* Top KPIs */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4">
-                      <AdminStatCard
-                        label="Total Users"
-                        value={data.totalPlatformUsers}
-                        icon={<IconUsers size={20} />}
-                        trend={{ value: data.growth.userGrowthRate, label: 'vs last week' }}
-                        detail={`${data.users.newUsersThisWeek} new this week`}
-                        accentColor="green"
-                      />
-                      <AdminStatCard
-                        label="Rounds This Week"
-                        value={data.health.roundsThisWeek}
-                        icon={<IconTarget size={20} />}
-                        trend={{ value: data.growth.roundGrowthRate, label: 'vs last week' }}
-                        detail={`${data.health.roundsToday} today`}
-                        accentColor="blue"
-                      />
-                      <AdminStatCard
-                        label="AI Activity"
-                        value={data.health.roundReviewsThisWeek + data.health.insightsThisWeek}
-                        icon={<IconSparkles size={20} />}
-                        detail={`${data.health.roundReviewsThisWeek} reviews, ${data.health.insightsThisWeek} insights`}
-                        accentColor="green"
-                      />
-                      <AdminStatCard
-                        label="Errors (7d)"
-                        value={data.errorLogs.totalErrors7d}
-                        icon={<IconWarning size={20} />}
-                        accentColor={data.errorLogs.criticalErrors7d > 0 ? 'red' : data.errorLogs.totalErrors7d > 0 ? 'amber' : 'green'}
-                        detail={data.errorLogs.criticalErrors7d > 0 ? `${data.errorLogs.criticalErrors7d} critical` : 'no critical'}
-                      />
-                      <AdminStatCard
-                        label="Growth Rate"
-                        value={`${data.growth.userGrowthRate > 0 ? '+' : ''}${data.growth.userGrowthRate}`}
-                        suffix="%"
-                        icon={<IconTrendingUp size={20} />}
-                        accentColor={data.growth.userGrowthRate > 0 ? 'green' : data.growth.userGrowthRate < 0 ? 'red' : 'blue'}
-                        detail="user growth vs last week"
-                      />
-                      <AdminStatCard
-                        label="Health Score"
-                        value={data.growth.platformHealthScore}
-                        suffix="/100"
-                        icon={<IconActivity size={20} />}
-                        accentColor={data.growth.platformHealthScore >= 50 ? 'green' : 'red'}
-                      />
-                    </div>
+            <div className="space-y-6">
+              {/* ============================================ */}
+              {/* TAB 1: COMMAND - Overview Dashboard */}
+              {/* ============================================ */}
+              {activeTab === 'command' && (
+                <div className="space-y-6">
+                  {/* Top KPIs */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4">
+                    <AdminStatCard
+                      label="Total Users"
+                      value={data.totalPlatformUsers}
+                      icon={<UsersIcon className="w-5 h-5" />}
+                      trend={{ value: data.growth.userGrowthRate, label: 'vs last week' }}
+                      detail={`${data.users.newUsersThisWeek} new this week`}
+                      accentColor="green"
+                    />
+                    <AdminStatCard
+                      label="Rounds This Week"
+                      value={data.health.roundsThisWeek}
+                      icon={<TargetIcon className="w-5 h-5" />}
+                      trend={{ value: data.growth.roundGrowthRate, label: 'vs last week' }}
+                      detail={`${data.health.roundsToday} today`}
+                      accentColor="blue"
+                    />
+                    <AdminStatCard
+                      label="AI Activity"
+                      value={data.health.roundReviewsThisWeek + data.health.insightsThisWeek}
+                      icon={<SparklesIcon className="w-5 h-5" />}
+                      detail={`${data.health.roundReviewsThisWeek} reviews, ${data.health.insightsThisWeek} insights`}
+                      accentColor="green"
+                    />
+                    <AdminStatCard
+                      label="Errors (7d)"
+                      value={data.errorLogs.totalErrors7d}
+                      icon={<AlertTriangleIcon className="w-5 h-5" />}
+                      accentColor={data.errorLogs.criticalErrors7d > 0 ? 'red' : data.errorLogs.totalErrors7d > 0 ? 'amber' : 'green'}
+                      detail={data.errorLogs.criticalErrors7d > 0 ? `${data.errorLogs.criticalErrors7d} critical` : 'no critical'}
+                    />
+                    <AdminStatCard
+                      label="Growth Rate"
+                      value={`${data.growth.userGrowthRate > 0 ? '+' : ''}${data.growth.userGrowthRate}`}
+                      suffix="%"
+                      icon={<TrendingUpIcon className="w-5 h-5" />}
+                      accentColor={data.growth.userGrowthRate > 0 ? 'green' : data.growth.userGrowthRate < 0 ? 'red' : 'blue'}
+                      detail="user growth vs last week"
+                    />
+                    <AdminStatCard
+                      label="Health Score"
+                      value={data.growth.platformHealthScore}
+                      suffix="/100"
+                      icon={<ActivityIcon className="w-5 h-5" />}
+                      accentColor={data.growth.platformHealthScore >= 50 ? 'green' : 'red'}
+                    />
+                  </div>
 
                     {/* Needs Attention */}
                     <NeedsAttention items={data.needsAttention} />
@@ -723,7 +670,7 @@ function AdminDashboardContent() {
                       <AdminStatCard
                         label="Total Users"
                         value={data.totalPlatformUsers}
-                        icon={<IconUsers size={20} />}
+                        icon={<UsersIcon className="w-5 h-5" />}
                         trend={{ value: data.growth.userGrowthRate, label: 'vs last week' }}
                         detail={`${data.users.totalCoaches} coaches · ${data.users.totalPlayers} players · ${data.users.totalAdmins} admin`}
                         accentColor="green"
@@ -731,7 +678,7 @@ function AdminDashboardContent() {
                       <AdminStatCard
                         label="Active Teams"
                         value={data.users.activeTeams}
-                        icon={<IconUsers size={20} />}
+                        icon={<UsersIcon className="w-5 h-5" />}
                         detail={`${data.teamRosters.length} total teams`}
                         accentColor="blue"
                       />
@@ -739,7 +686,7 @@ function AdminDashboardContent() {
                         label="Coach Onboarding"
                         value={`${data.users.coachOnboardingRate}`}
                         suffix="%"
-                        icon={<IconChart size={20} />}
+                        icon={<BarChart3Icon className="w-5 h-5" />}
                         detail={`${data.users.totalCoaches} coaches`}
                         accentColor={data.users.coachOnboardingRate > 60 ? 'green' : 'amber'}
                       />
@@ -747,7 +694,7 @@ function AdminDashboardContent() {
                         label="Player Onboarding"
                         value={`${data.users.playerOnboardingRate}`}
                         suffix="%"
-                        icon={<IconChart size={20} />}
+                        icon={<BarChart3Icon className="w-5 h-5" />}
                         detail={`${data.users.totalPlayers} players`}
                         accentColor={data.users.playerOnboardingRate > 60 ? 'green' : 'amber'}
                       />
@@ -775,26 +722,26 @@ function AdminDashboardContent() {
                       <AdminStatCard
                         label="Total Errors (7d)"
                         value={data.errorLogs.totalErrors7d}
-                        icon={<IconWarning size={20} />}
+                        icon={<AlertTriangleIcon className="w-5 h-5" />}
                         accentColor={data.errorLogs.totalErrors7d > 10 ? 'red' : data.errorLogs.totalErrors7d > 0 ? 'amber' : 'green'}
                       />
                       <AdminStatCard
                         label="Critical Errors"
                         value={data.errorLogs.criticalErrors7d}
-                        icon={<IconWarning size={20} />}
+                        icon={<AlertTriangleIcon className="w-5 h-5" />}
                         accentColor={data.errorLogs.criticalErrors7d > 0 ? 'red' : 'green'}
                         detail={data.errorLogs.criticalErrors7d > 0 ? 'Immediate attention needed' : 'All clear'}
                       />
                       <AdminStatCard
                         label="Failed Logins (7d)"
                         value={data.loginSecurity.failedLogins7d}
-                        icon={<IconActivity size={20} />}
+                        icon={<ActivityIcon className="w-5 h-5" />}
                         accentColor={data.loginSecurity.failedLogins7d > 5 ? 'amber' : 'green'}
                       />
                       <AdminStatCard
                         label="Locked Accounts"
                         value={data.loginSecurity.lockedAccounts}
-                        icon={<IconActivity size={20} />}
+                        icon={<ActivityIcon className="w-5 h-5" />}
                         accentColor={data.loginSecurity.lockedAccounts > 0 ? 'red' : 'green'}
                       />
                     </div>
@@ -834,14 +781,14 @@ function AdminDashboardContent() {
                         label="Health Score"
                         value={data.growth.platformHealthScore}
                         suffix="/100"
-                        icon={<IconActivity size={20} />}
+                        icon={<ActivityIcon className="w-5 h-5" />}
                         accentColor={data.growth.platformHealthScore >= 50 ? 'green' : 'red'}
                       />
                       <AdminStatCard
                         label="Power Users"
                         value={`${data.growth.npsProxy}`}
                         suffix="%"
-                        icon={<IconSparkles size={20} />}
+                        icon={<SparklesIcon className="w-5 h-5" />}
                         detail="coaches fully engaged"
                         accentColor={data.growth.npsProxy > 30 ? 'green' : 'amber'}
                       />
@@ -849,21 +796,21 @@ function AdminDashboardContent() {
                         label="Weekly Active"
                         value={`${data.engagement.weeklyRetention}`}
                         suffix="%"
-                        icon={<IconTrendingUp size={20} />}
+                        icon={<TrendingUpIcon className="w-5 h-5" />}
                         accentColor={data.engagement.weeklyRetention > 30 ? 'green' : 'amber'}
                       />
                       <AdminStatCard
                         label="Stickiness"
                         value={`${data.stickiness.dauMauRatio}`}
                         suffix="%"
-                        icon={<IconChart size={20} />}
+                        icon={<BarChart3Icon className="w-5 h-5" />}
                         detail={`DAU/MAU · ${data.stickiness.dau}/${data.stickiness.mau}`}
                         accentColor={data.stickiness.dauMauRatio > 20 ? 'green' : 'amber'}
                       />
                       <AdminStatCard
                         label="Churned (30d)"
                         value={data.growth.churnedPlayers30d}
-                        icon={<IconWarning size={20} />}
+                        icon={<AlertTriangleIcon className="w-5 h-5" />}
                         detail="players went inactive"
                         accentColor={data.growth.churnedPlayers30d > 0 ? 'amber' : 'green'}
                       />
@@ -871,7 +818,7 @@ function AdminDashboardContent() {
                         label="AI Adoption"
                         value={`${data.coachhelm.coachPhilosophyAdoption}`}
                         suffix="%"
-                        icon={<IconSparkles size={20} />}
+                        icon={<SparklesIcon className="w-5 h-5" />}
                         accentColor={data.coachhelm.coachPhilosophyAdoption > 50 ? 'green' : 'amber'}
                       />
                     </div>
@@ -1057,8 +1004,7 @@ function AdminDashboardContent() {
                   </div>
                 )}
 
-              </motion.div>
-            </AnimatePresence>
+            </div>
           ) : null}
         </div>
       </main>
