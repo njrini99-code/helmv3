@@ -321,7 +321,7 @@ export default function CRMPage() {
 
   const handleEventClick = (event: CRMEvent) => setSelectedEvent(event);
   const handleSlotClick = (date: Date) => { setScheduleModalDate(date); setScheduleModalCoach(null); setShowScheduleModal(true); };
-  const handleConnectGoogle = () => alert('Google Calendar integration coming soon! Will connect to admin@helmsports.com');
+  const handleConnectGoogle = () => alert('Google Calendar integration coming soon! Will connect to admin@helmsportslabs.com');
   const refreshCalendar = () => setCalendarRefreshKey(k => k + 1);
 
   // ============================================================================
