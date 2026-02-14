@@ -2,13 +2,12 @@
 
 import { useState } from 'react';
 import type { CoachStatus } from '../page';
-import { IconX, IconCheck, IconTrash } from '@/components/icons';
 
 interface BulkActionsBarProps {
   selectedCount: number;
   onAction: (action: string, value?: unknown) => void;
   onClear: () => void;
-  statusConfig: Record<CoachStatus, { label: string }>;
+  statusConfig: Record<CoachStatus, { label: string; icon: string }>;
 }
 
 export function BulkActionsBar({
@@ -22,15 +21,15 @@ export function BulkActionsBar({
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   return (
-    <div className="bg-emerald-600 text-white rounded-xl px-4 py-3 flex items-center justify-between shadow-lg">
+    <div className="bg-gradient-to-r from-emerald-600 to-teal-500 text-white rounded-2xl px-5 py-3.5 flex items-center justify-between shadow-lg">
       <div className="flex items-center gap-4">
         <button
           onClick={onClear}
-          className="p-1.5 rounded-lg hover:bg-emerald-500 transition-colors"
+          className="w-8 h-8 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
         >
-          <IconX className="w-4 h-4" />
+          ✕
         </button>
-        <span className="font-medium">{selectedCount} selected</span>
+        <span className="font-bold text-lg">{selectedCount} selected</span>
       </div>
 
       <div className="flex items-center gap-2">
@@ -41,12 +40,12 @@ export function BulkActionsBar({
               setShowStatusMenu(!showStatusMenu);
               setShowPriorityMenu(false);
             }}
-            className="px-4 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-sm font-medium transition-colors"
+            className="px-4 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-sm font-semibold transition-colors"
           >
-            Change Status
+            📋 Change Status
           </button>
           {showStatusMenu && (
-            <div className="absolute bottom-full mb-2 right-0 bg-white border border-warm-200 rounded-lg shadow-xl py-1 min-w-[180px] max-h-[300px] overflow-y-auto z-50">
+            <div className="absolute bottom-full mb-2 right-0 bg-white border border-slate-200 rounded-xl shadow-xl py-2 min-w-[180px] z-50">
               {Object.entries(statusConfig).map(([value, config]) => (
                 <button
                   key={value}
@@ -54,9 +53,10 @@ export function BulkActionsBar({
                     onAction('status', value);
                     setShowStatusMenu(false);
                   }}
-                  className="w-full text-left px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 transition-colors"
+                  className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2"
                 >
-                  {config.label}
+                  <span>{config.icon}</span>
+                  <span>{config.label}</span>
                 </button>
               ))}
             </div>
@@ -70,16 +70,15 @@ export function BulkActionsBar({
               setShowPriorityMenu(!showPriorityMenu);
               setShowStatusMenu(false);
             }}
-            className="px-4 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-sm font-medium transition-colors"
+            className="px-4 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-sm font-semibold transition-colors"
           >
-            Set Priority
+            ⚡ Set Priority
           </button>
           {showPriorityMenu && (
-            <div className="absolute bottom-full mb-2 right-0 bg-white border border-warm-200 rounded-lg shadow-xl py-1 min-w-[140px] z-50">
+            <div className="absolute bottom-full mb-2 right-0 bg-white border border-slate-200 rounded-xl shadow-xl py-2 min-w-[140px] z-50">
               {[
-                { value: 3, label: '🔥 Hot' },
-                { value: 2, label: '!! Urgent' },
-                { value: 1, label: '! High' },
+                { value: 2, label: '🔥 Hot' },
+                { value: 1, label: '⚡ High' },
                 { value: 0, label: 'Normal' },
               ].map((opt) => (
                 <button
@@ -88,7 +87,7 @@ export function BulkActionsBar({
                     onAction('priority', opt.value);
                     setShowPriorityMenu(false);
                   }}
-                  className="w-full text-left px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 transition-colors"
+                  className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
                 >
                   {opt.label}
                 </button>
@@ -99,31 +98,30 @@ export function BulkActionsBar({
 
         {/* Delete */}
         {confirmDelete ? (
-          <div className="flex items-center gap-2 bg-red-500 rounded-lg px-3 py-1.5">
-            <span className="text-sm">Delete {selectedCount}?</span>
+          <div className="flex items-center gap-2 bg-red-500 rounded-xl px-4 py-2">
+            <span className="text-sm font-medium">Delete {selectedCount}?</span>
             <button
               onClick={() => {
                 onAction('delete');
                 setConfirmDelete(false);
               }}
-              className="p-1 rounded bg-white/20 hover:bg-white/30"
+              className="px-2 py-1 rounded-lg bg-white/20 hover:bg-white/30 text-sm font-bold"
             >
-              <IconCheck className="w-4 h-4" />
+              Yes
             </button>
             <button
               onClick={() => setConfirmDelete(false)}
-              className="p-1 rounded bg-white/20 hover:bg-white/30"
+              className="px-2 py-1 rounded-lg bg-white/20 hover:bg-white/30 text-sm"
             >
-              <IconX className="w-4 h-4" />
+              No
             </button>
           </div>
         ) : (
           <button
             onClick={() => setConfirmDelete(true)}
-            className="px-4 py-1.5 rounded-lg bg-red-500 hover:bg-red-400 text-sm font-medium transition-colors flex items-center gap-1"
+            className="px-4 py-2 rounded-xl bg-red-500/80 hover:bg-red-500 text-sm font-semibold transition-colors"
           >
-            <IconTrash className="w-4 h-4" />
-            Delete
+            🗑️ Delete
           </button>
         )}
       </div>

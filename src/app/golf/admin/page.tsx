@@ -384,6 +384,12 @@ export default function AdminDashboardPage() {
                 </span>
               )}
               <div className="w-px h-6 bg-warm-200" />
+              <a
+                href="/golf/admin/crm"
+                className="flex items-center gap-2 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors px-3 py-2 rounded-lg bg-emerald-50 hover:bg-emerald-100"
+              >
+                🎯 CRM
+              </a>
               <button
                 onClick={handleSignOut}
                 className="flex items-center gap-2 text-sm text-warm-500 hover:text-warm-700 transition-colors px-3 py-2 rounded-lg hover:bg-white/50"
