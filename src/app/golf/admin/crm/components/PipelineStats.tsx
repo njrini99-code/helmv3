@@ -33,8 +33,11 @@ export function PipelineStats({ coaches, statusConfig }: PipelineStatsProps) {
 
     coaches.forEach(coach => {
       const stage = statusConfig[coach.status]?.stage || 'lead';
-      stages[stage].count++;
-      stages[stage].statuses[coach.status] = (stages[stage].statuses[coach.status] || 0) + 1;
+      const stageData = stages[stage];
+      if (stageData) {
+        stageData.count++;
+        stageData.statuses[coach.status] = (stageData.statuses[coach.status] || 0) + 1;
+      }
     });
 
     return stages;
@@ -68,7 +71,7 @@ export function PipelineStats({ coaches, statusConfig }: PipelineStatsProps) {
         <div className="grid grid-cols-4 gap-4">
           {(['lead', 'active', 'closing', 'closed'] as const).map((stage, index) => {
             const config = STAGE_CONFIG[stage];
-            const stats = stageStats[stage];
+            const stats = stageStats[stage] ?? { count: 0, statuses: {} };
             const width = coaches.length > 0 ? (stats.count / coaches.length) * 100 : 0;
             
             return (

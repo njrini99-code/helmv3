@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import type { Division, ProgramType } from '../page';
-import { IconX, IconUpload, IconCheck, IconWarning } from '@/components/icons';
+import { IconX, IconCheck, IconWarning } from '@/components/icons';
 
 interface ImportModalProps {
   onClose: () => void;
@@ -38,8 +38,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
       return;
     }
 
-    const header = lines[0].toLowerCase();
-    const hasConference = header.includes('conference');
+    const header = lines[0]?.toLowerCase() ?? '';
     const hasSchool = header.includes('school');
     const hasName = header.includes('name') || header.includes('coach');
     
@@ -52,7 +51,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
     const parseErrors: string[] = [];
 
     // Parse header to get column indices
-    const headerCols = lines[0].split(',').map(h => h.trim().toLowerCase());
+    const headerCols = (lines[0] ?? '').split(',').map(h => h.trim().toLowerCase());
     const confIdx = headerCols.findIndex(h => h.includes('conference'));
     const schoolIdx = headerCols.findIndex(h => h.includes('school'));
     const nameIdx = headerCols.findIndex(h => h.includes('name') || h.includes('coach'));
@@ -61,7 +60,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
     const programIdx = headerCols.findIndex(h => h.includes('program') || h.includes('gender'));
 
     for (let i = 1; i < lines.length; i++) {
-      const line = lines[i].trim();
+      const line = (lines[i] ?? '').trim();
       if (!line) continue;
 
       // Handle quoted fields with commas
@@ -81,12 +80,12 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
       }
       cols.push(current.trim());
 
-      const name = nameIdx >= 0 ? cols[nameIdx] : '';
-      const school = schoolIdx >= 0 ? cols[schoolIdx] : '';
-      const conference = confIdx >= 0 ? cols[confIdx] : 'Unknown';
-      const title = titleIdx >= 0 ? cols[titleIdx] : 'Head Coach';
-      const email = emailIdx >= 0 ? cols[emailIdx] : '';
-      const programRaw = programIdx >= 0 ? cols[programIdx]?.toLowerCase() || '' : '';
+      const name = nameIdx >= 0 ? (cols[nameIdx] ?? '') : '';
+      const school = schoolIdx >= 0 ? (cols[schoolIdx] ?? '') : '';
+      const conference = confIdx >= 0 ? (cols[confIdx] ?? 'Unknown') : 'Unknown';
+      const title = titleIdx >= 0 ? (cols[titleIdx] ?? 'Head Coach') : 'Head Coach';
+      const email = emailIdx >= 0 ? (cols[emailIdx] ?? '') : '';
+      const programRaw = programIdx >= 0 ? (cols[programIdx]?.toLowerCase() ?? '') : '';
 
       if (!name || !school) {
         parseErrors.push(`Row ${i + 1}: Missing name or school`);
@@ -133,6 +132,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
 
     for (let i = 0; i < parsedData.length; i++) {
       const coach = parsedData[i];
+      if (!coach) continue;
       
       try {
         const { error } = await supabase
@@ -145,7 +145,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
             conference: coach.conference,
             division: coach.division,
             program: coach.program,
-            status: 'lead',
+            status: 'new_lead',
           });
 
         if (error) {
@@ -239,7 +239,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
               <div className="text-xs text-warm-500">
                 <p className="font-medium mb-1">Expected columns:</p>
                 <p>Conference, School, Coach Name, Title, Email, Program</p>
-                <p className="mt-1">Program values: Men's, Women's, Both</p>
+                <p className="mt-1">Program values: Men&apos;s, Women&apos;s, Both</p>
               </div>
 
               <div className="flex justify-end gap-3">

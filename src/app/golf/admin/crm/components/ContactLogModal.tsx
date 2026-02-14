@@ -20,7 +20,7 @@ interface ContactLog {
   notes: string | null;
   next_action: string | null;
   next_action_date: string | null;
-  created_at: string;
+  created_at: string | null;
 }
 
 const CONTACT_TYPES = [
@@ -29,16 +29,24 @@ const CONTACT_TYPES = [
   { value: 'demo', label: 'Demo', icon: '🖥️' },
   { value: 'meeting', label: 'Meeting', icon: '🤝' },
   { value: 'note', label: 'Note', icon: '📝' },
-];
+] as const;
 
 const STATUS_OPTIONS: { value: CoachStatus; label: string }[] = [
-  { value: 'lead', label: 'Lead' },
-  { value: 'contacted', label: 'Contacted' },
+  { value: 'new_lead', label: 'New Lead' },
+  { value: 'researching', label: 'Researching' },
+  { value: 'outreach_pending', label: 'Outreach Pending' },
+  { value: 'initial_contact', label: 'Initial Contact' },
+  { value: 'follow_up', label: 'Follow Up' },
+  { value: 'engaged', label: 'Engaged' },
   { value: 'demo_scheduled', label: 'Demo Scheduled' },
   { value: 'demo_completed', label: 'Demo Completed' },
-  { value: 'customer', label: 'Customer' },
+  { value: 'proposal_sent', label: 'Proposal Sent' },
+  { value: 'negotiating', label: 'Negotiating' },
+  { value: 'closed_won', label: '✓ Customer' },
+  { value: 'closed_lost', label: '✗ Lost' },
   { value: 'not_interested', label: 'Not Interested' },
-  { value: 'churned', label: 'Churned' },
+  { value: 'bad_timing', label: 'Bad Timing' },
+  { value: 'nurture', label: 'Nurture' },
 ];
 
 export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalProps) {
@@ -71,7 +79,7 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
         .order('contact_date', { ascending: false });
 
       if (error) throw error;
-      setLogs(data || []);
+      setLogs((data || []) as ContactLog[]);
     } catch (err) {
       console.error('Failed to fetch logs:', err);
     } finally {
@@ -178,7 +186,7 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
               </a>
             )}
             <span className="text-warm-600">
-              Status: <span className="font-medium">{coach.status.replace('_', ' ')}</span>
+              Status: <span className="font-medium">{coach.status.replace(/_/g, ' ')}</span>
             </span>
           </div>
           {coach.notes && (
@@ -209,7 +217,7 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
                   <button
                     key={type.value}
                     type="button"
-                    onClick={() => setNewLog({ ...newLog, contact_type: type.value as ContactLog['contact_type'] })}
+                    onClick={() => setNewLog({ ...newLog, contact_type: type.value })}
                     className={cn(
                       'px-3 py-1.5 rounded-lg text-sm transition-colors',
                       newLog.contact_type === type.value

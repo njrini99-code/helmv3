@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import { CoachTable } from './components/CoachTable';
 import { PipelineStats } from './components/PipelineStats';
+import { PipelineView } from './components/PipelineView';
 import { CoachFilters, type Filters } from './components/CoachFilters';
 import { AddCoachModal } from './components/AddCoachModal';
 import { CoachDetailPanel } from './components/CoachDetailPanel';
@@ -16,6 +17,7 @@ import {
   IconUpload,
   IconRefresh,
   IconChart,
+  IconDownload,
 } from '@/components/icons';
 
 // ============================================
@@ -99,7 +101,7 @@ export const STATUS_CONFIG: Record<CoachStatus, {
   nurture: { label: 'Nurture', color: 'text-teal-600', bgColor: 'bg-teal-100', stage: 'closed', order: 15 },
 };
 
-export const PRIORITY_CONFIG = {
+export const PRIORITY_CONFIG: Record<number, { label: string; color: string; icon: string }> = {
   0: { label: 'Normal', color: 'text-gray-500', icon: '' },
   1: { label: 'High', color: 'text-orange-500', icon: '!' },
   2: { label: 'Urgent', color: 'text-red-500', icon: '!!' },
@@ -160,7 +162,7 @@ export default function CRMPage() {
       if (filters.stage !== 'all') {
         const stageStatuses = Object.entries(STATUS_CONFIG)
           .filter(([_, config]) => config.stage === filters.stage)
-          .map(([status]) => status);
+          .map(([status]) => status as CoachStatus);
         query = query.in('status', stageStatuses);
       }
       if (filters.division !== 'all') {
@@ -196,7 +198,7 @@ export default function CRMPage() {
       const { data, error } = await query;
 
       if (error) throw error;
-      setCoaches(data || []);
+      setCoaches((data || []) as Coach[]);
       
       // Get unique conferences
       const uniqueConferences = [...new Set((data || []).map(c => c.conference))].sort();
@@ -275,6 +277,42 @@ export default function CRMPage() {
     } catch (err) {
       console.error('Bulk action failed:', err);
     }
+  };
+
+  const exportToCSV = () => {
+    const headers = [
+      'Name', 'Title', 'Email', 'Phone', 'School', 'Conference', 
+      'Division', 'Program', 'Status', 'Priority', 'Starred',
+      'Last Contact', 'Next Follow-up', 'Notes'
+    ];
+    
+    const rows = coaches.map(c => [
+      c.name,
+      c.title || '',
+      c.email || '',
+      c.phone || '',
+      c.school,
+      c.conference,
+      c.division,
+      c.program,
+      STATUS_CONFIG[c.status]?.label || c.status,
+      PRIORITY_CONFIG[c.priority]?.label || 'Normal',
+      c.is_starred ? 'Yes' : 'No',
+      c.last_contacted_at ? new Date(c.last_contacted_at).toLocaleDateString() : '',
+      c.next_follow_up_at ? new Date(c.next_follow_up_at).toLocaleDateString() : '',
+      (c.notes || '').replace(/"/g, '""'),
+    ]);
+    
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `golfhelm-crm-export-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
   };
 
   // ============================================
@@ -383,6 +421,14 @@ export default function CRMPage() {
                   <IconRefresh className={cn('w-5 h-5', loading && 'animate-spin')} />
                 </button>
                 <button
+                  onClick={exportToCSV}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-warm-100 hover:bg-warm-200 text-warm-700 transition-colors"
+                  title="Export to CSV"
+                >
+                  <IconDownload className="w-4 h-4" />
+                  Export
+                </button>
+                <button
                   onClick={() => setShowImportModal(true)}
                   className="flex items-center gap-2 px-4 py-2 rounded-lg bg-warm-100 hover:bg-warm-200 text-warm-700 transition-colors"
                 >
@@ -425,19 +471,30 @@ export default function CRMPage() {
             />
           )}
 
-          {/* Coach Table */}
-          <CoachTable
-            coaches={coaches}
-            loading={loading}
-            selectedIds={selectedIds}
-            onSelectionChange={setSelectedIds}
-            onStatusChange={(id, status) => updateCoach(id, { status })}
-            onPriorityChange={(id, priority) => updateCoach(id, { priority })}
-            onToggleStar={toggleStar}
-            onCoachClick={handleCoachClick}
-            statusConfig={STATUS_CONFIG}
-            priorityConfig={PRIORITY_CONFIG}
-          />
+          {/* Coach Table or Pipeline View */}
+          {viewMode === 'table' ? (
+            <CoachTable
+              coaches={coaches}
+              loading={loading}
+              selectedIds={selectedIds}
+              onSelectionChange={setSelectedIds}
+              onStatusChange={(id, status) => updateCoach(id, { status })}
+              onPriorityChange={(id, priority) => updateCoach(id, { priority })}
+              onToggleStar={toggleStar}
+              onCoachClick={handleCoachClick}
+              statusConfig={STATUS_CONFIG}
+              priorityConfig={PRIORITY_CONFIG}
+            />
+          ) : (
+            <PipelineView
+              coaches={coaches}
+              onCoachClick={handleCoachClick}
+              onStatusChange={(id, status) => updateCoach(id, { status })}
+              onToggleStar={toggleStar}
+              statusConfig={STATUS_CONFIG}
+              priorityConfig={PRIORITY_CONFIG}
+            />
+          )}
         </div>
       </div>
 

@@ -13,7 +13,6 @@ interface CoachDetailPanelProps {
   coach: Coach;
   onClose: () => void;
   onUpdate: (updates: Partial<Coach>) => void;
-  _onRefresh?: () => void;
   statusConfig: Record<CoachStatus, { label: string; color: string; bgColor: string }>;
   priorityConfig: Record<number, { label: string; color: string; icon: string }>;
 }
@@ -50,7 +49,6 @@ export function CoachDetailPanel({
   coach,
   onClose,
   onUpdate,
-  _onRefresh,
   statusConfig,
   priorityConfig,
 }: CoachDetailPanelProps) {
@@ -111,7 +109,7 @@ export function CoachDetailPanel({
     try {
       await supabase.from('crm_contact_log').insert({
         coach_id: coach.id,
-        contact_type: newContact.type,
+        contact_type: newContact.type as 'email' | 'call' | 'demo' | 'meeting' | 'note',
         notes: newContact.notes || null,
         next_action: newContact.nextAction || null,
         next_action_date: newContact.nextActionDate || null,

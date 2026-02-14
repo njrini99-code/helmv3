@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { cn } from '@/lib/utils';
 import type { Division, ProgramType, CoachStatus } from '../page';
 import { IconX } from '@/components/icons';
 
