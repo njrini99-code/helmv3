@@ -252,6 +252,8 @@ export function useGolfMessages(conversationId: string) {
       read: false,
       has_attachments: false,
       created_at: new Date().toISOString(),
+      edited_at: null,
+      is_deleted: false,
     };
     setMessages(prev => [...prev, optimisticMessage]);
 

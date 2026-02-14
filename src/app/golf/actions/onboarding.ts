@@ -363,10 +363,10 @@ export async function completePlayerOnboarding(input: PlayerOnboardingInput) {
       updated_at: new Date().toISOString(),
     };
 
-    let playerId: string | null = null;
+    let _playerId: string | null = null;
 
     if (existingPlayer) {
-      playerId = existingPlayer.id;
+      _playerId = existingPlayer.id;
       const { error } = await supabase
         .from('golf_players')
         .update(playerData)
@@ -390,7 +390,7 @@ export async function completePlayerOnboarding(input: PlayerOnboardingInput) {
         console.error('[Onboarding] Player creation failed:', error);
         return { success: false, error: 'Failed to create player profile. Please try again.' };
       }
-      playerId = newPlayer.id;
+      _playerId = newPlayer.id;
     }
 
     revalidatePath('/golf/dashboard');

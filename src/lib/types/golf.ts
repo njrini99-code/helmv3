@@ -14,7 +14,18 @@ import { Tables } from './database';
 export type GolfCoach = Tables<'golf_coaches'>;
 export type GolfPlayer = Tables<'golf_players'>;
 export type GolfTeam = Tables<'golf_teams'>;
-export type GolfOrganization = Tables<'golf_organizations'>;
+// TODO: Regenerate Supabase types to include golf_organizations
+// export type GolfOrganization = Tables<'golf_organizations'>;
+export type GolfOrganization = {
+  id: string;
+  name: string;
+  city: string | null;
+  state: string | null;
+  division: string | null;
+  conference: string | null;
+  logo_url: string | null;
+  created_at: string;
+};
 
 // ============================================================================
 // ROUND TRACKING
