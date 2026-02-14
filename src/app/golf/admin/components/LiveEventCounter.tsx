@@ -1,6 +1,5 @@
 'use client';
 
-import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconActivity, IconWarning } from '@/components/icons';
 
@@ -55,21 +54,14 @@ export function LiveEventCounter({
       <div className="relative flex items-center gap-1.5">
         {connectionState === 'connected' ? (
           <>
-            <div className="relative">
-              <div className="w-2 h-2 rounded-full bg-emerald-500" />
-              <div className="absolute inset-0 w-2 h-2 rounded-full bg-emerald-500 animate-ping opacity-75" />
-            </div>
+            <div className="w-2 h-2 rounded-full bg-emerald-500" />
             <span className="text-[10px] font-medium text-emerald-600 uppercase tracking-wider">
               Live
             </span>
           </>
         ) : connectionState === 'connecting' ? (
           <>
-            <motion.div
-              className="w-2 h-2 rounded-full bg-amber-500"
-              animate={{ opacity: [1, 0.5, 1] }}
-              transition={{ duration: 1, repeat: Infinity }}
-            />
+            <div className="w-2 h-2 rounded-full bg-amber-500" />
             <span className="text-[10px] font-medium text-amber-600 uppercase tracking-wider">
               Connecting
             </span>
@@ -92,17 +84,9 @@ export function LiveEventCounter({
         {/* Total events */}
         <div className="flex items-center gap-1">
           <IconActivity size={14} className="text-warm-400" />
-          <AnimatePresence mode="popLayout">
-            <motion.span
-              key={total}
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
-              className="text-warm-700 font-semibold tabular-nums"
-            >
-              {total}
-            </motion.span>
-          </AnimatePresence>
+          <span className="text-warm-700 font-semibold tabular-nums">
+            {total}
+          </span>
         </div>
 
         {/* Error count (if any) */}
@@ -112,22 +96,14 @@ export function LiveEventCounter({
               size={14}
               className={critical > 0 ? 'text-red-500' : 'text-amber-500'}
             />
-            <AnimatePresence mode="popLayout">
-              <motion.span
-                key={errors}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                className={cn(
-                  'font-semibold tabular-nums',
-                  critical > 0 ? 'text-red-600' : 'text-amber-600'
-                )}
-              >
-                {errors}
-              </motion.span>
-            </AnimatePresence>
+            <span className={cn(
+              'font-semibold tabular-nums',
+              critical > 0 ? 'text-red-600' : 'text-amber-600'
+            )}>
+              {errors}
+            </span>
             {critical > 0 && (
-              <span className="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded-full font-medium animate-pulse">
+              <span className="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded-full font-medium">
                 {critical} critical
               </span>
             )}
@@ -177,13 +153,11 @@ export function LiveEventCounterMini({
 
   return (
     <div className={cn('flex items-center gap-1', className)}>
-      <motion.div
+      <div
         className={cn(
           'w-1.5 h-1.5 rounded-full',
           critical > 0 ? 'bg-red-500' : 'bg-amber-500'
         )}
-        animate={critical > 0 ? { scale: [1, 1.2, 1] } : {}}
-        transition={{ duration: 1, repeat: Infinity }}
       />
       <span
         className={cn(
@@ -223,17 +197,14 @@ export function LiveEventBadge({
   };
 
   return (
-    <motion.span
-      initial={{ scale: 0 }}
-      animate={{ scale: 1 }}
+    <span
       className={cn(
         'inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 text-[10px] font-bold rounded-full tabular-nums',
         variantStyles[variant],
-        pulse && 'animate-pulse',
         className
       )}
     >
       {count > 99 ? '99+' : count}
-    </motion.span>
+    </span>
   );
 }

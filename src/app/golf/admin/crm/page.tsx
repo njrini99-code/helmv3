@@ -2,8 +2,18 @@
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { motion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
+import {
+  IconClipboardList,
+  IconChart,
+  IconCalendar,
+  IconArrowLeft,
+  IconChevronLeft,
+  IconChevronRight,
+  IconPlus,
+  IconUpload,
+  IconDownload,
+} from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { CoachTable } from './components/CoachTable';
 import { PipelineView } from './components/PipelineView';
@@ -66,9 +76,9 @@ export interface Coach {
 // SIDEBAR TABS
 // ============================================================================
 const TABS = [
-  { id: 'list', label: 'Coach List', icon: '📋', shortcut: '1', description: 'All coaches in table view' },
-  { id: 'pipeline', label: 'Pipeline', icon: '📊', shortcut: '2', description: 'Kanban sales pipeline' },
-  { id: 'calendar', label: 'Calendar', icon: '📅', shortcut: '3', description: 'Scheduled events' },
+  { id: 'list', label: 'Coach List', Icon: IconClipboardList, shortcut: '1', description: 'All coaches in table view' },
+  { id: 'pipeline', label: 'Pipeline', Icon: IconChart, shortcut: '2', description: 'Kanban sales pipeline' },
+  { id: 'calendar', label: 'Calendar', Icon: IconCalendar, shortcut: '3', description: 'Scheduled events' },
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
@@ -400,7 +410,7 @@ export default function CRMPage() {
               sidebarCollapsed && 'justify-center'
             )}
           >
-            <span className="text-sm">←</span>
+            <IconArrowLeft size={16} className="flex-shrink-0" />
             {!sidebarCollapsed && <span className="text-sm font-medium">Dashboard</span>}
           </a>
         </div>
@@ -410,6 +420,7 @@ export default function CRMPage() {
           <div className="space-y-1">
             {TABS.map((tab) => {
               const isActive = activeTab === tab.id;
+              const TabIcon = tab.Icon;
               return (
                 <button
                   key={tab.id}
@@ -423,7 +434,13 @@ export default function CRMPage() {
                   {isActive && (
                     <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-primary-500 rounded-r-full" />
                   )}
-                  <span className="text-lg">{tab.icon}</span>
+                  <TabIcon 
+                    size={20} 
+                    className={cn(
+                      'flex-shrink-0 transition-colors duration-200',
+                      isActive ? 'text-primary-400' : 'text-warm-400 group-hover:text-white'
+                    )} 
+                  />
                   {!sidebarCollapsed && (
                     <span className="text-sm font-medium flex-1 text-left">{tab.label}</span>
                   )}
@@ -487,21 +504,23 @@ export default function CRMPage() {
               'hover:from-primary-600 hover:to-primary-700'
             )}
           >
-            <span>+</span>
+            <IconPlus size={16} className="flex-shrink-0" />
             {!sidebarCollapsed && <span>Add Coach</span>}
           </button>
           {!sidebarCollapsed && (
             <div className="flex gap-2">
               <button
                 onClick={() => setShowImportModal(true)}
-                className="flex-1 py-2 rounded-[10px] text-sm font-medium bg-white/5 hover:bg-white/10 text-warm-400 transition-colors"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[10px] text-sm font-medium bg-white/5 hover:bg-white/10 text-warm-400 transition-colors"
               >
+                <IconUpload size={14} />
                 Import
               </button>
               <button
                 onClick={exportToCSV}
-                className="flex-1 py-2 rounded-[10px] text-sm font-medium bg-white/5 hover:bg-white/10 text-warm-400 transition-colors"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[10px] text-sm font-medium bg-white/5 hover:bg-white/10 text-warm-400 transition-colors"
               >
+                <IconDownload size={14} />
                 Export
               </button>
             </div>
@@ -513,7 +532,7 @@ export default function CRMPage() {
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
           className="absolute -right-3 top-20 w-6 h-6 rounded-full bg-[#1C1917] border border-white/20 flex items-center justify-center text-warm-400 hover:text-white transition-colors shadow-lg"
         >
-          {sidebarCollapsed ? '→' : '←'}
+          {sidebarCollapsed ? <IconChevronRight size={14} /> : <IconChevronLeft size={14} />}
         </button>
       </aside>
 
