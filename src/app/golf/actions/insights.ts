@@ -1258,6 +1258,11 @@ export async function getPlayerFocusAreas(playerId: string) {
       .order('priority', { ascending: true });
 
     if (error) {
+      // PGRST116 = no rows, 42501 = RLS permission denied - both are expected for players without focus areas
+      // Return empty array instead of error to show graceful empty state
+      if (error.code === 'PGRST116' || error.code === '42501' || error.code === '42P01') {
+        return { success: true, focus_areas: [] };
+      }
       console.error('[Insights Error]', error);
       return { success: false, error: 'Failed to get focus areas. Please try again.', focus_areas: [] };
     }
