@@ -1506,10 +1506,24 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     adminDb.from('error_logs').select('id', { count: 'exact', head: true }).gte('created_at', ago7d),
     // Error logs: critical 7d
     adminDb.from('error_logs').select('id', { count: 'exact', head: true }).gte('created_at', ago7d).eq('severity', 'critical'),
-    // Error summary from RPC
-    (adminDb.rpc as unknown as (fn: string, params: Record<string, number>) => PromiseLike<{ data: unknown }>)('get_error_summary', { days_back: 7 }) as unknown as { data: { by_severity: { severity: string; count: number }[]; top_errors: { message: string; severity: string; occurrences: number; first_seen: string; last_seen: string; affected_users: number }[]; daily_rate: { day: string; count: number }[]; total_count: number; critical_count: number } | null; error: unknown },
-    // Audit log: recent entries via RPC
-    (adminDb.rpc as unknown as (fn: string, params: Record<string, number>) => PromiseLike<{ data: unknown }>)('get_audit_log_recent', { limit_count: 50 }) as unknown as { data: { id: string; user_id: string | null; user_email: string | null; action: string; table_name: string | null; record_id: string | null; old_data: Record<string, unknown> | null; new_data: Record<string, unknown> | null; created_at: string }[] | null; error: unknown },
+    // Error summary from RPC (wrapped for resilience)
+    (async () => {
+      try {
+        const result = await (adminDb.rpc as unknown as (fn: string, params: Record<string, number>) => PromiseLike<{ data: unknown }>)('get_error_summary', { days_back: 7 });
+        return result as unknown as { data: { by_severity: { severity: string; count: number }[]; top_errors: { message: string; severity: string; occurrences: number; first_seen: string; last_seen: string; affected_users: number }[]; daily_rate: { day: string; count: number }[]; total_count: number; critical_count: number } | null; error: unknown };
+      } catch {
+        return { data: null, error: null };
+      }
+    })(),
+    // Audit log: recent entries via RPC (wrapped for resilience)
+    (async () => {
+      try {
+        const result = await (adminDb.rpc as unknown as (fn: string, params: Record<string, number>) => PromiseLike<{ data: unknown }>)('get_audit_log_recent', { limit_count: 50 });
+        return result as unknown as { data: { id: string; user_id: string | null; user_email: string | null; action: string; table_name: string | null; record_id: string | null; old_data: Record<string, unknown> | null; new_data: Record<string, unknown> | null; created_at: string }[] | null; error: unknown };
+      } catch {
+        return { data: null, error: null };
+      }
+    })(),
     // Audit log: 7d count
     adminDb.from('audit_log').select('id', { count: 'exact', head: true }).gte('created_at', ago7d),
     // Login attempts
@@ -1545,8 +1559,16 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     adminDb.from('users').select('id', { count: 'exact', head: true }),
     // Admin events: recent entries
     adminDb.from('admin_events').select('id, event_type, severity, title, message, user_id, user_email, url, resolved, created_at').order('created_at', { ascending: false }).limit(50),
-    // Admin events: summary via RPC
-    adminDb.rpc('get_admin_event_summary', { p_days_back: 7 }) as unknown as { data: { total_events: number; error_count: number; critical_count: number; unresolved_count: number; events_by_type: Record<string, number>; events_by_severity: Record<string, number>; events_by_day: { date: string; count: number }[] } | null; error: unknown },
+    // Admin events: summary via RPC (wrapped in try-catch for resilience)
+    (async () => {
+      try {
+        const result = await adminDb.rpc('get_admin_event_summary', { p_days_back: 7 });
+        return result as unknown as { data: { total_events: number; error_count: number; critical_count: number; unresolved_count: number; events_by_type: Record<string, number>; events_by_severity: Record<string, number>; events_by_day: { date: string; count: number }[] } | null; error: unknown };
+      } catch {
+        // RPC function may not exist yet, return empty result
+        return { data: null, error: null };
+      }
+    })(),
     // Admin events: unresolved critical
     adminDb.from('admin_events').select('id, event_type, title, message, created_at').eq('resolved', false).in('severity', ['critical', 'error']).order('created_at', { ascending: false }).limit(20),
   ]);
@@ -1557,7 +1579,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     errorEmailMap.set(u.id, u.email);
   }
 
-  const errorSummary = (errorSummaryRes.data ?? null) as {
+  const errorSummaryRaw = (errorSummaryRes.data ?? null) as {
     by_severity: { severity: string; count: number }[];
     top_errors: { message: string; severity: string; occurrences: number; first_seen: string; last_seen: string; affected_users: number }[];
     daily_rate: { day: string; count: number }[];
@@ -1565,7 +1587,9 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     critical_count: number;
   } | null;
 
-  const recentErrors = (errorLogsRecentRes.data ?? []).map((e) => ({
+  const rawErrorLogs = errorLogsRecentRes.data ?? [];
+
+  const recentErrors = rawErrorLogs.map((e) => ({
     id: e.id,
     message: e.message,
     severity: e.severity ?? 'error',
@@ -1576,6 +1600,58 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     createdAt: e.created_at ?? new Date().toISOString(),
     occurrences: 1,
   }));
+
+  // Fallback: calculate error summary from raw error logs if RPC failed
+  const errorSummary = errorSummaryRaw ?? (() => {
+    // Group errors by message for top_errors
+    const errorGroups = new Map<string, { message: string; severity: string; count: number; firstSeen: string; lastSeen: string; userIds: Set<string | null> }>();
+    const severityCounts = new Map<string, number>();
+    const dailyCounts = new Map<string, number>();
+    
+    for (const e of rawErrorLogs) {
+      const msg = e.message;
+      const sev = e.severity ?? 'error';
+      const created = e.created_at ?? new Date().toISOString();
+      const day = new Date(created).toISOString().slice(0, 10);
+      
+      // Group by message
+      const existing = errorGroups.get(msg);
+      if (existing) {
+        existing.count++;
+        if (created < existing.firstSeen) existing.firstSeen = created;
+        if (created > existing.lastSeen) existing.lastSeen = created;
+        if (e.user_id) existing.userIds.add(e.user_id);
+      } else {
+        errorGroups.set(msg, { message: msg, severity: sev, count: 1, firstSeen: created, lastSeen: created, userIds: new Set(e.user_id ? [e.user_id] : []) });
+      }
+      
+      // Count by severity
+      severityCounts.set(sev, (severityCounts.get(sev) ?? 0) + 1);
+      
+      // Count by day
+      dailyCounts.set(day, (dailyCounts.get(day) ?? 0) + 1);
+    }
+    
+    return {
+      by_severity: Array.from(severityCounts.entries()).map(([severity, count]) => ({ severity, count })),
+      top_errors: Array.from(errorGroups.values())
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 20)
+        .map(e => ({
+          message: e.message,
+          severity: e.severity,
+          occurrences: e.count,
+          first_seen: e.firstSeen,
+          last_seen: e.lastSeen,
+          affected_users: e.userIds.size,
+        })),
+      daily_rate: Array.from(dailyCounts.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([day, count]) => ({ day: `${day}T00:00:00+00:00`, count })),
+      total_count: rawErrorLogs.length,
+      critical_count: severityCounts.get('critical') ?? 0,
+    };
+  })();
 
   const errorsByDay = (errorSummary?.daily_rate ?? []).map((d) => ({
     date: new Date(d.day).toISOString().slice(0, 10),
@@ -1610,17 +1686,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   const failedLogins7d = loginAttempts.reduce((s, l) => s + l.failedAttempts, 0);
 
   // --- Process admin events ---
-  const adminEventSummary = (adminEventsSummaryRes.data ?? null) as {
-    total_events: number;
-    error_count: number;
-    critical_count: number;
-    unresolved_count: number;
-    events_by_type: Record<string, number>;
-    events_by_severity: Record<string, number>;
-    events_by_day: { date: string; count: number }[];
-  } | null;
-
-  const recentAdminEvents = ((adminEventsRecentRes.data ?? []) as {
+  const rawAdminEvents = (adminEventsRecentRes.data ?? []) as {
     id: string;
     event_type: string;
     severity: string;
@@ -1631,7 +1697,51 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     url: string | null;
     resolved: boolean;
     created_at: string;
-  }[]).map((e) => ({
+  }[];
+
+  const adminEventSummaryRaw = (adminEventsSummaryRes.data ?? null) as {
+    total_events: number;
+    error_count: number;
+    critical_count: number;
+    unresolved_count: number;
+    events_by_type: Record<string, number>;
+    events_by_severity: Record<string, number>;
+    events_by_day: { date: string; count: number }[];
+  } | null;
+
+  // Fallback: calculate admin event summary from raw events if RPC failed
+  const adminEventSummary = adminEventSummaryRaw ?? (() => {
+    const eventsByType: Record<string, number> = {};
+    const eventsBySeverity: Record<string, number> = {};
+    const eventsByDay = new Map<string, number>();
+    let errorCount = 0;
+    let criticalCount = 0;
+    let unresolvedCount = 0;
+    
+    for (const e of rawAdminEvents) {
+      eventsByType[e.event_type] = (eventsByType[e.event_type] ?? 0) + 1;
+      eventsBySeverity[e.severity] = (eventsBySeverity[e.severity] ?? 0) + 1;
+      const day = new Date(e.created_at).toISOString().slice(0, 10);
+      eventsByDay.set(day, (eventsByDay.get(day) ?? 0) + 1);
+      if (e.severity === 'error') errorCount++;
+      if (e.severity === 'critical') criticalCount++;
+      if (!e.resolved) unresolvedCount++;
+    }
+    
+    return {
+      total_events: rawAdminEvents.length,
+      error_count: errorCount,
+      critical_count: criticalCount,
+      unresolved_count: unresolvedCount,
+      events_by_type: eventsByType,
+      events_by_severity: eventsBySeverity,
+      events_by_day: Array.from(eventsByDay.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([date, count]) => ({ date, count })),
+    };
+  })();
+
+  const recentAdminEvents = rawAdminEvents.map((e) => ({
     id: e.id,
     eventType: e.event_type,
     severity: e.severity,
