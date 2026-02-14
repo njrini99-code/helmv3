@@ -2,7 +2,7 @@
 
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { cn } from '@/lib/utils';
-import { IconActivity, IconClock, IconUsers, IconGlobe } from '@/components/icons';
+import { Activity, Clock, Users, Globe } from 'lucide-react';
 import { timeAgo, formatBytes } from './admin-utils';
 
 interface Props {
@@ -43,7 +43,7 @@ export function PlatformHealthCard({ health }: Props) {
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2">
           <div className="p-2 bg-white/50 rounded-lg text-warm-500">
-            <IconActivity size={18} />
+            <Activity size={18} />
           </div>
           <h3 className="text-lg font-semibold text-warm-900">Platform Health</h3>
         </div>
@@ -62,7 +62,7 @@ export function PlatformHealthCard({ health }: Props) {
       {/* Real-time active users (from auth sessions) */}
       <div className="mb-5">
         <div className="flex items-center gap-1.5 mb-2.5">
-          <IconUsers size={13} className="text-warm-400" />
+          <Users size={13} className="text-warm-400" />
           <span className="text-xs font-medium text-warm-500">Active Users (Real-Time)</span>
         </div>
         <div className="grid grid-cols-4 gap-2">
@@ -136,7 +136,7 @@ export function PlatformHealthCard({ health }: Props) {
       {/* Infrastructure stats */}
       <div className="mb-5">
         <div className="flex items-center gap-1.5 mb-2.5">
-          <IconGlobe size={13} className="text-warm-400" />
+          <Globe size={13} className="text-warm-400" />
           <span className="text-xs font-medium text-warm-500">Infrastructure</span>
         </div>
         <div className="grid grid-cols-2 gap-2">
@@ -200,7 +200,7 @@ export function PlatformHealthCard({ health }: Props) {
       {/* Timestamps */}
       <div className="border-t border-warm-100 pt-3">
         <div className="flex items-center gap-1.5 mb-1.5">
-          <IconClock size={12} className="text-warm-400" />
+          <Clock size={12} className="text-warm-400" />
           <span className="text-xs text-warm-400">Last Pulse</span>
         </div>
         <div className="grid grid-cols-2 gap-3 text-xs">

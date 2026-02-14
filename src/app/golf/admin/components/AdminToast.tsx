@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { IconCheck, IconX, IconInfo, IconWarning, IconActivity } from '@/components/icons';
+import { Check, X, Info, AlertTriangle, Activity } from 'lucide-react';
 
 // ============================================
 // TYPES
@@ -293,7 +293,7 @@ function AdminToastItem({ toast, onClose }: AdminToastItemProps) {
         }}
         className="flex-shrink-0 p-1.5 rounded-md text-warm-400 hover:text-warm-600 hover:bg-warm-100/50 transition-all duration-200"
       >
-        <IconX size={14} />
+        <X size={14} />
       </button>
 
       {/* Progress bar for auto-dismiss */}

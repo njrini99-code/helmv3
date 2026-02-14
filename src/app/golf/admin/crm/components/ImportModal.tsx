@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import type { Division, ProgramType } from '../page';
-import { IconX, IconCheck, IconWarning } from '@/components/icons';
+import { X, Check, AlertTriangle } from 'lucide-react';
 
 interface ImportModalProps {
   onClose: () => void;
@@ -185,7 +185,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
             onClick={onClose}
             className="p-2 rounded-lg hover:bg-warm-100 text-warm-500 transition-colors"
           >
-            <IconX className="w-5 h-5" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
@@ -277,7 +277,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
               {errors.length > 0 && (
                 <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <p className="text-sm text-yellow-800">
-                    <IconWarning className="w-4 h-4 inline mr-1" />
+                    <AlertTriangle className="w-4 h-4 inline mr-1" />
                     {errors.length} rows skipped due to errors
                   </p>
                 </div>
@@ -354,7 +354,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
                 'w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4',
                 importProgress.errors === 0 ? 'bg-emerald-100' : 'bg-yellow-100'
               )}>
-                <IconCheck className={cn(
+                <Check className={cn(
                   'w-8 h-8',
                   importProgress.errors === 0 ? 'text-emerald-600' : 'text-yellow-600'
                 )} />

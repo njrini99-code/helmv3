@@ -2,7 +2,7 @@
 
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { cn } from '@/lib/utils';
-import { IconTarget, IconTrophy, IconTrendingUp } from '@/components/icons';
+import { Target, Trophy, TrendingUp } from 'lucide-react';
 
 interface Props {
   scoring: AdminDashboardData['scoring'];
@@ -28,7 +28,7 @@ export function ScoringIntelligenceCard({ scoring }: Props) {
     <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6 transition-all duration-200 hover:bg-white/80 hover:shadow-card-hover">
       <div className="flex items-center gap-2 mb-5">
         <div className="p-2 bg-white/50 rounded-lg text-warm-500">
-          <IconTarget size={18} />
+          <Target size={18} />
         </div>
         <h3 className="text-lg font-semibold text-warm-900">Scoring Intelligence</h3>
       </div>
@@ -101,7 +101,7 @@ export function ScoringIntelligenceCard({ scoring }: Props) {
       {scoring.topPerformers.length > 0 && (
         <div className="mb-5">
           <h4 className="text-sm font-medium text-warm-500 mb-3 flex items-center gap-1.5">
-            <IconTrophy size={14} />
+            <Trophy size={14} />
             Top Performers
           </h4>
           <div className="space-y-2">
@@ -138,7 +138,7 @@ export function ScoringIntelligenceCard({ scoring }: Props) {
       {scoring.recentBestRounds.length > 0 && (
         <div>
           <h4 className="text-sm font-medium text-warm-500 mb-3 flex items-center gap-1.5">
-            <IconTrendingUp size={14} />
+            <TrendingUp size={14} />
             Best Recent Rounds
           </h4>
           <div className="space-y-2">

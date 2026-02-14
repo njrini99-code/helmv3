@@ -3,7 +3,7 @@
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { cn } from '@/lib/utils';
 import { AdminAreaChart, AdminDonutChart } from './AdminChart';
-import { IconTrendingUp } from '@/components/icons';
+import { TrendingUp } from 'lucide-react';
 
 interface Props {
   engagement: AdminDashboardData['engagement'];
@@ -24,7 +24,7 @@ export function EngagementCard({ engagement, totalPlayers, totalCoaches, playerE
     <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6 transition-all duration-200 hover:bg-white/80 hover:shadow-card-hover">
       <div className="flex items-center gap-2 mb-5">
         <div className="p-2 bg-white/50 rounded-lg text-warm-500">
-          <IconTrendingUp size={18} />
+          <TrendingUp size={18} />
         </div>
         <h3 className="text-lg font-semibold text-warm-900">Engagement & Retention</h3>
       </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { Component, type ErrorInfo, type ReactNode } from 'react';
-import { IconWarning, IconRefresh } from '@/components/icons';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // ============================================
@@ -127,7 +127,7 @@ function ErrorFallback({
     >
       {/* Icon */}
       <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
-        <IconWarning size={iconSizes[size]} className="text-red-600" />
+        <AlertTriangle size={iconSizes[size]} className="text-red-600" />
       </div>
 
       {/* Title */}
@@ -152,7 +152,7 @@ function ErrorFallback({
           textSizes[size]
         )}
       >
-        <IconRefresh size={iconSizes[size] - 4} />
+        <RefreshCw size={iconSizes[size] - 4} />
         Try again
       </button>
     </div>

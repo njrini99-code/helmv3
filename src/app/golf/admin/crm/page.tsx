@@ -4,22 +4,22 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import {
-  IconClipboardList,
-  IconChart,
-  IconCalendar,
-  IconArrowLeft,
-  IconChevronLeft,
-  IconChevronRight,
-  IconPlus,
-  IconUpload,
-  IconDownload,
-  IconNote,
-  IconMessage,
-  IconCheck,
-  IconX,
-  IconBolt,
-  IconTarget,
-} from '@/components/icons';
+  ClipboardList,
+  BarChart3,
+  Calendar,
+  ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Upload,
+  Download,
+  FileText,
+  MessageSquare,
+  Check,
+  X,
+  Zap,
+  Target,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CoachTable } from './components/CoachTable';
 import { PipelineView } from './components/PipelineView';
@@ -82,9 +82,9 @@ export interface Coach {
 // SIDEBAR TABS
 // ============================================================================
 const TABS = [
-  { id: 'list', label: 'Coach List', Icon: IconClipboardList, shortcut: '1', description: 'All coaches in table view' },
-  { id: 'pipeline', label: 'Pipeline', Icon: IconChart, shortcut: '2', description: 'Kanban sales pipeline' },
-  { id: 'calendar', label: 'Calendar', Icon: IconCalendar, shortcut: '3', description: 'Scheduled events' },
+  { id: 'list', label: 'Coach List', Icon: ClipboardList, shortcut: '1', description: 'All coaches in table view' },
+  { id: 'pipeline', label: 'Pipeline', Icon: BarChart3, shortcut: '2', description: 'Kanban sales pipeline' },
+  { id: 'calendar', label: 'Calendar', Icon: Calendar, shortcut: '3', description: 'Scheduled events' },
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
@@ -107,7 +107,7 @@ export const STATUS_CONFIG: Record<CoachStatus, {
     color: 'text-slate-700', 
     bgColor: 'bg-slate-100', 
     ringColor: 'ring-slate-300',
-    icon: <IconNote size={14} />,
+    icon: <FileText size={14} />,
     iconLabel: '📋',
     order: 1,
     gradient: 'from-slate-400 to-slate-500',
@@ -117,7 +117,7 @@ export const STATUS_CONFIG: Record<CoachStatus, {
     color: 'text-blue-700', 
     bgColor: 'bg-blue-50', 
     ringColor: 'ring-blue-300',
-    icon: <IconMessage size={14} />,
+    icon: <MessageSquare size={14} />,
     iconLabel: '💬',
     order: 2,
     gradient: 'from-blue-400 to-blue-500',
@@ -137,7 +137,7 @@ export const STATUS_CONFIG: Record<CoachStatus, {
     color: 'text-emerald-700', 
     bgColor: 'bg-emerald-50', 
     ringColor: 'ring-emerald-400',
-    icon: <IconCheck size={14} />,
+    icon: <Check size={14} />,
     iconLabel: '✅',
     order: 4,
     gradient: 'from-emerald-400 to-emerald-500',
@@ -147,7 +147,7 @@ export const STATUS_CONFIG: Record<CoachStatus, {
     color: 'text-red-700', 
     bgColor: 'bg-red-50', 
     ringColor: 'ring-red-300',
-    icon: <IconX size={14} />,
+    icon: <X size={14} />,
     iconLabel: '🚫',
     order: 5,
     gradient: 'from-red-400 to-red-500',
@@ -156,8 +156,8 @@ export const STATUS_CONFIG: Record<CoachStatus, {
 
 export const PRIORITY_CONFIG: Record<number, { label: string; color: string; bgColor: string; icon: React.ReactNode; iconLabel: string }> = {
   0: { label: 'Normal', color: 'text-warm-500', bgColor: 'bg-warm-50', icon: null, iconLabel: '' },
-  1: { label: 'High', color: 'text-amber-600', bgColor: 'bg-amber-50', icon: <IconBolt size={14} />, iconLabel: '⚡' },
-  2: { label: 'Hot', color: 'text-orange-600', bgColor: 'bg-orange-50', icon: <IconTarget size={14} />, iconLabel: '🔥' },
+  1: { label: 'High', color: 'text-amber-600', bgColor: 'bg-amber-50', icon: <Zap size={14} />, iconLabel: '⚡' },
+  2: { label: 'Hot', color: 'text-orange-600', bgColor: 'bg-orange-50', icon: <Target size={14} />, iconLabel: '🔥' },
 };
 
 // ============================================================================
@@ -422,7 +422,7 @@ export default function CRMPage() {
               sidebarCollapsed && 'justify-center'
             )}
           >
-            <IconArrowLeft size={16} className="flex-shrink-0" />
+            <ArrowLeft size={16} className="flex-shrink-0" />
             {!sidebarCollapsed && <span className="text-sm font-medium">Dashboard</span>}
           </a>
         </div>
@@ -516,7 +516,7 @@ export default function CRMPage() {
               'hover:from-primary-600 hover:to-primary-700'
             )}
           >
-            <IconPlus size={16} className="flex-shrink-0" />
+            <Plus size={16} className="flex-shrink-0" />
             {!sidebarCollapsed && <span>Add Coach</span>}
           </button>
           {!sidebarCollapsed && (
@@ -525,14 +525,14 @@ export default function CRMPage() {
                 onClick={() => setShowImportModal(true)}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[10px] text-sm font-medium bg-white/5 hover:bg-white/10 text-warm-400 transition-colors"
               >
-                <IconUpload size={14} />
+                <Upload size={14} />
                 Import
               </button>
               <button
                 onClick={exportToCSV}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[10px] text-sm font-medium bg-white/5 hover:bg-white/10 text-warm-400 transition-colors"
               >
-                <IconDownload size={14} />
+                <Download size={14} />
                 Export
               </button>
             </div>
@@ -544,7 +544,7 @@ export default function CRMPage() {
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
           className="absolute -right-3 top-20 w-6 h-6 rounded-full bg-[#1C1917] border border-white/20 flex items-center justify-center text-warm-400 hover:text-white transition-colors shadow-lg"
         >
-          {sidebarCollapsed ? <IconChevronRight size={14} /> : <IconChevronLeft size={14} />}
+          {sidebarCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
         </button>
       </aside>
 

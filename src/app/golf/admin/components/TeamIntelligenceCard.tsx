@@ -1,7 +1,7 @@
 'use client';
 
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
-import { IconUsers } from '@/components/icons';
+import { Users } from 'lucide-react';
 
 interface Props {
   teams: AdminDashboardData['teams'];
@@ -57,7 +57,7 @@ export function TeamIntelligenceCard({ teams }: Props) {
       <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6">
         <div className="flex items-center gap-2 mb-4">
           <div className="p-2 bg-white/50 rounded-lg text-warm-500">
-            <IconUsers size={18} />
+            <Users size={18} />
           </div>
           <h3 className="text-lg font-semibold text-warm-900">Team Intelligence</h3>
         </div>
@@ -74,7 +74,7 @@ export function TeamIntelligenceCard({ teams }: Props) {
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2">
           <div className="p-2 bg-white/50 rounded-lg text-warm-500">
-            <IconUsers size={18} />
+            <Users size={18} />
           </div>
           <h3 className="text-lg font-semibold text-warm-900">Team Intelligence</h3>
         </div>

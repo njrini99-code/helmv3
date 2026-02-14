@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import type { Coach, CoachStatus } from '../page';
-import { IconX, IconMail, IconPhone, IconCalendar, IconPlus } from '@/components/icons';
+import { X, Mail, Phone, Calendar, Plus } from 'lucide-react';
 
 interface ContactLogModalProps {
   coach: Coach;
@@ -166,7 +166,7 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
             onClick={onClose}
             className="p-2 rounded-lg hover:bg-warm-100 text-warm-500 transition-colors"
           >
-            <IconX className="w-5 h-5" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
@@ -175,13 +175,13 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
           <div className="flex items-center gap-6 text-sm">
             {coach.email && (
               <a href={`mailto:${coach.email}`} className="flex items-center gap-2 text-blue-600 hover:underline">
-                <IconMail className="w-4 h-4" />
+                <Mail className="w-4 h-4" />
                 {coach.email}
               </a>
             )}
             {coach.phone && (
               <a href={`tel:${coach.phone}`} className="flex items-center gap-2 text-blue-600 hover:underline">
-                <IconPhone className="w-4 h-4" />
+                <Phone className="w-4 h-4" />
                 {coach.phone}
               </a>
             )}
@@ -203,7 +203,7 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
                 onClick={() => setShowAddForm(true)}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200 text-sm transition-colors"
               >
-                <IconPlus className="w-4 h-4" />
+                <Plus className="w-4 h-4" />
                 Log Contact
               </button>
             )}
@@ -314,7 +314,7 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
                   )}
                   {log.next_action && (
                     <div className="mt-2 flex items-center gap-2 text-xs text-warm-500">
-                      <IconCalendar className="w-3 h-3" />
+                      <Calendar className="w-3 h-3" />
                       Next: {log.next_action}
                       {log.next_action_date && ` (${new Date(log.next_action_date).toLocaleDateString()})`}
                     </div>

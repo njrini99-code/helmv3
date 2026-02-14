@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { cn } from '@/lib/utils';
-import { IconUsers, IconSearch } from '@/components/icons';
+import { Users, Search } from 'lucide-react';
 import { DataExportButton } from './DataExportButton';
 import { timeAgo, formatDate } from './admin-utils';
 
@@ -146,7 +146,7 @@ export function UserActivityTable({ users }: Props) {
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2">
           <div className="p-2 bg-white/50 rounded-lg text-warm-500">
-            <IconUsers size={18} />
+            <Users size={18} />
           </div>
           <div>
             <h3 className="text-lg font-semibold text-warm-900">User Directory</h3>
@@ -162,7 +162,7 @@ export function UserActivityTable({ users }: Props) {
       {/* Filters */}
       <div className="flex items-center gap-3 mb-4">
         <div className="relative flex-1 max-w-xs">
-          <IconSearch size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
           <input
             type="text"
             placeholder="Search name, email, team..."

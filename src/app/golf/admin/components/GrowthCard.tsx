@@ -3,12 +3,7 @@
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { AdminAreaChart, AdminFunnelChart, AdminProgressBar } from './AdminChart';
 import { cn } from '@/lib/utils';
-import {
-  IconTrendingUp,
-  IconTrendingDown,
-  IconWarning,
-  IconSparkles,
-} from '@/components/icons';
+import { TrendingUp, TrendingDown, AlertTriangle, Sparkles } from 'lucide-react';
 
 interface Props {
   growth: AdminDashboardData['growth'];
@@ -91,7 +86,7 @@ export function GrowthCard({ growth, users, usage, coachhelm, userJourney, stick
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2">
           <div className="p-2 bg-white/50 rounded-lg text-warm-500">
-            <IconTrendingUp size={18} />
+            <TrendingUp size={18} />
           </div>
           <h3 className="text-lg font-semibold text-warm-900">Business Intelligence</h3>
         </div>
@@ -105,9 +100,9 @@ export function GrowthCard({ growth, users, usage, coachhelm, userJourney, stick
             <p className="text-xs text-warm-500 mb-0.5">User Growth</p>
             <div className="flex items-center gap-1">
               {growth.userGrowthRate >= 0 ? (
-                <IconTrendingUp size={14} className="text-emerald-600" />
+                <TrendingUp size={14} className="text-emerald-600" />
               ) : (
-                <IconTrendingDown size={14} className="text-red-500" />
+                <TrendingDown size={14} className="text-red-500" />
               )}
               <span className={cn(
                 'text-lg font-semibold tabular-nums',
@@ -121,9 +116,9 @@ export function GrowthCard({ growth, users, usage, coachhelm, userJourney, stick
             <p className="text-xs text-warm-500 mb-0.5">Round Growth</p>
             <div className="flex items-center gap-1">
               {growth.roundGrowthRate >= 0 ? (
-                <IconTrendingUp size={14} className="text-emerald-600" />
+                <TrendingUp size={14} className="text-emerald-600" />
               ) : (
-                <IconTrendingDown size={14} className="text-red-500" />
+                <TrendingDown size={14} className="text-red-500" />
               )}
               <span className={cn(
                 'text-lg font-semibold tabular-nums',
@@ -136,7 +131,7 @@ export function GrowthCard({ growth, users, usage, coachhelm, userJourney, stick
           <div className="bg-white/50 rounded-xl p-3">
             <p className="text-xs text-warm-500 mb-0.5">Churned (30d)</p>
             <div className="flex items-center gap-1">
-              {growth.churnedPlayers30d > 0 && <IconWarning size={14} className="text-amber-500" />}
+              {growth.churnedPlayers30d > 0 && <AlertTriangle size={14} className="text-amber-500" />}
               <span className={cn(
                 'text-lg font-semibold tabular-nums',
                 growth.churnedPlayers30d > 0 ? 'text-amber-600' : 'text-warm-900'
@@ -150,7 +145,7 @@ export function GrowthCard({ growth, users, usage, coachhelm, userJourney, stick
               {stickiness ? 'DAU/MAU' : 'Power Users'}
             </p>
             <div className="flex items-center gap-1">
-              <IconSparkles size={14} className="text-primary-500" />
+              <Sparkles size={14} className="text-primary-500" />
               <span className="text-lg font-semibold text-warm-900 tabular-nums">
                 {stickiness ? `${stickiness.dauMauRatio}%` : `${growth.npsProxy}%`}
               </span>

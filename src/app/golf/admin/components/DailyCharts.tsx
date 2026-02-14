@@ -2,7 +2,7 @@
 
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { AdminAreaChart } from './AdminChart';
-import { IconUsers, IconTrendingUp } from '@/components/icons';
+import { Users, TrendingUp } from 'lucide-react';
 
 interface Props {
   signupsByDay: AdminDashboardData['signupsByDay'];
@@ -83,14 +83,14 @@ export function DailyCharts({ signupsByDay, visitsByDay }: Props) {
         title="User Signups by Day"
         subtitle="New account registrations"
         color="#16A34A"
-        icon={<IconUsers size={20} />}
+        icon={<Users size={20} />}
       />
       <DailyAreaChartCard
         data={visitsByDay}
         title="Active Users by Day"
         subtitle="Unique users with round activity"
         color="#2563EB"
-        icon={<IconTrendingUp size={20} />}
+        icon={<TrendingUp size={20} />}
       />
     </div>
   );

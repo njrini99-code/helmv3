@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { cn } from '@/lib/utils';
-import { IconUser, IconTarget, IconSparkles } from '@/components/icons';
+import { User, Target, Sparkles } from 'lucide-react';
 import { timeAgo } from './admin-utils';
 
 interface Props {
@@ -21,9 +21,9 @@ interface TimelineItem {
 }
 
 const typeIcons = {
-  signup: <IconUser size={12} />,
-  round: <IconTarget size={12} />,
-  insight: <IconSparkles size={12} />,
+  signup: <User size={12} />,
+  round: <Target size={12} />,
+  insight: <Sparkles size={12} />,
 };
 
 const typeColors = {
@@ -139,7 +139,7 @@ export function ActivityFeed({ activity }: Props) {
         <>
           <div className="mb-5">
             <h4 className="text-sm font-medium text-warm-500 mb-3 flex items-center gap-1.5">
-              <IconUser size={14} />
+              <User size={14} />
               Latest Signups
             </h4>
             {activity.recentSignups.length === 0 ? (
@@ -177,7 +177,7 @@ export function ActivityFeed({ activity }: Props) {
 
           <div className="mb-5">
             <h4 className="text-sm font-medium text-warm-500 mb-3 flex items-center gap-1.5">
-              <IconTarget size={14} />
+              <Target size={14} />
               Latest Rounds
             </h4>
             {activity.recentRounds.length === 0 ? (
@@ -218,7 +218,7 @@ export function ActivityFeed({ activity }: Props) {
 
           <div>
             <h4 className="text-sm font-medium text-warm-500 mb-3 flex items-center gap-1.5">
-              <IconSparkles size={14} />
+              <Sparkles size={14} />
               Latest AI Insights
             </h4>
             {activity.recentInsights.length === 0 ? (
