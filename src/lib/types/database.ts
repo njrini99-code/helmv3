@@ -2889,6 +2889,164 @@ export type Database = {
           },
         ]
       }
+      crm_coaches: {
+        Row: {
+          best_contact_method: string | null
+          best_contact_time: string | null
+          budget_range: string | null
+          conference: string
+          created_at: string | null
+          created_by: string | null
+          current_software: string | null
+          decision_timeline: string | null
+          division: Database["public"]["Enums"]["ncaa_division"]
+          email: string | null
+          highlight_color: string | null
+          id: string
+          internal_comments: string | null
+          is_starred: boolean | null
+          last_contacted_at: string | null
+          name: string
+          next_follow_up_at: string | null
+          notes: string | null
+          pain_points: string[] | null
+          phone: string | null
+          priority: number | null
+          program: Database["public"]["Enums"]["program_type"]
+          school: string
+          status: Database["public"]["Enums"]["coach_status"]
+          tags: string[] | null
+          team_size: number | null
+          timezone: string | null
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          best_contact_method?: string | null
+          best_contact_time?: string | null
+          budget_range?: string | null
+          conference: string
+          created_at?: string | null
+          created_by?: string | null
+          current_software?: string | null
+          decision_timeline?: string | null
+          division: Database["public"]["Enums"]["ncaa_division"]
+          email?: string | null
+          highlight_color?: string | null
+          id?: string
+          internal_comments?: string | null
+          is_starred?: boolean | null
+          last_contacted_at?: string | null
+          name: string
+          next_follow_up_at?: string | null
+          notes?: string | null
+          pain_points?: string[] | null
+          phone?: string | null
+          priority?: number | null
+          program?: Database["public"]["Enums"]["program_type"]
+          school: string
+          status?: Database["public"]["Enums"]["coach_status"]
+          tags?: string[] | null
+          team_size?: number | null
+          timezone?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          best_contact_method?: string | null
+          best_contact_time?: string | null
+          budget_range?: string | null
+          conference?: string
+          created_at?: string | null
+          created_by?: string | null
+          current_software?: string | null
+          decision_timeline?: string | null
+          division?: Database["public"]["Enums"]["ncaa_division"]
+          email?: string | null
+          highlight_color?: string | null
+          id?: string
+          internal_comments?: string | null
+          is_starred?: boolean | null
+          last_contacted_at?: string | null
+          name?: string
+          next_follow_up_at?: string | null
+          notes?: string | null
+          pain_points?: string[] | null
+          phone?: string | null
+          priority?: number | null
+          program?: Database["public"]["Enums"]["program_type"]
+          school?: string
+          status?: Database["public"]["Enums"]["coach_status"]
+          tags?: string[] | null
+          team_size?: number | null
+          timezone?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_coaches_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_contact_log: {
+        Row: {
+          coach_id: string
+          contact_date: string
+          contact_type: Database["public"]["Enums"]["contact_type"]
+          created_at: string | null
+          created_by: string | null
+          id: string
+          next_action: string | null
+          next_action_date: string | null
+          notes: string | null
+          subject: string | null
+        }
+        Insert: {
+          coach_id: string
+          contact_date?: string
+          contact_type: Database["public"]["Enums"]["contact_type"]
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          next_action?: string | null
+          next_action_date?: string | null
+          notes?: string | null
+          subject?: string | null
+        }
+        Update: {
+          coach_id?: string
+          contact_date?: string
+          contact_type?: Database["public"]["Enums"]["contact_type"]
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          next_action?: string | null
+          next_action_date?: string | null
+          notes?: string | null
+          subject?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_contact_log_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "crm_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_contact_log_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       demo_requests: {
         Row: {
           contacted_at: string | null
@@ -8540,7 +8698,16 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_crm_pipeline_summary: {
+        Args: never
+        Returns: {
+          coach_count: number
+          division: Database["public"]["Enums"]["ncaa_division"]
+          status: Database["public"]["Enums"]["coach_status"]
+        }[]
+      }
       get_current_golf_player_id: { Args: never; Returns: string }
+      get_current_player_team_ids: { Args: never; Returns: string[] }
       get_error_summary: { Args: { days_back?: number }; Returns: Json }
       get_expected_strokes: {
         Args: { p_distance: number; p_is_putting?: boolean; p_lie: string }
@@ -8631,6 +8798,17 @@ export type Database = {
       is_baseball_team_player: { Args: { team_uuid: string }; Returns: boolean }
       is_golf_team_coach: { Args: { team_uuid: string }; Returns: boolean }
       is_golf_team_player: { Args: { team_uuid: string }; Returns: boolean }
+      log_coach_contact: {
+        Args: {
+          p_coach_id: string
+          p_contact_type: Database["public"]["Enums"]["contact_type"]
+          p_new_status?: Database["public"]["Enums"]["coach_status"]
+          p_next_action?: string
+          p_next_action_date?: string
+          p_notes?: string
+        }
+        Returns: string
+      }
       mark_player_stats_stale: {
         Args: { p_player_id: string }
         Returns: undefined
@@ -8681,6 +8859,23 @@ export type Database = {
         | "committed"
         | "uninterested"
       baseball_player_type: "college" | "juco" | "high_school" | "showcase"
+      coach_status:
+        | "new_lead"
+        | "researching"
+        | "outreach_pending"
+        | "initial_contact"
+        | "follow_up"
+        | "engaged"
+        | "demo_scheduled"
+        | "demo_completed"
+        | "proposal_sent"
+        | "negotiating"
+        | "closed_won"
+        | "closed_lost"
+        | "not_interested"
+        | "bad_timing"
+        | "nurture"
+      contact_type: "email" | "call" | "demo" | "meeting" | "note"
       golf_expense_category:
         | "lodging"
         | "transportation"
@@ -8693,6 +8888,7 @@ export type Database = {
         | "player"
         | "pending_reimbursement"
         | "split"
+      ncaa_division: "D2" | "D3"
       notification_type:
         | "profile_view"
         | "watchlist_add"
@@ -8706,6 +8902,7 @@ export type Database = {
         | "team_join"
         | "team_join_rejected"
       organization_type: "college" | "juco" | "high_school" | "showcase"
+      program_type: "mens" | "womens" | "both"
       reminder_type: "in_app" | "email" | "push" | "all"
       team_member_status: "pending" | "active" | "inactive" | "removed"
       user_role: "coach" | "player" | "admin"
@@ -8845,6 +9042,24 @@ export const Constants = {
         "uninterested",
       ],
       baseball_player_type: ["college", "juco", "high_school", "showcase"],
+      coach_status: [
+        "new_lead",
+        "researching",
+        "outreach_pending",
+        "initial_contact",
+        "follow_up",
+        "engaged",
+        "demo_scheduled",
+        "demo_completed",
+        "proposal_sent",
+        "negotiating",
+        "closed_won",
+        "closed_lost",
+        "not_interested",
+        "bad_timing",
+        "nurture",
+      ],
+      contact_type: ["email", "call", "demo", "meeting", "note"],
       golf_expense_category: [
         "lodging",
         "transportation",
@@ -8859,6 +9074,7 @@ export const Constants = {
         "pending_reimbursement",
         "split",
       ],
+      ncaa_division: ["D2", "D3"],
       notification_type: [
         "profile_view",
         "watchlist_add",
@@ -8873,6 +9089,7 @@ export const Constants = {
         "team_join_rejected",
       ],
       organization_type: ["college", "juco", "high_school", "showcase"],
+      program_type: ["mens", "womens", "both"],
       reminder_type: ["in_app", "email", "push", "all"],
       team_member_status: ["pending", "active", "inactive", "removed"],
       user_role: ["coach", "player", "admin"],
