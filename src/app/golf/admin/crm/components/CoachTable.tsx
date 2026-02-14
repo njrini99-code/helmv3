@@ -181,10 +181,10 @@ export function CoachTable({
 
   if (loading) {
     return (
-      <div className="bg-white rounded-2xl border border-slate-200 p-12 shadow-sm">
+      <div className="p-12">
         <div className="flex flex-col items-center justify-center gap-3">
           <div className="animate-spin w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full" />
-          <span className="text-slate-500 font-medium">Loading coaches...</span>
+          <span className="text-warm-500 font-medium">Loading coaches...</span>
         </div>
       </div>
     );
@@ -192,20 +192,20 @@ export function CoachTable({
 
   if (coaches.length === 0) {
     return (
-      <div className="bg-white rounded-2xl border border-slate-200 p-16 text-center shadow-sm">
+      <div className="p-16 text-center">
         <div className="text-6xl mb-4">📋</div>
-        <h3 className="text-xl font-bold text-slate-900 mb-2">No coaches found</h3>
-        <p className="text-slate-500">Try adjusting your filters or import some data.</p>
+        <h3 className="text-xl font-bold text-warm-900 mb-2">No coaches found</h3>
+        <p className="text-warm-500">Try adjusting your filters or import some data.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+    <div className="overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+            <tr className="bg-gradient-to-r from-emerald-50/50 to-teal-50/50 border-b border-white/30">
               <th className="w-10 px-3 py-3">
                 <input
                   type="checkbox"
@@ -424,7 +424,7 @@ export function CoachTable({
       </div>
       
       {/* Footer */}
-      <div className="bg-gradient-to-r from-slate-50 to-slate-100 border-t border-slate-200 px-4 py-3 flex items-center justify-between">
+      <div className="bg-gradient-to-r from-emerald-50/30 to-teal-50/30 border-t border-white/30 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-4 text-sm text-slate-600">
           <span className="font-medium">
             {((page - 1) * pageSize) + 1}-{Math.min(page * pageSize, sortedCoaches.length)} of {sortedCoaches.length}
