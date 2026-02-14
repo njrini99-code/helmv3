@@ -58,16 +58,17 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
       if (!coach) throw new Error('Coach not found');
 
       // Create task via untyped helper (table not in generated types)
+      // Note: golf_tasks has assigned_by (not created_by), status defaults to 'pending'
       const taskResult = await fromUntyped(supabase, 'golf_tasks')
         .insert({
           team_id: teamId,
-          created_by: coach.id,
+          assigned_by: coach.id,
           title: title.trim(),
           description: description.trim() || null,
           due_date: dueDate || null,
           reminder_at: reminderAt || null,
           reminder_sent: false,
-          status: 'active'
+          status: 'pending'
         })
         .select()
         .single() as { data: { id: string } | null; error: { message?: string } | null };
