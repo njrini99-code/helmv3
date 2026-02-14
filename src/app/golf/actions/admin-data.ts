@@ -419,6 +419,35 @@ export interface AdminDashboardData {
     lastSignInAt: string | null;
     lastSeen: string | null;
   }[];
+  // Admin events (real-time event tracking)
+  adminEvents: {
+    totalEvents7d: number;
+    errorCount7d: number;
+    criticalCount7d: number;
+    unresolvedCount: number;
+    eventsByType: Record<string, number>;
+    eventsBySeverity: Record<string, number>;
+    eventsByDay: { date: string; count: number }[];
+    recentEvents: {
+      id: string;
+      eventType: string;
+      severity: string;
+      title: string;
+      message: string | null;
+      userId: string | null;
+      userEmail: string | null;
+      url: string | null;
+      resolved: boolean;
+      createdAt: string;
+    }[];
+    unresolvedCritical: {
+      id: string;
+      eventType: string;
+      title: string;
+      message: string | null;
+      createdAt: string;
+    }[];
+  };
 }
 
 // ============================================
@@ -1466,6 +1495,10 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     golfConversationsAllRes,
     strokesGainedRes,
     totalPlatformUsersRes,
+    // Admin events (new real-time event tracking)
+    adminEventsRecentRes,
+    adminEventsSummaryRes,
+    adminEventsUnresolvedCriticalRes,
   ] = await Promise.all([
     // Error logs: recent entries
     adminDb.from('error_logs').select('id, message, severity, stack, url, user_id, created_at').order('created_at', { ascending: false }).limit(50),
@@ -1510,6 +1543,12 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     adminDb.from('golf_player_stats_cache').select('strokes_gained_total, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting').not('strokes_gained_total', 'is', null),
     // Total platform users (source of truth)
     adminDb.from('users').select('id', { count: 'exact', head: true }),
+    // Admin events: recent entries
+    adminDb.from('admin_events').select('id, event_type, severity, title, message, user_id, user_email, url, resolved, created_at').order('created_at', { ascending: false }).limit(50),
+    // Admin events: summary via RPC
+    adminDb.rpc('get_admin_event_summary', { p_days_back: 7 }) as unknown as { data: { total_events: number; error_count: number; critical_count: number; unresolved_count: number; events_by_type: Record<string, number>; events_by_severity: Record<string, number>; events_by_day: { date: string; count: number }[] } | null; error: unknown },
+    // Admin events: unresolved critical
+    adminDb.from('admin_events').select('id, event_type, title, message, created_at').eq('resolved', false).in('severity', ['critical', 'error']).order('created_at', { ascending: false }).limit(20),
   ]);
 
   // --- Process error logs ---
@@ -1569,6 +1608,67 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     lockedUntil: l.locked_until,
   }));
   const failedLogins7d = loginAttempts.reduce((s, l) => s + l.failedAttempts, 0);
+
+  // --- Process admin events ---
+  const adminEventSummary = (adminEventsSummaryRes.data ?? null) as {
+    total_events: number;
+    error_count: number;
+    critical_count: number;
+    unresolved_count: number;
+    events_by_type: Record<string, number>;
+    events_by_severity: Record<string, number>;
+    events_by_day: { date: string; count: number }[];
+  } | null;
+
+  const recentAdminEvents = ((adminEventsRecentRes.data ?? []) as {
+    id: string;
+    event_type: string;
+    severity: string;
+    title: string;
+    message: string | null;
+    user_id: string | null;
+    user_email: string | null;
+    url: string | null;
+    resolved: boolean;
+    created_at: string;
+  }[]).map((e) => ({
+    id: e.id,
+    eventType: e.event_type,
+    severity: e.severity,
+    title: e.title,
+    message: e.message,
+    userId: e.user_id,
+    userEmail: e.user_email ?? (e.user_id ? (errorEmailMap.get(e.user_id) ?? null) : null),
+    url: e.url,
+    resolved: e.resolved,
+    createdAt: e.created_at,
+  }));
+
+  const unresolvedCriticalEvents = ((adminEventsUnresolvedCriticalRes.data ?? []) as {
+    id: string;
+    event_type: string;
+    title: string;
+    message: string | null;
+    created_at: string;
+  }[]).map((e) => ({
+    id: e.id,
+    eventType: e.event_type,
+    title: e.title,
+    message: e.message,
+    createdAt: e.created_at,
+  }));
+
+  const adminEventsData = {
+    totalEvents7d: adminEventSummary?.total_events ?? 0,
+    errorCount7d: adminEventSummary?.error_count ?? 0,
+    criticalCount7d: adminEventSummary?.critical_count ?? 0,
+    unresolvedCount: adminEventSummary?.unresolved_count ?? 0,
+    eventsByType: adminEventSummary?.events_by_type ?? {},
+    eventsBySeverity: adminEventSummary?.events_by_severity ?? {},
+    eventsByDay: adminEventSummary?.events_by_day ?? [],
+    recentEvents: recentAdminEvents,
+    unresolvedCritical: unresolvedCriticalEvents,
+  };
 
   // --- Process baseball data ---
   const watchlistStages: Record<string, number> = {};
@@ -2483,5 +2583,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     infraHealth,
     freshnessAlerts,
     benchmarks,
+    // Admin events (real-time event tracking)
+    adminEvents: adminEventsData,
   };
 }
