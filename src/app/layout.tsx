@@ -5,6 +5,7 @@ import '../../sentry.client.config';
 import { ToastContainer } from '@/components/ui/toast';
 import { DatadogProvider } from '@/components/providers/DatadogProvider';
 import { Analytics } from '@vercel/analytics/next';
+import { AdminErrorHandler } from '@/components/providers/AdminErrorHandler';
 
 const playfair = Playfair_Display({
   subsets: ['latin'],
@@ -92,6 +93,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </DatadogProvider>
         <ToastContainer />
         <Analytics />
+        <AdminErrorHandler />
       </body>
     </html>
   );

@@ -15,6 +15,7 @@ import {
   coachHelmIntelligence,
   isCoachHelmEnabledForPlayer
 } from '@/lib/coachhelm/v2';
+import { logAIGeneration } from '@/lib/admin-logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -94,11 +95,23 @@ export async function POST(request: NextRequest) {
     );
 
     if (!v2Review) {
+      // Log failed AI generation (fire-and-forget)
+      logAIGeneration(playerData.user_id, '', 'round_review', false, {
+        roundId,
+        reason: 'insufficient_data',
+      }).catch(() => {});
+
       return NextResponse.json(
         { error: 'Insufficient data for review generation' },
         { status: 422 }
       );
     }
+
+    // Log successful AI generation (fire-and-forget)
+    logAIGeneration(playerData.user_id, '', 'round_review', true, {
+      roundId,
+      reviewId: v2Review.reviewId,
+    }).catch(() => {});
 
     return NextResponse.json({
       review: null, // V1 review not generated (deprecated)
@@ -107,6 +120,12 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Generate review error:', error);
+
+    // Log AI generation error (fire-and-forget)
+    logAIGeneration('', '', 'round_review', false, {
+      error: error instanceof Error ? error.message : 'Unknown error',
+    }).catch(() => {});
+
     return NextResponse.json(
       { error: 'Failed to generate review' },
       { status: 500 }

@@ -19,6 +19,7 @@ import type { RSVPStatus } from '@/lib/calendar/rsvp';
 import { invalidateOnRoundComplete } from '@/lib/cache/golf-stats-calculator';
 import { triggerPlayerInsightsAfterRound } from '@/app/golf/actions/insights';
 import { generateRoundReview } from '@/app/golf/actions/round-reviews';
+import { logRoundSubmitted } from '@/lib/admin-logger';
 
 // ============================================================================
 // RESULT TYPE
@@ -961,6 +962,15 @@ export async function submitGolfRoundComprehensive(
     // it here means it's likely ready by the time the player navigates there.
     generateRoundReview(round.id).catch(() => {});
 
+    // Log round submission event (fire-and-forget)
+    logRoundSubmitted(user.id, user.email || '', round.id, {
+      courseName: data.courseName,
+      totalScore,
+      scoreToPar: totalToPar,
+      roundType: data.roundType,
+      holesPlayed: data.holes.length,
+    }).catch(() => {});
+
     return { success: true, data: { roundId: round.id, shotsSaved } };
 
   } catch (error) {
@@ -1085,6 +1095,15 @@ export async function submitGolfRound(data: GolfRoundInput): Promise<ActionResul
 
     // Fire-and-forget: start AI round review generation
     generateRoundReview(round.id).catch(() => {});
+
+    // Log round submission event (fire-and-forget)
+    logRoundSubmitted(user.id, user.email || '', round.id, {
+      courseName: validatedData.courseName,
+      totalScore,
+      scoreToPar: totalToPar,
+      roundType: validatedData.roundType,
+      holesPlayed: validatedData.holes.length,
+    }).catch(() => {});
 
     return { success: true, data: { roundId: round.id } };
 

@@ -16,6 +16,7 @@ import {
   formatLockoutMessage,
 } from '@/lib/auth/account-lockout';
 import { validatePassword } from '@/lib/auth/password-validation';
+import { logSignup, logLogin, logSecurityEvent } from '@/lib/admin-logger';
 
 export type LoginResult = {
   success: boolean;
@@ -81,6 +82,13 @@ export async function loginAction(
   if (error) {
     const lockoutResult = await recordFailedLogin(normalizedEmail, ip, userAgent);
 
+    // Log failed login attempt (fire-and-forget)
+    logSecurityEvent(
+      `Failed login attempt: ${normalizedEmail}`,
+      lockoutResult.locked ? 'warning' : 'info',
+      { email: normalizedEmail, ip, remainingAttempts: lockoutResult.remainingAttempts }
+    ).catch(() => {});
+
     // Security: Failed login attempt recorded
     if (lockoutResult.locked && lockoutResult.lockedUntil) {
       return {
@@ -104,6 +112,9 @@ export async function loginAction(
   resetRateLimit(`login:email:${normalizedEmail}`);
   resetRateLimit(`login:ip:${ip}`);
   await resetLoginAttempts(normalizedEmail);
+
+  // Log successful login event (fire-and-forget)
+  logLogin(data.user.id, normalizedEmail, { ip }).catch(() => {});
 
   // Get user role and profile status to determine redirect
   const { data: userData } = await supabase
@@ -270,6 +281,9 @@ export async function signupAction(
       error: 'Account created but session could not be established. Please try signing in.',
     };
   }
+
+  // Log signup event (fire-and-forget)
+  logSignup(data.user.id, normalizedEmail, role, { ip }).catch(() => {});
 
   // Redirect based on role - coaches go to coach onboarding, players go to player onboarding
   const redirectTo = role === 'coach'
