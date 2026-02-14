@@ -33,7 +33,7 @@ export function LiveEventCounter({
   total,
   errors,
   critical,
-  isConnected,
+  isConnected: _isConnected, // Available for future use
   connectionState,
   onClick,
   className,

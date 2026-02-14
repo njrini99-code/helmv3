@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconUsers } from '@/components/icons';
@@ -202,11 +203,13 @@ function AdminListItem({ admin, isCurrentUser }: AdminListItemProps) {
         )}
       >
         {admin.avatar_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={admin.avatar_url}
             alt={admin.name || 'Admin'}
+            width={36}
+            height={36}
             className="w-full h-full rounded-full object-cover"
+            unoptimized
           />
         ) : (
           getAdminInitials(admin)

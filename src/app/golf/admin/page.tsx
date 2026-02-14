@@ -45,6 +45,17 @@ import {
   IconChart,
 } from '@/components/icons';
 
+// Real-time components
+import { AdminRealtimeProvider, useAdminRealtimeContext } from './components/AdminRealtimeProvider';
+import { AdminOnlineIndicator } from './components/AdminOnlineIndicator';
+import { LiveEventCounter, LiveEventBadge } from './components/LiveEventCounter';
+import { 
+  AdminErrorBoundary, 
+  CardErrorBoundary as _CardErrorBoundary, // Available for wrapping individual cards
+  StatSkeleton as ImprovedStatSkeleton, 
+  CardSkeleton as ImprovedCardSkeleton 
+} from './components/AdminErrorBoundary';
+
 // ============================================================================
 // TAB DEFINITIONS — 4 consolidated tabs
 // ============================================================================
@@ -84,35 +95,40 @@ type TabId = (typeof TABS)[number]['id'];
 const AUTO_REFRESH_INTERVAL = 60000;
 
 // ============================================================================
-// SKELETON LOADERS
+// SKELETON LOADERS (use improved versions from AdminErrorBoundary)
 // ============================================================================
-function StatSkeleton() {
-  return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-lg p-6 animate-pulse">
-      <div className="h-4 w-24 bg-warm-200 rounded mb-3" />
-      <div className="h-8 w-16 bg-warm-200 rounded" />
-    </div>
-  );
-}
-
-function CardSkeleton() {
-  return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-lg p-6 animate-pulse">
-      <div className="h-5 w-36 bg-warm-200 rounded mb-4" />
-      <div className="space-y-3">
-        <div className="h-3 w-full bg-warm-100 rounded" />
-        <div className="h-3 w-3/4 bg-warm-100 rounded" />
-        <div className="h-3 w-1/2 bg-warm-100 rounded" />
-        <div className="h-24 w-full bg-warm-100 rounded-lg" />
-      </div>
-    </div>
-  );
-}
+const StatSkeleton = ImprovedStatSkeleton;
+const CardSkeleton = ImprovedCardSkeleton;
 
 // ============================================================================
-// MAIN PAGE
+// MAIN PAGE WRAPPER (with real-time provider)
 // ============================================================================
 export default function AdminDashboardPage() {
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const activeTab = (searchParams.get('tab') || 'command') as string;
+  
+  // Get current user ID for presence
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      setCurrentUserId(data.user?.id ?? null);
+    });
+  }, []);
+
+  return (
+    <AdminRealtimeProvider currentUserId={currentUserId} currentTab={activeTab}>
+      <AdminErrorBoundary title="Dashboard Error" size="lg">
+        <AdminDashboardContent />
+      </AdminErrorBoundary>
+    </AdminRealtimeProvider>
+  );
+}
+
+// ============================================================================
+// MAIN PAGE CONTENT
+// ============================================================================
+function AdminDashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [data, setData] = useState<AdminDashboardData | null>(null);
@@ -124,6 +140,9 @@ export default function AdminDashboardPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const refreshTimerRef = useRef<ReturnType<typeof setInterval>>(undefined);
   const { trackFeature } = useAnalyticsTracking();
+  
+  // Real-time context
+  const { realtime, presence, alerts } = useAdminRealtimeContext();
 
   // URL-driven tab state
   const urlTab = searchParams.get('tab') as TabId | null;
@@ -277,12 +296,17 @@ export default function AdminDashboardPage() {
         <nav className="flex-1 p-3 space-y-1">
           {TABS.map((tab) => {
             const isActive = activeTab === tab.id;
+            // Show badge on health tab if there are unread alerts
+            const showBadge = tab.id === 'health' && alerts.unreadCount > 0;
+            const badgeCount = tab.id === 'health' ? alerts.unreadCount : 0;
+            const hasCritical = tab.id === 'health' && alerts.severityCounts.critical > 0;
+            
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  'w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group',
+                  'w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative',
                   isActive
                     ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/25'
                     : 'text-warm-600 hover:bg-white/80 hover:text-warm-900'
@@ -291,7 +315,16 @@ export default function AdminDashboardPage() {
                 <span className="text-xl">{tab.icon}</span>
                 {!sidebarCollapsed && (
                   <div className="flex-1 text-left">
-                    <div className="font-medium">{tab.label}</div>
+                    <div className="font-medium flex items-center gap-2">
+                      {tab.label}
+                      {showBadge && (
+                        <LiveEventBadge 
+                          count={badgeCount} 
+                          variant={hasCritical ? 'error' : 'warning'}
+                          pulse={hasCritical}
+                        />
+                      )}
+                    </div>
                     <div className={cn('text-xs', isActive ? 'text-white/70' : 'text-warm-400')}>
                       {tab.description}
                     </div>
@@ -304,6 +337,16 @@ export default function AdminDashboardPage() {
                   )}>
                     {tab.shortcut}
                   </span>
+                )}
+                {/* Badge for collapsed sidebar */}
+                {sidebarCollapsed && showBadge && (
+                  <div className="absolute -top-1 -right-1">
+                    <LiveEventBadge 
+                      count={badgeCount} 
+                      variant={hasCritical ? 'error' : 'warning'}
+                      pulse={hasCritical}
+                    />
+                  </div>
                 )}
               </button>
             );
@@ -371,6 +414,39 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
             </div>
+            
+            {/* Real-time Connection Status */}
+            <div className={cn(
+              'rounded-xl p-3 border flex items-center justify-between',
+              realtime.isConnected 
+                ? 'bg-gradient-to-br from-emerald-50 to-emerald-100/50 border-emerald-200/50' 
+                : 'bg-gradient-to-br from-amber-50 to-amber-100/50 border-amber-200/50'
+            )}>
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <div className={cn(
+                    'w-2 h-2 rounded-full',
+                    realtime.isConnected ? 'bg-emerald-500' : 'bg-amber-500'
+                  )} />
+                  {realtime.isConnected && (
+                    <div className="absolute inset-0 w-2 h-2 rounded-full bg-emerald-500 animate-ping opacity-75" />
+                  )}
+                </div>
+                <span className={cn(
+                  'text-xs font-medium',
+                  realtime.isConnected ? 'text-emerald-700' : 'text-amber-700'
+                )}>
+                  {realtime.connectionState === 'connected' ? 'Live Updates' : 
+                   realtime.connectionState === 'connecting' ? 'Connecting...' : 
+                   realtime.connectionState === 'error' ? 'Reconnecting...' : 'Offline'}
+                </span>
+              </div>
+              {presence.onlineCount > 1 && (
+                <span className="text-[10px] text-warm-500">
+                  {presence.onlineCount} admins
+                </span>
+              )}
+            </div>
           </div>
         )}
 
@@ -399,23 +475,27 @@ export default function AdminDashboardPage() {
             </button>
 
             <div className="flex items-center gap-3">
-              {/* Live Indicator */}
-              <div className="flex items-center gap-2">
-                {isRefreshing ? (
-                  <IconRefresh size={16} className="text-primary-500 animate-spin" />
-                ) : (
-                  <div className="flex items-center gap-1.5">
-                    <div className="relative">
-                      <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                      <div className="absolute inset-0 w-2 h-2 rounded-full bg-emerald-500 animate-ping opacity-75" />
-                    </div>
-                    <span className="text-xs text-warm-500 font-medium">Live</span>
-                  </div>
-                )}
-              </div>
+              {/* Live Event Counter */}
+              <LiveEventCounter
+                total={realtime.counts.total}
+                errors={realtime.counts.error + realtime.counts.critical}
+                critical={realtime.counts.critical}
+                isConnected={realtime.isConnected}
+                connectionState={realtime.connectionState}
+                onClick={() => setActiveTab('health')}
+              />
+
+              {/* Admin Online Indicator */}
+              <AdminOnlineIndicator
+                activeAdmins={presence.activeAdmins}
+                onlineCount={presence.onlineCount}
+                isConnected={presence.isConnected}
+                currentUserId={presence.activeAdmins[0]?.id}
+                className="hidden sm:block"
+              />
 
               {lastRefresh && (
-                <span className="text-xs text-warm-400 tabular-nums hidden sm:block">
+                <span className="text-xs text-warm-400 tabular-nums hidden md:block">
                   {lastRefresh.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
               )}

@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { IconCheck, IconX, IconInfo, IconWarning, IconActivity, IconRefresh } from '@/components/icons';
+import { IconCheck, IconX, IconInfo, IconWarning, IconActivity } from '@/components/icons';
 
 // ============================================
 // TYPES
@@ -223,13 +223,12 @@ interface AdminToastItemProps {
 }
 
 function AdminToastItem({ toast, onClose }: AdminToastItemProps) {
-  const [isExiting, setIsExiting] = useState(false);
   const config = variantConfig[toast.variant];
   const Icon = config.icon;
 
   const handleClose = useCallback(() => {
-    setIsExiting(true);
-    setTimeout(() => onClose(toast.id), 300);
+    // Framer Motion handles exit animation via AnimatePresence
+    onClose(toast.id);
   }, [onClose, toast.id]);
 
   // Auto-dismiss
