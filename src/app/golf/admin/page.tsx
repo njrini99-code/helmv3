@@ -56,6 +56,15 @@ import {
   CardSkeleton as ImprovedCardSkeleton 
 } from './components/AdminErrorBoundary';
 
+// CRM Stats type
+interface CRMStats {
+  total: number;
+  newLeads: number;
+  contacted: number;
+  demosScheduled: number;
+  customers: number;
+}
+
 // ============================================================================
 // TAB DEFINITIONS — 4 consolidated tabs
 // ============================================================================
@@ -138,6 +147,7 @@ function AdminDashboardContent() {
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [crmStats, setCrmStats] = useState<CRMStats | null>(null);
   const refreshTimerRef = useRef<ReturnType<typeof setInterval>>(undefined);
   const { trackFeature } = useAnalyticsTracking();
   
@@ -164,6 +174,23 @@ function AdminDashboardContent() {
       setData(result);
       setLastRefresh(new Date());
       setError(null);
+      
+      // Also fetch CRM stats
+      const supabase = createClient();
+      const { data: crmData } = await supabase
+        .from('crm_coaches')
+        .select('status');
+      
+      if (crmData) {
+        const stats: CRMStats = {
+          total: crmData.length,
+          newLeads: crmData.filter(c => c.status === 'new_lead').length,
+          contacted: crmData.filter(c => c.status === 'contacted').length,
+          demosScheduled: crmData.filter(c => c.status === 'demo_scheduled').length,
+          customers: crmData.filter(c => c.status === 'customer').length,
+        };
+        setCrmStats(stats);
+      }
     } catch (err) {
       if (!silent) {
         setError(err instanceof Error ? err.message : 'Failed to load dashboard');
@@ -351,6 +378,54 @@ function AdminDashboardContent() {
               </button>
             );
           })}
+          
+          {/* CRM Button - Prominent */}
+          <div className="mt-4 pt-4 border-t border-white/20">
+            <a
+              href="/golf/admin/crm"
+              className={cn(
+                'w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group',
+                'bg-gradient-to-r from-emerald-500/10 to-teal-500/10 hover:from-emerald-500 hover:to-teal-500',
+                'text-emerald-700 hover:text-white border-2 border-emerald-500/30 hover:border-transparent',
+                'shadow-sm hover:shadow-lg hover:shadow-emerald-500/25 hover:scale-[1.02]'
+              )}
+            >
+              <span className="text-xl">🎯</span>
+              {!sidebarCollapsed && (
+                <div className="flex-1 text-left">
+                  <div className="font-semibold">Coach CRM</div>
+                  <div className="text-xs text-emerald-600 group-hover:text-white/70">
+                    {crmStats ? `${crmStats.total} coaches` : 'Sales pipeline'}
+                  </div>
+                </div>
+              )}
+              {!sidebarCollapsed && (
+                <span className="text-emerald-500 group-hover:text-white">→</span>
+              )}
+            </a>
+            
+            {/* CRM Mini Stats */}
+            {!sidebarCollapsed && crmStats && (
+              <div className="mt-2 grid grid-cols-4 gap-1 px-1">
+                <div className="bg-slate-100/80 rounded-lg p-1.5 text-center" title="New Leads">
+                  <div className="text-sm font-bold text-slate-700">{crmStats.newLeads}</div>
+                  <div className="text-[8px] text-slate-500">📋</div>
+                </div>
+                <div className="bg-blue-100/80 rounded-lg p-1.5 text-center" title="Contacted">
+                  <div className="text-sm font-bold text-blue-700">{crmStats.contacted}</div>
+                  <div className="text-[8px] text-blue-500">💬</div>
+                </div>
+                <div className="bg-violet-100/80 rounded-lg p-1.5 text-center" title="Demos Scheduled">
+                  <div className="text-sm font-bold text-violet-700">{crmStats.demosScheduled}</div>
+                  <div className="text-[8px] text-violet-500">📅</div>
+                </div>
+                <div className="bg-emerald-100/80 rounded-lg p-1.5 text-center" title="Customers">
+                  <div className="text-sm font-bold text-emerald-700">{crmStats.customers}</div>
+                  <div className="text-[8px] text-emerald-500">✅</div>
+                </div>
+              </div>
+            )}
+          </div>
         </nav>
 
         {/* Quick Stats in Sidebar */}

@@ -398,6 +398,18 @@ export default function CRMPage() {
       )}>
         {/* Sidebar Header */}
         <div className="p-4 border-b border-white/20">
+          {/* Back to Dashboard */}
+          <a
+            href="/golf/admin"
+            className={cn(
+              'flex items-center gap-2 mb-3 px-2 py-1.5 -mx-1 rounded-lg text-sm',
+              'text-warm-500 hover:text-warm-700 hover:bg-white/50 transition-all'
+            )}
+          >
+            <span className="text-xs">←</span>
+            {!sidebarCollapsed && <span>Dashboard</span>}
+          </a>
+          
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-xl shadow-lg">
               🎯
