@@ -293,12 +293,16 @@ function AdminDashboardContent() {
 
       {/* Sidebar */}
       <aside className={cn(
-        'fixed lg:relative z-50 h-screen bg-white/70 backdrop-blur-xl border-r border-white/30 flex flex-col transition-all duration-300',
+        'fixed lg:relative z-50 h-screen flex flex-col transition-all duration-300',
+        // Premium glass styling
+        'bg-white/65 backdrop-blur-[16px]',
+        'border-r border-white/30',
+        'shadow-[1px_0_3px_rgba(0,0,0,0.02)]',
         sidebarCollapsed ? 'lg:w-20' : 'lg:w-72',
         mobileMenuOpen ? 'w-72 translate-x-0' : 'w-72 -translate-x-full lg:translate-x-0'
       )}>
         {/* Sidebar Header */}
-        <div className="p-4 border-b border-white/20">
+        <div className="p-5 border-b border-white/20">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg overflow-hidden">
               <Image
@@ -312,15 +316,15 @@ function AdminDashboardContent() {
             </div>
             {!sidebarCollapsed && (
               <div>
-                <h1 className="font-bold text-warm-900">Command Center</h1>
-                <p className="text-xs text-warm-500">Helm Sports Labs</p>
+                <h1 className="font-bold text-warm-900 tracking-tight">Command Center</h1>
+                <p className="text-[11px] font-medium text-warm-400 uppercase tracking-wider">Helm Sports Labs</p>
               </div>
             )}
           </div>
         </div>
 
         {/* Navigation Tabs */}
-        <nav className="flex-1 p-3 space-y-1">
+        <nav className="flex-1 p-4 space-y-1.5">
           {TABS.map((tab) => {
             const isActive = activeTab === tab.id;
             // Show badge on health tab if there are unread alerts
@@ -333,16 +337,16 @@ function AdminDashboardContent() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  'w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative',
+                  'w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-200 group relative',
                   isActive
                     ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/25'
-                    : 'text-warm-600 hover:bg-white/80 hover:text-warm-900'
+                    : 'text-warm-600 hover:bg-white/60 hover:text-warm-900 hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)]'
                 )}
               >
-                <span className="text-xl">{tab.icon}</span>
+                <span className="text-lg">{tab.icon}</span>
                 {!sidebarCollapsed && (
                   <div className="flex-1 text-left">
-                    <div className="font-medium flex items-center gap-2">
+                    <div className="font-semibold text-sm flex items-center gap-2">
                       {tab.label}
                       {showBadge && (
                         <LiveEventBadge 
@@ -352,14 +356,14 @@ function AdminDashboardContent() {
                         />
                       )}
                     </div>
-                    <div className={cn('text-xs', isActive ? 'text-white/70' : 'text-warm-400')}>
+                    <div className={cn('text-[11px] mt-0.5', isActive ? 'text-white/70' : 'text-warm-400')}>
                       {tab.description}
                     </div>
                   </div>
                 )}
                 {!sidebarCollapsed && (
                   <span className={cn(
-                    'text-xs px-1.5 py-0.5 rounded font-mono',
+                    'text-[10px] px-1.5 py-0.5 rounded-md font-mono',
                     isActive ? 'bg-white/20 text-white' : 'bg-warm-100 text-warm-500'
                   )}>
                     {tab.shortcut}
@@ -430,61 +434,72 @@ function AdminDashboardContent() {
 
         {/* Quick Stats in Sidebar */}
         {!sidebarCollapsed && quickStats && (
-          <div className="p-4 border-t border-white/20 space-y-3">
-            <div className="text-xs font-semibold text-warm-500 uppercase tracking-wider px-1">
+          <div className="p-4 border-t border-white/20 space-y-4">
+            <div className="text-[11px] font-medium text-warm-400 uppercase tracking-wider px-1">
               Quick Stats
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-xl p-3 border border-emerald-200/50">
-                <div className="text-2xl font-bold text-emerald-700 tabular-nums">{quickStats.totalUsers}</div>
-                <div className="text-xs text-emerald-600">Total Users</div>
+            <div className="grid grid-cols-2 gap-2.5">
+              <div className={cn(
+                'rounded-xl p-3.5',
+                'bg-white/50 backdrop-blur-sm',
+                'border border-white/40',
+                'shadow-[0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_0_rgba(255,255,255,0.6)]'
+              )}>
+                <div className="text-xl font-bold text-warm-900 tabular-nums">{quickStats.totalUsers}</div>
+                <div className="text-[11px] text-warm-400 font-medium uppercase tracking-wider mt-0.5">Total Users</div>
               </div>
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl p-3 border border-blue-200/50">
-                <div className="text-2xl font-bold text-blue-700 tabular-nums">{quickStats.activeNow}</div>
-                <div className="text-xs text-blue-600">Active Now</div>
+              <div className={cn(
+                'rounded-xl p-3.5',
+                'bg-white/50 backdrop-blur-sm',
+                'border border-white/40',
+                'shadow-[0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_0_rgba(255,255,255,0.6)]'
+              )}>
+                <div className="text-xl font-bold text-warm-900 tabular-nums">
+                  {quickStats.activeNow > 0 ? quickStats.activeNow : <span className="text-warm-400">—</span>}
+                </div>
+                <div className="text-[11px] text-warm-400 font-medium uppercase tracking-wider mt-0.5">Active Now</div>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2.5">
               <div className={cn(
-                'rounded-xl p-3 border',
-                quickStats.errors7d > 0 
-                  ? 'bg-gradient-to-br from-amber-50 to-amber-100/50 border-amber-200/50' 
-                  : 'bg-gradient-to-br from-emerald-50 to-emerald-100/50 border-emerald-200/50'
+                'rounded-xl p-3.5',
+                'bg-white/50 backdrop-blur-sm',
+                'border border-white/40',
+                'shadow-[0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_0_rgba(255,255,255,0.6)]',
+                quickStats.errors7d > 0 && 'border-l-2 border-l-amber-400'
               )}>
                 <div className={cn(
-                  'text-2xl font-bold tabular-nums',
-                  quickStats.errors7d > 0 ? 'text-amber-700' : 'text-emerald-700'
+                  'text-xl font-bold tabular-nums',
+                  quickStats.errors7d > 0 ? 'text-amber-600' : 'text-warm-900'
                 )}>
-                  {quickStats.errors7d}
+                  {quickStats.errors7d > 0 ? quickStats.errors7d : <span className="text-warm-400">—</span>}
                 </div>
-                <div className={cn('text-xs', quickStats.errors7d > 0 ? 'text-amber-600' : 'text-emerald-600')}>
-                  Errors (7d)
+                <div className="text-[11px] text-warm-400 font-medium uppercase tracking-wider mt-0.5">
+                  {quickStats.errors7d === 0 ? 'No Errors' : 'Errors (7d)'}
                 </div>
               </div>
               <div className={cn(
-                'rounded-xl p-3 border',
-                overallHealth === 'healthy' 
-                  ? 'bg-gradient-to-br from-emerald-50 to-emerald-100/50 border-emerald-200/50'
-                  : overallHealth === 'warning'
-                    ? 'bg-gradient-to-br from-amber-50 to-amber-100/50 border-amber-200/50'
-                    : 'bg-gradient-to-br from-red-50 to-red-100/50 border-red-200/50'
+                'rounded-xl p-3.5',
+                'bg-white/50 backdrop-blur-sm',
+                'border border-white/40',
+                'shadow-[0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_0_rgba(255,255,255,0.6)]',
+                overallHealth !== 'healthy' && 'border-l-2',
+                overallHealth === 'warning' && 'border-l-amber-400',
+                overallHealth === 'critical' && 'border-l-red-500'
               )}>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2">
                   <div className={cn(
-                    'w-2.5 h-2.5 rounded-full',
-                    overallHealth === 'healthy' ? 'bg-emerald-500' : overallHealth === 'warning' ? 'bg-amber-500' : 'bg-red-500'
+                    'w-2 h-2 rounded-full',
+                    overallHealth === 'healthy' ? 'bg-primary-500' : overallHealth === 'warning' ? 'bg-amber-500' : 'bg-red-500'
                   )} />
                   <span className={cn(
-                    'text-sm font-bold',
-                    overallHealth === 'healthy' ? 'text-emerald-700' : overallHealth === 'warning' ? 'text-amber-700' : 'text-red-700'
+                    'text-sm font-semibold',
+                    overallHealth === 'healthy' ? 'text-warm-900' : overallHealth === 'warning' ? 'text-amber-700' : 'text-red-700'
                   )}>
                     {overallHealth === 'healthy' ? 'Healthy' : overallHealth === 'warning' ? 'Warning' : 'Critical'}
                   </span>
                 </div>
-                <div className={cn(
-                  'text-xs mt-1',
-                  overallHealth === 'healthy' ? 'text-emerald-600' : overallHealth === 'warning' ? 'text-amber-600' : 'text-red-600'
-                )}>
+                <div className="text-[11px] text-warm-400 font-medium uppercase tracking-wider mt-1">
                   System Health
                 </div>
               </div>
@@ -492,24 +507,23 @@ function AdminDashboardContent() {
             
             {/* Real-time Connection Status */}
             <div className={cn(
-              'rounded-xl p-3 border flex items-center justify-between',
-              realtime.isConnected 
-                ? 'bg-gradient-to-br from-emerald-50 to-emerald-100/50 border-emerald-200/50' 
-                : 'bg-gradient-to-br from-amber-50 to-amber-100/50 border-amber-200/50'
+              'rounded-xl p-3 flex items-center justify-between',
+              'bg-white/40 backdrop-blur-sm',
+              'border border-white/30'
             )}>
               <div className="flex items-center gap-2">
                 <div className="relative">
                   <div className={cn(
                     'w-2 h-2 rounded-full',
-                    realtime.isConnected ? 'bg-emerald-500' : 'bg-amber-500'
+                    realtime.isConnected ? 'bg-primary-500' : 'bg-amber-500'
                   )} />
                   {realtime.isConnected && (
-                    <div className="absolute inset-0 w-2 h-2 rounded-full bg-emerald-500 animate-ping opacity-75" />
+                    <div className="absolute inset-0 w-2 h-2 rounded-full bg-primary-500 animate-ping opacity-75" />
                   )}
                 </div>
                 <span className={cn(
                   'text-xs font-medium',
-                  realtime.isConnected ? 'text-emerald-700' : 'text-amber-700'
+                  realtime.isConnected ? 'text-warm-600' : 'text-amber-600'
                 )}>
                   {realtime.connectionState === 'connected' ? 'Live Updates' : 
                    realtime.connectionState === 'connecting' ? 'Connecting...' : 
@@ -517,7 +531,7 @@ function AdminDashboardContent() {
                 </span>
               </div>
               {presence.onlineCount > 1 && (
-                <span className="text-[10px] text-warm-500">
+                <span className="text-[10px] text-warm-400 font-medium">
                   {presence.onlineCount} admins
                 </span>
               )}
@@ -647,9 +661,9 @@ function AdminDashboardContent() {
                 {/* TAB 1: COMMAND - Overview Dashboard */}
                 {/* ============================================ */}
                 {activeTab === 'command' && (
-                  <>
+                  <div className="space-y-6">
                     {/* Top KPIs */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4">
                       <AdminStatCard
                         label="Total Users"
                         value={data.totalPlatformUsers}
@@ -707,22 +721,22 @@ function AdminDashboardContent() {
                     />
 
                     {/* Health + Activity + Users */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-5">
                       <PlatformHealthCard health={data.health} />
                       <ActivityFeed activity={data.activity} />
                       <UserBreakdownCard users={data.users} />
                     </div>
-                  </>
+                  </div>
                 )}
 
                 {/* ============================================ */}
                 {/* TAB 2: USERS - User & Team Management */}
                 {/* ============================================ */}
                 {activeTab === 'users' && (
-                  <>
+                  <div className="space-y-6">
                     <InsightCallout data={data} tab="visibility" />
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                       <AdminStatCard
                         label="Total Users"
                         value={data.totalPlatformUsers}
@@ -765,16 +779,16 @@ function AdminDashboardContent() {
                     />
                     <TeamRosterCard teamRosters={data.teamRosters} />
                     <UserActivityTable users={data.userDirectory} />
-                  </>
+                  </div>
                 )}
 
                 {/* ============================================ */}
                 {/* TAB 3: HEALTH - System Health & Errors */}
                 {/* ============================================ */}
                 {activeTab === 'health' && (
-                  <>
+                  <div className="space-y-6">
                     {/* KPIs */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                       <AdminStatCard
                         label="Total Errors (7d)"
                         value={data.errorLogs.totalErrors7d}
@@ -803,7 +817,7 @@ function AdminDashboardContent() {
                     </div>
 
                     {/* System Health Grid + Error Feed */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5">
                       <HealthCheckGrid
                         health={data.health}
                         errorLogs={data.errorLogs}
@@ -822,17 +836,17 @@ function AdminDashboardContent() {
                       dbHealth={data.infraHealth.dbHealth}
                       totals={data.infraHealth.totals}
                     />
-                  </>
+                  </div>
                 )}
 
                 {/* ============================================ */}
                 {/* TAB 4: ANALYTICS - Growth, Engagement & Golf Stats */}
                 {/* ============================================ */}
                 {activeTab === 'analytics' && (
-                  <>
+                  <div className="space-y-6">
                     <InsightCallout data={data} tab="growth" />
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4">
                       <AdminStatCard
                         label="Health Score"
                         value={data.growth.platformHealthScore}
@@ -879,7 +893,7 @@ function AdminDashboardContent() {
                       />
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5">
                       <GrowthCard
                         growth={data.growth}
                         users={data.users}
@@ -907,51 +921,57 @@ function AdminDashboardContent() {
                     />
 
                     {/* Golf Performance Metrics */}
-                    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-lg p-6">
-                      <h3 className="text-lg font-semibold text-warm-900 mb-4 flex items-center gap-2">
+                    <div className={cn(
+                      'relative overflow-hidden',
+                      'bg-white/65 backdrop-blur-[16px]',
+                      'border border-white/30 rounded-2xl',
+                      'shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)]',
+                      'p-5 md:p-6'
+                    )}>
+                      <h3 className="text-[11px] md:text-xs font-medium text-warm-400 uppercase tracking-wider mb-4 flex items-center gap-2">
                         <span>⛳</span> Golf Performance Overview
                       </h3>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-                        <div className="bg-white/50 rounded-xl p-4 text-center border border-white/30">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                        <div className="bg-white/50 rounded-xl p-4 text-center border border-white/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
                           <p className="text-2xl font-bold text-warm-900 tabular-nums">
-                            {data.scoring.platformScoringAvg?.toFixed(1) ?? '—'}
+                            {data.scoring.platformScoringAvg?.toFixed(1) ?? <span className="text-warm-400">—</span>}
                           </p>
-                          <p className="text-xs text-warm-500 mt-1">Scoring Avg</p>
+                          <p className="text-[11px] text-warm-400 font-medium uppercase tracking-wider mt-1">Scoring Avg</p>
                         </div>
-                        <div className="bg-white/50 rounded-xl p-4 text-center border border-white/30">
+                        <div className="bg-white/50 rounded-xl p-4 text-center border border-white/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
                           <p className="text-2xl font-bold text-warm-900 tabular-nums">
-                            {data.scoring.platformFairwayPct != null ? `${data.scoring.platformFairwayPct.toFixed(0)}%` : '—'}
+                            {data.scoring.platformFairwayPct != null ? `${data.scoring.platformFairwayPct.toFixed(0)}%` : <span className="text-warm-400">—</span>}
                           </p>
-                          <p className="text-xs text-warm-500 mt-1">Fairway %</p>
+                          <p className="text-[11px] text-warm-400 font-medium uppercase tracking-wider mt-1">Fairway %</p>
                         </div>
-                        <div className="bg-white/50 rounded-xl p-4 text-center border border-white/30">
+                        <div className="bg-white/50 rounded-xl p-4 text-center border border-white/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
                           <p className="text-2xl font-bold text-warm-900 tabular-nums">
-                            {data.scoring.platformGirPct != null ? `${data.scoring.platformGirPct.toFixed(0)}%` : '—'}
+                            {data.scoring.platformGirPct != null ? `${data.scoring.platformGirPct.toFixed(0)}%` : <span className="text-warm-400">—</span>}
                           </p>
-                          <p className="text-xs text-warm-500 mt-1">GIR %</p>
+                          <p className="text-[11px] text-warm-400 font-medium uppercase tracking-wider mt-1">GIR %</p>
                         </div>
-                        <div className="bg-white/50 rounded-xl p-4 text-center border border-white/30">
+                        <div className="bg-white/50 rounded-xl p-4 text-center border border-white/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
                           <p className="text-2xl font-bold text-warm-900 tabular-nums">
-                            {data.scoring.platformPuttsPerRound?.toFixed(1) ?? '—'}
+                            {data.scoring.platformPuttsPerRound?.toFixed(1) ?? <span className="text-warm-400">—</span>}
                           </p>
-                          <p className="text-xs text-warm-500 mt-1">Putts / Round</p>
+                          <p className="text-[11px] text-warm-400 font-medium uppercase tracking-wider mt-1">Putts / Round</p>
                         </div>
-                        <div className="bg-white/50 rounded-xl p-4 text-center border border-white/30">
+                        <div className="bg-white/50 rounded-xl p-4 text-center border border-white/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
                           <p className="text-2xl font-bold text-warm-900 tabular-nums">
-                            {data.usage.totalRounds.toLocaleString()}
+                            {data.usage.totalRounds > 0 ? data.usage.totalRounds.toLocaleString() : <span className="text-warm-400">—</span>}
                           </p>
-                          <p className="text-xs text-warm-500 mt-1">Total Rounds</p>
+                          <p className="text-[11px] text-warm-400 font-medium uppercase tracking-wider mt-1">Total Rounds</p>
                         </div>
-                        <div className="bg-white/50 rounded-xl p-4 text-center border border-white/30">
+                        <div className="bg-white/50 rounded-xl p-4 text-center border border-white/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
                           <p className="text-2xl font-bold text-warm-900 tabular-nums">
-                            {data.usage.totalShots.toLocaleString()}
+                            {data.usage.totalShots > 0 ? data.usage.totalShots.toLocaleString() : <span className="text-warm-400">—</span>}
                           </p>
-                          <p className="text-xs text-warm-500 mt-1">Total Shots</p>
+                          <p className="text-[11px] text-warm-400 font-medium uppercase tracking-wider mt-1">Total Shots</p>
                         </div>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-5">
                       <ScoringIntelligenceCard scoring={data.scoring} />
                       <TeamIntelligenceCard teams={data.teams} />
                       <UsageMetricsCard usage={data.usage} dataQuality={data.dataQuality} funnel={data.funnel} />
@@ -964,11 +984,17 @@ function AdminDashboardContent() {
                     />
 
                     {/* Strokes Gained + Communication */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5">
                       {/* Strokes Gained Averages */}
                       {data.strokesGained.sgTotal != null && (
-                        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-lg p-6">
-                          <h3 className="text-lg font-semibold text-warm-900 mb-4">Platform Strokes Gained</h3>
+                        <div className={cn(
+                          'relative overflow-hidden',
+                          'bg-white/65 backdrop-blur-[16px]',
+                          'border border-white/30 rounded-2xl',
+                          'shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)]',
+                          'p-5 md:p-6'
+                        )}>
+                          <h3 className="text-[11px] md:text-xs font-medium text-warm-400 uppercase tracking-wider mb-4">Platform Strokes Gained</h3>
                           <div className="space-y-3">
                             {[
                               { label: 'Total', value: data.strokesGained.sgTotal, color: '#16A34A' },
@@ -982,54 +1008,70 @@ function AdminDashboardContent() {
                                   <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: sg.color }} />
                                   <span className="text-sm text-warm-600">{sg.label}</span>
                                 </div>
-                                <span className={`text-sm font-semibold tabular-nums ${(sg.value ?? 0) > 0 ? 'text-emerald-600' : (sg.value ?? 0) < 0 ? 'text-red-600' : 'text-warm-700'}`}>
+                                <span className={cn(
+                                  'text-sm font-semibold tabular-nums',
+                                  sg.value != null && sg.value > 0 ? 'text-primary-600' : 
+                                  sg.value != null && sg.value < 0 ? 'text-red-600' : 'text-warm-400'
+                                )}>
                                   {sg.value != null ? (sg.value > 0 ? `+${sg.value.toFixed(2)}` : sg.value.toFixed(2)) : '—'}
                                 </span>
                               </div>
                             ))}
                           </div>
-                          <p className="text-[10px] text-warm-400 mt-3">Average across all players with strokes gained data</p>
+                          <p className="text-[10px] text-warm-400 mt-4">Average across all players with strokes gained data</p>
                         </div>
                       )}
 
                       {/* Communication Metrics */}
-                      <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-lg p-6">
-                        <h3 className="text-lg font-semibold text-warm-900 mb-4">Communication</h3>
+                      <div className={cn(
+                        'relative overflow-hidden',
+                        'bg-white/65 backdrop-blur-[16px]',
+                        'border border-white/30 rounded-2xl',
+                        'shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)]',
+                        'p-5 md:p-6'
+                      )}>
+                        <h3 className="text-[11px] md:text-xs font-medium text-warm-400 uppercase tracking-wider mb-4">Communication</h3>
                         <div className="grid grid-cols-2 gap-3 mb-4">
-                          <div className="bg-white/50 rounded-xl p-3 text-center border border-white/30">
-                            <p className="text-2xl font-semibold text-warm-900 tabular-nums">{data.golfCommunication.totalAnnouncements}</p>
-                            <p className="text-xs text-warm-500 mt-0.5">Announcements</p>
-                          </div>
-                          <div className="bg-white/50 rounded-xl p-3 text-center border border-white/30">
-                            <p className="text-2xl font-semibold text-warm-900 tabular-nums">{data.golfCommunication.totalGolfMessages}</p>
-                            <p className="text-xs text-warm-500 mt-0.5">Messages</p>
-                          </div>
-                          <div className="bg-white/50 rounded-xl p-3 text-center border border-white/30">
-                            <p className="text-2xl font-semibold text-warm-900 tabular-nums">{data.golfCommunication.totalConversations}</p>
-                            <p className="text-xs text-warm-500 mt-0.5">Conversations</p>
-                          </div>
-                          <div className="bg-white/50 rounded-xl p-3 text-center border border-white/30">
-                            <p className="text-2xl font-semibold text-warm-900 tabular-nums">
-                              {data.golfCommunication.announcementAckRate != null ? `${data.golfCommunication.announcementAckRate}` : '—'}
+                          <div className="bg-white/50 rounded-xl p-3.5 text-center border border-white/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
+                            <p className="text-xl font-bold text-warm-900 tabular-nums">
+                              {data.golfCommunication.totalAnnouncements > 0 ? data.golfCommunication.totalAnnouncements : <span className="text-warm-400">—</span>}
                             </p>
-                            <p className="text-xs text-warm-500 mt-0.5">Avg Acks / Announce</p>
+                            <p className="text-[11px] text-warm-400 font-medium uppercase tracking-wider mt-1">Announcements</p>
+                          </div>
+                          <div className="bg-white/50 rounded-xl p-3.5 text-center border border-white/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
+                            <p className="text-xl font-bold text-warm-900 tabular-nums">
+                              {data.golfCommunication.totalGolfMessages > 0 ? data.golfCommunication.totalGolfMessages : <span className="text-warm-400">—</span>}
+                            </p>
+                            <p className="text-[11px] text-warm-400 font-medium uppercase tracking-wider mt-1">Messages</p>
+                          </div>
+                          <div className="bg-white/50 rounded-xl p-3.5 text-center border border-white/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
+                            <p className="text-xl font-bold text-warm-900 tabular-nums">
+                              {data.golfCommunication.totalConversations > 0 ? data.golfCommunication.totalConversations : <span className="text-warm-400">—</span>}
+                            </p>
+                            <p className="text-[11px] text-warm-400 font-medium uppercase tracking-wider mt-1">Conversations</p>
+                          </div>
+                          <div className="bg-white/50 rounded-xl p-3.5 text-center border border-white/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
+                            <p className="text-xl font-bold text-warm-900 tabular-nums">
+                              {data.golfCommunication.announcementAckRate != null ? data.golfCommunication.announcementAckRate : <span className="text-warm-400">—</span>}
+                            </p>
+                            <p className="text-[11px] text-warm-400 font-medium uppercase tracking-wider mt-1">Avg Acks</p>
                           </div>
                         </div>
                         {data.demoRequests.total > 0 && (
-                          <div className="pt-3 border-t border-warm-100">
+                          <div className="pt-4 border-t border-white/20">
                             <span className="text-[10px] text-warm-400 uppercase tracking-wider font-medium">Demo Requests</span>
                             <div className="flex items-center gap-4 mt-2">
                               <span className="text-sm text-warm-700"><span className="font-semibold tabular-nums">{data.demoRequests.total}</span> total</span>
                               {data.demoRequests.pending > 0 && (
                                 <span className="text-sm text-amber-600"><span className="font-semibold tabular-nums">{data.demoRequests.pending}</span> pending</span>
                               )}
-                              <span className="text-sm text-emerald-600"><span className="font-semibold tabular-nums">{data.demoRequests.contacted}</span> contacted</span>
+                              <span className="text-sm text-primary-600"><span className="font-semibold tabular-nums">{data.demoRequests.contacted}</span> contacted</span>
                             </div>
                           </div>
                         )}
                       </div>
                     </div>
-                  </>
+                  </div>
                 )}
 
               </motion.div>

@@ -74,7 +74,7 @@ const TABS = [
 type TabId = (typeof TABS)[number]['id'];
 
 // ============================================================================
-// STATUS CONFIG
+// STATUS CONFIG - Updated with softer colors
 // ============================================================================
 export const STATUS_CONFIG: Record<CoachStatus, { 
   label: string; 
@@ -97,7 +97,7 @@ export const STATUS_CONFIG: Record<CoachStatus, {
   contacted: { 
     label: 'Contacted', 
     color: 'text-blue-700', 
-    bgColor: 'bg-blue-100', 
+    bgColor: 'bg-blue-50', 
     ringColor: 'ring-blue-300',
     icon: '💬',
     order: 2,
@@ -105,17 +105,17 @@ export const STATUS_CONFIG: Record<CoachStatus, {
   },
   demo_scheduled: { 
     label: 'Demo Set', 
-    color: 'text-violet-700', 
-    bgColor: 'bg-violet-100', 
-    ringColor: 'ring-violet-300',
+    color: 'text-amber-700', 
+    bgColor: 'bg-amber-50', 
+    ringColor: 'ring-amber-300',
     icon: '📅',
     order: 3,
-    gradient: 'from-violet-400 to-violet-500',
+    gradient: 'from-amber-400 to-amber-500',
   },
   customer: { 
     label: 'Customer', 
     color: 'text-emerald-700', 
-    bgColor: 'bg-emerald-100', 
+    bgColor: 'bg-emerald-50', 
     ringColor: 'ring-emerald-400',
     icon: '✅',
     order: 4,
@@ -123,17 +123,17 @@ export const STATUS_CONFIG: Record<CoachStatus, {
   },
   closed: { 
     label: 'Closed', 
-    color: 'text-rose-700', 
-    bgColor: 'bg-rose-100', 
-    ringColor: 'ring-rose-300',
+    color: 'text-red-700', 
+    bgColor: 'bg-red-50', 
+    ringColor: 'ring-red-300',
     icon: '🚫',
     order: 5,
-    gradient: 'from-rose-400 to-rose-500',
+    gradient: 'from-red-400 to-red-500',
   },
 };
 
 export const PRIORITY_CONFIG: Record<number, { label: string; color: string; bgColor: string; icon: string }> = {
-  0: { label: 'Normal', color: 'text-slate-500', bgColor: 'bg-slate-50', icon: '' },
+  0: { label: 'Normal', color: 'text-warm-500', bgColor: 'bg-warm-50', icon: '' },
   1: { label: 'High', color: 'text-amber-600', bgColor: 'bg-amber-50', icon: '⚡' },
   2: { label: 'Hot', color: 'text-orange-600', bgColor: 'bg-orange-50', icon: '🔥' },
 };
@@ -344,12 +344,17 @@ export default function CRMPage() {
   // ============================================================================
   if (error) {
     return (
-      <div className="min-h-screen bg-[#FFFEFA] flex items-center justify-center p-8">
-        <div className="bg-white/80 backdrop-blur-xl border border-white/20 rounded-2xl p-8 text-center shadow-xl max-w-md">
-          <div className="text-5xl mb-4">⚠️</div>
+      <div className="min-h-screen bg-gradient-to-br from-warm-50 to-warm-100 flex items-center justify-center p-8">
+        <div className="bg-white/65 backdrop-blur-[16px] border border-white/30 rounded-2xl p-8 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)] max-w-md">
+          <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4">
+            <span className="text-3xl">⚠️</span>
+          </div>
           <h2 className="text-xl font-bold text-warm-900 mb-2">Error Loading CRM</h2>
-          <p className="text-warm-600 mb-4">{error}</p>
-          <button onClick={fetchCoaches} className="px-6 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 font-medium transition-colors">
+          <p className="text-warm-600 mb-6">{error}</p>
+          <button 
+            onClick={fetchCoaches} 
+            className="px-6 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 font-medium transition-colors shadow-sm"
+          >
             Try Again
           </button>
         </div>
@@ -361,70 +366,50 @@ export default function CRMPage() {
   // RENDER
   // ============================================================================
   return (
-    <div className="min-h-screen bg-[#FFFEFA] relative flex">
-      {/* Background Orbs */}
+    <div className="min-h-screen bg-gradient-to-br from-warm-50 via-white to-warm-50/50 relative flex">
+      {/* Subtle Background Pattern */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <motion.div
-          className="absolute w-[600px] h-[600px] -top-48 -right-48 rounded-full bg-gradient-to-br from-emerald-400/20 to-teal-500/10 blur-3xl"
-          animate={{ x: [0, 30, 0], y: [0, -20, 0], scale: [1, 1.05, 1] }}
-          transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut' }}
-        />
-        <motion.div
-          className="absolute w-[500px] h-[500px] -bottom-32 -left-32 rounded-full bg-gradient-to-tr from-violet-400/15 to-purple-400/10 blur-3xl"
-          animate={{ x: [0, -25, 0], y: [0, 25, 0], scale: [1, 0.95, 1] }}
-          transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
-        />
-        <motion.div
-          className="absolute w-[400px] h-[400px] top-1/2 left-1/3 rounded-full bg-gradient-to-br from-amber-300/10 to-orange-400/5 blur-3xl"
-          animate={{ x: [0, 40, 0], y: [0, -30, 0] }}
-          transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut', delay: 4 }}
-        />
+        <div className="absolute -top-40 -right-40 w-[500px] h-[500px] rounded-full bg-primary-100/30 blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-[400px] h-[400px] rounded-full bg-violet-100/20 blur-3xl" />
       </div>
-
-      {/* Grid Pattern */}
-      <div
-        className="absolute inset-0 pointer-events-none opacity-[0.02]"
-        style={{
-          backgroundImage: `linear-gradient(rgba(16,185,129,0.5) 1px, transparent 1px),
-                           linear-gradient(90deg, rgba(16,185,129,0.5) 1px, transparent 1px)`,
-          backgroundSize: '60px 60px',
-        }}
-      />
 
       {/* Sidebar */}
       <aside className={cn(
-        'relative z-10 bg-white/70 backdrop-blur-xl border-r border-white/30 flex flex-col transition-all duration-300',
+        'relative z-10 flex flex-col transition-all duration-300',
+        'bg-white/65 backdrop-blur-[16px]',
+        'border-r border-white/30',
+        'shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)]',
         sidebarCollapsed ? 'w-20' : 'w-72'
       )}>
         {/* Sidebar Header */}
-        <div className="p-4 border-b border-white/20">
+        <div className="p-4 border-b border-warm-100/50">
           {/* Back to Dashboard */}
           <a
             href="/golf/admin"
             className={cn(
-              'flex items-center gap-2 mb-3 px-2 py-1.5 -mx-1 rounded-lg text-sm',
+              'flex items-center gap-2 mb-4 px-2 py-1.5 -mx-1 rounded-xl text-sm',
               'text-warm-500 hover:text-warm-700 hover:bg-white/50 transition-all'
             )}
           >
             <span className="text-xs">←</span>
-            {!sidebarCollapsed && <span>Dashboard</span>}
+            {!sidebarCollapsed && <span className="font-medium">Dashboard</span>}
           </a>
           
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-xl shadow-lg">
-              🎯
+            <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
+              <span className="text-xl">🎯</span>
             </div>
             {!sidebarCollapsed && (
               <div>
                 <h1 className="font-bold text-warm-900">Coach CRM</h1>
-                <p className="text-xs text-warm-500">{stats.total} coaches</p>
+                <p className="text-[11px] font-medium text-warm-400 uppercase tracking-wider">{stats.total} coaches</p>
               </div>
             )}
           </div>
         </div>
 
         {/* Navigation Tabs */}
-        <nav className="flex-1 p-3 space-y-1">
+        <nav className="flex-1 p-3 space-y-1.5">
           {TABS.map((tab) => {
             const isActive = activeTab === tab.id;
             return (
@@ -434,22 +419,22 @@ export default function CRMPage() {
                 className={cn(
                   'w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group',
                   isActive
-                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/25'
-                    : 'text-warm-600 hover:bg-white/80 hover:text-warm-900'
+                    ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/20'
+                    : 'text-warm-600 hover:bg-white/60 hover:text-warm-900'
                 )}
               >
                 <span className="text-xl">{tab.icon}</span>
                 {!sidebarCollapsed && (
                   <div className="flex-1 text-left">
-                    <div className="font-medium">{tab.label}</div>
-                    <div className={cn('text-xs', isActive ? 'text-white/70' : 'text-warm-400')}>
+                    <div className="font-semibold text-sm">{tab.label}</div>
+                    <div className={cn('text-[11px]', isActive ? 'text-white/70' : 'text-warm-400')}>
                       {tab.description}
                     </div>
                   </div>
                 )}
                 {!sidebarCollapsed && (
                   <span className={cn(
-                    'text-xs px-1.5 py-0.5 rounded font-mono',
+                    'text-[10px] px-1.5 py-0.5 rounded-md font-mono',
                     isActive ? 'bg-white/20 text-white' : 'bg-warm-100 text-warm-500'
                   )}>
                     {tab.shortcut}
@@ -462,41 +447,59 @@ export default function CRMPage() {
 
         {/* Stats Cards in Sidebar */}
         {!sidebarCollapsed && (
-          <div className="p-4 border-t border-white/20 space-y-3">
+          <div className="p-4 border-t border-warm-100/50 space-y-3">
             <div className="grid grid-cols-2 gap-2">
-              <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-xl p-3 border border-emerald-200/50">
-                <div className="text-2xl font-bold text-emerald-700">{stats.byStatus.customer || 0}</div>
-                <div className="text-xs text-emerald-600">Customers</div>
+              <div className={cn(
+                'bg-white/65 backdrop-blur-[16px] rounded-xl p-3',
+                'border border-white/30',
+                'shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)]'
+              )}>
+                <div className="text-2xl font-bold text-emerald-700 tabular-nums">{stats.byStatus.customer || 0}</div>
+                <div className="text-[11px] font-medium text-warm-400 uppercase tracking-wider">Customers</div>
               </div>
-              <div className="bg-gradient-to-br from-violet-50 to-violet-100/50 rounded-xl p-3 border border-violet-200/50">
-                <div className="text-2xl font-bold text-violet-700">{stats.byStatus.demo_scheduled || 0}</div>
-                <div className="text-xs text-violet-600">Demos Set</div>
+              <div className={cn(
+                'bg-white/65 backdrop-blur-[16px] rounded-xl p-3',
+                'border border-white/30',
+                'shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)]'
+              )}>
+                <div className="text-2xl font-bold text-amber-700 tabular-nums">{stats.byStatus.demo_scheduled || 0}</div>
+                <div className="text-[11px] font-medium text-warm-400 uppercase tracking-wider">Demos Set</div>
               </div>
             </div>
             <div className="grid grid-cols-3 gap-2">
-              <div className="bg-white/60 rounded-lg p-2 text-center border border-white/40">
-                <div className="text-lg font-bold text-orange-600">{stats.hot}</div>
-                <div className="text-[10px] text-warm-500">🔥 Hot</div>
+              <div className={cn(
+                'bg-white/50 rounded-xl p-2.5 text-center',
+                'border border-white/30'
+              )}>
+                <div className="text-lg font-bold text-orange-600 tabular-nums">{stats.hot}</div>
+                <div className="text-[10px] text-warm-500 font-medium">🔥 Hot</div>
               </div>
-              <div className="bg-white/60 rounded-lg p-2 text-center border border-white/40">
-                <div className="text-lg font-bold text-amber-600">{stats.followUpsDue}</div>
-                <div className="text-[10px] text-warm-500">⏰ Due</div>
+              <div className={cn(
+                'bg-white/50 rounded-xl p-2.5 text-center',
+                'border border-white/30'
+              )}>
+                <div className="text-lg font-bold text-amber-600 tabular-nums">{stats.followUpsDue}</div>
+                <div className="text-[10px] text-warm-500 font-medium">⏰ Due</div>
               </div>
-              <div className="bg-white/60 rounded-lg p-2 text-center border border-white/40">
-                <div className="text-lg font-bold text-yellow-600">{stats.starred}</div>
-                <div className="text-[10px] text-warm-500">⭐ Starred</div>
+              <div className={cn(
+                'bg-white/50 rounded-xl p-2.5 text-center',
+                'border border-white/30'
+              )}>
+                <div className="text-lg font-bold text-yellow-600 tabular-nums">{stats.starred}</div>
+                <div className="text-[10px] text-warm-500 font-medium">⭐ Starred</div>
               </div>
             </div>
           </div>
         )}
 
         {/* Actions */}
-        <div className="p-4 border-t border-white/20 space-y-2">
+        <div className="p-4 border-t border-warm-100/50 space-y-2">
           <button
             onClick={() => setShowAddModal(true)}
             className={cn(
               'w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold transition-all',
-              'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg hover:shadow-xl hover:scale-[1.02]'
+              'bg-primary-600 text-white shadow-lg shadow-primary-500/20',
+              'hover:bg-primary-700 hover:shadow-xl active:scale-[0.98]'
             )}
           >
             <span>+</span>
@@ -506,13 +509,21 @@ export default function CRMPage() {
             <div className="flex gap-2">
               <button
                 onClick={() => setShowImportModal(true)}
-                className="flex-1 py-2 rounded-xl text-sm font-medium bg-white/60 hover:bg-white/80 text-warm-700 border border-white/40 transition-colors"
+                className={cn(
+                  'flex-1 py-2 rounded-xl text-sm font-medium transition-all',
+                  'bg-white/60 hover:bg-white/80 text-warm-700',
+                  'border border-white/40 shadow-sm'
+                )}
               >
                 📤 Import
               </button>
               <button
                 onClick={exportToCSV}
-                className="flex-1 py-2 rounded-xl text-sm font-medium bg-white/60 hover:bg-white/80 text-warm-700 border border-white/40 transition-colors"
+                className={cn(
+                  'flex-1 py-2 rounded-xl text-sm font-medium transition-all',
+                  'bg-white/60 hover:bg-white/80 text-warm-700',
+                  'border border-white/40 shadow-sm'
+                )}
               >
                 📥 Export
               </button>
@@ -523,7 +534,7 @@ export default function CRMPage() {
         {/* Collapse Toggle */}
         <button
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className="p-3 border-t border-white/20 text-warm-400 hover:text-warm-600 hover:bg-white/50 transition-colors"
+          className="p-3 border-t border-warm-100/50 text-warm-400 hover:text-warm-600 hover:bg-white/50 transition-colors"
         >
           {sidebarCollapsed ? '→' : '←'}
         </button>
@@ -532,13 +543,17 @@ export default function CRMPage() {
       {/* Main Content */}
       <main className="flex-1 relative z-10 flex flex-col min-h-screen overflow-hidden">
         {/* Top Bar */}
-        <header className="bg-white/50 backdrop-blur-xl border-b border-white/20 px-6 py-4">
+        <header className={cn(
+          'px-6 py-4 border-b',
+          'bg-white/65 backdrop-blur-[16px]',
+          'border-white/30'
+        )}>
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold text-warm-900">
+              <h2 className="text-xl font-bold text-warm-900">
                 {TABS.find(t => t.id === activeTab)?.label}
               </h2>
-              <p className="text-sm text-warm-500">
+              <p className="text-sm text-warm-500 mt-0.5">
                 {TABS.find(t => t.id === activeTab)?.description}
               </p>
             </div>
@@ -556,17 +571,17 @@ export default function CRMPage() {
                       key={status}
                       onClick={() => setFilters(f => ({ ...f, status: isActive ? 'all' : status }))}
                       className={cn(
-                        'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all',
+                        'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-all',
                         isActive 
-                          ? `bg-gradient-to-r ${config.gradient} text-white shadow-lg` 
+                          ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/20' 
                           : 'bg-white/60 text-warm-600 hover:bg-white/80 border border-white/40'
                       )}
                     >
                       <span>{config.icon}</span>
                       <span className="hidden lg:inline">{config.label}</span>
                       <span className={cn(
-                        'px-1.5 py-0.5 rounded-full text-xs font-bold',
-                        isActive ? 'bg-white/30' : 'bg-warm-100'
+                        'px-1.5 py-0.5 rounded-lg text-xs font-bold tabular-nums',
+                        isActive ? 'bg-white/20' : 'bg-warm-100'
                       )}>
                         {count}
                       </span>
@@ -594,7 +609,12 @@ export default function CRMPage() {
           ) : (
             <div className="space-y-4">
               {/* Filters */}
-              <div className="bg-white/70 backdrop-blur-xl border border-white/30 rounded-2xl p-4 shadow-lg">
+              <div className={cn(
+                'p-4 rounded-2xl',
+                'bg-white/65 backdrop-blur-[16px]',
+                'border border-white/30',
+                'shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)]'
+              )}>
                 <CoachFilters
                   filters={filters}
                   setFilters={setFilters}
@@ -614,7 +634,12 @@ export default function CRMPage() {
               )}
 
               {/* Table or Pipeline */}
-              <div className="bg-white/70 backdrop-blur-xl border border-white/30 rounded-2xl shadow-lg overflow-hidden">
+              <div className={cn(
+                'rounded-2xl overflow-hidden',
+                'bg-white/65 backdrop-blur-[16px]',
+                'border border-white/30',
+                'shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)]'
+              )}>
                 {activeTab === 'list' ? (
                   <CoachTable
                     coaches={coaches}
