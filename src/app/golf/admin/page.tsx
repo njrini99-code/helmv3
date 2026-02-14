@@ -294,17 +294,16 @@ function AdminDashboardContent() {
       {/* Sidebar */}
       <aside className={cn(
         'fixed lg:relative z-50 h-screen flex flex-col transition-all duration-300',
-        // Premium glass styling
-        'bg-white/65 backdrop-blur-[16px]',
-        'border-r border-white/30',
-        'shadow-[1px_0_3px_rgba(0,0,0,0.02)]',
+        // Dark sidebar styling (matching coach/player dashboards)
+        'bg-[#1C1917]',
+        'border-r border-white/5',
         sidebarCollapsed ? 'lg:w-20' : 'lg:w-72',
         mobileMenuOpen ? 'w-72 translate-x-0' : 'w-72 -translate-x-full lg:translate-x-0'
       )}>
         {/* Sidebar Header */}
-        <div className="p-5 border-b border-white/20">
+        <div className="p-5 border-b border-white/10">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg overflow-hidden">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/25 overflow-hidden">
               <Image
                 src="/helm-golf-logo-transparent.png"
                 alt="Helm"
@@ -316,15 +315,15 @@ function AdminDashboardContent() {
             </div>
             {!sidebarCollapsed && (
               <div>
-                <h1 className="font-bold text-warm-900 tracking-tight">Command Center</h1>
-                <p className="text-[11px] font-medium text-warm-400 uppercase tracking-wider">Helm Sports Labs</p>
+                <h1 className="font-bold text-white tracking-tight">Command Center</h1>
+                <p className="text-[11px] font-medium text-warm-500 uppercase tracking-wider">Helm Sports Labs</p>
               </div>
             )}
           </div>
         </div>
 
         {/* Navigation Tabs */}
-        <nav className="flex-1 p-4 space-y-1.5">
+        <nav className="flex-1 p-3 space-y-1">
           {TABS.map((tab) => {
             const isActive = activeTab === tab.id;
             // Show badge on health tab if there are unread alerts
@@ -337,12 +336,16 @@ function AdminDashboardContent() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  'w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-200 group relative',
+                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-[10px] transition-all duration-200 group relative',
                   isActive
-                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/25'
-                    : 'text-warm-600 hover:bg-white/60 hover:text-warm-900 hover:shadow-[0_2px_8px_rgba(0,0,0,0.04)]'
+                    ? 'bg-white/10 text-white'
+                    : 'text-warm-400 hover:bg-white/5 hover:text-white'
                 )}
               >
+                {/* Active indicator bar */}
+                {isActive && (
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-gradient-to-b from-primary-400 to-primary-600" />
+                )}
                 <span className="text-lg">{tab.icon}</span>
                 {!sidebarCollapsed && (
                   <div className="flex-1 text-left">
@@ -356,7 +359,7 @@ function AdminDashboardContent() {
                         />
                       )}
                     </div>
-                    <div className={cn('text-[11px] mt-0.5', isActive ? 'text-white/70' : 'text-warm-400')}>
+                    <div className={cn('text-[11px] mt-0.5', isActive ? 'text-warm-400' : 'text-warm-500')}>
                       {tab.description}
                     </div>
                   </div>
@@ -364,7 +367,7 @@ function AdminDashboardContent() {
                 {!sidebarCollapsed && (
                   <span className={cn(
                     'text-[10px] px-1.5 py-0.5 rounded-md font-mono',
-                    isActive ? 'bg-white/20 text-white' : 'bg-warm-100 text-warm-500'
+                    isActive ? 'bg-white/10 text-warm-300' : 'bg-white/5 text-warm-500'
                   )}>
                     {tab.shortcut}
                   </span>
@@ -384,48 +387,48 @@ function AdminDashboardContent() {
           })}
           
           {/* CRM Button - Prominent */}
-          <div className="mt-4 pt-4 border-t border-white/20">
+          <div className="mt-4 pt-4 border-t border-white/10">
             <a
               href="/golf/admin/crm"
               className={cn(
-                'w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group',
-                'bg-gradient-to-r from-emerald-500/10 to-teal-500/10 hover:from-emerald-500 hover:to-teal-500',
-                'text-emerald-700 hover:text-white border-2 border-emerald-500/30 hover:border-transparent',
-                'shadow-sm hover:shadow-lg hover:shadow-emerald-500/25 hover:scale-[1.02]'
+                'w-full flex items-center gap-3 px-3 py-2.5 rounded-[10px] transition-all duration-200 group',
+                'bg-gradient-to-r from-primary-500/20 to-primary-600/20 hover:from-primary-500 hover:to-primary-600',
+                'text-primary-400 hover:text-white',
+                'hover:shadow-lg hover:shadow-primary-500/25'
               )}
             >
               <span className="text-xl">🎯</span>
               {!sidebarCollapsed && (
                 <div className="flex-1 text-left">
                   <div className="font-semibold">Coach CRM</div>
-                  <div className="text-xs text-emerald-600 group-hover:text-white/70">
+                  <div className="text-xs text-primary-500 group-hover:text-white/70">
                     {crmStats ? `${crmStats.total} coaches` : 'Sales pipeline'}
                   </div>
                 </div>
               )}
               {!sidebarCollapsed && (
-                <span className="text-emerald-500 group-hover:text-white">→</span>
+                <span className="text-primary-400 group-hover:text-white">→</span>
               )}
             </a>
             
             {/* CRM Mini Stats */}
             {!sidebarCollapsed && crmStats && (
               <div className="mt-2 grid grid-cols-4 gap-1 px-1">
-                <div className="bg-slate-100/80 rounded-lg p-1.5 text-center" title="New Leads">
-                  <div className="text-sm font-bold text-slate-700">{crmStats.newLeads}</div>
-                  <div className="text-[8px] text-slate-500">📋</div>
+                <div className="bg-white/5 rounded-lg p-1.5 text-center" title="New Leads">
+                  <div className="text-sm font-bold text-warm-300">{crmStats.newLeads}</div>
+                  <div className="text-[8px] text-warm-500">📋</div>
                 </div>
-                <div className="bg-blue-100/80 rounded-lg p-1.5 text-center" title="Contacted">
-                  <div className="text-sm font-bold text-blue-700">{crmStats.contacted}</div>
-                  <div className="text-[8px] text-blue-500">💬</div>
+                <div className="bg-white/5 rounded-lg p-1.5 text-center" title="Contacted">
+                  <div className="text-sm font-bold text-blue-400">{crmStats.contacted}</div>
+                  <div className="text-[8px] text-warm-500">💬</div>
                 </div>
-                <div className="bg-violet-100/80 rounded-lg p-1.5 text-center" title="Demos Scheduled">
-                  <div className="text-sm font-bold text-violet-700">{crmStats.demosScheduled}</div>
-                  <div className="text-[8px] text-violet-500">📅</div>
+                <div className="bg-white/5 rounded-lg p-1.5 text-center" title="Demos Scheduled">
+                  <div className="text-sm font-bold text-violet-400">{crmStats.demosScheduled}</div>
+                  <div className="text-[8px] text-warm-500">📅</div>
                 </div>
-                <div className="bg-emerald-100/80 rounded-lg p-1.5 text-center" title="Customers">
-                  <div className="text-sm font-bold text-emerald-700">{crmStats.customers}</div>
-                  <div className="text-[8px] text-emerald-500">✅</div>
+                <div className="bg-white/5 rounded-lg p-1.5 text-center" title="Customers">
+                  <div className="text-sm font-bold text-primary-400">{crmStats.customers}</div>
+                  <div className="text-[8px] text-warm-500">✅</div>
                 </div>
               </div>
             )}
@@ -434,57 +437,41 @@ function AdminDashboardContent() {
 
         {/* Quick Stats in Sidebar */}
         {!sidebarCollapsed && quickStats && (
-          <div className="p-4 border-t border-white/20 space-y-4">
-            <div className="text-[11px] font-medium text-warm-400 uppercase tracking-wider px-1">
+          <div className="p-3 border-t border-white/10 space-y-3">
+            <div className="text-[11px] font-semibold text-warm-500 uppercase tracking-wider px-1">
               Quick Stats
             </div>
-            <div className="grid grid-cols-2 gap-2.5">
-              <div className={cn(
-                'rounded-xl p-3.5',
-                'bg-white/50 backdrop-blur-sm',
-                'border border-white/40',
-                'shadow-[0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_0_rgba(255,255,255,0.6)]'
-              )}>
-                <div className="text-xl font-bold text-warm-900 tabular-nums">{quickStats.totalUsers}</div>
-                <div className="text-[11px] text-warm-400 font-medium uppercase tracking-wider mt-0.5">Total Users</div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="rounded-[10px] p-3 bg-white/5 border border-white/5">
+                <div className="text-xl font-bold text-white tabular-nums">{quickStats.totalUsers}</div>
+                <div className="text-[10px] text-warm-500 font-medium uppercase tracking-wider mt-0.5">Total Users</div>
               </div>
-              <div className={cn(
-                'rounded-xl p-3.5',
-                'bg-white/50 backdrop-blur-sm',
-                'border border-white/40',
-                'shadow-[0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_0_rgba(255,255,255,0.6)]'
-              )}>
-                <div className="text-xl font-bold text-warm-900 tabular-nums">
-                  {quickStats.activeNow > 0 ? quickStats.activeNow : <span className="text-warm-400">—</span>}
+              <div className="rounded-[10px] p-3 bg-white/5 border border-white/5">
+                <div className="text-xl font-bold text-white tabular-nums">
+                  {quickStats.activeNow > 0 ? quickStats.activeNow : <span className="text-warm-500">—</span>}
                 </div>
-                <div className="text-[11px] text-warm-400 font-medium uppercase tracking-wider mt-0.5">Active Now</div>
+                <div className="text-[10px] text-warm-500 font-medium uppercase tracking-wider mt-0.5">Active Now</div>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-2 gap-2">
               <div className={cn(
-                'rounded-xl p-3.5',
-                'bg-white/50 backdrop-blur-sm',
-                'border border-white/40',
-                'shadow-[0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_0_rgba(255,255,255,0.6)]',
-                quickStats.errors7d > 0 && 'border-l-2 border-l-amber-400'
+                'rounded-[10px] p-3 bg-white/5 border border-white/5',
+                quickStats.errors7d > 0 && 'border-l-2 border-l-amber-500'
               )}>
                 <div className={cn(
                   'text-xl font-bold tabular-nums',
-                  quickStats.errors7d > 0 ? 'text-amber-600' : 'text-warm-900'
+                  quickStats.errors7d > 0 ? 'text-amber-400' : 'text-white'
                 )}>
-                  {quickStats.errors7d > 0 ? quickStats.errors7d : <span className="text-warm-400">—</span>}
+                  {quickStats.errors7d > 0 ? quickStats.errors7d : <span className="text-warm-500">—</span>}
                 </div>
-                <div className="text-[11px] text-warm-400 font-medium uppercase tracking-wider mt-0.5">
+                <div className="text-[10px] text-warm-500 font-medium uppercase tracking-wider mt-0.5">
                   {quickStats.errors7d === 0 ? 'No Errors' : 'Errors (7d)'}
                 </div>
               </div>
               <div className={cn(
-                'rounded-xl p-3.5',
-                'bg-white/50 backdrop-blur-sm',
-                'border border-white/40',
-                'shadow-[0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_0_rgba(255,255,255,0.6)]',
+                'rounded-[10px] p-3 bg-white/5 border border-white/5',
                 overallHealth !== 'healthy' && 'border-l-2',
-                overallHealth === 'warning' && 'border-l-amber-400',
+                overallHealth === 'warning' && 'border-l-amber-500',
                 overallHealth === 'critical' && 'border-l-red-500'
               )}>
                 <div className="flex items-center gap-2">
@@ -494,23 +481,19 @@ function AdminDashboardContent() {
                   )} />
                   <span className={cn(
                     'text-sm font-semibold',
-                    overallHealth === 'healthy' ? 'text-warm-900' : overallHealth === 'warning' ? 'text-amber-700' : 'text-red-700'
+                    overallHealth === 'healthy' ? 'text-white' : overallHealth === 'warning' ? 'text-amber-400' : 'text-red-400'
                   )}>
                     {overallHealth === 'healthy' ? 'Healthy' : overallHealth === 'warning' ? 'Warning' : 'Critical'}
                   </span>
                 </div>
-                <div className="text-[11px] text-warm-400 font-medium uppercase tracking-wider mt-1">
+                <div className="text-[10px] text-warm-500 font-medium uppercase tracking-wider mt-1">
                   System Health
                 </div>
               </div>
             </div>
             
             {/* Real-time Connection Status */}
-            <div className={cn(
-              'rounded-xl p-3 flex items-center justify-between',
-              'bg-white/40 backdrop-blur-sm',
-              'border border-white/30'
-            )}>
+            <div className="rounded-[10px] p-2.5 flex items-center justify-between bg-white/5 border border-white/5">
               <div className="flex items-center gap-2">
                 <div className="relative">
                   <div className={cn(
@@ -523,7 +506,7 @@ function AdminDashboardContent() {
                 </div>
                 <span className={cn(
                   'text-xs font-medium',
-                  realtime.isConnected ? 'text-warm-600' : 'text-amber-600'
+                  realtime.isConnected ? 'text-warm-400' : 'text-amber-400'
                 )}>
                   {realtime.connectionState === 'connected' ? 'Live Updates' : 
                    realtime.connectionState === 'connecting' ? 'Connecting...' : 
@@ -531,7 +514,7 @@ function AdminDashboardContent() {
                 </span>
               </div>
               {presence.onlineCount > 1 && (
-                <span className="text-[10px] text-warm-400 font-medium">
+                <span className="text-[10px] text-warm-500 font-medium">
                   {presence.onlineCount} admins
                 </span>
               )}
@@ -542,7 +525,7 @@ function AdminDashboardContent() {
         {/* Collapse Toggle */}
         <button
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className="hidden lg:block p-3 border-t border-white/20 text-warm-400 hover:text-warm-600 hover:bg-white/50 transition-colors"
+          className="hidden lg:block p-3 border-t border-white/10 text-warm-500 hover:text-white hover:bg-white/5 transition-colors"
         >
           {sidebarCollapsed ? '→' : '←'}
         </button>
