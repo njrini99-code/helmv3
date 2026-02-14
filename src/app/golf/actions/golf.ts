@@ -1,5 +1,6 @@
 'use server';
 
+import { randomInt } from 'crypto';
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -1816,7 +1817,6 @@ export async function invitePlayerToTeam(
     // Uses 8-char readable format (no confusing chars like 0/O, 1/I/L)
     let joinCode = team?.join_code;
     if (!joinCode || joinCode.length < 6) {
-      const { randomInt } = require('crypto');
       const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
       joinCode = '';
       for (let i = 0; i < 8; i++) {

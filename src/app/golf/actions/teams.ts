@@ -1,5 +1,6 @@
 'use server';
 
+import { randomInt } from 'crypto';
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { revalidatePath } from 'next/cache';
@@ -55,7 +56,6 @@ async function getCoachTeamId(
  * Must match the format used in onboarding.ts
  */
 function generateJoinCode(): string {
-  const { randomInt } = require('crypto');
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = '';
   for (let i = 0; i < 8; i++) {

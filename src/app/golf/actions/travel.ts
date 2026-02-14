@@ -126,29 +126,32 @@ export async function createGolfTravelItinerary(input: CreateTravelItineraryInpu
 
     // DB column types: flight_info=jsonb, room_assignments=jsonb, gear_list=text[]
     // check_in_date and check_out_date don't exist in the database
+    // Convert empty strings to null for time/date columns (Postgres rejects "" for time type)
+    const emptyToNull = (val: string | undefined) => (val && val.trim() !== '' ? val : null);
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
       .from('golf_travel_itineraries')
       .insert({
         team_id: validatedData.team_id,
-        event_id: validatedData.event_id,
+        event_id: validatedData.event_id || null,
         event_name: validatedData.event_name,
         destination: validatedData.destination,
         transportation_type: validatedData.transportation_type,
         departure_date: validatedData.departure_date,
-        departure_time: validatedData.departure_time,
-        departure_location: validatedData.departure_location,
-        return_date: validatedData.return_date,
-        return_time: validatedData.return_time,
+        departure_time: emptyToNull(validatedData.departure_time),
+        departure_location: emptyToNull(validatedData.departure_location),
+        return_date: emptyToNull(validatedData.return_date),
+        return_time: emptyToNull(validatedData.return_time),
         flight_info: validatedData.flight_info ? { text: validatedData.flight_info } : null,
-        hotel_name: validatedData.hotel_name,
-        hotel_address: validatedData.hotel_address,
-        hotel_phone: validatedData.hotel_phone,
-        hotel_confirmation: validatedData.hotel_confirmation,
+        hotel_name: emptyToNull(validatedData.hotel_name),
+        hotel_address: emptyToNull(validatedData.hotel_address),
+        hotel_phone: emptyToNull(validatedData.hotel_phone),
+        hotel_confirmation: emptyToNull(validatedData.hotel_confirmation),
         room_assignments: validatedData.room_assignments ? { text: validatedData.room_assignments } : null,
-        uniform_requirements: validatedData.uniform_requirements,
+        uniform_requirements: emptyToNull(validatedData.uniform_requirements),
         gear_list: validatedData.gear_list ? validatedData.gear_list.split(',').map((s: string) => s.trim()).filter(Boolean) : null,
-        notes: validatedData.notes,
+        notes: emptyToNull(validatedData.notes),
         created_by: validatedData.created_by,
       })
       .select()
@@ -192,7 +195,27 @@ export async function updateGolfTravelItinerary(input: UpdateTravelItineraryInpu
     const { id, check_in_date: _checkIn, check_out_date: _checkOut, ...rawUpdateData } = validatedData;
 
     // Convert types to match DB schema: flight_info=jsonb, room_assignments=jsonb, gear_list=text[]
+    // Convert empty strings to null for time/date columns (Postgres rejects "" for time type)
+    const emptyToNull = (val: unknown) => (typeof val === 'string' && val.trim() === '' ? null : val);
+
     const updateData: Record<string, unknown> = { ...rawUpdateData };
+
+    // Sanitize time/date fields that Postgres rejects as empty strings
+    const timeAndDateFields = ['departure_time', 'return_time', 'departure_date', 'return_date'];
+    for (const field of timeAndDateFields) {
+      if (field in updateData) {
+        updateData[field] = emptyToNull(updateData[field]);
+      }
+    }
+
+    // Sanitize other optional string fields
+    const optionalStringFields = ['departure_location', 'hotel_name', 'hotel_address', 'hotel_phone', 'hotel_confirmation', 'uniform_requirements', 'notes', 'event_id'];
+    for (const field of optionalStringFields) {
+      if (field in updateData) {
+        updateData[field] = emptyToNull(updateData[field]);
+      }
+    }
+
     if ('flight_info' in updateData && typeof updateData.flight_info === 'string') {
       updateData.flight_info = updateData.flight_info ? { text: updateData.flight_info } : null;
     }
