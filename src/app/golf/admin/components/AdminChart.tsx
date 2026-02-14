@@ -21,13 +21,15 @@ interface AdminBarChartProps {
   title: string;
   color?: string;
   height?: number;
+  showTooltip?: boolean;
 }
 
 export function AdminBarChart({
   data,
   title,
   color = '#16A34A',
-  height = 200,
+  height = 240,
+  showTooltip = true,
 }: AdminBarChartProps) {
   const max = Math.max(...data.map((d) => d.value), 1);
   const total = data.reduce((s, d) => s + d.value, 0);
@@ -126,7 +128,7 @@ interface AdminDonutChartProps {
   size?: number;
 }
 
-export function AdminDonutChart({ data, title, size = 120 }: AdminDonutChartProps) {
+export function AdminDonutChart({ data, title, size = 160 }: AdminDonutChartProps) {
   const total = data.reduce((sum, d) => sum + d.value, 0);
   const [mounted, setMounted] = useState(false);
 
@@ -250,15 +252,17 @@ interface AdminAreaChartProps {
   height?: number;
   showGrid?: boolean;
   gradientId?: string;
+  showValues?: boolean;
 }
 
 export function AdminAreaChart({
   data,
   title,
   color = '#16A34A',
-  height = 160,
+  height = 200,
   showGrid = true,
   gradientId: gradientIdProp,
+  showValues = true,
 }: AdminAreaChartProps) {
   const autoId = useId();
   const gId = gradientIdProp ?? `area-fill-${autoId}`;
@@ -477,13 +481,15 @@ interface AdminSparklineProps {
   color?: string;
   width?: number;
   height?: number;
+  showEndDot?: boolean;
 }
 
 export function AdminSparkline({
   data,
   color = '#16A34A',
-  width = 80,
-  height = 24,
+  width = 100,
+  height = 32,
+  showEndDot = true,
 }: AdminSparklineProps) {
   const sparkId = useId();
 
@@ -512,11 +518,11 @@ export function AdminSparkline({
   const lastY = toY(lastVal);
 
   return (
-    <svg width={width} height={height} className="inline-block align-middle">
+    <svg width={width} height={height} className="inline-block align-middle overflow-visible">
       <defs>
         <linearGradient id={`spark-${sparkId}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity={0.2} />
-          <stop offset="100%" stopColor={color} stopOpacity={0} />
+          <stop offset="0%" stopColor={color} stopOpacity={0.25} />
+          <stop offset="100%" stopColor={color} stopOpacity={0.02} />
         </linearGradient>
       </defs>
       <path d={areaPath} fill={`url(#spark-${sparkId})`} />
@@ -524,11 +530,20 @@ export function AdminSparkline({
         points={linePoints}
         fill="none"
         stroke={color}
-        strokeWidth={1.5}
+        strokeWidth={2}
         strokeLinejoin="round"
         strokeLinecap="round"
+        className="transition-all duration-300"
       />
-      <circle cx={lastX} cy={lastY} r={2} fill={color} />
+      {showEndDot && (
+        <circle 
+          cx={lastX} 
+          cy={lastY} 
+          r={3} 
+          fill={color}
+          className="drop-shadow-sm"
+        />
+      )}
     </svg>
   );
 }

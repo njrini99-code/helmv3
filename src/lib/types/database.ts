@@ -3047,6 +3047,171 @@ export type Database = {
           },
         ]
       }
+      crm_events: {
+        Row: {
+          all_day: boolean | null
+          coach_id: string | null
+          completed_at: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          end_time: string
+          event_type: Database["public"]["Enums"]["crm_event_type"]
+          google_calendar_id: string | null
+          google_event_id: string | null
+          google_last_synced_at: string | null
+          google_sync_status: string | null
+          id: string
+          is_recurring: boolean | null
+          location: string | null
+          meeting_url: string | null
+          notes: string | null
+          outcome: string | null
+          parent_event_id: string | null
+          recurrence_rule: string | null
+          reminder_sent: boolean | null
+          reminder_time: number | null
+          start_time: string
+          status: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          all_day?: boolean | null
+          coach_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          end_time: string
+          event_type?: Database["public"]["Enums"]["crm_event_type"]
+          google_calendar_id?: string | null
+          google_event_id?: string | null
+          google_last_synced_at?: string | null
+          google_sync_status?: string | null
+          id?: string
+          is_recurring?: boolean | null
+          location?: string | null
+          meeting_url?: string | null
+          notes?: string | null
+          outcome?: string | null
+          parent_event_id?: string | null
+          recurrence_rule?: string | null
+          reminder_sent?: boolean | null
+          reminder_time?: number | null
+          start_time: string
+          status?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          all_day?: boolean | null
+          coach_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          end_time?: string
+          event_type?: Database["public"]["Enums"]["crm_event_type"]
+          google_calendar_id?: string | null
+          google_event_id?: string | null
+          google_last_synced_at?: string | null
+          google_sync_status?: string | null
+          id?: string
+          is_recurring?: boolean | null
+          location?: string | null
+          meeting_url?: string | null
+          notes?: string | null
+          outcome?: string | null
+          parent_event_id?: string | null
+          recurrence_rule?: string | null
+          reminder_sent?: boolean | null
+          reminder_time?: number | null
+          start_time?: string
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_events_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "crm_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_events_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_events_parent_event_id_fkey"
+            columns: ["parent_event_id"]
+            isOneToOne: false
+            referencedRelation: "crm_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_google_calendar_tokens: {
+        Row: {
+          access_token: string
+          calendar_id: string | null
+          calendar_name: string | null
+          created_at: string | null
+          expires_at: string
+          id: string
+          is_active: boolean | null
+          last_sync_at: string | null
+          refresh_token: string | null
+          scope: string | null
+          token_type: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          calendar_id?: string | null
+          calendar_name?: string | null
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          is_active?: boolean | null
+          last_sync_at?: string | null
+          refresh_token?: string | null
+          scope?: string | null
+          token_type?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          calendar_id?: string | null
+          calendar_name?: string | null
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_sync_at?: string | null
+          refresh_token?: string | null
+          scope?: string | null
+          token_type?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_google_calendar_tokens_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       demo_requests: {
         Row: {
           contacted_at: string | null
@@ -8698,6 +8863,25 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_crm_events_in_range: {
+        Args: { p_end: string; p_start: string }
+        Returns: {
+          all_day: boolean
+          coach_id: string
+          coach_name: string
+          coach_school: string
+          description: string
+          end_time: string
+          event_type: Database["public"]["Enums"]["crm_event_type"]
+          google_event_id: string
+          id: string
+          location: string
+          meeting_url: string
+          start_time: string
+          status: string
+          title: string
+        }[]
+      }
       get_crm_pipeline_summary: {
         Args: never
         Returns: {
@@ -8876,6 +9060,13 @@ export type Database = {
         | "bad_timing"
         | "nurture"
       contact_type: "email" | "call" | "demo" | "meeting" | "note"
+      crm_event_type:
+        | "demo"
+        | "follow_up"
+        | "call"
+        | "meeting"
+        | "email_reminder"
+        | "other"
       golf_expense_category:
         | "lodging"
         | "transportation"
@@ -9060,6 +9251,14 @@ export const Constants = {
         "nurture",
       ],
       contact_type: ["email", "call", "demo", "meeting", "note"],
+      crm_event_type: [
+        "demo",
+        "follow_up",
+        "call",
+        "meeting",
+        "email_reminder",
+        "other",
+      ],
       golf_expense_category: [
         "lodging",
         "transportation",
