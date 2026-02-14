@@ -189,7 +189,7 @@ export function AddCoachModal({ onClose, onSuccess, statusConfig }: AddCoachModa
                 className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
               >
                 {Object.entries(statusConfig).map(([value, config]) => (
-                  <option key={value} value={value}>{config.icon} {config.label}</option>
+                  <option key={value} value={value}>{config.iconLabel} {config.label}</option>
                 ))}
               </select>
             </div>

@@ -494,7 +494,7 @@ export function CalendarView({
                     style={{ top: `${top}px`, height: `${height}px`, minHeight: '40px' }}
                   >
                     <div className="flex items-center gap-2">
-                      <span className="text-lg">{config.icon}</span>
+                      <span className="flex items-center">{config.icon}</span>
                       <div className="flex-1 min-w-0">
                         <div className="font-semibold truncate">{event.title}</div>
                         <div className="text-sm opacity-90">

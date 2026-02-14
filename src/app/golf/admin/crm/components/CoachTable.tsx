@@ -287,7 +287,7 @@ export function CoachTable({
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       {coach.priority > 0 && (
-                        <span className="text-base flex-shrink-0">{priorityConfig[coach.priority]?.icon}</span>
+                        <span className="flex-shrink-0">{priorityConfig[coach.priority]?.icon}</span>
                       )}
                       <div className="min-w-0">
                         <div className="font-semibold text-warm-900 text-sm">{coach.name}</div>

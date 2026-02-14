@@ -13,6 +13,12 @@ import {
   IconPlus,
   IconUpload,
   IconDownload,
+  IconNote,
+  IconMessage,
+  IconCheck,
+  IconX,
+  IconBolt,
+  IconTarget,
 } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { CoachTable } from './components/CoachTable';
@@ -84,14 +90,15 @@ const TABS = [
 type TabId = (typeof TABS)[number]['id'];
 
 // ============================================================================
-// STATUS CONFIG - Updated with softer colors
+// STATUS CONFIG - Updated with softer colors and proper icons
 // ============================================================================
 export const STATUS_CONFIG: Record<CoachStatus, { 
   label: string; 
   color: string; 
   bgColor: string;
   ringColor: string;
-  icon: string;
+  icon: React.ReactNode;
+  iconLabel: string; // For use in native <option> elements
   order: number;
   gradient: string;
 }> = {
@@ -100,7 +107,8 @@ export const STATUS_CONFIG: Record<CoachStatus, {
     color: 'text-slate-700', 
     bgColor: 'bg-slate-100', 
     ringColor: 'ring-slate-300',
-    icon: '📋',
+    icon: <IconNote size={14} />,
+    iconLabel: '📋',
     order: 1,
     gradient: 'from-slate-400 to-slate-500',
   },
@@ -109,7 +117,8 @@ export const STATUS_CONFIG: Record<CoachStatus, {
     color: 'text-blue-700', 
     bgColor: 'bg-blue-50', 
     ringColor: 'ring-blue-300',
-    icon: '💬',
+    icon: <IconMessage size={14} />,
+    iconLabel: '💬',
     order: 2,
     gradient: 'from-blue-400 to-blue-500',
   },
@@ -118,7 +127,8 @@ export const STATUS_CONFIG: Record<CoachStatus, {
     color: 'text-amber-700', 
     bgColor: 'bg-amber-50', 
     ringColor: 'ring-amber-300',
-    icon: '📅',
+    icon: <IconCalendar size={14} />,
+    iconLabel: '📅',
     order: 3,
     gradient: 'from-amber-400 to-amber-500',
   },
@@ -127,7 +137,8 @@ export const STATUS_CONFIG: Record<CoachStatus, {
     color: 'text-emerald-700', 
     bgColor: 'bg-emerald-50', 
     ringColor: 'ring-emerald-400',
-    icon: '✅',
+    icon: <IconCheck size={14} />,
+    iconLabel: '✅',
     order: 4,
     gradient: 'from-emerald-400 to-emerald-500',
   },
@@ -136,16 +147,17 @@ export const STATUS_CONFIG: Record<CoachStatus, {
     color: 'text-red-700', 
     bgColor: 'bg-red-50', 
     ringColor: 'ring-red-300',
-    icon: '🚫',
+    icon: <IconX size={14} />,
+    iconLabel: '🚫',
     order: 5,
     gradient: 'from-red-400 to-red-500',
   },
 };
 
-export const PRIORITY_CONFIG: Record<number, { label: string; color: string; bgColor: string; icon: string }> = {
-  0: { label: 'Normal', color: 'text-warm-500', bgColor: 'bg-warm-50', icon: '' },
-  1: { label: 'High', color: 'text-amber-600', bgColor: 'bg-amber-50', icon: '⚡' },
-  2: { label: 'Hot', color: 'text-orange-600', bgColor: 'bg-orange-50', icon: '🔥' },
+export const PRIORITY_CONFIG: Record<number, { label: string; color: string; bgColor: string; icon: React.ReactNode; iconLabel: string }> = {
+  0: { label: 'Normal', color: 'text-warm-500', bgColor: 'bg-warm-50', icon: null, iconLabel: '' },
+  1: { label: 'High', color: 'text-amber-600', bgColor: 'bg-amber-50', icon: <IconBolt size={14} />, iconLabel: '⚡' },
+  2: { label: 'Hot', color: 'text-orange-600', bgColor: 'bg-orange-50', icon: <IconTarget size={14} />, iconLabel: '🔥' },
 };
 
 // ============================================================================

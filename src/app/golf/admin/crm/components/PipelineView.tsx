@@ -116,7 +116,7 @@ export function PipelineView({
             )}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="text-lg">{config.icon}</span>
+                  <span className="flex items-center">{config.icon}</span>
                   <span className="font-semibold text-warm-900 text-sm">{config.label}</span>
                 </div>
                 <span className={cn(

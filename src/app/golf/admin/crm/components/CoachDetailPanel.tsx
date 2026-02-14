@@ -165,7 +165,7 @@ export function CoachDetailPanel({
                 </button>
                 <h2 className="text-xl font-bold truncate">{coach.name}</h2>
                 {coach.priority > 0 && (
-                  <span className="text-lg">{priorityConfig[coach.priority]?.icon}</span>
+                  <span className="flex items-center">{priorityConfig[coach.priority]?.icon}</span>
                 )}
               </div>
               <p className="text-warm-300 text-sm">{coach.title || 'Coach'}</p>
@@ -223,7 +223,7 @@ export function CoachDetailPanel({
               )}
             >
               {Object.entries(statusConfig).map(([value, config]) => (
-                <option key={value} value={value}>{config.icon} {config.label}</option>
+                <option key={value} value={value}>{config.iconLabel} {config.label}</option>
               ))}
             </select>
           </div>
