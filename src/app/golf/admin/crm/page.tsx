@@ -288,7 +288,10 @@ export default function CRMPage() {
     await updateCoach(coachId, { is_starred: !currentStarred });
   };
 
-  const handleCoachClick = (coach: Coach) => setQuickActionsCoach(coach);
+  const handleCoachClick = (coach: Coach) => {
+    setSelectedCoach(coach);
+    setDetailPanelOpen(true);
+  };
 
   const handleBulkAction = async (action: string, value?: unknown) => {
     const ids = Array.from(selectedIds);
@@ -344,8 +347,8 @@ export default function CRMPage() {
   // ============================================================================
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-warm-50 to-warm-100 flex items-center justify-center p-8">
-        <div className="bg-white/65 backdrop-blur-[16px] border border-white/30 rounded-2xl p-8 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)] max-w-md">
+      <div className="min-h-screen bg-[#FFFEF8] flex items-center justify-center p-8">
+        <div className="bg-white rounded-2xl border border-warm-200/50 shadow-sm p-8 text-center max-w-md">
           <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4">
             <span className="text-3xl">⚠️</span>
           </div>
@@ -567,10 +570,7 @@ export default function CRMPage() {
         </header>
 
         {/* Content Area */}
-        <div className={cn(
-          'flex-1 overflow-auto p-6',
-          detailPanelOpen && selectedCoach ? 'mr-[420px]' : ''
-        )}>
+        <div className="flex-1 overflow-auto p-6">
           {activeTab === 'calendar' ? (
             <CalendarView
               key={calendarRefreshKey}
@@ -582,12 +582,7 @@ export default function CRMPage() {
           ) : (
             <div className="space-y-4">
               {/* Filters */}
-              <div className={cn(
-                'p-4 rounded-2xl',
-                'bg-white/65 backdrop-blur-[16px]',
-                'border border-white/30',
-                'shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)]'
-              )}>
+              <div className="p-4 bg-white rounded-2xl border border-warm-200/50 shadow-sm">
                 <CoachFilters
                   filters={filters}
                   setFilters={setFilters}
@@ -607,12 +602,7 @@ export default function CRMPage() {
               )}
 
               {/* Table or Pipeline */}
-              <div className={cn(
-                'rounded-2xl overflow-hidden',
-                'bg-white/65 backdrop-blur-[16px]',
-                'border border-white/30',
-                'shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)]'
-              )}>
+              <div className="rounded-2xl overflow-hidden bg-white border border-warm-200/50 shadow-sm">
                 {activeTab === 'list' ? (
                   <CoachTable
                     coaches={coaches}

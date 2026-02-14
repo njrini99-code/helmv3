@@ -34,22 +34,21 @@ import PlayerDropoffFunnel from './components/PlayerDropoffFunnel';
 import SessionHeatmap from './components/SessionHeatmap';
 import { useAnalyticsTracking } from '@/hooks/useAnalyticsTracking';
 import {
-  HomeIcon,
-  UsersIcon,
-  HeartPulseIcon,
-  BarChart3Icon,
-  TargetIcon,
-  RefreshCwIcon,
-  LogOutIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  MenuIcon,
-  XIcon,
-  AlertTriangleIcon,
-  TrendingUpIcon,
-  SparklesIcon,
-  ActivityIcon,
-} from 'lucide-react';
+  IconHome,
+  IconUsers,
+  IconActivity,
+  IconChart,
+  IconTarget,
+  IconRefresh,
+  IconLogOut,
+  IconChevronLeft,
+  IconChevronRight,
+  IconMenu,
+  IconX,
+  IconWarning,
+  IconTrendingUp,
+  IconSparkles,
+} from '@/components/icons';
 
 // Real-time components
 import { AdminRealtimeProvider, useAdminRealtimeContext } from './components/AdminRealtimeProvider';
@@ -78,28 +77,28 @@ const TABS = [
   { 
     id: 'command', 
     label: 'Command', 
-    Icon: HomeIcon, 
+    Icon: IconHome, 
     shortcut: '1',
     description: 'Overview dashboard'
   },
   { 
     id: 'users', 
     label: 'Users', 
-    Icon: UsersIcon, 
+    Icon: IconUsers, 
     shortcut: '2',
     description: 'User & team management'
   },
   { 
     id: 'health', 
     label: 'Health', 
-    Icon: HeartPulseIcon, 
+    Icon: IconActivity, 
     shortcut: '3',
     description: 'System health & errors'
   },
   { 
     id: 'analytics', 
     label: 'Analytics', 
-    Icon: BarChart3Icon, 
+    Icon: IconChart, 
     shortcut: '4',
     description: 'Growth & engagement'
   },
@@ -317,10 +316,13 @@ function AdminDashboardContent() {
                   {isActive && (
                     <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-primary-500 rounded-r-full" />
                   )}
-                  <TabIcon className={cn(
-                    'w-5 h-5 flex-shrink-0 transition-colors duration-200',
-                    isActive ? 'text-primary-400' : 'text-warm-400 group-hover:text-white'
-                  )} />
+                  <TabIcon 
+                    size={20}
+                    className={cn(
+                      'flex-shrink-0 transition-colors duration-200',
+                      isActive ? 'text-primary-400' : 'text-warm-400 group-hover:text-white'
+                    )} 
+                  />
                   {!sidebarCollapsed && (
                     <span className="text-sm font-medium flex-1 text-left">{tab.label}</span>
                   )}
@@ -360,7 +362,7 @@ function AdminDashboardContent() {
                 'text-primary-400 hover:bg-white/5 hover:text-primary-300'
               )}
             >
-              <TargetIcon className="w-5 h-5 flex-shrink-0" />
+              <IconTarget className="w-5 h-5 flex-shrink-0" />
               {!sidebarCollapsed && (
                 <>
                   <div className="flex-1 text-left">
@@ -461,7 +463,7 @@ function AdminDashboardContent() {
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
           className="absolute -right-3 top-20 w-6 h-6 rounded-full bg-[#1C1917] border border-white/20 flex items-center justify-center text-warm-400 hover:text-white transition-colors shadow-lg"
         >
-          {sidebarCollapsed ? <ChevronRightIcon className="w-3.5 h-3.5" /> : <ChevronLeftIcon className="w-3.5 h-3.5" />}
+          {sidebarCollapsed ? <IconChevronRight size={14} /> : <IconChevronLeft size={14} />}
         </button>
       </aside>
 
@@ -480,7 +482,7 @@ function AdminDashboardContent() {
             <span className="font-bold text-lg text-white">Command</span>
           </div>
           <button onClick={() => setMobileMenuOpen(false)} className="p-2 text-warm-400 hover:text-white">
-            <XIcon className="w-5 h-5" />
+            <IconX size={20} />
           </button>
         </div>
         <nav className="flex-1 px-3 py-2 space-y-1">
@@ -496,13 +498,13 @@ function AdminDashboardContent() {
                   isActive ? 'bg-white/10 text-white' : 'text-warm-400 hover:bg-white/5 hover:text-white'
                 )}
               >
-                <TabIcon className={cn('w-5 h-5', isActive && 'text-primary-400')} />
+                <TabIcon size={20} className={cn(isActive && 'text-primary-400')} />
                 <span className="text-sm font-medium">{tab.label}</span>
               </button>
             );
           })}
           <Link href="/golf/admin/crm" className="flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-primary-400 hover:bg-white/5 mt-4 pt-4 border-t border-white/10">
-            <TargetIcon className="w-5 h-5" />
+            <IconTarget size={20} />
             <span className="text-sm font-medium">Coach CRM</span>
           </Link>
         </nav>
@@ -517,7 +519,7 @@ function AdminDashboardContent() {
         <header className="sticky top-0 z-30 bg-[#FFFEF8]/95 backdrop-blur-sm border-b border-warm-200/50 px-4 sm:px-6 py-3">
           <div className="flex items-center justify-between">
             <button onClick={() => setMobileMenuOpen(true)} className="lg:hidden p-2 -ml-2 rounded-lg text-warm-600 hover:bg-warm-100">
-              <MenuIcon className="w-5 h-5" />
+              <IconMenu size={20} />
             </button>
 
             <div className="flex items-center gap-3">
@@ -538,14 +540,14 @@ function AdminDashboardContent() {
                 )}
                 title="Refresh (R)"
               >
-                <RefreshCwIcon className="w-4 h-4" />
+                <IconRefresh size={16} />
               </button>
 
               <Link
                 href="/golf/admin/crm"
                 className="flex items-center gap-2 text-sm font-medium text-primary-600 hover:text-primary-700 px-3 py-1.5 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors"
               >
-                <TargetIcon className="w-4 h-4" />
+                <IconTarget size={16} />
                 <span className="hidden sm:inline">CRM</span>
               </Link>
 
@@ -554,7 +556,7 @@ function AdminDashboardContent() {
                 className="p-2 rounded-lg text-warm-500 hover:text-warm-700 hover:bg-warm-100 transition-colors"
                 title="Sign Out"
               >
-                <LogOutIcon className="w-4 h-4" />
+                <IconLogOut size={16} />
               </button>
             </div>
           </div>
@@ -597,7 +599,7 @@ function AdminDashboardContent() {
                     <AdminStatCard
                       label="Total Users"
                       value={data.totalPlatformUsers}
-                      icon={<UsersIcon className="w-5 h-5" />}
+                      icon={<IconUsers size={20} />}
                       trend={{ value: data.growth.userGrowthRate, label: 'vs last week' }}
                       detail={`${data.users.newUsersThisWeek} new this week`}
                       accentColor="green"
@@ -605,7 +607,7 @@ function AdminDashboardContent() {
                     <AdminStatCard
                       label="Rounds This Week"
                       value={data.health.roundsThisWeek}
-                      icon={<TargetIcon className="w-5 h-5" />}
+                      icon={<IconTarget size={20} />}
                       trend={{ value: data.growth.roundGrowthRate, label: 'vs last week' }}
                       detail={`${data.health.roundsToday} today`}
                       accentColor="blue"
@@ -613,14 +615,14 @@ function AdminDashboardContent() {
                     <AdminStatCard
                       label="AI Activity"
                       value={data.health.roundReviewsThisWeek + data.health.insightsThisWeek}
-                      icon={<SparklesIcon className="w-5 h-5" />}
+                      icon={<IconSparkles size={20} />}
                       detail={`${data.health.roundReviewsThisWeek} reviews, ${data.health.insightsThisWeek} insights`}
                       accentColor="green"
                     />
                     <AdminStatCard
                       label="Errors (7d)"
                       value={data.errorLogs.totalErrors7d}
-                      icon={<AlertTriangleIcon className="w-5 h-5" />}
+                      icon={<IconWarning size={20} />}
                       accentColor={data.errorLogs.criticalErrors7d > 0 ? 'red' : data.errorLogs.totalErrors7d > 0 ? 'amber' : 'green'}
                       detail={data.errorLogs.criticalErrors7d > 0 ? `${data.errorLogs.criticalErrors7d} critical` : 'no critical'}
                     />
@@ -628,7 +630,7 @@ function AdminDashboardContent() {
                       label="Growth Rate"
                       value={`${data.growth.userGrowthRate > 0 ? '+' : ''}${data.growth.userGrowthRate}`}
                       suffix="%"
-                      icon={<TrendingUpIcon className="w-5 h-5" />}
+                      icon={<IconTrendingUp size={20} />}
                       accentColor={data.growth.userGrowthRate > 0 ? 'green' : data.growth.userGrowthRate < 0 ? 'red' : 'blue'}
                       detail="user growth vs last week"
                     />
@@ -636,7 +638,7 @@ function AdminDashboardContent() {
                       label="Health Score"
                       value={data.growth.platformHealthScore}
                       suffix="/100"
-                      icon={<ActivityIcon className="w-5 h-5" />}
+                      icon={<IconActivity size={20} />}
                       accentColor={data.growth.platformHealthScore >= 50 ? 'green' : 'red'}
                     />
                   </div>
@@ -670,7 +672,7 @@ function AdminDashboardContent() {
                       <AdminStatCard
                         label="Total Users"
                         value={data.totalPlatformUsers}
-                        icon={<UsersIcon className="w-5 h-5" />}
+                        icon={<IconUsers size={20} />}
                         trend={{ value: data.growth.userGrowthRate, label: 'vs last week' }}
                         detail={`${data.users.totalCoaches} coaches · ${data.users.totalPlayers} players · ${data.users.totalAdmins} admin`}
                         accentColor="green"
@@ -678,7 +680,7 @@ function AdminDashboardContent() {
                       <AdminStatCard
                         label="Active Teams"
                         value={data.users.activeTeams}
-                        icon={<UsersIcon className="w-5 h-5" />}
+                        icon={<IconUsers size={20} />}
                         detail={`${data.teamRosters.length} total teams`}
                         accentColor="blue"
                       />
@@ -686,7 +688,7 @@ function AdminDashboardContent() {
                         label="Coach Onboarding"
                         value={`${data.users.coachOnboardingRate}`}
                         suffix="%"
-                        icon={<BarChart3Icon className="w-5 h-5" />}
+                        icon={<IconChart size={20} />}
                         detail={`${data.users.totalCoaches} coaches`}
                         accentColor={data.users.coachOnboardingRate > 60 ? 'green' : 'amber'}
                       />
@@ -694,7 +696,7 @@ function AdminDashboardContent() {
                         label="Player Onboarding"
                         value={`${data.users.playerOnboardingRate}`}
                         suffix="%"
-                        icon={<BarChart3Icon className="w-5 h-5" />}
+                        icon={<IconChart size={20} />}
                         detail={`${data.users.totalPlayers} players`}
                         accentColor={data.users.playerOnboardingRate > 60 ? 'green' : 'amber'}
                       />
@@ -722,26 +724,26 @@ function AdminDashboardContent() {
                       <AdminStatCard
                         label="Total Errors (7d)"
                         value={data.errorLogs.totalErrors7d}
-                        icon={<AlertTriangleIcon className="w-5 h-5" />}
+                        icon={<IconWarning size={20} />}
                         accentColor={data.errorLogs.totalErrors7d > 10 ? 'red' : data.errorLogs.totalErrors7d > 0 ? 'amber' : 'green'}
                       />
                       <AdminStatCard
                         label="Critical Errors"
                         value={data.errorLogs.criticalErrors7d}
-                        icon={<AlertTriangleIcon className="w-5 h-5" />}
+                        icon={<IconWarning size={20} />}
                         accentColor={data.errorLogs.criticalErrors7d > 0 ? 'red' : 'green'}
                         detail={data.errorLogs.criticalErrors7d > 0 ? 'Immediate attention needed' : 'All clear'}
                       />
                       <AdminStatCard
                         label="Failed Logins (7d)"
                         value={data.loginSecurity.failedLogins7d}
-                        icon={<ActivityIcon className="w-5 h-5" />}
+                        icon={<IconActivity size={20} />}
                         accentColor={data.loginSecurity.failedLogins7d > 5 ? 'amber' : 'green'}
                       />
                       <AdminStatCard
                         label="Locked Accounts"
                         value={data.loginSecurity.lockedAccounts}
-                        icon={<ActivityIcon className="w-5 h-5" />}
+                        icon={<IconActivity size={20} />}
                         accentColor={data.loginSecurity.lockedAccounts > 0 ? 'red' : 'green'}
                       />
                     </div>
@@ -781,14 +783,14 @@ function AdminDashboardContent() {
                         label="Health Score"
                         value={data.growth.platformHealthScore}
                         suffix="/100"
-                        icon={<ActivityIcon className="w-5 h-5" />}
+                        icon={<IconActivity size={20} />}
                         accentColor={data.growth.platformHealthScore >= 50 ? 'green' : 'red'}
                       />
                       <AdminStatCard
                         label="Power Users"
                         value={`${data.growth.npsProxy}`}
                         suffix="%"
-                        icon={<SparklesIcon className="w-5 h-5" />}
+                        icon={<IconSparkles size={20} />}
                         detail="coaches fully engaged"
                         accentColor={data.growth.npsProxy > 30 ? 'green' : 'amber'}
                       />
@@ -796,21 +798,21 @@ function AdminDashboardContent() {
                         label="Weekly Active"
                         value={`${data.engagement.weeklyRetention}`}
                         suffix="%"
-                        icon={<TrendingUpIcon className="w-5 h-5" />}
+                        icon={<IconTrendingUp size={20} />}
                         accentColor={data.engagement.weeklyRetention > 30 ? 'green' : 'amber'}
                       />
                       <AdminStatCard
                         label="Stickiness"
                         value={`${data.stickiness.dauMauRatio}`}
                         suffix="%"
-                        icon={<BarChart3Icon className="w-5 h-5" />}
+                        icon={<IconChart size={20} />}
                         detail={`DAU/MAU · ${data.stickiness.dau}/${data.stickiness.mau}`}
                         accentColor={data.stickiness.dauMauRatio > 20 ? 'green' : 'amber'}
                       />
                       <AdminStatCard
                         label="Churned (30d)"
                         value={data.growth.churnedPlayers30d}
-                        icon={<AlertTriangleIcon className="w-5 h-5" />}
+                        icon={<IconWarning size={20} />}
                         detail="players went inactive"
                         accentColor={data.growth.churnedPlayers30d > 0 ? 'amber' : 'green'}
                       />
@@ -818,7 +820,7 @@ function AdminDashboardContent() {
                         label="AI Adoption"
                         value={`${data.coachhelm.coachPhilosophyAdoption}`}
                         suffix="%"
-                        icon={<SparklesIcon className="w-5 h-5" />}
+                        icon={<IconSparkles size={20} />}
                         accentColor={data.coachhelm.coachPhilosophyAdoption > 50 ? 'green' : 'amber'}
                       />
                     </div>

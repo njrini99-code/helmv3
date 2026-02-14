@@ -251,10 +251,11 @@ export function CoachTable({
                 <tr
                   key={coach.id}
                   className={cn(
-                    'border-b border-warm-100/50 transition-all cursor-pointer group',
-                    isSelected && 'bg-primary-50/50',
-                    isFocused && 'ring-2 ring-inset ring-primary-400',
-                    !isSelected && !isFocused && 'hover:bg-white/50'
+                    'border-b border-warm-100/50 cursor-pointer group',
+                    'transition-colors duration-150',
+                    isSelected && 'bg-primary-50/60',
+                    isFocused && 'ring-2 ring-inset ring-primary-400 bg-primary-50/30',
+                    !isSelected && !isFocused && 'hover:bg-warm-50/60'
                   )}
                   onClick={() => onCoachClick(coach)}
                   onMouseEnter={() => setFocusedIndex(index)}
