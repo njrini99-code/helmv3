@@ -150,13 +150,16 @@ export function useAdminRealtime(options: UseAdminRealtimeOptions = {}): UseAdmi
 
   // Connect to realtime channel
   const connect = useCallback(() => {
-    // Clean up existing channel
-    if (channelRef.current) {
-      supabase.removeChannel(channelRef.current);
-    }
+    try {
+      // Clean up existing channel
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current).catch(() => {
+          // Ignore cleanup errors
+        });
+      }
 
-    setConnectionState('connecting');
-    setError(null);
+      setConnectionState('connecting');
+      setError(null);
 
     // Create channel for admin_events table (primary) + fallback to admin_client_errors
     const channel = supabase
@@ -290,7 +293,13 @@ export function useAdminRealtime(options: UseAdminRealtimeOptions = {}): UseAdmi
         }
       });
 
-    channelRef.current = channel;
+      channelRef.current = channel;
+    } catch (err) {
+      console.error('Failed to connect to realtime channel:', err);
+      setConnectionState('error');
+      setError(err instanceof Error ? err : new Error('Failed to connect'));
+      setIsConnected(false);
+    }
   }, [supabase, handleNewEvent, shouldIncludeEvent, maxEvents, autoReconnect]);
 
   // Manual reconnect

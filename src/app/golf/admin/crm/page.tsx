@@ -127,7 +127,7 @@ export const STATUS_CONFIG: Record<CoachStatus, {
     color: 'text-amber-700', 
     bgColor: 'bg-amber-50', 
     ringColor: 'ring-amber-300',
-    icon: <IconCalendar size={14} />,
+    icon: <Calendar size={14} />,
     iconLabel: '📅',
     order: 3,
     gradient: 'from-amber-400 to-amber-500',

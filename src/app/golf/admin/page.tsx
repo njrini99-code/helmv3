@@ -123,9 +123,14 @@ export default function AdminDashboardPage() {
   
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      setCurrentUserId(data.user?.id ?? null);
-    });
+    supabase.auth.getUser()
+      .then(({ data }) => {
+        setCurrentUserId(data.user?.id ?? null);
+      })
+      .catch((err) => {
+        console.error('Failed to get user:', err);
+        setCurrentUserId(null);
+      });
   }, []);
 
   return (
@@ -690,7 +695,7 @@ function AdminDashboardContent() {
                       label="Coach Onboarding"
                       value={`${data.users.coachOnboardingRate}`}
                       suffix="%"
-                      icon={<IconChart size={20} />}
+                      icon={<BarChart3 size={20} />}
                       detail={`${data.users.totalCoaches} coaches`}
                       accentColor={data.users.coachOnboardingRate > 60 ? 'green' : 'amber'}
                     />
@@ -698,7 +703,7 @@ function AdminDashboardContent() {
                       label="Player Onboarding"
                       value={`${data.users.playerOnboardingRate}`}
                       suffix="%"
-                      icon={<IconChart size={20} />}
+                      icon={<BarChart3 size={20} />}
                       detail={`${data.users.totalPlayers} players`}
                       accentColor={data.users.playerOnboardingRate > 60 ? 'green' : 'amber'}
                     />
@@ -838,7 +843,7 @@ function AdminDashboardContent() {
                       label="Stickiness"
                       value={`${data.stickiness.dauMauRatio}`}
                       suffix="%"
-                      icon={<IconChart size={20} />}
+                      icon={<BarChart3 size={20} />}
                       detail={`DAU/MAU · ${data.stickiness.dau}/${data.stickiness.mau}`}
                       accentColor={data.stickiness.dauMauRatio > 20 ? 'green' : 'amber'}
                     />

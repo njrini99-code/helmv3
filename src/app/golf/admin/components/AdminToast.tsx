@@ -180,37 +180,37 @@ export function useAdminToast(): AdminToastContextValue {
 // ============================================
 
 const variantConfig: Record<AdminToastVariant, {
-  icon: typeof IconCheck;
+  icon: typeof Check;
   iconClass: string;
   borderClass: string;
   bgClass: string;
 }> = {
   success: {
-    icon: IconCheck,
+    icon: Check,
     iconClass: 'bg-emerald-500 text-white',
     borderClass: 'border-emerald-200/50',
     bgClass: 'bg-emerald-50/50',
   },
   warning: {
-    icon: IconWarning,
+    icon: AlertTriangle,
     iconClass: 'bg-amber-500 text-white',
     borderClass: 'border-amber-200/50',
     bgClass: 'bg-amber-50/50',
   },
   error: {
-    icon: IconX,
+    icon: X,
     iconClass: 'bg-red-500 text-white',
     borderClass: 'border-red-200/50',
     bgClass: 'bg-red-50/50',
   },
   info: {
-    icon: IconInfo,
+    icon: Info,
     iconClass: 'bg-blue-500 text-white',
     borderClass: 'border-blue-200/50',
     bgClass: 'bg-blue-50/50',
   },
   critical: {
-    icon: IconActivity,
+    icon: Activity,
     iconClass: 'bg-red-600 text-white animate-pulse',
     borderClass: 'border-red-300/50',
     bgClass: 'bg-red-100/50',

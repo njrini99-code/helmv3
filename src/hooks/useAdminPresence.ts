@@ -147,17 +147,21 @@ export function useAdminPresence(options: UseAdminPresenceOptions = {}): UseAdmi
           setError(null);
 
           // Track our own presence
-          const presenceInfo: Partial<AdminPresenceInfo> = {
-            id: currentUser.id,
-            email: currentUser.email ?? null,
-            name: currentUser.user_metadata?.full_name ?? currentUser.email?.split('@')[0] ?? null,
-            avatar_url: currentUser.user_metadata?.avatar_url ?? null,
-            currentTab: currentTab,
-            joined_at: new Date().toISOString(),
-            last_active: new Date().toISOString(),
-          };
+          try {
+            const presenceInfo: Partial<AdminPresenceInfo> = {
+              id: currentUser.id,
+              email: currentUser.email ?? null,
+              name: currentUser.user_metadata?.full_name ?? currentUser.email?.split('@')[0] ?? null,
+              avatar_url: currentUser.user_metadata?.avatar_url ?? null,
+              currentTab: currentTab,
+              joined_at: new Date().toISOString(),
+              last_active: new Date().toISOString(),
+            };
 
-          await channel.track(presenceInfo);
+            await channel.track(presenceInfo);
+          } catch (err) {
+            console.error('Failed to track presence:', err);
+          }
         } else if (status === 'CHANNEL_ERROR') {
           setIsConnected(false);
           setError(new Error('Presence channel error'));
@@ -200,7 +204,9 @@ export function useAdminPresence(options: UseAdminPresenceOptions = {}): UseAdmi
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       
       if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
+        supabase.removeChannel(channelRef.current).catch(() => {
+          // Ignore cleanup errors
+        });
       }
     };
   }, [currentUser, channelName, syncInterval, supabase, extractAdmins, currentTab, updatePresence]);
