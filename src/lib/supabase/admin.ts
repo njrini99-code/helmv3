@@ -9,7 +9,7 @@ export function createAdminClient() {
     throw new Error('Missing Supabase admin credentials');
   }
 
-  return createClient<Database>(url, serviceRoleKey, {
+  return createClient<Database>(url.trim(), serviceRoleKey.trim(), {
     auth: {
       autoRefreshToken: false,
       persistSession: false,

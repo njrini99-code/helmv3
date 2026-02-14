@@ -2,26 +2,29 @@ import { createClient } from '@/lib/supabase/server';
 import { NextRequest, NextResponse } from 'next/server';
 import type { PlayerPuttTendencies } from '@/lib/types/golf';
 
-interface PlayerPuttTendenciesRow {
-  player_id: string;
-  full_name: string | null;
-  total_missed_putts: number | null;
-  low_misses: number | null;
-  high_misses: number | null;
-  short_misses: number | null;
-  long_misses: number | null;
-  pull_misses: number | null;
-  push_misses: number | null;
-  low_miss_pct: number | null;
-  high_miss_pct: number | null;
-  under_read_tendency: number | null;
-  leave_short_tendency: number | null;
-  misses_inside_5ft: number | null;
-  made_inside_5ft: number | null;
-  misses_5_to_10ft: number | null;
-  made_5_to_10ft: number | null;
-  misses_outside_10ft: number | null;
-  made_outside_10ft: number | null;
+const EMPTY_TENDENCIES: PlayerPuttTendencies = {
+  playerId: '',
+  fullName: 'Unknown',
+  totalMissedPutts: 0,
+  missByType: { low: 0, high: 0, short: 0, long: 0, pull: 0, push: 0 },
+  percentages: {
+    lowMissPct: 0,
+    highMissPct: 0,
+    underReadTendency: 50,
+    leaveShortTendency: 50,
+  },
+  byDistance: {
+    inside5ft: { attempts: 0, made: 0, pct: 0 },
+    fiveTo10ft: { attempts: 0, made: 0, pct: 0 },
+    outside10ft: { attempts: 0, made: 0, pct: 0 },
+  },
+};
+
+interface PuttDetailRow {
+  miss_tags: string[] | null;
+  break_direction: string | null;
+  distance_feet: number | null;
+  made: boolean;
 }
 
 export async function GET(
@@ -38,10 +41,10 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Authorization: Check if user is the player or a coach on the player's team
+    // Get player info
     const { data: player } = await supabase
       .from('golf_players')
-      .select('id, user_id')
+      .select('id, user_id, first_name, last_name')
       .eq('id', playerId)
       .single();
 
@@ -49,14 +52,10 @@ export async function GET(
       return NextResponse.json({ error: 'Player not found' }, { status: 404 });
     }
 
-    // Check if user is the player themselves
+    // Authorization: must be the player or a coach on their team
     const isOwnData = player.user_id === user.id;
-
-    // Check if user is a coach on the player's team
-    // Player-team relationship is through golf_team_members table
     let isTeamCoach = false;
     if (!isOwnData) {
-      // First get the player's team(s)
       const { data: teamMembership } = await supabase
         .from('golf_team_members')
         .select('team_id')
@@ -65,7 +64,6 @@ export async function GET(
         .single();
 
       if (teamMembership?.team_id) {
-        // Verify coach is on the same team as the player via organization_id
         const { data: coachProfile } = await supabase
           .from('golf_coaches')
           .select('organization_id')
@@ -90,87 +88,94 @@ export async function GET(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Use type assertion to bypass TypeScript type checking for views not in generated types
+    // Query putt_details for this player's shots via golf_shots join
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
-      .from('player_putt_tendencies')
-      .select('*')
-      .eq('player_id', playerId)
-      .single() as { data: PlayerPuttTendenciesRow | null; error: { message: string } | null };
-    const row = data;
+    const { data: puttRows, error } = await (supabase as any)
+      .from('putt_details')
+      .select('miss_tags, break_direction, distance_feet, made, shot:golf_shots!inner(player_id)')
+      .eq('shot.player_id', playerId) as { data: (PuttDetailRow & { shot: { player_id: string } })[] | null; error: { message: string } | null };
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    if (!row) {
-      return NextResponse.json({
-        playerId: playerId,
-        fullName: 'Unknown',
-        totalMissedPutts: 0,
-        missByType: {
-          low: 0,
-          high: 0,
-          short: 0,
-          long: 0,
-          pull: 0,
-          push: 0,
-        },
-        percentages: {
-          lowMissPct: 0,
-          highMissPct: 0,
-          underReadTendency: 50,
-          leaveShortTendency: 50,
-        },
-        byDistance: {
-          inside5ft: { attempts: 0, made: 0, pct: 0 },
-          fiveTo10ft: { attempts: 0, made: 0, pct: 0 },
-          outside10ft: { attempts: 0, made: 0, pct: 0 },
-        },
-      } as PlayerPuttTendencies);
+    const rows = puttRows || [];
+    const fullName = [player.first_name, player.last_name].filter(Boolean).join(' ') || 'Unknown';
+
+    if (rows.length === 0) {
+      return NextResponse.json({ ...EMPTY_TENDENCIES, playerId, fullName });
     }
 
-    // Transform database result to PlayerPuttTendencies format
+    // Compute tendencies from raw putt data
+    const missByType = { low: 0, high: 0, short: 0, long: 0, pull: 0, push: 0 };
+    let totalMissedPutts = 0;
+
+    // Distance buckets
+    const inside5ft = { attempts: 0, made: 0 };
+    const fiveTo10ft = { attempts: 0, made: 0 };
+    const outside10ft = { attempts: 0, made: 0 };
+
+    for (const row of rows) {
+      const dist = row.distance_feet ?? 0;
+
+      // Distance buckets
+      if (dist < 5) {
+        inside5ft.attempts++;
+        if (row.made) inside5ft.made++;
+      } else if (dist < 10) {
+        fiveTo10ft.attempts++;
+        if (row.made) fiveTo10ft.made++;
+      } else {
+        outside10ft.attempts++;
+        if (row.made) outside10ft.made++;
+      }
+
+      // Miss tags (only for missed putts)
+      if (!row.made && row.miss_tags && row.miss_tags.length > 0) {
+        totalMissedPutts++;
+        for (const tag of row.miss_tags) {
+          if (tag in missByType) {
+            missByType[tag as keyof typeof missByType]++;
+          }
+        }
+      }
+    }
+
+    // Calculate percentages
+    const lowMissPct = totalMissedPutts > 0 ? Math.round((missByType.low / totalMissedPutts) * 100) : 0;
+    const highMissPct = totalMissedPutts > 0 ? Math.round((missByType.high / totalMissedPutts) * 100) : 0;
+
+    // Under-read tendency: low = under-read (ball broke more than expected)
+    // Balanced is 50%. >50 means more under-reads.
+    const readMisses = missByType.low + missByType.high;
+    const underReadTendency = readMisses > 0
+      ? Math.round((missByType.low / readMisses) * 100)
+      : 50;
+
+    // Leave-short tendency: short vs long
+    const speedMisses = missByType.short + missByType.long;
+    const leaveShortTendency = speedMisses > 0
+      ? Math.round((missByType.short / speedMisses) * 100)
+      : 50;
+
+    const pct = (made: number, attempts: number) =>
+      attempts > 0 ? Math.round((made / attempts) * 100) : 0;
+
     const tendencies: PlayerPuttTendencies = {
-      playerId: row.player_id,
-      fullName: row.full_name || 'Unknown',
-      totalMissedPutts: row.total_missed_putts || 0,
-      missByType: {
-        low: row.low_misses || 0,
-        high: row.high_misses || 0,
-        short: row.short_misses || 0,
-        long: row.long_misses || 0,
-        pull: row.pull_misses || 0,
-        push: row.push_misses || 0,
-      },
+      playerId,
+      fullName,
+      totalMissedPutts,
+      missByType,
       percentages: {
-        lowMissPct: row.low_miss_pct || 0,
-        highMissPct: row.high_miss_pct || 0,
-        underReadTendency: row.under_read_tendency || 50,
-        leaveShortTendency: row.leave_short_tendency || 50,
+        lowMissPct,
+        highMissPct,
+        underReadTendency,
+        leaveShortTendency,
       },
       byDistance: {
-        inside5ft: {
-          attempts: (row.misses_inside_5ft || 0) + (row.made_inside_5ft || 0),
-          made: row.made_inside_5ft || 0,
-          pct: (row.misses_inside_5ft || 0) + (row.made_inside_5ft || 0) > 0
-            ? Math.round(((row.made_inside_5ft || 0) / ((row.misses_inside_5ft || 0) + (row.made_inside_5ft || 0))) * 100)
-            : 0,
-        },
-        fiveTo10ft: {
-          attempts: (row.misses_5_to_10ft || 0) + (row.made_5_to_10ft || 0),
-          made: row.made_5_to_10ft || 0,
-          pct: (row.misses_5_to_10ft || 0) + (row.made_5_to_10ft || 0) > 0
-            ? Math.round(((row.made_5_to_10ft || 0) / ((row.misses_5_to_10ft || 0) + (row.made_5_to_10ft || 0))) * 100)
-            : 0,
-        },
-        outside10ft: {
-          attempts: (row.misses_outside_10ft || 0) + (row.made_outside_10ft || 0),
-          made: row.made_outside_10ft || 0,
-          pct: (row.misses_outside_10ft || 0) + (row.made_outside_10ft || 0) > 0
-            ? Math.round(((row.made_outside_10ft || 0) / ((row.misses_outside_10ft || 0) + (row.made_outside_10ft || 0))) * 100)
-            : 0,
-        },
+        inside5ft: { ...inside5ft, pct: pct(inside5ft.made, inside5ft.attempts) },
+        fiveTo10ft: { ...fiveTo10ft, pct: pct(fiveTo10ft.made, fiveTo10ft.attempts) },
+        outside10ft: { ...outside10ft, pct: pct(outside10ft.made, outside10ft.attempts) },
       },
     };
 

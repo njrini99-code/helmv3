@@ -142,9 +142,10 @@ Aggregated player and team statistics with 50+ metrics, cached for performance. 
 ### Data Flow
 ```
 Round completion → invalidateOnRoundComplete()
-  → Recalculate golf_player_stats_cache
-  → Recalculate golf_round_stats_cache
-  → Update golf_putting_tendencies
+  → Mark golf_player_stats_cache stale (via Redis invalidation)
+  → Attempt SG recalculation RPCs (non-critical, may not exist)
+  → golf_round_stats_cache: populated at round submit time, not recalculated here
+  → golf_putting_tendencies: NOT updated by this function (table exists but no app-level writes)
 
 Stats pages:
   /golf/dashboard/stats → Player personal stats
@@ -182,6 +183,8 @@ Player profile:
 | Gap | Severity | Details |
 |-----|----------|---------|
 | Strokes Gained not populated | Medium | SG columns exist in stats cache but are null. Framework exists in codebase. |
+| golf_putting_tendencies never written | Medium | Table exists in DB with RLS policies, but no app code writes to it. Stats cache invalidation does NOT update it despite being documented as a dependency. |
+| Stats cache is lazy-refresh | Low | `invalidateOnRoundComplete()` marks cache stale via Redis; actual recalculation happens lazily on next read via `getStatsFromCache()` → `refreshStatsCache()`. |
 
 ---
 
@@ -436,10 +439,10 @@ Player view (via Player Hub):
   → Packing list, room assignments, uniform requirements
   → Status badges: upcoming, in transit, completed
 
-Budget/Expenses (SCAFFOLDED):
-  → golf_travel_budgets (table exists, no CRUD actions)
-  → golf_travel_expenses (table exists, partial actions)
-  → golf_travel_expense_splits (table exists, no actions)
+Budget/Expenses (IMPLEMENTED in travel.ts):
+  → golf_travel_budgets: setBudget(), getBudgetsForItinerary()
+  → golf_travel_expenses: full CRUD + receipt upload + CSV export
+  → golf_travel_expense_splits (table exists, referenced but no dedicated split logic)
 ```
 
 ### Key Files
@@ -455,9 +458,8 @@ golf_travel_itineraries, golf_travel_budgets, golf_travel_expenses, golf_travel_
 ### Known Gaps
 | Gap | Severity | Details |
 |-----|----------|---------|
-| Budget CRUD missing | Medium | Table exists but no create/update/delete actions |
-| Expense recording missing | Medium | Partial implementation, no receipt uploads |
-| Expense splits missing | Medium | Table exists, no split calculation logic |
+| Expense splits incomplete | Medium | Table exists but no split calculation or per-player assignment logic |
+| Budget UI may be missing | Low | CRUD functions exist in travel.ts but verify UI components expose them |
 
 ---
 
@@ -808,7 +810,9 @@ Personal action center for players. Central dashboard showing upcoming travel, a
   Section 2: TASKS
     → Query golf_tasks + golf_task_assignments WHERE player_id
     → Display: title, due date, category, upload requirement
-    → Action: completeTask(taskId) → INSERT golf_task_completions
+    → ⚠️ DUAL TABLE BUG: Hub page READS from golf_task_completions, but
+       completeTask() action WRITES to golf_task_assignments (status + completed_at)
+       These two tables can get out of sync.
     → Status: pending, overdue, completed (color-coded)
 
   Section 3: EVENTS
@@ -826,7 +830,12 @@ Personal action center for players. Central dashboard showing upcoming travel, a
 | Components | `src/components/golf/player-hub/PlayerHub.tsx` (40KB), `PlayerHubWrapper.tsx` |
 
 ### DB Tables
-golf_travel_itineraries, golf_tasks, golf_task_assignments, golf_task_completions, golf_events, golf_event_attendance
+golf_travel_itineraries, golf_tasks, golf_task_assignments, golf_task_completions (⚠️ read here but writes go to golf_task_assignments), golf_events, golf_event_attendance
+
+### Known Gaps
+| Gap | Severity | Details |
+|-----|----------|---------|
+| Task completion dual-table bug | **High** | Hub page reads `golf_task_completions` for completion status, but `completeTask()` action writes to `golf_task_assignments`. Tasks may appear incomplete in the Hub even after completion. |
 
 ### Dependencies
 - **Depends on**: Travel, Tasks, Calendar & Events
@@ -1275,7 +1284,7 @@ Reads from ALL major tables: users, golf_coaches, golf_players, golf_teams, golf
 | 7 | Messaging | Both | ✅ | 100% | ✅ | — |
 | 8 | Announcements | Both | ✅ | 100% | — | — |
 | 9 | Documents | Both | ✅ | 100% | — | — |
-| 10 | Travel | Both | ⚠️ | 50% | — | Budget/expense tracking |
+| 10 | Travel | Both | ⚠️ | 80% | — | Expense splits, budget UI |
 | 11 | Academics / Classes | Player | ✅ | 100% | — | — |
 | 12 | CoachHelm AI Engine | System | ⚠️ | 75% | — | Effectiveness, philosophy wiring |
 | 13 | Alerts System | Coach | ✅ | 95% | — | — |
@@ -1300,22 +1309,24 @@ Reads from ALL major tables: users, golf_coaches, golf_players, golf_teams, golf
 ## PRIORITY GAPS (by business impact)
 
 ### High Priority
-1. **CoachHelm effectiveness tracking** — DB ready, needs server actions + UI. Without this, coaches can't measure if AI insights are working.
-2. **CoachHelm outcome measurement** — No way to close the feedback loop (mark insights as improved/no_change/worsened).
-3. **Strokes Gained calculation** — Framework exists, data exists (shots table), but SG columns in stats cache are null. This is the most important golf statistic.
+1. **Player Hub task completion bug** — Hub reads `golf_task_completions` but `completeTask()` writes to `golf_task_assignments`. Tasks show as incomplete in Hub after completion. Needs unified to one table.
+2. **CoachHelm effectiveness tracking** — DB ready, needs server actions + UI. Without this, coaches can't measure if AI insights are working.
+3. **CoachHelm outcome measurement** — No way to close the feedback loop (mark insights as improved/no_change/worsened).
+4. **Strokes Gained calculation** — Framework exists, data exists (shots table), but SG columns in stats cache are null. This is the most important golf statistic.
 
 ### Medium Priority
-4. **Philosophy priority ranking** — Coach sets priorities but insights don't reorder. Quick win.
-5. **Philosophy weights in predictions** — Prediction model ignores coach weight preferences. Quick win.
-6. **Task reminder auto-send** — Tables and fields exist, needs a cron job or edge function.
-7. **Travel budget/expense tracking** — Tables ready, needs CRUD actions and UI.
+5. **Philosophy priority ranking** — Coach sets priorities but insights don't reorder. Quick win.
+6. **Philosophy weights in predictions** — Prediction model ignores coach weight preferences. Quick win.
+7. **Task reminder auto-send** — Tables and fields exist, needs a cron job or edge function.
 8. **Offline shot sync** — Type alignment fix between ShotRecord and OfflineShot.
 9. **CoachHelm analytics data** — Dashboard exists but effectiveness tables not actively populated.
+10. **golf_putting_tendencies never populated** — Table exists with schema and RLS but no app code writes to it. Stats pipeline skips it.
 
 ### Low Priority
-10. **Appearance preferences consumption** — Settings saved to localStorage but UI doesn't apply them.
-11. **Location defaults consumption** — Settings saved but round creation doesn't pre-fill.
-12. **Coach round verification** — Sharing works, formal approval workflow not critical yet.
-13. **V1 dead code cleanup** — 16K lines of deprecated code, safe to remove.
-14. **Player insight preferences UI** — Table exists, low demand.
-15. **Draft data column migration** — Currently stored in notes field, works but messy.
+11. **Appearance preferences consumption** — Settings saved to localStorage but UI doesn't apply them.
+12. **Location defaults consumption** — Settings saved but round creation doesn't pre-fill.
+13. **Coach round verification** — Sharing works, formal approval workflow not critical yet.
+14. **V1 dead code cleanup** — 16K lines of deprecated code, safe to remove.
+15. **Player insight preferences UI** — Table exists, low demand.
+16. **Draft data column migration** — Currently stored in notes field, works but messy.
+17. **Travel expense splits** — Table exists, CRUD for expenses works, but per-player split logic not implemented.

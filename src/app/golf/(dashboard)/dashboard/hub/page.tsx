@@ -8,18 +8,9 @@ export const metadata: Metadata = {
   description: 'Your personal action center — travel, tasks, and event RSVPs.',
 };
 
-// Task shape from our queries
-interface RawTask {
-  id: string;
-  title: string;
-  description: string | null;
-  due_date: string | null;
-  category: string | null;
-  requires_upload: boolean;
-}
-
-interface RawCompletion {
+interface RawAssignment {
   task_id: string;
+  status: string;
   completed_at: string | null;
 }
 
@@ -89,13 +80,12 @@ export default async function PlayerHubPage() {
       .eq('team_id', teamId)
       .order('departure_date', { ascending: true }),
 
-    // Tasks assigned to this player (or all players)
+    // Tasks assigned to this player via golf_task_assignments
+    // (createTask writes to golf_task_assignments, not golf_tasks.assigned_to)
     supabase
-      .from('golf_tasks')
-      .select('id, title, description, due_date')
-      .eq('team_id', teamId)
-      .or(`assigned_to.is.null,assigned_to.eq.${player.id}`)
-      .order('due_date', { ascending: true, nullsFirst: false }),
+      .from('golf_task_assignments' as 'golf_shots')
+      .select('task_id, status, completed_at')
+      .eq('player_id' as 'id', player.id) as unknown as Promise<{ data: RawAssignment[] | null; error: unknown }>,
 
     // Upcoming events
     supabase
@@ -137,38 +127,47 @@ export default async function PlayerHubPage() {
         : (item.flight_info ? JSON.stringify(item.flight_info) : null)),
   }));
 
-  // Get task completions for this player
-  const rawTasks = (tasksRaw.data || []) as unknown as RawTask[];
-  const taskIds = rawTasks.map(t => t.id);
+  // Build tasks from assignments (tasksRaw is now the assignments query result)
+  const rawAssignments = (tasksRaw.data || []) as unknown as RawAssignment[];
+  const assignmentMap = new Map(rawAssignments.map(a => [a.task_id, a]));
+  const taskIds = [...new Set(rawAssignments.map(a => a.task_id))];
 
-  let completionMap = new Map<string, string | null>();
+  let tasks: Array<{
+    id: string;
+    title: string;
+    description: string | null;
+    due_date: string | null;
+    category: string | null;
+    requires_upload: boolean;
+    status: 'completed' | 'overdue' | 'pending';
+    completed_at: string | null;
+  }> = [];
+
   if (taskIds.length > 0) {
-    // Use raw query since golf_task_completions may not be in generated types
-    const { data: completionsData } = await supabase
-      .from('golf_task_completions' as 'golf_shots') // type assertion for table not in generated types
-      .select('task_id, completed_at')
-      .eq('player_id' as 'id', player.id)
-      .in('task_id' as 'id', taskIds) as { data: RawCompletion[] | null };
+    const { data: taskDetails } = await supabase
+      .from('golf_tasks')
+      .select('id, title, description, due_date, category')
+      .in('id', taskIds)
+      .eq('team_id', teamId)
+      .order('due_date', { ascending: true, nullsFirst: false });
 
-    completionMap = new Map(
-      (completionsData || []).map(c => [c.task_id, c.completed_at])
-    );
+    tasks = (taskDetails || []).map(t => {
+      const assignment = assignmentMap.get(t.id);
+      const isCompleted = assignment?.status === 'completed';
+      const completedAt = assignment?.completed_at || null;
+      const isOverdue = !isCompleted && t.due_date && new Date(t.due_date) < new Date();
+      return {
+        id: t.id,
+        title: t.title,
+        description: t.description,
+        due_date: t.due_date,
+        category: t.category || null,
+        requires_upload: false,
+        status: isCompleted ? 'completed' as const : isOverdue ? 'overdue' as const : 'pending' as const,
+        completed_at: completedAt,
+      };
+    });
   }
-
-  const tasks = rawTasks.map(t => {
-    const completedAt = completionMap.get(t.id) || null;
-    const isOverdue = !completedAt && t.due_date && new Date(t.due_date) < new Date();
-    return {
-      id: t.id,
-      title: t.title,
-      description: t.description,
-      due_date: t.due_date,
-      category: t.category || null,
-      requires_upload: t.requires_upload || false,
-      status: completedAt ? 'completed' as const : isOverdue ? 'overdue' as const : 'pending' as const,
-      completed_at: completedAt,
-    };
-  });
 
   // Transform events — fetch RSVP status and counts
   const rawEvents = (eventsRaw.data || []) as unknown as RawEvent[];

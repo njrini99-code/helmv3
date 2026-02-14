@@ -59,7 +59,7 @@ interface TaskAssignment {
  */
 export async function completeTask(
   taskId: string,
-  uploadUrl?: string,
+  _uploadUrl?: string,
   notes?: string
 ): Promise<ActionResult> {
   try {
@@ -122,9 +122,7 @@ export async function completeTask(
         .update({
           status: 'completed',
           completed_at: now,
-          upload_url: uploadUrl || null,
           notes: notes || null,
-          updated_at: now,
         })
         .eq('id', existingAssignment.id);
 
@@ -155,9 +153,7 @@ export async function completeTask(
           player_id: player.id,
           status: 'completed',
           completed_at: now,
-          upload_url: uploadUrl || null,
           notes: notes || null,
-          created_at: now,
         });
 
       if (insertError) {

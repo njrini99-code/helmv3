@@ -29,7 +29,7 @@ ALL golf tables use the `golf_` prefix. Never query without it.
 
 ---
 
-## Tables by Role & Feature (74 total)
+## Tables by Role & Feature (75 total)
 
 ### COACH Tables (AI + Management)
 
@@ -129,7 +129,8 @@ ALL golf tables use the `golf_` prefix. Never query without it.
 | Table | Feature | Purpose |
 |-------|---------|---------|
 | `golf_tasks` | Tasks | Coach-assigned tasks (title, due_date, urgency) |
-| `golf_task_assignments` | Tasks | Task ↔ player assignments |
+| `golf_task_assignments` | Tasks | Task ↔ player assignments (⚠️ completeTask writes here) |
+| `golf_task_completions` | Tasks | Legacy completion records (⚠️ Player Hub reads here — dual-table bug) |
 | `golf_task_templates` | Tasks | Reusable task templates |
 | `golf_task_reminders` | Tasks | Scheduled reminders (NOT auto-triggered) |
 

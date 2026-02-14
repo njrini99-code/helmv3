@@ -25,7 +25,7 @@
 |------------------------|---------------------|
 | **Any golf feature** (understanding behavior, fixing bugs, adding to it) | `memory/context/golfhelm-features.md` — Find the feature by name, get data flow, files, tables, dependencies, gaps |
 | **Database queries** (writing SQL, adding columns, debugging data) | `memory/context/golfhelm-database.md` — Every column of every table |
-| **Table names or enums** (quick lookup, "what table stores X?") | `memory/glossary.md` — All 74 tables, all enums, all type locations |
+| **Table names or enums** (quick lookup, "what table stores X?") | `memory/glossary.md` — All 75 tables, all enums, all type locations |
 | **CoachHelm AI** (insights, patterns, predictions, reviews, philosophy) | `memory/context/coachhelm-ai.md` — V2 engine architecture, pipeline, components |
 | **Routes, actions, or file locations** ("where is the code for X?") | `memory/projects/golfhelm.md` — All routes, all 41 action files, component directories |
 | **Baseball features** | No deep reference yet — use `src/app/baseball/` directly |
@@ -66,7 +66,7 @@ import type { Player, Coach, Organization } from '@/lib/types';
 ```typescript
 // WRONG: coaches, players, teams, rounds, events (no prefix = doesn't exist)
 // RIGHT: golf_coaches, golf_players, golf_teams, golf_rounds, golf_events
-// Full list of 74 golf tables: memory/glossary.md
+// Full list of 75 golf tables: memory/glossary.md
 // Full column definitions: memory/context/golfhelm-database.md
 ```
 
@@ -220,7 +220,7 @@ src/lib/
 │   └── v2/               # V2: orchestrator, mining, prediction, learning, NLG
 └── utils.ts              # cn(), formatters
 
-src/hooks/golf/           # 13 hooks (realtime, data, offline)
+src/hooks/golf/           # 12 hooks (realtime, data, offline)
 src/stores/               # Zustand (golf-auth-store.ts)
 ```
 

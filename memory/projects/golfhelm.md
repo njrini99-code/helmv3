@@ -116,6 +116,7 @@
 | `alerts.ts` | Coach alert CRUD (get, acknowledge, dismiss, generate) |
 | `insight-management.ts` | Insight search, filter, acknowledge, dismiss, export |
 | `insight-evidence.ts` | Insight evidence/supporting data |
+| `insights.ts` | CoachHelm AI insight generation (pattern mining, predictions, analysis) |
 | `pattern-management.ts` | Pattern lifecycle (validate, address, resolve, dismiss) |
 | `intelligence-dashboard.ts` | Intelligence hub data aggregation |
 | `coachhelm-analytics.ts` | CoachHelm effectiveness analytics |
@@ -203,7 +204,7 @@ src/components/golf/           # 256+ components total
 
 ---
 
-## Hooks (13 golf hooks)
+## Hooks (12 golf hooks)
 
 | Hook | Purpose |
 |------|---------|
