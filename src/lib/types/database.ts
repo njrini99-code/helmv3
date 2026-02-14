@@ -116,6 +116,75 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_events: {
+        Row: {
+          browser_info: Json | null
+          created_at: string | null
+          event_type: string
+          id: string
+          message: string | null
+          metadata: Json | null
+          resolved: boolean | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: Database["public"]["Enums"]["admin_event_severity"]
+          stack_trace: string | null
+          title: string
+          url: string | null
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          browser_info?: Json | null
+          created_at?: string | null
+          event_type: string
+          id?: string
+          message?: string | null
+          metadata?: Json | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: Database["public"]["Enums"]["admin_event_severity"]
+          stack_trace?: string | null
+          title: string
+          url?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          browser_info?: Json | null
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          message?: string | null
+          metadata?: Json | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: Database["public"]["Enums"]["admin_event_severity"]
+          stack_trace?: string | null
+          title?: string
+          url?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_events_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       approach_miss_details: {
         Row: {
           created_at: string | null
@@ -9035,6 +9104,7 @@ export type Database = {
       }
     }
     Enums: {
+      admin_event_severity: "info" | "warning" | "error" | "critical"
       baseball_coach_type: "college" | "juco" | "high_school" | "showcase"
       baseball_pipeline_stage:
         | "watchlist"
@@ -9224,6 +9294,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      admin_event_severity: ["info", "warning", "error", "critical"],
       baseball_coach_type: ["college", "juco", "high_school", "showcase"],
       baseball_pipeline_stage: [
         "watchlist",
