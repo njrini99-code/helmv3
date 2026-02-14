@@ -67,7 +67,8 @@ export function TeamSettingsModal({ isOpen, onClose, onUpdate }: TeamSettingsMod
 
         // Load organization data if exists
         if (team.organization_id) {
-          const { data: org } = await supabase
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: org } = await (supabase as any)
             .from('golf_organizations')
             .select('id, name, city, state, division, conference, logo_url')
             .eq('id', team.organization_id)
@@ -135,7 +136,8 @@ export function TeamSettingsModal({ isOpen, onClose, onUpdate }: TeamSettingsMod
         .getPublicUrl(fileName);
 
       // Update organization with new logo URL
-      const { error: updateError } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: updateError } = await (supabase as any)
         .from('golf_organizations')
         .update({ logo_url: publicUrl })
         .eq('id', organizationId);
@@ -180,7 +182,8 @@ export function TeamSettingsModal({ isOpen, onClose, onUpdate }: TeamSettingsMod
 
       // Update organization if exists
       if (organizationId) {
-        const { error: orgError } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error: orgError } = await (supabase as any)
           .from('golf_organizations')
           .update({
             name: orgName.trim() || undefined,

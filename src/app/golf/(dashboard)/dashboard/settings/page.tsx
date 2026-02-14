@@ -1432,7 +1432,8 @@ function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
         setOrganizationId(team.organization_id);
 
         if (team.organization_id) {
-          const { data: org } = await supabase
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: org } = await (supabase as any)
             .from('golf_organizations')
             .select('name, city, state, division, conference')
             .eq('id', team.organization_id)
@@ -1466,7 +1467,8 @@ function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
       if (teamError) throw teamError;
 
       if (organizationId) {
-        const { error: orgError } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error: orgError } = await (supabase as any)
           .from('golf_organizations')
           .update({
             name: orgName.trim() || undefined,
