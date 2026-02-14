@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef, useTransition } from 'react';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import { useRouter } from 'next/navigation';
 import ShotTrackingComprehensive, { type HoleStats, type ShotRecord } from '@/components/golf/ShotTrackingComprehensive';
@@ -183,6 +183,8 @@ export default function NewRoundClient() {
   const [savedRoundId, setSavedRoundId] = useState<string | null>(null);
   const [inProgressShotsByHole, setInProgressShotsByHole] = useState<Record<number, ShotRecord[]>>({});
   const [holesPerRound, setHolesPerRound] = useState<9 | 18>(18);
+  const isSubmittingRef = useRef(false);
+  const [isStartingRound, setIsStartingRound] = useState(false);
 
   // Resume draft modal state
   const [showResumeDraftModal, setShowResumeDraftModal] = useState(false);
@@ -409,18 +411,26 @@ export default function NewRoundClient() {
 
   const handleSetupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Prevent double-clicks / duplicate submissions
+    if (isStartingRound) return;
+    setIsStartingRound(true);
+    
     if (!setupData.courseName) {
       setError('Please enter a course name');
+      setIsStartingRound(false);
       return;
     }
     // Validate qualifier selection if round type is qualifier
     if (setupData.roundType === 'qualifier') {
       if (!selectedQualifierId) {
         setError('Please select a qualifier');
+        setIsStartingRound(false);
         return;
       }
       if (!selectedRoundNumber) {
         setError('Please select which round of the qualifier this is');
+        setIsStartingRound(false);
         return;
       }
     }
@@ -559,6 +569,8 @@ export default function NewRoundClient() {
   ]);
 
   const handleRoundSubmit = async (allHoleStats: HoleStats[]) => {
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
     setStep('submitting');
     setError('');
 
@@ -591,6 +603,7 @@ export default function NewRoundClient() {
       router.push(`/golf/dashboard/rounds/${roundId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to submit round');
+      isSubmittingRef.current = false;
       setStep('tracking');
     }
   };
@@ -1330,15 +1343,22 @@ export default function NewRoundClient() {
                 <button
                   type="button"
                   onClick={() => router.back()}
-                  className="flex-1 px-4 py-2.5 rounded-lg border border-slate-200 font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                  disabled={isStartingRound}
+                  className="flex-1 px-4 py-2.5 rounded-lg border border-slate-200 font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2.5 rounded-lg bg-green-600 font-medium text-white hover:bg-green-700 transition-colors shadow-sm shadow-green-950/10 ring-1 ring-green-700"
+                  disabled={isStartingRound}
+                  className="flex-1 px-4 py-2.5 rounded-lg bg-green-600 font-medium text-white hover:bg-green-700 transition-colors shadow-sm shadow-green-950/10 ring-1 ring-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  {preloadedHoleConfigs && preloadedHoleConfigs.length > 0
+                  {isStartingRound ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Starting...
+                    </>
+                  ) : preloadedHoleConfigs && preloadedHoleConfigs.length > 0
                     ? 'Start Round →'
                     : 'Next: Configure Holes →'}
                 </button>

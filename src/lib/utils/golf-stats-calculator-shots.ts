@@ -440,8 +440,11 @@ const AROUND_GREEN_THRESHOLD_YARDS = 50;
 // Source: PGA Tour Strokes Gained methodology
 
 const STROKES_GAINED_BENCHMARKS = {
-  // From tee (by distance in yards)
+  // From tee (by distance in yards) — includes par 3 and short par 4 distances
   tee: {
+    100: 2.92, 125: 2.99, 150: 3.05, 175: 3.12, 200: 3.20,
+    225: 3.29, 250: 3.37, 275: 3.45, 300: 3.56, 325: 3.65,
+    350: 3.73, 375: 3.86,
     400: 4.08, 425: 4.17, 450: 4.27, 475: 4.37, 500: 4.47,
     525: 4.57, 550: 4.68, 575: 4.79, 600: 4.91,
   },
@@ -486,7 +489,15 @@ function getExpectedStrokes(lie: string | null, distanceYards: number, distanceF
     return STROKES_GAINED_BENCHMARKS.green[closest as keyof typeof STROKES_GAINED_BENCHMARKS.green] || 2.0;
   }
 
-  const benchmarkTable = STROKES_GAINED_BENCHMARKS[lie as keyof typeof STROKES_GAINED_BENCHMARKS];
+  // FIX: Tee shots under 400 yards (par 3s, short par 4s) should use fairway benchmark
+  // The tee benchmark only covers 400-600 yards (long par 4s and par 5s)
+  // Tee box conditions are similar to fairway, so this gives accurate expected strokes
+  let effectiveLie = lie;
+  if (lie === 'tee' && distanceYards < 400) {
+    effectiveLie = 'fairway';
+  }
+
+  const benchmarkTable = STROKES_GAINED_BENCHMARKS[effectiveLie as keyof typeof STROKES_GAINED_BENCHMARKS];
   if (!benchmarkTable || typeof benchmarkTable !== 'object') {
     // Fallback to rough benchmarks for unknown lie types
     return 3.50;
