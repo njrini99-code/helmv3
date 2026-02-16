@@ -186,8 +186,8 @@ function HoleOverviewCard({ hole }: { hole: HoleReviewData }) {
       scoreColor = 'text-amber-600';
       bgColor = 'bg-amber-50';
     } else if (diff === -1) {
-      scoreColor = 'text-green-600';
-      bgColor = 'bg-green-50';
+      scoreColor = 'text-primary-600';
+      bgColor = 'bg-primary-50';
     } else if (diff === 0) {
       scoreColor = 'text-warm-700';
       bgColor = 'bg-warm-50';

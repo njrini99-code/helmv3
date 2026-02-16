@@ -121,7 +121,7 @@ export function AttachmentButton({
         className={cn(
           'p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100',
           'transition-colors duration-200',
-          'focus:outline-none focus:ring-2 focus:ring-green-500/40 focus:ring-offset-1',
+          'focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:ring-offset-1',
           isOpen && 'bg-warm-100 text-warm-600',
           disabled && 'opacity-50 cursor-not-allowed',
           className

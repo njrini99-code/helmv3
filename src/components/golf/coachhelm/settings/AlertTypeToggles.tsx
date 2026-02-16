@@ -28,7 +28,7 @@ export function AlertTypeToggles({ values, onChange }: AlertTypeTogglesProps) {
                                             type="checkbox"
                                             checked={isChecked}
                                             onChange={(e) => onChange(alert.key, e.target.checked)}
-                                            className="peer h-5 w-5 rounded border-warm-300 text-green-600 focus:ring-green-500/20"
+                                            className="peer h-5 w-5 rounded border-warm-300 text-primary-600 focus:ring-primary-500/20"
                                         />
                                     </div>
                                     <span className="text-sm font-medium text-warm-900">

@@ -124,8 +124,8 @@ export function TeamStatsTable({ players }: TeamStatsTableProps) {
       return <span className="w-4" />;
     }
     return sortConfig.direction === 'asc'
-      ? <IconChevronUp size={14} className="text-green-600" />
-      : <IconChevronDown size={14} className="text-green-600" />;
+      ? <IconChevronUp size={14} className="text-primary-600" />
+      : <IconChevronDown size={14} className="text-primary-600" />;
   };
 
   const formatPct = (val: number | null) => {
@@ -139,14 +139,14 @@ export function TeamStatsTable({ players }: TeamStatsTableProps) {
   };
 
   const TrendIndicator = ({ trend }: { trend: number | null }) => {
-    if (trend === null) return <span className="text-slate-400">—</span>;
+    if (trend === null) return <span className="text-warm-400">—</span>;
 
     const isImproving = trend < 0; // Negative = lower scores = better
     const absValue = Math.abs(trend).toFixed(1);
 
     if (Math.abs(trend) < 0.3) {
       return (
-        <span className="inline-flex items-center gap-1 text-slate-500">
+        <span className="inline-flex items-center gap-1 text-warm-500">
           <IconMinus size={12} />
           <span className="text-xs">Steady</span>
         </span>
@@ -156,7 +156,7 @@ export function TeamStatsTable({ players }: TeamStatsTableProps) {
     return (
       <span className={cn(
         'inline-flex items-center gap-1',
-        isImproving ? 'text-green-600' : 'text-rose-500'
+        isImproving ? 'text-primary-600' : 'text-rose-500'
       )}>
         {isImproving ? <IconTrendingDown size={14} /> : <IconTrendingUp size={14} />}
         <span className="text-sm font-medium">{absValue}</span>
@@ -170,11 +170,11 @@ export function TeamStatsTable({ players }: TeamStatsTableProps) {
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-slate-200/60">
+            <tr className="border-b border-warm-200/60">
               <th className="text-left px-4 py-3">
                 <button
                   onClick={() => handleSort('name')}
-                  className="flex items-center gap-1 text-xs font-semibold text-slate-500 uppercase tracking-wider hover:text-slate-700 transition-colors"
+                  className="flex items-center gap-1 text-xs font-semibold text-warm-500 uppercase tracking-wider hover:text-warm-700 transition-colors"
                 >
                   Player
                   <SortIcon columnKey="name" />
@@ -183,7 +183,7 @@ export function TeamStatsTable({ players }: TeamStatsTableProps) {
               <th className="text-center px-3 py-3">
                 <button
                   onClick={() => handleSort('rounds_played')}
-                  className="flex items-center justify-center gap-1 text-xs font-semibold text-slate-500 uppercase tracking-wider hover:text-slate-700 transition-colors mx-auto"
+                  className="flex items-center justify-center gap-1 text-xs font-semibold text-warm-500 uppercase tracking-wider hover:text-warm-700 transition-colors mx-auto"
                 >
                   Rnds
                   <SortIcon columnKey="rounds_played" />
@@ -192,7 +192,7 @@ export function TeamStatsTable({ players }: TeamStatsTableProps) {
               <th className="text-center px-3 py-3">
                 <button
                   onClick={() => handleSort('scoring_average')}
-                  className="flex items-center justify-center gap-1 text-xs font-semibold text-slate-500 uppercase tracking-wider hover:text-slate-700 transition-colors mx-auto"
+                  className="flex items-center justify-center gap-1 text-xs font-semibold text-warm-500 uppercase tracking-wider hover:text-warm-700 transition-colors mx-auto"
                 >
                   Avg
                   <SortIcon columnKey="scoring_average" />
@@ -201,7 +201,7 @@ export function TeamStatsTable({ players }: TeamStatsTableProps) {
               <th className="text-center px-3 py-3">
                 <button
                   onClick={() => handleSort('best_round')}
-                  className="flex items-center justify-center gap-1 text-xs font-semibold text-slate-500 uppercase tracking-wider hover:text-slate-700 transition-colors mx-auto"
+                  className="flex items-center justify-center gap-1 text-xs font-semibold text-warm-500 uppercase tracking-wider hover:text-warm-700 transition-colors mx-auto"
                 >
                   Best
                   <SortIcon columnKey="best_round" />
@@ -210,7 +210,7 @@ export function TeamStatsTable({ players }: TeamStatsTableProps) {
               <th className="text-center px-3 py-3 hidden md:table-cell">
                 <button
                   onClick={() => handleSort('handicap')}
-                  className="flex items-center justify-center gap-1 text-xs font-semibold text-slate-500 uppercase tracking-wider hover:text-slate-700 transition-colors mx-auto"
+                  className="flex items-center justify-center gap-1 text-xs font-semibold text-warm-500 uppercase tracking-wider hover:text-warm-700 transition-colors mx-auto"
                 >
                   HCP
                   <SortIcon columnKey="handicap" />
@@ -219,7 +219,7 @@ export function TeamStatsTable({ players }: TeamStatsTableProps) {
               <th className="text-center px-3 py-3 hidden lg:table-cell">
                 <button
                   onClick={() => handleSort('fairway_pct')}
-                  className="flex items-center justify-center gap-1 text-xs font-semibold text-slate-500 uppercase tracking-wider hover:text-slate-700 transition-colors mx-auto"
+                  className="flex items-center justify-center gap-1 text-xs font-semibold text-warm-500 uppercase tracking-wider hover:text-warm-700 transition-colors mx-auto"
                 >
                   FW%
                   <SortIcon columnKey="fairway_pct" />
@@ -228,7 +228,7 @@ export function TeamStatsTable({ players }: TeamStatsTableProps) {
               <th className="text-center px-3 py-3 hidden lg:table-cell">
                 <button
                   onClick={() => handleSort('gir_pct')}
-                  className="flex items-center justify-center gap-1 text-xs font-semibold text-slate-500 uppercase tracking-wider hover:text-slate-700 transition-colors mx-auto"
+                  className="flex items-center justify-center gap-1 text-xs font-semibold text-warm-500 uppercase tracking-wider hover:text-warm-700 transition-colors mx-auto"
                 >
                   GIR%
                   <SortIcon columnKey="gir_pct" />
@@ -237,7 +237,7 @@ export function TeamStatsTable({ players }: TeamStatsTableProps) {
               <th className="text-center px-3 py-3 hidden xl:table-cell">
                 <button
                   onClick={() => handleSort('putts_per_round')}
-                  className="flex items-center justify-center gap-1 text-xs font-semibold text-slate-500 uppercase tracking-wider hover:text-slate-700 transition-colors mx-auto"
+                  className="flex items-center justify-center gap-1 text-xs font-semibold text-warm-500 uppercase tracking-wider hover:text-warm-700 transition-colors mx-auto"
                 >
                   Putts
                   <SortIcon columnKey="putts_per_round" />
@@ -246,7 +246,7 @@ export function TeamStatsTable({ players }: TeamStatsTableProps) {
               <th className="text-center px-3 py-3 hidden sm:table-cell">
                 <button
                   onClick={() => handleSort('scoring_trend')}
-                  className="flex items-center justify-center gap-1 text-xs font-semibold text-slate-500 uppercase tracking-wider hover:text-slate-700 transition-colors mx-auto"
+                  className="flex items-center justify-center gap-1 text-xs font-semibold text-warm-500 uppercase tracking-wider hover:text-warm-700 transition-colors mx-auto"
                 >
                   Trend
                   <SortIcon columnKey="scoring_trend" />
@@ -255,11 +255,11 @@ export function TeamStatsTable({ players }: TeamStatsTableProps) {
               <th className="w-10 px-3 py-3" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-warm-100">
             {sortedPlayers.map((player, index) => (
               <tr
                 key={player.id}
-                className="group hover:bg-slate-50/50 transition-colors"
+                className="group hover:bg-warm-50/50 transition-colors"
                 style={{
                   animation: 'fadeIn 0.3s ease-out forwards',
                   animationDelay: `${index * 20}ms`,
@@ -275,10 +275,10 @@ export function TeamStatsTable({ players }: TeamStatsTableProps) {
                       size="sm"
                     />
                     <div className="min-w-0">
-                      <p className="font-medium text-slate-900 truncate">
+                      <p className="font-medium text-warm-900 truncate">
                         {player.first_name} {player.last_name}
                       </p>
-                      <p className="text-xs text-slate-500 capitalize">
+                      <p className="text-xs text-warm-500 capitalize">
                         {player.graduation_year ? `Class of ${player.graduation_year}` : 'Player'}
                       </p>
                     </div>
@@ -287,7 +287,7 @@ export function TeamStatsTable({ players }: TeamStatsTableProps) {
 
                 {/* Rounds */}
                 <td className="text-center px-3 py-3">
-                  <span className="font-medium text-slate-700 tabular-nums">
+                  <span className="font-medium text-warm-700 tabular-nums">
                     {player.rounds_played}
                   </span>
                 </td>
@@ -297,8 +297,8 @@ export function TeamStatsTable({ players }: TeamStatsTableProps) {
                   <span className={cn(
                     'font-semibold tabular-nums',
                     player.scoring_average !== null && player.scoring_average <= 72
-                      ? 'text-green-600'
-                      : 'text-slate-900'
+                      ? 'text-primary-600'
+                      : 'text-warm-900'
                   )}>
                     {formatScore(player.scoring_average)}
                   </span>
@@ -306,7 +306,7 @@ export function TeamStatsTable({ players }: TeamStatsTableProps) {
 
                 {/* Best Round */}
                 <td className="text-center px-3 py-3">
-                  <span className="font-medium text-green-600 tabular-nums">
+                  <span className="font-medium text-primary-600 tabular-nums">
                     {player.best_round ?? '—'}
                   </span>
                 </td>
@@ -316,8 +316,8 @@ export function TeamStatsTable({ players }: TeamStatsTableProps) {
                   <span className={cn(
                     'font-medium tabular-nums',
                     player.handicap !== null && player.handicap <= 0
-                      ? 'text-green-600'
-                      : 'text-slate-700'
+                      ? 'text-primary-600'
+                      : 'text-warm-700'
                   )}>
                     {player.handicap !== null
                       ? player.handicap > 0
@@ -332,8 +332,8 @@ export function TeamStatsTable({ players }: TeamStatsTableProps) {
                   <span className={cn(
                     'text-sm tabular-nums',
                     player.fairway_pct !== null && player.fairway_pct >= 60
-                      ? 'text-green-600 font-medium'
-                      : 'text-slate-600'
+                      ? 'text-primary-600 font-medium'
+                      : 'text-warm-600'
                   )}>
                     {formatPct(player.fairway_pct)}
                   </span>
@@ -344,8 +344,8 @@ export function TeamStatsTable({ players }: TeamStatsTableProps) {
                   <span className={cn(
                     'text-sm tabular-nums',
                     player.gir_pct !== null && player.gir_pct >= 50
-                      ? 'text-green-600 font-medium'
-                      : 'text-slate-600'
+                      ? 'text-primary-600 font-medium'
+                      : 'text-warm-600'
                   )}>
                     {formatPct(player.gir_pct)}
                   </span>
@@ -356,8 +356,8 @@ export function TeamStatsTable({ players }: TeamStatsTableProps) {
                   <span className={cn(
                     'text-sm tabular-nums',
                     player.putts_per_round !== null && player.putts_per_round <= 30
-                      ? 'text-green-600 font-medium'
-                      : 'text-slate-600'
+                      ? 'text-primary-600 font-medium'
+                      : 'text-warm-600'
                   )}>
                     {formatScore(player.putts_per_round)}
                   </span>
@@ -372,7 +372,7 @@ export function TeamStatsTable({ players }: TeamStatsTableProps) {
                 <td className="px-3 py-3">
                   <Link
                     href={`/golf/dashboard/stats?player=${player.id}`}
-                    className="p-2 rounded-lg text-slate-400 hover:text-green-600 hover:bg-slate-100 transition-colors inline-flex sm:opacity-0 sm:group-hover:opacity-100"
+                    className="p-2 rounded-lg text-warm-400 hover:text-primary-600 hover:bg-warm-100 transition-colors inline-flex sm:opacity-0 sm:group-hover:opacity-100"
                   >
                     <IconChevronRight size={16} />
                   </Link>
@@ -384,15 +384,15 @@ export function TeamStatsTable({ players }: TeamStatsTableProps) {
       </div>
 
       {/* Summary Footer */}
-      <div className="px-4 py-3 border-t border-slate-200/60 bg-slate-50/50">
+      <div className="px-4 py-3 border-t border-warm-200/60 bg-warm-50/50">
         <div className="flex items-center justify-between text-sm">
-          <span className="text-slate-500">
+          <span className="text-warm-500">
             Showing {players.length} player{players.length !== 1 ? 's' : ''}
           </span>
-          <div className="flex items-center gap-4 text-slate-600">
+          <div className="flex items-center gap-4 text-warm-600">
             <span>
               Team Avg:{' '}
-              <strong className="text-slate-900">
+              <strong className="text-warm-900">
                 {players.filter(p => p.scoring_average !== null).length > 0
                   ? (
                       players

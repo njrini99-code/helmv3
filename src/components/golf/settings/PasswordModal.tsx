@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/toast';
 import { Modal } from '@/components/ui/modal';
@@ -13,6 +14,7 @@ interface PasswordModalProps {
 }
 
 export function PasswordModal({ isOpen, onClose }: PasswordModalProps) {
+  const { modalRef } = useFocusTrap(isOpen, onClose);
   const [loading, setLoading] = useState(false);
   const [, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -54,7 +56,7 @@ export function PasswordModal({ isOpen, onClose }: PasswordModalProps) {
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Password & Security">
-      <div className="space-y-4">
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="modal-title" className="space-y-4">
         <Input
           label="New Password"
           type="password"

@@ -135,13 +135,13 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
     const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
     if (returnDate && now > returnDate) {
-      return { label: 'Completed', color: 'bg-slate-100 text-slate-600', dotColor: 'bg-slate-400' };
+      return { label: 'Completed', color: 'bg-warm-100 text-warm-600', dotColor: 'bg-warm-400' };
     }
     if (now >= departure && returnDate && now <= returnDate) {
-      return { label: 'In Transit', color: 'bg-green-100 text-green-700', dotColor: 'bg-green-500', pulse: true };
+      return { label: 'In Transit', color: 'bg-primary-100 text-primary-700', dotColor: 'bg-primary-500', pulse: true };
     }
     if (now >= departure && !returnDate) {
-      return { label: 'Departed', color: 'bg-slate-100 text-slate-600', dotColor: 'bg-slate-400' };
+      return { label: 'Departed', color: 'bg-warm-100 text-warm-600', dotColor: 'bg-warm-400' };
     }
     if (diffDays <= 3 && diffDays > 0) {
       return { label: `${diffDays}d away`, color: 'bg-amber-100 text-amber-700', dotColor: 'bg-amber-500' };
@@ -149,7 +149,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
     if (diffDays <= 7 && diffDays > 0) {
       return { label: `${diffDays}d away`, color: 'bg-blue-100 text-blue-700', dotColor: 'bg-blue-500' };
     }
-    return { label: 'Upcoming', color: 'bg-slate-100 text-slate-600', dotColor: 'bg-slate-400' };
+    return { label: 'Upcoming', color: 'bg-warm-100 text-warm-600', dotColor: 'bg-warm-400' };
   };
 
   const formatDate = (dateStr: string) => {
@@ -340,7 +340,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
   return (
     <div className="min-h-full">
       {/* Header */}
-      <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+      <div className="border-b border-warm-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -348,7 +348,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                 onClick={toggleMobile}
                 className={cn(
                   'lg:hidden p-2.5 -ml-2 rounded-xl',
-                  'text-slate-500 hover:text-slate-700 hover:bg-slate-100/80',
+                  'text-warm-500 hover:text-warm-700 hover:bg-warm-100/80',
                   'transition-colors duration-150 active:scale-95',
                   'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
                 )}
@@ -357,8 +357,8 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                 <IconMenu size={22} />
               </button>
               <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Travel</h1>
-              <p className="text-slate-500 mt-0.5">
+              <h1 className="text-2xl font-semibold tracking-tight text-warm-900">Travel</h1>
+              <p className="text-warm-500 mt-0.5">
                 {itineraries.length === 0
                   ? 'Tournament travel itineraries & expenses'
                   : (() => {
@@ -377,7 +377,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                   resetForm();
                   setShowModal(true);
                 }}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+                className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
               >
                 <IconPlus size={18} />
                 Add Itinerary
@@ -392,11 +392,11 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
         {itineraries.length === 0 ? (
           <div className="relative glass-standard rounded-2xl overflow-hidden p-8 md:p-16 text-center">
             <ShineEffect />
-            <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
-              <IconAirplane size={28} className="text-slate-400" />
+            <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
+              <IconAirplane size={28} className="text-warm-400" />
             </div>
-            <h3 className="text-lg font-semibold text-slate-900 mb-2">No Travel Itineraries</h3>
-            <p className="text-slate-500 mb-6 max-w-sm mx-auto">
+            <h3 className="text-lg font-semibold text-warm-900 mb-2">No Travel Itineraries</h3>
+            <p className="text-warm-500 mb-6 max-w-sm mx-auto">
               {isCoach
                 ? 'Create travel itineraries for upcoming tournaments and events'
                 : 'Travel details will appear here when available'}
@@ -407,7 +407,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                   resetForm();
                   setShowModal(true);
                 }}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
               >
                 Create First Itinerary
               </button>
@@ -417,7 +417,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Itinerary List */}
             <div className="lg:col-span-1 space-y-4">
-              <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">
+              <h2 className="text-sm font-semibold text-warm-500 uppercase tracking-wider mb-2">
                 Trips
               </h2>
               {itineraries.map((itinerary) => (
@@ -428,15 +428,15 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                   whileTap={{ scale: 0.99 }}
                   className={`relative rounded-xl p-4 cursor-pointer transition-all ${
                     selectedItinerary?.id === itinerary.id
-                      ? 'bg-green-50 border-2 border-green-500 shadow-md'
-                      : 'bg-white border border-slate-200 hover:border-slate-300 hover:shadow-sm'
+                      ? 'bg-primary-50 border-2 border-primary-500 shadow-md'
+                      : 'bg-white border border-warm-200 hover:border-warm-300 hover:shadow-sm'
                   }`}
                 >
                   <div className="flex items-start gap-3">
                     <div className="text-2xl">{getTransportIcon(itinerary.transportation_type)}</div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <h3 className="font-semibold text-slate-900 truncate">{itinerary.event_name}</h3>
+                        <h3 className="font-semibold text-warm-900 truncate">{itinerary.event_name}</h3>
                         {(() => {
                           const status = getTripStatus(itinerary);
                           return (
@@ -447,11 +447,11 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                           );
                         })()}
                       </div>
-                      <div className="flex items-center gap-1 text-sm text-slate-500 mt-0.5">
+                      <div className="flex items-center gap-1 text-sm text-warm-500 mt-0.5">
                         <IconMapPin size={14} />
                         <span className="truncate">{itinerary.destination}</span>
                       </div>
-                      <div className="flex items-center gap-1 text-xs text-slate-400 mt-1">
+                      <div className="flex items-center gap-1 text-xs text-warm-400 mt-1">
                         <IconCalendar size={12} />
                         <span>{formatDate(itinerary.departure_date)}</span>
                         {itinerary.return_date && itinerary.return_date !== itinerary.departure_date && (
@@ -467,15 +467,15 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
             {/* Selected Itinerary Details / Expenses */}
             <div className="lg:col-span-2">
               {selectedItinerary ? (
-                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                <div className="bg-white rounded-2xl border border-warm-200 overflow-hidden">
                   {/* Itinerary Header */}
-                  <div className="p-6 border-b border-slate-200">
+                  <div className="p-6 border-b border-warm-200">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-start gap-4">
                         <div className="text-4xl">{getTransportIcon(selectedItinerary.transportation_type)}</div>
                         <div>
-                          <h2 className="text-xl font-semibold text-slate-900">{selectedItinerary.event_name}</h2>
-                          <div className="flex items-center gap-2 text-slate-500 mt-1">
+                          <h2 className="text-xl font-semibold text-warm-900">{selectedItinerary.event_name}</h2>
+                          <div className="flex items-center gap-2 text-warm-500 mt-1">
                             <IconMapPin size={16} />
                             <span>{selectedItinerary.destination}</span>
                           </div>
@@ -485,9 +485,9 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => handleEdit(selectedItinerary)}
-                            className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                            className="p-2 hover:bg-warm-100 rounded-lg transition-colors"
                           >
-                            <IconEdit size={18} className="text-slate-600" />
+                            <IconEdit size={18} className="text-warm-600" />
                           </button>
                           <button
                             onClick={() => handleDelete(selectedItinerary.id)}
@@ -500,13 +500,13 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                     </div>
 
                     {/* Tabs */}
-                    <div className="flex gap-4 border-b border-slate-200 -mb-6 -mx-6 px-6">
+                    <div className="flex gap-4 border-b border-warm-200 -mb-6 -mx-6 px-6">
                       <button
                         onClick={() => setActiveTab('details')}
                         className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${
                           activeTab === 'details'
-                            ? 'border-green-600 text-green-600'
-                            : 'border-transparent text-slate-500 hover:text-slate-700'
+                            ? 'border-primary-600 text-primary-600'
+                            : 'border-transparent text-warm-500 hover:text-warm-700'
                         }`}
                       >
                         Details
@@ -515,8 +515,8 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                         onClick={() => setActiveTab('expenses')}
                         className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
                           activeTab === 'expenses'
-                            ? 'border-green-600 text-green-600'
-                            : 'border-transparent text-slate-500 hover:text-slate-700'
+                            ? 'border-primary-600 text-primary-600'
+                            : 'border-transparent text-warm-500 hover:text-warm-700'
                         }`}
                       >
                         <IconChartBar size={16} />
@@ -538,31 +538,31 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                         >
                           {/* Departure/Return */}
                           <div className="grid grid-cols-2 gap-6 mb-6">
-                            <div className="p-4 bg-slate-50 rounded-xl">
-                              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Departure</p>
-                              <div className="flex items-center gap-2 text-slate-900">
-                                <IconCalendar size={16} className="text-slate-400" />
+                            <div className="p-4 bg-warm-50 rounded-xl">
+                              <p className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-2">Departure</p>
+                              <div className="flex items-center gap-2 text-warm-900">
+                                <IconCalendar size={16} className="text-warm-400" />
                                 <span className="font-medium">{formatDate(selectedItinerary.departure_date)}</span>
                                 {selectedItinerary.departure_time && (
                                   <>
-                                    <IconClock size={16} className="text-slate-400 ml-2" />
+                                    <IconClock size={16} className="text-warm-400 ml-2" />
                                     <span>{selectedItinerary.departure_time}</span>
                                   </>
                                 )}
                               </div>
                               {selectedItinerary.departure_location && (
-                                <p className="text-sm text-slate-500 mt-2">{selectedItinerary.departure_location}</p>
+                                <p className="text-sm text-warm-500 mt-2">{selectedItinerary.departure_location}</p>
                               )}
                             </div>
                             {selectedItinerary.return_date && (
-                              <div className="p-4 bg-slate-50 rounded-xl">
-                                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Return</p>
-                                <div className="flex items-center gap-2 text-slate-900">
-                                  <IconCalendar size={16} className="text-slate-400" />
+                              <div className="p-4 bg-warm-50 rounded-xl">
+                                <p className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-2">Return</p>
+                                <div className="flex items-center gap-2 text-warm-900">
+                                  <IconCalendar size={16} className="text-warm-400" />
                                   <span className="font-medium">{formatDate(selectedItinerary.return_date)}</span>
                                   {selectedItinerary.return_time && (
                                     <>
-                                      <IconClock size={16} className="text-slate-400 ml-2" />
+                                      <IconClock size={16} className="text-warm-400 ml-2" />
                                       <span>{selectedItinerary.return_time}</span>
                                     </>
                                   )}
@@ -575,21 +575,21 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                           {selectedItinerary.hotel_name && (
                             <div className="p-4 bg-blue-50 rounded-xl mb-6">
                               <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider mb-2">Lodging</p>
-                              <p className="font-semibold text-slate-900">{selectedItinerary.hotel_name}</p>
+                              <p className="font-semibold text-warm-900">{selectedItinerary.hotel_name}</p>
                               {selectedItinerary.hotel_address && (
-                                <p className="text-sm text-slate-600 mt-1">{selectedItinerary.hotel_address}</p>
+                                <p className="text-sm text-warm-600 mt-1">{selectedItinerary.hotel_address}</p>
                               )}
                               <div className="flex flex-wrap gap-4 mt-3 text-sm">
                                 {selectedItinerary.hotel_phone && (
                                   <div>
-                                    <span className="text-slate-500">Phone: </span>
-                                    <span className="text-slate-900">{selectedItinerary.hotel_phone}</span>
+                                    <span className="text-warm-500">Phone: </span>
+                                    <span className="text-warm-900">{selectedItinerary.hotel_phone}</span>
                                   </div>
                                 )}
                                 {selectedItinerary.hotel_confirmation && (
                                   <div>
-                                    <span className="text-slate-500">Confirmation: </span>
-                                    <span className="text-slate-900">{selectedItinerary.hotel_confirmation}</span>
+                                    <span className="text-warm-500">Confirmation: </span>
+                                    <span className="text-warm-900">{selectedItinerary.hotel_confirmation}</span>
                                   </div>
                                 )}
                               </div>
@@ -600,20 +600,20 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                           <div className="space-y-4">
                             {selectedItinerary.uniform_requirements && (
                               <div>
-                                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Uniform</p>
-                                <p className="text-slate-700">{selectedItinerary.uniform_requirements}</p>
+                                <p className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1">Uniform</p>
+                                <p className="text-warm-700">{selectedItinerary.uniform_requirements}</p>
                               </div>
                             )}
                             {selectedItinerary.gear_list && (
                               <div>
-                                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Gear List</p>
-                                <p className="text-slate-700">{selectedItinerary.gear_list}</p>
+                                <p className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1">Gear List</p>
+                                <p className="text-warm-700">{selectedItinerary.gear_list}</p>
                               </div>
                             )}
                             {selectedItinerary.notes && (
                               <div>
-                                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Notes</p>
-                                <p className="text-slate-700">{selectedItinerary.notes}</p>
+                                <p className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1">Notes</p>
+                                <p className="text-warm-700">{selectedItinerary.notes}</p>
                               </div>
                             )}
                           </div>
@@ -628,13 +628,13 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                         >
                           {/* Expense Actions */}
                           <div className="flex items-center justify-between mb-6">
-                            <h3 className="font-semibold text-slate-900">Trip Expenses</h3>
+                            <h3 className="font-semibold text-warm-900">Trip Expenses</h3>
                             <div className="flex items-center gap-2">
                               {expenses.length > 0 && (
                                 <button
                                   onClick={handleExportCSV}
                                   disabled={exporting}
-                                  className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-50"
+                                  className="flex items-center gap-2 px-3 py-1.5 text-sm text-warm-600 hover:text-warm-900 hover:bg-warm-100 rounded-lg transition-colors disabled:opacity-50"
                                 >
                                   <IconDownload size={16} />
                                   {exporting ? 'Exporting...' : 'Export CSV'}
@@ -646,7 +646,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                                     setEditingExpense(null);
                                     setShowExpenseForm(true);
                                   }}
-                                  className="flex items-center gap-2 px-3 py-1.5 text-sm bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                                  className="flex items-center gap-2 px-3 py-1.5 text-sm bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
                                 >
                                   <IconPlus size={16} />
                                   Add Expense
@@ -656,8 +656,10 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                           </div>
 
                           {loadingExpenses ? (
-                            <div className="flex items-center justify-center py-12">
-                              <div className="animate-spin h-8 w-8 border-2 border-green-600 border-t-transparent rounded-full" />
+                            <div className="space-y-4 py-8 px-4">
+                              <div className="h-4 w-3/4 bg-warm-200 rounded skeleton-shimmer" />
+                              <div className="h-4 w-1/2 bg-warm-200 rounded skeleton-shimmer" />
+                              <div className="h-4 w-2/3 bg-warm-200 rounded skeleton-shimmer" />
                             </div>
                           ) : (
                             <div className="space-y-6">
@@ -674,7 +676,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
 
                               {/* Expense List */}
                               <div>
-                                <h4 className="font-medium text-slate-900 mb-3">All Expenses</h4>
+                                <h4 className="font-medium text-warm-900 mb-3">All Expenses</h4>
                                 <ExpenseList
                                   expenses={expenses}
                                   onEdit={(expense) => {
@@ -693,12 +695,12 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                   </div>
                 </div>
               ) : (
-                <div className="bg-white rounded-2xl border border-slate-200 p-8 md:p-12 text-center">
-                  <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                    <IconAirplane size={28} className="text-slate-400" />
+                <div className="bg-white rounded-2xl border border-warm-200 p-8 md:p-12 text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
+                    <IconAirplane size={28} className="text-warm-400" />
                   </div>
-                  <h3 className="text-lg font-semibold text-slate-900 mb-2">Select a Trip</h3>
-                  <p className="text-slate-500 max-w-sm mx-auto">
+                  <h3 className="text-lg font-semibold text-warm-900 mb-2">Select a Trip</h3>
+                  <p className="text-warm-500 max-w-sm mx-auto">
                     Choose a travel itinerary from the list to view details and track expenses.
                   </p>
                 </div>
@@ -710,10 +712,10 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
 
       {/* Create/Edit Itinerary Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }}>
+        <div className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }}>
           <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-xl my-8">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-slate-900">
+              <h2 className="text-xl font-semibold text-warm-900">
                 {editingId ? 'Edit Travel Itinerary' : 'Create Travel Itinerary'}
               </h2>
               <button
@@ -721,7 +723,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                   setShowModal(false);
                   resetForm();
                 }}
-                className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-warm-100 rounded-lg transition-colors"
               >
                 <IconX size={20} />
               </button>
@@ -736,31 +738,31 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
             <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2 overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }} data-scroll-container>
               {/* Event Name */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Event Name *</label>
+                <label className="block text-sm font-medium text-warm-700 mb-2">Event Name *</label>
                 <input
                   type="text"
                   value={formData.event_name}
                   onChange={(e) => setFormData((prev) => ({ ...prev, event_name: e.target.value }))}
-                  className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                   placeholder="e.g., Spring Invitational"
                 />
               </div>
 
               {/* Destination */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Destination *</label>
+                <label className="block text-sm font-medium text-warm-700 mb-2">Destination *</label>
                 <input
                   type="text"
                   value={formData.destination}
                   onChange={(e) => setFormData((prev) => ({ ...prev, destination: e.target.value }))}
-                  className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                   placeholder="e.g., Pebble Beach, CA"
                 />
               </div>
 
               {/* Transportation */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Transportation</label>
+                <label className="block text-sm font-medium text-warm-700 mb-2">Transportation</label>
                 <select
                   value={formData.transportation_type}
                   onChange={(e) =>
@@ -769,7 +771,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                       transportation_type: e.target.value as TransportationType,
                     }))
                   }
-                  className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                 >
                   <option value="bus">Bus</option>
                   <option value="van">Van</option>
@@ -781,32 +783,32 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
               {/* Departure Info */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Departure Date *</label>
+                  <label className="block text-sm font-medium text-warm-700 mb-2">Departure Date *</label>
                   <input
                     type="date"
                     value={formData.departure_date}
                     onChange={(e) => setFormData((prev) => ({ ...prev, departure_date: e.target.value }))}
-                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Departure Time</label>
+                  <label className="block text-sm font-medium text-warm-700 mb-2">Departure Time</label>
                   <input
                     type="time"
                     value={formData.departure_time}
                     onChange={(e) => setFormData((prev) => ({ ...prev, departure_time: e.target.value }))}
-                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Departure Location</label>
+                <label className="block text-sm font-medium text-warm-700 mb-2">Departure Location</label>
                 <input
                   type="text"
                   value={formData.departure_location}
                   onChange={(e) => setFormData((prev) => ({ ...prev, departure_location: e.target.value }))}
-                  className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                   placeholder="e.g., School parking lot"
                 />
               </div>
@@ -814,64 +816,64 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
               {/* Return Info */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Return Date</label>
+                  <label className="block text-sm font-medium text-warm-700 mb-2">Return Date</label>
                   <input
                     type="date"
                     value={formData.return_date}
                     onChange={(e) => setFormData((prev) => ({ ...prev, return_date: e.target.value }))}
-                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Return Time</label>
+                  <label className="block text-sm font-medium text-warm-700 mb-2">Return Time</label>
                   <input
                     type="time"
                     value={formData.return_time}
                     onChange={(e) => setFormData((prev) => ({ ...prev, return_time: e.target.value }))}
-                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                   />
                 </div>
               </div>
 
               {/* Hotel Info */}
-              <div className="border-t border-slate-200 pt-4 mt-4">
-                <h3 className="font-medium text-slate-900 mb-3">Hotel Information</h3>
+              <div className="border-t border-warm-200 pt-4 mt-4">
+                <h3 className="font-medium text-warm-900 mb-3">Hotel Information</h3>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Hotel Name</label>
+                    <label className="block text-sm font-medium text-warm-700 mb-2">Hotel Name</label>
                     <input
                       type="text"
                       value={formData.hotel_name}
                       onChange={(e) => setFormData((prev) => ({ ...prev, hotel_name: e.target.value }))}
-                      className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Hotel Address</label>
+                    <label className="block text-sm font-medium text-warm-700 mb-2">Hotel Address</label>
                     <input
                       type="text"
                       value={formData.hotel_address}
                       onChange={(e) => setFormData((prev) => ({ ...prev, hotel_address: e.target.value }))}
-                      className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">Hotel Phone</label>
+                      <label className="block text-sm font-medium text-warm-700 mb-2">Hotel Phone</label>
                       <input
                         type="tel"
                         value={formData.hotel_phone}
                         onChange={(e) => setFormData((prev) => ({ ...prev, hotel_phone: e.target.value }))}
-                        className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                        className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-2">Confirmation #</label>
+                      <label className="block text-sm font-medium text-warm-700 mb-2">Confirmation #</label>
                       <input
                         type="text"
                         value={formData.hotel_confirmation}
                         onChange={(e) => setFormData((prev) => ({ ...prev, hotel_confirmation: e.target.value }))}
-                        className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                        className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                       />
                     </div>
                   </div>
@@ -879,35 +881,35 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
               </div>
 
               {/* Additional Details */}
-              <div className="border-t border-slate-200 pt-4 mt-4">
-                <h3 className="font-medium text-slate-900 mb-3">Additional Details</h3>
+              <div className="border-t border-warm-200 pt-4 mt-4">
+                <h3 className="font-medium text-warm-900 mb-3">Additional Details</h3>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Uniform Requirements</label>
+                    <label className="block text-sm font-medium text-warm-700 mb-2">Uniform Requirements</label>
                     <input
                       type="text"
                       value={formData.uniform_requirements}
                       onChange={(e) => setFormData((prev) => ({ ...prev, uniform_requirements: e.target.value }))}
-                      className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                       placeholder="e.g., Team polo, khaki pants"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Gear List</label>
+                    <label className="block text-sm font-medium text-warm-700 mb-2">Gear List</label>
                     <input
                       type="text"
                       value={formData.gear_list}
                       onChange={(e) => setFormData((prev) => ({ ...prev, gear_list: e.target.value }))}
-                      className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                       placeholder="e.g., Clubs, rain gear, extra balls"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Notes</label>
+                    <label className="block text-sm font-medium text-warm-700 mb-2">Notes</label>
                     <textarea
                       value={formData.notes}
                       onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
-                      className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-green-600 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                       rows={3}
                       placeholder="Any additional information..."
                     />
@@ -916,20 +918,20 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
               </div>
             </div>
 
-            <div className="flex gap-3 pt-4 mt-4 border-t border-slate-200">
+            <div className="flex gap-3 pt-4 mt-4 border-t border-warm-200">
               <button
                 onClick={() => {
                   setShowModal(false);
                   resetForm();
                 }}
-                className="flex-1 px-4 py-2 border border-slate-200 rounded-lg font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                className="flex-1 px-4 py-2 border border-warm-200 rounded-lg font-medium text-warm-700 hover:bg-warm-50 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {saving ? 'Saving...' : editingId ? 'Save Changes' : 'Create Itinerary'}
               </button>

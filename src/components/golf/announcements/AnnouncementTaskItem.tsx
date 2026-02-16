@@ -54,7 +54,7 @@ export function AnnouncementTaskItem({
       className={cn(
         'w-full flex items-start gap-3 p-3 rounded-xl text-left transition-all',
         isCompleted
-          ? 'bg-green-50/50 border border-green-200/60'
+          ? 'bg-primary-50/50 border border-primary-200/60'
           : 'bg-white border border-warm-200 hover:border-warm-300 hover:shadow-sm cursor-pointer'
       )}
     >
@@ -64,8 +64,8 @@ export function AnnouncementTaskItem({
           className={cn(
             'w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors',
             isCompleted
-              ? 'bg-green-500 border-green-500'
-              : 'border-warm-300 hover:border-green-400'
+              ? 'bg-primary-500 border-primary-500'
+              : 'border-warm-300 hover:border-primary-400'
           )}
           animate={isCompleted ? { scale: [1, 1.2, 1] } : {}}
           transition={{ duration: 0.3 }}
@@ -86,14 +86,14 @@ export function AnnouncementTaskItem({
       <div className="flex-1 min-w-0">
         <p className={cn(
           'text-sm font-medium transition-colors',
-          isCompleted ? 'text-green-700 line-through' : 'text-warm-900'
+          isCompleted ? 'text-primary-700 line-through' : 'text-warm-900'
         )}>
           {title}
         </p>
         {description && (
           <p className={cn(
             'text-xs mt-0.5',
-            isCompleted ? 'text-green-600/60' : 'text-warm-500'
+            isCompleted ? 'text-primary-600/60' : 'text-warm-500'
           )}>
             {description}
           </p>
@@ -101,7 +101,7 @@ export function AnnouncementTaskItem({
         {dueDate && (
           <div className={cn(
             'flex items-center gap-1 mt-1',
-            isOverdue ? 'text-red-500' : isCompleted ? 'text-green-500' : 'text-warm-400'
+            isOverdue ? 'text-red-500' : isCompleted ? 'text-primary-500' : 'text-warm-400'
           )}>
             <IconCalendar size={10} />
             <span className="text-xs font-medium">
@@ -114,7 +114,11 @@ export function AnnouncementTaskItem({
 
       {loading && (
         <div className="flex-shrink-0 pt-0.5">
-          <div className="animate-spin h-4 w-4 border-2 border-green-500 border-t-transparent rounded-full" />
+          <span className="flex items-center gap-1">
+            <span className="w-1 h-1 rounded-full bg-primary-500 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+            <span className="w-1 h-1 rounded-full bg-primary-500 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+            <span className="w-1 h-1 rounded-full bg-primary-500 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+          </span>
         </div>
       )}
     </motion.button>

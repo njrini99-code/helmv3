@@ -37,13 +37,13 @@ function DroppableTimeSlot({ date, hour }: { date: Date; hour: number }) {
       aria-label={`Drop zone: ${formatHour(hour)}`}
       className={cn(
         'h-16 relative transition-all duration-200',
-        'border-l border-t border-stone-100/30',
+        'border-l border-t border-warm-100/30',
         'hover:bg-white/20',
-        isOver && 'bg-green-100/50 border-green-300/50'
+        isOver && 'bg-primary-100/50 border-primary-300/50'
       )}
     >
       {isOver && (
-        <div className="absolute inset-1 border-2 border-dashed border-green-400 rounded-lg bg-green-50/40" aria-hidden="true" />
+        <div className="absolute inset-1 border-2 border-dashed border-primary-400 rounded-lg bg-primary-50/40" aria-hidden="true" />
       )}
     </div>
   );
@@ -193,8 +193,8 @@ export function DayView({ date, events, onEventClick, isDraggable = false }: Day
             {HOURS.map((hour) => (
               <div key={hour} className="contents">
                 {/* Time label column - Compact on mobile */}
-                <div className="h-16 border-r border-stone-100/20 flex items-start justify-end pr-2 md:pr-4 pt-1 bg-gradient-to-r from-stone-50/40 to-transparent">
-                  <span className="text-xs md:text-xs font-medium text-stone-400">
+                <div className="h-16 border-r border-warm-100/20 flex items-start justify-end pr-2 md:pr-4 pt-1 bg-gradient-to-r from-warm-50/40 to-transparent">
+                  <span className="text-xs md:text-xs font-medium text-warm-400">
                     {/* Mobile: compact format (6a), Desktop: full format (6 AM) */}
                     <span className="md:hidden">
                       {hour === 0
@@ -222,7 +222,7 @@ export function DayView({ date, events, onEventClick, isDraggable = false }: Day
                 ) : (
                   <div className="
                     h-16 relative
-                    border-l border-t border-stone-100/30
+                    border-l border-t border-warm-100/30
                     hover:bg-white/30
                     transition-colors duration-150
                   " />
@@ -287,11 +287,11 @@ export function DayView({ date, events, onEventClick, isDraggable = false }: Day
               <div className="flex items-center -ml-1.5">
                 {/* Green dot with white border */}
                 <div
-                  className="w-3 h-3 rounded-full flex-shrink-0 bg-green-600 border-2 border-white shadow-[0_0_8px_rgba(22,163,74,0.5),0_2px_4px_rgba(0,0,0,0.1)]"
+                  className="w-3 h-3 rounded-full flex-shrink-0 bg-primary-600 border-2 border-white shadow-[0_0_8px_rgba(22,163,74,0.5),0_2px_4px_rgba(0,0,0,0.1)]"
                 />
                 {/* Green line */}
                 <div
-                  className="h-[2px] flex-1 bg-gradient-to-r from-green-600 to-green-600/40"
+                  className="h-[2px] flex-1 bg-gradient-to-r from-primary-600 to-primary-600/40"
                 />
               </div>
             </div>
@@ -303,17 +303,17 @@ export function DayView({ date, events, onEventClick, isDraggable = false }: Day
           <div className="mt-16 text-center">
             <div className="
               w-16 h-16 rounded-[16px]
-              bg-stone-100/80
+              bg-warm-100/80
               mx-auto
               flex items-center justify-center
               mb-4
             ">
-              <Calendar className="w-7 h-7 text-stone-400" />
+              <Calendar className="w-7 h-7 text-warm-400" />
             </div>
-            <h3 className="text-lg font-semibold text-stone-900 mb-2">
+            <h3 className="text-lg font-semibold text-warm-900 mb-2">
               No events scheduled
             </h3>
-            <p className="text-sm text-stone-500 max-w-xs mx-auto">
+            <p className="text-sm text-warm-500 max-w-xs mx-auto">
               Click &ldquo;Add Event&rdquo; to schedule something for this day
             </p>
           </div>

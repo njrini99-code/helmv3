@@ -88,13 +88,13 @@ function SectionHeader({
               'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
               variant === 'red' && 'bg-red-100 text-red-700',
               variant === 'amber' && 'bg-amber-100 text-amber-700',
-              variant === 'green' && 'bg-green-100 text-green-700'
+              variant === 'green' && 'bg-primary-100 text-primary-700'
             )}
           >
             {count}
           </span>
         ) : (
-          <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">
+          <span className="inline-flex items-center rounded-full bg-primary-100 px-2.5 py-0.5 text-xs font-medium text-primary-700">
             All clear
           </span>
         )}
@@ -172,7 +172,7 @@ export default function DataFreshnessAlerts({
           {churnOpen && (
             <div className="mt-1 px-1">
               {!hasChurnRisk ? (
-                <p className="px-4 py-3 text-sm text-green-600">
+                <p className="px-4 py-3 text-sm text-primary-600">
                   All players are actively submitting rounds.
                 </p>
               ) : (
@@ -266,7 +266,7 @@ export default function DataFreshnessAlerts({
           {teamsOpen && (
             <div className="mt-1 px-1">
               {!hasInactiveTeams ? (
-                <p className="px-4 py-3 text-sm text-green-600">
+                <p className="px-4 py-3 text-sm text-primary-600">
                   All teams have recent login activity.
                 </p>
               ) : (
@@ -342,7 +342,7 @@ export default function DataFreshnessAlerts({
           {coachesOpen && (
             <div className="mt-1 px-1">
               {!hasDisengaged ? (
-                <p className="px-4 py-3 text-sm text-green-600">
+                <p className="px-4 py-3 text-sm text-primary-600">
                   All coaches are regularly checking insights.
                 </p>
               ) : (

@@ -1,7 +1,8 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import type { CoachStatus } from '../page';
+import { Search, X, Clock, Star } from 'lucide-react';
+import type { CoachStatus } from '../crm-config';
 
 export interface Filters {
   status: CoachStatus | 'all';
@@ -20,15 +21,17 @@ interface CoachFiltersProps {
   filters: Filters;
   setFilters: React.Dispatch<React.SetStateAction<Filters>>;
   conferences: string[];
-  statusConfig: Record<CoachStatus, { label: string; icon: string }>;
+  statusConfig: Record<CoachStatus, { label: string; icon: React.ReactNode }>;
 }
 
 export function CoachFilters({
   filters,
   setFilters,
   conferences,
+  statusConfig,
 }: CoachFiltersProps) {
   const activeFilterCount = [
+    filters.status !== 'all',
     filters.division !== 'all',
     filters.conference !== 'all',
     filters.program !== 'all',
@@ -41,111 +44,141 @@ export function CoachFilters({
 
   const clearFilters = () => {
     setFilters({
-      status: 'all',
-      division: 'all',
-      conference: 'all',
-      program: 'all',
-      priority: 'all',
-      search: '',
-      followUpDue: false,
-      starred: false,
-      hasNotes: false,
-      noContact30Days: false,
+      status: 'all', division: 'all', conference: 'all', program: 'all', priority: 'all',
+      search: '', followUpDue: false, starred: false, hasNotes: false, noContact30Days: false,
     });
   };
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-      <div className="flex flex-wrap items-center gap-3">
+    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-4">
+      <div className="flex flex-wrap items-center gap-2">
         {/* Search */}
-        <div className="relative flex-1 min-w-[240px]">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
           <input
             type="text"
-            placeholder="Search coaches, schools, emails..."
+            placeholder="Search coaches, schools, conferences..."
             value={filters.search}
             onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
-            className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+            className={cn(
+              'w-full pl-9 pr-8 py-2 rounded-[10px] text-sm',
+              'bg-white/80 border border-warm-200/50',
+              'text-warm-900 placeholder:text-warm-400',
+              'focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300',
+              'transition-all duration-200'
+            )}
           />
+          {filters.search && (
+            <button onClick={() => setFilters(f => ({ ...f, search: '' }))} className="absolute right-3 top-1/2 -translate-y-1/2 text-warm-400 hover:text-warm-600">
+              <X size={14} />
+            </button>
+          )}
         </div>
 
-        {/* Division */}
-        <select
-          value={filters.division}
-          onChange={(e) => setFilters(f => ({ ...f, division: e.target.value as Filters['division'] }))}
-          className={cn(
-            'px-4 py-2.5 border rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500',
-            filters.division !== 'all' ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-700'
-          )}
-        >
-          <option value="all">All Divisions</option>
-          <option value="D2">🔵 D2</option>
-          <option value="D3">🟣 D3</option>
-        </select>
+        {/* Division pill toggle — segment control per spec */}
+        <div className="flex items-center gap-1 bg-warm-100/50 rounded-lg p-0.5">
+          {(['all', 'D2', 'D3'] as const).map(div => (
+            <button
+              key={div}
+              onClick={() => setFilters(f => ({ ...f, division: div === 'all' ? 'all' : div }))}
+              className={cn(
+                'px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200',
+                filters.division === div
+                  ? 'bg-white text-warm-900 shadow-sm'
+                  : 'text-warm-500 hover:text-warm-700'
+              )}
+            >
+              {div === 'all' ? 'All' : div}
+            </button>
+          ))}
+        </div>
 
-        {/* Conference */}
+        {/* Program pill toggle */}
+        <div className="flex items-center gap-1 bg-warm-100/50 rounded-lg p-0.5">
+          {([
+            { value: 'all', label: 'All' },
+            { value: 'mens', label: "Men's" },
+            { value: 'womens', label: "Women's" },
+            { value: 'both', label: 'Both' },
+          ] as const).map(opt => (
+            <button
+              key={opt.value}
+              onClick={() => setFilters(f => ({ ...f, program: opt.value }))}
+              className={cn(
+                'px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200',
+                filters.program === opt.value
+                  ? 'bg-white text-warm-900 shadow-sm'
+                  : 'text-warm-500 hover:text-warm-700'
+              )}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Conference dropdown */}
         <select
           value={filters.conference}
           onChange={(e) => setFilters(f => ({ ...f, conference: e.target.value }))}
           className={cn(
-            'px-4 py-2.5 border rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 max-w-[200px]',
-            filters.conference !== 'all' ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-700'
+            'px-3 py-2 rounded-[10px] text-xs font-medium',
+            'bg-white/80 border border-warm-200/50 text-warm-600',
+            'focus:outline-none focus:ring-2 focus:ring-primary-500/20',
+            'max-w-[180px] cursor-pointer',
+            filters.conference !== 'all' && 'border-primary-300 bg-primary-50 text-primary-700'
           )}
         >
           <option value="all">All Conferences</option>
-          {conferences.map(conf => (
-            <option key={conf} value={conf}>{conf}</option>
-          ))}
+          {conferences.map(conf => <option key={conf} value={conf}>{conf}</option>)}
         </select>
 
-        {/* Priority */}
+        {/* Status dropdown */}
         <select
-          value={filters.priority}
-          onChange={(e) => setFilters(f => ({ ...f, priority: e.target.value }))}
+          value={filters.status}
+          onChange={(e) => setFilters(f => ({ ...f, status: e.target.value as Filters['status'] }))}
           className={cn(
-            'px-4 py-2.5 border rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500',
-            filters.priority !== 'all' ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-700'
+            'px-3 py-2 rounded-[10px] text-xs font-medium',
+            'bg-white/80 border border-warm-200/50 text-warm-600',
+            'focus:outline-none focus:ring-2 focus:ring-primary-500/20',
+            'cursor-pointer',
+            filters.status !== 'all' && 'border-primary-300 bg-primary-50 text-primary-700'
           )}
         >
-          <option value="all">All Priorities</option>
-          <option value="2">🔥 Hot</option>
-          <option value="1">⚡ High</option>
-          <option value="0">Normal</option>
+          <option value="all">All Statuses</option>
+          {(Object.keys(statusConfig) as CoachStatus[]).map(s => <option key={s} value={s}>{statusConfig[s].label}</option>)}
         </select>
 
-        {/* Quick Filters */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setFilters(f => ({ ...f, starred: !f.starred }))}
-            className={cn(
-              'px-3 py-2 rounded-xl text-sm font-medium transition-all',
-              filters.starred 
-                ? 'bg-amber-100 text-amber-700 ring-2 ring-amber-300' 
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            )}
-          >
-            ⭐ Starred
-          </button>
+        {/* Quick filter pills */}
+        <div className="flex items-center gap-1.5">
           <button
             onClick={() => setFilters(f => ({ ...f, followUpDue: !f.followUpDue }))}
             className={cn(
-              'px-3 py-2 rounded-xl text-sm font-medium transition-all',
-              filters.followUpDue 
-                ? 'bg-orange-100 text-orange-700 ring-2 ring-orange-300' 
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors',
+              filters.followUpDue
+                ? 'bg-amber-50 border-amber-200 text-amber-700'
+                : 'bg-white/60 border-warm-200/50 text-warm-500 hover:bg-warm-50'
             )}
           >
-            ⏰ Due
+            <Clock size={12} /> Follow-ups Due
+          </button>
+          <button
+            onClick={() => setFilters(f => ({ ...f, starred: !f.starred }))}
+            className={cn(
+              'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors',
+              filters.starred
+                ? 'bg-amber-50 border-amber-200 text-amber-700'
+                : 'bg-white/60 border-warm-200/50 text-warm-500 hover:bg-warm-50'
+            )}
+          >
+            <Star size={12} /> Starred
           </button>
         </div>
 
         {/* Clear */}
         {activeFilterCount > 0 && (
-          <button
-            onClick={clearFilters}
-            className="px-3 py-2 rounded-xl text-sm font-medium text-rose-600 hover:bg-rose-50 transition-colors"
-          >
-            ✕ Clear ({activeFilterCount})
+          <button onClick={clearFilters}
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-red-600 hover:bg-red-50 transition-colors ml-auto">
+            <X size={12} /> Clear {activeFilterCount}
           </button>
         )}
       </div>

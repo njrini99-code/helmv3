@@ -129,23 +129,23 @@ const EVENT_TYPE_PILLS: Array<{
     type: 'practice',
     label: 'Practice',
     icon: Dumbbell,
-    activeBg: 'bg-stone-800',
+    activeBg: 'bg-warm-800',
     activeText: 'text-white',
-    activeShadow: 'shadow-stone-800/30',
-    inactiveBg: 'bg-stone-100 hover:bg-stone-200',
-    inactiveText: 'text-stone-600',
-    headerGradient: 'from-stone-50 to-white',
+    activeShadow: 'shadow-warm-800/30',
+    inactiveBg: 'bg-warm-100 hover:bg-warm-200',
+    inactiveText: 'text-warm-600',
+    headerGradient: 'from-warm-50 to-white',
   },
   {
     type: 'tournament',
     label: 'Tournament',
     icon: Trophy,
-    activeBg: 'bg-emerald-600',
+    activeBg: 'bg-primary-600',
     activeText: 'text-white',
-    activeShadow: 'shadow-emerald-600/30',
-    inactiveBg: 'bg-emerald-50 hover:bg-emerald-100',
-    inactiveText: 'text-emerald-700',
-    headerGradient: 'from-emerald-50 to-white',
+    activeShadow: 'shadow-primary-600/30',
+    inactiveBg: 'bg-primary-50 hover:bg-primary-100',
+    inactiveText: 'text-primary-700',
+    headerGradient: 'from-primary-50 to-white',
   },
   {
     type: 'qualifier',
@@ -602,7 +602,7 @@ export function EventDetailModal({
             <label className="flex items-center gap-3 pl-[52px] cursor-pointer group">
               <div className={cn(
                 'relative w-10 h-6 rounded-full transition-colors duration-200',
-                formData.allDay ? 'bg-emerald-500' : 'bg-warm-300'
+                formData.allDay ? 'bg-primary-500' : 'bg-warm-300'
               )}>
                 <input
                   type="checkbox"
@@ -655,7 +655,7 @@ export function EventDetailModal({
                 </div>
                 <div className="flex items-center gap-2">
                   {formData.attendeeIds.length > 0 && (
-                    <span className="text-xs font-medium px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full">
+                    <span className="text-xs font-medium px-2 py-0.5 bg-primary-100 text-primary-700 rounded-full">
                       {formData.attendeeIds.length}/{availablePlayers.length}
                     </span>
                   )}
@@ -670,7 +670,7 @@ export function EventDetailModal({
                         }
                       }}
                       disabled={isViewMode || isSaving}
-                      className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 disabled:opacity-40 transition-colors"
+                      className="text-xs font-semibold text-primary-600 hover:text-primary-700 disabled:opacity-40 transition-colors"
                     >
                       {formData.attendeeIds.length === availablePlayers.length ? 'Clear' : 'Add All'}
                     </button>
@@ -695,7 +695,7 @@ export function EventDetailModal({
                         className={cn(
                           'group flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-150',
                           isSelected
-                            ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20 scale-[1.02]'
+                            ? 'bg-primary-600 text-white shadow-md shadow-primary-600/20 scale-[1.02]'
                             : 'bg-warm-100 text-warm-700 hover:bg-warm-200',
                           'disabled:opacity-50 disabled:cursor-not-allowed'
                         )}
@@ -720,7 +720,11 @@ export function EventDetailModal({
               {/* Conflict Warning */}
               {checkingConflicts && (
                 <div className="p-3 bg-warm-100 rounded-xl text-sm text-warm-600 flex items-center gap-2">
-                  <div className="animate-spin h-4 w-4 border-2 border-warm-400 border-t-transparent rounded-full" />
+                  <span className="flex items-center gap-1">
+                    <span className="w-1 h-1 rounded-full bg-warm-400 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                    <span className="w-1 h-1 rounded-full bg-warm-400 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                    <span className="w-1 h-1 rounded-full bg-warm-400 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+                  </span>
                   Checking conflicts...
                 </div>
               )}
@@ -742,7 +746,7 @@ export function EventDetailModal({
               <label className="cursor-pointer">
                 <div className={cn(
                   'relative w-10 h-6 rounded-full transition-colors duration-200',
-                  formData.requiresRsvp ? 'bg-emerald-500' : 'bg-warm-300'
+                  formData.requiresRsvp ? 'bg-primary-500' : 'bg-warm-300'
                 )}>
                   <input
                     type="checkbox"
@@ -892,7 +896,7 @@ export function EventDetailModal({
                   disabled={isSaving}
                   className={cn(
                     'px-5 py-2 rounded-xl text-sm font-semibold text-white transition-all',
-                    'bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20',
+                    'bg-primary-600 hover:bg-primary-700 shadow-md shadow-primary-600/20',
                     'disabled:opacity-50 disabled:cursor-not-allowed',
                     isSaving && 'animate-pulse'
                   )}

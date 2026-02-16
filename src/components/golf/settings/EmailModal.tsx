@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/toast';
 import { Modal } from '@/components/ui/modal';
@@ -15,6 +16,7 @@ interface EmailModalProps {
 }
 
 export function EmailModal({ isOpen, onClose, currentEmail, onUpdate }: EmailModalProps) {
+  const { modalRef } = useFocusTrap(isOpen, onClose);
   const [loading, setLoading] = useState(false);
   const [newEmail, setNewEmail] = useState('');
   const { showToast } = useToast();
@@ -53,7 +55,7 @@ export function EmailModal({ isOpen, onClose, currentEmail, onUpdate }: EmailMod
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Change Email Address">
-      <div className="space-y-4">
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="modal-title" className="space-y-4">
         <div>
           <label className="text-sm font-medium text-warm-700 block mb-1">
             Current Email

@@ -23,7 +23,7 @@ interface TaskTemplateListProps {
 const categoryColors: Record<string, string> = {
   Equipment: 'bg-blue-100 text-blue-700',
   Tournament: 'bg-purple-100 text-purple-700',
-  Practice: 'bg-green-100 text-green-700',
+  Practice: 'bg-primary-100 text-primary-700',
   Travel: 'bg-amber-100 text-amber-700',
   Fitness: 'bg-red-100 text-red-700',
   Training: 'bg-cyan-100 text-cyan-700',
@@ -195,7 +195,8 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
+            style={{ overflow: 'hidden' }}
             onSubmit={handleSubmit}
             className="bg-white rounded-xl border border-warm-200 p-4 space-y-3"
           >
@@ -207,6 +208,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
                 type="button"
                 onClick={resetForm}
                 className="p-1 rounded-full hover:bg-warm-100"
+                aria-label="Close form"
               >
                 <IconX size={16} className="text-warm-400" />
               </button>
@@ -218,7 +220,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
               onChange={(e) => setFormTitle(e.target.value)}
               placeholder="Template title"
               className="w-full px-3 py-2 rounded-lg border border-warm-200 text-sm
-                       focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                       focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
             />
 
             <textarea
@@ -227,7 +229,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
               placeholder="Description (optional)"
               rows={2}
               className="w-full px-3 py-2 rounded-lg border border-warm-200 text-sm resize-none
-                       focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                       focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
             />
 
             <div className="grid grid-cols-2 gap-3">
@@ -242,7 +244,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
                   placeholder="e.g., Tournament"
                   list="category-suggestions"
                   className="w-full px-3 py-2 rounded-lg border border-warm-200 text-sm
-                           focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                           focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
                 />
                 <datalist id="category-suggestions">
                   <option value="Equipment" />
@@ -265,7 +267,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
                   min={1}
                   placeholder="e.g., 7"
                   className="w-full px-3 py-2 rounded-lg border border-warm-200 text-sm
-                           focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                           focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
                 />
               </div>
             </div>
@@ -279,7 +281,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
                   value={formPriority}
                   onChange={(e) => setFormPriority(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg border border-warm-200 text-sm bg-white
-                           focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                           focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
                 >
                   <option value="low">Low</option>
                   <option value="normal">Normal</option>
@@ -296,7 +298,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
                   value={formAssigneeType}
                   onChange={(e) => setFormAssigneeType(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg border border-warm-200 text-sm bg-white
-                           focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                           focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
                 >
                   <option value="all_players">All Players</option>
                   <option value="individual">Individual</option>
@@ -340,7 +342,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
                     className="group relative bg-white rounded-lg border border-warm-200 p-3
-                             hover:border-green-200 hover:shadow-sm transition-all cursor-pointer"
+                             hover:border-primary-200 hover:shadow-sm transition-all cursor-pointer"
                     onClick={() => onSelectTemplate(template)}
                   >
                     <div className="flex items-start justify-between">
@@ -392,6 +394,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
                             startEditing(template);
                           }}
                           className="p-1.5 rounded-lg hover:bg-warm-100 transition-colors"
+                          aria-label="Edit template"
                         >
                           <IconEdit size={14} className="text-warm-400" />
                         </button>
@@ -402,6 +405,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
                             handleDelete(template.id);
                           }}
                           className="p-1.5 rounded-lg hover:bg-red-50 transition-colors"
+                          aria-label="Delete template"
                         >
                           <IconTrash size={14} className="text-warm-400 hover:text-red-500" />
                         </button>

@@ -44,12 +44,12 @@ export function AcknowledgementTracker({
               strokeWidth="2.5"
               strokeDasharray={`${progress * 0.691} 100`}
               strokeLinecap="round"
-              className={isComplete ? 'text-green-500' : 'text-blue-500'}
+              className={isComplete ? 'text-primary-500' : 'text-blue-500'}
             />
           </svg>
           {isComplete && (
             <div className="absolute inset-0 flex items-center justify-center">
-              <IconCheck size={10} className="text-green-600" />
+              <IconCheck size={10} className="text-primary-600" />
             </div>
           )}
         </div>
@@ -67,7 +67,7 @@ export function AcknowledgementTracker({
         <span className="text-sm font-medium text-warm-700">Acknowledgements</span>
         <span className={cn(
           'text-sm font-semibold tabular-nums',
-          isComplete ? 'text-green-600' : 'text-warm-900'
+          isComplete ? 'text-primary-600' : 'text-warm-900'
         )}>
           {acknowledgedCount}/{totalRecipients}
         </span>
@@ -78,7 +78,7 @@ export function AcknowledgementTracker({
         <div
           className={cn(
             'h-full rounded-full transition-all duration-500 ease-out',
-            isComplete ? 'bg-green-500' : progress > 50 ? 'bg-blue-500' : 'bg-blue-400'
+            isComplete ? 'bg-primary-500' : progress > 50 ? 'bg-blue-500' : 'bg-blue-400'
           )}
           style={{ width: `${Math.min(progress, 100)}%` }}
         />
@@ -89,8 +89,8 @@ export function AcknowledgementTracker({
         <div className="space-y-1 max-h-40 overflow-y-auto">
           {acknowledgements.map((ack) => (
             <div key={ack.player_id} className="flex items-center gap-2 py-1.5 px-2 rounded-lg">
-              <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-                <IconCheck size={10} className="text-green-600" />
+              <div className="w-5 h-5 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
+                <IconCheck size={10} className="text-primary-600" />
               </div>
               <span className="text-sm text-warm-700 flex-1 truncate">
                 {playerNames[ack.player_id] || 'Unknown Player'}
@@ -113,7 +113,7 @@ export function AcknowledgementPill({ count, total }: { count: number; total: nu
     <span className={cn(
       'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium tabular-nums',
       isComplete
-        ? 'bg-green-50 text-green-700'
+        ? 'bg-primary-50 text-primary-700'
         : 'bg-warm-100 text-warm-500'
     )}>
       {isComplete ? <IconCheck size={10} /> : <IconClock size={10} />}

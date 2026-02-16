@@ -217,9 +217,9 @@ export function PatternTimeline({ patterns }: PatternTimelineProps) {
     },
     confirmed: {
       icon: <IconCheck size={14} />,
-      bg: 'bg-green-100',
-      border: 'border-green-300',
-      text: 'text-green-700',
+      bg: 'bg-primary-100',
+      border: 'border-primary-300',
+      text: 'text-primary-700',
       label: 'Confirmed',
     },
     addressed: {
@@ -231,9 +231,9 @@ export function PatternTimeline({ patterns }: PatternTimelineProps) {
     },
     resolved: {
       icon: <IconCheck size={14} />,
-      bg: 'bg-emerald-100',
-      border: 'border-emerald-300',
-      text: 'text-emerald-700',
+      bg: 'bg-primary-100',
+      border: 'border-primary-300',
+      text: 'text-primary-700',
       label: 'Resolved',
     },
     dismissed: {
@@ -279,7 +279,7 @@ export function PatternTimeline({ patterns }: PatternTimelineProps) {
               </div>
               <div className="text-warm-300">|</div>
               <div className="flex items-center gap-2">
-                <span className="text-2xl font-semibold text-green-600">
+                <span className="text-2xl font-semibold text-primary-600">
                   {trendSummary.resolved}
                 </span>
                 <span className="text-sm text-warm-500">resolved</span>
@@ -290,7 +290,7 @@ export function PatternTimeline({ patterns }: PatternTimelineProps) {
           <div className={cn(
             'flex items-center gap-2 px-4 py-2 rounded-lg',
             trendSummary.trend === 'increasing' && 'bg-red-50 text-red-700',
-            trendSummary.trend === 'decreasing' && 'bg-green-50 text-green-700',
+            trendSummary.trend === 'decreasing' && 'bg-primary-50 text-primary-700',
             trendSummary.trend === 'stable' && 'bg-warm-50 text-warm-600',
           )}>
             {trendSummary.trend === 'increasing' && <IconTrendingUp size={20} />}
@@ -311,16 +311,16 @@ export function PatternTimeline({ patterns }: PatternTimelineProps) {
         <div className="h-48">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" />
               <XAxis
                 dataKey="dateFormatted"
-                tick={{ fontSize: 11, fill: '#64748b' }}
+                tick={{ fontSize: 11, fill: '#78716c' }}
                 tickLine={false}
-                axisLine={{ stroke: '#e2e8f0' }}
+                axisLine={{ stroke: '#e7e5e4' }}
                 interval="preserveStartEnd"
               />
               <YAxis
-                tick={{ fontSize: 11, fill: '#64748b' }}
+                tick={{ fontSize: 11, fill: '#78716c' }}
                 tickLine={false}
                 axisLine={false}
                 allowDecimals={false}
@@ -328,13 +328,13 @@ export function PatternTimeline({ patterns }: PatternTimelineProps) {
               <Tooltip
                 contentStyle={{
                   backgroundColor: 'white',
-                  border: '1px solid #e2e8f0',
+                  border: '1px solid #e7e5e4',
                   borderRadius: '8px',
                   boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
                 }}
                 labelStyle={{ fontWeight: 600, marginBottom: 4 }}
               />
-              <ReferenceLine y={0} stroke="#94a3b8" strokeDasharray="3 3" />
+              <ReferenceLine y={0} stroke="#a8a29e" strokeDasharray="3 3" />
               <Line
                 type="monotone"
                 dataKey="detected"
@@ -410,7 +410,7 @@ export function PatternTimeline({ patterns }: PatternTimelineProps) {
                         {event.strokeImpact !== 0 && (
                           <span className={cn(
                             'ml-2',
-                            event.strokeImpact > 0 ? 'text-red-500' : 'text-green-600'
+                            event.strokeImpact > 0 ? 'text-red-500' : 'text-primary-600'
                           )}>
                             {event.strokeImpact > 0 ? '+' : ''}{event.strokeImpact.toFixed(1)} strokes
                           </span>

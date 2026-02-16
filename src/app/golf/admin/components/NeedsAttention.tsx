@@ -14,13 +14,13 @@ const severityOrder: Record<string, number> = {
 };
 
 const dotColors = {
-  info: 'bg-emerald-500',
+  info: 'bg-primary-500',
   warning: 'bg-amber-500',
   critical: 'bg-red-500',
 };
 
 const itemGradients = {
-  info: 'bg-gradient-to-r from-emerald-50/30 to-transparent',
+  info: 'bg-gradient-to-r from-primary-50/30 to-transparent',
   warning: 'bg-gradient-to-r from-amber-50/30 to-transparent',
   critical: 'bg-gradient-to-r from-red-50/30 to-transparent',
 };
@@ -57,14 +57,14 @@ export function NeedsAttention({ items }: Props) {
 
       {/* All clear state */}
       {allClear ? (
-        <div className="flex items-center gap-3 rounded-xl bg-gradient-to-r from-emerald-50/50 to-emerald-50/20 py-3 px-4">
+        <div className="flex items-center gap-3 rounded-xl bg-gradient-to-r from-primary-50/50 to-primary-50/20 py-3 px-4">
           <div className="relative">
-            <div className="w-2 h-2 rounded-full bg-emerald-500" />
-            <div className="absolute inset-0 w-2 h-2 rounded-full bg-emerald-500 animate-ping opacity-75" />
+            <div className="w-2 h-2 rounded-full bg-primary-500" />
+            <div className="absolute inset-0 w-2 h-2 rounded-full bg-primary-500 animate-ping opacity-75" />
           </div>
           <div>
-            <p className="text-sm font-medium text-emerald-700">All clear</p>
-            <p className="text-xs text-emerald-600/70">No issues detected — platform is running smoothly</p>
+            <p className="text-sm font-medium text-primary-700">All clear</p>
+            <p className="text-xs text-primary-600/70">No issues detected — platform is running smoothly</p>
           </div>
         </div>
       ) : (

@@ -209,6 +209,7 @@ export function ConflictResolutionModal({
               </div>
               <button
                 onClick={onClose}
+                aria-label="Close dialog"
                 className="p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
               >
                 <IconX size={20} />
@@ -243,10 +244,10 @@ export function ConflictResolutionModal({
               </div>
 
               {/* Server Version */}
-              <div className="border border-green-200 rounded-xl overflow-hidden">
-                <div className="bg-green-50 px-4 py-3 flex items-center gap-2">
-                  <Cloud size={18} className="text-green-600" />
-                  <span className="font-medium text-green-900">Server</span>
+              <div className="border border-primary-200 rounded-xl overflow-hidden">
+                <div className="bg-primary-50 px-4 py-3 flex items-center gap-2">
+                  <Cloud size={18} className="text-primary-600" />
+                  <span className="font-medium text-primary-900">Server</span>
                 </div>
                 <div className="px-4 py-3 space-y-1">
                   <div className="flex items-center gap-2 text-sm text-warm-500">
@@ -273,7 +274,7 @@ export function ConflictResolutionModal({
                       </th>
                       <th className="px-4 py-2 font-medium">
                         <span className="flex items-center gap-1">
-                          <Cloud size={14} className="text-green-500" />
+                          <Cloud size={14} className="text-primary-500" />
                           Server
                         </span>
                       </th>
@@ -298,7 +299,7 @@ export function ConflictResolutionModal({
                         <td
                           className={`px-4 py-3 ${
                             selectedFields[diff.field] === 'server'
-                              ? 'bg-green-50 text-green-900'
+                              ? 'bg-primary-50 text-primary-900'
                               : 'text-warm-600'
                           }`}
                         >
@@ -310,7 +311,7 @@ export function ConflictResolutionModal({
                             className={`p-1.5 rounded-lg transition-colors ${
                               selectedFields[diff.field] === 'local'
                                 ? 'bg-blue-100 text-blue-600'
-                                : 'bg-green-100 text-green-600'
+                                : 'bg-primary-100 text-primary-600'
                             }`}
                             title={`Using ${selectedFields[diff.field]} value`}
                           >
@@ -350,14 +351,14 @@ export function ConflictResolutionModal({
                   disabled={resolving}
                   className="flex items-center gap-2"
                 >
-                  <Cloud size={16} className="text-green-500" />
+                  <Cloud size={16} className="text-primary-500" />
                   Keep Server
                 </Button>
                 <Button
                   onClick={() => handleResolution('merge')}
                   disabled={resolving}
                   isLoading={resolving}
-                  className="bg-green-600 hover:bg-green-700"
+                  className="bg-primary-600 hover:bg-primary-700"
                 >
                   Merge Selected
                 </Button>

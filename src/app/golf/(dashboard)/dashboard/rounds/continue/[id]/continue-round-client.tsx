@@ -273,14 +273,18 @@ export default function ContinueRoundClient({
     return (
       <div className="min-h-full bg-transparent flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-8">
-          <div className="w-20 h-20 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
-          <h2 className="text-2xl font-bold text-slate-900 mb-2">
+          <div className="flex items-center justify-center gap-2 mx-auto mb-6">
+            <span className="w-3 h-3 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+            <span className="w-3 h-3 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+            <span className="w-3 h-3 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+          </div>
+          <h2 className="text-2xl font-bold text-warm-900 mb-2">
             Completing Round...
           </h2>
-          <p className="text-slate-600 mb-4">
+          <p className="text-warm-600 mb-4">
             Score: {totalScore} ({toPar >= 0 ? '+' : ''}{toPar})
           </p>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-warm-500">
             Calculating your 50+ statistics...
           </p>
           {error && (
@@ -288,7 +292,7 @@ export default function ContinueRoundClient({
               <p className="text-sm text-red-600 mb-3">{error}</p>
               <button
                 onClick={() => setSubmitting(false)}
-                className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-200 transition-colors"
+                className="px-4 py-2 bg-warm-100 text-warm-700 rounded-lg text-sm font-medium hover:bg-warm-200 transition-colors"
               >
                 Go Back
               </button>
@@ -305,23 +309,23 @@ export default function ContinueRoundClient({
   return (
     <>
       {/* Header Banner */}
-      <div className="bg-emerald-50 border-b border-emerald-200 px-4 py-3">
+      <div className="bg-primary-50 border-b border-primary-200 px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center flex-shrink-0">
+          <div className="w-8 h-8 rounded-lg bg-primary-500 flex items-center justify-center flex-shrink-0">
             <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-emerald-900">
+            <p className="text-sm font-medium text-primary-900">
               Continuing Round
             </p>
-            <p className="text-xs text-emerald-700">
+            <p className="text-xs text-primary-700">
               {setupData.courseName} • Starting on hole {startHoleIndex + 1}
             </p>
           </div>
           <div className="text-right">
-            <p className="text-xs font-medium text-emerald-700">
+            <p className="text-xs font-medium text-primary-700">
               {completedHoleStats.filter(s => s !== undefined).length} of {holes.length} holes
             </p>
           </div>
@@ -380,16 +384,16 @@ export default function ContinueRoundClient({
       {/* Finish Round Confirmation */}
       {showFinishConfirm && pendingFinalStats && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setShowFinishConfirm(false)} />
+          <div className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm" onClick={() => setShowFinishConfirm(false)} />
           <div className="relative bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center">
-            <h3 className="text-lg font-semibold text-slate-900 mb-2">Submit Round?</h3>
-            <p className="text-sm text-slate-500 mb-6">
+            <h3 className="text-lg font-semibold text-warm-900 mb-2">Submit Round?</h3>
+            <p className="text-sm text-warm-500 mb-6">
               All {holes.length} holes are complete. Submit your round for scoring?
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowFinishConfirm(false)}
-                className="flex-1 py-3 rounded-xl bg-slate-100 text-slate-700 font-medium hover:bg-slate-200 transition-colors"
+                className="flex-1 py-3 rounded-xl bg-warm-100 text-warm-700 font-medium hover:bg-warm-200 transition-colors"
               >
                 Review
               </button>
@@ -398,7 +402,7 @@ export default function ContinueRoundClient({
                   setShowFinishConfirm(false);
                   await handleRoundSubmit(pendingFinalStats);
                 }}
-                className="flex-1 py-3 rounded-xl bg-emerald-600 text-white font-medium hover:bg-emerald-700 transition-colors"
+                className="flex-1 py-3 rounded-xl bg-primary-600 text-white font-medium hover:bg-primary-700 transition-colors"
               >
                 Submit
               </button>

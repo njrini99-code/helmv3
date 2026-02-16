@@ -57,7 +57,11 @@ export function InsightsFeed({ limit = 5, showGenerateButton = true, coachId }: 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full" />
+        <div className="space-y-3 w-48">
+          <div className="h-4 w-full bg-warm-200 rounded skeleton-shimmer" />
+          <div className="h-4 w-3/4 bg-warm-200 rounded skeleton-shimmer" />
+          <div className="h-4 w-1/2 bg-warm-200 rounded skeleton-shimmer" />
+        </div>
       </div>
     );
   }
@@ -68,7 +72,7 @@ export function InsightsFeed({ limit = 5, showGenerateButton = true, coachId }: 
         <p className="text-sm text-red-600">{error}</p>
         <button
           onClick={loadInsights}
-          className="mt-4 text-sm text-green-600 hover:text-green-700 font-medium"
+          className="mt-4 text-sm text-primary-600 hover:text-primary-700 font-medium"
         >
           Try Again
         </button>
@@ -93,7 +97,7 @@ export function InsightsFeed({ limit = 5, showGenerateButton = true, coachId }: 
           <button
             onClick={handleGenerate}
             disabled={generating}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white font-medium rounded-xl hover:bg-green-700 disabled:opacity-50 transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary-600 text-white font-medium rounded-xl hover:bg-primary-700 disabled:opacity-50 transition-colors"
           >
             <IconSparkles size={18} />
             {generating ? 'Analyzing Team...' : 'Generate Insights'}
@@ -114,7 +118,7 @@ export function InsightsFeed({ limit = 5, showGenerateButton = true, coachId }: 
           <button
             onClick={handleGenerate}
             disabled={generating}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-green-600 bg-green-50 rounded-lg hover:bg-green-100 disabled:opacity-50 transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-primary-600 bg-primary-50 rounded-lg hover:bg-primary-100 disabled:opacity-50 transition-colors"
           >
             <IconRefresh size={14} className={generating ? 'animate-spin' : ''} />
             {generating ? 'Analyzing...' : 'Refresh'}

@@ -1131,15 +1131,21 @@ export async function deleteGolfRound(roundId: string): Promise<ActionResult> {
       .eq('id', roundId)
       .single();
 
-    if (!round || round.player?.user_id !== user.id) {
-      return { success: false, error: 'You do not have permission to delete this round' };
+    if (!round || !round.player || round.player.user_id !== user.id) {
+      return { success: false, error: 'Round not found or you do not have permission to delete it' };
     }
 
-    // Delete shots first
-    await supabase.from('golf_shots').delete().eq('round_id', roundId);
+    // Delete shots first — check for errors
+    const { error: shotsError } = await supabase.from('golf_shots').delete().eq('round_id', roundId);
+    if (shotsError) {
+      return { success: false, error: 'Failed to delete round data. Please try again.' };
+    }
 
-    // Delete holes
-    await supabase.from('golf_holes').delete().eq('round_id', roundId);
+    // Delete holes — check for errors
+    const { error: holesError } = await supabase.from('golf_holes').delete().eq('round_id', roundId);
+    if (holesError) {
+      return { success: false, error: 'Failed to delete round data. Please try again.' };
+    }
 
     // Delete round
     const { error } = await supabase
@@ -2141,7 +2147,8 @@ export async function markNotificationRead(
     await (supabase as any)
       .from('golf_calendar_notifications')
       .update({ read_at: new Date().toISOString() })
-      .eq('id', notificationId);
+      .eq('id', notificationId)
+      .eq('user_id', user.id);
 
     revalidatePath('/golf/dashboard');
     return { success: true, data: undefined };
@@ -2378,7 +2385,19 @@ export async function deleteCoachBlockedTime(id: string): Promise<ActionResult<v
       return { success: false, error: 'Coach profile not found' };
     }
 
-    // Delete blocked time (RLS will ensure it's theirs)
+    // Verify blocked time exists and belongs to this coach
+    const { data: existing } = await supabase
+      .from('golf_coach_blocked_time')
+      .select('id')
+      .eq('id', id)
+      .eq('coach_id', coach.id)
+      .maybeSingle();
+
+    if (!existing) {
+      return { success: false, error: 'Blocked time not found' };
+    }
+
+    // Delete blocked time
     const { error } = await supabase
       .from('golf_coach_blocked_time')
       .delete()
@@ -2424,6 +2443,18 @@ export async function updateCoachBlockedTime(
       return { success: false, error: 'Coach profile not found' };
     }
 
+    // Verify blocked time exists and belongs to this coach
+    const { data: existing } = await supabase
+      .from('golf_coach_blocked_time')
+      .select('id')
+      .eq('id', id)
+      .eq('coach_id', coach.id)
+      .maybeSingle();
+
+    if (!existing) {
+      return { success: false, error: 'Blocked time not found' };
+    }
+
     // Build update object
     const updates: BlockedTimeUpdateData = {};
     if (data.title !== undefined) updates.title = data.title;
@@ -2435,7 +2466,7 @@ export async function updateCoachBlockedTime(
     if (data.recurrenceRule !== undefined) updates.recurrence_rule = data.recurrenceRule;
     if (data.description !== undefined) updates.description = data.description;
 
-    // Update blocked time (RLS will ensure it's theirs)
+    // Update blocked time
     const { error } = await supabase
       .from('golf_coach_blocked_time')
       .update(updates)
@@ -2628,21 +2659,11 @@ export async function savePartialRound(
       }
 
       if (!round) {
-        // Round doesn't exist or isn't in_progress, create new one instead
-        const { data: newRound, error: insertError } = await supabase
-          .from('golf_rounds')
-          .insert(roundData)
-          .select()
-          .single();
-
-        if (insertError) {
-          return {
-            success: false,
-            error: insertError.message || 'Failed to save round. Please try again.'
-          };
-        }
-
-        roundId = newRound.id;
+        // Round doesn't exist or is no longer in_progress — don't silently create a duplicate
+        return {
+          success: false,
+          error: 'Round not found or already completed. Please start a new round.'
+        };
       } else {
         roundId = round.id;
       }

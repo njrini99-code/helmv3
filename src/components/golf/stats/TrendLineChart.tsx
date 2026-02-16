@@ -99,8 +99,8 @@ export function TrendLineChart({
 
   if (sortedData.length === 0) {
     return (
-      <div className={cn('flex items-center justify-center bg-gray-50 rounded-lg', className)} style={{ height }}>
-        <p className="text-gray-500 text-sm">No data available</p>
+      <div className={cn('flex items-center justify-center bg-warm-50 rounded-lg', className)} style={{ height }}>
+        <p className="text-warm-500 text-sm">No data available</p>
       </div>
     );
   }
@@ -143,7 +143,7 @@ export function TrendLineChart({
 
     return {
       icon: trend === 'improving' ? '↑' : trend === 'declining' ? '↓' : '→',
-      color: trend === 'stable' ? 'text-gray-500' : isGood ? 'text-green-500' : 'text-red-500',
+      color: trend === 'stable' ? 'text-warm-500' : isGood ? 'text-primary-500' : 'text-red-500',
       label: trend.charAt(0).toUpperCase() + trend.slice(1),
     };
   };
@@ -155,7 +155,7 @@ export function TrendLineChart({
       {/* Header */}
       {title && (
         <div className="flex items-center justify-between mb-2">
-          <h3 className="font-semibold text-gray-900">{title}</h3>
+          <h3 className="font-semibold text-warm-900">{title}</h3>
           {trendIndicator && (
             <div className={cn('flex items-center gap-1 text-sm', trendIndicator.color)}>
               <span>{trendIndicator.icon}</span>
@@ -181,7 +181,7 @@ export function TrendLineChart({
               y1={tick.y}
               x2={width - padding.right}
               y2={tick.y}
-              stroke="#e2e8f0"
+              stroke="#e7e5e4"
               strokeWidth={1}
             />
             <text
@@ -189,7 +189,7 @@ export function TrendLineChart({
               y={tick.y}
               textAnchor="end"
               dominantBaseline="middle"
-              className="text-xs fill-gray-500"
+              className="text-xs fill-warm-500"
             >
               {formatValue(tick.value)}
             </text>
@@ -267,7 +267,7 @@ export function TrendLineChart({
             <text
               x={predictionPoint.x + 8}
               y={predictionPoint.y}
-              className="text-xs fill-gray-500"
+              className="text-xs fill-warm-500"
               dominantBaseline="middle"
             >
               Predicted
@@ -290,7 +290,7 @@ export function TrendLineChart({
               x={xScale(i)}
               y={height - padding.bottom + 20}
               textAnchor="middle"
-              className="text-xs fill-gray-500"
+              className="text-xs fill-warm-500"
             >
               {label}
             </text>
@@ -307,7 +307,7 @@ export function TrendLineChart({
               height={40}
               rx={4}
               fill="white"
-              stroke="#e2e8f0"
+              stroke="#e7e5e4"
               strokeWidth={1}
               filter="drop-shadow(0 2px 4px rgba(0,0,0,0.1))"
             />
@@ -315,7 +315,7 @@ export function TrendLineChart({
               x={xScale(sortedData.indexOf(hoveredPoint))}
               y={yScale(hoveredPoint.value) - 30}
               textAnchor="middle"
-              className="text-sm font-semibold fill-gray-900"
+              className="text-sm font-semibold fill-warm-900"
             >
               {formatValue(hoveredPoint.value)}
             </text>
@@ -323,7 +323,7 @@ export function TrendLineChart({
               x={xScale(sortedData.indexOf(hoveredPoint))}
               y={yScale(hoveredPoint.value) - 14}
               textAnchor="middle"
-              className="text-xs fill-gray-500"
+              className="text-xs fill-warm-500"
             >
               {new Date(hoveredPoint.date).toLocaleDateString()}
             </text>
@@ -332,14 +332,14 @@ export function TrendLineChart({
       </svg>
 
       {/* Legend */}
-      <div className="flex items-center justify-center gap-4 mt-2 text-xs text-gray-500">
+      <div className="flex items-center justify-center gap-4 mt-2 text-xs text-warm-500">
         <div className="flex items-center gap-1">
           <div className="w-3 h-0.5" style={{ backgroundColor: color }} />
           <span>Actual</span>
         </div>
         {showMovingAverage && sortedData.length >= 5 && (
           <div className="flex items-center gap-1">
-            <div className="w-3 h-0.5 bg-gray-400" style={{ borderTop: '2px dashed #94a3b8' }} />
+            <div className="w-3 h-0.5 bg-warm-400" style={{ borderTop: '2px dashed #94a3b8' }} />
             <span>5-Round Moving Avg</span>
           </div>
         )}
@@ -354,17 +354,17 @@ export function TrendLineChart({
       {/* Analysis summary */}
       {analysis && sortedData.length > 0 && (
         <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
-          <div className="bg-gray-50 rounded p-2">
-            <div className="text-gray-500">Current</div>
-            <div className="font-semibold text-gray-900">{formatValue(sortedData[sortedData.length - 1]!.value)}</div>
+          <div className="bg-warm-50 rounded p-2">
+            <div className="text-warm-500">Current</div>
+            <div className="font-semibold text-warm-900">{formatValue(sortedData[sortedData.length - 1]!.value)}</div>
           </div>
-          <div className="bg-gray-50 rounded p-2">
-            <div className="text-gray-500">Best</div>
-            <div className="font-semibold text-green-600">{formatValue(Math.min(...sortedData.map(d => d.value)))}</div>
+          <div className="bg-warm-50 rounded p-2">
+            <div className="text-warm-500">Best</div>
+            <div className="font-semibold text-primary-600">{formatValue(Math.min(...sortedData.map(d => d.value)))}</div>
           </div>
-          <div className="bg-gray-50 rounded p-2">
-            <div className="text-gray-500">Change</div>
-            <div className="font-semibold text-gray-900">{analysis.changePercent >= 0 ? '+' : ''}{analysis.changePercent.toFixed(1)}%</div>
+          <div className="bg-warm-50 rounded p-2">
+            <div className="text-warm-500">Change</div>
+            <div className="font-semibold text-warm-900">{analysis.changePercent >= 0 ? '+' : ''}{analysis.changePercent.toFixed(1)}%</div>
           </div>
         </div>
       )}

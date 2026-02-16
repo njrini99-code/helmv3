@@ -275,7 +275,7 @@ export default function MobileScoreEntry({
   const getScoreColor = (score: number, par: number) => {
     const diff = score - par;
     if (diff <= -2) return 'text-yellow-500'; // Eagle+
-    if (diff === -1) return 'text-emerald-500'; // Birdie
+    if (diff === -1) return 'text-primary-500'; // Birdie
     if (diff === 0) return 'text-warm-800'; // Par
     if (diff === 1) return 'text-amber-500'; // Bogey
     return 'text-red-500'; // Double+
@@ -284,7 +284,7 @@ export default function MobileScoreEntry({
   const getScoreBgColor = (score: number, par: number) => {
     const diff = score - par;
     if (diff <= -2) return 'bg-yellow-50 border-yellow-200'; // Eagle+
-    if (diff === -1) return 'bg-emerald-50 border-emerald-200'; // Birdie
+    if (diff === -1) return 'bg-primary-50 border-primary-200'; // Birdie
     if (diff === 0) return 'bg-warm-50 border-warm-200'; // Par
     if (diff === 1) return 'bg-amber-50 border-amber-200'; // Bogey
     return 'bg-red-50 border-red-200'; // Double+
@@ -336,7 +336,7 @@ export default function MobileScoreEntry({
           {onSwitchToDetailedMode && (
             <button
               onClick={onSwitchToDetailedMode}
-              className="text-sm font-medium text-emerald-400 hover:text-emerald-300 active:scale-95 transition-all min-h-[44px] px-2"
+              className="text-sm font-medium text-primary-400 hover:text-primary-300 active:scale-95 transition-all min-h-[44px] px-2"
               aria-label="Switch to detailed shot tracking"
             >
               Detailed
@@ -347,7 +347,7 @@ export default function MobileScoreEntry({
         {/* Progress bar */}
         <div className="mt-3 h-1.5 bg-warm-700 rounded-full overflow-hidden">
           <div
-            className="h-full bg-emerald-500 transition-all duration-500"
+            className="h-full bg-primary-500 transition-all duration-500"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
@@ -453,7 +453,7 @@ export default function MobileScoreEntry({
                   onClick={() => toggleFairway(true)}
                   className={`py-4 rounded-xl font-semibold text-base transition-all active:scale-95
                     ${entry.fairwayHit === true
-                      ? 'bg-emerald-500 text-white shadow-md'
+                      ? 'bg-primary-500 text-white shadow-md'
                       : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
                     }`}
                 >
@@ -483,7 +483,7 @@ export default function MobileScoreEntry({
                 onClick={() => toggleGIR(true)}
                 className={`py-4 rounded-xl font-semibold text-base transition-all active:scale-95
                   ${entry.greenInRegulation === true
-                    ? 'bg-emerald-500 text-white shadow-md'
+                    ? 'bg-primary-500 text-white shadow-md'
                     : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
                   }`}
               >
@@ -521,7 +521,7 @@ export default function MobileScoreEntry({
                   }}
                   className={`py-4 rounded-xl font-semibold text-base transition-all active:scale-95
                     ${(p === 0 ? entry.putts >= 4 : entry.putts === p)
-                      ? 'bg-emerald-500 text-white shadow-md'
+                      ? 'bg-primary-500 text-white shadow-md'
                       : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
                     }`}
                 >
@@ -546,8 +546,8 @@ export default function MobileScoreEntry({
             )}
             <button
               onClick={saveHole}
-              className={`py-4 rounded-xl bg-emerald-500 text-white font-semibold text-base
-                          shadow-lg shadow-emerald-500/25 active:scale-95 active:bg-emerald-600 transition-all
+              className={`py-4 rounded-xl bg-primary-500 text-white font-semibold text-base
+                          shadow-lg shadow-primary-500/25 active:scale-95 active:bg-primary-600 transition-all
                           ${!canGoBack ? 'col-span-2' : ''}`}
             >
               {currentHoleIndex === holes.length - 1 ? 'Finish Round' : 'Save & Next'}
@@ -615,11 +615,11 @@ function HoleNavigationDots({
 
         let dotColor = 'bg-warm-600';
         if (isActive) {
-          dotColor = 'bg-emerald-500 ring-2 ring-emerald-400 ring-offset-2 ring-offset-warm-800';
+          dotColor = 'bg-primary-500 ring-2 ring-primary-400 ring-offset-2 ring-offset-warm-800';
         } else if (isCompleted) {
           const diff = (stats?.score ?? 0) - hole.par;
           if (diff <= -2) dotColor = 'bg-yellow-400';
-          else if (diff === -1) dotColor = 'bg-emerald-400';
+          else if (diff === -1) dotColor = 'bg-primary-400';
           else if (diff === 0) dotColor = 'bg-white';
           else if (diff === 1) dotColor = 'bg-amber-400';
           else dotColor = 'bg-red-400';

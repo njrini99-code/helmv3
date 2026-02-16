@@ -1,9 +1,42 @@
 export default function Loading() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#FAF6F1]">
-      <div className="flex flex-col items-center gap-3">
-        <div className="animate-spin h-8 w-8 border-2 border-green-600 border-t-transparent rounded-full" />
-        <p className="text-sm text-slate-500">Loading onboarding...</p>
+    <div className="min-h-screen bg-[#FFFEFA] flex items-center justify-center p-4">
+      <div className="w-full max-w-lg space-y-8">
+        {/* Logo placeholder */}
+        <div className="flex justify-center">
+          <div className="skeleton-shimmer h-10 w-32 rounded-lg" />
+        </div>
+
+        {/* Step indicator */}
+        <div className="flex items-center justify-center gap-0">
+          {[1, 2, 3].map((step, index) => (
+            <div key={step} className="flex items-center">
+              {index > 0 && (
+                <div className="h-[2px] w-8 sm:w-12 bg-warm-200 skeleton-shimmer" />
+              )}
+              <div className="w-9 h-9 rounded-full skeleton-shimmer" />
+            </div>
+          ))}
+        </div>
+
+        {/* Title */}
+        <div className="text-center space-y-2">
+          <div className="skeleton-shimmer h-7 w-56 mx-auto rounded-lg" />
+          <div className="skeleton-shimmer h-4 w-72 mx-auto rounded" />
+        </div>
+
+        {/* Form card */}
+        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-8 space-y-5">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="space-y-2">
+              <div className="skeleton-shimmer h-4 w-24 rounded" />
+              <div className="skeleton-shimmer h-10 w-full rounded-lg" />
+            </div>
+          ))}
+          <div className="flex justify-end pt-4">
+            <div className="skeleton-shimmer h-10 w-28 rounded-lg" />
+          </div>
+        </div>
       </div>
     </div>
   );

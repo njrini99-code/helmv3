@@ -151,7 +151,7 @@ export function RecurrencePicker({ value, onChange, startDate }: RecurrencePicke
                   w-10 h-10 rounded-full flex items-center justify-center
                   text-sm font-medium transition-colors
                   ${byDay.includes(day.value)
-                    ? 'bg-green-600 text-white hover:bg-green-700'
+                    ? 'bg-primary-600 text-white hover:bg-primary-700'
                     : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
                   }
                 `}

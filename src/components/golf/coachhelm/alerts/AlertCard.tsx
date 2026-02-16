@@ -76,11 +76,11 @@ const levelConfig: Record<AlertLevel, {
     label: 'Info',
   },
   suggestion: {
-    bg: 'bg-green-50',
-    border: 'border-green-200',
-    icon: <IconSparkles size={16} className="text-green-600" />,
-    iconBg: 'bg-green-100',
-    accent: 'bg-green-500',
+    bg: 'bg-primary-50',
+    border: 'border-primary-200',
+    icon: <IconSparkles size={16} className="text-primary-600" />,
+    iconBg: 'bg-primary-100',
+    accent: 'bg-primary-500',
     label: 'Suggestion',
   },
 };
@@ -160,11 +160,11 @@ export function AlertCard({
       <div
         className={cn(
           'absolute inset-0 flex items-center px-4',
-          dragX > 50 ? 'justify-start bg-green-100' : dragX < -50 ? 'justify-end bg-red-100' : 'hidden'
+          dragX > 50 ? 'justify-start bg-primary-100' : dragX < -50 ? 'justify-end bg-red-100' : 'hidden'
         )}
         aria-hidden="true"
       >
-        {dragX > 50 && <IconCheck size={24} className="text-green-600" />}
+        {dragX > 50 && <IconCheck size={24} className="text-primary-600" />}
         {dragX < -50 && <IconX size={24} className="text-red-500" />}
       </div>
 
@@ -215,6 +215,7 @@ export function AlertCard({
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
+                  transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
                   className="mt-2 pt-2 border-t border-white/50"
                 >
                   <p className="text-xs text-warm-500 mb-2">
@@ -263,7 +264,7 @@ export function AlertCard({
                     }}
                     className={cn(
                       'flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg ml-auto',
-                      'text-green-600 hover:text-green-700 hover:bg-green-100',
+                      'text-primary-600 hover:text-primary-700 hover:bg-primary-100',
                       'transition-colors'
                     )}
                   >
@@ -318,7 +319,7 @@ export function AlertCard({
 export function TrendIndicator({ direction }: { direction: 'up' | 'down' }) {
   return direction === 'up' ? (
     <span>
-      <IconTrendingUp size={14} className="text-green-600" />
+      <IconTrendingUp size={14} className="text-primary-600" />
       <span className="sr-only">Trending up</span>
     </span>
   ) : (

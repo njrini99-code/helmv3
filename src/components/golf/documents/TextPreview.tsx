@@ -197,7 +197,7 @@ export function TextPreview({
             </span>
           )}
           {isCsv && (
-            <span className="px-2 py-0.5 text-xs rounded bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+            <span className="px-2 py-0.5 text-xs rounded bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200">
               CSV
             </span>
           )}
@@ -222,7 +222,7 @@ export function TextPreview({
             title="Copy to clipboard"
           >
             {copied ? (
-              <CheckIcon className="h-4 w-4 text-green-600" />
+              <CheckIcon className="h-4 w-4 text-primary-600" />
             ) : (
               <CopyIcon className="h-4 w-4" />
             )}
@@ -236,6 +236,7 @@ export function TextPreview({
               size="icon-sm"
               onClick={onFullScreen}
               title="Full Screen"
+              aria-label="Full screen"
             >
               <Maximize2Icon className="h-4 w-4" />
             </Button>
@@ -245,6 +246,7 @@ export function TextPreview({
             size="icon-sm"
             onClick={handleDownload}
             title="Download"
+            aria-label="Download"
           >
             <DownloadIcon className="h-4 w-4" />
           </Button>

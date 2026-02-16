@@ -37,7 +37,7 @@ interface PlayerCoachHelmDashboardProps {
 function getStateGradient(state: PlayerCoachHelmDashboardData['playerState']) {
   switch (state) {
     case 'improving':
-      return 'from-green-500/10 via-transparent to-transparent';
+      return 'from-primary-500/10 via-transparent to-transparent';
     case 'struggling':
       return 'from-amber-500/10 via-transparent to-transparent';
     default:
@@ -51,8 +51,8 @@ function getStateGradient(state: PlayerCoachHelmDashboardData['playerState']) {
 function EmptyState() {
   return (
     <GlassCard className="text-center py-16">
-      <div className="w-20 h-20 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-6">
-        <IconInfo size={40} className="text-slate-400" />
+      <div className="w-20 h-20 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-6">
+        <IconInfo size={40} className="text-warm-400" />
       </div>
       <h3 className="text-xl font-semibold text-warm-900 mb-2">
         No Insights Available Yet
@@ -154,15 +154,15 @@ export function PlayerCoachHelmDashboard({
             <m.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex gap-2 p-1 bg-slate-100/80 backdrop-blur-sm rounded-xl mb-6 w-fit"
+              className="flex gap-2 p-1 bg-warm-100/80 backdrop-blur-sm rounded-xl mb-6 w-fit"
             >
               <button
                 onClick={() => setActiveSection('insights')}
                 className={cn(
                   'flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all',
                   activeSection === 'insights'
-                    ? 'bg-white text-slate-900 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-700'
+                    ? 'bg-white text-warm-900 shadow-sm'
+                    : 'text-warm-500 hover:text-warm-700'
                 )}
               >
                 <IconSparkles size={16} />
@@ -173,8 +173,8 @@ export function PlayerCoachHelmDashboard({
                 className={cn(
                   'flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all',
                   activeSection === 'analytics'
-                    ? 'bg-white text-slate-900 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-700'
+                    ? 'bg-white text-warm-900 shadow-sm'
+                    : 'text-warm-500 hover:text-warm-700'
                 )}
               >
                 <IconChartRadar size={16} />

@@ -738,15 +738,15 @@ export default function NewRoundClient() {
         const isComplete = i < currentStepIndex;
         return (
           <div key={s.key} className="flex-1 flex flex-col items-center gap-1">
-            <div className="w-full h-1.5 rounded-full overflow-hidden bg-slate-200">
+            <div className="w-full h-1.5 rounded-full overflow-hidden bg-warm-200">
               <div
                 className={`h-full rounded-full transition-all duration-500 ${
-                  isComplete ? 'bg-green-500 w-full' : isActive ? 'bg-green-400 w-1/2' : 'w-0'
+                  isComplete ? 'bg-primary-500 w-full' : isActive ? 'bg-primary-400 w-1/2' : 'w-0'
                 }`}
                 style={{ width: isComplete ? '100%' : isActive ? '50%' : '0%' }}
               />
             </div>
-            <span className={`text-xs font-medium ${isActive ? 'text-green-600' : isComplete ? 'text-slate-600' : 'text-slate-400'}`}>
+            <span className={`text-xs font-medium ${isActive ? 'text-primary-600' : isComplete ? 'text-warm-600' : 'text-warm-400'}`}>
               <span className="hidden sm:inline">{s.label}</span>
               <span className="sm:hidden">{s.shortLabel}</span>
             </span>
@@ -766,10 +766,10 @@ export default function NewRoundClient() {
           <div className="relative glass-standard rounded-2xl overflow-hidden p-5 sm:p-8">
             <ShineEffect />
             <StepProgressBar />
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-900 mb-2">
+            <h1 className="text-2xl font-semibold tracking-tight text-warm-900 mb-2">
               New Round
             </h1>
-            <p className="text-slate-500 text-sm mb-6">
+            <p className="text-warm-500 text-sm mb-6">
               Track your round shot-by-shot for comprehensive stats
             </p>
 
@@ -790,19 +790,19 @@ export default function NewRoundClient() {
                   {/* Header with mode toggle */}
                   <div className="flex flex-wrap items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+                      <div className="h-10 w-10 rounded-xl bg-primary-500/10 text-primary-600 flex items-center justify-center">
                         {courseMode === 'saved' ? <IconBookmark size={18} /> : <IconPlus size={18} />}
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-slate-900">Course</p>
-                        <p className="text-xs text-slate-500">
+                        <p className="text-sm font-semibold text-warm-900">Course</p>
+                        <p className="text-xs text-warm-500">
                           {courseMode === 'saved'
                             ? `${savedCourses.length} saved course${savedCourses.length !== 1 ? 's' : ''}`
                             : 'Enter new course details'}
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center rounded-full bg-slate-100/80 p-1">
+                    <div className="flex items-center rounded-full bg-warm-100/80 p-1">
                       <button
                         type="button"
                         onClick={() => {
@@ -814,8 +814,8 @@ export default function NewRoundClient() {
                         }}
                         className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
                           courseMode === 'saved'
-                            ? 'bg-white text-slate-900 shadow-sm'
-                            : 'text-slate-500 hover:text-slate-700'
+                            ? 'bg-white text-warm-900 shadow-sm'
+                            : 'text-warm-500 hover:text-warm-700'
                         }`}
                         aria-pressed={courseMode === 'saved'}
                       >
@@ -841,8 +841,8 @@ export default function NewRoundClient() {
                         }}
                         className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
                           courseMode === 'new'
-                            ? 'bg-white text-slate-900 shadow-sm'
-                            : 'text-slate-500 hover:text-slate-700'
+                            ? 'bg-white text-warm-900 shadow-sm'
+                            : 'text-warm-500 hover:text-warm-700'
                         }`}
                         aria-pressed={courseMode === 'new'}
                       >
@@ -858,7 +858,7 @@ export default function NewRoundClient() {
                       {/* Search bar — only if 4+ courses */}
                       {savedCourses.length >= 4 && (
                         <div className="relative">
-                          <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-warm-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                           </svg>
                           <input
@@ -868,7 +868,7 @@ export default function NewRoundClient() {
                             placeholder="Search saved courses..."
                             enterKeyHint="search"
                             autoComplete="off"
-                            className="w-full pl-9 pr-4 py-2 rounded-lg border border-slate-200/70 bg-white/80 text-base md:text-sm text-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 outline-none transition-colors"
+                            className="w-full pl-9 pr-4 py-2 rounded-lg border border-warm-200/70 bg-white/80 text-base md:text-sm text-warm-700 placeholder:text-warm-400 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-colors"
                           />
                         </div>
                       )}
@@ -876,7 +876,7 @@ export default function NewRoundClient() {
                       {/* Course cards */}
                       <div className="space-y-2 max-h-[280px] overflow-y-auto scrollbar-hide pr-0.5">
                         {filteredSavedCourses.length === 0 ? (
-                          <div className="text-center py-6 text-sm text-slate-400">
+                          <div className="text-center py-6 text-sm text-warm-400">
                             No courses match &ldquo;{courseSearchQuery}&rdquo;
                           </div>
                         ) : (
@@ -892,8 +892,8 @@ export default function NewRoundClient() {
                                 onClick={() => handleSavedCourseSelect(isSelected ? null : course.id)}
                                 className={`w-full text-left rounded-xl border p-3.5 transition-all duration-150 ${
                                   isSelected
-                                    ? 'border-emerald-400/60 bg-emerald-50/60 ring-2 ring-emerald-500/20 shadow-sm'
-                                    : 'border-slate-200/70 bg-white/70 hover:border-slate-300 hover:bg-white/90 hover:shadow-sm'
+                                    ? 'border-primary-400/60 bg-primary-50/60 ring-2 ring-primary-500/20 shadow-sm'
+                                    : 'border-warm-200/70 bg-white/70 hover:border-warm-300 hover:bg-white/90 hover:shadow-sm'
                                 }`}
                               >
                                 <div className="flex items-start justify-between gap-3">
@@ -901,11 +901,11 @@ export default function NewRoundClient() {
                                     {/* Course name */}
                                     <div className="flex items-center gap-2">
                                       {isSelected && (
-                                        <span className="flex-shrink-0 h-5 w-5 rounded-full bg-emerald-500 flex items-center justify-center">
+                                        <span className="flex-shrink-0 h-5 w-5 rounded-full bg-primary-500 flex items-center justify-center">
                                           <IconCheck size={12} className="text-white" />
                                         </span>
                                       )}
-                                      <p className={`text-sm font-semibold truncate ${isSelected ? 'text-emerald-900' : 'text-slate-900'}`}>
+                                      <p className={`text-sm font-semibold truncate ${isSelected ? 'text-primary-900' : 'text-warm-900'}`}>
                                         {course.courseName}
                                       </p>
                                     </div>
@@ -913,16 +913,16 @@ export default function NewRoundClient() {
                                     {/* Location + tees */}
                                     <div className="flex items-center gap-1.5 mt-1">
                                       {location && (
-                                        <span className="text-xs text-slate-500 flex items-center gap-1">
-                                          <IconMapPin size={11} className="text-slate-400 flex-shrink-0" />
+                                        <span className="text-xs text-warm-500 flex items-center gap-1">
+                                          <IconMapPin size={11} className="text-warm-400 flex-shrink-0" />
                                           {location}
                                         </span>
                                       )}
                                       {location && course.teesPlayed && (
-                                        <span className="text-slate-300">·</span>
+                                        <span className="text-warm-300">·</span>
                                       )}
                                       {course.teesPlayed && (
-                                        <span className="text-xs text-slate-500">{course.teesPlayed} tees</span>
+                                        <span className="text-xs text-warm-500">{course.teesPlayed} tees</span>
                                       )}
                                     </div>
 
@@ -930,21 +930,21 @@ export default function NewRoundClient() {
                                     <div className="flex items-center gap-2 mt-2">
                                       {totalPar !== null && (
                                         <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-medium ${
-                                          isSelected ? 'bg-emerald-100/80 text-emerald-700' : 'bg-slate-100 text-slate-600'
+                                          isSelected ? 'bg-primary-100/80 text-primary-700' : 'bg-warm-100 text-warm-600'
                                         }`}>
                                           Par {totalPar}
                                         </span>
                                       )}
                                       {course.holeConfigs.length > 0 && (
                                         <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-medium ${
-                                          isSelected ? 'bg-emerald-100/80 text-emerald-700' : 'bg-slate-100 text-slate-600'
+                                          isSelected ? 'bg-primary-100/80 text-primary-700' : 'bg-warm-100 text-warm-600'
                                         }`}>
                                           {course.holeConfigs.length} holes
                                         </span>
                                       )}
                                       {course.courseRating !== null && (
                                         <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-medium ${
-                                          isSelected ? 'bg-emerald-100/80 text-emerald-700' : 'bg-slate-100 text-slate-600'
+                                          isSelected ? 'bg-primary-100/80 text-primary-700' : 'bg-warm-100 text-warm-600'
                                         }`}>
                                           {course.courseRating}/{course.courseSlope ?? '—'}
                                         </span>
@@ -953,7 +953,7 @@ export default function NewRoundClient() {
                                   </div>
 
                                   {/* Last played */}
-                                  <span className="text-xs text-slate-400 whitespace-nowrap flex-shrink-0 pt-0.5">
+                                  <span className="text-xs text-warm-400 whitespace-nowrap flex-shrink-0 pt-0.5">
                                     {formatRelativeTime(course.lastUsedAt)}
                                   </span>
                                 </div>
@@ -970,10 +970,10 @@ export default function NewRoundClient() {
               {/* ── Course Details: Compact summary when saved, full form when new ── */}
               {courseMode === 'saved' && selectedCourse ? (
                 /* Compact summary card for selected saved course */
-                <div className="rounded-2xl border border-emerald-200/50 bg-gradient-to-br from-emerald-50/50 to-white/80 backdrop-blur-sm p-5 shadow-sm">
+                <div className="rounded-2xl border border-primary-200/50 bg-gradient-to-br from-primary-50/50 to-white/80 backdrop-blur-sm p-5 shadow-sm">
                   <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
-                      <IconCheck size={16} className="text-emerald-600" />
+                    <h2 className="text-sm font-semibold text-warm-900 flex items-center gap-2">
+                      <IconCheck size={16} className="text-primary-600" />
                       Course ready
                     </h2>
                     <button
@@ -991,16 +991,16 @@ export default function NewRoundClient() {
                           teesPlayed: 'White',
                         }));
                       }}
-                      className="text-xs text-slate-500 hover:text-slate-700 transition-colors"
+                      className="text-xs text-warm-500 hover:text-warm-700 transition-colors"
                     >
                       Change
                     </button>
                   </div>
-                  <p className="text-base font-semibold text-slate-900">{selectedCourse.courseName}</p>
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-xs text-slate-500">
+                  <p className="text-base font-semibold text-warm-900">{selectedCourse.courseName}</p>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-xs text-warm-500">
                     {selectedCourse.courseCity && (
                       <span className="flex items-center gap-1">
-                        <IconMapPin size={11} className="text-slate-400" />
+                        <IconMapPin size={11} className="text-warm-400" />
                         {selectedCourse.courseCity}{selectedCourse.courseState ? `, ${selectedCourse.courseState}` : ''}
                       </span>
                     )}
@@ -1008,7 +1008,7 @@ export default function NewRoundClient() {
                     {selectedCourse.courseRating !== null && <span>Rating {selectedCourse.courseRating}</span>}
                     {selectedCourse.courseSlope !== null && <span>Slope {selectedCourse.courseSlope}</span>}
                     {selectedCourse.holeConfigs.length > 0 && (
-                      <span className="text-emerald-600 font-medium">
+                      <span className="text-primary-600 font-medium">
                         {selectedCourse.holeConfigs.length} holes · Par {computeTotalPar(selectedCourse.holeConfigs)}
                       </span>
                     )}
@@ -1017,10 +1017,10 @@ export default function NewRoundClient() {
               ) : (
                 /* Full form for new course entry */
                 <div>
-                  <h2 className="text-lg font-medium text-slate-900 mb-4">Course Information</h2>
+                  <h2 className="text-lg font-medium text-warm-900 mb-4">Course Information</h2>
                   <div className="space-y-4">
                     <div>
-                      <label htmlFor="courseName" className="text-sm font-medium text-slate-700 block mb-2">
+                      <label htmlFor="courseName" className="text-sm font-medium text-warm-700 block mb-2">
                         Course Name *
                       </label>
                       <input
@@ -1030,7 +1030,7 @@ export default function NewRoundClient() {
                         onChange={(e) => setSetupData({ ...setupData, courseName: e.target.value })}
                         enterKeyHint="next"
                         autoComplete="off"
-                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white/80 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none transition-colors"
+                        className="w-full px-4 py-2.5 rounded-lg border border-warm-200 bg-white/80 focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none transition-colors"
                         placeholder="Pebble Beach Golf Links"
                         required
                       />
@@ -1038,7 +1038,7 @@ export default function NewRoundClient() {
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label htmlFor="courseCity" className="text-sm font-medium text-slate-700 block mb-2">
+                        <label htmlFor="courseCity" className="text-sm font-medium text-warm-700 block mb-2">
                           City
                         </label>
                         <input
@@ -1048,12 +1048,12 @@ export default function NewRoundClient() {
                           onChange={(e) => setSetupData({ ...setupData, courseCity: e.target.value })}
                           enterKeyHint="next"
                           autoComplete="off"
-                          className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white/80 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none transition-colors"
+                          className="w-full px-4 py-2.5 rounded-lg border border-warm-200 bg-white/80 focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none transition-colors"
                           placeholder="Pebble Beach"
                         />
                       </div>
                       <div>
-                        <label htmlFor="courseState" className="text-sm font-medium text-slate-700 block mb-2">
+                        <label htmlFor="courseState" className="text-sm font-medium text-warm-700 block mb-2">
                           State
                         </label>
                         <input
@@ -1063,7 +1063,7 @@ export default function NewRoundClient() {
                           onChange={(e) => setSetupData({ ...setupData, courseState: e.target.value })}
                           enterKeyHint="next"
                           autoComplete="off"
-                          className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white/80 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none transition-colors"
+                          className="w-full px-4 py-2.5 rounded-lg border border-warm-200 bg-white/80 focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none transition-colors"
                           placeholder="CA"
                           maxLength={2}
                         />
@@ -1072,7 +1072,7 @@ export default function NewRoundClient() {
 
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                       <div>
-                        <label htmlFor="courseRating" className="text-sm font-medium text-slate-700 block mb-2">
+                        <label htmlFor="courseRating" className="text-sm font-medium text-warm-700 block mb-2">
                           Rating
                         </label>
                         <input
@@ -1083,12 +1083,12 @@ export default function NewRoundClient() {
                           enterKeyHint="next"
                           value={setupData.courseRating}
                           onChange={(e) => setSetupData({ ...setupData, courseRating: e.target.value })}
-                          className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white/80 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none transition-colors"
+                          className="w-full px-4 py-2.5 rounded-lg border border-warm-200 bg-white/80 focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none transition-colors"
                           placeholder="72.1"
                         />
                       </div>
                       <div>
-                        <label htmlFor="courseSlope" className="text-sm font-medium text-slate-700 block mb-2">
+                        <label htmlFor="courseSlope" className="text-sm font-medium text-warm-700 block mb-2">
                           Slope
                         </label>
                         <input
@@ -1098,20 +1098,20 @@ export default function NewRoundClient() {
                           enterKeyHint="next"
                           value={setupData.courseSlope}
                           onChange={(e) => setSetupData({ ...setupData, courseSlope: e.target.value })}
-                          className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white/80 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none transition-colors"
+                          className="w-full px-4 py-2.5 rounded-lg border border-warm-200 bg-white/80 focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none transition-colors"
                           placeholder="133"
                           aria-label="Course slope rating"
                         />
                       </div>
                       <div>
-                        <label htmlFor="teesPlayed" className="text-sm font-medium text-slate-700 block mb-2">
+                        <label htmlFor="teesPlayed" className="text-sm font-medium text-warm-700 block mb-2">
                           Tees
                         </label>
                         <select
                           id="teesPlayed"
                           value={setupData.teesPlayed}
                           onChange={(e) => setSetupData({ ...setupData, teesPlayed: e.target.value })}
-                          className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white/80 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none transition-colors"
+                          className="w-full px-4 py-2.5 rounded-lg border border-warm-200 bg-white/80 focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none transition-colors"
                         >
                           <option>Championship</option>
                           <option>Black</option>
@@ -1130,22 +1130,22 @@ export default function NewRoundClient() {
                         onClick={() => setSaveCourseChecked(!saveCourseChecked)}
                         className={`w-full flex items-center gap-3 p-3.5 rounded-xl border transition-all duration-150 ${
                           saveCourseChecked
-                            ? 'border-emerald-300/60 bg-emerald-50/50'
-                            : 'border-slate-200/70 bg-white/50 hover:bg-white/70'
+                            ? 'border-primary-300/60 bg-primary-50/50'
+                            : 'border-warm-200/70 bg-white/50 hover:bg-white/70'
                         }`}
                       >
                         <div className={`flex-shrink-0 h-5 w-5 rounded-md border-2 flex items-center justify-center transition-all ${
                           saveCourseChecked
-                            ? 'border-emerald-500 bg-emerald-500'
-                            : 'border-slate-300'
+                            ? 'border-primary-500 bg-primary-500'
+                            : 'border-warm-300'
                         }`}>
                           {saveCourseChecked && <IconCheck size={12} className="text-white" />}
                         </div>
                         <div className="text-left">
-                          <p className={`text-sm font-medium ${saveCourseChecked ? 'text-emerald-900' : 'text-slate-700'}`}>
+                          <p className={`text-sm font-medium ${saveCourseChecked ? 'text-primary-900' : 'text-warm-700'}`}>
                             Save for quick access next round
                           </p>
-                          <p className="text-xs text-slate-500 mt-0.5">
+                          <p className="text-xs text-warm-500 mt-0.5">
                             Remembers hole pars, yardages & course details
                           </p>
                         </div>
@@ -1157,18 +1157,18 @@ export default function NewRoundClient() {
 
               {/* Round Info */}
               <div>
-                <h2 className="text-lg font-medium text-slate-900 mb-4">Round Details</h2>
+                <h2 className="text-lg font-medium text-warm-900 mb-4">Round Details</h2>
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label htmlFor="roundType" className="text-sm font-medium text-slate-700 block mb-2">
+                      <label htmlFor="roundType" className="text-sm font-medium text-warm-700 block mb-2">
                         Round Type
                       </label>
                       <select
                         id="roundType"
                         value={setupData.roundType}
                         onChange={(e) => setSetupData({ ...setupData, roundType: e.target.value as 'practice' | 'tournament' | 'qualifier' })}
-                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none"
+                        className="w-full px-4 py-2.5 rounded-lg border border-warm-200 focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none"
                       >
                         <option value="practice">Practice</option>
                         <option value="tournament">Tournament</option>
@@ -1176,7 +1176,7 @@ export default function NewRoundClient() {
                       </select>
                     </div>
                     <div>
-                      <label htmlFor="roundDate" className="text-sm font-medium text-slate-700 block mb-2">
+                      <label htmlFor="roundDate" className="text-sm font-medium text-warm-700 block mb-2">
                         Date
                       </label>
                       <input
@@ -1184,7 +1184,7 @@ export default function NewRoundClient() {
                         type="date"
                         value={setupData.roundDate}
                         onChange={(e) => setSetupData({ ...setupData, roundDate: e.target.value })}
-                        className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:ring-2 focus:ring-green-600 focus:border-transparent outline-none"
+                        className="w-full px-4 py-2.5 rounded-lg border border-warm-200 focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none"
                         required
                       />
                     </div>
@@ -1192,17 +1192,17 @@ export default function NewRoundClient() {
 
                   {/* Holes per round toggle */}
                   <div>
-                    <label className="text-sm font-medium text-slate-700 block mb-2">
+                    <label className="text-sm font-medium text-warm-700 block mb-2">
                       Holes
                     </label>
-                    <div className="flex items-center rounded-lg bg-slate-100/80 p-1 w-fit">
+                    <div className="flex items-center rounded-lg bg-warm-100/80 p-1 w-fit">
                       <button
                         type="button"
                         onClick={() => setHolesPerRound(9)}
                         className={`px-5 py-2 rounded-md text-sm font-semibold transition-all ${
                           holesPerRound === 9
-                            ? 'bg-white text-slate-900 shadow-sm'
-                            : 'text-slate-500 hover:text-slate-700'
+                            ? 'bg-white text-warm-900 shadow-sm'
+                            : 'text-warm-500 hover:text-warm-700'
                         }`}
                       >
                         9 Holes
@@ -1212,8 +1212,8 @@ export default function NewRoundClient() {
                         onClick={() => setHolesPerRound(18)}
                         className={`px-5 py-2 rounded-md text-sm font-semibold transition-all ${
                           holesPerRound === 18
-                            ? 'bg-white text-slate-900 shadow-sm'
-                            : 'text-slate-500 hover:text-slate-700'
+                            ? 'bg-white text-warm-900 shadow-sm'
+                            : 'text-warm-500 hover:text-warm-700'
                         }`}
                       >
                         18 Holes
@@ -1233,7 +1233,11 @@ export default function NewRoundClient() {
 
                   {loadingQualifiers ? (
                     <div className="flex items-center gap-2 text-sm text-amber-700">
-                      <div className="w-4 h-4 border-2 border-amber-600 border-t-transparent rounded-full animate-spin" />
+                      <span className="flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-600 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+                      </span>
                       Loading your qualifiers...
                     </div>
                   ) : qualifierError ? (
@@ -1322,12 +1326,12 @@ export default function NewRoundClient() {
               )}
 
               {/* Stats Info Box */}
-              <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-                <h3 className="font-medium text-green-800 mb-2 flex items-center gap-2">
-                  <IconChartBar size={18} className="text-green-600" />
+              <div className="bg-primary-50 border border-primary-200 rounded-xl p-4">
+                <h3 className="font-medium text-primary-800 mb-2 flex items-center gap-2">
+                  <IconChartBar size={18} className="text-primary-600" />
                   Comprehensive Stats Tracking
                 </h3>
-                <p className="text-sm text-green-700">
+                <p className="text-sm text-primary-700">
                   This round will track 50+ statistics including driving distance, approach proximity,
                   putting efficiency, scrambling, and more. Use your rangefinder for accurate distances.
                 </p>
@@ -1344,18 +1348,22 @@ export default function NewRoundClient() {
                   type="button"
                   onClick={() => router.back()}
                   disabled={isStartingRound}
-                  className="flex-1 px-4 py-2.5 rounded-lg border border-slate-200 font-medium text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-4 py-2.5 rounded-lg border border-warm-200 font-medium text-warm-700 hover:bg-warm-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isStartingRound}
-                  className="flex-1 px-4 py-2.5 rounded-lg bg-green-600 font-medium text-white hover:bg-green-700 transition-colors shadow-sm shadow-green-950/10 ring-1 ring-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2.5 rounded-lg bg-primary-600 font-medium text-white hover:bg-primary-700 transition-colors shadow-sm shadow-primary-950/10 ring-1 ring-primary-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isStartingRound ? (
                     <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span className="flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                        <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                        <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+                      </span>
                       Starting...
                     </>
                   ) : preloadedHoleConfigs && preloadedHoleConfigs.length > 0
@@ -1405,14 +1413,18 @@ export default function NewRoundClient() {
         <div className="w-full max-w-md">
           <div className="relative glass-standard rounded-2xl overflow-hidden p-8 text-center">
             <ShineEffect />
-            <div className="w-20 h-20 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
-            <h2 className="text-2xl font-bold text-slate-900 mb-2">
+            <div className="flex items-center justify-center gap-2 mx-auto mb-6">
+              <span className="w-3 h-3 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+              <span className="w-3 h-3 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+              <span className="w-3 h-3 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+            </div>
+            <h2 className="text-2xl font-bold text-warm-900 mb-2">
               Saving Round...
             </h2>
-            <p className="text-slate-600 mb-4">
+            <p className="text-warm-600 mb-4">
               Score: {totalScore} ({toPar >= 0 ? '+' : ''}{toPar})
             </p>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-warm-500">
               Calculating your 50+ statistics...
             </p>
             {error && (
@@ -1420,7 +1432,7 @@ export default function NewRoundClient() {
                 <p className="text-sm text-red-600 mb-3">{error}</p>
                 <button
                   onClick={() => setStep('tracking')}
-                  className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-200 transition-colors"
+                  className="px-4 py-2 bg-warm-100 text-warm-700 rounded-lg text-sm font-medium hover:bg-warm-200 transition-colors"
                 >
                   Go Back
                 </button>
@@ -1478,7 +1490,7 @@ export default function NewRoundClient() {
               setStep(preloadedHoleConfigs ? 'setup' : 'holes');
               setCurrentHoleIndex(0);
             }}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/90 backdrop-blur-sm border border-slate-200 text-sm font-medium text-slate-600 hover:bg-white shadow-sm"
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/90 backdrop-blur-sm border border-warm-200 text-sm font-medium text-warm-600 hover:bg-white shadow-sm"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />

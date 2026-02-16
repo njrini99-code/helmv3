@@ -171,6 +171,7 @@ export function ImagePreview({
               size="icon-sm"
               onClick={onFullScreen}
               title="Full Screen"
+              aria-label="Full screen"
             >
               <Maximize2Icon className="h-4 w-4" />
             </Button>
@@ -180,6 +181,7 @@ export function ImagePreview({
             size="icon-sm"
             onClick={handleDownload}
             title="Download"
+            aria-label="Download"
           >
             <DownloadIcon className="h-4 w-4" />
           </Button>

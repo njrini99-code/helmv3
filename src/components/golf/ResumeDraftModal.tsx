@@ -126,8 +126,8 @@ export function ResumeDraftModal({
           <div className="rounded-xl border border-warm-200 bg-warm-50 p-4 space-y-3">
             {/* Course Name */}
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
-                <IconFlag size={20} className="text-emerald-600" />
+              <div className="w-10 h-10 rounded-xl bg-primary-500/10 flex items-center justify-center flex-shrink-0">
+                <IconFlag size={20} className="text-primary-600" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-warm-900 truncate">
@@ -150,7 +150,7 @@ export function ResumeDraftModal({
               </div>
               <div className="h-2 bg-warm-200 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-emerald-500 rounded-full transition-all duration-300"
+                  className="h-full bg-primary-500 rounded-full transition-all duration-300"
                   style={{ width: `${progressPercent}%` }}
                 />
               </div>
@@ -172,18 +172,18 @@ export function ResumeDraftModal({
               className={cn(
                 'w-full p-4 rounded-xl border-2 transition-all duration-200',
                 'flex items-center gap-4',
-                'border-emerald-200 bg-emerald-50 hover:bg-emerald-100',
+                'border-primary-200 bg-primary-50 hover:bg-primary-100',
                 'disabled:opacity-50 disabled:cursor-not-allowed'
               )}
             >
-              <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-primary-500 flex items-center justify-center flex-shrink-0">
                 <IconPlay size={20} className="text-white" />
               </div>
               <div className="flex-1 text-left">
-                <p className="font-semibold text-emerald-900">
+                <p className="font-semibold text-primary-900">
                   {isResuming ? 'Loading...' : 'Resume Round'}
                 </p>
-                <p className="text-xs text-emerald-700 mt-0.5">
+                <p className="text-xs text-primary-700 mt-0.5">
                   Continue from hole {draftInfo.holesCompleted + 1}
                 </p>
               </div>

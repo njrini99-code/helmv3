@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
-import type { Coach, CoachStatus } from '../page';
-import { format, addDays, addHours, setHours, setMinutes } from 'date-fns';
+import type { Coach, CoachStatus } from '../crm-config';
+import { format, addDays, addHours } from 'date-fns';
 
 // ============================================================================
 // TYPES
@@ -14,7 +14,7 @@ interface QuickActionsPanelProps {
   onClose: () => void;
   onUpdate: (updates: Partial<Coach>) => void;
   onRefreshEvents?: () => void;
-  statusConfig: Record<CoachStatus, { label: string; color: string; bgColor: string; icon: string }>;
+  statusConfig: Record<CoachStatus, { label: string; color: string; bgColor: string; icon: React.ReactNode }>;
 }
 
 type ActionView = 'main' | 'schedule' | 'log' | 'note';
@@ -33,7 +33,7 @@ interface ScheduleForm {
 const ACTION_TYPES = [
   { value: 'demo' as const, label: 'Demo', icon: '🖥️', color: 'bg-violet-500' },
   { value: 'follow_up' as const, label: 'Follow-up', icon: '📞', color: 'bg-blue-500' },
-  { value: 'call' as const, label: 'Call', icon: '☎️', color: 'bg-emerald-500' },
+  { value: 'call' as const, label: 'Call', icon: '☎️', color: 'bg-primary-500' },
   { value: 'meeting' as const, label: 'Meeting', icon: '🤝', color: 'bg-amber-500' },
 ];
 
@@ -134,7 +134,7 @@ export function QuickActionsPanel({
       }
       // Auto-advance status if still new_lead
       if (coach.status === 'new_lead') {
-        updates.status = 'contacted';
+        updates.status = 'initial_contact';
       }
       
       onUpdate(updates);
@@ -179,7 +179,7 @@ export function QuickActionsPanel({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-slate-800 to-slate-900 text-white p-5">
+        <div className="bg-gradient-to-r from-warm-800 to-warm-900 text-white p-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <button
@@ -190,7 +190,7 @@ export function QuickActionsPanel({
               </button>
               <div>
                 <h2 className="text-xl font-bold">{coach.school}</h2>
-                <p className="text-slate-300 text-sm">{coach.name} • {coach.conference}</p>
+                <p className="text-warm-300 text-sm">{coach.name} • {coach.conference}</p>
               </div>
             </div>
             <button
@@ -234,7 +234,7 @@ export function QuickActionsPanel({
                 </button>
                 <button
                   onClick={() => setView('log')}
-                  className="flex items-center justify-center gap-2 p-4 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]"
+                  className="flex items-center justify-center gap-2 p-4 bg-gradient-to-br from-primary-500 to-primary-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]"
                 >
                   <span className="text-2xl">✏️</span>
                   <span>Log Contact</span>
@@ -254,7 +254,7 @@ export function QuickActionsPanel({
                 {coach.phone && (
                   <a
                     href={`tel:${coach.phone}`}
-                    className="flex-1 flex items-center justify-center gap-2 p-3 bg-green-50 text-green-700 rounded-xl font-medium hover:bg-green-100 transition-colors"
+                    className="flex-1 flex items-center justify-center gap-2 p-3 bg-primary-50 text-primary-700 rounded-xl font-medium hover:bg-primary-100 transition-colors"
                   >
                     <span>📞</span> Call
                   </a>
@@ -269,7 +269,7 @@ export function QuickActionsPanel({
 
               {/* Change Status */}
               <div>
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 block">
+                <label className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-2 block">
                   Status
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -283,8 +283,8 @@ export function QuickActionsPanel({
                         className={cn(
                           'flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
                           isActive
-                            ? `${config.bgColor} ${config.color} ring-2 ring-offset-1 ring-slate-300`
-                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                            ? `${config.bgColor} ${config.color} ring-2 ring-offset-1 ring-warm-300`
+                            : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
                         )}
                       >
                         {config.icon} {config.label}
@@ -296,7 +296,7 @@ export function QuickActionsPanel({
 
               {/* Change Priority */}
               <div>
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 block">
+                <label className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-2 block">
                   Priority
                 </label>
                 <div className="flex gap-2">
@@ -305,8 +305,8 @@ export function QuickActionsPanel({
                     className={cn(
                       'flex-1 py-2 rounded-lg text-sm font-medium transition-all',
                       coach.priority === 0
-                        ? 'bg-slate-200 text-slate-700 ring-2 ring-slate-400'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        ? 'bg-warm-200 text-warm-700 ring-2 ring-warm-400'
+                        : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
                     )}
                   >
                     Normal
@@ -317,7 +317,7 @@ export function QuickActionsPanel({
                       'flex-1 py-2 rounded-lg text-sm font-medium transition-all',
                       coach.priority === 1
                         ? 'bg-amber-100 text-amber-700 ring-2 ring-amber-400'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
                     )}
                   >
                     ⚡ High
@@ -328,7 +328,7 @@ export function QuickActionsPanel({
                       'flex-1 py-2 rounded-lg text-sm font-medium transition-all',
                       coach.priority === 2
                         ? 'bg-orange-100 text-orange-700 ring-2 ring-orange-400'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
                     )}
                   >
                     🔥 Hot
@@ -342,12 +342,12 @@ export function QuickActionsPanel({
             <div className="space-y-4">
               <button
                 onClick={() => setView('main')}
-                className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-2"
+                className="flex items-center gap-1 text-sm text-warm-500 hover:text-warm-700 mb-2"
               >
                 ← Back
               </button>
 
-              <h3 className="text-lg font-bold text-slate-800">Schedule Event</h3>
+              <h3 className="text-lg font-bold text-warm-800">Schedule Event</h3>
 
               {/* Event Type */}
               <div className="grid grid-cols-4 gap-2">
@@ -363,7 +363,7 @@ export function QuickActionsPanel({
                       'p-3 rounded-xl text-center transition-all',
                       scheduleForm.type === type.value
                         ? `${type.color} text-white shadow-lg`
-                        : 'bg-slate-100 hover:bg-slate-200'
+                        : 'bg-warm-100 hover:bg-warm-200'
                     )}
                   >
                     <span className="text-xl block">{type.icon}</span>
@@ -374,7 +374,7 @@ export function QuickActionsPanel({
 
               {/* Quick Time Select */}
               <div>
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 block">
+                <label className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-2 block">
                   Quick Select
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -385,7 +385,7 @@ export function QuickActionsPanel({
                         const { date, time } = qt.getValue();
                         setScheduleForm(f => ({ ...f, date, time }));
                       }}
-                      className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm font-medium text-slate-700 transition-colors"
+                      className="px-3 py-1.5 bg-warm-100 hover:bg-warm-200 rounded-lg text-sm font-medium text-warm-700 transition-colors"
                     >
                       {qt.label}
                     </button>
@@ -396,32 +396,32 @@ export function QuickActionsPanel({
               {/* Date & Time */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 block">
+                  <label className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1 block">
                     Date
                   </label>
                   <input
                     type="date"
                     value={scheduleForm.date}
                     onChange={(e) => setScheduleForm(f => ({ ...f, date: e.target.value }))}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-3 py-2 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 block">
+                  <label className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1 block">
                     Time
                   </label>
                   <input
                     type="time"
                     value={scheduleForm.time}
                     onChange={(e) => setScheduleForm(f => ({ ...f, time: e.target.value }))}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-3 py-2 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
               </div>
 
               {/* Duration */}
               <div>
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 block">
+                <label className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1 block">
                   Duration
                 </label>
                 <div className="flex gap-2">
@@ -432,8 +432,8 @@ export function QuickActionsPanel({
                       className={cn(
                         'flex-1 py-2 rounded-lg text-sm font-medium transition-all',
                         scheduleForm.duration === d
-                          ? 'bg-emerald-100 text-emerald-700 ring-2 ring-emerald-400'
-                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          ? 'bg-primary-100 text-primary-700 ring-2 ring-primary-400'
+                          : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
                       )}
                     >
                       {d}m
@@ -444,28 +444,28 @@ export function QuickActionsPanel({
 
               {/* Title */}
               <div>
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 block">
+                <label className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1 block">
                   Title
                 </label>
                 <input
                   type="text"
                   value={scheduleForm.title}
                   onChange={(e) => setScheduleForm(f => ({ ...f, title: e.target.value }))}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-3 py-2 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                   placeholder="Event title"
                 />
               </div>
 
               {/* Meeting URL (optional) */}
               <div>
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 block">
-                  Meeting Link <span className="text-slate-400 font-normal">(optional)</span>
+                <label className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1 block">
+                  Meeting Link <span className="text-warm-400 font-normal">(optional)</span>
                 </label>
                 <input
                   type="url"
                   value={scheduleForm.meetingUrl}
                   onChange={(e) => setScheduleForm(f => ({ ...f, meetingUrl: e.target.value }))}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-3 py-2 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                   placeholder="https://zoom.us/j/..."
                 />
               </div>
@@ -474,7 +474,7 @@ export function QuickActionsPanel({
               <button
                 onClick={handleSchedule}
                 disabled={submitting || !scheduleForm.date || !scheduleForm.time}
-                className="w-full py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submitting ? 'Scheduling...' : '📅 Schedule Event'}
               </button>
@@ -485,12 +485,12 @@ export function QuickActionsPanel({
             <div className="space-y-4">
               <button
                 onClick={() => setView('main')}
-                className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-2"
+                className="flex items-center gap-1 text-sm text-warm-500 hover:text-warm-700 mb-2"
               >
                 ← Back
               </button>
 
-              <h3 className="text-lg font-bold text-slate-800">Log Contact</h3>
+              <h3 className="text-lg font-bold text-warm-800">Log Contact</h3>
 
               {/* Contact Type */}
               <div className="flex flex-wrap gap-2">
@@ -507,8 +507,8 @@ export function QuickActionsPanel({
                     className={cn(
                       'px-4 py-2 rounded-xl text-sm font-medium transition-all',
                       logForm.type === type.value
-                        ? 'bg-emerald-500 text-white shadow-lg'
-                        : 'bg-slate-100 hover:bg-slate-200'
+                        ? 'bg-primary-500 text-white shadow-lg'
+                        : 'bg-warm-100 hover:bg-warm-200'
                     )}
                   >
                     {type.icon} {type.label}
@@ -518,13 +518,13 @@ export function QuickActionsPanel({
 
               {/* Notes */}
               <div>
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 block">
+                <label className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1 block">
                   Notes
                 </label>
                 <textarea
                   value={logForm.notes}
                   onChange={(e) => setLogForm(f => ({ ...f, notes: e.target.value }))}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+                  className="w-full px-3 py-2 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
                   rows={3}
                   placeholder="What happened during this contact?"
                 />
@@ -533,26 +533,26 @@ export function QuickActionsPanel({
               {/* Next Action */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 block">
+                  <label className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1 block">
                     Next Action
                   </label>
                   <input
                     type="text"
                     value={logForm.nextAction}
                     onChange={(e) => setLogForm(f => ({ ...f, nextAction: e.target.value }))}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-3 py-2 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                     placeholder="e.g., Follow up call"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 block">
+                  <label className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1 block">
                     Follow-up Date
                   </label>
                   <input
                     type="date"
                     value={logForm.nextActionDate}
                     onChange={(e) => setLogForm(f => ({ ...f, nextActionDate: e.target.value }))}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full px-3 py-2 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
               </div>
@@ -561,7 +561,7 @@ export function QuickActionsPanel({
               <button
                 onClick={handleLogContact}
                 disabled={submitting}
-                className="w-full py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
+                className="w-full py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
               >
                 {submitting ? 'Saving...' : '✓ Log Contact'}
               </button>
@@ -572,17 +572,17 @@ export function QuickActionsPanel({
             <div className="space-y-4">
               <button
                 onClick={() => setView('main')}
-                className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-2"
+                className="flex items-center gap-1 text-sm text-warm-500 hover:text-warm-700 mb-2"
               >
                 ← Back
               </button>
 
-              <h3 className="text-lg font-bold text-slate-800">📝 Notes</h3>
+              <h3 className="text-lg font-bold text-warm-800">📝 Notes</h3>
 
               <textarea
                 value={noteForm}
                 onChange={(e) => setNoteForm(e.target.value)}
-                className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+                className="w-full px-3 py-2 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
                 rows={6}
                 placeholder="Add notes about this coach..."
                 autoFocus

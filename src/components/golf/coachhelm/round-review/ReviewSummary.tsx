@@ -9,7 +9,7 @@ interface ReviewSummaryProps {
 export function ReviewSummary({ review }: ReviewSummaryProps) {
   return (
     <div
-      className="rounded-xl border border-green-200 bg-gradient-to-br from-green-50 to-white p-5"
+      className="rounded-xl border border-primary-200 bg-gradient-to-br from-primary-50 to-white p-5"
       style={{ animation: 'fadeInUp 0.5s ease-out 0.6s both' }}
     >
       <h3 className="text-sm font-semibold text-warm-900 mb-3 flex items-center gap-2">
@@ -27,9 +27,9 @@ export function ReviewSummary({ review }: ReviewSummaryProps) {
       </div>
 
       {/* Primary takeaway */}
-      <div className="p-3 bg-green-100/50 rounded-lg border border-green-200 mb-3">
-        <div className="text-xs font-medium text-green-700 mb-1">Key Takeaway</div>
-        <p className="text-sm font-medium text-green-900">{review.primaryTakeaway}</p>
+      <div className="p-3 bg-primary-100/50 rounded-lg border border-primary-200 mb-3">
+        <div className="text-xs font-medium text-primary-700 mb-1">Key Takeaway</div>
+        <p className="text-sm font-medium text-primary-900">{review.primaryTakeaway}</p>
       </div>
 
       {/* Next practice priority */}

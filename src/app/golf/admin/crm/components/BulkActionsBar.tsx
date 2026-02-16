@@ -1,14 +1,22 @@
 'use client';
 
 import { useState } from 'react';
-import type { CoachStatus } from '../page';
+import { cn } from '@/lib/utils';
+import { ArrowRight, Star, Trash2, X, ChevronUp } from 'lucide-react';
+import type { CoachStatus } from '../crm-config';
 
 interface BulkActionsBarProps {
   selectedCount: number;
   onAction: (action: string, value?: unknown) => void;
   onClear: () => void;
-  statusConfig: Record<CoachStatus, { label: string; icon: string }>;
+  statusConfig: Record<CoachStatus, { label: string; icon: React.ReactNode }>;
 }
+
+const ALL_STATUSES: CoachStatus[] = [
+  'new_lead', 'researching', 'outreach_pending', 'initial_contact', 'follow_up',
+  'engaged', 'demo_scheduled', 'demo_completed', 'proposal_sent', 'negotiating',
+  'closed_won', 'closed_lost', 'not_interested', 'bad_timing', 'nurture',
+];
 
 export function BulkActionsBar({
   selectedCount,
@@ -17,114 +25,84 @@ export function BulkActionsBar({
   statusConfig,
 }: BulkActionsBarProps) {
   const [showStatusMenu, setShowStatusMenu] = useState(false);
-  const [showPriorityMenu, setShowPriorityMenu] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   return (
-    <div className="bg-gradient-to-r from-emerald-600 to-teal-500 text-white rounded-2xl px-5 py-3.5 flex items-center justify-between shadow-lg">
-      <div className="flex items-center gap-4">
+    <div className={cn(
+      'fixed bottom-6 left-1/2 -translate-x-1/2 z-50',
+      'flex items-center gap-3 px-4 py-2.5 rounded-2xl',
+      'bg-warm-900 text-white shadow-2xl',
+      'border border-white/10',
+      'animate-slide-up'
+    )}>
+      {/* Count */}
+      <span className="text-sm font-medium tabular-nums">{selectedCount} selected</span>
+
+      <div className="w-px h-5 bg-white/20" />
+
+      {/* Move to Status */}
+      <div className="relative">
         <button
-          onClick={onClear}
-          className="w-8 h-8 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
+          onClick={() => setShowStatusMenu(!showStatusMenu)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-white/10 transition-colors"
         >
-          ✕
+          <ArrowRight size={14} /> Move to
+          <ChevronUp size={12} className={cn('transition-transform', showStatusMenu && 'rotate-180')} />
         </button>
-        <span className="font-bold text-lg">{selectedCount} selected</span>
-      </div>
-
-      <div className="flex items-center gap-2">
-        {/* Change Status */}
-        <div className="relative">
-          <button
-            onClick={() => {
-              setShowStatusMenu(!showStatusMenu);
-              setShowPriorityMenu(false);
-            }}
-            className="px-4 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-sm font-semibold transition-colors"
-          >
-            📋 Change Status
-          </button>
-          {showStatusMenu && (
-            <div className="absolute bottom-full mb-2 right-0 bg-white border border-slate-200 rounded-xl shadow-xl py-2 min-w-[180px] z-50">
-              {Object.entries(statusConfig).map(([value, config]) => (
-                <button
-                  key={value}
-                  onClick={() => {
-                    onAction('status', value);
-                    setShowStatusMenu(false);
-                  }}
-                  className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2"
-                >
-                  <span>{config.icon}</span>
-                  <span>{config.label}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Change Priority */}
-        <div className="relative">
-          <button
-            onClick={() => {
-              setShowPriorityMenu(!showPriorityMenu);
-              setShowStatusMenu(false);
-            }}
-            className="px-4 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-sm font-semibold transition-colors"
-          >
-            ⚡ Set Priority
-          </button>
-          {showPriorityMenu && (
-            <div className="absolute bottom-full mb-2 right-0 bg-white border border-slate-200 rounded-xl shadow-xl py-2 min-w-[140px] z-50">
-              {[
-                { value: 2, label: '🔥 Hot' },
-                { value: 1, label: '⚡ High' },
-                { value: 0, label: 'Normal' },
-              ].map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => {
-                    onAction('priority', opt.value);
-                    setShowPriorityMenu(false);
-                  }}
-                  className="w-full text-left px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Delete */}
-        {confirmDelete ? (
-          <div className="flex items-center gap-2 bg-red-500 rounded-xl px-4 py-2">
-            <span className="text-sm font-medium">Delete {selectedCount}?</span>
-            <button
-              onClick={() => {
-                onAction('delete');
-                setConfirmDelete(false);
-              }}
-              className="px-2 py-1 rounded-lg bg-white/20 hover:bg-white/30 text-sm font-bold"
-            >
-              Yes
-            </button>
-            <button
-              onClick={() => setConfirmDelete(false)}
-              className="px-2 py-1 rounded-lg bg-white/20 hover:bg-white/30 text-sm"
-            >
-              No
-            </button>
+        {showStatusMenu && (
+          <div className="absolute bottom-full mb-2 left-0 bg-white/95 backdrop-blur-xl border border-warm-200/50 rounded-xl shadow-xl py-1 min-w-[180px] max-h-[400px] overflow-y-auto">
+            {ALL_STATUSES.map(status => (
+              <button key={status}
+                onClick={() => { onAction('status', status); setShowStatusMenu(false); }}
+                className="w-full text-left px-4 py-2 text-sm text-warm-700 hover:bg-warm-50 transition-colors flex items-center gap-2">
+                <span className="flex items-center">{statusConfig[status]?.icon}</span>
+                <span>{statusConfig[status]?.label}</span>
+              </button>
+            ))}
           </div>
-        ) : (
-          <button
-            onClick={() => setConfirmDelete(true)}
-            className="px-4 py-2 rounded-xl bg-red-500/80 hover:bg-red-500 text-sm font-semibold transition-colors"
-          >
-            🗑️ Delete
-          </button>
         )}
       </div>
+
+      {/* Star */}
+      <button
+        onClick={() => onAction('star')}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-white/10 transition-colors"
+      >
+        <Star size={14} /> Star
+      </button>
+
+      {/* Unstar */}
+      <button
+        onClick={() => onAction('unstar')}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-white/10 transition-colors"
+      >
+        ☆ Unstar
+      </button>
+
+      <div className="w-px h-5 bg-white/20" />
+
+      {/* Delete */}
+      {confirmDelete ? (
+        <div className="flex items-center gap-2 bg-red-500/80 rounded-lg px-3 py-1.5">
+          <span className="text-sm font-medium">Delete {selectedCount}?</span>
+          <button onClick={() => { onAction('delete'); setConfirmDelete(false); }}
+            className="px-2 py-0.5 rounded bg-white/20 hover:bg-white/30 text-sm font-bold">Yes</button>
+          <button onClick={() => setConfirmDelete(false)}
+            className="px-2 py-0.5 rounded bg-white/20 hover:bg-white/30 text-sm">No</button>
+        </div>
+      ) : (
+        <button onClick={() => setConfirmDelete(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-red-400 hover:bg-red-500/20 transition-colors">
+          <Trash2 size={14} /> Delete
+        </button>
+      )}
+
+      <div className="w-px h-5 bg-white/20" />
+
+      {/* Dismiss */}
+      <button onClick={onClear} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors">
+        <X size={16} />
+      </button>
     </div>
   );
 }

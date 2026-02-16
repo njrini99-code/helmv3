@@ -69,11 +69,11 @@ export function CoachHelmHealthCard({ coachhelm, coachhelmRoi }: Props) {
         <div className="mb-5">
           <h4 className="text-sm font-medium text-warm-500 mb-2.5">CoachHelm ROI</h4>
           <div className="grid grid-cols-2 gap-2.5">
-            <div className="bg-emerald-50/50 rounded-xl p-3">
-              <p className="text-xs text-emerald-600 mb-0.5">AI Coaches</p>
-              <p className="text-xl font-semibold text-emerald-700 tabular-nums">{coachhelmRoi.coachesUsingAI}</p>
+            <div className="bg-primary-50/50 rounded-xl p-3">
+              <p className="text-xs text-primary-600 mb-0.5">AI Coaches</p>
+              <p className="text-xl font-semibold text-primary-700 tabular-nums">{coachhelmRoi.coachesUsingAI}</p>
               {coachhelmRoi.avgScoreAICoachPlayers != null && (
-                <p className="text-[10px] text-emerald-500 mt-0.5">
+                <p className="text-[10px] text-primary-500 mt-0.5">
                   Avg team score: {coachhelmRoi.avgScoreAICoachPlayers.toFixed(1)}
                 </p>
               )}
@@ -90,7 +90,7 @@ export function CoachHelmHealthCard({ coachhelm, coachhelmRoi }: Props) {
           </div>
           {coachhelmRoi.scoreDifference != null && (
             <p className="text-xs text-center mt-2 text-warm-500">
-              AI coach advantage: <span className="font-semibold text-emerald-600">{coachhelmRoi.scoreDifference.toFixed(1)} strokes</span>
+              AI coach advantage: <span className="font-semibold text-primary-600">{coachhelmRoi.scoreDifference.toFixed(1)} strokes</span>
             </p>
           )}
         </div>
@@ -130,7 +130,7 @@ export function CoachHelmHealthCard({ coachhelm, coachhelmRoi }: Props) {
                     <td className="py-2 text-warm-700">{m.model_type}</td>
                     <td className={cn(
                       'py-2 text-right tabular-nums',
-                      m.accuracy_rate != null && m.accuracy_rate > 0.8 ? 'text-emerald-600 font-medium' :
+                      m.accuracy_rate != null && m.accuracy_rate > 0.8 ? 'text-primary-600 font-medium' :
                       m.accuracy_rate != null && m.accuracy_rate > 0.6 ? 'text-warm-600' :
                       'text-warm-400'
                     )}>
@@ -138,7 +138,7 @@ export function CoachHelmHealthCard({ coachhelm, coachhelmRoi }: Props) {
                     </td>
                     <td className={cn(
                       'py-2 text-right tabular-nums',
-                      m.calibration_score != null && m.calibration_score > 0.8 ? 'text-emerald-600 font-medium' :
+                      m.calibration_score != null && m.calibration_score > 0.8 ? 'text-primary-600 font-medium' :
                       m.calibration_score != null && m.calibration_score > 0.5 ? 'text-warm-600' :
                       'text-warm-400'
                     )}>
@@ -175,19 +175,19 @@ export function CoachHelmHealthCard({ coachhelm, coachhelmRoi }: Props) {
                     <td className="py-2 text-warm-700">{e.insight_type}</td>
                     <td className={cn(
                       'py-2 text-right tabular-nums',
-                      e.action_rate != null && e.action_rate > 0.5 ? 'text-emerald-600 font-medium' : 'text-warm-600'
+                      e.action_rate != null && e.action_rate > 0.5 ? 'text-primary-600 font-medium' : 'text-warm-600'
                     )}>
                       {e.action_rate != null ? `${(e.action_rate * 100).toFixed(1)}%` : '\u2014'}
                     </td>
                     <td className={cn(
                       'py-2 text-right tabular-nums',
-                      e.improvement_rate != null && e.improvement_rate > 0.5 ? 'text-emerald-600 font-medium' : 'text-warm-600'
+                      e.improvement_rate != null && e.improvement_rate > 0.5 ? 'text-primary-600 font-medium' : 'text-warm-600'
                     )}>
                       {e.improvement_rate != null ? `${(e.improvement_rate * 100).toFixed(1)}%` : '\u2014'}
                     </td>
                     <td className={cn(
                       'py-2 text-right tabular-nums',
-                      e.effectiveness_score != null && e.effectiveness_score > 0.7 ? 'text-emerald-600 font-medium' : 'text-warm-600'
+                      e.effectiveness_score != null && e.effectiveness_score > 0.7 ? 'text-primary-600 font-medium' : 'text-warm-600'
                     )}>
                       {e.effectiveness_score != null ? e.effectiveness_score.toFixed(2) : '\u2014'}
                     </td>

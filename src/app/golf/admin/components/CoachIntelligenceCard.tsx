@@ -210,7 +210,7 @@ export default function CoachIntelligenceCard({ coaches }: CoachIntelligenceCard
                     className={cn(
                       'inline-block text-sm font-medium rounded-full px-2.5 py-0.5',
                       avgReviewRate >= 70
-                        ? 'bg-green-100 text-green-700'
+                        ? 'bg-primary-100 text-primary-700'
                         : avgReviewRate >= 30
                           ? 'bg-amber-100 text-amber-700'
                           : 'bg-red-100 text-red-700'
@@ -225,7 +225,7 @@ export default function CoachIntelligenceCard({ coaches }: CoachIntelligenceCard
                       className={cn(
                         'text-sm font-medium',
                         avgResponseTime < 24
-                          ? 'text-green-600'
+                          ? 'text-primary-600'
                           : avgResponseTime < 72
                             ? 'text-amber-600'
                             : 'text-red-600'
@@ -280,7 +280,7 @@ export default function CoachIntelligenceCard({ coaches }: CoachIntelligenceCard
                         className={cn(
                           'inline-block text-sm font-medium rounded-full px-2.5 py-0.5',
                           coach.reviewRate >= 70
-                            ? 'bg-green-100 text-green-700'
+                            ? 'bg-primary-100 text-primary-700'
                             : coach.reviewRate >= 30
                               ? 'bg-amber-100 text-amber-700'
                               : 'bg-red-100 text-red-700'
@@ -295,7 +295,7 @@ export default function CoachIntelligenceCard({ coaches }: CoachIntelligenceCard
                           className={cn(
                             'text-sm font-medium',
                             coach.avgResponseTimeHours < 24
-                              ? 'text-green-600'
+                              ? 'text-primary-600'
                               : coach.avgResponseTimeHours < 72
                                 ? 'text-amber-600'
                                 : 'text-red-600'
@@ -314,7 +314,7 @@ export default function CoachIntelligenceCard({ coaches }: CoachIntelligenceCard
                     </td>
                     <td className="px-3 py-2.5 text-center">
                       {coach.philosophyConfigured ? (
-                        <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-100 text-green-600">
+                        <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary-100 text-primary-600">
                           <svg
                             className="w-3.5 h-3.5"
                             fill="none"

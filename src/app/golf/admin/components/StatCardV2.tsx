@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { motion, useSpring, useTransform } from 'framer-motion';
+import { useEffect, useState } from 'react';
+import { motion, useSpring } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { AdminSparkline } from './AdminChart';
 
@@ -27,9 +27,6 @@ export interface StatCardV2Props {
 
 function AnimatedNumber({ value, duration = 1000 }: { value: number; duration?: number }) {
   const spring = useSpring(0, { duration });
-  const display = useTransform(spring, (current) =>
-    Math.round(current).toLocaleString()
-  );
   const [displayValue, setDisplayValue] = useState('0');
 
   useEffect(() => {
@@ -48,11 +45,11 @@ function AnimatedNumber({ value, duration = 1000 }: { value: number; duration?: 
 
 const severityConfig = {
   success: {
-    border: 'border-l-emerald-500',
+    border: 'border-l-primary-500',
     sparkline: '#10B981',
-    pulse: 'bg-emerald-500',
+    pulse: 'bg-primary-500',
     trend: {
-      positive: 'bg-emerald-50 text-emerald-700',
+      positive: 'bg-primary-50 text-primary-700',
       negative: 'bg-red-50 text-red-700',
     },
   },
@@ -61,7 +58,7 @@ const severityConfig = {
     sparkline: '#F59E0B',
     pulse: 'bg-amber-500',
     trend: {
-      positive: 'bg-emerald-50 text-emerald-700',
+      positive: 'bg-primary-50 text-primary-700',
       negative: 'bg-red-50 text-red-700',
     },
   },
@@ -71,15 +68,15 @@ const severityConfig = {
     pulse: 'bg-red-500',
     trend: {
       positive: 'bg-red-50 text-red-700',
-      negative: 'bg-emerald-50 text-emerald-700',
+      negative: 'bg-primary-50 text-primary-700',
     },
   },
   neutral: {
-    border: 'border-l-slate-400',
-    sparkline: '#64748B',
-    pulse: 'bg-slate-500',
+    border: 'border-l-warm-400',
+    sparkline: '#78716c',
+    pulse: 'bg-warm-500',
     trend: {
-      positive: 'bg-emerald-50 text-emerald-700',
+      positive: 'bg-primary-50 text-primary-700',
       negative: 'bg-red-50 text-red-700',
     },
   },

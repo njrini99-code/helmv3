@@ -71,11 +71,11 @@ export default async function GolfRosterPage() {
     return (
       <div className="p-6">
         <div className="max-w-md mx-auto text-center">
-          <h2 className="text-lg font-semibold text-slate-900 mb-2">Coach Profile Not Found</h2>
-          <p className="text-slate-500 mb-4">
+          <h2 className="text-lg font-semibold text-warm-900 mb-2">Coach Profile Not Found</h2>
+          <p className="text-warm-500 mb-4">
             Unable to load your coach profile. Please contact support if this persists.
           </p>
-          <p className="text-xs text-slate-400">Error: {coachError.message}</p>
+          <p className="text-xs text-warm-400">Error: {coachError.message}</p>
         </div>
       </div>
     );
@@ -88,8 +88,8 @@ export default async function GolfRosterPage() {
           <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
             <IconAlertCircle size={32} className="text-amber-500" />
           </div>
-          <h2 className="text-xl font-semibold text-slate-900 mb-2">Coach Profile Not Found</h2>
-          <p className="text-slate-500 mb-6">
+          <h2 className="text-xl font-semibold text-warm-900 mb-2">Coach Profile Not Found</h2>
+          <p className="text-warm-500 mb-6">
             Unable to find your coach profile. Please complete onboarding or contact support.
           </p>
           <Link href="/golf/coach">
@@ -118,8 +118,8 @@ export default async function GolfRosterPage() {
           <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
             <IconUsers size={32} className="text-amber-500" />
           </div>
-          <h2 className="text-xl font-semibold text-slate-900 mb-2">No Team Assigned</h2>
-          <p className="text-slate-500 mb-6">
+          <h2 className="text-xl font-semibold text-warm-900 mb-2">No Team Assigned</h2>
+          <p className="text-warm-500 mb-6">
             You haven't created or joined a team yet. Create a team to start building your roster.
           </p>
           <Link href="/golf/dashboard/team">
@@ -141,12 +141,12 @@ export default async function GolfRosterPage() {
     return (
       <div className="p-6">
         <div className="max-w-md mx-auto text-center">
-          <h2 className="text-lg font-semibold text-slate-900 mb-2">Team Not Found</h2>
-          <p className="text-slate-500 mb-4">
+          <h2 className="text-lg font-semibold text-warm-900 mb-2">Team Not Found</h2>
+          <p className="text-warm-500 mb-4">
             Unable to load team information. The team may have been deleted.
           </p>
-          <p className="text-xs text-slate-400">Team ID: {teamId}</p>
-          <p className="text-xs text-slate-400">Error: {teamError.message}</p>
+          <p className="text-xs text-warm-400">Team ID: {teamId}</p>
+          <p className="text-xs text-warm-400">Error: {teamError.message}</p>
         </div>
       </div>
     );
@@ -208,11 +208,11 @@ export default async function GolfRosterPage() {
     return (
       <div className="p-6">
         <div className="max-w-md mx-auto text-center">
-          <h2 className="text-lg font-semibold text-slate-900 mb-2">Error Loading Roster</h2>
-          <p className="text-slate-500 mb-4">
+          <h2 className="text-lg font-semibold text-warm-900 mb-2">Error Loading Roster</h2>
+          <p className="text-warm-500 mb-4">
             Unable to load team roster. Please try refreshing the page.
           </p>
-          <p className="text-xs text-slate-400">Error: {playersError.message}</p>
+          <p className="text-xs text-warm-400">Error: {playersError.message}</p>
         </div>
       </div>
     );
@@ -279,7 +279,7 @@ export default async function GolfRosterPage() {
 
         {playersWithStats.length === 0 ? (
           /* Enhanced Empty State */
-          <div className="bg-white rounded-2xl border border-slate-200 p-12 md:p-16 text-center shadow-sm relative overflow-hidden">
+          <div className="bg-white rounded-2xl border border-warm-200 p-12 md:p-16 text-center shadow-sm relative overflow-hidden">
             {/* Decorative background pattern */}
             <div className="absolute inset-0 opacity-[0.03]">
               <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
@@ -293,8 +293,8 @@ export default async function GolfRosterPage() {
               <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center mx-auto mb-6 shadow-sm">
                 <IconUsers size={36} className="text-primary-500" />
               </div>
-              <h3 className="text-2xl font-semibold text-slate-900 mb-3">Build Your Team</h3>
-              <p className="text-slate-500 mb-4 max-w-md mx-auto leading-relaxed">
+              <h3 className="text-2xl font-semibold text-warm-900 mb-3">Build Your Team</h3>
+              <p className="text-warm-500 mb-4 max-w-md mx-auto leading-relaxed">
                 Start building your team by inviting players to join your roster.
                 Players will receive a code they can use to join.
               </p>
@@ -302,8 +302,8 @@ export default async function GolfRosterPage() {
                 <InvitePlayerButton teamName={teamName} existingCode={inviteCode} />
               </div>
               {inviteCode && (
-                <p className="text-xs text-slate-400 mt-4">
-                  Team code: <span className="font-mono font-medium text-slate-500">{inviteCode}</span>
+                <p className="text-xs text-warm-400 mt-4">
+                  Team code: <span className="font-mono font-medium text-warm-500">{inviteCode}</span>
                 </p>
               )}
             </div>
@@ -314,7 +314,7 @@ export default async function GolfRosterPage() {
             {playersWithStats.map((player) => (
               <div
                 key={player.id}
-                className="group bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 hover:-translate-y-0.5 transition-all duration-200"
+                className="group bg-white rounded-2xl border border-warm-200 shadow-sm hover:shadow-md hover:border-warm-300 hover:-translate-y-0.5 transition-all duration-200"
               >
                 {/* Card Header with Avatar and Name */}
                 <div className="p-5 md:p-6">
@@ -322,7 +322,7 @@ export default async function GolfRosterPage() {
                     {/* Large Avatar - 72px mobile, 80px desktop */}
                     <div className="relative flex-shrink-0">
                       {player.avatar_url ? (
-                        <div className="w-[72px] h-[72px] md:w-20 md:h-20 rounded-2xl overflow-hidden ring-1 ring-slate-200 shadow-sm">
+                        <div className="w-[72px] h-[72px] md:w-20 md:h-20 rounded-2xl overflow-hidden ring-1 ring-warm-200 shadow-sm">
                           <Image
                             src={player.avatar_url}
                             alt={`${player.first_name} ${player.last_name}`}
@@ -332,8 +332,8 @@ export default async function GolfRosterPage() {
                           />
                         </div>
                       ) : (
-                        <div className="w-[72px] h-[72px] md:w-20 md:h-20 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center ring-1 ring-slate-200">
-                          <span className="text-2xl font-semibold text-slate-500">
+                        <div className="w-[72px] h-[72px] md:w-20 md:h-20 rounded-2xl bg-gradient-to-br from-warm-100 to-warm-200 flex items-center justify-center ring-1 ring-warm-200">
+                          <span className="text-2xl font-semibold text-warm-500">
                             {(player.first_name?.[0] || '')}{(player.last_name?.[0] || '')}
                           </span>
                         </div>
@@ -341,21 +341,21 @@ export default async function GolfRosterPage() {
                       {/* Online status indicator */}
                       <div className={cn(
                         'absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-[3px] border-white shadow-sm',
-                        isUserOnline(player.last_seen) ? 'bg-emerald-500' : 'bg-slate-300',
+                        isUserOnline(player.last_seen) ? 'bg-primary-500' : 'bg-warm-300',
                       )} title={isUserOnline(player.last_seen) ? 'Online' : 'Offline'} />
                     </div>
 
                     {/* Player Info */}
                     <div className="flex-1 min-w-0 pt-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="text-lg md:text-xl font-semibold text-slate-900 truncate">
+                        <h3 className="text-lg md:text-xl font-semibold text-warm-900 truncate">
                           {player.first_name} {player.last_name}
                         </h3>
                         <YearBadge year={player.graduation_year} />
                       </div>
 
                       {player.hometown && player.state && (
-                        <p className="text-sm text-slate-500 mt-1">
+                        <p className="text-sm text-warm-500 mt-1">
                           {player.hometown}, {player.state}
                         </p>
                       )}
@@ -378,29 +378,29 @@ export default async function GolfRosterPage() {
 
                 {/* Stats Row */}
                 <div className="px-5 md:px-6 pb-4 md:pb-5">
-                  <div className="flex items-center justify-between bg-slate-50/80 rounded-xl p-4 md:p-5">
+                  <div className="flex items-center justify-between bg-warm-50/80 rounded-xl p-4 md:p-5">
                     <div className="text-center flex-1">
-                      <p className="text-2xl md:text-3xl font-bold text-slate-900 tabular-nums leading-none">
+                      <p className="text-2xl md:text-3xl font-bold text-warm-900 tabular-nums leading-none">
                         {player.rounds_count || 0}
                       </p>
-                      <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mt-1.5">Rounds</p>
+                      <p className="text-xs text-warm-500 font-medium uppercase tracking-wide mt-1.5">Rounds</p>
                     </div>
-                    <div className="w-px h-12 bg-slate-200/80" />
+                    <div className="w-px h-12 bg-warm-200/80" />
                     <div className="text-center flex-1">
-                      <p className="text-2xl md:text-3xl font-bold text-slate-900 tabular-nums leading-none">
+                      <p className="text-2xl md:text-3xl font-bold text-warm-900 tabular-nums leading-none">
                         {player.avg_score && player.avg_score > 0 ? player.avg_score.toFixed(1) : '—'}
                       </p>
-                      <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mt-1.5">Avg Score</p>
+                      <p className="text-xs text-warm-500 font-medium uppercase tracking-wide mt-1.5">Avg Score</p>
                     </div>
-                    <div className="w-px h-12 bg-slate-200/80" />
+                    <div className="w-px h-12 bg-warm-200/80" />
                     <div className="text-center flex-1">
                       <p className={cn(
                         'text-2xl md:text-3xl font-bold tabular-nums leading-none',
-                        player.handicap !== null && player.handicap <= 0 ? 'text-emerald-600' : 'text-slate-900'
+                        player.handicap !== null && player.handicap <= 0 ? 'text-primary-600' : 'text-warm-900'
                       )}>
                         {formatHandicap(player.handicap)}
                       </p>
-                      <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mt-1.5">Handicap</p>
+                      <p className="text-xs text-warm-500 font-medium uppercase tracking-wide mt-1.5">Handicap</p>
                     </div>
                   </div>
                 </div>
@@ -408,13 +408,13 @@ export default async function GolfRosterPage() {
                 {/* Action Buttons - min 44px touch targets */}
                 <div className="px-5 md:px-6 pb-5 md:pb-6 flex items-center gap-3">
                   <Link href={`/golf/dashboard/stats?player=${player.id}`} className="flex-1">
-                    <button className="w-full px-4 py-3 bg-slate-900 text-white text-sm font-medium rounded-xl hover:bg-slate-800 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                    <button className="w-full px-4 py-3 bg-warm-900 text-white text-sm font-medium rounded-xl hover:bg-warm-800 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
                       <IconChartBar size={16} />
                       View Stats
                     </button>
                   </Link>
                   <Link href={`/golf/dashboard/messages?player=${player.id}`} className="flex-1">
-                    <button className="w-full px-4 py-3 bg-white border border-slate-200 text-slate-700 text-sm font-medium rounded-xl hover:bg-slate-50 hover:border-slate-300 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                    <button className="w-full px-4 py-3 bg-white border border-warm-200 text-warm-700 text-sm font-medium rounded-xl hover:bg-warm-50 hover:border-warm-300 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
                       <IconMessage size={16} />
                       Message
                     </button>

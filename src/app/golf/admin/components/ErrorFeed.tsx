@@ -93,15 +93,15 @@ export function ErrorFeed({ errorLogs }: Props) {
         <>
           {recentErrors.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-center">
-              <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center mb-3">
-                <svg width="18" height="18" viewBox="0 0 16 16" fill="none" className="text-green-500">
+              <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center mb-3">
+                <svg width="18" height="18" viewBox="0 0 16 16" fill="none" className="text-primary-500">
                   <path
                     d="M8 1C4.134 1 1 4.134 1 8s3.134 7 7 7 7-3.134 7-7-3.134-7-7-7Zm3.354 5.354-4 4a.5.5 0 0 1-.708 0l-2-2a.5.5 0 1 1 .708-.708L7 9.293l3.646-3.647a.5.5 0 0 1 .708.708Z"
                     fill="currentColor"
                   />
                 </svg>
               </div>
-              <p className="text-sm font-medium text-green-700">No errors in the last 7 days</p>
+              <p className="text-sm font-medium text-primary-700">No errors in the last 7 days</p>
               <p className="text-xs text-warm-400 mt-1">Everything is running smoothly</p>
             </div>
           ) : (
@@ -166,15 +166,15 @@ export function ErrorFeed({ errorLogs }: Props) {
         <>
           {topErrors.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-center">
-              <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center mb-3">
-                <svg width="18" height="18" viewBox="0 0 16 16" fill="none" className="text-green-500">
+              <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center mb-3">
+                <svg width="18" height="18" viewBox="0 0 16 16" fill="none" className="text-primary-500">
                   <path
                     d="M8 1C4.134 1 1 4.134 1 8s3.134 7 7 7 7-3.134 7-7-3.134-7-7-7Zm3.354 5.354-4 4a.5.5 0 0 1-.708 0l-2-2a.5.5 0 1 1 .708-.708L7 9.293l3.646-3.647a.5.5 0 0 1 .708.708Z"
                     fill="currentColor"
                   />
                 </svg>
               </div>
-              <p className="text-sm font-medium text-green-700">No errors in the last 7 days</p>
+              <p className="text-sm font-medium text-primary-700">No errors in the last 7 days</p>
               <p className="text-xs text-warm-400 mt-1">Everything is running smoothly</p>
             </div>
           ) : (

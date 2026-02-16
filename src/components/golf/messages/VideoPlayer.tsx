@@ -269,10 +269,14 @@ export function VideoPlayer({
           autoPlay={autoPlay}
         />
 
-        {/* Loading spinner */}
+        {/* Loading indicator */}
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin" />
+            <span className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+              <span className="w-2.5 h-2.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+              <span className="w-2.5 h-2.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+            </span>
           </div>
         )}
 
@@ -395,10 +399,14 @@ export function VideoPlayer({
         autoPlay={autoPlay}
       />
 
-      {/* Loading spinner */}
+      {/* Loading indicator */}
       {isLoading && !hasError && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-          <div className="w-8 h-8 border-3 border-white/20 border-t-white rounded-full animate-spin" />
+          <span className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+            <span className="w-2 h-2 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+            <span className="w-2 h-2 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+          </span>
         </div>
       )}
 
@@ -442,6 +450,7 @@ export function VideoPlayer({
               togglePlay();
             }}
             className="p-1 rounded hover:bg-white/20 text-white"
+            aria-label={isPlaying ? 'Pause' : 'Play'}
           >
             {isPlaying ? <IconPause size={16} /> : <IconPlay size={16} />}
           </button>
@@ -459,6 +468,7 @@ export function VideoPlayer({
               toggleMute();
             }}
             className="p-1 rounded hover:bg-white/20 text-white"
+            aria-label={isMuted ? 'Unmute' : 'Mute'}
           >
             {isMuted ? <IconVolumeX size={16} /> : <IconVolume2 size={16} />}
           </button>
@@ -470,6 +480,7 @@ export function VideoPlayer({
               toggleFullscreen();
             }}
             className="p-1 rounded hover:bg-white/20 text-white"
+            aria-label="Fullscreen"
           >
             <IconMaximize size={16} />
           </button>

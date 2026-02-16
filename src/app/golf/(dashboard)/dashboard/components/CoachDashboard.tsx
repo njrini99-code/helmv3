@@ -134,7 +134,7 @@ const InviteCodeCard = memo(function InviteCodeCard({ inviteCode }: { inviteCode
         <m.div
             className={cn(
                 'relative overflow-hidden rounded-2xl',
-                'bg-gradient-to-r from-primary-50 via-primary-50/80 to-emerald-50',
+                'bg-gradient-to-r from-primary-50 via-primary-50/80 to-primary-50',
                 'border border-primary-200/40',
                 'shadow-[0_1px_4px_rgba(0,0,0,0.04)]'
             )}

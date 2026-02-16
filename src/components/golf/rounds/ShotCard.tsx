@@ -50,15 +50,15 @@ const CLUB_DISPLAY: Record<string, { label: string; color: string }> = {
   gw: { label: 'GW', color: 'bg-amber-100 text-amber-700' },
   sw: { label: 'SW', color: 'bg-amber-100 text-amber-700' },
   lw: { label: 'LW', color: 'bg-amber-100 text-amber-700' },
-  putter: { label: 'Putter', color: 'bg-green-100 text-green-700' },
+  putter: { label: 'Putter', color: 'bg-primary-100 text-primary-700' },
 };
 
 // Result display config
 const RESULT_DISPLAY: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
-  fairway: { icon: <IconCheck size={12} />, color: 'text-green-600', label: 'Fairway' },
-  green: { icon: <IconCheck size={12} />, color: 'text-green-600', label: 'Green' },
-  hole: { icon: <IconFlag size={12} />, color: 'text-green-600', label: 'Holed!' },
-  holed: { icon: <IconFlag size={12} />, color: 'text-green-600', label: 'Holed!' },
+  fairway: { icon: <IconCheck size={12} />, color: 'text-primary-600', label: 'Fairway' },
+  green: { icon: <IconCheck size={12} />, color: 'text-primary-600', label: 'Green' },
+  hole: { icon: <IconFlag size={12} />, color: 'text-primary-600', label: 'Holed!' },
+  holed: { icon: <IconFlag size={12} />, color: 'text-primary-600', label: 'Holed!' },
   miss: { icon: <IconX size={12} />, color: 'text-amber-600', label: 'Missed' },
   rough: { icon: <IconTarget size={12} />, color: 'text-amber-600', label: 'Rough' },
   bunker: { icon: <IconWarning size={12} />, color: 'text-amber-600', label: 'Bunker' },
@@ -84,7 +84,7 @@ const SYNC_STATUS_DISPLAY: Record<SyncStatus, { icon: React.ReactNode; label: st
   synced: {
     icon: <IconCheck size={12} />,
     label: 'Synced',
-    className: 'bg-green-50 text-green-700 border-green-200',
+    className: 'bg-primary-50 text-primary-700 border-primary-200',
   },
   failed: {
     icon: <IconWarning size={12} />,
@@ -271,7 +271,7 @@ export function ShotCard({ shot, isFirst, isLast, showSyncStatus = false, onRetr
               <span className="text-xs text-warm-400">To:</span>
               <span className={cn(
                 'font-medium',
-                shot.result === 'holed' || shot.result === 'hole' ? 'text-green-600' : ''
+                shot.result === 'holed' || shot.result === 'hole' ? 'text-primary-600' : ''
               )}>
                 {shot.result === 'holed' || shot.result === 'hole'
                   ? 'Holed!'

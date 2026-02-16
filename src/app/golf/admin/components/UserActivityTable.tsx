@@ -26,7 +26,7 @@ function getEngagementLevel(user: AdminDashboardData['userDirectory'][number]): 
 }
 
 const engagementBadges: Record<EngagementLevel, string> = {
-  High: 'bg-emerald-50 text-emerald-700',
+  High: 'bg-primary-50 text-primary-700',
   Medium: 'bg-blue-50 text-blue-600',
   Low: 'bg-amber-50 text-amber-600',
   Dormant: 'bg-warm-100 text-warm-400',
@@ -284,8 +284,8 @@ export function UserActivityTable({ users }: Props) {
                   </td>
                   <td className="py-2.5 px-2">
                     {u.onboardingCompleted ? (
-                      <span className="inline-flex items-center gap-1 text-xs text-emerald-600">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      <span className="inline-flex items-center gap-1 text-xs text-primary-600">
+                        <span className="w-1.5 h-1.5 rounded-full bg-primary-500" />
                         Active
                       </span>
                     ) : (

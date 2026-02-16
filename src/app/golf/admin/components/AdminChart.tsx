@@ -29,7 +29,7 @@ export function AdminBarChart({
   title,
   color = '#16A34A',
   height = 200,
-  showTooltip = true,
+  showTooltip: _showTooltip = true,
 }: AdminBarChartProps) {
   const max = Math.max(...data.map((d) => d.value), 1);
   const total = data.reduce((s, d) => s + d.value, 0);
@@ -291,7 +291,7 @@ export function AdminAreaChart({
   height = 200,
   showGrid = true,
   gradientId: gradientIdProp,
-  showValues = true,
+  showValues: _showValues = true,
 }: AdminAreaChartProps) {
   const autoId = useId();
   const gId = gradientIdProp ?? `area-fill-${autoId}`;

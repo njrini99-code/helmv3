@@ -138,9 +138,9 @@ function StatBar({
 
   const statusConfig = {
     above: {
-      color: 'bg-green-500',
-      bgColor: 'bg-green-50',
-      textColor: 'text-green-600',
+      color: 'bg-primary-500',
+      bgColor: 'bg-primary-50',
+      textColor: 'text-primary-600',
       icon: <IconTrendingUp size={12} />,
     },
     below: {
@@ -202,11 +202,11 @@ function StatBar({
 
         {/* Round value bar */}
         <motion.div
-          initial={{ width: '50%' }}
-          animate={{ width: `${barWidth}%` }}
+          initial={{ scaleX: 0.5 }}
+          animate={{ scaleX: barWidth / 100 }}
           transition={{ delay: index * 0.1 + 0.2, duration: 0.5, ease: 'easeOut' }}
           className={cn(
-            'absolute top-0 bottom-0 left-0 rounded-full',
+            'absolute top-0 bottom-0 left-0 w-full rounded-full origin-left',
             config.color
           )}
         />
@@ -366,7 +366,7 @@ export function RoundStatsComparison({
       <div className="mt-6 pt-4 border-t border-white/20">
         <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-warm-500">
           <span className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-green-500" />
+            <span className="w-3 h-3 rounded-full bg-primary-500" />
             Above average
           </span>
           <span className="flex items-center gap-2">
@@ -401,7 +401,7 @@ export function CompactStatsComparison({
   className,
 }: CompactStatsComparisonProps) {
   const statusColors = {
-    above: 'bg-green-100 text-green-700 border-green-200',
+    above: 'bg-primary-100 text-primary-700 border-primary-200',
     below: 'bg-amber-100 text-amber-700 border-amber-200',
     average: 'bg-blue-100 text-blue-700 border-blue-200',
   };

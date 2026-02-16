@@ -325,8 +325,8 @@ export function OfflineSyncStatus({
     return {
       icon: <CheckCircleIcon className="w-4 h-4" />,
       label: 'Synced',
-      color: 'text-green-600',
-      bgColor: 'bg-green-50 border-green-200',
+      color: 'text-primary-600',
+      bgColor: 'bg-primary-50 border-primary-200',
     };
   };
 
@@ -402,7 +402,7 @@ export function OfflineSyncStatus({
                   {/* Connection status */}
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-warm-500">Connection</span>
-                    <span className={cn('font-medium', isOnline ? 'text-green-600' : 'text-amber-600')}>
+                    <span className={cn('font-medium', isOnline ? 'text-primary-600' : 'text-amber-600')}>
                       {isOnline ? (
                         <span className="flex items-center gap-1">
                           <WifiIcon className="w-4 h-4" />
@@ -540,7 +540,7 @@ export function OfflineSyncStatus({
                   ? 'bg-red-100'
                   : isSyncing
                     ? 'bg-blue-100'
-                    : 'bg-green-100'
+                    : 'bg-primary-100'
             )}
           >
             <span
@@ -551,7 +551,7 @@ export function OfflineSyncStatus({
                     ? 'text-red-600'
                     : isSyncing
                       ? 'text-blue-600'
-                      : 'text-green-600'
+                      : 'text-primary-600'
               )}
             >
               {statusDisplay.icon}

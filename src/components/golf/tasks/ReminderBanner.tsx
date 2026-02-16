@@ -149,16 +149,16 @@ export function ReminderBanner({
 
           {/* Task info */}
           <div className="mt-2 p-3 bg-white rounded-lg border border-primary-100">
-            <p className="font-medium text-gray-900 text-sm">
+            <p className="font-medium text-warm-900 text-sm">
               {currentReminder.task.title}
             </p>
             {currentReminder.task.description && (
-              <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+              <p className="text-xs text-warm-500 mt-1 line-clamp-2">
                 {currentReminder.task.description}
               </p>
             )}
             {currentReminder.task.due_date && (
-              <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+              <p className="text-xs text-warm-500 mt-2 flex items-center gap-1">
                 <svg
                   width="12"
                   height="12"
@@ -276,7 +276,7 @@ export function ReminderIndicator({
     <button
       onClick={onClick}
       className={cn(
-        'relative p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors',
+        'relative p-2 text-warm-500 hover:bg-warm-100 rounded-lg transition-colors',
         className
       )}
       aria-label={`${count} upcoming reminders`}

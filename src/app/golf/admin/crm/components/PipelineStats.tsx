@@ -2,24 +2,24 @@
 
 import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
-import type { Coach, CoachStatus } from '../page';
+import type { Coach, CoachStatus } from '../crm-config';
 
 interface PipelineStatsProps {
   coaches: Coach[];
-  statusConfig: Record<CoachStatus, { 
-    label: string; 
-    color: string; 
+  statusConfig: Record<CoachStatus, {
+    label: string;
+    color: string;
     bgColor: string;
-    stage: string;
+    stage?: string;
     order: number;
   }>;
 }
 
 const STAGE_CONFIG = {
-  lead: { label: 'Leads', emoji: '🎯', color: 'from-slate-400 to-slate-500' },
+  lead: { label: 'Leads', emoji: '🎯', color: 'from-warm-400 to-warm-500' },
   active: { label: 'Active', emoji: '💬', color: 'from-blue-400 to-blue-500' },
   closing: { label: 'Closing', emoji: '🤝', color: 'from-purple-400 to-purple-500' },
-  closed: { label: 'Closed', emoji: '✓', color: 'from-emerald-400 to-emerald-500' },
+  closed: { label: 'Closed', emoji: '✓', color: 'from-primary-400 to-primary-500' },
 };
 
 export function PipelineStats({ coaches, statusConfig }: PipelineStatsProps) {
@@ -148,7 +148,7 @@ export function PipelineStats({ coaches, statusConfig }: PipelineStatsProps) {
         
         <div className="bg-white rounded-xl border border-warm-200 p-4">
           <div className="text-xs text-warm-500 mb-1">Conversion</div>
-          <div className="text-2xl font-bold text-emerald-600">{conversionRate}%</div>
+          <div className="text-2xl font-bold text-primary-600">{conversionRate}%</div>
         </div>
         
         <div className={cn(

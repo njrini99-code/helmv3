@@ -25,7 +25,7 @@ export function HighlightsSection({ highlights }: HighlightsSectionProps) {
           return (
             <div
               key={highlight.id}
-              className="flex items-start gap-3 p-3 rounded-xl bg-gradient-to-r from-green-50 to-white border border-green-100"
+              className="flex items-start gap-3 p-3 rounded-xl bg-gradient-to-r from-primary-50 to-white border border-primary-100"
               style={{
                 animation: `fadeInUp 0.4s ease-out ${300 + index * 80}ms both`,
               }}
@@ -38,7 +38,7 @@ export function HighlightsSection({ highlights }: HighlightsSectionProps) {
                 </div>
                 <p className="text-sm text-warm-600 mt-0.5">{highlight.description}</p>
               </div>
-              <div className="text-xs font-medium text-green-600 bg-green-100 px-2 py-1 rounded">
+              <div className="text-xs font-medium text-primary-600 bg-primary-100 px-2 py-1 rounded">
                 {highlight.impact}
               </div>
             </div>

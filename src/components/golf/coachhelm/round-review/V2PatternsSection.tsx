@@ -70,7 +70,7 @@ export function V2PatternsSection({ patterns }: V2PatternsSectionProps) {
                 'p-4 rounded-xl border transition-colors',
                 isNegative
                   ? 'bg-red-50/40 border-red-100 hover:bg-red-50/60'
-                  : 'bg-green-50/40 border-green-100 hover:bg-green-50/60'
+                  : 'bg-primary-50/40 border-primary-100 hover:bg-primary-50/60'
               )}
             >
               <div className="flex items-start justify-between gap-3 mb-1.5">
@@ -80,8 +80,8 @@ export function V2PatternsSection({ patterns }: V2PatternsSectionProps) {
                       <IconTrendingUp size={12} className="text-red-500" />
                     </div>
                   ) : (
-                    <div className="p-1 bg-green-100 rounded-md">
-                      <IconTrendingDown size={12} className="text-green-500" />
+                    <div className="p-1 bg-primary-100 rounded-md">
+                      <IconTrendingDown size={12} className="text-primary-500" />
                     </div>
                   )}
                   <span className="text-sm font-semibold text-warm-900">
@@ -97,7 +97,7 @@ export function V2PatternsSection({ patterns }: V2PatternsSectionProps) {
                     'text-xs font-bold px-2.5 py-0.5 rounded-lg flex-shrink-0 tabular-nums',
                     isNegative
                       ? 'bg-red-100 text-red-700 border border-red-200/50'
-                      : 'bg-green-100 text-green-700 border border-green-200/50'
+                      : 'bg-primary-100 text-primary-700 border border-primary-200/50'
                   )}
                 >
                   {isNegative ? '+' : ''}{strokeImpact.toFixed(1)}
@@ -124,7 +124,7 @@ export function V2PatternsSection({ patterns }: V2PatternsSectionProps) {
                   'px-2 py-0.5 rounded-md text-[10px] font-bold border',
                   pattern.trend === 'strengthening' && 'bg-amber-100 text-amber-700 border-amber-200/50',
                   pattern.trend === 'stable' && 'bg-warm-100 text-warm-600 border-warm-200/50',
-                  pattern.trend === 'weakening' && 'bg-green-100 text-green-700 border-green-200/50',
+                  pattern.trend === 'weakening' && 'bg-primary-100 text-primary-700 border-primary-200/50',
                   pattern.trend === 'new' && 'bg-blue-100 text-blue-700 border-blue-200/50',
                 )}>
                   {trendLabels[pattern.trend] ?? pattern.trend}

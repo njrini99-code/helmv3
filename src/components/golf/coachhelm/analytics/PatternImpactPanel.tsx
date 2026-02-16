@@ -74,14 +74,14 @@ export function PatternImpactPanel({
           <StatCard
             label="Resolved"
             value={data.patternsResolved}
-            icon={<IconCheck size={14} className="text-green-500" />}
+            icon={<IconCheck size={14} className="text-primary-500" />}
             color="green"
           />
           <StatCard
             label="Strokes Saved"
             value={data.totalStrokesSaved.toFixed(1)}
-            icon={<IconTrendingUp size={14} className="text-emerald-500" />}
-            color="emerald"
+            icon={<IconTrendingUp size={14} className="text-primary-500" />}
+            color="primary"
           />
         </div>
 
@@ -92,7 +92,7 @@ export function PatternImpactPanel({
             <span
               className={cn(
                 'text-sm font-bold',
-                data.conversionRate >= 0.5 ? 'text-green-600' : 'text-amber-600'
+                data.conversionRate >= 0.5 ? 'text-primary-600' : 'text-amber-600'
               )}
             >
               {Math.round(data.conversionRate * 100)}%
@@ -102,7 +102,7 @@ export function PatternImpactPanel({
             <motion.div
               className={cn(
                 'h-full rounded-full',
-                data.conversionRate >= 0.5 ? 'bg-green-500' : 'bg-amber-500'
+                data.conversionRate >= 0.5 ? 'bg-primary-500' : 'bg-amber-500'
               )}
               initial={{ width: 0 }}
               animate={{ width: `${Math.min(data.conversionRate * 100, 100)}%` }}
@@ -170,7 +170,7 @@ export function PatternImpactPanel({
               <span
                 className={cn(
                   'text-lg font-bold',
-                  data.conversionRate >= 0.5 ? 'text-green-600' : 'text-amber-600'
+                  data.conversionRate >= 0.5 ? 'text-primary-600' : 'text-amber-600'
                 )}
               >
                 {Math.round(data.conversionRate * 100)}%
@@ -248,12 +248,12 @@ function StatCard({
   label: string;
   value: string | number;
   icon: React.ReactNode;
-  color: 'slate' | 'green' | 'emerald';
+  color: 'slate' | 'green' | 'primary';
 }) {
   const colors = {
     slate: 'bg-warm-50 border-warm-100',
-    green: 'bg-green-50 border-green-100',
-    emerald: 'bg-emerald-50 border-emerald-100',
+    green: 'bg-primary-50 border-primary-100',
+    primary: 'bg-primary-50 border-primary-100',
   };
 
   return (
@@ -284,7 +284,7 @@ function StatCardLarge({
       <p
         className={cn(
           'text-2xl font-bold tabular-nums',
-          color === 'green' && 'text-green-600',
+          color === 'green' && 'text-primary-600',
           color === 'amber' && 'text-amber-600',
           color === 'slate' && 'text-warm-900'
         )}
@@ -377,7 +377,7 @@ function PatternRow({
     detected: { bg: 'bg-warm-100', text: 'text-warm-600' },
     confirmed: { bg: 'bg-blue-100', text: 'text-blue-700' },
     addressed: { bg: 'bg-amber-100', text: 'text-amber-700' },
-    resolved: { bg: 'bg-green-100', text: 'text-green-700' },
+    resolved: { bg: 'bg-primary-100', text: 'text-primary-700' },
     dismissed: { bg: 'bg-warm-100', text: 'text-warm-500' },
   };
 
@@ -399,7 +399,7 @@ function PatternRow({
           <span
             className={cn(
               'text-xs font-medium',
-              pattern.strokesImpact > 0 ? 'text-red-600' : 'text-green-600'
+              pattern.strokesImpact > 0 ? 'text-red-600' : 'text-primary-600'
             )}
           >
             {pattern.strokesImpact > 0 ? '+' : ''}
@@ -435,7 +435,7 @@ function PatternRow({
             <div
               className={cn(
                 'flex items-center gap-1',
-                pattern.strokesImpact > 0 ? 'text-red-600' : 'text-green-600'
+                pattern.strokesImpact > 0 ? 'text-red-600' : 'text-primary-600'
               )}
             >
               {pattern.strokesImpact > 0 ? (

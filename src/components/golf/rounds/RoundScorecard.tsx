@@ -11,7 +11,7 @@ function getScoreClass(score: number, par: number): string {
   const diff = score - par;
   if (diff <= -2) return 'bg-amber-400 text-white'; // Eagle or better
   if (diff === -1) return 'bg-red-500 text-white'; // Birdie
-  if (diff === 0) return 'bg-gray-100 text-gray-900'; // Par
+  if (diff === 0) return 'bg-warm-100 text-warm-900'; // Par
   if (diff === 1) return 'bg-blue-100 text-blue-700'; // Bogey
   if (diff === 2) return 'bg-blue-200 text-blue-800'; // Double
   return 'bg-blue-300 text-blue-900'; // Triple+
@@ -49,34 +49,34 @@ export function RoundScorecard({ holeScores }: RoundScorecardProps) {
   const renderHoles = (holes: HoleScore[], startHole: number) => (
     <>
       {/* Hole Numbers */}
-      <tr className="bg-gray-50">
-        <td className="px-2 py-1.5 text-xs font-medium text-gray-500 border-r border-border-light">Hole</td>
+      <tr className="bg-warm-50">
+        <td className="px-2 py-1.5 text-xs font-medium text-warm-500 border-r border-border-light">Hole</td>
         {holes.map((_, index) => (
-          <td key={index} className="px-2 py-1.5 text-xs font-medium text-gray-500 text-center min-w-[40px]">
+          <td key={index} className="px-2 py-1.5 text-xs font-medium text-warm-500 text-center min-w-[40px]">
             {startHole + index}
           </td>
         ))}
-        <td className="px-2 py-1.5 text-xs font-medium text-gray-500 text-center border-l border-border-light bg-gray-100">
+        <td className="px-2 py-1.5 text-xs font-medium text-warm-500 text-center border-l border-border-light bg-warm-100">
           {startHole === 1 ? 'OUT' : 'IN'}
         </td>
       </tr>
 
       {/* Par */}
       <tr className="bg-white">
-        <td className="px-2 py-1.5 text-xs font-medium text-gray-500 border-r border-border-light">Par</td>
+        <td className="px-2 py-1.5 text-xs font-medium text-warm-500 border-r border-border-light">Par</td>
         {holes.map((hole, index) => (
-          <td key={index} className="px-2 py-1.5 text-xs text-gray-600 text-center">
+          <td key={index} className="px-2 py-1.5 text-xs text-warm-600 text-center">
             {hole.par}
           </td>
         ))}
-        <td className="px-2 py-1.5 text-xs font-medium text-gray-600 text-center border-l border-border-light bg-gray-50">
+        <td className="px-2 py-1.5 text-xs font-medium text-warm-600 text-center border-l border-border-light bg-warm-50">
           {startHole === 1 ? front9Par : back9Par}
         </td>
       </tr>
 
       {/* Score */}
       <tr className="bg-white">
-        <td className="px-2 py-1.5 text-xs font-medium text-gray-700 border-r border-border-light">Score</td>
+        <td className="px-2 py-1.5 text-xs font-medium text-warm-700 border-r border-border-light">Score</td>
         {holes.map((hole, index) => (
           <td key={index} className="px-2 py-1.5 text-center">
             <span
@@ -90,8 +90,8 @@ export function RoundScorecard({ holeScores }: RoundScorecardProps) {
             </span>
           </td>
         ))}
-        <td className="px-2 py-1.5 text-center border-l border-border-light bg-gray-50">
-          <span className="text-sm font-semibold text-gray-900">
+        <td className="px-2 py-1.5 text-center border-l border-border-light bg-warm-50">
+          <span className="text-sm font-semibold text-warm-900">
             {startHole === 1 ? front9Score : back9Score}
           </span>
         </td>
@@ -99,29 +99,29 @@ export function RoundScorecard({ holeScores }: RoundScorecardProps) {
 
       {/* Putts */}
       <tr className="bg-white border-b border-border-light">
-        <td className="px-2 py-1.5 text-xs font-medium text-gray-500 border-r border-border-light">Putts</td>
+        <td className="px-2 py-1.5 text-xs font-medium text-warm-500 border-r border-border-light">Putts</td>
         {holes.map((hole, index) => (
           <td key={index} className={cn(
             'px-2 py-1.5 text-xs text-center',
             (hole.putts ?? 0) >= 3 ? 'text-red-600 font-medium' :
-            hole.putts === 1 ? 'text-green-600 font-medium' : 'text-gray-500'
+            hole.putts === 1 ? 'text-primary-600 font-medium' : 'text-warm-500'
           )}>
             {hole.putts ?? '-'}
           </td>
         ))}
-        <td className="px-2 py-1.5 text-xs font-medium text-gray-600 text-center border-l border-border-light bg-gray-50">
+        <td className="px-2 py-1.5 text-xs font-medium text-warm-600 text-center border-l border-border-light bg-warm-50">
           {startHole === 1 ? front9Putts : back9Putts}
         </td>
       </tr>
 
       {/* FIR (Fairway in Regulation) - only for par 4s and 5s */}
       <tr className="bg-white">
-        <td className="px-2 py-1.5 text-xs font-medium text-gray-500 border-r border-border-light">FIR</td>
+        <td className="px-2 py-1.5 text-xs font-medium text-warm-500 border-r border-border-light">FIR</td>
         {holes.map((hole, index) => (
           <td key={index} className="px-2 py-1.5 text-xs text-center">
             {hole.par >= 4 ? (
               hole.fairway_hit ? (
-                <svg className="w-4 h-4 mx-auto text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <svg className="w-4 h-4 mx-auto text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               ) : (
@@ -130,11 +130,11 @@ export function RoundScorecard({ holeScores }: RoundScorecardProps) {
                 </svg>
               )
             ) : (
-              <span className="text-gray-300">-</span>
+              <span className="text-warm-300">-</span>
             )}
           </td>
         ))}
-        <td className="px-2 py-1.5 text-xs text-center border-l border-border-light bg-gray-50">
+        <td className="px-2 py-1.5 text-xs text-center border-l border-border-light bg-warm-50">
           {holes.filter(h => h.par >= 4 && h.fairway_hit).length}/
           {holes.filter(h => h.par >= 4).length}
         </td>
@@ -142,11 +142,11 @@ export function RoundScorecard({ holeScores }: RoundScorecardProps) {
 
       {/* GIR (Green in Regulation) */}
       <tr className="bg-white border-b-2 border-border-light">
-        <td className="px-2 py-1.5 text-xs font-medium text-gray-500 border-r border-border-light">GIR</td>
+        <td className="px-2 py-1.5 text-xs font-medium text-warm-500 border-r border-border-light">GIR</td>
         {holes.map((hole, index) => (
           <td key={index} className="px-2 py-1.5 text-xs text-center">
             {hole.green_in_regulation ? (
-              <svg className="w-4 h-4 mx-auto text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <svg className="w-4 h-4 mx-auto text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
             ) : (
@@ -156,7 +156,7 @@ export function RoundScorecard({ holeScores }: RoundScorecardProps) {
             )}
           </td>
         ))}
-        <td className="px-2 py-1.5 text-xs text-center border-l border-border-light bg-gray-50">
+        <td className="px-2 py-1.5 text-xs text-center border-l border-border-light bg-warm-50">
           {holes.filter(h => h.green_in_regulation).length}/{holes.length}
         </td>
       </tr>
@@ -166,7 +166,7 @@ export function RoundScorecard({ holeScores }: RoundScorecardProps) {
   return (
     <div className="bg-white border border-border-light rounded-xl overflow-hidden">
       <div className="px-6 py-4 border-b border-border-light">
-        <h3 className="text-base font-semibold text-gray-900">Scorecard</h3>
+        <h3 className="text-base font-semibold text-warm-900">Scorecard</h3>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full border-collapse">
@@ -179,21 +179,21 @@ export function RoundScorecard({ holeScores }: RoundScorecardProps) {
 
             {/* Total Row */}
             {holeScores.length > 9 && (
-              <tr className="bg-gray-100">
-                <td className="px-2 py-2 text-sm font-semibold text-gray-900 border-r border-border-light">
+              <tr className="bg-warm-100">
+                <td className="px-2 py-2 text-sm font-semibold text-warm-900 border-r border-border-light">
                   Total
                 </td>
                 <td colSpan={front9.length} className="px-2 py-2 text-center">
                   <span className={cn(
                     'text-sm font-semibold',
-                    totalScore <= totalPar ? 'text-green-600' : 'text-gray-900'
+                    totalScore <= totalPar ? 'text-primary-600' : 'text-warm-900'
                   )}>
                     {front9Score}
                   </span>
                 </td>
                 <td className="px-2 py-2 text-center border-l border-border-light">
-                  <span className="text-lg font-bold text-gray-900">{totalScore}</span>
-                  <span className="ml-1 text-sm text-gray-500">
+                  <span className="text-lg font-bold text-warm-900">{totalScore}</span>
+                  <span className="ml-1 text-sm text-warm-500">
                     ({totalScore - totalPar >= 0 ? '+' : ''}{totalScore - totalPar})
                   </span>
                 </td>
@@ -208,23 +208,23 @@ export function RoundScorecard({ holeScores }: RoundScorecardProps) {
         <div className="flex flex-wrap items-center gap-4 text-xs">
           <div className="flex items-center gap-2">
             <span className="w-5 h-5 rounded-full bg-amber-400 flex items-center justify-center text-white text-xs">E</span>
-            <span className="text-gray-500">Eagle</span>
+            <span className="text-warm-500">Eagle</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center text-white text-xs">B</span>
-            <span className="text-gray-500">Birdie</span>
+            <span className="text-warm-500">Birdie</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-gray-900 text-xs">P</span>
-            <span className="text-gray-500">Par</span>
+            <span className="w-5 h-5 rounded-full bg-warm-100 flex items-center justify-center text-warm-900 text-xs">P</span>
+            <span className="text-warm-500">Par</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 text-xs">+1</span>
-            <span className="text-gray-500">Bogey</span>
+            <span className="text-warm-500">Bogey</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="w-5 h-5 rounded-full bg-blue-200 flex items-center justify-center text-blue-800 text-xs">+2</span>
-            <span className="text-gray-500">Double+</span>
+            <span className="text-warm-500">Double+</span>
           </div>
         </div>
       </div>

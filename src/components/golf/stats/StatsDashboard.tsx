@@ -147,7 +147,7 @@ export function StatsDashboard({
       : 'low';
 
     const colors: Record<string, string> = {
-      high: 'bg-green-100 text-green-700',
+      high: 'bg-primary-100 text-primary-700',
       medium: 'bg-yellow-100 text-yellow-700',
       low: 'bg-red-100 text-red-700',
     };
@@ -379,7 +379,7 @@ export function StatsDashboard({
                     <ul className="space-y-2">
                       {trendInsights.slice(0, 3).map((insight, i) => (
                         <li key={i} className="flex items-start gap-2 text-sm">
-                          <span className="text-green-500 mt-0.5">•</span>
+                          <span className="text-primary-500 mt-0.5">•</span>
                           <span className="text-warm-700">{insight}</span>
                         </li>
                       ))}
@@ -395,7 +395,7 @@ export function StatsDashboard({
                     <CardTitle className="text-base">Next Round Prediction</CardTitle>
                   </CardHeader>
                   <CardContent className="text-center">
-                    <div className="text-3xl font-bold text-green-600">
+                    <div className="text-3xl font-bold text-primary-600">
                       {prediction.predicted_score}
                     </div>
                     <div className="text-sm text-warm-500 mt-1">
@@ -505,7 +505,7 @@ export function StatsDashboard({
                               isNeutral
                                 ? 'text-warm-500'
                                 : isBetter
-                                ? 'text-green-600'
+                                ? 'text-primary-600'
                                 : 'text-red-600'
                             )}
                           >
@@ -520,7 +520,7 @@ export function StatsDashboard({
                 {/* Strengths and Weaknesses */}
                 <div className="grid grid-cols-2 gap-6 mt-6">
                   <div>
-                    <h4 className="text-sm font-semibold text-green-600 mb-2">Strengths</h4>
+                    <h4 className="text-sm font-semibold text-primary-600 mb-2">Strengths</h4>
                     {statisticalStrengths && statisticalStrengths.length > 0 ? (
                       <div className="space-y-2">
                         {statisticalStrengths.map((s, i) => (
@@ -531,7 +531,7 @@ export function StatsDashboard({
                       <ul className="space-y-1">
                         {comparison.strengths.map((s, i) => (
                           <li key={i} className="flex items-center gap-2 text-sm text-warm-700">
-                            <span className="text-green-500">✓</span> {s}
+                            <span className="text-primary-500">✓</span> {s}
                           </li>
                         ))}
                       </ul>
@@ -639,11 +639,11 @@ function ComparisonSWItem({
 }) {
   const isStrength = type === 'strength';
   const sign = item.strokeImpact >= 0 ? '+' : '';
-  const impactColor = isStrength ? 'text-green-600' : 'text-red-600';
+  const impactColor = isStrength ? 'text-primary-600' : 'text-red-600';
 
   return (
     <div className="flex items-start gap-2 text-sm">
-      <span className={isStrength ? 'text-green-500 mt-0.5' : 'text-red-500 mt-0.5'} aria-hidden="true">
+      <span className={isStrength ? 'text-primary-500 mt-0.5' : 'text-red-500 mt-0.5'} aria-hidden="true">
         {isStrength ? '✓' : '→'}
       </span>
       <div className="flex-1 min-w-0">

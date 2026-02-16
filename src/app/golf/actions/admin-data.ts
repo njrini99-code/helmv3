@@ -448,6 +448,68 @@ export interface AdminDashboardData {
       createdAt: string;
     }[];
   };
+  // Enhanced user activity with team grouping
+  userActivity: {
+    teams: {
+      teamId: string;
+      teamName: string;
+      season: string;
+      memberCount: number;
+      activeCount: number;
+      avgRoundsPerPlayer: number;
+      lastTeamActivity: string | null;
+      healthStatus: 'healthy' | 'warning' | 'critical';
+      members: {
+        id: string;
+        email: string;
+        name: string | null;
+        role: string;
+        created_at: string;
+        last_seen: string | null;
+        daysSinceLastSeen: number | null;
+        activityStatus: 'active_today' | 'active_week' | 'active_month' | 'inactive' | 'never';
+        roundsEntered: number;
+        lastRoundDate: string | null;
+        avgScore: number | null;
+        insightsReceived: number;
+        roundReviews: number;
+      }[];
+    }[];
+    unassigned: {
+      id: string;
+      email: string;
+      role: string;
+      created_at: string;
+      last_seen: string | null;
+      daysSinceLastSeen: number | null;
+      activityStatus: 'active_today' | 'active_week' | 'active_month' | 'inactive' | 'never';
+    }[];
+    summary: {
+      totalUsers: number;
+      neverLoggedIn: number;
+      activeToday: number;
+      activeThisWeek: number;
+      inactivePlus14d: number;
+      churnRisk: number;
+    };
+  };
+  // Error detection and classification
+  errorDetection: {
+    errors24h: number;
+    errors7d: number;
+    unresolvedErrors: number;
+    errorsByType: { type: string; count: number; lastOccurred: string }[];
+    errorsByRoute: { route: string; count: number }[];
+    errorsByUser: { userId: string | null; email: string | null; count: number }[];
+    userExperienceIssues: {
+      chunkLoadErrors: number;
+      frameworkWarnings: number;
+      serverErrors: number;
+      authErrors: number;
+    };
+    lastErrorAt: string | null;
+    allClear: boolean;
+  };
 }
 
 // ============================================
@@ -1562,7 +1624,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     // Admin events: summary via RPC (wrapped in try-catch for resilience)
     (async () => {
       try {
-        const result = await adminDb.rpc('get_admin_event_summary', { p_days_back: 7 });
+        const result = await (adminDb.rpc as unknown as (fn: string, params: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>)('get_admin_event_summary', { p_days_back: 7 });
         return result as unknown as { data: { total_events: number; error_count: number; critical_count: number; unresolved_count: number; events_by_type: Record<string, number>; events_by_severity: Record<string, number>; events_by_day: { date: string; count: number }[] } | null; error: unknown };
       } catch {
         // RPC function may not exist yet, return empty result
@@ -1993,11 +2055,20 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   type CoachInsightRow = { coach_id: string; created_at: string };
   type CoachReviewRow = { coach_id: string | null; round_id: string; created_at: string; golf_rounds: { player_id: string; created_at: string } | null };
 
+  type PlayerInsightRow = { player_id: string; insights_generated: number | null };
+  type TeamSeasonRow = { id: string; season: string | null };
+  type AdminEventErrorRow = { id: string; event_type: string; severity: string; resolved: boolean; created_at: string };
+
   const [
     analyticsEventsRes,
     coachInsightsViewedRes,
     coachRoundReviewsRes,
     roundsWithDatesRes,
+    // NEW: for userActivity + errorDetection
+    playerInsightsPerPlayerRes,
+    teamSeasonsRes,
+    errors24hCountRes,
+    adminEventsErrorsRes,
   ] = await Promise.all([
     // Session heatmap: analytics events (last 7d) — table not in generated types
     adminDb.from('admin_analytics_events' as never).select('event_type, page_path, feature_name, session_id, user_id, created_at, duration_ms').gte('created_at', ago7d) as unknown as { data: AnalyticsEvent[] | null; error: unknown },
@@ -2007,6 +2078,14 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     adminDb.from('golf_round_reviews').select('coach_id, round_id, created_at, golf_rounds(player_id, created_at)') as unknown as { data: CoachReviewRow[] | null; error: unknown },
     // For cohort retention + benchmarks: all rounds with player + date
     adminDb.from('golf_rounds').select('player_id, created_at, team_id').order('created_at', { ascending: false }),
+    // NEW: Insights per player (for userActivity team member detail)
+    adminDb.from('golf_insight_generation_log').select('player_id, insights_generated').not('player_id', 'is', null) as unknown as { data: PlayerInsightRow[] | null; error: unknown },
+    // NEW: Team seasons
+    adminDb.from('golf_teams').select('id, season') as unknown as { data: TeamSeasonRow[] | null; error: unknown },
+    // NEW: Error count in last 24h
+    adminDb.from('error_logs').select('id', { count: 'exact', head: true }).gte('created_at', ago24h),
+    // NEW: Admin events with error/critical severity (for error detection)
+    adminDb.from('admin_events').select('id, event_type, severity, resolved, created_at').in('severity', ['error', 'critical']) as unknown as { data: AdminEventErrorRow[] | null; error: unknown },
   ]);
 
   // --- SESSION HEATMAP ---
@@ -2485,6 +2564,320 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     aiCorrelation,
   };
 
+  // ============================================
+  // PROCESS: User Activity with Team Grouping
+  // ============================================
+
+  // Build player insights count (per player, from generation log)
+  const playerInsightCounts = new Map<string, number>();
+  for (const row of (playerInsightsPerPlayerRes.data ?? [])) {
+    if (row.player_id) {
+      playerInsightCounts.set(
+        row.player_id,
+        (playerInsightCounts.get(row.player_id) ?? 0) + (row.insights_generated ?? 1)
+      );
+    }
+  }
+
+  // Build player review counts (per player, derived from round reviews)
+  const playerReviewCounts = new Map<string, number>();
+  for (const cr of coachReviewsData) {
+    const round = cr.golf_rounds as { player_id: string; created_at: string } | null;
+    if (round?.player_id) {
+      playerReviewCounts.set(round.player_id, (playerReviewCounts.get(round.player_id) ?? 0) + 1);
+    }
+  }
+
+  // Build team seasons map
+  const teamSeasonMap = new Map<string, string>();
+  for (const t of (teamSeasonsRes.data ?? [])) {
+    teamSeasonMap.set(t.id, t.season ?? '');
+  }
+
+  // Activity status helper
+  const getActivityStatus = (lastSeenTs: string | null): 'active_today' | 'active_week' | 'active_month' | 'inactive' | 'never' => {
+    if (!lastSeenTs) return 'never';
+    if (lastSeenTs >= today) return 'active_today';
+    if (lastSeenTs >= ago7d) return 'active_week';
+    if (lastSeenTs >= ago30d) return 'active_month';
+    return 'inactive';
+  };
+
+  // Days since timestamp helper
+  const computeDaysSince = (ts: string | null): number | null => {
+    if (!ts) return null;
+    return Math.floor((Date.now() - new Date(ts).getTime()) / 86400000);
+  };
+
+  // Track which users are assigned to a team
+  const usersOnTeams = new Set<string>();
+
+  // Build team-grouped user activity
+  const userActivityTeams: AdminDashboardData['userActivity']['teams'] = [];
+
+  for (const [teamId, teamInfo] of teamsMap) {
+    const season = teamSeasonMap.get(teamId) ?? '';
+    const teamMembersList = (teamMembersRes.data ?? []).filter(m => m.team_id === teamId);
+
+    // Find coaches for this team via organization
+    const teamDataEntry = (teamsDataRes.data ?? []).find(t => t.id === teamId);
+    const teamOrgId = teamDataEntry?.organization_id;
+    const teamCoachesList = teamOrgId ? (orgCoaches.get(teamOrgId) ?? []) : [];
+
+    const members: AdminDashboardData['userActivity']['teams'][0]['members'] = [];
+
+    // Add player members
+    for (const m of teamMembersList) {
+      const player = allPlayersMap.get(m.player_id);
+      if (!player?.userId) continue;
+      const userId = player.userId;
+
+      const userRecord = (allUsersRes.data ?? []).find(u => u.id === userId);
+      if (!userRecord) continue;
+
+      const lastSeenTs = userLastActive.get(userId) ?? null;
+      const statEntry = statsRows.find(s => s.player_id === m.player_id);
+      usersOnTeams.add(userId);
+
+      members.push({
+        id: userId,
+        email: userRecord.email,
+        name: `${player.firstName} ${player.lastName}`.trim() || null,
+        role: userRecord.role ?? 'player',
+        created_at: userRecord.created_at ?? '',
+        last_seen: lastSeenTs,
+        daysSinceLastSeen: computeDaysSince(lastSeenTs),
+        activityStatus: getActivityStatus(lastSeenTs),
+        roundsEntered: playerRoundCounts.get(m.player_id) ?? 0,
+        lastRoundDate: playerLastRound.get(m.player_id) ?? null,
+        avgScore: statEntry?.scoring_average != null ? Math.round(Number(statEntry.scoring_average) * 10) / 10 : null,
+        insightsReceived: playerInsightCounts.get(m.player_id) ?? 0,
+        roundReviews: playerReviewCounts.get(m.player_id) ?? 0,
+      });
+    }
+
+    // Add coach members
+    for (const coach of teamCoachesList) {
+      const coachDetail = [...allCoachesMap.values()].find(c => c.id === coach.id);
+      const userId = coachDetail?.userId;
+      if (!userId) continue;
+
+      // Skip if already added (e.g. duplicate org mapping)
+      if (usersOnTeams.has(userId)) continue;
+
+      const userRecord = (allUsersRes.data ?? []).find(u => u.id === userId);
+      if (!userRecord) continue;
+
+      const lastSeenTs = userLastActive.get(userId) ?? null;
+      usersOnTeams.add(userId);
+
+      members.push({
+        id: userId,
+        email: userRecord.email,
+        name: `${coach.firstName} ${coach.lastName}`.trim() || null,
+        role: 'coach',
+        created_at: userRecord.created_at ?? '',
+        last_seen: lastSeenTs,
+        daysSinceLastSeen: computeDaysSince(lastSeenTs),
+        activityStatus: getActivityStatus(lastSeenTs),
+        roundsEntered: 0,
+        lastRoundDate: null,
+        avgScore: null,
+        insightsReceived: 0,
+        roundReviews: 0,
+      });
+    }
+
+    // Compute team-level stats
+    const activeMemberCount = members.filter(m =>
+      m.activityStatus === 'active_today' || m.activityStatus === 'active_week'
+    ).length;
+    const playerMembersOnly = members.filter(m => m.role !== 'coach');
+    const totalTeamRounds = playerMembersOnly.reduce((sum, m) => sum + m.roundsEntered, 0);
+    const avgRoundsPerPlayerForTeam = playerMembersOnly.length > 0 ? totalTeamRounds / playerMembersOnly.length : 0;
+
+    // Last team activity = most recent last_seen among all members
+    const memberLastSeens = members.map(m => m.last_seen).filter((s): s is string => s !== null);
+    const lastTeamAct = memberLastSeens.length > 0
+      ? memberLastSeens.sort().reverse()[0]!
+      : null;
+
+    // Health: >50% active in 7d = healthy, >25% = warning, else critical
+    const activePctForTeam = members.length > 0 ? activeMemberCount / members.length : 0;
+    const teamHealthStatus: 'healthy' | 'warning' | 'critical' =
+      activePctForTeam > 0.5 ? 'healthy' : activePctForTeam > 0.25 ? 'warning' : 'critical';
+
+    // Sort members: coaches first, then by activity (most active first)
+    const activityOrder: Record<string, number> = { active_today: 0, active_week: 1, active_month: 2, inactive: 3, never: 4 };
+    members.sort((a, b) => {
+      if (a.role === 'coach' && b.role !== 'coach') return -1;
+      if (a.role !== 'coach' && b.role === 'coach') return 1;
+      return (activityOrder[a.activityStatus] ?? 5) - (activityOrder[b.activityStatus] ?? 5);
+    });
+
+    userActivityTeams.push({
+      teamId,
+      teamName: teamInfo.name,
+      season,
+      memberCount: members.length,
+      activeCount: activeMemberCount,
+      avgRoundsPerPlayer: Math.round(avgRoundsPerPlayerForTeam * 10) / 10,
+      lastTeamActivity: lastTeamAct,
+      healthStatus: teamHealthStatus,
+      members,
+    });
+  }
+
+  // Sort teams by member count descending
+  userActivityTeams.sort((a, b) => b.memberCount - a.memberCount);
+
+  // Unassigned users (not on any team)
+  const unassignedUsers: AdminDashboardData['userActivity']['unassigned'] = (allUsersRes.data ?? [])
+    .filter(u => !usersOnTeams.has(u.id))
+    .map(u => {
+      const lastSeenTs = userLastActive.get(u.id) ?? null;
+      return {
+        id: u.id,
+        email: u.email,
+        role: u.role ?? 'unknown',
+        created_at: u.created_at ?? '',
+        last_seen: lastSeenTs,
+        daysSinceLastSeen: computeDaysSince(lastSeenTs),
+        activityStatus: getActivityStatus(lastSeenTs),
+      };
+    });
+
+  // Summary stats across all users
+  const allUsersList = allUsersRes.data ?? [];
+  const summaryNeverLoggedIn = allUsersList.filter(u => !userLastActive.has(u.id)).length;
+  const summaryActiveToday = allUsersList.filter(u => {
+    const ls = userLastActive.get(u.id);
+    return ls != null && ls >= today;
+  }).length;
+  const summaryActiveWeek = allUsersList.filter(u => {
+    const ls = userLastActive.get(u.id);
+    return ls != null && ls >= ago7d;
+  }).length;
+  const summaryInactive14d = allUsersList.filter(u => {
+    const ls = userLastActive.get(u.id);
+    return ls != null && ls < ago14d;
+  }).length;
+  // Churn risk: had activity (last_seen exists) but nothing in 14+ days
+  const summaryChurnRisk = allUsersList.filter(u => {
+    const ls = userLastActive.get(u.id);
+    return ls != null && ls < ago14d;
+  }).length;
+
+  const userActivityData: AdminDashboardData['userActivity'] = {
+    teams: userActivityTeams,
+    unassigned: unassignedUsers,
+    summary: {
+      totalUsers: allUsersList.length,
+      neverLoggedIn: summaryNeverLoggedIn,
+      activeToday: summaryActiveToday,
+      activeThisWeek: summaryActiveWeek,
+      inactivePlus14d: summaryInactive14d,
+      churnRisk: summaryChurnRisk,
+    },
+  };
+
+  // ============================================
+  // PROCESS: Error Detection & Classification
+  // ============================================
+
+  const errors24hCount = errors24hCountRes.count ?? 0;
+
+  // Unresolved error-severity events from admin_events
+  const adminErrorEventsData = (adminEventsErrorsRes.data ?? []) as AdminEventErrorRow[];
+  const unresolvedErrorCount = adminErrorEventsData.filter(e => !e.resolved).length;
+
+  // Group errors by type (normalized message)
+  const errorTypeGroups = new Map<string, { count: number; lastOccurred: string }>();
+  for (const e of rawErrorLogs) {
+    const msg = (e.message ?? 'Unknown error').substring(0, 120);
+    const existing = errorTypeGroups.get(msg);
+    const ts = e.created_at ?? new Date().toISOString();
+    if (existing) {
+      existing.count++;
+      if (ts > existing.lastOccurred) existing.lastOccurred = ts;
+    } else {
+      errorTypeGroups.set(msg, { count: 1, lastOccurred: ts });
+    }
+  }
+  const detectedErrorsByType = [...errorTypeGroups.entries()]
+    .map(([type, d]) => ({ type, count: d.count, lastOccurred: d.lastOccurred }))
+    .sort((a, b) => b.count - a.count);
+
+  // Group errors by route (extracted from url field)
+  const errorRouteGroups = new Map<string, number>();
+  for (const e of rawErrorLogs) {
+    if (e.url) {
+      try {
+        const urlPath = new URL(e.url, 'http://localhost').pathname;
+        errorRouteGroups.set(urlPath, (errorRouteGroups.get(urlPath) ?? 0) + 1);
+      } catch {
+        errorRouteGroups.set(e.url, (errorRouteGroups.get(e.url) ?? 0) + 1);
+      }
+    } else {
+      errorRouteGroups.set('(no route)', (errorRouteGroups.get('(no route)') ?? 0) + 1);
+    }
+  }
+  const detectedErrorsByRoute = [...errorRouteGroups.entries()]
+    .map(([route, count]) => ({ route, count }))
+    .sort((a, b) => b.count - a.count);
+
+  // Group errors by user
+  const errorUserGroups = new Map<string, number>();
+  for (const e of rawErrorLogs) {
+    const key = e.user_id ?? '__anonymous__';
+    errorUserGroups.set(key, (errorUserGroups.get(key) ?? 0) + 1);
+  }
+  const detectedErrorsByUser = [...errorUserGroups.entries()]
+    .map(([uid, count]) => ({
+      userId: uid === '__anonymous__' ? null : uid,
+      email: uid !== '__anonymous__' ? (errorEmailMap.get(uid) ?? null) : null,
+      count,
+    }))
+    .sort((a, b) => b.count - a.count);
+
+  // Classify user experience issues by error message pattern
+  let uxChunkLoadErrors = 0;
+  let uxFrameworkWarnings = 0;
+  let uxServerErrors = 0;
+  let uxAuthErrors = 0;
+  for (const e of rawErrorLogs) {
+    const msg = (e.message ?? '').toLowerCase();
+    const sev = (e.severity ?? '').toLowerCase();
+    if (msg.includes('chunk') || msg.includes('chunkloaderror') || msg.includes('loading chunk')) {
+      uxChunkLoadErrors++;
+    } else if (msg.includes('lazymotion') || msg.includes('framer') || sev === 'warning') {
+      uxFrameworkWarnings++;
+    } else if (msg.includes('500') || msg.includes('server error') || msg.includes('internal server')) {
+      uxServerErrors++;
+    } else if (msg.includes('auth') || msg.includes('login') || msg.includes('unauthorized') || msg.includes('forbidden')) {
+      uxAuthErrors++;
+    }
+  }
+
+  const lastErrorTimestamp = rawErrorLogs.length > 0 ? (rawErrorLogs[0]?.created_at ?? null) : null;
+
+  const errorDetectionData: AdminDashboardData['errorDetection'] = {
+    errors24h: errors24hCount,
+    errors7d: totalErrors7d,
+    unresolvedErrors: unresolvedErrorCount,
+    errorsByType: detectedErrorsByType,
+    errorsByRoute: detectedErrorsByRoute,
+    errorsByUser: detectedErrorsByUser,
+    userExperienceIssues: {
+      chunkLoadErrors: uxChunkLoadErrors,
+      frameworkWarnings: uxFrameworkWarnings,
+      serverErrors: uxServerErrors,
+      authErrors: uxAuthErrors,
+    },
+    lastErrorAt: lastErrorTimestamp,
+    allClear: totalErrors7d === 0 && unresolvedErrorCount === 0,
+  };
+
   return {
     health: {
       activeUsers24h: new Set((activeUsers24hRes.data ?? []).map(r => r.player_id)).size,
@@ -2695,5 +3088,9 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     benchmarks,
     // Admin events (real-time event tracking)
     adminEvents: adminEventsData,
+    // Enhanced user activity with team grouping
+    userActivity: userActivityData,
+    // Error detection and classification
+    errorDetection: errorDetectionData,
   };
 }

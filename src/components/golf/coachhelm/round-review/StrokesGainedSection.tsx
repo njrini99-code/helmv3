@@ -32,7 +32,7 @@ export function StrokesGainedSection({ strokesGained }: StrokesGainedSectionProp
         </h3>
         <div className={cn(
           'text-lg font-bold tabular-nums',
-          strokesGained.total >= 0 ? 'text-green-600' : 'text-red-500'
+          strokesGained.total >= 0 ? 'text-primary-600' : 'text-red-500'
         )}>
           {strokesGained.total >= 0 ? '+' : ''}{strokesGained.total.toFixed(1)}
         </div>
@@ -57,7 +57,7 @@ export function StrokesGainedSection({ strokesGained }: StrokesGainedSectionProp
                 <div className="absolute inset-0 flex items-center">
                   {isPositive ? (
                     <div
-                      className="absolute left-1/2 h-4 rounded-r bg-gradient-to-r from-green-400 to-green-500"
+                      className="absolute left-1/2 h-4 rounded-r bg-gradient-to-r from-primary-400 to-primary-500"
                       style={{
                         width: `${barWidth}%`,
                         animation: `barGrow 0.6s ease-out ${500 + index * 100}ms both`,
@@ -80,7 +80,7 @@ export function StrokesGainedSection({ strokesGained }: StrokesGainedSectionProp
               {/* Value */}
               <div className={cn(
                 'w-12 text-right text-sm font-semibold tabular-nums',
-                isPositive ? 'text-green-600' : 'text-red-500'
+                isPositive ? 'text-primary-600' : 'text-red-500'
               )}>
                 {isPositive ? '+' : ''}{value.toFixed(2)}
               </div>

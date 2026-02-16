@@ -14,7 +14,7 @@ function getNotificationIcon(type: Notification['type']) {
     case 'event_invitation':
       return <Calendar className="w-5 h-5 text-blue-500" />;
     case 'rsvp_response':
-      return <MessageSquare className="w-5 h-5 text-green-500" />;
+      return <MessageSquare className="w-5 h-5 text-primary-500" />;
     case 'event_updated':
       return <AlertCircle className="w-5 h-5 text-amber-500" />;
     case 'event_cancelled':
@@ -116,7 +116,7 @@ export function NotificationCenter() {
               {unreadCount > 0 && (
                 <button
                   onClick={handleMarkAllRead}
-                  className="text-xs text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-1"
+                  className="text-xs text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
                 >
                   <Check className="w-3 h-3" />
                   Mark all read
@@ -153,7 +153,7 @@ export function NotificationCenter() {
                       <button
                         onClick={() => handleNotificationClick(notification)}
                         className={`w-full px-4 py-3 flex gap-3 hover:bg-warm-50 transition-colors text-left ${
-                          !notification.read ? 'bg-emerald-50/30' : ''
+                          !notification.read ? 'bg-primary-50/30' : ''
                         }`}
                       >
                         {/* Icon */}
@@ -181,7 +181,7 @@ export function NotificationCenter() {
                         {/* Unread Indicator */}
                         {!notification.read && (
                           <div className="flex-shrink-0">
-                            <span className="w-2 h-2 bg-emerald-500 rounded-full inline-block"></span>
+                            <span className="w-2 h-2 bg-primary-500 rounded-full inline-block"></span>
                           </div>
                         )}
                       </button>

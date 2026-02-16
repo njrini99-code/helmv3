@@ -112,13 +112,13 @@ export function StrokesGainedDashboard({
           <div
             className={cn(
               'px-3 py-1.5 rounded-full text-sm font-medium',
-              sgData.sg_total >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+              sgData.sg_total >= 0 ? 'bg-primary-100 text-primary-700' : 'bg-red-100 text-red-700'
             )}
           >
             {formatStrokesGained(sgData.sg_total)} Total
           </div>
           {primaryStrength && (
-            <Badge variant="outline" className="text-green-600 border-green-200">
+            <Badge variant="outline" className="text-primary-600 border-primary-200">
               Strong: {primaryStrength}
             </Badge>
           )}
@@ -219,7 +219,7 @@ export function StrokesGainedDashboard({
                 <ul className="space-y-2">
                   {insights.map((insight, i) => (
                     <li key={i} className="flex items-start gap-2 text-sm">
-                      <span className="text-green-500 mt-0.5">•</span>
+                      <span className="text-primary-500 mt-0.5">•</span>
                       <span className="text-warm-700">{insight}</span>
                     </li>
                   ))}
@@ -232,7 +232,7 @@ export function StrokesGainedDashboard({
           <div className="grid grid-cols-2 gap-6 mt-6">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-base text-green-600">Strengths</CardTitle>
+                <CardTitle className="text-base text-primary-600">Strengths</CardTitle>
               </CardHeader>
               <CardContent>
                 {statisticalStrengths && statisticalStrengths.length > 0 ? (
@@ -245,7 +245,7 @@ export function StrokesGainedDashboard({
                   <ul className="space-y-1">
                     {strengths.map((s, i) => (
                       <li key={i} className="flex items-center gap-2 text-sm">
-                        <span className="text-green-500">✓</span>
+                        <span className="text-primary-500">✓</span>
                         <span>{s}</span>
                       </li>
                     ))}
@@ -399,7 +399,7 @@ export function StrokesGainedDashboard({
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-200">
+                      <tbody className="divide-y divide-warm-200">
                         {categories.map((cat) => {
                           const yours = sgData[cat.key];
                           const theirs = comparisonData.data[cat.key];
@@ -430,7 +430,7 @@ export function StrokesGainedDashboard({
                               <td
                                 className={cn(
                                   'text-right px-4 py-3 font-medium',
-                                  diff > 0 ? 'text-green-600' : diff < 0 ? 'text-red-600' : 'text-warm-500'
+                                  diff > 0 ? 'text-primary-600' : diff < 0 ? 'text-red-600' : 'text-warm-500'
                                 )}
                               >
                                 {diff > 0 ? '+' : ''}{diff.toFixed(2)}
@@ -461,9 +461,9 @@ function StrengthWeaknessCard({
 }) {
   const isStrength = type === 'strength';
   const sign = item.strokeImpact >= 0 ? '+' : '';
-  const impactColor = isStrength ? 'text-green-600' : 'text-red-600';
-  const impactBg = isStrength ? 'bg-green-50' : 'bg-red-50';
-  const borderColor = isStrength ? 'border-green-100' : 'border-red-100';
+  const impactColor = isStrength ? 'text-primary-600' : 'text-red-600';
+  const impactBg = isStrength ? 'bg-primary-50' : 'bg-red-50';
+  const borderColor = isStrength ? 'border-primary-100' : 'border-red-100';
 
   return (
     <div className={cn('rounded-lg border p-3', borderColor)}>
@@ -511,7 +511,7 @@ export function StrokesGainedSummary({
       {showDetails && (primaryStrength || primaryWeakness) && (
         <div className="mt-2 flex items-center gap-2 text-xs">
           {primaryStrength && (
-            <span className="text-green-600">Strong: {primaryStrength}</span>
+            <span className="text-primary-600">Strong: {primaryStrength}</span>
           )}
           {primaryStrength && primaryWeakness && <span className="text-warm-300">|</span>}
           {primaryWeakness && (

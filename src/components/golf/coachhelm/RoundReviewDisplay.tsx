@@ -65,9 +65,9 @@ const sentimentConfig: Record<
   { bg: string; text: string; icon: string; label: string }
 > = {
   positive: {
-    bg: 'bg-green-100',
-    text: 'text-green-700',
-    icon: 'text-green-600',
+    bg: 'bg-primary-100',
+    text: 'text-primary-700',
+    icon: 'text-primary-600',
     label: 'Great Round',
   },
   neutral: {
@@ -88,7 +88,7 @@ const gradeConfig: Record<
   OverallGrade,
   { bg: string; text: string; border: string }
 > = {
-  A: { bg: 'bg-green-500', text: 'text-white', border: 'border-green-600' },
+  A: { bg: 'bg-primary-500', text: 'text-white', border: 'border-primary-600' },
   B: { bg: 'bg-blue-500', text: 'text-white', border: 'border-blue-600' },
   C: { bg: 'bg-amber-500', text: 'text-white', border: 'border-amber-600' },
   D: { bg: 'bg-orange-500', text: 'text-white', border: 'border-orange-600' },
@@ -101,7 +101,7 @@ const comparisonConfig: Record<
 > = {
   above: {
     icon: <IconTrendingUp size={14} />,
-    color: 'text-green-600',
+    color: 'text-primary-600',
     label: 'Above avg',
   },
   below: {
@@ -156,7 +156,7 @@ function ExpandableSection({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: 'easeInOut' }}
+            transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
           >
             <div className="px-4 pb-4 pt-1">{children}</div>
           </motion.div>
@@ -245,7 +245,7 @@ export function RoundReviewDisplay({
                     className={cn(
                       'text-sm font-medium',
                       scoreToPar < 0
-                        ? 'text-green-600'
+                        ? 'text-primary-600'
                         : scoreToPar > 0
                           ? 'text-amber-600'
                           : 'text-warm-500'
@@ -294,7 +294,7 @@ export function RoundReviewDisplay({
               </button>
             )}
             {isShared && (
-              <span className="flex items-center gap-2 text-xs text-green-600 font-medium">
+              <span className="flex items-center gap-2 text-xs text-primary-600 font-medium">
                 <IconCheck size={14} />
                 Shared with Coach
               </span>
@@ -321,7 +321,7 @@ export function RoundReviewDisplay({
           title="Highlights"
           icon={<IconStar size={16} />}
           badge={
-            <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full font-medium">
+            <span className="px-2 py-0.5 bg-primary-100 text-primary-700 text-xs rounded-full font-medium">
               {review.highlights.length}
             </span>
           }
@@ -333,10 +333,10 @@ export function RoundReviewDisplay({
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="flex gap-3 p-3 rounded-lg bg-green-50/50 border border-green-100"
+                className="flex gap-3 p-3 rounded-lg bg-primary-50/50 border border-primary-100"
               >
-                <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-                  <IconCheck size={14} className="text-green-600" />
+                <div className="w-6 h-6 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
+                  <IconCheck size={14} className="text-primary-600" />
                 </div>
                 <div>
                   <div className="font-medium text-warm-900 text-sm">
@@ -469,7 +469,7 @@ export function RoundReviewDisplay({
                 {review.holeByHole.filter(h => h.hole <= 9).map((h) => {
                   const bg =
                     h.scoreToPar <= -2 ? 'bg-amber-400/80 text-amber-900' :
-                    h.scoreToPar === -1 ? 'bg-green-500/80 text-white' :
+                    h.scoreToPar === -1 ? 'bg-primary-500/80 text-white' :
                     h.scoreToPar === 0 ? 'bg-warm-100 text-warm-700' :
                     h.scoreToPar === 1 ? 'bg-orange-400/80 text-white' :
                     'bg-red-500/80 text-white';
@@ -503,7 +503,7 @@ export function RoundReviewDisplay({
                   {review.holeByHole.filter(h => h.hole >= 10).map((h) => {
                     const bg =
                       h.scoreToPar <= -2 ? 'bg-amber-400/80 text-amber-900' :
-                      h.scoreToPar === -1 ? 'bg-green-500/80 text-white' :
+                      h.scoreToPar === -1 ? 'bg-primary-500/80 text-white' :
                       h.scoreToPar === 0 ? 'bg-warm-100 text-warm-700' :
                       h.scoreToPar === 1 ? 'bg-orange-400/80 text-white' :
                       'bg-red-500/80 text-white';
@@ -533,7 +533,7 @@ export function RoundReviewDisplay({
             {/* Legend */}
             <div className="flex flex-wrap gap-3 pt-1 text-[10px] text-warm-500">
               <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-amber-400/80" /> Eagle+</span>
-              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-green-500/80" /> Birdie</span>
+              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-primary-500/80" /> Birdie</span>
               <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-warm-100" /> Par</span>
               <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-orange-400/80" /> Bogey</span>
               <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-red-500/80" /> Double+</span>
@@ -559,7 +559,7 @@ export function RoundReviewDisplay({
                 {/* Front 9 */}
                 <div className={cn(
                   'p-3 rounded-xl border',
-                  frontBetter ? 'bg-green-50/50 border-green-200/50' : 'bg-white/60 border-white/30'
+                  frontBetter ? 'bg-primary-50/50 border-primary-200/50' : 'bg-white/60 border-white/30'
                 )}>
                   <div className="text-xs font-semibold text-warm-500 mb-2 uppercase">Front 9</div>
                   <div className="space-y-1.5">
@@ -584,7 +584,7 @@ export function RoundReviewDisplay({
                 {/* Back 9 */}
                 <div className={cn(
                   'p-3 rounded-xl border',
-                  !frontBetter ? 'bg-green-50/50 border-green-200/50' : 'bg-white/60 border-white/30'
+                  !frontBetter ? 'bg-primary-50/50 border-primary-200/50' : 'bg-white/60 border-white/30'
                 )}>
                   <div className="text-xs font-semibold text-warm-500 mb-2 uppercase">Back 9</div>
                   <div className="space-y-1.5">
@@ -642,7 +642,7 @@ export function RoundReviewDisplay({
                   </div>
                   <div className="h-3 bg-warm-100 rounded-full overflow-hidden">
                     <motion.div
-                      className="h-full bg-green-500 rounded-full"
+                      className="h-full bg-primary-500 rounded-full"
                       initial={{ width: 0 }}
                       animate={{ width: `${range.pct}%` }}
                       transition={{ delay: i * 0.08 + 0.2, duration: 0.5 }}
@@ -662,7 +662,7 @@ export function RoundReviewDisplay({
               )}
               <div className="p-2 rounded-lg bg-white/60 text-center">
                 <div className="text-xs text-warm-500">One-Putts</div>
-                <div className="text-lg font-bold text-green-600">{review.puttingBreakdown.onePuttCount}</div>
+                <div className="text-lg font-bold text-primary-600">{review.puttingBreakdown.onePuttCount}</div>
               </div>
             </div>
 
@@ -782,7 +782,7 @@ export function RoundReviewDisplay({
                           >
                             <div className={cn(
                               'w-full h-full rounded-sm',
-                              isOver ? 'bg-red-400/70' : val < 0 ? 'bg-green-500/70' : 'bg-warm-300'
+                              isOver ? 'bg-red-400/70' : val < 0 ? 'bg-primary-500/70' : 'bg-warm-300'
                             )} />
                           </div>
                         </div>
@@ -801,7 +801,7 @@ export function RoundReviewDisplay({
                   Finished at{' '}
                   <span className={cn(
                     'font-semibold',
-                    data[data.length - 1]!.rollingScoreToPar < 0 ? 'text-green-600' :
+                    data[data.length - 1]!.rollingScoreToPar < 0 ? 'text-primary-600' :
                     data[data.length - 1]!.rollingScoreToPar > 0 ? 'text-red-600' :
                     'text-warm-700'
                   )}>

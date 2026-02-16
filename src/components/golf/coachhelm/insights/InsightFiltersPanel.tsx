@@ -57,7 +57,7 @@ const PRIORITY_OPTIONS: { value: InsightPriority; label: string; color: string }
 ];
 
 const STATUS_OPTIONS: { value: InsightStatus; label: string; color: string }[] = [
-  { value: 'active', label: 'Active', color: 'bg-green-100 text-green-700' },
+  { value: 'active', label: 'Active', color: 'bg-primary-100 text-primary-700' },
   { value: 'acknowledged', label: 'Acknowledged', color: 'bg-blue-100 text-blue-700' },
   { value: 'resolved', label: 'Resolved', color: 'bg-warm-100 text-warm-700' },
   { value: 'dismissed', label: 'Dismissed', color: 'bg-warm-100 text-warm-500' },
@@ -443,6 +443,8 @@ export function InsightFiltersPanel({
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
+                transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
+                style={{ overflow: 'hidden' }}
                 className="px-4 pb-3"
               >
                 <div className="flex flex-wrap gap-2">
@@ -466,7 +468,8 @@ export function InsightFiltersPanel({
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="overflow-hidden"
+                transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
+                style={{ overflow: 'hidden' }}
               >
                 <div className="px-4 pb-4 border-t border-warm-100">
                   <div className="pt-4">

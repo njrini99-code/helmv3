@@ -124,6 +124,11 @@ export async function createGolfTravelItinerary(input: CreateTravelItineraryInpu
 
     const supabase = await createClient();
 
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
     // DB column types: flight_info=jsonb, room_assignments=jsonb, gear_list=text[]
     // check_in_date and check_out_date don't exist in the database
     // Convert empty strings to null for time/date columns (Postgres rejects "" for time type)
@@ -152,7 +157,7 @@ export async function createGolfTravelItinerary(input: CreateTravelItineraryInpu
         uniform_requirements: emptyToNull(validatedData.uniform_requirements),
         gear_list: validatedData.gear_list ? validatedData.gear_list.split(',').map((s: string) => s.trim()).filter(Boolean) : null,
         notes: emptyToNull(validatedData.notes),
-        created_by: validatedData.created_by,
+        created_by: user.id,
       })
       .select()
       .single();
@@ -190,6 +195,11 @@ export async function updateGolfTravelItinerary(input: UpdateTravelItineraryInpu
     const validatedData = updateTravelItinerarySchema.parse(input);
 
     const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
 
     // Extract update data (omit id and fields that don't exist in the database)
     const { id, check_in_date: _checkIn, check_out_date: _checkOut, ...rawUpdateData } = validatedData;
@@ -268,6 +278,11 @@ export async function deleteGolfTravelItinerary(itineraryId: string) {
   }
 
   const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: 'Not authenticated' };
+  }
 
   const { error } = await supabase
     .from('golf_travel_itineraries')
@@ -426,6 +441,11 @@ export async function updateTravelExpense(input: UpdateExpenseInput) {
     const validatedData = updateExpenseSchema.parse(input);
     const supabase = await createClient();
 
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
     const { id, ...updateData } = validatedData;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -461,6 +481,11 @@ export async function deleteTravelExpense(expenseId: string) {
 
   const supabase = await createClient();
 
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any)
     .from('golf_travel_expenses')
@@ -485,6 +510,11 @@ export async function getExpensesForItinerary(itineraryId: string): Promise<{ su
   }
 
   const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: 'Not authenticated' };
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
@@ -511,6 +541,11 @@ export async function getExpensesForTeam(teamId: string): Promise<{ success: boo
 
   const supabase = await createClient();
 
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from('golf_travel_expenses')
@@ -535,6 +570,11 @@ export async function getExpenseSummary(itineraryId: string): Promise<{ success:
   }
 
   const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: 'Not authenticated' };
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
@@ -650,6 +690,11 @@ export async function exportExpensesToCSV(itineraryId: string): Promise<{ succes
 
   const supabase = await createClient();
 
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: itinerary } = await (supabase as any)
     .from('golf_travel_itineraries')
@@ -715,6 +760,11 @@ export async function setBudget(input: { itinerary_id: string; category: Expense
     const validatedData = budgetSchema.parse(input);
     const supabase = await createClient();
 
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
       .from('golf_travel_budgets')
@@ -752,6 +802,11 @@ export async function getBudgetsForItinerary(itineraryId: string): Promise<{ suc
   }
 
   const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: 'Not authenticated' };
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)

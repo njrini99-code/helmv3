@@ -50,7 +50,7 @@ function getScoreDisplay(score: number | null, par: number): {
       bgColor: 'bg-amber-100',
     };
   } else if (diff === -1) {
-    return { label: 'Birdie', color: 'text-green-600', bgColor: 'bg-green-100' };
+    return { label: 'Birdie', color: 'text-primary-600', bgColor: 'bg-primary-100' };
   } else if (diff === 0) {
     return { label: 'Par', color: 'text-warm-600', bgColor: 'bg-warm-100' };
   } else if (diff === 1) {
@@ -118,10 +118,11 @@ function CloudOffIcon({ className }: { className?: string }) {
 
 function SyncingSpinner({ className }: { className?: string }) {
   return (
-    <svg className={cn(className, 'animate-spin')} fill="none" viewBox="0 0 24 24">
-      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-    </svg>
+    <span className={cn(className, 'flex items-center gap-0.5')}>
+      <span className="w-1 h-1 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+      <span className="w-1 h-1 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+      <span className="w-1 h-1 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+    </span>
   );
 }
 
@@ -233,11 +234,11 @@ export function HoleAccordion({
             {(hole.par ?? 0) >= 4 && hole.fairway_hit !== null && (
               <div className="flex items-center gap-1">
                 {hole.fairway_hit ? (
-                  <IconCheck size={14} className="text-green-600" />
+                  <IconCheck size={14} className="text-primary-600" />
                 ) : (
                   <IconX size={14} className="text-red-500" />
                 )}
-                <span className={hole.fairway_hit ? 'text-green-600' : 'text-red-500'}>
+                <span className={hole.fairway_hit ? 'text-primary-600' : 'text-red-500'}>
                   FIR
                 </span>
               </div>
@@ -247,11 +248,11 @@ export function HoleAccordion({
             {hole.green_in_regulation !== null && (
               <div className="flex items-center gap-1">
                 {hole.green_in_regulation ? (
-                  <IconCheck size={14} className="text-green-600" />
+                  <IconCheck size={14} className="text-primary-600" />
                 ) : (
                   <IconX size={14} className="text-red-500" />
                 )}
-                <span className={hole.green_in_regulation ? 'text-green-600' : 'text-red-500'}>
+                <span className={hole.green_in_regulation ? 'text-primary-600' : 'text-red-500'}>
                   GIR
                 </span>
               </div>
@@ -285,7 +286,7 @@ export function HoleAccordion({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: 'easeInOut' }}
+            transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
           >
             <div className="p-5 bg-warm-50/50">
               {/* Hole stats summary (mobile) */}
@@ -301,7 +302,7 @@ export function HoleAccordion({
                     <div className="text-xs text-warm-500">FIR</div>
                     <div className={cn(
                       'text-lg font-semibold',
-                      hole.fairway_hit ? 'text-green-600' : 'text-red-500'
+                      hole.fairway_hit ? 'text-primary-600' : 'text-red-500'
                     )}>
                       {hole.fairway_hit ? 'Yes' : 'No'}
                     </div>
@@ -311,7 +312,7 @@ export function HoleAccordion({
                   <div className="text-xs text-warm-500">GIR</div>
                   <div className={cn(
                     'text-lg font-semibold',
-                    hole.green_in_regulation ? 'text-green-600' : 'text-red-500'
+                    hole.green_in_regulation ? 'text-primary-600' : 'text-red-500'
                   )}>
                     {hole.green_in_regulation ? 'Yes' : 'No'}
                   </div>
@@ -344,7 +345,7 @@ export function HoleAccordion({
                       <span className="text-warm-500">Scramble:</span>{' '}
                       <span className={cn(
                         'font-medium',
-                        hole.scramble_made ? 'text-green-600' : 'text-red-500'
+                        hole.scramble_made ? 'text-primary-600' : 'text-red-500'
                       )}>
                         {hole.scramble_made ? 'Saved' : 'Missed'}
                       </span>
@@ -355,7 +356,7 @@ export function HoleAccordion({
                       <span className="text-warm-500">Sand save:</span>{' '}
                       <span className={cn(
                         'font-medium',
-                        hole.sand_save_made ? 'text-green-600' : 'text-red-500'
+                        hole.sand_save_made ? 'text-primary-600' : 'text-red-500'
                       )}>
                         {hole.sand_save_made ? 'Yes' : 'No'}
                       </span>

@@ -73,7 +73,7 @@ export function TaskCard({ task }: TaskCardProps) {
             )}
           </div>
           {task.status === 'completed' && (
-            <div className="ml-3 px-2.5 py-1 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+            <div className="ml-3 px-2.5 py-1 rounded-full bg-primary-100 text-primary-700 text-xs font-medium">
               Completed
             </div>
           )}
@@ -92,7 +92,7 @@ export function TaskCard({ task }: TaskCardProps) {
             <div
               className={cn(
                 'h-full transition-all duration-300',
-                completionRate === 100 ? 'bg-green-600' : 'bg-green-500'
+                completionRate === 100 ? 'bg-primary-600' : 'bg-primary-500'
               )}
               style={{ width: `${completionRate}%` }}
             />
@@ -137,7 +137,8 @@ export function TaskCard({ task }: TaskCardProps) {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
+              style={{ overflow: 'hidden' }}
               className="mt-4 pt-4 border-t border-warm-200"
             >
               <p className="text-xs font-semibold text-warm-400 uppercase tracking-wider mb-3">
@@ -172,7 +173,7 @@ export function TaskCard({ task }: TaskCardProps) {
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ delay: index * 0.05, type: 'spring', stiffness: 500, damping: 25 }}
-                        className="flex items-center gap-2 text-green-600"
+                        className="flex items-center gap-2 text-primary-600"
                       >
                         <IconCheck size={16} />
                         <span className="text-xs font-medium">Completed</span>

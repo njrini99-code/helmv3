@@ -88,8 +88,8 @@ export function PremiumEventBlock({
                 'font-semibold truncate leading-tight',
                 compact ? 'text-xs' : 'text-[13px]',
                 event.status === 'cancelled'
-                  ? 'text-stone-400 line-through'
-                  : 'text-stone-800'
+                  ? 'text-warm-400 line-through'
+                  : 'text-warm-800'
               )}
             >
               {event.title}
@@ -97,15 +97,15 @@ export function PremiumEventBlock({
 
             {/* Recurring indicator */}
             {event.recurring && (
-              <Calendar className="w-3 h-3 text-stone-400 shrink-0" />
+              <Calendar className="w-3 h-3 text-warm-400 shrink-0" />
             )}
           </div>
 
           {/* Time */}
           {!compact && event.start_time && (
             <div className="flex items-center gap-1 mt-0.5">
-              <Clock className="w-3 h-3 text-stone-400" />
-              <span className="text-xs text-stone-500">
+              <Clock className="w-3 h-3 text-warm-400" />
+              <span className="text-xs text-warm-500">
                 {formatTime(event.start_time)}
                 {event.end_time && ` – ${formatTime(event.end_time)}`}
               </span>
@@ -115,8 +115,8 @@ export function PremiumEventBlock({
           {/* Location (non-compact only) */}
           {!compact && event.location && (
             <div className="flex items-center gap-1 mt-0.5">
-              <MapPin className="w-3 h-3 text-stone-400" />
-              <span className="text-xs text-stone-500 truncate">
+              <MapPin className="w-3 h-3 text-warm-400" />
+              <span className="text-xs text-warm-500 truncate">
                 {event.location}
               </span>
             </div>
@@ -126,9 +126,9 @@ export function PremiumEventBlock({
         {/* RSVP Count */}
         {hasRSVP && (
           <div className="shrink-0">
-            <div className="flex items-center gap-1 px-1.5 py-0.5 bg-stone-50/80 rounded-md">
-              <Users className="w-3 h-3 text-stone-500" />
-              <span className="text-xs text-stone-600 tabular-nums">
+            <div className="flex items-center gap-1 px-1.5 py-0.5 bg-warm-50/80 rounded-md">
+              <Users className="w-3 h-3 text-warm-500" />
+              <span className="text-xs text-warm-600 tabular-nums">
                 {event.rsvp_confirmed_count ?? 0}/{event.max_attendees ?? event.rsvp_total_count ?? 0}
               </span>
             </div>
@@ -160,7 +160,7 @@ function EventStatusBadge({ status, compact }: EventStatusBadgeProps) {
     draft: {
       icon: AlertCircle,
       label: 'Draft',
-      className: 'bg-stone-100/80 text-stone-500 border-stone-200/60',
+      className: 'bg-warm-100/80 text-warm-500 border-warm-200/60',
     },
     cancelled: {
       icon: XCircle,
@@ -170,17 +170,17 @@ function EventStatusBadge({ status, compact }: EventStatusBadgeProps) {
     confirmed: {
       icon: CheckCircle,
       label: 'Confirmed',
-      className: 'bg-green-50/80 text-green-600 border-green-200/60',
+      className: 'bg-primary-50/80 text-primary-600 border-primary-200/60',
     },
     scheduled: {
       icon: CheckCircle,
       label: 'Scheduled',
-      className: 'bg-green-50/80 text-green-600 border-green-200/60',
+      className: 'bg-primary-50/80 text-primary-600 border-primary-200/60',
     },
   }[status] || {
     icon: AlertCircle,
     label: status,
-    className: 'bg-stone-100/80 text-stone-500 border-stone-200/60',
+    className: 'bg-warm-100/80 text-warm-500 border-warm-200/60',
   };
 
   const Icon = config.icon;

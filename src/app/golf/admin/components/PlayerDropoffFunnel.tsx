@@ -90,7 +90,7 @@ export default function PlayerDropoffFunnel({
               <div className="flex-1 relative">
                 <div
                   className={cn(
-                    'h-10 rounded-lg bg-gradient-to-r from-emerald-500 to-emerald-300',
+                    'h-10 rounded-lg bg-gradient-to-r from-primary-500 to-primary-300',
                     'flex items-center justify-end pr-3 transition-all duration-500 ease-out',
                     'shadow-sm'
                   )}
@@ -110,7 +110,7 @@ export default function PlayerDropoffFunnel({
                   className={cn(
                     'inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-medium',
                     index === 0
-                      ? 'bg-emerald-100 text-emerald-700'
+                      ? 'bg-primary-100 text-primary-700'
                       : 'bg-warm-100 text-warm-600'
                   )}
                 >

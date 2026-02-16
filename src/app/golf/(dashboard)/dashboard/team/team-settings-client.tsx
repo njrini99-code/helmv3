@@ -102,15 +102,15 @@ export function TeamSettingsClient({ team }: TeamSettingsClientProps) {
     return (
       <div className="max-w-2xl mx-auto px-6 py-12">
         <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-slate-900">Create Your Team</h1>
-          <p className="text-slate-500 mt-1">
+          <h1 className="text-2xl font-semibold text-warm-900">Create Your Team</h1>
+          <p className="text-warm-500 mt-1">
             Set up your team to start adding players and creating events.
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-6">
+        <div className="bg-white rounded-2xl border border-warm-200 p-6 space-y-6">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+            <label className="block text-sm font-medium text-warm-700 mb-2">
               Team Name
             </label>
             <Input
@@ -122,7 +122,7 @@ export function TeamSettingsClient({ team }: TeamSettingsClientProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+            <label className="block text-sm font-medium text-warm-700 mb-2">
               Season
             </label>
             <Input
@@ -149,18 +149,18 @@ export function TeamSettingsClient({ team }: TeamSettingsClientProps) {
   return (
     <div className="max-w-2xl mx-auto px-6 py-12">
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-slate-900">Team Settings</h1>
-        <p className="text-slate-500 mt-1">
+        <h1 className="text-2xl font-semibold text-warm-900">Team Settings</h1>
+        <p className="text-warm-500 mt-1">
           Manage your team details and invite players.
         </p>
       </div>
 
       {/* Team Info */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-6 mb-6">
-        <h2 className="text-lg font-semibold text-slate-900">Team Information</h2>
+      <div className="bg-white rounded-2xl border border-warm-200 p-6 space-y-6 mb-6">
+        <h2 className="text-lg font-semibold text-warm-900">Team Information</h2>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
+          <label className="block text-sm font-medium text-warm-700 mb-2">
             Team Name
           </label>
           <Input
@@ -172,7 +172,7 @@ export function TeamSettingsClient({ team }: TeamSettingsClientProps) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
+          <label className="block text-sm font-medium text-warm-700 mb-2">
             Season
           </label>
           <Input
@@ -195,14 +195,14 @@ export function TeamSettingsClient({ team }: TeamSettingsClientProps) {
       </div>
 
       {/* Invite Code */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
-        <h2 className="text-lg font-semibold text-slate-900">Player Invitations</h2>
-        <p className="text-sm text-slate-500">
+      <div className="bg-white rounded-2xl border border-warm-200 p-6 space-y-4">
+        <h2 className="text-lg font-semibold text-warm-900">Player Invitations</h2>
+        <p className="text-sm text-warm-500">
           Share this link with players to invite them to join your team.
         </p>
 
         <div className="flex items-center gap-3">
-          <div className="flex-1 px-4 py-3 bg-slate-50 rounded-lg font-mono text-sm text-slate-700 truncate">
+          <div className="flex-1 px-4 py-3 bg-warm-50 rounded-lg font-mono text-sm text-warm-700 truncate">
             {`${typeof window !== 'undefined' ? window.location.origin : ''}/golf/join/${team.join_code}`}
           </div>
           <Button
@@ -225,7 +225,7 @@ export function TeamSettingsClient({ team }: TeamSettingsClientProps) {
           {isPending ? 'Regenerating...' : 'Regenerate Invite Code'}
         </Button>
 
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-warm-400">
           Regenerating will invalidate the old invite link.
         </p>
       </div>

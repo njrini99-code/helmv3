@@ -207,6 +207,7 @@ function InsightRow({ insight, isSelected, onToggleSelect, onRefresh }: InsightR
         <button
           type="button"
           onClick={() => setIsExpanded(!isExpanded)}
+          aria-label={isExpanded ? 'Collapse insight' : 'Expand insight'}
           className="flex-shrink-0 p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
         >
           {isExpanded ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
@@ -220,8 +221,8 @@ function InsightRow({ insight, isSelected, onToggleSelect, onRefresh }: InsightR
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="overflow-hidden"
+            transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
+            style={{ overflow: 'hidden' }}
           >
             <div className="px-4 pb-4 space-y-3 border-t border-warm-100">
               {/* Player Info (visible on mobile) */}
@@ -247,12 +248,12 @@ function InsightRow({ insight, isSelected, onToggleSelect, onRefresh }: InsightR
 
               {/* Recommendation */}
               {insight.recommendation && (
-                <div className="bg-green-50 rounded-lg p-3">
+                <div className="bg-primary-50 rounded-lg p-3">
                   <div className="flex items-start gap-2">
-                    <IconSparkles size={16} className="text-green-600 flex-shrink-0 mt-0.5" />
+                    <IconSparkles size={16} className="text-primary-600 flex-shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-xs font-medium text-green-900 mb-1">Recommendation</p>
-                      <p className="text-sm text-green-800 leading-relaxed">
+                      <p className="text-xs font-medium text-primary-900 mb-1">Recommendation</p>
+                      <p className="text-sm text-primary-800 leading-relaxed">
                         {insight.recommendation}
                       </p>
                     </div>
@@ -265,7 +266,7 @@ function InsightRow({ insight, isSelected, onToggleSelect, onRefresh }: InsightR
                 <span
                   className={cn(
                     'px-2 py-0.5 rounded-full font-medium',
-                    insight.status === 'active' && 'bg-green-100 text-green-700',
+                    insight.status === 'active' && 'bg-primary-100 text-primary-700',
                     insight.status === 'acknowledged' && 'bg-blue-100 text-blue-700',
                     insight.status === 'resolved' && 'bg-warm-100 text-warm-700',
                     insight.status === 'dismissed' && 'bg-warm-100 text-warm-500'
@@ -287,7 +288,7 @@ function InsightRow({ insight, isSelected, onToggleSelect, onRefresh }: InsightR
                     type="button"
                     onClick={() => handleAction('resolve')}
                     disabled={isLoading}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors"
                   >
                     <IconCheck size={16} />
                     Resolve

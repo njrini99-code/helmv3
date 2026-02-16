@@ -32,12 +32,12 @@ export interface AvailabilityDayViewProps {
 
 const EVENT_COLORS = {
   // Team events (coach-created)
-  practice: { bg: 'bg-emerald-500/20', border: 'border-emerald-500', text: 'text-emerald-700' },
+  practice: { bg: 'bg-primary-500/20', border: 'border-primary-500', text: 'text-primary-700' },
   tournament: { bg: 'bg-amber-500/20', border: 'border-amber-500', text: 'text-amber-700' },
-  qualifier: { bg: 'bg-green-500/20', border: 'border-green-500', text: 'text-green-700' },
+  qualifier: { bg: 'bg-primary-500/20', border: 'border-primary-500', text: 'text-primary-700' },
   meeting: { bg: 'bg-warm-500/20', border: 'border-warm-500', text: 'text-warm-700' },
   travel: { bg: 'bg-warm-500/20', border: 'border-warm-500', text: 'text-warm-700' },
-  other: { bg: 'bg-gray-500/20', border: 'border-gray-500', text: 'text-gray-700' },
+  other: { bg: 'bg-warm-500/20', border: 'border-warm-500', text: 'text-warm-700' },
 
   // Coach-specific
   blocked: { bg: 'bg-orange-500/10', border: 'border-orange-400', text: 'text-orange-700' },
@@ -49,10 +49,10 @@ const EVENT_COLORS = {
     text: 'text-rose-600',
     pattern: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(244, 63, 94, 0.05) 10px, rgba(244, 63, 94, 0.05) 20px)',
   },
-  playerEvent: { bg: 'bg-green-500/20', border: 'border-green-500', text: 'text-green-700' },
+  playerEvent: { bg: 'bg-primary-500/20', border: 'border-primary-500', text: 'text-primary-700' },
 
   // Availability states
-  free: { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700' },
+  free: { bg: 'bg-primary-50', border: 'border-primary-200', text: 'text-primary-700' },
   busy: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-600' },
 };
 
@@ -159,7 +159,7 @@ export function AvailabilityDayView({
           {/* Legend */}
           <div className="flex items-center gap-4 text-xs">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded bg-emerald-500"></div>
+              <div className="w-3 h-3 rounded bg-primary-500"></div>
               <span className="text-warm-600">Your Event</span>
             </div>
             <div className="flex items-center gap-2">
@@ -173,11 +173,11 @@ export function AvailabilityDayView({
                   <span className="text-warm-600">{selectedPlayer.first_name}&apos;s Class</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded bg-green-500"></div>
+                  <div className="w-3 h-3 rounded bg-primary-500"></div>
                   <span className="text-warm-600">{selectedPlayer.first_name}&apos;s Event</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded bg-green-100 border border-green-300"></div>
+                  <div className="w-3 h-3 rounded bg-primary-100 border border-primary-300"></div>
                   <span className="text-warm-600">Both Free</span>
                 </div>
               </>
@@ -213,15 +213,15 @@ export function AvailabilityDayView({
               <div className="flex-1 p-3 relative">
                 {/* Free slot indicator */}
                 {bothFree && (
-                  <div className="absolute inset-0 bg-green-50/50 border-l-2 border-green-400">
+                  <div className="absolute inset-0 bg-primary-50/50 border-l-2 border-primary-400">
                     <div className="flex items-center justify-between h-full px-4">
-                      <span className="text-sm font-medium text-green-700">
+                      <span className="text-sm font-medium text-primary-700">
                         ✓ Both available
                       </span>
                       {isHovered && (
                         <button
                           onClick={() => onTimeSlotClick(date, hour)}
-                          className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg flex items-center gap-1 shadow-sm transition-all"
+                          className="px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg flex items-center gap-1 shadow-sm transition-all"
                         >
                           <Plus className="w-4 h-4" />
                           Quick Add
@@ -243,7 +243,7 @@ export function AvailabilityDayView({
                           ? 'bg-orange-500/10 border-orange-400'
                           : isBlocked
                             ? 'bg-orange-500/10 border-orange-400'
-                            : 'bg-emerald-500/10 border-emerald-500'
+                            : 'bg-primary-500/10 border-primary-500'
                       }`}
                     >
                       <div className="flex items-start justify-between">
@@ -253,14 +253,14 @@ export function AvailabilityDayView({
                               className={`px-2 py-0.5 text-xs font-medium rounded ${
                                 isClass || isBlocked
                                   ? 'bg-orange-500 text-white'
-                                  : 'bg-emerald-600 text-white'
+                                  : 'bg-primary-600 text-white'
                               }`}
                             >
                               {isClass ? 'Your Class' : isBlocked ? 'Blocked' : 'You'}
                             </span>
                             <span
                               className={`text-sm font-medium ${
-                                isClass || isBlocked ? 'text-orange-900' : 'text-emerald-900'
+                                isClass || isBlocked ? 'text-orange-900' : 'text-primary-900'
                               }`}
                             >
                               {period.title || 'Busy'}
@@ -282,7 +282,7 @@ export function AvailabilityDayView({
                       className={`mb-2 p-3 rounded-lg border-l-3 backdrop-blur-sm ${
                         isClass
                           ? 'bg-rose-500/5 border-rose-400'
-                          : 'bg-green-500/10 border-green-500'
+                          : 'bg-primary-500/10 border-primary-500'
                       }`}
                       style={isClass ? { backgroundImage: EVENT_COLORS.class.pattern } : undefined}
                     >
@@ -291,12 +291,12 @@ export function AvailabilityDayView({
                           <div className="flex items-center gap-2">
                             <span
                               className={`px-2 py-0.5 text-xs font-medium rounded ${
-                                isClass ? 'bg-rose-500 text-white' : 'bg-green-600 text-white'
+                                isClass ? 'bg-rose-500 text-white' : 'bg-primary-600 text-white'
                               }`}
                             >
                               {isClass ? 'Class' : 'Player Event'}
                             </span>
-                            <span className={`text-sm font-medium ${isClass ? 'text-rose-900' : 'text-green-900'}`}>
+                            <span className={`text-sm font-medium ${isClass ? 'text-rose-900' : 'text-primary-900'}`}>
                               {period.title || 'Busy'}
                             </span>
                           </div>

@@ -33,10 +33,10 @@ const toneConfig: Record<InsightTone, {
 }> = {
   encouraging: {
     icon: IconTrophy,
-    bgColor: 'bg-green-50/80',
-    borderColor: 'border-green-200',
-    iconColor: 'text-green-600',
-    accentColor: 'bg-green-500',
+    bgColor: 'bg-primary-50/80',
+    borderColor: 'border-primary-200',
+    iconColor: 'text-primary-600',
+    accentColor: 'bg-primary-500',
   },
   neutral: {
     icon: IconInfo,
@@ -152,7 +152,7 @@ function InsightCard({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
             className="overflow-hidden"
           >
             <div className="px-4 pb-4 space-y-3">
@@ -199,7 +199,7 @@ function InsightCard({
                         e.stopPropagation();
                         onAcknowledge(index);
                       }}
-                      className="flex items-center gap-2 text-xs font-medium text-green-600 hover:text-green-700 px-3 py-1.5 rounded-lg bg-green-100 hover:bg-green-200 transition-colors"
+                      className="flex items-center gap-2 text-xs font-medium text-primary-600 hover:text-primary-700 px-3 py-1.5 rounded-lg bg-primary-100 hover:bg-primary-200 transition-colors"
                     >
                       <IconCheck size={14} />
                       Got It

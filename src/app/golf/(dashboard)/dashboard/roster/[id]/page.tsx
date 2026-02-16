@@ -60,25 +60,25 @@ function StatsSectionSkeleton() {
       {/* Section header skeleton */}
       <div className="flex items-center justify-between">
         <div>
-          <div className="h-6 bg-slate-200 rounded w-40 animate-pulse" />
-          <div className="h-4 bg-slate-200 rounded w-60 mt-2 animate-pulse" />
+          <div className="h-6 bg-warm-200 rounded w-40 animate-pulse" />
+          <div className="h-4 bg-warm-200 rounded w-60 mt-2 animate-pulse" />
         </div>
-        <div className="h-10 bg-slate-200 rounded w-32 animate-pulse" />
+        <div className="h-10 bg-warm-200 rounded w-32 animate-pulse" />
       </div>
 
       {/* Metrics grid skeleton */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {[...Array(6)].map((_, i) => (
           <div key={i} className="glass-standard rounded-2xl p-4 animate-pulse">
-            <div className="h-7 bg-slate-200 rounded w-16 mx-auto mb-2" />
-            <div className="h-4 bg-slate-200 rounded w-12 mx-auto" />
+            <div className="h-7 bg-warm-200 rounded w-16 mx-auto mb-2" />
+            <div className="h-4 bg-warm-200 rounded w-12 mx-auto" />
           </div>
         ))}
       </div>
 
       {/* Charts skeleton */}
       <div className="glass-standard rounded-2xl p-6 animate-pulse">
-        <div className="h-48 bg-slate-100 rounded-xl" />
+        <div className="h-48 bg-warm-100 rounded-xl" />
       </div>
     </div>
   );
@@ -176,11 +176,11 @@ export default async function PlayerProfilePage({ params }: PageProps) {
     <AnimatedPage className="min-h-full">
       {/* Header with Back Button */}
       <AnimatedItem>
-      <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+      <div className="border-b border-warm-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 md:px-6 py-4">
           <Link
             href="/golf/dashboard/roster"
-            className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-700 transition-colors"
+            className="inline-flex items-center gap-2 text-warm-500 hover:text-warm-700 transition-colors"
           >
             <IconArrowLeft size={16} />
             <span className="text-sm font-medium">Back to Roster</span>
@@ -221,7 +221,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
               <div className="flex-1 min-w-0">
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                   <div>
-                    <h1 className="text-2xl font-semibold text-slate-900">
+                    <h1 className="text-2xl font-semibold text-warm-900">
                       {player.first_name} {player.last_name}
                     </h1>
                     <div className="flex flex-wrap items-center gap-2 mt-2">
@@ -229,7 +229,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
                       <PlayerStatusBadge playerId={player.id} currentStatus={membership.status} />
                     </div>
                     {(player.hometown || player.state) && (
-                      <div className="flex items-center gap-1.5 mt-2 text-slate-500">
+                      <div className="flex items-center gap-1.5 mt-2 text-warm-500">
                         <IconMapPin size={14} />
                         <span className="text-sm">
                           {[player.hometown, player.state].filter(Boolean).join(', ')}
@@ -243,7 +243,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
                     {player.email && (
                       <a
                         href={`mailto:${player.email}`}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-warm-600 hover:text-warm-900 hover:bg-warm-100 rounded-lg transition-colors"
                         title={player.email}
                       >
                         <IconMail size={14} />
@@ -253,7 +253,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
                     {player.phone && (
                       <a
                         href={`tel:${player.phone}`}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-warm-600 hover:text-warm-900 hover:bg-warm-100 rounded-lg transition-colors"
                         title={player.phone}
                       >
                         <IconPhone size={14} />
@@ -270,7 +270,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
                 </div>
 
                 {/* Member since */}
-                <div className="mt-3 text-xs text-slate-400">
+                <div className="mt-3 text-xs text-warm-400">
                   Member since{' '}
                   {player.created_at
                     ? new Date(player.created_at).toLocaleDateString('en-US', {
@@ -295,11 +295,11 @@ export default async function PlayerProfilePage({ params }: PageProps) {
         {/* Recent Rounds - Full Width */}
         <div className="mt-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-slate-900">Recent Rounds</h2>
+            <h2 className="text-lg font-semibold text-warm-900">Recent Rounds</h2>
             {totalRounds > 0 && (
               <Link
                 href={`/golf/dashboard/rounds?player=${player.id}`}
-                className="text-sm text-green-600 hover:text-green-700 font-medium"
+                className="text-sm text-primary-600 hover:text-primary-700 font-medium"
               >
                 View All Rounds
               </Link>
@@ -310,10 +310,10 @@ export default async function PlayerProfilePage({ params }: PageProps) {
             <div className="relative glass-standard rounded-2xl overflow-hidden p-8 md:p-12 text-center">
               <ShineEffect />
               <div className="relative">
-                <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
-                  <IconFlag size={20} className="text-slate-400" />
+                <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-3">
+                  <IconFlag size={20} className="text-warm-400" />
                 </div>
-                <p className="text-slate-500">No rounds recorded yet</p>
+                <p className="text-warm-500">No rounds recorded yet</p>
               </div>
             </div>
           ) : (
@@ -335,11 +335,11 @@ export default async function PlayerProfilePage({ params }: PageProps) {
                   <div className="relative p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
-                        <p className="font-medium text-slate-900 truncate">
+                        <p className="font-medium text-warm-900 truncate">
                           {round.course_name || 'Unknown Course'}
                         </p>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className="text-xs text-slate-500">
+                          <span className="text-xs text-warm-500">
                             {round.round_date
                               ? new Date(round.round_date).toLocaleDateString('en-US', {
                                   month: 'short',
@@ -348,19 +348,19 @@ export default async function PlayerProfilePage({ params }: PageProps) {
                               : 'Date unknown'}
                           </span>
                           {round.round_type && (
-                            <span className="text-xs px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 capitalize">
+                            <span className="text-xs px-1.5 py-0.5 bg-warm-100 rounded text-warm-600 capitalize">
                               {round.round_type.replace('_', ' ')}
                             </span>
                           )}
                         </div>
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <p className="text-xl font-semibold text-slate-900 tabular-nums">
+                        <p className="text-xl font-semibold text-warm-900 tabular-nums">
                           {round.total_score || '—'}
                         </p>
                         <p className={cn(
                           'text-sm font-medium tabular-nums',
-                          (round.score_to_par || 0) <= 0 ? 'text-green-600' : 'text-red-600'
+                          (round.score_to_par || 0) <= 0 ? 'text-primary-600' : 'text-red-600'
                         )}>
                           {formatScoreToPar(round.score_to_par)}
                         </p>

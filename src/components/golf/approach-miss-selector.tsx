@@ -36,11 +36,11 @@ export function ApproachMissSelector({
               return (
                 <div
                   key={index}
-                  className="flex items-center justify-center rounded-xl bg-emerald-500/20 border-2 border-emerald-500/40 aspect-square"
+                  className="flex items-center justify-center rounded-xl bg-primary-500/20 border-2 border-primary-500/40 aspect-square"
                 >
                   <div className="text-center">
-                    <div className="w-4 h-4 mx-auto rounded-full bg-emerald-500/60 mb-1" />
-                    <span className="text-xs text-emerald-600 font-medium">GREEN</span>
+                    <div className="w-4 h-4 mx-auto rounded-full bg-primary-500/60 mb-1" />
+                    <span className="text-xs text-primary-600 font-medium">GREEN</span>
                   </div>
                 </div>
               );
@@ -64,8 +64,8 @@ export function ApproachMissSelector({
                   'relative flex flex-col items-center justify-center rounded-xl border transition-all duration-200 aspect-square',
                   'font-medium',
                   isSelected
-                    ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm shadow-emerald-950/10'
-                    : 'bg-white/70 backdrop-blur-sm border-warm-200 hover:border-emerald-300 hover:bg-emerald-50',
+                    ? 'bg-primary-600 border-primary-600 text-white shadow-sm shadow-primary-950/10'
+                    : 'bg-white/70 backdrop-blur-sm border-warm-200 hover:border-primary-300 hover:bg-primary-50',
                   disabled && 'opacity-50 cursor-not-allowed'
                 )}
               >

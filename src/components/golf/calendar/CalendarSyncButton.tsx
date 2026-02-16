@@ -169,12 +169,13 @@ export function CalendarSyncButton({
             className={cn(
               'w-12 h-12 rounded-xl flex items-center justify-center',
               'bg-white/60 hover:bg-white/80 backdrop-blur-sm',
-              'border border-white/40 hover:border-emerald-200',
-              'text-stone-500 hover:text-emerald-600',
+              'border border-white/40 hover:border-primary-200',
+              'text-warm-500 hover:text-primary-600',
               'shadow-sm hover:shadow-md',
               'transition-all duration-200',
               className
             )}
+            aria-label="Subscribe to Calendar"
           >
             <Calendar className="w-5 h-5" />
           </button>
@@ -185,7 +186,7 @@ export function CalendarSyncButton({
           className={cn(
             'inline-flex items-center gap-2 px-4 py-2.5',
             'rounded-lg font-medium text-sm',
-            'bg-emerald-600 hover:bg-emerald-700 text-white',
+            'bg-primary-600 hover:bg-primary-700 text-white',
             'shadow-sm hover:shadow-md',
             'transition-all duration-200',
             className
@@ -209,8 +210,8 @@ export function CalendarSyncButton({
           <DialogHeader className="px-6 pt-6 pb-4 border-b border-warm-100">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
-                  <Calendar className="w-5 h-5 text-emerald-600" />
+                <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center">
+                  <Calendar className="w-5 h-5 text-primary-600" />
                 </div>
                 <div>
                   <DialogTitle className="text-lg font-semibold text-warm-900">
@@ -224,6 +225,7 @@ export function CalendarSyncButton({
               <button
                 onClick={() => setIsOpen(false)}
                 className="p-2 rounded-lg hover:bg-warm-100 text-warm-400 hover:text-warm-600 transition-colors"
+                aria-label="Close"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -234,7 +236,7 @@ export function CalendarSyncButton({
             {/* Loading State */}
             {loading && (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 text-emerald-600 animate-spin" />
+                <Loader2 className="w-6 h-6 text-primary-600 animate-spin" />
               </div>
             )}
 
@@ -270,10 +272,11 @@ export function CalendarSyncButton({
                       className={cn(
                         'shrink-0 p-2.5 rounded-lg font-medium text-sm transition-all',
                         copied
-                          ? 'bg-emerald-100 text-emerald-700'
+                          ? 'bg-primary-100 text-primary-700'
                           : 'bg-warm-100 text-warm-700 hover:bg-warm-200'
                       )}
                       title="Copy URL"
+                      aria-label={copied ? 'Copied' : 'Copy URL'}
                     >
                       {copied ? (
                         <Check className="w-4 h-4" />
@@ -418,12 +421,12 @@ export function CalendarSyncChip({
     <div
       className={cn(
         'inline-flex items-center gap-2 px-3 py-1.5 rounded-full',
-        'bg-emerald-50 border border-emerald-200',
+        'bg-primary-50 border border-primary-200',
         className
       )}
     >
-      <Calendar className="w-3.5 h-3.5 text-emerald-600" />
-      <span className="text-xs font-medium text-emerald-700">
+      <Calendar className="w-3.5 h-3.5 text-primary-600" />
+      <span className="text-xs font-medium text-primary-700">
         Calendar Sync
       </span>
       <button
@@ -431,9 +434,10 @@ export function CalendarSyncChip({
         className={cn(
           'p-1 rounded-full transition-colors',
           copied
-            ? 'bg-emerald-200 text-emerald-700'
-            : 'bg-white/60 text-emerald-600 hover:bg-white'
+            ? 'bg-primary-200 text-primary-700'
+            : 'bg-white/60 text-primary-600 hover:bg-white'
         )}
+        aria-label={copied ? 'Copied' : 'Copy calendar URL'}
       >
         {copied ? (
           <Check className="w-3 h-3" />

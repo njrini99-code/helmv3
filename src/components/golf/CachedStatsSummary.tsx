@@ -68,7 +68,7 @@ export function CachedStatsSummary({
 
   const TrendIcon = stats.trendDirection === 'improving' ? TrendingDown :
                     stats.trendDirection === 'declining' ? TrendingUp : Minus;
-  const trendColor = stats.trendDirection === 'improving' ? 'text-green-600' :
+  const trendColor = stats.trendDirection === 'improving' ? 'text-primary-600' :
                      stats.trendDirection === 'declining' ? 'text-red-600' : 'text-warm-400';
   const trendText = stats.trendDirection === 'improving' ? 'Improving' :
                     stats.trendDirection === 'declining' ? 'Declining' : 'Stable';
@@ -124,6 +124,7 @@ export function CachedStatsSummary({
               disabled={loading}
               className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors disabled:opacity-50"
               title="Refresh stats"
+              aria-label="Refresh stats"
             >
               <RefreshCw className={cn('h-4 w-4', loading && 'animate-spin')} />
             </button>

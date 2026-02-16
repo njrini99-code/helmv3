@@ -121,7 +121,7 @@ export function PollResultSelector({
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as SortMode)}
-              className="pl-3 pr-8 py-2 text-sm border border-warm-200 rounded-lg bg-white text-warm-700 font-medium cursor-pointer hover:border-warm-300 focus:outline-none focus:ring-2 focus:ring-green-100 focus:border-green-500"
+              className="pl-3 pr-8 py-2 text-sm border border-warm-200 rounded-lg bg-white text-warm-700 font-medium cursor-pointer hover:border-warm-300 focus:outline-none focus:ring-2 focus:ring-primary-100 focus:border-primary-500"
             >
               <option value="availability">Best Availability</option>
               <option value="date">Earliest Date</option>
@@ -168,8 +168,8 @@ export function PollResultSelector({
                   key={`${slot.date}-${slot.startTime}`}
                   className={cn(
                     'p-4 transition-all',
-                    isSelected && 'bg-green-50',
-                    isTopChoice && 'bg-emerald-50/50'
+                    isSelected && 'bg-primary-50',
+                    isTopChoice && 'bg-primary-50/50'
                   )}
                 >
                   <div className="flex items-start gap-4">
@@ -178,7 +178,7 @@ export function PollResultSelector({
                       className={cn(
                         'shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold',
                         isTopChoice
-                          ? 'bg-emerald-600 text-white'
+                          ? 'bg-primary-600 text-white'
                           : 'bg-warm-100 text-warm-600'
                       )}
                     >
@@ -220,7 +220,7 @@ export function PollResultSelector({
 
                       {/* Top choice badge */}
                       {isTopChoice && (
-                        <div className="mt-2 inline-flex items-center gap-2 px-2.5 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-semibold">
+                        <div className="mt-2 inline-flex items-center gap-2 px-2.5 py-1 bg-primary-100 text-primary-700 rounded-full text-xs font-semibold">
                           <TrendingUp className="w-3 h-3" />
                           Best Option
                         </div>
@@ -235,7 +235,7 @@ export function PollResultSelector({
                           'min-w-[100px] px-4 py-2.5 rounded-lg font-medium text-sm',
                           'transition-all duration-200',
                           isSelected
-                            ? 'bg-green-600 text-white shadow-md'
+                            ? 'bg-primary-600 text-white shadow-md'
                             : 'bg-warm-100 text-warm-700 hover:bg-warm-200'
                         )}
                       >
@@ -280,7 +280,7 @@ export function PollResultSelector({
                 {selectedSlot.availableCount} players available for this time
               </p>
             </div>
-            <Button onClick={handleCreateEvent} className="bg-green-600 hover:bg-green-700">
+            <Button onClick={handleCreateEvent} className="bg-primary-600 hover:bg-primary-700">
               <Plus className="w-4 h-4 mr-2" />
               Create Event
             </Button>

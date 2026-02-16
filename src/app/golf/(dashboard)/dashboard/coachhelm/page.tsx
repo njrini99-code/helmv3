@@ -6,6 +6,12 @@ import { getPlayerCoachHelmDashboard } from '@/app/golf/actions/insights';
 import { getPlayerShotAnalytics } from '@/app/golf/actions/shot-analytics';
 import { PlayerCoachHelmDashboard } from './components/PlayerCoachHelmDashboard';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'CoachHelm | GolfHelm',
+  description: 'AI-powered insights, predictions, and focus areas for your golf performance.',
+};
 
 /**
  * Error state component for displaying errors gracefully
@@ -77,8 +83,8 @@ function CoachHelmDisabledState({ reason }: { reason: string }) {
       <AnimatedItem>
         <div className="min-h-full flex items-center justify-center p-4 md:p-6">
           <GlassCard className="max-w-md w-full text-center">
-            <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
-              <IconSparkles size={32} className="text-slate-400" />
+            <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
+              <IconSparkles size={32} className="text-warm-400" />
             </div>
             <h2 className="text-xl font-semibold text-warm-900 mb-2">
               CoachHelm AI Not Available

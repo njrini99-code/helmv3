@@ -188,9 +188,10 @@ export function MobileCalendarWrapper({
                   'w-9 h-9 rounded-lg',
                   'transition-all duration-200',
                   currentView === 'day'
-                    ? 'bg-white text-green-600 shadow-sm'
+                    ? 'bg-white text-primary-600 shadow-sm'
                     : 'text-warm-500 hover:text-warm-700'
                 )}
+                aria-label="Day view"
               >
                 <Calendar className="w-[18px] h-[18px]" />
               </button>
@@ -202,9 +203,10 @@ export function MobileCalendarWrapper({
                   'w-9 h-9 rounded-lg',
                   'transition-all duration-200',
                   currentView === 'list'
-                    ? 'bg-white text-green-600 shadow-sm'
+                    ? 'bg-white text-primary-600 shadow-sm'
                     : 'text-warm-500 hover:text-warm-700'
                 )}
+                aria-label="List view"
               >
                 <List className="w-[18px] h-[18px]" />
               </button>
@@ -221,6 +223,7 @@ export function MobileCalendarWrapper({
                   'text-warm-400 hover:text-warm-600 hover:bg-warm-100/80',
                   'transition-all duration-200'
                 )}
+                aria-label="Calendar settings"
               >
                 <Settings2 className="w-[18px] h-[18px]" />
               </button>

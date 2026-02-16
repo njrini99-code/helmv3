@@ -4,161 +4,55 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import {
-  ClipboardList,
   BarChart3,
-  Calendar,
+  ClipboardList,
+  LayoutDashboard,
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
   Plus,
   Upload,
   Download,
-  FileText,
-  MessageSquare,
-  Check,
-  X,
-  Zap,
-  Target,
+  Users,
+  TrendingUp,
+  Clock,
+  Flame,
+  Building2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  type CoachStatus,
+  type Coach,
+  PIPELINE_STAGES,
+  STATUS_CONFIG,
+  PRIORITY_CONFIG,
+} from './crm-config';
+import { CRMDashboard } from './components/CRMDashboard';
 import { CoachTable } from './components/CoachTable';
 import { PipelineView } from './components/PipelineView';
+import { ConferenceGroupView } from './components/ConferenceGroupView';
 import { CoachFilters, type Filters } from './components/CoachFilters';
 import { AddCoachModal } from './components/AddCoachModal';
 import { CoachDetailPanel } from './components/CoachDetailPanel';
 import { ImportModal } from './components/ImportModal';
 import { BulkActionsBar } from './components/BulkActionsBar';
-import { CalendarView, type CRMEvent } from './components/CalendarView';
-import { QuickActionsPanel } from './components/QuickActionsPanel';
 import { FAB } from './components/FAB';
+import { QuickActionsPanel } from './components/QuickActionsPanel';
 import { ScheduleEventModal } from './components/ScheduleEventModal';
 import { EventDetailModal } from './components/EventDetailModal';
-
-// ============================================================================
-// TYPES
-// ============================================================================
-export type CoachStatus = 
-  | 'new_lead'
-  | 'contacted'
-  | 'demo_scheduled'
-  | 'customer'
-  | 'closed';
-
-export type Division = 'D2' | 'D3';
-export type ProgramType = 'mens' | 'womens' | 'both';
-
-export interface Coach {
-  id: string;
-  name: string;
-  title: string | null;
-  email: string | null;
-  phone: string | null;
-  school: string;
-  conference: string;
-  division: Division;
-  program: ProgramType;
-  status: CoachStatus;
-  priority: number;
-  highlight_color: string | null;
-  is_starred: boolean;
-  notes: string | null;
-  internal_comments: string | null;
-  tags: string[] | null;
-  team_size: number | null;
-  current_software: string | null;
-  budget_range: string | null;
-  decision_timeline: string | null;
-  pain_points: string[] | null;
-  best_contact_method: string | null;
-  best_contact_time: string | null;
-  timezone: string | null;
-  last_contacted_at: string | null;
-  next_follow_up_at: string | null;
-  created_at: string;
-  updated_at: string;
-}
+import type { CRMEvent } from './components/CalendarView';
 
 // ============================================================================
 // SIDEBAR TABS
 // ============================================================================
 const TABS = [
-  { id: 'list', label: 'Coach List', Icon: ClipboardList, shortcut: '1', description: 'All coaches in table view' },
-  { id: 'pipeline', label: 'Pipeline', Icon: BarChart3, shortcut: '2', description: 'Kanban sales pipeline' },
-  { id: 'calendar', label: 'Calendar', Icon: Calendar, shortcut: '3', description: 'Scheduled events' },
+  { id: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard, shortcut: '1', description: 'Pipeline overview & quick actions' },
+  { id: 'list', label: 'Coaches', Icon: ClipboardList, shortcut: '2', description: 'All coaches in table view' },
+  { id: 'pipeline', label: 'Pipeline', Icon: BarChart3, shortcut: '3', description: 'Kanban sales pipeline' },
+  { id: 'conferences', label: 'Conferences', Icon: Building2, shortcut: '4', description: 'Grouped by conference' },
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
-
-// ============================================================================
-// STATUS CONFIG - Updated with softer colors and proper icons
-// ============================================================================
-export const STATUS_CONFIG: Record<CoachStatus, { 
-  label: string; 
-  color: string; 
-  bgColor: string;
-  ringColor: string;
-  icon: React.ReactNode;
-  iconLabel: string; // For use in native <option> elements
-  order: number;
-  gradient: string;
-}> = {
-  new_lead: { 
-    label: 'New Lead', 
-    color: 'text-slate-700', 
-    bgColor: 'bg-slate-100', 
-    ringColor: 'ring-slate-300',
-    icon: <FileText size={14} />,
-    iconLabel: '📋',
-    order: 1,
-    gradient: 'from-slate-400 to-slate-500',
-  },
-  contacted: { 
-    label: 'Contacted', 
-    color: 'text-blue-700', 
-    bgColor: 'bg-blue-50', 
-    ringColor: 'ring-blue-300',
-    icon: <MessageSquare size={14} />,
-    iconLabel: '💬',
-    order: 2,
-    gradient: 'from-blue-400 to-blue-500',
-  },
-  demo_scheduled: { 
-    label: 'Demo Set', 
-    color: 'text-amber-700', 
-    bgColor: 'bg-amber-50', 
-    ringColor: 'ring-amber-300',
-    icon: <Calendar size={14} />,
-    iconLabel: '📅',
-    order: 3,
-    gradient: 'from-amber-400 to-amber-500',
-  },
-  customer: { 
-    label: 'Customer', 
-    color: 'text-emerald-700', 
-    bgColor: 'bg-emerald-50', 
-    ringColor: 'ring-emerald-400',
-    icon: <Check size={14} />,
-    iconLabel: '✅',
-    order: 4,
-    gradient: 'from-emerald-400 to-emerald-500',
-  },
-  closed: { 
-    label: 'Closed', 
-    color: 'text-red-700', 
-    bgColor: 'bg-red-50', 
-    ringColor: 'ring-red-300',
-    icon: <X size={14} />,
-    iconLabel: '🚫',
-    order: 5,
-    gradient: 'from-red-400 to-red-500',
-  },
-};
-
-export const PRIORITY_CONFIG: Record<number, { label: string; color: string; bgColor: string; icon: React.ReactNode; iconLabel: string }> = {
-  0: { label: 'Normal', color: 'text-warm-500', bgColor: 'bg-warm-50', icon: null, iconLabel: '' },
-  1: { label: 'High', color: 'text-amber-600', bgColor: 'bg-amber-50', icon: <Zap size={14} />, iconLabel: '⚡' },
-  2: { label: 'Hot', color: 'text-orange-600', bgColor: 'bg-orange-50', icon: <Target size={14} />, iconLabel: '🔥' },
-};
 
 // ============================================================================
 // MAIN COMPONENT
@@ -166,15 +60,15 @@ export const PRIORITY_CONFIG: Record<number, { label: string; color: string; bgC
 export default function CRMPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  
+
   const [coaches, setCoaches] = useState<Coach[]>([]);
+  const [allCoaches, setAllCoaches] = useState<Coach[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  // URL-driven tab state
+
   const urlTab = searchParams.get('tab') as TabId | null;
-  const activeTab: TabId = TABS.some((t) => t.id === urlTab) ? urlTab! : 'list';
-  
+  const activeTab: TabId = TABS.some((t) => t.id === urlTab) ? urlTab! : 'dashboard';
+
   const [filters, setFilters] = useState<Filters>({
     status: 'all',
     division: 'all',
@@ -187,11 +81,11 @@ export default function CRMPage() {
     hasNotes: false,
     noContact30Days: false,
   });
-  
+
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [conferences, setConferences] = useState<string[]>([]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  
+
   // Modals & Panels
   const [showAddModal, setShowAddModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
@@ -203,8 +97,6 @@ export default function CRMPage() {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<CRMEvent | null>(null);
   const [editingEvent, setEditingEvent] = useState<CRMEvent | null>(null);
-  const [calendarRefreshKey, setCalendarRefreshKey] = useState(0);
-  const [googleConnected, setGoogleConnected] = useState(false);
 
   const supabase = createClient();
 
@@ -217,11 +109,9 @@ export default function CRMPage() {
     router.replace(`/golf/admin/crm?${params.toString()}`, { scroll: false });
   }
 
-  // Keyboard shortcuts
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-      
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) return;
       const tabIndex = parseInt(e.key) - 1;
       if (tabIndex >= 0 && tabIndex < TABS.length) {
         setActiveTab(TABS[tabIndex]!.id);
@@ -229,11 +119,29 @@ export default function CRMPage() {
     }
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   // ============================================================================
   // DATA FETCHING
   // ============================================================================
+  const fetchAllCoaches = useCallback(async () => {
+    try {
+      const { data } = await supabase
+        .from('crm_coaches')
+        .select('*')
+        .order('is_starred', { ascending: false })
+        .order('priority', { ascending: false })
+        .order('updated_at', { ascending: false });
+      const coachData = (data || []) as Coach[];
+      setAllCoaches(coachData);
+      const uniqueConferences = [...new Set(coachData.map(c => c.conference))].sort();
+      setConferences(uniqueConferences);
+    } catch (err) {
+      console.error('Failed to fetch all coaches:', err);
+    }
+  }, [supabase]);
+
   const fetchCoaches = useCallback(async () => {
     setLoading(true);
     try {
@@ -261,11 +169,9 @@ export default function CRMPage() {
         query = query.or(`last_contacted_at.is.null,last_contacted_at.lt.${thirtyDaysAgo.toISOString()}`);
       }
 
-      const { data, error } = await query;
-      if (error) throw error;
+      const { data, error: fetchError } = await query;
+      if (fetchError) throw fetchError;
       setCoaches((data || []) as Coach[]);
-      const uniqueConferences = [...new Set((data || []).map(c => c.conference))].sort();
-      setConferences(uniqueConferences);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch coaches');
     } finally {
@@ -274,35 +180,44 @@ export default function CRMPage() {
   }, [filters, supabase]);
 
   useEffect(() => { fetchCoaches(); }, [fetchCoaches]);
-
-  useEffect(() => {
-    const checkGoogleConnection = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data } = await supabase
-        .from('crm_google_calendar_tokens')
-        .select('id, is_active')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .single();
-      setGoogleConnected(!!data);
-    };
-    checkGoogleConnection();
-  }, [supabase]);
+  useEffect(() => { fetchAllCoaches(); }, [fetchAllCoaches]);
 
   // ============================================================================
   // ACTIONS
   // ============================================================================
   const updateCoach = async (coachId: string, updates: Partial<Coach>) => {
+    const finalUpdates = updates.status
+      ? { ...updates, updated_at: new Date().toISOString() }
+      : updates;
+
     try {
-      const { error } = await supabase.from('crm_coaches').update(updates).eq('id', coachId);
-      if (error) throw error;
-      setCoaches(prev => prev.map(c => c.id === coachId ? { ...c, ...updates } : c));
-      if (selectedCoach?.id === coachId) setSelectedCoach(prev => prev ? { ...prev, ...updates } : null);
-      if (quickActionsCoach?.id === coachId) setQuickActionsCoach(prev => prev ? { ...prev, ...updates } : null);
+      const { error: updateError } = await supabase.from('crm_coaches').update(finalUpdates).eq('id', coachId);
+      if (updateError) throw updateError;
+      setCoaches(prev => prev.map(c => c.id === coachId ? { ...c, ...finalUpdates } : c));
+      setAllCoaches(prev => prev.map(c => c.id === coachId ? { ...c, ...finalUpdates } : c));
+      if (selectedCoach?.id === coachId) setSelectedCoach(prev => prev ? { ...prev, ...finalUpdates } : null);
     } catch (err) {
       console.error('Failed to update coach:', err);
       fetchCoaches();
+      fetchAllCoaches();
+    }
+  };
+
+  const bulkUpdateCoaches = async (ids: string[], updates: Partial<Coach>) => {
+    const finalUpdates = updates.status
+      ? { ...updates, updated_at: new Date().toISOString() }
+      : updates;
+
+    try {
+      const { error: updateError } = await supabase.from('crm_coaches').update(finalUpdates).in('id', ids);
+      if (updateError) throw updateError;
+      const idSet = new Set(ids);
+      setCoaches(prev => prev.map(c => idSet.has(c.id) ? { ...c, ...finalUpdates } : c));
+      setAllCoaches(prev => prev.map(c => idSet.has(c.id) ? { ...c, ...finalUpdates } : c));
+    } catch (err) {
+      console.error('Failed to bulk update:', err);
+      fetchCoaches();
+      fetchAllCoaches();
     }
   };
 
@@ -319,21 +234,27 @@ export default function CRMPage() {
     const ids = Array.from(selectedIds);
     if (ids.length === 0) return;
     try {
-      if (action === 'status') await supabase.from('crm_coaches').update({ status: value as CoachStatus }).in('id', ids);
-      else if (action === 'priority') await supabase.from('crm_coaches').update({ priority: value as number }).in('id', ids);
-      else if (action === 'delete') await supabase.from('crm_coaches').delete().in('id', ids);
+      if (action === 'status') await bulkUpdateCoaches(ids, { status: value as CoachStatus });
+      else if (action === 'priority') await bulkUpdateCoaches(ids, { priority: value as number });
+      else if (action === 'star') await bulkUpdateCoaches(ids, { is_starred: true });
+      else if (action === 'unstar') await bulkUpdateCoaches(ids, { is_starred: false });
+      else if (action === 'delete') {
+        await supabase.from('crm_coaches').delete().in('id', ids);
+        fetchCoaches();
+        fetchAllCoaches();
+      }
       setSelectedIds(new Set());
-      fetchCoaches();
     } catch (err) { console.error('Bulk action failed:', err); }
   };
 
   const exportToCSV = () => {
-    const headers = ['Name', 'Email', 'School', 'Conference', 'Division', 'Status', 'Priority', 'Starred', 'Notes'];
+    const headers = ['Name', 'Email', 'School', 'Conference', 'Division', 'Program', 'Status', 'Priority', 'Starred', 'Last Contact', 'Notes'];
     const rows = coaches.map(c => [
-      c.name, c.email || '', c.school, c.conference, c.division,
+      c.name, c.email || '', c.school, c.conference, c.division, c.program,
       STATUS_CONFIG[c.status]?.label || c.status,
       PRIORITY_CONFIG[c.priority]?.label || 'Normal',
       c.is_starred ? 'Yes' : 'No',
+      c.last_contacted_at || '',
       (c.notes || '').replace(/"/g, '""'),
     ]);
     const csvContent = [headers.join(','), ...rows.map(row => row.map(cell => `"${cell}"`).join(','))].join('\n');
@@ -344,25 +265,31 @@ export default function CRMPage() {
     link.click();
   };
 
-  const handleEventClick = (event: CRMEvent) => setSelectedEvent(event);
-  const handleSlotClick = (date: Date) => { setScheduleModalDate(date); setScheduleModalCoach(null); setShowScheduleModal(true); };
-  const handleConnectGoogle = () => alert('Google Calendar integration coming soon! Will connect to admin@helmsportslabs.com');
-  const refreshCalendar = () => setCalendarRefreshKey(k => k + 1);
+  const refreshData = () => { fetchCoaches(); fetchAllCoaches(); };
 
   // ============================================================================
   // COMPUTED
   // ============================================================================
   const stats = useMemo(() => {
-    const total = coaches.length;
+    const total = allCoaches.length;
     const byStatus = Object.keys(STATUS_CONFIG).reduce((acc, status) => {
-      acc[status as CoachStatus] = coaches.filter(c => c.status === status).length;
+      acc[status as CoachStatus] = allCoaches.filter(c => c.status === status).length;
       return acc;
     }, {} as Record<CoachStatus, number>);
-    const starred = coaches.filter(c => c.is_starred).length;
-    const hot = coaches.filter(c => c.priority >= 2).length;
-    const followUpsDue = coaches.filter(c => c.next_follow_up_at && new Date(c.next_follow_up_at) <= new Date()).length;
-    return { total, byStatus, starred, hot, followUpsDue };
-  }, [coaches]);
+
+    const byStage = PIPELINE_STAGES.reduce((acc, stage) => {
+      acc[stage.id] = allCoaches.filter(c => stage.statuses.includes(c.status)).length;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const starred = allCoaches.filter(c => c.is_starred).length;
+    const hot = allCoaches.filter(c => c.priority >= 2).length;
+    const followUpsDue = allCoaches.filter(c => c.next_follow_up_at && new Date(c.next_follow_up_at) <= new Date()).length;
+    const contacted = allCoaches.filter(c => c.last_contacted_at).length;
+    const inPipeline = allCoaches.filter(c => !['new_lead', 'closed_won', 'closed_lost', 'not_interested', 'bad_timing'].includes(c.status)).length;
+
+    return { total, byStatus, byStage, starred, hot, followUpsDue, contacted, inPipeline };
+  }, [allCoaches]);
 
   // ============================================================================
   // ERROR STATE
@@ -370,14 +297,14 @@ export default function CRMPage() {
   if (error) {
     return (
       <div className="min-h-screen bg-[#FFFEF8] flex items-center justify-center p-8">
-        <div className="bg-white rounded-2xl border border-warm-200/50 shadow-sm p-8 text-center max-w-md">
+        <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/20 shadow-glass p-8 text-center max-w-md">
           <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4">
             <span className="text-3xl">⚠️</span>
           </div>
           <h2 className="text-xl font-bold text-warm-900 mb-2">Error Loading CRM</h2>
           <p className="text-warm-600 mb-6">{error}</p>
-          <button 
-            onClick={fetchCoaches} 
+          <button
+            onClick={() => { setError(null); fetchCoaches(); }}
             className="px-6 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 font-medium transition-colors shadow-sm"
           >
             Try Again
@@ -392,36 +319,29 @@ export default function CRMPage() {
   // ============================================================================
   return (
     <div className="min-h-screen bg-[#FFFEF8] flex">
-      {/* Sidebar - Dark theme matching admin dashboard */}
+      {/* ═══════════════════ Sidebar ═══════════════════ */}
       <aside className={cn(
-        'fixed left-0 top-0 bottom-0 z-50',
-        'flex flex-col',
-        'bg-[#1C1917]',
-        'border-r border-white/5',
+        'fixed left-0 top-0 bottom-0 z-50 flex flex-col',
+        'bg-[#1C1917] border-r border-white/5',
         'transition-all duration-300 ease-in-out',
         sidebarCollapsed ? 'w-[72px]' : 'w-[260px]',
         'hidden lg:flex'
       )}>
-        {/* Sidebar Header */}
+        {/* Logo */}
         <div className={cn('flex items-center gap-3 px-4 h-16', sidebarCollapsed && 'justify-center px-0')}>
           <div className="w-9 h-9 rounded-[10px] bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/25">
             <span className="text-lg">🎯</span>
           </div>
-          {!sidebarCollapsed && (
-            <span className="font-bold text-lg text-white tracking-tight">Coach CRM</span>
-          )}
+          {!sidebarCollapsed && <span className="font-bold text-lg text-white tracking-tight">Coach CRM</span>}
         </div>
 
         {/* Back to Dashboard */}
         <div className="px-3 mb-2">
-          <a
-            href="/golf/admin"
-            className={cn(
-              'flex items-center gap-3 px-3 py-2 rounded-[10px]',
-              'text-warm-400 hover:bg-white/5 hover:text-white transition-colors',
-              sidebarCollapsed && 'justify-center'
-            )}
-          >
+          <a href="/golf/admin" className={cn(
+            'flex items-center gap-3 px-3 py-2 rounded-[10px]',
+            'text-warm-400 hover:bg-white/5 hover:text-white transition-colors',
+            sidebarCollapsed && 'justify-center'
+          )}>
             <ArrowLeft size={16} className="flex-shrink-0" />
             {!sidebarCollapsed && <span className="text-sm font-medium">Dashboard</span>}
           </a>
@@ -443,24 +363,11 @@ export default function CRMPage() {
                     isActive ? 'bg-white/10 text-white' : 'text-warm-400 hover:bg-white/5 hover:text-white'
                   )}
                 >
-                  {isActive && (
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-primary-500 rounded-r-full" />
-                  )}
-                  <TabIcon 
-                    size={20} 
-                    className={cn(
-                      'flex-shrink-0 transition-colors duration-200',
-                      isActive ? 'text-primary-400' : 'text-warm-400 group-hover:text-white'
-                    )} 
-                  />
+                  {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-primary-500 rounded-r-full" />}
+                  <TabIcon size={20} className={cn('flex-shrink-0', isActive ? 'text-primary-400' : 'text-warm-400 group-hover:text-white')} />
+                  {!sidebarCollapsed && <span className="text-sm font-medium flex-1 text-left">{tab.label}</span>}
                   {!sidebarCollapsed && (
-                    <span className="text-sm font-medium flex-1 text-left">{tab.label}</span>
-                  )}
-                  {!sidebarCollapsed && (
-                    <span className={cn(
-                      'text-[10px] px-1.5 py-0.5 rounded font-mono',
-                      isActive ? 'bg-white/10 text-warm-300' : 'bg-white/5 text-warm-500'
-                    )}>
+                    <span className={cn('text-[10px] px-1.5 py-0.5 rounded font-mono', isActive ? 'bg-white/10 text-warm-300' : 'bg-white/5 text-warm-500')}>
                       {tab.shortcut}
                     </span>
                   )}
@@ -473,20 +380,42 @@ export default function CRMPage() {
               );
             })}
           </div>
+
+          {/* Pipeline Summary in sidebar */}
+          {!sidebarCollapsed && (
+            <div className="mt-6 space-y-1">
+              <div className="text-[11px] font-semibold text-warm-500 uppercase tracking-wider px-1 mb-2">Pipeline</div>
+              {PIPELINE_STAGES.map((stage) => {
+                const count = stats.byStage[stage.id] || 0;
+                return (
+                  <button
+                    key={stage.id}
+                    onClick={() => setActiveTab('pipeline')}
+                    className="flex items-center justify-between w-full px-3 py-1.5 rounded-lg text-warm-400 hover:bg-white/5 hover:text-white transition-colors group"
+                  >
+                    <span className="flex items-center gap-2 text-sm">
+                      <span className="text-xs">{stage.emoji}</span>
+                      <span>{stage.label}</span>
+                    </span>
+                    <span className="text-xs font-bold tabular-nums text-warm-500 group-hover:text-warm-300">{count}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </nav>
 
-        {/* Stats Cards in Sidebar */}
+        {/* Sidebar Stats */}
         {!sidebarCollapsed && (
           <div className="p-3 border-t border-white/10 space-y-3">
-            <div className="text-[11px] font-semibold text-warm-500 uppercase tracking-wider px-1">Pipeline</div>
             <div className="grid grid-cols-2 gap-2">
               <div className="rounded-[10px] p-3 bg-white/5 border border-white/5">
-                <div className="text-xl font-bold text-primary-400 tabular-nums">{stats.byStatus.customer || 0}</div>
-                <div className="text-[10px] text-warm-500 font-medium uppercase tracking-wider mt-0.5">Customers</div>
+                <div className="text-xl font-bold text-primary-400 tabular-nums">{stats.byStatus.closed_won || 0}</div>
+                <div className="text-[10px] text-warm-500 font-medium uppercase tracking-wider mt-0.5">Won</div>
               </div>
               <div className="rounded-[10px] p-3 bg-white/5 border border-white/5">
-                <div className="text-xl font-bold text-amber-400 tabular-nums">{stats.byStatus.demo_scheduled || 0}</div>
-                <div className="text-[10px] text-warm-500 font-medium uppercase tracking-wider mt-0.5">Demos Set</div>
+                <div className="text-xl font-bold text-cyan-400 tabular-nums">{(stats.byStatus.demo_scheduled || 0) + (stats.byStatus.demo_completed || 0)}</div>
+                <div className="text-[10px] text-warm-500 font-medium uppercase tracking-wider mt-0.5">Demos</div>
               </div>
             </div>
             <div className="grid grid-cols-3 gap-2">
@@ -500,20 +429,19 @@ export default function CRMPage() {
               </div>
               <div className="rounded-[10px] p-2 bg-white/5 border border-white/5 text-center">
                 <div className="text-sm font-bold text-yellow-400 tabular-nums">{stats.starred}</div>
-                <div className="text-[9px] text-warm-500">⭐ Starred</div>
+                <div className="text-[9px] text-warm-500">⭐ Star</div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Actions */}
+        {/* Action Buttons */}
         <div className="p-3 border-t border-white/10 space-y-2">
           <button
             onClick={() => setShowAddModal(true)}
             className={cn(
               'w-full flex items-center justify-center gap-2 py-2.5 rounded-[10px] font-medium transition-colors',
-              'bg-gradient-to-r from-primary-500 to-primary-600 text-white',
-              'hover:from-primary-600 hover:to-primary-700'
+              'bg-gradient-to-r from-primary-500 to-primary-600 text-white hover:from-primary-600 hover:to-primary-700'
             )}
           >
             <Plus size={16} className="flex-shrink-0" />
@@ -521,19 +449,11 @@ export default function CRMPage() {
           </button>
           {!sidebarCollapsed && (
             <div className="flex gap-2">
-              <button
-                onClick={() => setShowImportModal(true)}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[10px] text-sm font-medium bg-white/5 hover:bg-white/10 text-warm-400 transition-colors"
-              >
-                <Upload size={14} />
-                Import
+              <button onClick={() => setShowImportModal(true)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[10px] text-sm font-medium bg-white/5 hover:bg-white/10 text-warm-400 transition-colors">
+                <Upload size={14} /> Import
               </button>
-              <button
-                onClick={exportToCSV}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[10px] text-sm font-medium bg-white/5 hover:bg-white/10 text-warm-400 transition-colors"
-              >
-                <Download size={14} />
-                Export
+              <button onClick={exportToCSV} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[10px] text-sm font-medium bg-white/5 hover:bg-white/10 text-warm-400 transition-colors">
+                <Download size={14} /> Export
               </button>
             </div>
           )}
@@ -548,7 +468,7 @@ export default function CRMPage() {
         </button>
       </aside>
 
-      {/* Main Content - with margin for fixed sidebar */}
+      {/* ═══════════════════ Main Content ═══════════════════ */}
       <main className={cn(
         'flex-1 flex flex-col min-h-screen transition-all duration-300',
         sidebarCollapsed ? 'lg:ml-[72px]' : 'lg:ml-[260px]'
@@ -557,111 +477,132 @@ export default function CRMPage() {
         <header className="sticky top-0 z-30 bg-[#FFFEF8]/95 backdrop-blur-sm border-b border-warm-200/50 px-6 py-3">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-bold text-warm-900">
-                {TABS.find(t => t.id === activeTab)?.label}
-              </h2>
-              <p className="text-sm text-warm-500 mt-0.5">
-                {TABS.find(t => t.id === activeTab)?.description}
-              </p>
+              <h2 className="text-xl font-bold text-warm-900">{TABS.find(t => t.id === activeTab)?.label}</h2>
+              <p className="text-sm text-warm-500 mt-0.5">{TABS.find(t => t.id === activeTab)?.description}</p>
             </div>
-
-            {/* Pipeline Status Chips */}
-            {activeTab !== 'calendar' && (
-              <div className="flex items-center gap-2">
-                {(Object.keys(STATUS_CONFIG) as CoachStatus[]).map((status) => {
-                  const config = STATUS_CONFIG[status];
-                  const count = stats.byStatus[status] || 0;
-                  const isActive = filters.status === status;
-                  
-                  return (
-                    <button
-                      key={status}
-                      onClick={() => setFilters(f => ({ ...f, status: isActive ? 'all' : status }))}
-                      className={cn(
-                        'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-all',
-                        isActive 
-                          ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/20' 
-                          : 'bg-white/60 text-warm-600 hover:bg-white/80 border border-white/40'
-                      )}
-                    >
-                      <span>{config.icon}</span>
-                      <span className="hidden lg:inline">{config.label}</span>
-                      <span className={cn(
-                        'px-1.5 py-0.5 rounded-lg text-xs font-bold tabular-nums',
-                        isActive ? 'bg-white/20' : 'bg-warm-100'
-                      )}>
-                        {count}
-                      </span>
-                    </button>
-                  );
-                })}
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/70 border border-white/30 shadow-glass-sm">
+                <Users size={14} className="text-warm-500" />
+                <span className="text-sm font-bold text-warm-800 tabular-nums">{stats.total}</span>
+                <span className="text-xs text-warm-500">coaches</span>
               </div>
-            )}
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/70 border border-white/30 shadow-glass-sm">
+                <TrendingUp size={14} className="text-primary-500" />
+                <span className="text-sm font-bold text-warm-800 tabular-nums">{stats.inPipeline}</span>
+                <span className="text-xs text-warm-500">in pipeline</span>
+              </div>
+              {stats.followUpsDue > 0 && (
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200/50">
+                  <Clock size={14} className="text-amber-600" />
+                  <span className="text-sm font-bold text-amber-700 tabular-nums">{stats.followUpsDue}</span>
+                  <span className="text-xs text-amber-600">due</span>
+                </div>
+              )}
+              {stats.hot > 0 && (
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-50 border border-orange-200/50">
+                  <Flame size={14} className="text-orange-600" />
+                  <span className="text-sm font-bold text-orange-700 tabular-nums">{stats.hot}</span>
+                  <span className="text-xs text-orange-600">hot</span>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
         {/* Content Area */}
         <div className="flex-1 overflow-auto p-6">
-          {activeTab === 'calendar' ? (
-            <CalendarView
-              key={calendarRefreshKey}
-              onEventClick={handleEventClick}
-              onSlotClick={handleSlotClick}
-              googleConnected={googleConnected}
-              onConnectGoogle={handleConnectGoogle}
+          {/* ── Dashboard Tab ── */}
+          {activeTab === 'dashboard' && (
+            <CRMDashboard
+              allCoaches={allCoaches}
+              stats={stats}
+              pipelineStages={PIPELINE_STAGES}
+              statusConfig={STATUS_CONFIG}
+              onBulkUpdate={bulkUpdateCoaches}
+              onRefresh={refreshData}
+              onNavigate={setActiveTab}
             />
-          ) : (
+          )}
+
+          {/* ── Coaches List Tab ── */}
+          {activeTab === 'list' && (
             <div className="space-y-4">
-              {/* Filters */}
-              <div className="p-4 bg-white rounded-2xl border border-warm-200/50 shadow-sm">
-                <CoachFilters
-                  filters={filters}
-                  setFilters={setFilters}
-                  conferences={conferences}
+              <CoachFilters
+                filters={filters}
+                setFilters={setFilters}
+                conferences={conferences}
+                statusConfig={STATUS_CONFIG}
+              />
+              <div className="rounded-2xl overflow-hidden bg-white/70 backdrop-blur-xl border border-white/20 shadow-glass">
+                <CoachTable
+                  coaches={coaches}
+                  loading={loading}
+                  selectedIds={selectedIds}
+                  onSelectionChange={setSelectedIds}
+                  onStatusChange={(id, status) => updateCoach(id, { status })}
+                  onToggleStar={toggleStar}
+                  onCoachClick={handleCoachClick}
+                  onLogContact={(coach) => setQuickActionsCoach(coach)}
                   statusConfig={STATUS_CONFIG}
+                  priorityConfig={PRIORITY_CONFIG}
                 />
               </div>
+            </div>
+          )}
 
-              {/* Bulk Actions */}
-              {selectedIds.size > 0 && (
-                <BulkActionsBar
-                  selectedCount={selectedIds.size}
-                  onAction={handleBulkAction}
-                  onClear={() => setSelectedIds(new Set())}
-                  statusConfig={STATUS_CONFIG}
-                />
-              )}
+          {/* ── Pipeline Tab ── */}
+          {activeTab === 'pipeline' && (
+            <PipelineView
+              coaches={allCoaches}
+              onCoachClick={handleCoachClick}
+              onStatusChange={(id, status) => updateCoach(id, { status })}
+              onToggleStar={toggleStar}
+              statusConfig={STATUS_CONFIG}
+              priorityConfig={PRIORITY_CONFIG}
+              pipelineStages={PIPELINE_STAGES}
+              stats={stats}
+              onBulkUpdate={bulkUpdateCoaches}
+              onRefresh={refreshData}
+            />
+          )}
 
-              {/* Table or Pipeline */}
-              <div className="rounded-2xl overflow-hidden bg-white border border-warm-200/50 shadow-sm">
-                {activeTab === 'list' ? (
-                  <CoachTable
-                    coaches={coaches}
-                    loading={loading}
-                    selectedIds={selectedIds}
-                    onSelectionChange={setSelectedIds}
-                    onStatusChange={(id, status) => updateCoach(id, { status })}
-                    onPriorityChange={(id, priority) => updateCoach(id, { priority })}
-                    onToggleStar={toggleStar}
-                    onCoachClick={handleCoachClick}
-                    statusConfig={STATUS_CONFIG}
-                    priorityConfig={PRIORITY_CONFIG}
-                  />
-                ) : (
-                  <PipelineView
-                    coaches={coaches}
-                    onCoachClick={handleCoachClick}
-                    onStatusChange={(id, status) => updateCoach(id, { status })}
-                    onToggleStar={toggleStar}
-                    statusConfig={STATUS_CONFIG}
-                    priorityConfig={PRIORITY_CONFIG}
-                  />
-                )}
-              </div>
+          {/* ── Conferences Tab ── */}
+          {activeTab === 'conferences' && (
+            <div className="space-y-4">
+              <CoachFilters
+                filters={filters}
+                setFilters={setFilters}
+                conferences={conferences}
+                statusConfig={STATUS_CONFIG}
+              />
+              <ConferenceGroupView
+                coaches={coaches}
+                loading={loading}
+                selectedIds={selectedIds}
+                onSelectionChange={setSelectedIds}
+                onCoachClick={handleCoachClick}
+                onStatusChange={(id, status) => updateCoach(id, { status })}
+                onToggleStar={toggleStar}
+                onLogContact={(coach) => setQuickActionsCoach(coach)}
+                statusConfig={STATUS_CONFIG}
+                priorityConfig={PRIORITY_CONFIG}
+              />
             </div>
           )}
         </div>
       </main>
+
+      {/* ═══════════════════ Overlays ═══════════════════ */}
+
+      {/* Bulk Actions Bar */}
+      {selectedIds.size > 0 && (
+        <BulkActionsBar
+          selectedCount={selectedIds.size}
+          onAction={handleBulkAction}
+          onClear={() => setSelectedIds(new Set())}
+          statusConfig={STATUS_CONFIG}
+        />
+      )}
 
       {/* Detail Panel */}
       {detailPanelOpen && selectedCoach && (
@@ -680,7 +621,7 @@ export default function CRMPage() {
           coach={quickActionsCoach}
           onClose={() => setQuickActionsCoach(null)}
           onUpdate={(updates) => updateCoach(quickActionsCoach.id, updates)}
-          onRefreshEvents={refreshCalendar}
+          onRefreshEvents={refreshData}
           statusConfig={STATUS_CONFIG}
         />
       )}
@@ -692,41 +633,35 @@ export default function CRMPage() {
         onAddCoach={() => setShowAddModal(true)}
       />
 
-      {/* Schedule Modal */}
+      {/* Modals */}
       {showScheduleModal && (
         <ScheduleEventModal
           coach={scheduleModalCoach}
           event={editingEvent}
           initialDate={scheduleModalDate}
           onClose={() => { setShowScheduleModal(false); setScheduleModalCoach(null); setScheduleModalDate(undefined); setEditingEvent(null); }}
-          onSuccess={() => { refreshCalendar(); fetchCoaches(); }}
+          onSuccess={refreshData}
         />
       )}
-
-      {/* Event Detail Modal */}
       {selectedEvent && !editingEvent && (
         <EventDetailModal
           event={selectedEvent}
           onClose={() => setSelectedEvent(null)}
           onEdit={() => { setEditingEvent(selectedEvent); setShowScheduleModal(true); setSelectedEvent(null); }}
-          onRefresh={() => { refreshCalendar(); fetchCoaches(); }}
+          onRefresh={refreshData}
         />
       )}
-
-      {/* Add Coach Modal */}
       {showAddModal && (
         <AddCoachModal
           onClose={() => setShowAddModal(false)}
-          onSuccess={() => { setShowAddModal(false); fetchCoaches(); }}
+          onSuccess={() => { setShowAddModal(false); refreshData(); }}
           statusConfig={STATUS_CONFIG}
         />
       )}
-
-      {/* Import Modal */}
       {showImportModal && (
         <ImportModal
           onClose={() => setShowImportModal(false)}
-          onSuccess={() => { setShowImportModal(false); fetchCoaches(); }}
+          onSuccess={() => { setShowImportModal(false); refreshData(); }}
         />
       )}
     </div>

@@ -58,8 +58,8 @@ const fadeUp = {
 
 // Grade color mapping
 const gradeColors: Record<string, { bg: string; text: string; border: string; ring: string; glow: string }> = {
-  A: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', ring: 'ring-emerald-500/20', glow: 'shadow-emerald-500/15' },
-  B: { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200', ring: 'ring-green-500/20', glow: 'shadow-green-500/15' },
+  A: { bg: 'bg-primary-50', text: 'text-primary-700', border: 'border-primary-200', ring: 'ring-primary-500/20', glow: 'shadow-primary-500/15' },
+  B: { bg: 'bg-primary-50', text: 'text-primary-700', border: 'border-primary-200', ring: 'ring-primary-500/20', glow: 'shadow-primary-500/15' },
   C: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', ring: 'ring-amber-500/20', glow: 'shadow-amber-500/15' },
   D: { bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200', ring: 'ring-orange-500/20', glow: 'shadow-orange-500/15' },
   F: { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200', ring: 'ring-red-500/20', glow: 'shadow-red-500/15' },
@@ -74,7 +74,7 @@ const sentimentLabel: Record<string, string> = {
 // Score-to-par color for scorecard
 function scoreToPairColor(stp: number): string {
   if (stp <= -2) return 'bg-amber-400 text-white'; // eagle+
-  if (stp === -1) return 'bg-green-500 text-white'; // birdie
+  if (stp === -1) return 'bg-primary-500 text-white'; // birdie
   if (stp === 0) return 'bg-warm-100 text-warm-800'; // par
   if (stp === 1) return 'bg-red-200 text-red-800'; // bogey
   return 'bg-red-400 text-white'; // double+
@@ -86,7 +86,7 @@ function formatScoreToPar(stp: number): string {
 }
 
 function comparisonArrow(cmp: StatComparison): { icon: string; color: string; label: string } {
-  if (cmp === 'above') return { icon: '\u2191', color: 'text-green-600', label: 'Above avg' };
+  if (cmp === 'above') return { icon: '\u2191', color: 'text-primary-600', label: 'Above avg' };
   if (cmp === 'below') return { icon: '\u2193', color: 'text-red-600', label: 'Below avg' };
   return { icon: '\u2014', color: 'text-warm-400', label: 'Average' };
 }
@@ -170,7 +170,7 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.15, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-            className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center mb-5 shadow-lg shadow-green-500/25"
+            className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center mb-5 shadow-lg shadow-primary-500/25"
           >
             <IconSparkles size={28} className="text-white" />
           </motion.div>
@@ -198,7 +198,7 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
             <Button
               onClick={generate}
               disabled={generating}
-              className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-lg shadow-green-500/20 hover:shadow-green-500/30 transition-all duration-300"
+              className="bg-gradient-to-r from-primary-600 to-primary-600 hover:from-primary-700 hover:to-primary-700 shadow-lg shadow-primary-500/20 hover:shadow-primary-500/30 transition-all duration-300"
             >
               {generating ? (
                 <>
@@ -228,14 +228,14 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
             <motion.div
               animate={{ rotate: [0, 5, -5, 0] }}
               transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
-              className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-green-500/25"
+              className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/25"
             >
               <IconSparkles size={28} className="text-white" />
             </motion.div>
             <motion.div
               animate={{ scale: [1, 1.5, 1], opacity: [0.3, 0, 0.3] }}
               transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
-              className="absolute -inset-3 bg-green-500/15 rounded-3xl"
+              className="absolute -inset-3 bg-primary-500/15 rounded-3xl"
             />
           </div>
           <h3 className="text-lg font-semibold text-warm-900 mt-7 mb-2">Analyzing Round...</h3>
@@ -248,7 +248,7 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
             <motion.div
               animate={{ x: ['-100%', '100%'] }}
               transition={{ repeat: Infinity, duration: 1.5, ease: 'easeInOut' }}
-              className="h-full w-1/2 bg-gradient-to-r from-transparent via-green-500 to-transparent rounded-full"
+              className="h-full w-1/2 bg-gradient-to-r from-transparent via-primary-500 to-transparent rounded-full"
             />
           </motion.div>
         </div>
@@ -279,7 +279,7 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
         className="flex items-center justify-between"
       >
         <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg shadow-green-500/20">
+          <div className="p-2.5 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl shadow-lg shadow-primary-500/20">
             <IconSparkles size={18} className="text-white" />
           </div>
           <div>
@@ -289,7 +289,7 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
             </p>
           </div>
         </div>
-        <Button variant="secondary" size="sm" onClick={generate} disabled={generating} title="Regenerate review" className="hover:bg-warm-100 transition-colors">
+        <Button variant="secondary" size="sm" onClick={generate} disabled={generating} title="Regenerate review" aria-label="Regenerate review" className="hover:bg-warm-100 transition-colors">
           <IconRefresh size={14} className={cn(generating && 'animate-spin')} />
         </Button>
       </motion.div>
@@ -378,8 +378,8 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
               <h3 className="text-sm font-semibold text-warm-900 mb-3">Summary</h3>
               <p className="text-sm text-warm-600 leading-relaxed">{review.summary}</p>
               {review.primaryTakeaway && (
-                <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-100">
-                  <p className="text-sm font-medium text-green-900">Key Takeaway: {review.primaryTakeaway}</p>
+                <div className="mt-4 p-3 bg-primary-50 rounded-lg border border-primary-100">
+                  <p className="text-sm font-medium text-primary-900">Key Takeaway: {review.primaryTakeaway}</p>
                 </div>
               )}
             </div>
@@ -396,12 +396,12 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
           className="space-y-5 pt-2"
         >
           <div className="flex items-center gap-3 px-1">
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-green-300/60 to-transparent" />
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50/80 rounded-full border border-green-200/40">
-              <IconSparkles size={12} className="text-green-600" />
-              <span className="text-[11px] font-semibold text-green-700 uppercase tracking-wider">AI Intelligence</span>
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary-300/60 to-transparent" />
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-primary-50/80 rounded-full border border-primary-200/40">
+              <IconSparkles size={12} className="text-primary-600" />
+              <span className="text-[11px] font-semibold text-primary-700 uppercase tracking-wider">AI Intelligence</span>
             </div>
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-green-300/60 to-transparent" />
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary-300/60 to-transparent" />
           </div>
           <V2ReviewSummary review={v2Review} />
           {v2Review.prediction && <V2PredictionCard prediction={v2Review.prediction} />}
@@ -454,7 +454,7 @@ function GradeSummaryCard({ content }: { content: RoundReviewContent }) {
           <div className="flex items-center gap-2 mb-2">
             <span className={cn(
               'text-xs font-semibold px-3 py-1 rounded-full',
-              content.sentiment === 'positive' && 'bg-green-100 text-green-700',
+              content.sentiment === 'positive' && 'bg-primary-100 text-primary-700',
               content.sentiment === 'neutral' && 'bg-amber-100 text-amber-700',
               content.sentiment === 'challenging' && 'bg-red-100 text-red-700',
             )}>
@@ -528,7 +528,7 @@ function ScorecardStrip({
               <td className="py-2">
                 <span className={cn(
                   'text-sm font-bold',
-                  totalScore <= totalPar ? 'text-green-700' : 'text-red-600',
+                  totalScore <= totalPar ? 'text-primary-700' : 'text-red-600',
                 )}>
                   {totalScore}
                 </span>
@@ -540,7 +540,7 @@ function ScorecardStrip({
               {nineHoles.map(h => (
                 <td key={h.hole} className={cn(
                   'text-[11px] py-1.5 font-medium',
-                  h.threePutt ? 'text-red-500 font-bold' : h.onePutt ? 'text-green-600' : 'text-warm-400',
+                  h.threePutt ? 'text-red-500 font-bold' : h.onePutt ? 'text-primary-600' : 'text-warm-400',
                 )}>
                   {h.putts}
                 </td>
@@ -597,7 +597,7 @@ function ScorecardStrip({
       {/* Scorecard legend */}
       <div className="mt-3 flex items-center gap-3 text-[10px]">
         <div className="flex items-center gap-1"><span className="w-4 h-4 rounded bg-amber-400" /> <span className="text-warm-400">Eagle+</span></div>
-        <div className="flex items-center gap-1"><span className="w-4 h-4 rounded bg-green-500" /> <span className="text-warm-400">Birdie</span></div>
+        <div className="flex items-center gap-1"><span className="w-4 h-4 rounded bg-primary-500" /> <span className="text-warm-400">Birdie</span></div>
         <div className="flex items-center gap-1"><span className="w-4 h-4 rounded bg-warm-100" /> <span className="text-warm-400">Par</span></div>
         <div className="flex items-center gap-1"><span className="w-4 h-4 rounded bg-red-200" /> <span className="text-warm-400">Bogey</span></div>
         <div className="flex items-center gap-1"><span className="w-4 h-4 rounded bg-red-400" /> <span className="text-warm-400">Double+</span></div>
@@ -616,7 +616,7 @@ function ScoringDistribution({
 }) {
   const segments = [
     { label: 'Eagle+', count: dist.eagles.length, color: 'bg-amber-400', text: 'text-amber-700' },
-    { label: 'Birdie', count: dist.birdies.length, color: 'bg-green-500', text: 'text-green-700' },
+    { label: 'Birdie', count: dist.birdies.length, color: 'bg-primary-500', text: 'text-primary-700' },
     { label: 'Par', count: dist.pars.length, color: 'bg-warm-300', text: 'text-warm-700' },
     { label: 'Bogey', count: dist.bogeys.length, color: 'bg-red-300', text: 'text-red-700' },
     { label: 'Double+', count: dist.doublePlus.length, color: 'bg-red-500', text: 'text-red-700' },
@@ -673,7 +673,7 @@ function KeyStatsGrid({ stats }: { stats: RoundReviewContent['keyStats'] }) {
               transition={{ delay: 0.1 * i, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
               className={cn(
                 'p-3.5 rounded-xl border transition-colors',
-                stat.comparison === 'above' && 'bg-green-50/60 border-green-100',
+                stat.comparison === 'above' && 'bg-primary-50/60 border-primary-100',
                 stat.comparison === 'below' && 'bg-red-50/60 border-red-100',
                 stat.comparison === 'average' && 'bg-warm-50/60 border-warm-100',
               )}
@@ -732,7 +732,7 @@ function MomentumChart({ data }: { data: RoundReviewContent['momentumData'] }) {
             strokeWidth="0.12"
             strokeLinejoin="round"
             strokeLinecap="round"
-            className="text-green-500"
+            className="text-primary-500"
             points={data.map((d, i) => `${i},${max - d.rollingScoreToPar}`).join(' ')}
           />
         </svg>
@@ -750,7 +750,7 @@ function MomentumChart({ data }: { data: RoundReviewContent['momentumData'] }) {
                   className={cn(
                     'absolute rounded-full -translate-x-1/2',
                     isLast ? 'w-3 h-3 ring-2 ring-white shadow-sm' : 'w-1.5 h-1.5',
-                    d.rollingScoreToPar <= 0 ? 'bg-green-500' : 'bg-red-400',
+                    d.rollingScoreToPar <= 0 ? 'bg-primary-500' : 'bg-red-400',
                   )}
                   style={{ top: `${pct}%`, left: '50%' }}
                 />
@@ -768,7 +768,7 @@ function MomentumChart({ data }: { data: RoundReviewContent['momentumData'] }) {
         <span>Hole 1</span>
         <span className={cn(
           'font-bold text-xs',
-          (values[values.length - 1] ?? 0) <= 0 ? 'text-green-600' : 'text-red-500',
+          (values[values.length - 1] ?? 0) <= 0 ? 'text-primary-600' : 'text-red-500',
         )}>
           Final: {formatScoreToPar(values[values.length - 1] ?? 0)}
         </span>
@@ -806,7 +806,7 @@ function GameBreakdownSection({
           <div className="grid grid-cols-3 gap-3 mb-4">
             {[
               { value: putting.totalPutts, label: 'Total Putts', bg: 'bg-warm-50', textColor: 'text-warm-900' },
-              { value: putting.onePuttCount, label: 'One-Putts', bg: 'bg-green-50/80', textColor: 'text-green-700' },
+              { value: putting.onePuttCount, label: 'One-Putts', bg: 'bg-primary-50/80', textColor: 'text-primary-700' },
               { value: putting.avgFirstPuttDist !== null ? `${putting.avgFirstPuttDist}ft` : '--', label: 'Avg 1st Putt', bg: 'bg-warm-50', textColor: 'text-warm-900' },
             ].map((item, i) => (
               <motion.div
@@ -842,7 +842,7 @@ function GameBreakdownSection({
                     <td className="px-3 py-2.5 text-center">
                       <span className={cn(
                         'font-semibold tabular-nums',
-                        r.pct >= 80 ? 'text-green-600' : r.pct >= 40 ? 'text-warm-700' : 'text-red-500',
+                        r.pct >= 80 ? 'text-primary-600' : r.pct >= 40 ? 'text-warm-700' : 'text-red-500',
                       )}>
                         {r.attempts > 0 ? `${r.pct}%` : '--'}
                       </span>
@@ -895,7 +895,7 @@ function GameBreakdownSection({
               <div className="text-center p-3 rounded-xl bg-warm-50">
                 <div className={cn(
                   'text-2xl font-bold tabular-nums',
-                  driving.fairwayPct >= 60 ? 'text-green-700' : driving.fairwayPct >= 45 ? 'text-warm-900' : 'text-red-600',
+                  driving.fairwayPct >= 60 ? 'text-primary-700' : driving.fairwayPct >= 45 ? 'text-warm-900' : 'text-red-600',
                 )}>
                   {driving.fairwayPct}%
                 </div>
@@ -948,7 +948,7 @@ function GameBreakdownSection({
               <div className="text-center p-3.5 rounded-xl bg-warm-50">
                 <div className={cn(
                   'text-2xl font-bold tabular-nums',
-                  shortGame.scramblePct >= 50 ? 'text-green-700' : 'text-warm-900',
+                  shortGame.scramblePct >= 50 ? 'text-primary-700' : 'text-warm-900',
                 )}>
                   {shortGame.scramblePct}%
                 </div>
@@ -961,7 +961,7 @@ function GameBreakdownSection({
               <div className="text-center p-3.5 rounded-xl bg-warm-50">
                 <div className={cn(
                   'text-2xl font-bold tabular-nums',
-                  (shortGame.sandSavePct ?? 0) >= 50 ? 'text-green-700' : 'text-warm-900',
+                  (shortGame.sandSavePct ?? 0) >= 50 ? 'text-primary-700' : 'text-warm-900',
                 )}>
                   {shortGame.sandSavePct !== null ? `${shortGame.sandSavePct}%` : '--'}
                 </div>
@@ -984,7 +984,7 @@ function GameBreakdownSection({
                 >
                   <span className={cn(
                     'w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold',
-                    ud.success ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600',
+                    ud.success ? 'bg-primary-100 text-primary-700' : 'bg-red-100 text-red-600',
                   )}>
                     {ud.success ? '\u2713' : '\u2717'}
                   </span>
@@ -1013,8 +1013,8 @@ function HighlightsAndImprovements({
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {highlights && highlights.length > 0 && (
-        <div className="rounded-2xl border border-green-100 bg-green-50/40 backdrop-blur-sm p-5 shadow-sm">
-          <h3 className="text-xs font-semibold text-green-700 uppercase tracking-wider mb-3 flex items-center gap-2">
+        <div className="rounded-2xl border border-primary-100 bg-primary-50/40 backdrop-blur-sm p-5 shadow-sm">
+          <h3 className="text-xs font-semibold text-primary-700 uppercase tracking-wider mb-3 flex items-center gap-2">
             <IconTrendingUp size={14} />
             Highlights
           </h3>
@@ -1025,7 +1025,7 @@ function HighlightsAndImprovements({
                 initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.1 * i, duration: 0.35 }}
-                className="p-3.5 rounded-xl bg-white/80 border border-green-100 shadow-sm"
+                className="p-3.5 rounded-xl bg-white/80 border border-primary-100 shadow-sm"
               >
                 <div className="text-xs font-semibold text-warm-900">{formatLabel(h.title)}</div>
                 <p className="text-[11px] text-warm-600 mt-1 leading-relaxed">{h.description}</p>
@@ -1098,7 +1098,7 @@ function RecommendationsCard({ recs }: { recs: string[] }) {
   return (
     <div className="rounded-2xl border border-warm-200 bg-white/80 backdrop-blur-sm p-5 shadow-sm">
       <h3 className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-        <IconSparkles size={14} className="text-green-600" />
+        <IconSparkles size={14} className="text-primary-600" />
         Practice Recommendations
       </h3>
       <div className="space-y-2.5">
@@ -1110,7 +1110,7 @@ function RecommendationsCard({ recs }: { recs: string[] }) {
             transition={{ delay: 0.1 * i, duration: 0.35 }}
             className="flex items-start gap-3 p-3.5 rounded-xl bg-warm-50/50 border border-warm-100/50"
           >
-            <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 text-white flex items-center justify-center text-[10px] font-bold mt-0.5 shadow-sm">
+            <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-white flex items-center justify-center text-[10px] font-bold mt-0.5 shadow-sm">
               {i + 1}
             </span>
             <p className="text-xs text-warm-700 leading-relaxed">{rec}</p>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { useToast } from '@/components/ui/toast';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
@@ -28,6 +29,7 @@ interface NotificationPreferences {
 }
 
 export function NotificationsModal({ isOpen, onClose }: NotificationsModalProps) {
+  const { modalRef } = useFocusTrap(isOpen, onClose);
   const [loading, setLoading] = useState(false);
   const [loadingPrefs, setLoadingPrefs] = useState(true);
   const [preferences, setPreferences] = useState<NotificationPreferences>({
@@ -105,9 +107,14 @@ export function NotificationsModal({ isOpen, onClose }: NotificationsModalProps)
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Notification Preferences">
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="modal-title">
       {loadingPrefs ? (
         <div className="flex items-center justify-center py-8">
-          <div className="animate-spin h-6 w-6 border-2 border-emerald-600 border-t-transparent rounded-full" />
+          <span className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+          </span>
         </div>
       ) : (
         <div className="space-y-6">
@@ -175,6 +182,7 @@ export function NotificationsModal({ isOpen, onClose }: NotificationsModalProps)
           </div>
         </div>
       )}
+      </div>
     </Modal>
   );
 }
@@ -206,7 +214,7 @@ function ToggleRow({
         aria-hidden="true"
         className={cn(
           'w-11 h-6 rounded-full transition-colors relative flex-shrink-0',
-          checked ? 'bg-emerald-600' : 'bg-warm-200'
+          checked ? 'bg-primary-600' : 'bg-warm-200'
         )}
       >
         <div className={cn(

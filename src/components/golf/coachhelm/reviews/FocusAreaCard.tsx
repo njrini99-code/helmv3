@@ -63,13 +63,13 @@ interface FocusAreaCardProps {
 
 const AREA_TYPE_CONFIG: Record<string, { icon: string; color: string; bgColor: string }> = {
   putting: { icon: '🎯', color: 'text-blue-600', bgColor: 'bg-blue-50' },
-  driving: { icon: '🏌️', color: 'text-green-600', bgColor: 'bg-green-50' },
+  driving: { icon: '🏌️', color: 'text-primary-600', bgColor: 'bg-primary-50' },
   iron_play: { icon: '⛳', color: 'text-amber-600', bgColor: 'bg-amber-50' },
   short_game: { icon: '🕳️', color: 'text-purple-600', bgColor: 'bg-purple-50' },
   mental_game: { icon: '🧠', color: 'text-pink-600', bgColor: 'bg-pink-50' },
   course_management: { icon: '🗺️', color: 'text-indigo-600', bgColor: 'bg-indigo-50' },
   consistency: { icon: '📊', color: 'text-cyan-600', bgColor: 'bg-cyan-50' },
-  strength: { icon: '💪', color: 'text-green-600', bgColor: 'bg-green-50' },
+  strength: { icon: '💪', color: 'text-primary-600', bgColor: 'bg-primary-50' },
   weakness: { icon: '🔧', color: 'text-red-600', bgColor: 'bg-red-50' },
   default: { icon: '📋', color: 'text-warm-600', bgColor: 'bg-warm-100' },
 };
@@ -112,7 +112,7 @@ function ProgressBar({ current, target, label }: ProgressBarProps) {
           transition={{ duration: 0.5, ease: 'easeOut' }}
           className={cn(
             'h-full rounded-full',
-            isComplete ? 'bg-green-500' : 'bg-primary-500'
+            isComplete ? 'bg-primary-500' : 'bg-primary-500'
           )}
         />
       </div>
@@ -150,7 +150,7 @@ function PriorityBadge({ priority }: { priority: number }) {
 function StatusBadge({ status }: { status: FocusArea['status'] }) {
   const config = {
     active: { label: 'Active', color: 'text-blue-600', bgColor: 'bg-blue-50' },
-    completed: { label: 'Completed', color: 'text-green-600', bgColor: 'bg-green-50' },
+    completed: { label: 'Completed', color: 'text-primary-600', bgColor: 'bg-primary-50' },
     archived: { label: 'Archived', color: 'text-warm-500', bgColor: 'bg-warm-100' },
   }[status];
 
@@ -257,7 +257,7 @@ export function FocusAreaCard({
       animate={{ opacity: 1, y: 0 }}
       className={cn(
         'bg-white rounded-xl border border-warm-200 overflow-hidden transition-all duration-200',
-        isCompleted && 'border-green-200',
+        isCompleted && 'border-primary-200',
         className
       )}
     >
@@ -419,7 +419,7 @@ export function FocusAreaCard({
 
           {/* Completed date */}
           {focusArea.completedAt && (
-            <div className="flex items-center gap-2 text-xs text-green-600">
+            <div className="flex items-center gap-2 text-xs text-primary-600">
               <IconCheck size={14} />
               <span>Completed {new Date(focusArea.completedAt).toLocaleDateString()}</span>
             </div>

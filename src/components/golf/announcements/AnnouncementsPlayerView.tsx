@@ -133,7 +133,7 @@ function PlayerAnnouncementCard({ announcement: ann, playerId }: { announcement:
           <div className="flex items-center gap-2 mb-1">
             <h3 className="text-sm font-semibold text-warm-900 truncate">{ann.title}</h3>
             {isRecent && (
-              <span className="px-1.5 py-0.5 text-xs font-medium rounded-full bg-green-50 text-green-600 flex-shrink-0">
+              <span className="px-1.5 py-0.5 text-xs font-medium rounded-full bg-primary-50 text-primary-600 flex-shrink-0">
                 New
               </span>
             )}
@@ -162,7 +162,7 @@ function PlayerAnnouncementCard({ announcement: ann, playerId }: { announcement:
               </span>
             )}
             {hasAcknowledged && (
-              <span className="inline-flex items-center gap-1 text-xs text-green-600 font-medium">
+              <span className="inline-flex items-center gap-1 text-xs text-primary-600 font-medium">
                 <IconCheck size={10} />
                 Acknowledged
               </span>
@@ -185,13 +185,17 @@ function PlayerAnnouncementCard({ announcement: ann, playerId }: { announcement:
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.25 }}
+            transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
             className="overflow-hidden"
           >
             <div className="px-5 pb-4 border-t border-warm-100">
               {loadingDetail ? (
                 <div className="py-6 flex items-center justify-center">
-                  <div className="animate-spin h-5 w-5 border-2 border-green-600 border-t-transparent rounded-full" />
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+                  </span>
                 </div>
               ) : detail ? (
                 <div className="pt-4 space-y-4">
@@ -221,7 +225,7 @@ function PlayerAnnouncementCard({ announcement: ann, playerId }: { announcement:
                                 {d.document?.file_size ? ` - ${(d.document.file_size / 1024).toFixed(1)} KB` : ''}
                               </p>
                             </div>
-                            <IconDownload size={14} className="text-warm-400 group-hover:text-green-600 transition-colors flex-shrink-0" />
+                            <IconDownload size={14} className="text-warm-400 group-hover:text-primary-600 transition-colors flex-shrink-0" />
                           </a>
                         ))}
                       </div>
@@ -236,7 +240,7 @@ function PlayerAnnouncementCard({ announcement: ann, playerId }: { announcement:
                         {myTotalTasks > 0 && (
                           <span className={cn(
                             'text-xs font-medium tabular-nums',
-                            myCompletedTasks === myTotalTasks ? 'text-green-600' : 'text-warm-500'
+                            myCompletedTasks === myTotalTasks ? 'text-primary-600' : 'text-warm-500'
                           )}>
                             {myCompletedTasks}/{myTotalTasks} complete
                           </span>
@@ -277,7 +281,7 @@ function PlayerAnnouncementCard({ announcement: ann, playerId }: { announcement:
                   )}
 
                   {ann.requires_acknowledgement && hasAcknowledged && (
-                    <div className="pt-2 border-t border-warm-100 flex items-center gap-2 text-green-600">
+                    <div className="pt-2 border-t border-warm-100 flex items-center gap-2 text-primary-600">
                       <IconCheck size={16} />
                       <span className="text-sm font-medium">You acknowledged this announcement</span>
                     </div>

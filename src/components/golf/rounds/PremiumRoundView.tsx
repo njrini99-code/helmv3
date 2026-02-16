@@ -282,7 +282,7 @@ function getScoreStyles(score: number | null, par: number) {
   if (score === null) return { bg: 'bg-warm-100', text: 'text-warm-500', ring: 'ring-warm-200', dot: 'bg-warm-300' };
   const diff = score - par;
   if (diff <= -2) return { bg: 'bg-amber-50', text: 'text-amber-700', ring: 'ring-amber-200', dot: 'bg-amber-400' };
-  if (diff === -1) return { bg: 'bg-emerald-50', text: 'text-emerald-700', ring: 'ring-emerald-200', dot: 'bg-emerald-400' };
+  if (diff === -1) return { bg: 'bg-primary-50', text: 'text-primary-700', ring: 'ring-primary-200', dot: 'bg-primary-400' };
   if (diff === 0) return { bg: 'bg-warm-50', text: 'text-warm-600', ring: 'ring-warm-200', dot: 'bg-warm-300' };
   if (diff === 1) return { bg: 'bg-red-50', text: 'text-red-600', ring: 'ring-red-200', dot: 'bg-red-400' };
   if (diff === 2) return { bg: 'bg-red-50', text: 'text-red-700', ring: 'ring-red-300', dot: 'bg-red-500' };
@@ -377,7 +377,7 @@ function HoleCard({
             {hole.putts !== null && (
               <div className={cn(
                 'flex items-center gap-1 px-2 py-1 rounded-lg',
-                hole.putts >= 3 ? 'bg-red-50 text-red-600' : hole.putts <= 1 ? 'bg-emerald-50 text-emerald-600' : 'bg-warm-50 text-warm-500'
+                hole.putts >= 3 ? 'bg-red-50 text-red-600' : hole.putts <= 1 ? 'bg-primary-50 text-primary-600' : 'bg-warm-50 text-warm-500'
               )}>
                 <IconFlag size={12} />
                 <span className="font-medium">{hole.putts}</span>
@@ -386,7 +386,7 @@ function HoleCard({
             {hole.par >= 4 && hole.fairway_hit !== null && (
               <div className={cn(
                 'flex items-center gap-1 px-2 py-1 rounded-lg',
-                hole.fairway_hit ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'
+                hole.fairway_hit ? 'bg-primary-50 text-primary-600' : 'bg-red-50 text-red-500'
               )}>
                 {hole.fairway_hit ? <IconCheck size={12} /> : <IconX size={12} />}
                 <span className="font-medium">FIR</span>
@@ -395,7 +395,7 @@ function HoleCard({
             {hole.gir !== null && (
               <div className={cn(
                 'flex items-center gap-1 px-2 py-1 rounded-lg',
-                hole.gir ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'
+                hole.gir ? 'bg-primary-50 text-primary-600' : 'bg-red-50 text-red-500'
               )}>
                 {hole.gir ? <IconCheck size={12} /> : <IconX size={12} />}
                 <span className="font-medium">GIR</span>
@@ -428,7 +428,7 @@ function HoleCard({
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.25, ease: 'easeInOut' }}
+              transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
               className="overflow-hidden"
             >
               <div className={cn(
@@ -512,7 +512,7 @@ function HoleCard({
                               isProblematic
                                 ? 'bg-white/80 text-red-600 ring-1 ring-red-200'
                                 : shot.result === 'hole' || shot.result === 'holed'
-                                  ? 'bg-white/80 text-emerald-600 ring-1 ring-emerald-200'
+                                  ? 'bg-white/80 text-primary-600 ring-1 ring-primary-200'
                                   : 'bg-white/60 text-warm-500 ring-1 ring-warm-200/60'
                             )}
                           >
@@ -555,7 +555,7 @@ function NineSummary({ holes, label }: { holes: HoleData[]; label: string }) {
       <span className="text-sm font-semibold text-warm-700">{label}</span>
       <div className="flex items-center gap-4 text-xs">
         {birdies > 0 && (
-          <span className="text-emerald-600 font-medium">{birdies} birdie{birdies !== 1 ? 's' : ''}</span>
+          <span className="text-primary-600 font-medium">{birdies} birdie{birdies !== 1 ? 's' : ''}</span>
         )}
         <span className="text-warm-500">{pars} par{pars !== 1 ? 's' : ''}</span>
         {bogeys > 0 && (
@@ -563,7 +563,7 @@ function NineSummary({ holes, label }: { holes: HoleData[]; label: string }) {
         )}
         <div className={cn(
           'px-2.5 py-1 rounded-lg font-bold text-sm',
-          toPar < 0 ? 'bg-emerald-50 text-emerald-700' : toPar > 0 ? 'bg-red-50 text-red-600' : 'bg-warm-100 text-warm-600'
+          toPar < 0 ? 'bg-primary-50 text-primary-700' : toPar > 0 ? 'bg-red-50 text-red-600' : 'bg-warm-100 text-warm-600'
         )}>
           {totalScore} ({toPar === 0 ? 'E' : toPar > 0 ? `+${toPar}` : toPar})
         </div>
@@ -642,7 +642,7 @@ export function PremiumRoundView({
 
   const scoreColor = scoreToPar === null || scoreToPar === undefined
     ? 'text-warm-600'
-    : scoreToPar < 0 ? 'text-emerald-600' : scoreToPar > 0 ? 'text-red-600' : 'text-warm-600';
+    : scoreToPar < 0 ? 'text-primary-600' : scoreToPar > 0 ? 'text-red-600' : 'text-warm-600';
 
   const totalPenalties = sortedHoles.reduce((sum, h) => sum + (h.penalty_strokes || 0), 0);
   const bogeyPlusCount = sortedHoles.filter(h => h.score !== null && h.score > h.par).length;
@@ -742,7 +742,7 @@ export function PremiumRoundView({
             </div>
             <div>
               <p className="text-xs text-warm-400 font-medium">Birdies</p>
-              <p className="text-xl font-semibold text-emerald-600 tabular-nums">{birdieCount}</p>
+              <p className="text-xl font-semibold text-primary-600 tabular-nums">{birdieCount}</p>
             </div>
             <div>
               <p className="text-xs text-warm-400 font-medium">Penalties</p>
@@ -767,7 +767,11 @@ export function PremiumRoundView({
           </div>
           {shotDataLoading && (
             <div className="flex items-center gap-2 text-xs text-warm-400">
-              <div className="w-3 h-3 rounded-full border-2 border-primary-400 border-t-transparent animate-spin" />
+              <span className="flex items-center gap-0.5">
+                <span className="w-1 h-1 rounded-full bg-primary-400 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                <span className="w-1 h-1 rounded-full bg-primary-400 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                <span className="w-1 h-1 rounded-full bg-primary-400 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+              </span>
               Loading shot data...
             </div>
           )}

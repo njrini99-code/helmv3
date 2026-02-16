@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/toast';
 import { Modal } from '@/components/ui/modal';
@@ -15,6 +16,7 @@ interface TeamSettingsModalProps {
 }
 
 export function TeamSettingsModal({ isOpen, onClose, onUpdate }: TeamSettingsModalProps) {
+  const { modalRef } = useFocusTrap(isOpen, onClose);
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -210,9 +212,14 @@ export function TeamSettingsModal({ isOpen, onClose, onUpdate }: TeamSettingsMod
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Team Settings">
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="modal-title">
       {loadingData ? (
         <div className="flex items-center justify-center py-8">
-          <div className="animate-spin h-6 w-6 border-2 border-emerald-600 border-t-transparent rounded-full" />
+          <span className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+          </span>
         </div>
       ) : (
         <div className="space-y-6 max-h-[70vh] overflow-y-auto">
@@ -268,7 +275,7 @@ export function TeamSettingsModal({ isOpen, onClose, onUpdate }: TeamSettingsMod
                       accept="image/*"
                       onChange={handleLogoUpload}
                       disabled={uploadingLogo}
-                      className="text-sm text-warm-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-green-50 file:text-green-700 hover:file:bg-green-100 file:cursor-pointer"
+                      className="text-sm text-warm-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 file:cursor-pointer"
                       id="logo-upload"
                     />
                     <p className="text-xs text-warm-500 mt-1">
@@ -329,6 +336,7 @@ export function TeamSettingsModal({ isOpen, onClose, onUpdate }: TeamSettingsMod
           </div>
         </div>
       )}
+      </div>
     </Modal>
   );
 }

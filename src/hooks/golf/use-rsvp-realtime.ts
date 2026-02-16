@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 /**
@@ -247,6 +247,7 @@ export function useTeamEventsAttendanceRealtime(
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const supabase = createClient();
+  const eventIdsRef = useRef<Set<string>>(new Set());
 
   const fetchEvents = useCallback(async () => {
     if (!teamId) {
@@ -335,6 +336,7 @@ export function useTeamEventsAttendanceRealtime(
       }));
 
       setEvents(transformedEvents);
+      eventIdsRef.current = new Set(transformedEvents.map(e => e.id));
     } catch (err) {
       console.error('Error fetching team events:', err);
       setError(err instanceof Error ? err.message : 'Failed to load events');
@@ -375,18 +377,12 @@ export function useTeamEventsAttendanceRealtime(
         },
         (payload) => {
           // Only refetch if this attendance record is for one of our events
+          // Use ref to avoid async side effects inside state updater
           const newRecord = payload.new as Record<string, unknown> | undefined;
           const oldRecord = payload.old as Record<string, unknown> | undefined;
           const eventId = (newRecord?.event_id || oldRecord?.event_id) as string | undefined;
-          if (eventId) {
-            // Check if this event belongs to our team (by checking if it's in our list)
-            setEvents((prevEvents) => {
-              const isOurEvent = prevEvents.some(e => e.id === eventId);
-              if (isOurEvent) {
-                fetchEvents();
-              }
-              return prevEvents;
-            });
+          if (eventId && eventIdsRef.current.has(eventId)) {
+            fetchEvents();
           }
         }
       )

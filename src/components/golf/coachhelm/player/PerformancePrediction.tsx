@@ -64,7 +64,7 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
 
   const getTrendIcon = () => {
     if (isNeutral) return <IconTarget size={24} className="text-warm-400" />;
-    if (isPositive) return <IconTrendingDown size={24} className="text-green-500" />;
+    if (isPositive) return <IconTrendingDown size={24} className="text-primary-500" />;
     return <IconTrendingUp size={24} className="text-red-500" />;
   };
 
@@ -76,7 +76,7 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
   const getStateMessage = () => {
     switch (playerState) {
       case 'improving':
-        return { text: 'Your game is trending upward', icon: IconTrendingUp, color: 'text-green-600' };
+        return { text: 'Your game is trending upward', icon: IconTrendingUp, color: 'text-primary-600' };
       case 'struggling':
         return { text: 'Focus on fundamentals to get back on track', icon: IconTrendingDown, color: 'text-amber-600' };
       case 'stable':
@@ -124,7 +124,7 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
           <div className="flex items-center justify-center gap-3">
             <span className={cn(
               'text-5xl font-bold tracking-tight',
-              isPositive ? 'text-green-600' : isNeutral ? 'text-warm-700' : 'text-red-600'
+              isPositive ? 'text-primary-600' : isNeutral ? 'text-warm-700' : 'text-red-600'
             )}>
               {formatScore(predictedValue)}
             </span>
@@ -142,7 +142,7 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
           </div>
           <div className="relative h-3 bg-warm-100 rounded-full overflow-hidden">
             {/* Background gradient */}
-            <div className="absolute inset-0 bg-gradient-to-r from-green-200 via-warm-200 to-red-200 opacity-50" />
+            <div className="absolute inset-0 bg-gradient-to-r from-primary-200 via-warm-200 to-red-200 opacity-50" />
 
             {/* Confidence fill */}
             <motion.div
@@ -185,7 +185,7 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
                 <span className="text-warm-600">{factor.name}</span>
                 <span className={cn(
                   'font-medium tabular-nums',
-                  factor.contribution > 0 ? 'text-red-500' : 'text-green-500'
+                  factor.contribution > 0 ? 'text-red-500' : 'text-primary-500'
                 )}>
                   {factor.contribution > 0 ? '+' : ''}{factor.contribution.toFixed(1)}
                 </span>
@@ -204,9 +204,9 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
               {Math.round(prediction.tailRisks.blowupProbability * 100)}%
             </p>
           </div>
-          <div className="text-center p-3 bg-green-50/50 rounded-lg">
+          <div className="text-center p-3 bg-primary-50/50 rounded-lg">
             <p className="text-xs text-warm-500 mb-1">Great Round Chance</p>
-            <p className="text-lg font-bold text-green-500">
+            <p className="text-lg font-bold text-primary-500">
               {Math.round(prediction.tailRisks.greatRoundProbability * 100)}%
             </p>
           </div>

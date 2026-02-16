@@ -19,3 +19,6 @@ export * from './use-message-attachments';
 
 // Offline support
 export * from './use-offline-sync';
+
+// Appearance preferences
+export * from './use-appearance-preferences';

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/toast';
 import { Modal } from '@/components/ui/modal';
@@ -25,6 +26,7 @@ export function PersonalInfoModal({
   role,
   onUpdate
 }: PersonalInfoModalProps) {
+  const { modalRef } = useFocusTrap(isOpen, onClose);
   const [loading, setLoading] = useState(false);
   const { showToast } = useToast();
 
@@ -83,7 +85,7 @@ export function PersonalInfoModal({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Personal Information">
-      <div className="space-y-6">
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="modal-title" className="space-y-6">
         {/* Avatar Upload */}
         <div>
           <label className="block text-sm font-medium text-warm-700 mb-3">

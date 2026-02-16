@@ -87,6 +87,10 @@ export async function getDocuments(teamId: string): Promise<{ data: GolfDocument
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: 'Unauthorized' };
 
+    // Verify user belongs to this team
+    const hasAccess = await verifyTeamAccess(supabase, user.id, teamId);
+    if (!hasAccess) return { data: null, error: 'Not authorized to access this team\'s documents' };
+
     const { data, error } = await supabase
       .from('golf_documents')
       .select(`

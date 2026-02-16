@@ -99,8 +99,8 @@ function BarItem({
             <span
               className={cn(
                 'text-xs font-medium px-1.5 py-0.5 rounded',
-                performanceLabel === 'Excellent' && 'bg-green-100 text-green-700',
-                performanceLabel === 'Good' && 'bg-green-50 text-green-600',
+                performanceLabel === 'Excellent' && 'bg-primary-100 text-primary-700',
+                performanceLabel === 'Good' && 'bg-primary-50 text-primary-600',
                 performanceLabel === 'Needs Work' && 'bg-amber-100 text-amber-700',
                 performanceLabel === 'Focus Area' && 'bg-red-100 text-red-700'
               )}
@@ -222,7 +222,7 @@ export function ShotTypeBreakdown({
           className="space-y-3"
         >
           <div className="flex items-center gap-2">
-            <div className="w-1 h-4 bg-green-500 rounded-full" />
+            <div className="w-1 h-4 bg-primary-500 rounded-full" />
             <h4 className="text-sm font-semibold text-warm-800 uppercase tracking-wide">
               Approach Shots
             </h4>
@@ -340,7 +340,7 @@ export function ShotTypeBreakdown({
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-warm-500">1-Putt</span>
-                <span className="font-medium text-green-600">{puttingStats.onePuttRate}%</span>
+                <span className="font-medium text-primary-600">{puttingStats.onePuttRate}%</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-warm-500">2-Putt</span>

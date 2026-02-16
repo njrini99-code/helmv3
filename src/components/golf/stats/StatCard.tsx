@@ -54,8 +54,8 @@ export function GolfStatCard({
 
     return {
       icon: trend === 'improving' ? '↑' : trend === 'declining' ? '↓' : '→',
-      color: trend === 'stable' ? 'text-warm-500' : isPositive ? 'text-green-500' : 'text-red-500',
-      bgColor: trend === 'stable' ? 'bg-warm-50/70' : isPositive ? 'bg-green-50/70' : 'bg-red-50/70',
+      color: trend === 'stable' ? 'text-warm-500' : isPositive ? 'text-primary-500' : 'text-red-500',
+      bgColor: trend === 'stable' ? 'bg-warm-50/70' : isPositive ? 'bg-primary-50/70' : 'bg-red-50/70',
     };
   };
 
@@ -71,7 +71,7 @@ export function GolfStatCard({
     return {
       diff: Math.abs(diff),
       isBetter,
-      color: isBetter ? 'text-green-600' : 'text-red-600',
+      color: isBetter ? 'text-primary-600' : 'text-red-600',
     };
   };
 
@@ -262,7 +262,7 @@ export function ScoringDistribution({
 
   const data = [
     { label: 'Eagles', value: eagles, color: 'bg-purple-500', pct: (eagles / total) * 100 },
-    { label: 'Birdies', value: birdies, color: 'bg-green-500', pct: (birdies / total) * 100 },
+    { label: 'Birdies', value: birdies, color: 'bg-primary-500', pct: (birdies / total) * 100 },
     { label: 'Pars', value: pars, color: 'bg-warm-400', pct: (pars / total) * 100 },
     { label: 'Bogeys', value: bogeys, color: 'bg-orange-400', pct: (bogeys / total) * 100 },
     { label: '2+ Over', value: doublePlus, color: 'bg-red-500', pct: (doublePlus / total) * 100 },

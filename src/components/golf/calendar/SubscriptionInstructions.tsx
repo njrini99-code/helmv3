@@ -100,7 +100,7 @@ export function SubscriptionInstructions({
                   'flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm',
                   'border-2 transition-all duration-200',
                   isSelected
-                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'
+                    ? 'bg-primary-600 text-white border-primary-600 shadow-md'
                     : 'bg-white text-warm-700 border-warm-200 hover:border-warm-300'
                 )}
               >
@@ -114,13 +114,13 @@ export function SubscriptionInstructions({
 
       {/* Copy URL button (prominent) */}
       {!compact && (
-        <div className="p-4 rounded-lg bg-emerald-50 border border-emerald-200">
+        <div className="p-4 rounded-lg bg-primary-50 border border-primary-200">
           <div className="flex items-start gap-3">
             <div className="flex-1">
-              <p className="text-sm font-semibold text-emerald-900 mb-1">
+              <p className="text-sm font-semibold text-primary-900 mb-1">
                 First, copy this URL:
               </p>
-              <code className="text-xs text-emerald-700 font-mono break-all block">
+              <code className="text-xs text-primary-700 font-mono break-all block">
                 {feedUrl}
               </code>
             </div>
@@ -130,8 +130,8 @@ export function SubscriptionInstructions({
               className={cn(
                 'shrink-0 px-3 py-2 rounded-lg font-medium text-sm transition-all',
                 copied
-                  ? 'bg-emerald-600 text-white'
-                  : 'bg-white text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
+                  ? 'bg-primary-600 text-white'
+                  : 'bg-white text-primary-700 border border-primary-200 hover:bg-primary-100'
               )}
             >
               {copied ? (
@@ -225,7 +225,7 @@ function AppleInstructions({ compact }: { compact?: boolean }) {
                     compact ? 'text-xs' : 'text-sm'
                   )}
                 >
-                  <span className="text-emerald-600 font-semibold shrink-0">{stepIdx + 1}.</span>
+                  <span className="text-primary-600 font-semibold shrink-0">{stepIdx + 1}.</span>
                   <span>{step}</span>
                 </li>
               ))}
@@ -287,7 +287,7 @@ function GoogleInstructions({ compact }: { compact?: boolean }) {
                     compact ? 'text-xs' : 'text-sm'
                   )}
                 >
-                  <span className="text-emerald-600 font-semibold shrink-0">{stepIdx + 1}.</span>
+                  <span className="text-primary-600 font-semibold shrink-0">{stepIdx + 1}.</span>
                   <span>{step}</span>
                 </li>
               ))}
@@ -355,7 +355,7 @@ function OutlookInstructions({ compact }: { compact?: boolean }) {
                     compact ? 'text-xs' : 'text-sm'
                   )}
                 >
-                  <span className="text-emerald-600 font-semibold shrink-0">{stepIdx + 1}.</span>
+                  <span className="text-primary-600 font-semibold shrink-0">{stepIdx + 1}.</span>
                   <span>{step}</span>
                 </li>
               ))}
@@ -395,7 +395,7 @@ export function CompactSubscriptionHelp({ feedUrl }: { feedUrl: string }) {
         className={cn(
           'shrink-0 px-2 py-1 rounded text-xs font-medium transition-colors',
           copied
-            ? 'bg-emerald-100 text-emerald-700'
+            ? 'bg-primary-100 text-primary-700'
             : 'bg-white text-warm-600 hover:bg-warm-100'
         )}
       >

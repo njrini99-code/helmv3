@@ -61,22 +61,22 @@ export function PlayerSelector({ players, selectedPlayerIds, onChange }: PlayerS
           className={cn(
             'w-full p-3 rounded-xl border-2 text-left transition-all flex items-center gap-3',
             isAllTeam
-              ? 'border-green-600 bg-green-50 shadow-sm'
+              ? 'border-primary-600 bg-primary-50 shadow-sm'
               : 'border-warm-200 hover:border-warm-300 hover:shadow-sm'
           )}
         >
           <div className={cn(
             'w-9 h-9 rounded-lg flex items-center justify-center',
-            isAllTeam ? 'bg-green-100' : 'bg-warm-100'
+            isAllTeam ? 'bg-primary-100' : 'bg-warm-100'
           )}>
-            <IconUsers size={18} className={isAllTeam ? 'text-green-600' : 'text-warm-400'} />
+            <IconUsers size={18} className={isAllTeam ? 'text-primary-600' : 'text-warm-400'} />
           </div>
           <div className="flex-1">
             <p className="font-medium text-warm-900 text-sm">All Team Members</p>
             <p className="text-xs text-warm-500">{players.length} players</p>
           </div>
           {isAllTeam && (
-            <div className="w-5 h-5 rounded-full bg-green-600 flex items-center justify-center">
+            <div className="w-5 h-5 rounded-full bg-primary-600 flex items-center justify-center">
               <IconCheck size={12} className="text-white" />
             </div>
           )}
@@ -90,15 +90,15 @@ export function PlayerSelector({ players, selectedPlayerIds, onChange }: PlayerS
           className={cn(
             'w-full p-3 rounded-xl border-2 text-left transition-all flex items-center gap-3',
             !isAllTeam
-              ? 'border-green-600 bg-green-50 shadow-sm'
+              ? 'border-primary-600 bg-primary-50 shadow-sm'
               : 'border-warm-200 hover:border-warm-300 hover:shadow-sm'
           )}
         >
           <div className={cn(
             'w-9 h-9 rounded-lg flex items-center justify-center',
-            !isAllTeam ? 'bg-green-100' : 'bg-warm-100'
+            !isAllTeam ? 'bg-primary-100' : 'bg-warm-100'
           )}>
-            <IconUser size={18} className={!isAllTeam ? 'text-green-600' : 'text-warm-400'} />
+            <IconUser size={18} className={!isAllTeam ? 'text-primary-600' : 'text-warm-400'} />
           </div>
           <div className="flex-1">
             <p className="font-medium text-warm-900 text-sm">Specific Players</p>
@@ -109,7 +109,7 @@ export function PlayerSelector({ players, selectedPlayerIds, onChange }: PlayerS
             </p>
           </div>
           {!isAllTeam && (
-            <div className="w-5 h-5 rounded-full bg-green-600 flex items-center justify-center">
+            <div className="w-5 h-5 rounded-full bg-primary-600 flex items-center justify-center">
               <IconCheck size={12} className="text-white" />
             </div>
           )}
@@ -122,7 +122,7 @@ export function PlayerSelector({ players, selectedPlayerIds, onChange }: PlayerS
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
             className="overflow-hidden"
           >
             <div className="mt-3 border border-warm-200 rounded-xl overflow-hidden">
@@ -151,14 +151,14 @@ export function PlayerSelector({ players, selectedPlayerIds, onChange }: PlayerS
                       className={cn(
                         'w-full px-3 py-2 rounded-lg text-left text-sm transition-all flex items-center gap-2',
                         isSelected
-                          ? 'bg-green-100 text-green-900'
+                          ? 'bg-primary-100 text-primary-900'
                           : 'hover:bg-warm-50 text-warm-700'
                       )}
                     >
                       <div className={cn(
                         'w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors',
                         isSelected
-                          ? 'bg-green-600 border-green-600'
+                          ? 'bg-primary-600 border-primary-600'
                           : 'border-warm-300'
                       )}>
                         {isSelected && <IconCheck size={10} className="text-white" />}

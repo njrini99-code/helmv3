@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/toast';
 import { Modal } from '@/components/ui/modal';
@@ -13,6 +14,7 @@ interface InviteSettingsModalProps {
 }
 
 export function InviteSettingsModal({ isOpen, onClose }: InviteSettingsModalProps) {
+  const { modalRef } = useFocusTrap(isOpen, onClose);
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [inviteCode, setInviteCode] = useState('');
@@ -115,9 +117,14 @@ export function InviteSettingsModal({ isOpen, onClose }: InviteSettingsModalProp
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Team Invite Settings">
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="modal-title">
       {loadingData ? (
         <div className="flex items-center justify-center py-8">
-          <div className="animate-spin h-6 w-6 border-2 border-emerald-600 border-t-transparent rounded-full" />
+          <span className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+          </span>
         </div>
       ) : (
         <div className="space-y-6">
@@ -177,6 +184,7 @@ export function InviteSettingsModal({ isOpen, onClose }: InviteSettingsModalProp
           </div>
         </div>
       )}
+      </div>
     </Modal>
   );
 }

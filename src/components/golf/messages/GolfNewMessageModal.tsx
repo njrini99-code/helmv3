@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { cn } from '@/lib/utils';
 import { Modal, ModalFooter } from '@/components/ui/modal';
 import { SearchBar } from '@/components/ui/search-bar';
@@ -33,6 +34,7 @@ export function GolfNewMessageModal({
   currentUserRole,
   teamId,
 }: GolfNewMessageModalProps) {
+  const { modalRef } = useFocusTrap(isOpen, onClose);
   const [searchQuery, setSearchQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -184,6 +186,7 @@ export function GolfNewMessageModal({
       size="md"
      
     >
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="modal-title">
       <div className="space-y-4">
         {/* No Team Error */}
         {noTeamError && (
@@ -213,7 +216,11 @@ export function GolfNewMessageModal({
         <div className="min-h-[300px] max-h-[400px] overflow-y-auto -mx-6 px-6">
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin h-6 w-6 border-2 border-green-600 border-t-transparent rounded-full" />
+              <span className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+              </span>
             </div>
           ) : noTeamError ? null : results.length > 0 ? (
             <div className="divide-y divide-warm-100">
@@ -224,7 +231,7 @@ export function GolfNewMessageModal({
                   className={cn(
                     'w-full px-4 py-3 flex items-center gap-3 text-left transition-colors',
                     'hover:bg-warm-50 rounded-lg -mx-4',
-                    selectedId === result.userId && 'bg-green-50 hover:bg-green-50'
+                    selectedId === result.userId && 'bg-primary-50 hover:bg-primary-50'
                   )}
                 >
                   <Avatar name={result.name} src={result.avatar} size="md" />
@@ -235,7 +242,7 @@ export function GolfNewMessageModal({
                     )}
                   </div>
                   {selectedId === result.userId && (
-                    <div className="w-6 h-6 rounded-full bg-green-600 flex items-center justify-center">
+                    <div className="w-6 h-6 rounded-full bg-primary-600 flex items-center justify-center">
                       <IconCheck size={14} className="text-white" />
                     </div>
                   )}
@@ -270,6 +277,7 @@ export function GolfNewMessageModal({
           Start Conversation
         </Button>
       </ModalFooter>
+      </div>
     </Modal>
   );
 }

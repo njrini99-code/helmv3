@@ -208,7 +208,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                                 <div className="relative p-6 md:p-10 text-center">
                                     <div className="absolute right-0 top-0 w-48 h-48 bg-primary-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none" />
                                     <div className="relative z-10">
-                                        <div className="w-14 h-14 md:w-16 md:h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-primary-50 to-emerald-50 flex items-center justify-center shadow-sm">
+                                        <div className="w-14 h-14 md:w-16 md:h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-primary-50 to-primary-50 flex items-center justify-center shadow-sm">
                                             <IconGolf size={28} className="text-primary-500 md:hidden" />
                                             <IconGolf size={32} className="text-primary-500 hidden md:block" />
                                         </div>

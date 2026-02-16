@@ -235,13 +235,13 @@ export function CalendarDayViewSwipeable({
         >
           <RefreshCw
             className={cn(
-              'w-5 h-5 text-green-600',
+              'w-5 h-5 text-primary-600',
               isRefreshing && 'animate-spin',
               pullDistance > 60 && !isRefreshing && 'scale-110'
             )}
           />
           {pullDistance > 60 && !isRefreshing && (
-            <span className="ml-2 text-sm text-green-600 font-medium">Release to refresh</span>
+            <span className="ml-2 text-sm text-primary-600 font-medium">Release to refresh</span>
           )}
         </div>
       )}
@@ -254,12 +254,12 @@ export function CalendarDayViewSwipeable({
             <div className="flex items-center gap-2">
               <h2 className={cn(
                 'text-xl font-bold tracking-tight',
-                isTodayDate ? 'text-green-600' : 'text-warm-900'
+                isTodayDate ? 'text-primary-600' : 'text-warm-900'
               )}>
                 {dateLabel}
               </h2>
               {isTodayDate && (
-                <span className="px-2 py-0.5 text-xs font-bold uppercase tracking-wide bg-green-100 text-green-700 rounded-full">
+                <span className="px-2 py-0.5 text-xs font-bold uppercase tracking-wide bg-primary-100 text-primary-700 rounded-full">
                   Now
                 </span>
               )}
@@ -277,11 +277,12 @@ export function CalendarDayViewSwipeable({
                 className={cn(
                   'flex items-center justify-center',
                   'w-10 h-10 rounded-xl',
-                  'bg-green-100 text-green-700',
-                  'hover:bg-green-200 active:scale-95',
+                  'bg-primary-100 text-primary-700',
+                  'hover:bg-primary-200 active:scale-95',
                   'transition-all duration-200',
                   'touch-manipulation mr-1'
                 )}
+                aria-label="Go to today"
               >
                 <Calendar className="w-4 h-4" />
               </button>
@@ -301,6 +302,7 @@ export function CalendarDayViewSwipeable({
                 'touch-manipulation',
                 isTransitioning && 'opacity-50'
               )}
+              aria-label="Previous day"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
@@ -317,6 +319,7 @@ export function CalendarDayViewSwipeable({
                 'touch-manipulation',
                 isTransitioning && 'opacity-50'
               )}
+              aria-label="Next day"
             >
               <ChevronRight className="w-5 h-5" />
             </button>
@@ -338,7 +341,7 @@ export function CalendarDayViewSwipeable({
             // Premium empty state
             <div className="flex flex-col items-center justify-center py-20 text-center">
               <div className="relative mb-6">
-                <div className="absolute inset-0 bg-green-500/10 rounded-3xl blur-2xl scale-150" />
+                <div className="absolute inset-0 bg-primary-500/10 rounded-3xl blur-2xl scale-150" />
                 <div className="relative w-20 h-20 rounded-3xl bg-gradient-to-br from-warm-50 to-warm-100 border border-warm-200/50 flex items-center justify-center shadow-sm">
                   <Calendar className="w-10 h-10 text-warm-300" />
                 </div>
@@ -356,9 +359,9 @@ export function CalendarDayViewSwipeable({
                   className={cn(
                     'group flex items-center gap-2',
                     'px-6 py-3 rounded-2xl font-semibold text-sm',
-                    'bg-green-600 text-white',
-                    'shadow-lg shadow-green-600/25',
-                    'hover:bg-green-700 hover:shadow-green-600/30',
+                    'bg-primary-600 text-white',
+                    'shadow-lg shadow-primary-600/25',
+                    'hover:bg-primary-700 hover:shadow-primary-600/30',
                     'active:scale-95',
                     'transition-all duration-200',
                     'touch-manipulation'
@@ -479,9 +482,9 @@ export function MobileWeekPicker({
                 'transition-all duration-200 ease-out',
                 'touch-manipulation select-none',
                 isSelected
-                  ? 'bg-green-600 shadow-lg shadow-green-600/30 scale-105'
+                  ? 'bg-primary-600 shadow-lg shadow-primary-600/30 scale-105'
                   : isTodayDate
-                    ? 'bg-green-50 ring-2 ring-green-500/30'
+                    ? 'bg-primary-50 ring-2 ring-primary-500/30'
                     : 'bg-white/60 hover:bg-white/90',
                 isPastDate && !isSelected && 'opacity-50',
                 'active:scale-95'
@@ -491,9 +494,9 @@ export function MobileWeekPicker({
               <span className={cn(
                 'text-xs font-semibold uppercase tracking-wide',
                 isSelected
-                  ? 'text-green-100'
+                  ? 'text-primary-100'
                   : isTodayDate
-                    ? 'text-green-600'
+                    ? 'text-primary-600'
                     : 'text-warm-400'
               )}>
                 {format(day, 'EEE')}
@@ -505,7 +508,7 @@ export function MobileWeekPicker({
                 isSelected
                   ? 'text-white'
                   : isTodayDate
-                    ? 'text-green-700'
+                    ? 'text-primary-700'
                     : 'text-warm-800'
               )}>
                 {format(day, 'd')}
@@ -521,7 +524,7 @@ export function MobileWeekPicker({
                         'w-1 h-1 rounded-full',
                         isSelected
                           ? 'bg-white/80'
-                          : 'bg-green-500'
+                          : 'bg-primary-500'
                       )}
                     />
                   ))}
@@ -530,7 +533,7 @@ export function MobileWeekPicker({
 
               {/* Today ring indicator */}
               {isTodayDate && !isSelected && (
-                <div className="absolute inset-0 rounded-2xl ring-2 ring-green-500/40 pointer-events-none" />
+                <div className="absolute inset-0 rounded-2xl ring-2 ring-primary-500/40 pointer-events-none" />
               )}
             </button>
           );

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import { format, addDays, addHours, parseISO } from 'date-fns';
-import type { Coach } from '../page';
+import type { Coach } from '../crm-config';
 import type { CRMEvent, CRMEventType } from './CalendarView';
 
 // ============================================================================
@@ -33,10 +33,10 @@ interface FormState {
 const EVENT_TYPES: { value: CRMEventType; label: string; icon: string; color: string }[] = [
   { value: 'demo', label: 'Demo', icon: '🖥️', color: 'bg-violet-500' },
   { value: 'follow_up', label: 'Follow-up', icon: '📞', color: 'bg-blue-500' },
-  { value: 'call', label: 'Call', icon: '☎️', color: 'bg-emerald-500' },
+  { value: 'call', label: 'Call', icon: '☎️', color: 'bg-primary-500' },
   { value: 'meeting', label: 'Meeting', icon: '🤝', color: 'bg-amber-500' },
-  { value: 'email_reminder', label: 'Email', icon: '✉️', color: 'bg-slate-500' },
-  { value: 'other', label: 'Other', icon: '📌', color: 'bg-gray-500' },
+  { value: 'email_reminder', label: 'Email', icon: '✉️', color: 'bg-warm-500' },
+  { value: 'other', label: 'Other', icon: '📌', color: 'bg-warm-500' },
 ];
 
 const DURATIONS = [
@@ -264,8 +264,8 @@ export function ScheduleEventModal({
           {/* Coach Selection (if not pre-selected) */}
           {!selectedCoach && !isEditing && (
             <div>
-              <label className="text-sm font-semibold text-slate-700 mb-2 block">
-                Coach <span className="text-slate-400 font-normal">(optional)</span>
+              <label className="text-sm font-semibold text-warm-700 mb-2 block">
+                Coach <span className="text-warm-400 font-normal">(optional)</span>
               </label>
               <div className="relative">
                 <input
@@ -273,10 +273,10 @@ export function ScheduleEventModal({
                   value={coachSearchQuery}
                   onChange={(e) => setCoachSearchQuery(e.target.value)}
                   placeholder="Search coach or school..."
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:bg-white"
+                  className="w-full px-4 py-3 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:bg-white"
                 />
                 {coachSearchResults.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-10 max-h-48 overflow-y-auto">
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-warm-200 rounded-xl shadow-xl z-10 max-h-48 overflow-y-auto">
                     {coachSearchResults.map((c) => (
                       <button
                         key={c.id}
@@ -286,7 +286,7 @@ export function ScheduleEventModal({
                           setCoachSearchQuery('');
                           setCoachSearchResults([]);
                         }}
-                        className="w-full p-3 text-left hover:bg-slate-50 flex items-center gap-3"
+                        className="w-full p-3 text-left hover:bg-warm-50 flex items-center gap-3"
                       >
                         <span className={cn(
                           'px-2 py-1 rounded text-xs font-bold',
@@ -295,8 +295,8 @@ export function ScheduleEventModal({
                           {c.division}
                         </span>
                         <div>
-                          <div className="font-medium text-slate-800">{c.school}</div>
-                          <div className="text-xs text-slate-500">{c.name}</div>
+                          <div className="font-medium text-warm-800">{c.school}</div>
+                          <div className="text-xs text-warm-500">{c.name}</div>
                         </div>
                       </button>
                     ))}
@@ -308,7 +308,7 @@ export function ScheduleEventModal({
 
           {/* Selected Coach Badge */}
           {selectedCoach && (
-            <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+            <div className="flex items-center gap-3 p-3 bg-warm-50 rounded-xl">
               <span className={cn(
                 'px-2 py-1 rounded text-xs font-bold',
                 selectedCoach.division === 'D2' ? 'bg-blue-100 text-blue-700' : 'bg-violet-100 text-violet-700'
@@ -316,8 +316,8 @@ export function ScheduleEventModal({
                 {selectedCoach.division}
               </span>
               <div className="flex-1">
-                <div className="font-medium text-slate-800">{selectedCoach.school}</div>
-                <div className="text-xs text-slate-500">{selectedCoach.name}</div>
+                <div className="font-medium text-warm-800">{selectedCoach.school}</div>
+                <div className="text-xs text-warm-500">{selectedCoach.name}</div>
               </div>
               {!isEditing && (
                 <button
@@ -325,7 +325,7 @@ export function ScheduleEventModal({
                     setSelectedCoach(null);
                     setForm(f => ({ ...f, coachId: null }));
                   }}
-                  className="text-slate-400 hover:text-slate-600 text-sm"
+                  className="text-warm-400 hover:text-warm-600 text-sm"
                 >
                   ✕
                 </button>
@@ -335,7 +335,7 @@ export function ScheduleEventModal({
 
           {/* Event Type */}
           <div>
-            <label className="text-sm font-semibold text-slate-700 mb-2 block">Event Type</label>
+            <label className="text-sm font-semibold text-warm-700 mb-2 block">Event Type</label>
             <div className="grid grid-cols-3 gap-2">
               {EVENT_TYPES.map((type) => (
                 <button
@@ -345,7 +345,7 @@ export function ScheduleEventModal({
                     'p-3 rounded-xl text-center transition-all',
                     form.type === type.value
                       ? `${type.color} text-white shadow-lg`
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      : 'bg-warm-100 text-warm-700 hover:bg-warm-200'
                   )}
                 >
                   <span className="text-xl block mb-1">{type.icon}</span>
@@ -357,20 +357,20 @@ export function ScheduleEventModal({
 
           {/* Title */}
           <div>
-            <label className="text-sm font-semibold text-slate-700 mb-2 block">Title</label>
+            <label className="text-sm font-semibold text-warm-700 mb-2 block">Title</label>
             <input
               type="text"
               value={form.title}
               onChange={(e) => setForm(f => ({ ...f, title: e.target.value }))}
               placeholder="Event title"
-              className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+              className="w-full px-4 py-3 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
             />
           </div>
 
           {/* Quick Time Select */}
           {!isEditing && (
             <div>
-              <label className="text-sm font-semibold text-slate-700 mb-2 block">Quick Select</label>
+              <label className="text-sm font-semibold text-warm-700 mb-2 block">Quick Select</label>
               <div className="flex flex-wrap gap-2">
                 {QUICK_TIMES.map((qt) => (
                   <button
@@ -379,7 +379,7 @@ export function ScheduleEventModal({
                       const { date, time } = qt.getValue();
                       setForm(f => ({ ...f, date, time }));
                     }}
-                    className="px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg text-sm font-medium text-slate-700 transition-colors"
+                    className="px-3 py-2 bg-warm-100 hover:bg-warm-200 rounded-lg text-sm font-medium text-warm-700 transition-colors"
                   >
                     {qt.label}
                   </button>
@@ -391,28 +391,28 @@ export function ScheduleEventModal({
           {/* Date & Time */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-semibold text-slate-700 mb-2 block">Date</label>
+              <label className="text-sm font-semibold text-warm-700 mb-2 block">Date</label>
               <input
                 type="date"
                 value={form.date}
                 onChange={(e) => setForm(f => ({ ...f, date: e.target.value }))}
-                className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                className="w-full px-4 py-3 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
               />
             </div>
             <div>
-              <label className="text-sm font-semibold text-slate-700 mb-2 block">Time</label>
+              <label className="text-sm font-semibold text-warm-700 mb-2 block">Time</label>
               <input
                 type="time"
                 value={form.time}
                 onChange={(e) => setForm(f => ({ ...f, time: e.target.value }))}
-                className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                className="w-full px-4 py-3 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
               />
             </div>
           </div>
 
           {/* Duration */}
           <div>
-            <label className="text-sm font-semibold text-slate-700 mb-2 block">Duration</label>
+            <label className="text-sm font-semibold text-warm-700 mb-2 block">Duration</label>
             <div className="flex flex-wrap gap-2">
               {DURATIONS.map((d) => (
                 <button
@@ -422,7 +422,7 @@ export function ScheduleEventModal({
                     'px-4 py-2 rounded-lg text-sm font-medium transition-all',
                     form.duration === d.value
                       ? 'bg-violet-500 text-white shadow-lg'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      : 'bg-warm-100 text-warm-700 hover:bg-warm-200'
                   )}
                 >
                   {d.label}
@@ -433,49 +433,49 @@ export function ScheduleEventModal({
 
           {/* Location */}
           <div>
-            <label className="text-sm font-semibold text-slate-700 mb-2 block">
-              Location <span className="text-slate-400 font-normal">(optional)</span>
+            <label className="text-sm font-semibold text-warm-700 mb-2 block">
+              Location <span className="text-warm-400 font-normal">(optional)</span>
             </label>
             <input
               type="text"
               value={form.location}
               onChange={(e) => setForm(f => ({ ...f, location: e.target.value }))}
               placeholder="e.g., Zoom, Phone, Office"
-              className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+              className="w-full px-4 py-3 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
             />
           </div>
 
           {/* Meeting URL */}
           <div>
-            <label className="text-sm font-semibold text-slate-700 mb-2 block">
-              Meeting Link <span className="text-slate-400 font-normal">(optional)</span>
+            <label className="text-sm font-semibold text-warm-700 mb-2 block">
+              Meeting Link <span className="text-warm-400 font-normal">(optional)</span>
             </label>
             <input
               type="url"
               value={form.meetingUrl}
               onChange={(e) => setForm(f => ({ ...f, meetingUrl: e.target.value }))}
               placeholder="https://zoom.us/j/..."
-              className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+              className="w-full px-4 py-3 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="text-sm font-semibold text-slate-700 mb-2 block">
-              Notes <span className="text-slate-400 font-normal">(optional)</span>
+            <label className="text-sm font-semibold text-warm-700 mb-2 block">
+              Notes <span className="text-warm-400 font-normal">(optional)</span>
             </label>
             <textarea
               value={form.description}
               onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))}
               placeholder="Add any notes for this event..."
               rows={3}
-              className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
+              className="w-full px-4 py-3 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
             />
           </div>
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+        <div className="px-6 py-4 bg-warm-50 border-t border-warm-200 flex items-center justify-between">
           {isEditing ? (
             <button
               onClick={handleDelete}
@@ -491,7 +491,7 @@ export function ScheduleEventModal({
           <div className="flex items-center gap-3">
             <button
               onClick={onClose}
-              className="px-5 py-2.5 text-slate-600 hover:text-slate-800 font-medium"
+              className="px-5 py-2.5 text-warm-600 hover:text-warm-800 font-medium"
             >
               Cancel
             </button>

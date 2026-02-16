@@ -46,10 +46,10 @@ interface InsightCardProps {
 
 const toneStyles = {
   encouraging: {
-    bg: 'bg-green-50',
-    border: 'border-green-200',
-    icon: 'text-green-600',
-    accent: 'bg-green-500',
+    bg: 'bg-primary-50',
+    border: 'border-primary-200',
+    icon: 'text-primary-600',
+    accent: 'bg-primary-500',
   },
   neutral: {
     bg: 'bg-warm-50',
@@ -175,7 +175,7 @@ export function InsightCard({
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
+              transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
               className="overflow-hidden"
             >
               <div className="px-4 pb-4 pt-0">
@@ -229,17 +229,17 @@ export function InsightCard({
                 {playerId && (
                   <button
                     onClick={handleViewDetails}
-                    className="w-full flex items-center justify-between p-3 mb-4 bg-white/70 hover:bg-white rounded-lg border border-warm-200 hover:border-green-200 transition-all group"
+                    className="w-full flex items-center justify-between p-3 mb-4 bg-white/70 hover:bg-white rounded-lg border border-warm-200 hover:border-primary-200 transition-all group"
                   >
                     <div className="flex items-center gap-2">
-                      <IconSparkles size={16} className="text-green-600" />
+                      <IconSparkles size={16} className="text-primary-600" />
                       <span className="text-sm font-medium text-warm-700">
                         View Full Analysis
                       </span>
                     </div>
                     <IconChevronRight
                       size={16}
-                      className="text-warm-400 group-hover:text-green-600 transition-colors"
+                      className="text-warm-400 group-hover:text-primary-600 transition-colors"
                     />
                   </button>
                 )}
@@ -252,7 +252,7 @@ export function InsightCard({
                         e.stopPropagation();
                         onAction('acknowledge');
                       }}
-                      className="flex items-center gap-2 text-xs font-medium text-green-600 hover:text-green-700 px-3 py-1.5 rounded-lg bg-green-100 hover:bg-green-200 transition-colors"
+                      className="flex items-center gap-2 text-xs font-medium text-primary-600 hover:text-primary-700 px-3 py-1.5 rounded-lg bg-primary-100 hover:bg-primary-200 transition-colors"
                     >
                       <IconCheck size={14} />
                       Got It

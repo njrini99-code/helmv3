@@ -58,20 +58,20 @@ export default async function GolfJoinTeamPage({ params }: PageProps) {
 
   if (teamError || !team) {
     return (
-      <div className="min-h-screen bg-[#FAF6F1] flex items-center justify-center p-6">
-        <div className="max-w-md w-full bg-white rounded-2xl border border-slate-200 p-8 text-center">
+      <div className="min-h-screen bg-cream flex items-center justify-center p-6">
+        <div className="max-w-md w-full bg-white rounded-2xl border border-warm-200 p-8 text-center">
           <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-8 h-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </div>
-          <h1 className="text-xl font-semibold text-slate-900 mb-2">Invalid Invite Code</h1>
-          <p className="text-slate-600 mb-6">
+          <h1 className="text-xl font-semibold text-warm-900 mb-2">Invalid Invite Code</h1>
+          <p className="text-warm-600 mb-6">
             This team invitation code is invalid or does not exist.
           </p>
           <a
             href="/golf/dashboard"
-            className="inline-block px-6 py-2.5 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors"
+            className="inline-block px-6 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
           >
             Go to Dashboard
           </a>

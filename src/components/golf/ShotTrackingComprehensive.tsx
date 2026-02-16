@@ -1145,15 +1145,16 @@ export default function ShotTrackingComprehensive({
             {onAutoSave && autoSaveStatus !== 'idle' && (
               <span className={`flex items-center gap-2 text-xs font-medium px-2 py-1 rounded-md transition-all ${
                 autoSaveStatus === 'saving' ? 'text-amber-300 bg-amber-900/30' :
-                autoSaveStatus === 'saved' ? 'text-emerald-300 bg-emerald-900/30' :
+                autoSaveStatus === 'saved' ? 'text-primary-300 bg-primary-900/30' :
                 'text-red-300 bg-red-900/30'
               }`}>
                 {autoSaveStatus === 'saving' && (
                   <>
-                    <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
+                    <span className="flex items-center gap-0.5">
+                      <span className="w-1 h-1 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                      <span className="w-1 h-1 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                      <span className="w-1 h-1 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+                    </span>
                     Saving...
                   </>
                 )}
@@ -1214,14 +1215,15 @@ export default function ShotTrackingComprehensive({
             {onAutoSave && autoSaveStatus !== 'idle' && (
               <span className={`flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded transition-all ${
                 autoSaveStatus === 'saving' ? 'text-amber-300 bg-amber-900/30' :
-                autoSaveStatus === 'saved' ? 'text-emerald-300 bg-emerald-900/30' :
+                autoSaveStatus === 'saved' ? 'text-primary-300 bg-primary-900/30' :
                 'text-red-300 bg-red-900/30'
               }`}>
                 {autoSaveStatus === 'saving' && (
-                  <svg className="w-2.5 h-2.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
+                  <span className="flex items-center gap-0.5">
+                    <span className="w-1 h-1 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                    <span className="w-1 h-1 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                    <span className="w-1 h-1 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+                  </span>
                 )}
                 {autoSaveStatus === 'saved' && (
                   <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1231,7 +1233,7 @@ export default function ShotTrackingComprehensive({
                 {autoSaveStatus === 'error' && '!'}
               </span>
             )}
-            <span className="text-xs font-bold text-emerald-400 uppercase tracking-wide">
+            <span className="text-xs font-bold text-primary-400 uppercase tracking-wide">
               Hole {currentHole.number} of {holes.length}
             </span>
           </div>
@@ -1258,7 +1260,7 @@ export default function ShotTrackingComprehensive({
                 if (isCurrent) return 'text-white';
                 if (!hasScore) return 'text-warm-500';
                 if (scoreToPar <= -2) return 'text-blue-400'; // Eagle or better
-                if (scoreToPar === -1) return 'text-green-400'; // Birdie
+                if (scoreToPar === -1) return 'text-primary-400'; // Birdie
                 if (scoreToPar === 0) return 'text-white'; // Par
                 if (scoreToPar === 1) return 'text-amber-400'; // Bogey
                 return 'text-red-400'; // Double+
@@ -1271,15 +1273,15 @@ export default function ShotTrackingComprehensive({
                   disabled={!canNavigate}
                   className={`min-w-[75px] py-3 px-2 text-center border-r border-warm-600 transition-all ${
                     isCurrent
-                      ? 'bg-emerald-600'
+                      ? 'bg-primary-600'
                       : canNavigate
                         ? 'hover:bg-warm-700 cursor-pointer'
                         : 'cursor-default'
                   }`}
                 >
                   <div className={`text-xs font-semibold ${isCurrent ? 'text-white' : 'text-warm-300'}`}>Hole {hole.number}</div>
-                  <div className={`text-xs ${isCurrent ? 'text-emerald-100' : 'text-warm-400'}`}>Par {hole.par}</div>
-                  <div className={`text-xs ${isCurrent ? 'text-emerald-100' : 'text-warm-500'}`}>{hole.yardage} yds</div>
+                  <div className={`text-xs ${isCurrent ? 'text-primary-100' : 'text-warm-400'}`}>Par {hole.par}</div>
+                  <div className={`text-xs ${isCurrent ? 'text-primary-100' : 'text-warm-500'}`}>{hole.yardage} yds</div>
                   <div className={`mt-1 text-lg font-bold ${getScoreColor()}`}>
                     {hasScore ? hole.score : '-'}
                   </div>
@@ -1307,7 +1309,7 @@ export default function ShotTrackingComprehensive({
                 if (isCurrent) return 'text-white';
                 if (!hasScore) return 'text-warm-500';
                 if (scoreToPar <= -2) return 'text-blue-400'; // Eagle or better
-                if (scoreToPar === -1) return 'text-green-400'; // Birdie
+                if (scoreToPar === -1) return 'text-primary-400'; // Birdie
                 if (scoreToPar === 0) return 'text-white'; // Par
                 if (scoreToPar === 1) return 'text-amber-400'; // Bogey
                 return 'text-red-400'; // Double+
@@ -1320,15 +1322,15 @@ export default function ShotTrackingComprehensive({
                   disabled={!canNavigate}
                   className={`min-w-[75px] py-3 px-2 text-center border-r border-warm-600 transition-all ${
                     isCurrent
-                      ? 'bg-emerald-600'
+                      ? 'bg-primary-600'
                       : canNavigate
                         ? 'hover:bg-warm-700 cursor-pointer'
                         : 'cursor-default'
                   }`}
                 >
                   <div className={`text-xs font-semibold ${isCurrent ? 'text-white' : 'text-warm-300'}`}>Hole {hole.number}</div>
-                  <div className={`text-xs ${isCurrent ? 'text-emerald-100' : 'text-warm-400'}`}>Par {hole.par}</div>
-                  <div className={`text-xs ${isCurrent ? 'text-emerald-100' : 'text-warm-500'}`}>{hole.yardage} yds</div>
+                  <div className={`text-xs ${isCurrent ? 'text-primary-100' : 'text-warm-400'}`}>Par {hole.par}</div>
+                  <div className={`text-xs ${isCurrent ? 'text-primary-100' : 'text-warm-500'}`}>{hole.yardage} yds</div>
                   <div className={`mt-1 text-lg font-bold ${getScoreColor()}`}>
                     {hasScore ? hole.score : '-'}
                   </div>
@@ -1365,7 +1367,7 @@ export default function ShotTrackingComprehensive({
         <div className="flex-1 max-w-5xl mx-auto p-6 space-y-5">
 
           {/* Shot Pills - Sticky - Dynamic */}
-          <div className="sticky top-[105px] lg:top-[81px] z-40 bg-white py-4 -mt-4 -mx-6 px-6 flex items-center gap-2 shadow-sm shadow-emerald-950/5 border-b border-warm-100">
+          <div className="sticky top-[105px] lg:top-[81px] z-40 bg-white py-4 -mt-4 -mx-6 px-6 flex items-center gap-2 shadow-sm shadow-primary-950/5 border-b border-warm-100">
             <span className="text-xs font-semibold text-warm-500 uppercase tracking-wider mr-2">Shot</span>
             {Array.from({ length: Math.max(6, currentShot + 1) }, (_, i) => i + 1).map(num => {
               const isActive = num === currentShot;
@@ -1390,10 +1392,10 @@ export default function ShotTrackingComprehensive({
                     }
                   }}
                   className={`flex-1 min-w-[44px] h-10 rounded-lg flex items-center justify-center text-sm font-semibold transition-all
-                    ${isActive ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-950/5' : ''}
-                    ${isCompleted ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' : ''}
+                    ${isActive ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10 ring-1 ring-primary-950/5' : ''}
+                    ${isCompleted ? 'bg-primary-50 text-primary-700 ring-1 ring-primary-200' : ''}
                     ${isFuture ? 'bg-warm-50 text-warm-400 ring-1 ring-warm-200' : ''}
-                    ${isSelected ? 'ring-2 ring-emerald-500' : ''}
+                    ${isSelected ? 'ring-2 ring-primary-500' : ''}
                     ${isRecorded ? 'cursor-pointer' : 'cursor-default'}`}
                   aria-label={isRecorded ? `View shot ${num}` : `Shot ${num} not recorded`}
                 >
@@ -1404,7 +1406,7 @@ export default function ShotTrackingComprehensive({
           </div>
 
           {/* Hole Header */}
-          <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-lg p-6 text-white shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-950/5">
+          <div className="bg-gradient-to-br from-primary-600 to-primary-700 rounded-lg p-6 text-white shadow-sm shadow-primary-950/10 ring-1 ring-primary-950/5">
             <div className="flex justify-between items-start">
               <div>
                 <div className="flex items-center gap-3">
@@ -1413,15 +1415,15 @@ export default function ShotTrackingComprehensive({
                     Par {currentHole.par}
                   </span>
                 </div>
-                <p className="text-emerald-100 text-sm mt-2">
+                <p className="text-primary-100 text-sm mt-2">
                   Shot {currentShot} • {shotType.charAt(0).toUpperCase() + shotType.slice(1).replace('_', ' ')}
                   {' • '}<span className="capitalize font-medium">{currentLie}</span>
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-emerald-200 text-xs font-semibold uppercase tracking-wider">Distance</p>
+                <p className="text-primary-200 text-xs font-semibold uppercase tracking-wider">Distance</p>
                 <p className="text-4xl font-bold mt-1">
-                  {distanceToHole}<span className="text-xl ml-1 font-semibold text-emerald-100">{distanceUnit === 'yards' ? 'YDS' : 'FT'}</span>
+                  {distanceToHole}<span className="text-xl ml-1 font-semibold text-primary-100">{distanceUnit === 'yards' ? 'YDS' : 'FT'}</span>
                 </p>
               </div>
             </div>
@@ -1429,8 +1431,8 @@ export default function ShotTrackingComprehensive({
             {/* Inline Progress Bar - Mobile Only */}
             <div className="xl:hidden mt-6 bg-white/10 backdrop-blur-sm rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-emerald-100 font-semibold uppercase tracking-wide">Progress</span>
-                <span className="text-xs text-emerald-100 font-bold">{Math.round(progressPercent)}%</span>
+                <span className="text-xs text-primary-100 font-semibold uppercase tracking-wide">Progress</span>
+                <span className="text-xs text-primary-100 font-bold">{Math.round(progressPercent)}%</span>
               </div>
               <div className="h-2 bg-white/20 rounded-full overflow-hidden">
                 <div
@@ -1438,7 +1440,7 @@ export default function ShotTrackingComprehensive({
                   style={{ width: `${progressPercent}%` }}
                 />
               </div>
-              <div className="flex justify-between mt-3 text-xs text-emerald-100">
+              <div className="flex justify-between mt-3 text-xs text-primary-100">
                 <span className="flex items-center gap-2 font-medium">
                   <span className="w-1.5 h-1.5 rounded-full border border-white/60"></span>
                   Tee
@@ -1467,14 +1469,14 @@ export default function ShotTrackingComprehensive({
                     <button onClick={() => setUsedDriver(true)}
                       className={`flex-1 py-3 rounded-md font-semibold text-sm transition-all ${
                         usedDriver === true
-                          ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10'
+                          ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10'
                           : 'text-warm-600 hover:text-warm-900'}`}>
                       Driver
                     </button>
                     <button onClick={() => setUsedDriver(false)}
                       className={`flex-1 py-3 rounded-md font-semibold text-sm transition-all ${
                         usedDriver === false
-                          ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10'
+                          ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10'
                           : 'text-warm-600 hover:text-warm-900'}`}>
                       Non-Driver
                     </button>
@@ -1484,20 +1486,20 @@ export default function ShotTrackingComprehensive({
 
               {/* Putt Details (FIRST - when putting) */}
               {isPutting && (
-                <div className="bg-gradient-to-br from-emerald-50 to-white rounded-xl p-6 border-2 border-emerald-200 shadow-lg shadow-emerald-950/5">
+                <div className="bg-gradient-to-br from-primary-50 to-white rounded-xl p-6 border-2 border-primary-200 shadow-lg shadow-primary-950/5">
                   <div className="flex items-center justify-between mb-4">
-                    <p className="text-sm font-bold text-emerald-900 uppercase tracking-wide">Putting Details</p>
-                    <span className="text-xs font-semibold text-emerald-700 bg-emerald-100 px-2 py-1 rounded-md">Fill First</span>
+                    <p className="text-sm font-bold text-primary-900 uppercase tracking-wide">Putting Details</p>
+                    <span className="text-xs font-semibold text-primary-700 bg-primary-100 px-2 py-1 rounded-md">Fill First</span>
                   </div>
                   <p className="text-xs text-warm-600 mb-4">Describe your putt before selecting the result</p>
                   <div className="mb-6">
                     <p className="text-xs font-semibold text-warm-500 uppercase tracking-wide mb-3">Break</p>
-                    <div className="inline-flex bg-white rounded-lg p-1 w-full border border-emerald-200">
+                    <div className="inline-flex bg-white rounded-lg p-1 w-full border border-primary-200">
                       {[{v: 'left_to_right', l: 'L → R'}, {v: 'straight', l: 'Straight'}, {v: 'right_to_left', l: 'R → L'}, {v: 'multiple', l: 'Multiple'}].map(b => (
                         <button key={b.v} onClick={() => setPuttBreak(b.v as ShotRecord['puttBreak'])}
                           className={`flex-1 py-2.5 rounded-md font-semibold text-sm transition-all ${
                             puttBreak === b.v
-                              ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10'
+                              ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10'
                               : 'text-warm-600 hover:text-warm-900'}`}>
                           {b.l}
                         </button>
@@ -1506,12 +1508,12 @@ export default function ShotTrackingComprehensive({
                   </div>
                   <div className="mb-2">
                     <p className="text-xs font-semibold text-warm-500 uppercase tracking-wide mb-3">Slope</p>
-                    <div className="inline-flex bg-white rounded-lg p-1 w-full border border-emerald-200">
+                    <div className="inline-flex bg-white rounded-lg p-1 w-full border border-primary-200">
                       {[{v: 'uphill', l: 'Uphill'}, {v: 'level', l: 'Level'}, {v: 'downhill', l: 'Downhill'}, {v: 'severe', l: 'Severe'}].map(s => (
                         <button key={s.v} onClick={() => setPuttSlope(s.v as ShotRecord['puttSlope'])}
                           className={`flex-1 py-2.5 rounded-md font-semibold text-sm transition-all ${
                             puttSlope === s.v
-                              ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10'
+                              ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10'
                               : 'text-warm-600 hover:text-warm-900'}`}>
                           {s.l}
                         </button>
@@ -1549,12 +1551,12 @@ export default function ShotTrackingComprehensive({
                       <button key={r} onClick={() => handleResultSelect(r)}
                         className={`py-3 rounded-lg font-semibold text-sm transition-all ${
                           resultOfShot === r
-                            ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-700'
-                            : 'bg-warm-50 text-warm-700 ring-1 ring-warm-200 hover:ring-emerald-300 hover:bg-warm-100'}`}>
+                            ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10 ring-1 ring-primary-700'
+                            : 'bg-warm-50 text-warm-700 ring-1 ring-warm-200 hover:ring-primary-300 hover:bg-warm-100'}`}>
                         {formatLieLabel(r)}
                         {r === 'green' && (
                           <span className={`block text-xs font-normal leading-tight ${
-                            resultOfShot === r ? 'text-emerald-100' : 'text-warm-400'
+                            resultOfShot === r ? 'text-primary-100' : 'text-warm-400'
                           }`}>(putting surface, not fringe)</span>
                         )}
                       </button>
@@ -1581,7 +1583,7 @@ export default function ShotTrackingComprehensive({
                         <button key={d} onClick={() => setMissDirection(d)}
                           className={`flex-1 py-3 rounded-md font-semibold text-sm transition-all flex items-center justify-center gap-2 ${
                             missDirection === d
-                              ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10'
+                              ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10'
                               : 'text-warm-600 hover:text-warm-900'}`}>
                           {d === 'left' ? '←' : ''} {d.charAt(0).toUpperCase() + d.slice(1)} {d === 'right' ? '→' : ''}
                         </button>
@@ -1605,12 +1607,12 @@ export default function ShotTrackingComprehensive({
 
               {/* Distance Remaining - Final Step (if not holed) */}
               {resultOfShot && resultOfShot !== 'hole' && (
-                <div className="bg-gradient-to-br from-emerald-50 to-white rounded-xl p-6 border-2 border-emerald-200 shadow-lg shadow-emerald-950/5">
+                <div className="bg-gradient-to-br from-primary-50 to-white rounded-xl p-6 border-2 border-primary-200 shadow-lg shadow-primary-950/5">
                   <div className="flex items-center justify-between mb-3">
-                    <p className="text-sm font-bold text-emerald-900 uppercase tracking-wide">
+                    <p className="text-sm font-bold text-primary-900 uppercase tracking-wide">
                       {isPutting ? 'Leave Distance' : 'Distance Remaining'}
                     </p>
-                    <span className="text-xs font-semibold text-emerald-700 bg-emerald-100 px-2 py-1 rounded-md">Required</span>
+                    <span className="text-xs font-semibold text-primary-700 bg-primary-100 px-2 py-1 rounded-md">Required</span>
                   </div>
                   <p className="text-xs text-warm-600 mb-4">
                     {isPutting
@@ -1625,7 +1627,7 @@ export default function ShotTrackingComprehensive({
                       value={distanceAfterShot}
                       onChange={(e) => setDistanceAfterShot(e.target.value)}
                       placeholder="Enter distance"
-                      className="w-full h-14 px-5 rounded-xl text-3xl font-bold text-emerald-900 text-center bg-white border-2 border-emerald-300 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 focus:outline-none transition-all placeholder:text-warm-300"
+                      className="w-full h-14 px-5 rounded-xl text-3xl font-bold text-primary-900 text-center bg-white border-2 border-primary-300 focus:border-primary-500 focus:ring-4 focus:ring-primary-100 focus:outline-none transition-all placeholder:text-warm-300"
                     />
                     {/* Quick-select buttons for common putting distances */}
                     {isPutting && (
@@ -1640,8 +1642,8 @@ export default function ShotTrackingComprehensive({
                             }}
                             className={`py-2 rounded-lg text-xs font-bold transition-all ${
                               distanceAfterShot === String(ft) && distanceAfterUnit === 'feet'
-                                ? 'bg-emerald-600 text-white shadow-sm'
-                                : 'bg-white text-emerald-700 border border-emerald-200 hover:bg-emerald-50'
+                                ? 'bg-primary-600 text-white shadow-sm'
+                                : 'bg-white text-primary-700 border border-primary-200 hover:bg-primary-50'
                             }`}
                           >
                             {ft}ft
@@ -1649,12 +1651,12 @@ export default function ShotTrackingComprehensive({
                         ))}
                       </div>
                     )}
-                    <div className="inline-flex bg-white rounded-lg p-1 border-2 border-emerald-300 w-full">
+                    <div className="inline-flex bg-white rounded-lg p-1 border-2 border-primary-300 w-full">
                       <button
                         onClick={() => setDistanceAfterUnit('yards')}
                         className={`flex-1 py-2.5 rounded-md font-bold text-sm uppercase tracking-wide transition-all ${
                           distanceAfterUnit === 'yards'
-                            ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10'
+                            ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10'
                             : 'text-warm-600 hover:text-warm-900 hover:bg-warm-50'
                         }`}
                       >
@@ -1664,7 +1666,7 @@ export default function ShotTrackingComprehensive({
                         onClick={() => setDistanceAfterUnit('feet')}
                         className={`flex-1 py-2.5 rounded-md font-bold text-sm uppercase tracking-wide transition-all ${
                           distanceAfterUnit === 'feet'
-                            ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10'
+                            ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10'
                             : 'text-warm-600 hover:text-warm-900 hover:bg-warm-50'
                         }`}
                       >
@@ -1673,9 +1675,9 @@ export default function ShotTrackingComprehensive({
                     </div>
                   </div>
                   {distanceAfterShot && (
-                    <div className="flex items-center justify-between bg-white/60 rounded-lg px-4 py-2.5 border border-emerald-200">
+                    <div className="flex items-center justify-between bg-white/60 rounded-lg px-4 py-2.5 border border-primary-200">
                       <span className="text-xs font-semibold text-warm-600 uppercase tracking-wide">Shot Distance</span>
-                      <span className="text-lg font-bold text-emerald-700">
+                      <span className="text-lg font-bold text-primary-700">
                         ~{Math.round(calculateShotDistanceWithDirection(
                           distanceUnit === 'feet' ? distanceToHole / 3 : distanceToHole,
                           distanceAfterUnit === 'feet' ? parseInt(distanceAfterShot) / 3 : parseInt(distanceAfterShot),
@@ -1694,7 +1696,7 @@ export default function ShotTrackingComprehensive({
                 aria-label={resultOfShot === 'hole' ? `Complete hole with score ${currentShot}` : 'Record next shot'}
                 className={`w-full py-4 rounded-lg font-bold text-base transition-all ${
                   isReadyForNextShot()
-                    ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-700'
+                    ? 'bg-primary-600 text-white hover:bg-primary-700 shadow-sm shadow-primary-950/10 ring-1 ring-primary-700'
                     : 'bg-warm-100 text-warm-400 cursor-not-allowed ring-1 ring-warm-200'}`}>
                 {resultOfShot === 'hole' ? `Complete Hole - Score: ${currentShot}` : 'Next Shot →'}
               </button>
@@ -1720,7 +1722,7 @@ export default function ShotTrackingComprehensive({
               </div>
               <div className="text-right">
                 <p className="text-xs font-bold text-warm-400 uppercase tracking-wider">Shot</p>
-                <p className="text-lg font-bold text-emerald-600">{currentShot}</p>
+                <p className="text-lg font-bold text-primary-600">{currentShot}</p>
               </div>
             </div>
 
@@ -1874,7 +1876,7 @@ export default function ShotTrackingComprehensive({
                 </div>
                 <div className="text-right">
                   <p className="text-[9px] font-bold text-warm-400 uppercase">To Hole</p>
-                  <p className="text-sm font-bold text-emerald-600">{displayDistance} {displayUnit === 'yards' ? 'yds' : 'ft'}</p>
+                  <p className="text-sm font-bold text-primary-600">{displayDistance} {displayUnit === 'yards' ? 'yds' : 'ft'}</p>
                 </div>
               </div>
             </div>
@@ -1896,7 +1898,7 @@ export default function ShotTrackingComprehensive({
                         }}
                         className={`w-full flex items-center justify-between px-2 py-1.5 rounded text-xs transition-all ${
                           isSelected
-                            ? 'bg-emerald-100 ring-1 ring-emerald-400'
+                            ? 'bg-primary-100 ring-1 ring-primary-400'
                             : shot.isPenalty
                               ? 'bg-red-50 hover:bg-red-100'
                               : 'bg-warm-50 hover:bg-warm-100'
@@ -1905,7 +1907,7 @@ export default function ShotTrackingComprehensive({
                         <span className={`font-bold ${shot.isPenalty ? 'text-red-600' : 'text-warm-600'}`}>
                           {shot.isPenalty ? 'P' : shot.shotNumber}
                         </span>
-                        <span className={`font-bold ${shot.isPenalty ? 'text-red-500' : 'text-emerald-600'}`}>
+                        <span className={`font-bold ${shot.isPenalty ? 'text-red-500' : 'text-primary-600'}`}>
                           {shot.isPenalty ? '+1' : `${shot.shotDistance}y`}
                         </span>
                       </button>
@@ -1963,6 +1965,7 @@ export default function ShotTrackingComprehensive({
                 </h2>
                 <button
                   onClick={handleCloseEditModal}
+                  aria-label="Close"
                   className="p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-all"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2001,10 +2004,11 @@ export default function ShotTrackingComprehensive({
                     >
                       {editSaving ? (
                         <>
-                          <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                          </svg>
+                          <span className="flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                            <span className="w-1.5 h-1.5 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                            <span className="w-1.5 h-1.5 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+                          </span>
                           Deleting...
                         </>
                       ) : (
@@ -2054,7 +2058,7 @@ export default function ShotTrackingComprehensive({
                               onClick={() => setEditFormData(prev => prev ? {...prev, clubType: 'driver'} : null)}
                               className={`flex-1 py-2.5 rounded-md font-semibold text-sm transition-all ${
                                 editFormData.clubType === 'driver'
-                                  ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10'
+                                  ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10'
                                   : 'text-warm-600 hover:text-warm-900'
                               }`}
                             >
@@ -2064,7 +2068,7 @@ export default function ShotTrackingComprehensive({
                               onClick={() => setEditFormData(prev => prev ? {...prev, clubType: 'non_driver'} : null)}
                               className={`flex-1 py-2.5 rounded-md font-semibold text-sm transition-all ${
                                 editFormData.clubType === 'non_driver'
-                                  ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10'
+                                  ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10'
                                   : 'text-warm-600 hover:text-warm-900'
                               }`}
                             >
@@ -2086,13 +2090,13 @@ export default function ShotTrackingComprehensive({
                               onClick={() => setEditFormData(prev => prev ? {...prev, lieBefore: lie} : null)}
                               className={`py-2.5 rounded-lg font-semibold text-sm transition-all ${
                                 editFormData.lieBefore === lie
-                                  ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-700'
-                                  : 'bg-warm-50 text-warm-700 ring-1 ring-warm-200 hover:ring-emerald-300'
+                                  ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10 ring-1 ring-primary-700'
+                                  : 'bg-warm-50 text-warm-700 ring-1 ring-warm-200 hover:ring-primary-300'
                               }`}
                             >
                               {lieLabel}
                               {lie === 'green' && (
-                                <span className={`block text-xs font-normal leading-tight ${editFormData.lieBefore === 'green' ? 'text-emerald-100' : 'text-warm-400'}`}>(putting surface)</span>
+                                <span className={`block text-xs font-normal leading-tight ${editFormData.lieBefore === 'green' ? 'text-primary-100' : 'text-warm-400'}`}>(putting surface)</span>
                               )}
                             </button>);
                           })}
@@ -2108,14 +2112,14 @@ export default function ShotTrackingComprehensive({
                             inputMode="numeric"
                             value={editFormData.distanceToHoleBefore}
                             onChange={(e) => setEditFormData(prev => prev ? {...prev, distanceToHoleBefore: e.target.value} : null)}
-                            className="flex-1 h-12 px-4 rounded-lg text-lg font-semibold text-warm-900 text-center bg-white border-2 border-warm-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 focus:outline-none transition-all"
+                            className="flex-1 h-12 px-4 rounded-lg text-lg font-semibold text-warm-900 text-center bg-white border-2 border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 focus:outline-none transition-all"
                           />
                           <div className="inline-flex bg-warm-100 rounded-lg p-1">
                             <button
                               onClick={() => setEditFormData(prev => prev ? {...prev, distanceUnitBefore: 'yards'} : null)}
                               className={`px-3 py-2 rounded-md font-semibold text-xs uppercase transition-all ${
                                 editFormData.distanceUnitBefore === 'yards'
-                                  ? 'bg-emerald-600 text-white shadow-sm'
+                                  ? 'bg-primary-600 text-white shadow-sm'
                                   : 'text-warm-600'
                               }`}
                             >
@@ -2125,7 +2129,7 @@ export default function ShotTrackingComprehensive({
                               onClick={() => setEditFormData(prev => prev ? {...prev, distanceUnitBefore: 'feet'} : null)}
                               className={`px-3 py-2 rounded-md font-semibold text-xs uppercase transition-all ${
                                 editFormData.distanceUnitBefore === 'feet'
-                                  ? 'bg-emerald-600 text-white shadow-sm'
+                                  ? 'bg-primary-600 text-white shadow-sm'
                                   : 'text-warm-600'
                               }`}
                             >
@@ -2147,13 +2151,13 @@ export default function ShotTrackingComprehensive({
                               onClick={() => setEditFormData(prev => prev ? {...prev, result: r} : null)}
                               className={`py-2.5 rounded-lg font-semibold text-sm transition-all ${
                                 editFormData.result === r
-                                  ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-700'
-                                  : 'bg-warm-50 text-warm-700 ring-1 ring-warm-200 hover:ring-emerald-300'
+                                  ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10 ring-1 ring-primary-700'
+                                  : 'bg-warm-50 text-warm-700 ring-1 ring-warm-200 hover:ring-primary-300'
                               }`}
                             >
                               {resultLabel}
                               {r === 'green' && (
-                                <span className={`block text-xs font-normal leading-tight ${editFormData.result === 'green' ? 'text-emerald-100' : 'text-warm-400'}`}>(putting surface, not fringe)</span>
+                                <span className={`block text-xs font-normal leading-tight ${editFormData.result === 'green' ? 'text-primary-100' : 'text-warm-400'}`}>(putting surface, not fringe)</span>
                               )}
                             </button>);
                           })}
@@ -2170,14 +2174,14 @@ export default function ShotTrackingComprehensive({
                               inputMode="numeric"
                               value={editFormData.distanceToHoleAfter}
                               onChange={(e) => setEditFormData(prev => prev ? {...prev, distanceToHoleAfter: e.target.value} : null)}
-                              className="flex-1 h-12 px-4 rounded-lg text-lg font-semibold text-warm-900 text-center bg-white border-2 border-warm-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 focus:outline-none transition-all"
+                              className="flex-1 h-12 px-4 rounded-lg text-lg font-semibold text-warm-900 text-center bg-white border-2 border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 focus:outline-none transition-all"
                             />
                             <div className="inline-flex bg-warm-100 rounded-lg p-1">
                               <button
                                 onClick={() => setEditFormData(prev => prev ? {...prev, distanceUnitAfter: 'yards'} : null)}
                                 className={`px-3 py-2 rounded-md font-semibold text-xs uppercase transition-all ${
                                   editFormData.distanceUnitAfter === 'yards'
-                                    ? 'bg-emerald-600 text-white shadow-sm'
+                                    ? 'bg-primary-600 text-white shadow-sm'
                                     : 'text-warm-600'
                                 }`}
                               >
@@ -2187,7 +2191,7 @@ export default function ShotTrackingComprehensive({
                                 onClick={() => setEditFormData(prev => prev ? {...prev, distanceUnitAfter: 'feet'} : null)}
                                 className={`px-3 py-2 rounded-md font-semibold text-xs uppercase transition-all ${
                                   editFormData.distanceUnitAfter === 'feet'
-                                    ? 'bg-emerald-600 text-white shadow-sm'
+                                    ? 'bg-primary-600 text-white shadow-sm'
                                     : 'text-warm-600'
                                 }`}
                               >
@@ -2210,8 +2214,8 @@ export default function ShotTrackingComprehensive({
                                 onClick={() => setEditFormData(prev => prev ? {...prev, missDirection: prev.missDirection === dir ? null : dir} : null)}
                                 className={`py-2.5 rounded-lg font-semibold text-sm capitalize transition-all ${
                                   editFormData.missDirection === dir
-                                    ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-700'
-                                    : 'bg-warm-50 text-warm-700 ring-1 ring-warm-200 hover:ring-emerald-300'
+                                    ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10 ring-1 ring-primary-700'
+                                    : 'bg-warm-50 text-warm-700 ring-1 ring-warm-200 hover:ring-primary-300'
                                 }`}
                               >
                                 {dir}
@@ -2233,8 +2237,8 @@ export default function ShotTrackingComprehensive({
                                   onClick={() => setEditFormData(prev => prev ? {...prev, puttBreak: b.v as ShotRecord['puttBreak']} : null)}
                                   className={`py-2.5 rounded-lg font-semibold text-sm transition-all ${
                                     editFormData.puttBreak === b.v
-                                      ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-700'
-                                      : 'bg-warm-50 text-warm-700 ring-1 ring-warm-200 hover:ring-emerald-300'
+                                      ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10 ring-1 ring-primary-700'
+                                      : 'bg-warm-50 text-warm-700 ring-1 ring-warm-200 hover:ring-primary-300'
                                   }`}
                                 >
                                   {b.l}
@@ -2251,8 +2255,8 @@ export default function ShotTrackingComprehensive({
                                   onClick={() => setEditFormData(prev => prev ? {...prev, puttSlope: s.v as ShotRecord['puttSlope']} : null)}
                                   className={`py-2.5 rounded-lg font-semibold text-sm transition-all ${
                                     editFormData.puttSlope === s.v
-                                      ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-700'
-                                      : 'bg-warm-50 text-warm-700 ring-1 ring-warm-200 hover:ring-emerald-300'
+                                      ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10 ring-1 ring-primary-700'
+                                      : 'bg-warm-50 text-warm-700 ring-1 ring-warm-200 hover:ring-primary-300'
                                   }`}
                                 >
                                   {s.l}
@@ -2265,9 +2269,9 @@ export default function ShotTrackingComprehensive({
 
                       {/* Calculated Shot Distance */}
                       {editFormData.distanceToHoleBefore && editFormData.distanceToHoleAfter && (
-                        <div className="flex items-center justify-between bg-emerald-50 rounded-lg px-4 py-3 ring-1 ring-emerald-200">
-                          <span className="text-xs font-semibold text-emerald-700 uppercase tracking-wide">Calculated Distance</span>
-                          <span className="text-lg font-bold text-emerald-700">
+                        <div className="flex items-center justify-between bg-primary-50 rounded-lg px-4 py-3 ring-1 ring-primary-200">
+                          <span className="text-xs font-semibold text-primary-700 uppercase tracking-wide">Calculated Distance</span>
+                          <span className="text-lg font-bold text-primary-700">
                             ~{Math.round(calculateShotDistanceWithDirection(
                               editFormData.distanceUnitBefore === 'feet' ? parseFloat(editFormData.distanceToHoleBefore) / 3 : parseFloat(editFormData.distanceToHoleBefore),
                               editFormData.distanceUnitAfter === 'feet' ? parseFloat(editFormData.distanceToHoleAfter) / 3 : parseFloat(editFormData.distanceToHoleAfter),
@@ -2306,14 +2310,15 @@ export default function ShotTrackingComprehensive({
                   <button
                     onClick={handleSaveEditedShot}
                     disabled={editSaving}
-                    className="flex-1 py-3 rounded-lg font-semibold text-sm bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="flex-1 py-3 rounded-lg font-semibold text-sm bg-primary-600 text-white hover:bg-primary-700 shadow-sm shadow-primary-950/10 ring-1 ring-primary-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     {editSaving ? (
                       <>
-                        <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                        </svg>
+                        <span className="flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                          <span className="w-1.5 h-1.5 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                          <span className="w-1.5 h-1.5 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+                        </span>
                         Saving...
                       </>
                     ) : (

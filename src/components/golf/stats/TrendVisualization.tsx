@@ -167,9 +167,9 @@ export function TrendVisualization({
     return {
       icon: direction === 'improving' ? '↑' : direction === 'declining' ? '↓' : '→',
       color: direction === 'stable' || direction === 'insufficient_data'
-        ? 'bg-gray-100 text-gray-700'
+        ? 'bg-warm-100 text-warm-700'
         : isGood
-        ? 'bg-green-100 text-green-700'
+        ? 'bg-primary-100 text-primary-700'
         : 'bg-red-100 text-red-700',
       label: direction.charAt(0).toUpperCase() + direction.slice(1).replace('_', ' '),
     };
@@ -228,8 +228,8 @@ export function TrendVisualization({
       {/* Header with Quick Stats */}
       <div className="flex items-start justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">Performance Trends</h2>
-          <p className="text-sm text-gray-500">Track your progress over time</p>
+          <h2 className="text-xl font-semibold text-warm-900">Performance Trends</h2>
+          <p className="text-sm text-warm-500">Track your progress over time</p>
         </div>
 
         {/* Quick Stats Row */}
@@ -240,17 +240,17 @@ export function TrendVisualization({
             return (
               <div
                 key={i}
-                className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg"
+                className="flex items-center gap-2 px-3 py-1.5 bg-warm-50 rounded-lg"
               >
-                <span className="text-xs text-gray-500">{stat.label}:</span>
+                <span className="text-xs text-warm-500">{stat.label}:</span>
                 <span className="text-sm font-semibold">{stat.value}</span>
                 <span
                   className={cn(
                     'text-xs',
                     stat.trend === 'stable'
-                      ? 'text-gray-500'
+                      ? 'text-warm-500'
                       : isGood
-                      ? 'text-green-500'
+                      ? 'text-primary-500'
                       : 'text-red-500'
                   )}
                 >
@@ -269,8 +269,8 @@ export function TrendVisualization({
           className={cn(
             'px-4 py-2 text-sm font-medium rounded-lg transition-colors',
             activeCategory === 'performance'
-              ? 'bg-green-100 text-green-700'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              ? 'bg-primary-100 text-primary-700'
+              : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
           )}
         >
           Performance Stats
@@ -280,8 +280,8 @@ export function TrendVisualization({
           className={cn(
             'px-4 py-2 text-sm font-medium rounded-lg transition-colors',
             activeCategory === 'strokes_gained'
-              ? 'bg-green-100 text-green-700'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              ? 'bg-primary-100 text-primary-700'
+              : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
           )}
         >
           Strokes Gained
@@ -303,7 +303,7 @@ export function TrendVisualization({
                 'flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all',
                 selectedMetric === metric
                   ? 'bg-white shadow-md border-2'
-                  : 'bg-gray-50 hover:bg-gray-100 border border-transparent'
+                  : 'bg-warm-50 hover:bg-warm-100 border border-transparent'
               )}
               style={{
                 borderColor: selectedMetric === metric ? metricConfig.color : undefined,
@@ -337,7 +337,7 @@ export function TrendVisualization({
                 <div className="text-2xl font-bold" style={{ color: config.color }}>
                   {config.format(selectedTrend.current_value)}
                 </div>
-                <div className="text-xs text-gray-500">Current</div>
+                <div className="text-xs text-warm-500">Current</div>
               </div>
             )}
           </div>
@@ -355,7 +355,7 @@ export function TrendVisualization({
               formatValue={config.format}
             />
           ) : (
-            <div className="flex items-center justify-center h-64 text-gray-500">
+            <div className="flex items-center justify-center h-64 text-warm-500">
               No trend data available for this metric
             </div>
           )}
@@ -393,7 +393,7 @@ export function TrendVisualization({
                       formatValue={metricConfig.format}
                     />
                   ) : (
-                    <div className="flex items-center justify-center h-32 text-gray-400 text-sm">
+                    <div className="flex items-center justify-center h-32 text-warm-400 text-sm">
                       No data
                     </div>
                   )}
@@ -415,8 +415,8 @@ export function TrendVisualization({
               <ul className="space-y-2">
                 {insights.map((insight, i) => (
                   <li key={i} className="flex items-start gap-2 text-sm">
-                    <span className="text-green-500 mt-0.5">•</span>
-                    <span className="text-gray-700">{insight}</span>
+                    <span className="text-primary-500 mt-0.5">•</span>
+                    <span className="text-warm-700">{insight}</span>
                   </li>
                 ))}
               </ul>
@@ -432,13 +432,13 @@ export function TrendVisualization({
             </CardHeader>
             <CardContent>
               <div className="text-center">
-                <div className="text-4xl font-bold text-green-600">
+                <div className="text-4xl font-bold text-primary-600">
                   {prediction.predicted_score}
                 </div>
-                <div className="text-sm text-gray-500 mt-1">
+                <div className="text-sm text-warm-500 mt-1">
                   Expected Score
                 </div>
-                <div className="mt-3 text-sm text-gray-600">
+                <div className="mt-3 text-sm text-warm-600">
                   Range: {prediction.range_low} - {prediction.range_high}
                 </div>
                 <div className="mt-2">
@@ -475,9 +475,9 @@ export function TrendIndicator({
       className={cn(
         'inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs',
         trend === 'stable'
-          ? 'bg-gray-100 text-gray-600'
+          ? 'bg-warm-100 text-warm-600'
           : isGood
-          ? 'bg-green-50 text-green-600'
+          ? 'bg-primary-50 text-primary-600'
           : 'bg-red-50 text-red-600',
         className
       )}

@@ -36,7 +36,7 @@ function getFileIcon(fileType: string): string {
 function getFileColor(fileType: string): { bg: string; text: string } {
   if (fileType.includes('pdf')) return { bg: 'bg-red-50', text: 'text-red-600' };
   if (fileType.includes('doc') || fileType.includes('word')) return { bg: 'bg-blue-50', text: 'text-blue-600' };
-  if (fileType.includes('sheet') || fileType.includes('xls') || fileType.includes('csv')) return { bg: 'bg-green-50', text: 'text-green-600' };
+  if (fileType.includes('sheet') || fileType.includes('xls') || fileType.includes('csv')) return { bg: 'bg-primary-50', text: 'text-primary-600' };
   if (fileType.includes('image') || fileType.includes('png') || fileType.includes('jpg')) return { bg: 'bg-purple-50', text: 'text-purple-600' };
   return { bg: 'bg-warm-50', text: 'text-warm-600' };
 }
@@ -123,7 +123,7 @@ export function DocumentAttacher({ existingDocuments, selectedDocumentIds, onCha
             className={cn(
               'flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed transition-all text-sm',
               isExpanded
-                ? 'border-green-300 bg-green-50/50 text-green-700'
+                ? 'border-primary-300 bg-primary-50/50 text-primary-700'
                 : 'border-warm-300 hover:border-warm-400 text-warm-500 hover:text-warm-700'
             )}
           >
@@ -140,7 +140,7 @@ export function DocumentAttacher({ existingDocuments, selectedDocumentIds, onCha
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.2 }}
+                transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
                 className="overflow-hidden"
               >
                 <div className="mt-2 border border-warm-200 rounded-xl overflow-hidden">

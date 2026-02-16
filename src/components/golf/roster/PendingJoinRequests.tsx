@@ -168,7 +168,8 @@ export function PendingJoinRequests() {
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
+              transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
+              style={{ overflow: 'hidden' }}
             >
               {error && (
                 <div className="mx-4 mb-3 p-3 bg-red-50 border border-red-200 rounded-lg">
@@ -178,7 +179,11 @@ export function PendingJoinRequests() {
 
               {loading ? (
                 <div className="p-6 text-center">
-                  <div className="w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto" />
+                  <span className="flex items-center justify-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+                  </span>
                 </div>
               ) : (
                 <div className="px-4 pb-4 space-y-3">
@@ -243,7 +248,11 @@ export function PendingJoinRequests() {
                             className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
                           >
                             {processingId === request.id ? (
-                              <span className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+                              <span className="flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-400 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-400 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-400 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+                              </span>
                             ) : (
                               <IconX size={16} />
                             )}
@@ -252,10 +261,14 @@ export function PendingJoinRequests() {
                             size="sm"
                             onClick={() => handleAccept(request.id)}
                             disabled={processingId === request.id}
-                            className="bg-green-600 hover:bg-green-700"
+                            className="bg-primary-600 hover:bg-primary-700"
                           >
                             {processingId === request.id ? (
-                              <span className="w-4 h-4 border-2 border-white/50 border-t-transparent rounded-full animate-spin" />
+                              <span className="flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                                <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                                <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+                              </span>
                             ) : (
                               <>
                                 <IconCheck size={16} className="mr-1" />

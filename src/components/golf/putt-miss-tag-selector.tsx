@@ -56,8 +56,8 @@ export function PuttMissTagSelector({
                 'relative px-4 py-3 rounded-xl border transition-all duration-200',
                 'text-sm font-semibold',
                 isSelected
-                  ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm shadow-emerald-950/10'
-                  : 'bg-white/70 backdrop-blur-sm border-warm-200 text-warm-700 hover:border-emerald-300 hover:bg-emerald-50',
+                  ? 'bg-primary-600 border-primary-600 text-white shadow-sm shadow-primary-950/10'
+                  : 'bg-white/70 backdrop-blur-sm border-warm-200 text-warm-700 hover:border-primary-300 hover:bg-primary-50',
                 disabled && 'opacity-50 cursor-not-allowed'
               )}
             >

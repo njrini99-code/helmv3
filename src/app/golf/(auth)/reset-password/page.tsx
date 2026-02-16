@@ -58,7 +58,7 @@ export default function ResetPasswordPage() {
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Large primary orb - top right */}
         <motion.div
-          className="auth-orb auth-orb-1 w-[300px] h-[300px] sm:w-[500px] sm:h-[500px] -top-20 -right-20 sm:-top-32 sm:-right-32 bg-gradient-to-br from-emerald-400/40 to-green-500/30"
+          className="auth-orb auth-orb-1 w-[300px] h-[300px] sm:w-[500px] sm:h-[500px] -top-20 -right-20 sm:-top-32 sm:-right-32 bg-gradient-to-br from-primary-400/40 to-primary-500/30"
           animate={{
             x: [0, 30, 0],
             y: [0, -20, 0],
@@ -72,7 +72,7 @@ export default function ResetPasswordPage() {
         />
         {/* Medium orb - bottom left */}
         <motion.div
-          className="auth-orb auth-orb-2 w-[250px] h-[250px] sm:w-[400px] sm:h-[400px] -bottom-16 -left-16 sm:-bottom-24 sm:-left-24 bg-gradient-to-tr from-teal-400/30 to-emerald-400/25"
+          className="auth-orb auth-orb-2 w-[250px] h-[250px] sm:w-[400px] sm:h-[400px] -bottom-16 -left-16 sm:-bottom-24 sm:-left-24 bg-gradient-to-tr from-teal-400/30 to-primary-400/25"
           animate={{
             x: [0, -25, 0],
             y: [0, 25, 0],
@@ -87,7 +87,7 @@ export default function ResetPasswordPage() {
         />
         {/* Small accent orb - top left (hidden on very small screens) */}
         <motion.div
-          className="auth-orb auth-orb-3 hidden sm:block w-[200px] h-[200px] top-20 left-[10%] bg-gradient-to-br from-green-300/25 to-emerald-400/20"
+          className="auth-orb auth-orb-3 hidden sm:block w-[200px] h-[200px] top-20 left-[10%] bg-gradient-to-br from-primary-300/25 to-primary-400/20"
           animate={{
             x: [0, 20, 0],
             y: [0, -15, 0],
@@ -101,7 +101,7 @@ export default function ResetPasswordPage() {
         />
         {/* Tiny floating dot */}
         <motion.div
-          className="absolute w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-emerald-500/40 top-[30%] right-[15%] sm:right-[20%]"
+          className="absolute w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-primary-500/40 top-[30%] right-[15%] sm:right-[20%]"
           animate={{
             y: [0, -10, 0],
             opacity: [0.4, 0.8, 0.4],
@@ -140,7 +140,7 @@ export default function ResetPasswordPage() {
             transition={{ delay: 0.2, duration: 0.5 }}
           >
             <div className="relative">
-              <div className="absolute inset-0 bg-emerald-500/30 rounded-full blur-xl scale-150" />
+              <div className="absolute inset-0 bg-primary-500/30 rounded-full blur-xl scale-150" />
               <div className="relative w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center mb-3 sm:mb-4">
                 <Image
                   src="/helm-golf-logo-transparent.png"
@@ -209,7 +209,7 @@ export default function ResetPasswordPage() {
                     text-warm-900 text-base lg:text-sm
                     placeholder:text-warm-400
                     transition-all duration-200
-                    focus:outline-none focus:border-emerald-500 focus:ring-[3px] focus:ring-emerald-500/10
+                    focus:outline-none focus:border-primary-500 focus:ring-[3px] focus:ring-primary-500/10
                   "
                 />
                 <PasswordStrengthIndicator password={password} />
@@ -236,8 +236,8 @@ export default function ResetPasswordPage() {
                     ${confirmPassword && confirmPassword !== password
                       ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10'
                       : confirmPassword && confirmPassword === password
-                      ? 'border-emerald-300 focus:border-emerald-500 focus:ring-emerald-500/10'
-                      : 'border-warm-200 focus:border-emerald-500 focus:ring-emerald-500/10'
+                      ? 'border-primary-300 focus:border-primary-500 focus:ring-primary-500/10'
+                      : 'border-warm-200 focus:border-primary-500 focus:ring-primary-500/10'
                     }
                   `}
                 />
@@ -248,7 +248,7 @@ export default function ResetPasswordPage() {
                   </p>
                 )}
                 {confirmPassword && confirmPassword === password && password.length >= 8 && (
-                  <p className="text-xs text-emerald-600 flex items-center gap-1">
+                  <p className="text-xs text-primary-600 flex items-center gap-1">
                     <ShieldCheck className="w-3 h-3" />
                     Passwords match
                   </p>
@@ -260,12 +260,12 @@ export default function ResetPasswordPage() {
                 disabled={loading || !password || !confirmPassword}
                 className="
                   w-full py-2.5 sm:py-3
-                  bg-emerald-600 text-white
+                  bg-primary-600 text-white
                   font-semibold text-sm
                   rounded-xl
-                  shadow-lg shadow-emerald-600/25
+                  shadow-lg shadow-primary-600/25
                   transition-all duration-200
-                  hover:bg-emerald-700 hover:shadow-emerald-600/30
+                  hover:bg-primary-700 hover:shadow-primary-600/30
                   active:scale-[0.98]
                   disabled:opacity-50 disabled:cursor-not-allowed
                   flex items-center justify-center
@@ -294,7 +294,7 @@ export default function ResetPasswordPage() {
         >
           <p className="text-center mt-5 sm:mt-6 text-warm-600 text-sm">
             Remember your password?{' '}
-            <Link href="/golf/login" className="text-emerald-600 font-semibold hover:text-emerald-700 transition-colors">
+            <Link href="/golf/login" className="text-primary-600 font-semibold hover:text-primary-700 transition-colors">
               Sign in
             </Link>
           </p>

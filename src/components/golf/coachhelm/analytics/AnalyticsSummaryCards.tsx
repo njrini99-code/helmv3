@@ -49,9 +49,9 @@ export function AnalyticsSummaryCards({ data, className }: AnalyticsSummaryCards
       label: 'Improvement Rate',
       value: `${(data.improvementRate * 100).toFixed(0)}%`,
       subtext: 'Led to improvement',
-      icon: <IconTrendingUp size={20} className="text-green-600" />,
-      bgColor: 'bg-green-50',
-      borderColor: 'border-green-100',
+      icon: <IconTrendingUp size={20} className="text-primary-600" />,
+      bgColor: 'bg-primary-50',
+      borderColor: 'border-primary-100',
       isPercentage: true,
       percentValue: data.improvementRate,
     },
@@ -69,9 +69,9 @@ export function AnalyticsSummaryCards({ data, className }: AnalyticsSummaryCards
       label: 'Strokes Saved',
       value: data.strokesSavedEstimate.toFixed(1),
       subtext: 'Estimated impact',
-      icon: <IconChartBar size={20} className="text-emerald-600" />,
-      bgColor: 'bg-emerald-50',
-      borderColor: 'border-emerald-100',
+      icon: <IconChartBar size={20} className="text-primary-600" />,
+      bgColor: 'bg-primary-50',
+      borderColor: 'border-primary-100',
     },
   ];
 
@@ -103,7 +103,7 @@ export function AnalyticsSummaryCards({ data, className }: AnalyticsSummaryCards
                 <span
                   className={cn(
                     'flex items-center text-xs font-medium',
-                    card.change > 0 ? 'text-green-600' : 'text-red-500'
+                    card.change > 0 ? 'text-primary-600' : 'text-red-500'
                   )}
                 >
                   {card.change > 0 ? (
@@ -130,7 +130,7 @@ export function AnalyticsSummaryCards({ data, className }: AnalyticsSummaryCards
                     className={cn(
                       'h-full rounded-full',
                       card.percentValue >= 0.7
-                        ? 'bg-green-500'
+                        ? 'bg-primary-500'
                         : card.percentValue >= 0.4
                         ? 'bg-amber-500'
                         : 'bg-red-500'

@@ -35,11 +35,11 @@ function getRoundTypeMeta(type: string | null) {
     case 'qualifying':
       return { label: 'Qualifying', bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' };
     case 'practice':
-      return { label: 'Practice', bg: 'bg-slate-50', text: 'text-slate-600', border: 'border-slate-200' };
+      return { label: 'Practice', bg: 'bg-warm-50', text: 'text-warm-600', border: 'border-warm-200' };
     case 'casual':
-      return { label: 'Casual', bg: 'bg-slate-50', text: 'text-slate-500', border: 'border-slate-200' };
+      return { label: 'Casual', bg: 'bg-warm-50', text: 'text-warm-500', border: 'border-warm-200' };
     default:
-      return { label: type || 'Round', bg: 'bg-slate-50', text: 'text-slate-600', border: 'border-slate-200' };
+      return { label: type || 'Round', bg: 'bg-warm-50', text: 'text-warm-600', border: 'border-warm-200' };
   }
 }
 
@@ -273,12 +273,12 @@ export default async function RoundsPage() {
                 <ShineEffect />
                 <div className="relative z-10">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center">
-                      <IconGolf size={14} className="text-slate-500" />
+                    <div className="w-7 h-7 rounded-lg bg-warm-100 flex items-center justify-center">
+                      <IconGolf size={14} className="text-warm-500" />
                     </div>
                   </div>
-                  <p className="text-2xl font-bold text-slate-900 tabular-nums">{roundStats.totalRounds}</p>
-                  <p className="text-xs text-slate-400 font-medium uppercase tracking-wider mt-0.5">Rounds</p>
+                  <p className="text-2xl font-bold text-warm-900 tabular-nums">{roundStats.totalRounds}</p>
+                  <p className="text-xs text-warm-400 font-medium uppercase tracking-wider mt-0.5">Rounds</p>
                 </div>
               </div>
 
@@ -287,12 +287,12 @@ export default async function RoundsPage() {
                 <ShineEffect />
                 <div className="relative z-10">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center">
-                      <IconFlag size={14} className="text-slate-500" />
+                    <div className="w-7 h-7 rounded-lg bg-warm-100 flex items-center justify-center">
+                      <IconFlag size={14} className="text-warm-500" />
                     </div>
                   </div>
-                  <p className="text-2xl font-bold text-slate-900 tabular-nums">{roundStats.avg.toFixed(1)}</p>
-                  <p className="text-xs text-slate-400 font-medium uppercase tracking-wider mt-0.5">Avg Score</p>
+                  <p className="text-2xl font-bold text-warm-900 tabular-nums">{roundStats.avg.toFixed(1)}</p>
+                  <p className="text-xs text-warm-400 font-medium uppercase tracking-wider mt-0.5">Avg Score</p>
                 </div>
               </div>
 
@@ -301,15 +301,15 @@ export default async function RoundsPage() {
                 <ShineEffect />
                 <div className="relative z-10">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-7 h-7 rounded-lg bg-green-50 flex items-center justify-center">
-                      <IconTrophy size={14} className="text-green-600" />
+                    <div className="w-7 h-7 rounded-lg bg-primary-50 flex items-center justify-center">
+                      <IconTrophy size={14} className="text-primary-600" />
                     </div>
                   </div>
                   <p className={cn(
                     'text-2xl font-bold tabular-nums',
-                    roundStats.best < 72 ? 'text-green-600' : 'text-slate-900'
+                    roundStats.best < 72 ? 'text-primary-600' : 'text-warm-900'
                   )}>{roundStats.best}</p>
-                  <p className="text-xs text-slate-400 font-medium uppercase tracking-wider mt-0.5">Best Round</p>
+                  <p className="text-xs text-warm-400 font-medium uppercase tracking-wider mt-0.5">Best Round</p>
                 </div>
               </div>
 
@@ -320,24 +320,24 @@ export default async function RoundsPage() {
                   <div className="flex items-center gap-2 mb-2">
                     <div className={cn(
                       'w-7 h-7 rounded-lg flex items-center justify-center',
-                      roundStats.avgToPar !== null && roundStats.avgToPar < 0 ? 'bg-green-50' : 'bg-slate-100'
+                      roundStats.avgToPar !== null && roundStats.avgToPar < 0 ? 'bg-primary-50' : 'bg-warm-100'
                     )}>
                       {roundStats.avgToPar !== null && roundStats.avgToPar < 0
-                        ? <IconTrendingDown size={14} className="text-green-600" />
-                        : <IconTrendingUp size={14} className="text-slate-500" />
+                        ? <IconTrendingDown size={14} className="text-primary-600" />
+                        : <IconTrendingUp size={14} className="text-warm-500" />
                       }
                     </div>
                   </div>
                   <p className={cn(
                     'text-2xl font-bold tabular-nums',
-                    roundStats.avgToPar !== null && roundStats.avgToPar < 0 ? 'text-green-600' : 'text-slate-900'
+                    roundStats.avgToPar !== null && roundStats.avgToPar < 0 ? 'text-primary-600' : 'text-warm-900'
                   )}>
                     {roundStats.avgToPar !== null
                       ? `${roundStats.avgToPar >= 0 ? '+' : ''}${roundStats.avgToPar.toFixed(1)}`
                       : '--'
                     }
                   </p>
-                  <p className="text-xs text-slate-400 font-medium uppercase tracking-wider mt-0.5">Avg to Par</p>
+                  <p className="text-xs text-warm-400 font-medium uppercase tracking-wider mt-0.5">Avg to Par</p>
                 </div>
               </div>
 
@@ -349,9 +349,9 @@ export default async function RoundsPage() {
                     {roundStats.trend && (
                       <span className={cn(
                         'text-xs font-semibold px-2 py-0.5 rounded-full',
-                        roundStats.trend === 'improving' ? 'text-green-700 bg-green-100' :
+                        roundStats.trend === 'improving' ? 'text-primary-700 bg-primary-100' :
                         roundStats.trend === 'declining' ? 'text-red-600 bg-red-50' :
-                        'text-slate-500 bg-slate-100'
+                        'text-warm-500 bg-warm-100'
                       )}>
                         {roundStats.trend === 'improving' ? 'Improving' :
                          roundStats.trend === 'declining' ? 'Declining' :
@@ -359,10 +359,10 @@ export default async function RoundsPage() {
                       </span>
                     )}
                   </div>
-                  <p className="text-2xl font-bold tabular-nums text-slate-900">
+                  <p className="text-2xl font-bold tabular-nums text-warm-900">
                     {roundStats.underParPct}%
                   </p>
-                  <p className="text-xs text-slate-400 font-medium uppercase tracking-wider mt-0.5">Under Par</p>
+                  <p className="text-xs text-warm-400 font-medium uppercase tracking-wider mt-0.5">Under Par</p>
                 </div>
               </div>
             </div>
@@ -374,9 +374,9 @@ export default async function RoundsPage() {
               <UnfinishedRoundsSection rounds={inProgressRounds} />
               {rounds.length > 0 && (
                 <div className="mt-10 mb-6 flex items-center gap-3">
-                  <div className="h-px flex-1 bg-slate-200/80" />
-                  <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Completed</span>
-                  <div className="h-px flex-1 bg-slate-200/80" />
+                  <div className="h-px flex-1 bg-warm-200/80" />
+                  <span className="text-xs font-semibold text-warm-400 uppercase tracking-wider">Completed</span>
+                  <div className="h-px flex-1 bg-warm-200/80" />
                 </div>
               )}
             </>
@@ -390,8 +390,8 @@ export default async function RoundsPage() {
                 <div className="w-16 h-16 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto mb-5">
                   <IconGolf size={28} className="text-primary-400" />
                 </div>
-                <h3 className="text-xl font-semibold text-slate-900 mb-2">No Rounds Yet</h3>
-                <p className="text-slate-500 mb-8 max-w-sm mx-auto leading-relaxed">
+                <h3 className="text-xl font-semibold text-warm-900 mb-2">No Rounds Yet</h3>
+                <p className="text-warm-500 mb-8 max-w-sm mx-auto leading-relaxed">
                   {userRole === 'coach'
                     ? "Your players haven't submitted any rounds yet. Rounds will appear here as they're recorded."
                     : 'Start tracking your golf rounds to see stats and improvement over time.'}
@@ -413,11 +413,11 @@ export default async function RoundsPage() {
                 <div key={monthYear}>
                   {/* Month/Year Section Header */}
                   <div className="flex items-center gap-3 mb-4">
-                    <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">
+                    <h2 className="text-xs font-semibold text-warm-400 uppercase tracking-wider whitespace-nowrap">
                       {monthYear}
                     </h2>
-                    <div className="h-px flex-1 bg-slate-200/60" />
-                    <span className="text-xs font-medium text-slate-300">
+                    <div className="h-px flex-1 bg-warm-200/60" />
+                    <span className="text-xs font-medium text-warm-300">
                       {monthRounds.length} round{monthRounds.length !== 1 ? 's' : ''}
                     </span>
                   </div>
@@ -455,11 +455,11 @@ export default async function RoundsPage() {
                                 /* Player self-view: show score as the leading element */
                                 <div className={cn(
                                   'w-12 h-12 rounded-xl flex flex-col items-center justify-center flex-shrink-0',
-                                  scoreToPar < 0 ? 'bg-green-50 ring-1 ring-green-100' : scoreToPar === 0 ? 'bg-slate-50 ring-1 ring-slate-100' : 'bg-amber-50 ring-1 ring-amber-100'
+                                  scoreToPar < 0 ? 'bg-primary-50 ring-1 ring-primary-100' : scoreToPar === 0 ? 'bg-warm-50 ring-1 ring-warm-100' : 'bg-amber-50 ring-1 ring-amber-100'
                                 )}>
                                   <span className={cn(
                                     'text-lg font-bold leading-none',
-                                    scoreToPar < 0 ? 'text-green-600' : scoreToPar === 0 ? 'text-slate-700' : 'text-amber-600'
+                                    scoreToPar < 0 ? 'text-primary-600' : scoreToPar === 0 ? 'text-warm-700' : 'text-amber-600'
                                   )}>
                                     {round.total_score || '--'}
                                   </span>
@@ -471,11 +471,11 @@ export default async function RoundsPage() {
                                 {/* Row 1: Player Name (coach) / Course Name (player) */}
                                 <div className="flex items-center gap-2 mb-0.5">
                                   {userRole === 'coach' ? (
-                                    <h3 className="font-semibold text-slate-900 truncate group-hover:text-primary-600 transition-colors text-[15px]">
+                                    <h3 className="font-semibold text-warm-900 truncate group-hover:text-primary-600 transition-colors text-[15px]">
                                       {playerName}
                                     </h3>
                                   ) : (
-                                    <h3 className="font-semibold text-slate-900 truncate group-hover:text-primary-600 transition-colors text-[15px]">
+                                    <h3 className="font-semibold text-warm-900 truncate group-hover:text-primary-600 transition-colors text-[15px]">
                                       {round.course_name}
                                     </h3>
                                   )}
@@ -489,13 +489,13 @@ export default async function RoundsPage() {
 
                                 {/* Row 2: Course (coach) / Date + Location (player) */}
                                 {userRole === 'coach' ? (
-                                  <p className="text-sm text-slate-500 truncate">
+                                  <p className="text-sm text-warm-500 truncate">
                                     {round.course_name}
                                   </p>
                                 ) : null}
 
                                 {/* Row 3: Metadata */}
-                                <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-400">
+                                <div className="flex items-center gap-3 mt-1.5 text-xs text-warm-400">
                                   <span className="flex items-center gap-1" title={fullDate}>
                                     <IconCalendar size={12} />
                                     {relativeDate}
@@ -507,7 +507,7 @@ export default async function RoundsPage() {
                                     </span>
                                   )}
                                   {round.total_putts && (
-                                    <span className="hidden md:inline text-slate-400">
+                                    <span className="hidden md:inline text-warm-400">
                                       {round.total_putts} putts
                                     </span>
                                   )}
@@ -521,13 +521,13 @@ export default async function RoundsPage() {
                                   <div className="text-right">
                                     <p className={cn(
                                       'text-2xl font-bold tabular-nums leading-none',
-                                      scoreToPar < 0 ? 'text-green-600' : scoreToPar === 0 ? 'text-slate-800' : 'text-slate-800'
+                                      scoreToPar < 0 ? 'text-primary-600' : scoreToPar === 0 ? 'text-warm-800' : 'text-warm-800'
                                     )}>
                                       {round.total_score || '--'}
                                     </p>
                                     <p className={cn(
                                       'text-xs font-semibold tabular-nums mt-0.5',
-                                      scoreToPar < 0 ? 'text-green-500' : scoreToPar === 0 ? 'text-slate-400' : 'text-amber-500'
+                                      scoreToPar < 0 ? 'text-primary-500' : scoreToPar === 0 ? 'text-warm-400' : 'text-amber-500'
                                     )}>
                                       {scoreToPar === 0 ? 'Even' : scoreToPar > 0 ? `+${scoreToPar}` : scoreToPar}
                                     </p>
@@ -536,13 +536,13 @@ export default async function RoundsPage() {
                                   /* Player sees to-par badge */
                                   <div className={cn(
                                     'px-2.5 py-1 rounded-lg text-xs font-semibold tabular-nums',
-                                    scoreToPar < 0 ? 'bg-green-50 text-green-600' : scoreToPar === 0 ? 'bg-slate-50 text-slate-500' : 'bg-amber-50 text-amber-600'
+                                    scoreToPar < 0 ? 'bg-primary-50 text-primary-600' : scoreToPar === 0 ? 'bg-warm-50 text-warm-500' : 'bg-amber-50 text-amber-600'
                                   )}>
                                     {scoreToPar === 0 ? 'E' : scoreToPar > 0 ? `+${scoreToPar}` : scoreToPar}
                                   </div>
                                 )}
 
-                                <IconChevronRight size={16} className="text-slate-300 group-hover:text-primary-500 transition-colors" />
+                                <IconChevronRight size={16} className="text-warm-300 group-hover:text-primary-500 transition-colors" />
                               </div>
                             </div>
                           </div>

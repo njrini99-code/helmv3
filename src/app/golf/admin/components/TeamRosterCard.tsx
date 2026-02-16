@@ -193,8 +193,8 @@ export function TeamRosterCard({ teamRosters }: Props) {
                                 </td>
                                 <td className="py-2 px-2">
                                   {p.onboardingCompleted ? (
-                                    <span className="inline-flex items-center gap-1 text-xs text-emerald-600">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                    <span className="inline-flex items-center gap-1 text-xs text-primary-600">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-primary-500" />
                                       Active
                                     </span>
                                   ) : (

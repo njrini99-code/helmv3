@@ -52,7 +52,7 @@ export function EngagementCard({ engagement, totalPlayers, totalCoaches, playerE
             <span className="text-sm text-warm-600">DAU/MAU Stickiness</span>
             <span className={cn(
               'text-xl font-semibold tabular-nums',
-              stickiness.dauMauRatio > 20 ? 'text-emerald-600' : stickiness.dauMauRatio > 10 ? 'text-amber-600' : 'text-red-500'
+              stickiness.dauMauRatio > 20 ? 'text-primary-600' : stickiness.dauMauRatio > 10 ? 'text-amber-600' : 'text-red-500'
             )}>
               {stickiness.dauMauRatio}%
             </span>
@@ -94,7 +94,7 @@ export function EngagementCard({ engagement, totalPlayers, totalCoaches, playerE
           <div className="flex items-center gap-1.5">
             <span className={cn(
               'font-medium tabular-nums',
-              engagement.playersWithNoRounds > 0 ? 'text-amber-600' : 'text-emerald-600'
+              engagement.playersWithNoRounds > 0 ? 'text-amber-600' : 'text-primary-600'
             )}>
               {engagement.playersWithNoRounds}
             </span>

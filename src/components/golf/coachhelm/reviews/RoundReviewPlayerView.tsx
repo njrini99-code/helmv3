@@ -116,7 +116,7 @@ function EmptyState({ onGenerate, generating }: {
       className="bg-glass-subtle backdrop-blur-xl border border-dashed border-warm-300 rounded-2xl p-8"
     >
       <div className="flex flex-col items-center justify-center text-center">
-        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary-500 to-emerald-600 flex items-center justify-center mb-4 shadow-lg shadow-primary-500/20">
+        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center mb-4 shadow-lg shadow-primary-500/20">
           <IconSparkles size={24} className="text-white" />
         </div>
         <h3 className="text-lg font-semibold text-warm-900 mb-2">
@@ -130,7 +130,7 @@ function EmptyState({ onGenerate, generating }: {
           <Button
             onClick={onGenerate}
             disabled={generating}
-            className="bg-gradient-to-r from-primary-600 to-emerald-600"
+            className="bg-gradient-to-r from-primary-600 to-primary-600"
           >
             {generating ? (
               <>
@@ -363,7 +363,7 @@ function ActionItems({ items }: ActionItemsProps) {
           >
             <div className={cn(
               'w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5',
-              item.completed ? 'bg-green-100 text-green-600' : 'bg-warm-100 text-warm-400'
+              item.completed ? 'bg-primary-100 text-primary-600' : 'bg-warm-100 text-warm-400'
             )}>
               {item.completed ? <IconCheck size={12} /> : <span className="w-2 h-2 rounded-full bg-current" />}
             </div>
@@ -393,9 +393,9 @@ interface AcknowledgmentCTAProps {
 function AcknowledgmentCTA({ review, onAcknowledge, loading }: AcknowledgmentCTAProps) {
   if (review.playerAcknowledgedAt) {
     return (
-      <div className="flex items-center justify-center gap-2 py-3 bg-green-50 border border-green-100 rounded-lg">
-        <IconCheck size={16} className="text-green-600" />
-        <span className="text-sm font-medium text-green-700">
+      <div className="flex items-center justify-center gap-2 py-3 bg-primary-50 border border-primary-100 rounded-lg">
+        <IconCheck size={16} className="text-primary-600" />
+        <span className="text-sm font-medium text-primary-700">
           Acknowledged on {new Date(review.playerAcknowledgedAt).toLocaleDateString()}
         </span>
       </div>
@@ -403,7 +403,7 @@ function AcknowledgmentCTA({ review, onAcknowledge, loading }: AcknowledgmentCTA
   }
 
   return (
-    <div className="bg-gradient-to-r from-primary-50 to-emerald-50 border border-primary-100 rounded-xl p-4">
+    <div className="bg-gradient-to-r from-primary-50 to-primary-50 border border-primary-100 rounded-xl p-4">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-primary-900">
@@ -507,7 +507,7 @@ export function RoundReviewPlayerView({ roundId, className }: RoundReviewPlayerV
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-gradient-to-br from-primary-500 to-emerald-600 rounded-xl shadow-lg shadow-primary-500/20">
+          <div className="p-2 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl shadow-lg shadow-primary-500/20">
             <IconSparkles size={18} className="text-white" />
           </div>
           <div>

@@ -56,9 +56,9 @@ interface RSVPStats {
 const RESPONSE_CONFIGS = {
   accepted: {
     label: 'Accepted',
-    color: 'bg-emerald-500',
-    textColor: 'text-emerald-700',
-    bgColor: 'bg-emerald-50',
+    color: 'bg-primary-500',
+    textColor: 'text-primary-700',
+    bgColor: 'bg-primary-50',
   },
   tentative: {
     label: 'Tentative',
@@ -191,7 +191,7 @@ export function RSVPStatusSection({
             placeholder="Search players..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-sm border border-warm-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-100 focus:border-green-500"
+            className="w-full pl-9 pr-4 py-2 text-sm border border-warm-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-100 focus:border-primary-500"
           />
         </div>
 
@@ -208,7 +208,7 @@ export function RSVPStatusSection({
             active={filter === 'accepted'}
             onClick={() => setFilter('accepted')}
             count={stats.accepted}
-            color="emerald"
+            color="primary"
           >
             Accepted
           </FilterButton>
@@ -285,7 +285,7 @@ export function RSVPStatusSection({
             <p className="text-sm text-warm-600">{selectedIds.size} selected</p>
             <button
               onClick={handleSendReminder}
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
+              className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-colors"
             >
               Send Reminder
             </button>
@@ -309,11 +309,11 @@ function FilterButton({
   active: boolean;
   onClick: () => void;
   count: number;
-  color?: 'emerald' | 'amber' | 'rose' | 'slate';
+  color?: 'primary' | 'amber' | 'rose' | 'slate';
   children: React.ReactNode;
 }) {
   const colorClasses = {
-    emerald: active ? 'bg-emerald-600 text-white' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100',
+    primary: active ? 'bg-primary-600 text-white' : 'bg-primary-50 text-primary-700 hover:bg-primary-100',
     amber: active ? 'bg-amber-500 text-white' : 'bg-amber-50 text-amber-700 hover:bg-amber-100',
     rose: active ? 'bg-rose-500 text-white' : 'bg-rose-50 text-rose-700 hover:bg-rose-100',
     slate: active ? 'bg-warm-600 text-white' : 'bg-warm-100 text-warm-700 hover:bg-warm-200',
@@ -358,7 +358,7 @@ function ParticipantRow({
     <div
       className={cn(
         'flex items-center gap-3 p-3 hover:bg-warm-50 transition-colors',
-        selected && 'bg-green-50',
+        selected && 'bg-primary-50',
         compact && 'p-2'
       )}
     >
@@ -368,7 +368,7 @@ function ParticipantRow({
           type="checkbox"
           checked={selected}
           onChange={onToggleSelect}
-          className="w-4 h-4 rounded border-warm-300 text-green-600 focus:ring-2 focus:ring-green-100"
+          className="w-4 h-4 rounded border-warm-300 text-primary-600 focus:ring-2 focus:ring-primary-100"
         />
       )}
 
@@ -441,7 +441,7 @@ export function CompactRSVPStatus({
   return (
     <div className="flex items-center gap-3">
       <div className="flex items-center gap-2">
-        <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+        <div className="w-2 h-2 rounded-full bg-primary-500"></div>
         <span className="text-sm font-medium text-warm-700">{accepted} accepted</span>
       </div>
       {pending > 0 && (

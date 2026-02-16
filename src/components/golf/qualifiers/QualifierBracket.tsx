@@ -64,10 +64,10 @@ function getPositionStyles(position: number, isAboveCutline: boolean, isOnBubble
   }
   if (isAboveCutline) {
     return {
-      card: 'bg-white/70 border-green-200/50',
+      card: 'bg-white/70 border-primary-200/50',
       ring: '',
       name: 'text-warm-900',
-      score: 'text-green-600',
+      score: 'text-primary-600',
     };
   }
   return {
@@ -138,7 +138,7 @@ function PlayerBracketCard({
             <div
               className={cn(
                 'h-full rounded-full transition-all duration-500',
-                isAboveCutline ? 'bg-green-500' : 'bg-warm-300'
+                isAboveCutline ? 'bg-primary-500' : 'bg-warm-300'
               )}
               style={{ width: `${progressPercent}%` }}
             />
@@ -198,7 +198,7 @@ export function QualifierBracket({
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-4 text-sm">
           <span className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-green-500" />
+            <span className="w-3 h-3 rounded-full bg-primary-500" />
             <span className="text-warm-600">Qualifying ({effectiveCutline} spots)</span>
           </span>
           <span className="flex items-center gap-2">
@@ -209,7 +209,7 @@ export function QualifierBracket({
         {leaderboard.length > effectiveCutline + 3 && (
           <button
             onClick={() => setShowAll(!showAll)}
-            className="flex items-center gap-1 text-sm text-green-600 hover:text-green-700 font-medium"
+            className="flex items-center gap-1 text-sm text-primary-600 hover:text-primary-700 font-medium"
           >
             {showAll ? (
               <>Show Less <IconChevronUp size={14} /></>
@@ -262,8 +262,8 @@ export function QualifierBracket({
       {/* Summary */}
       <div className="mt-6 pt-4 border-t border-warm-100">
         <div className="grid grid-cols-3 gap-4 text-center">
-          <div className="p-3 bg-green-50 rounded-xl">
-            <p className="text-2xl font-bold text-green-600">
+          <div className="p-3 bg-primary-50 rounded-xl">
+            <p className="text-2xl font-bold text-primary-600">
               {leaderboard.filter((_, i) => i < effectiveCutline).length}
             </p>
             <p className="text-xs text-warm-500 mt-1">Qualifying</p>

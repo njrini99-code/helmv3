@@ -240,14 +240,12 @@ export default function RoundReviewPage() {
     return (
       <div className="max-w-2xl mx-auto px-4 py-8">
         <div className="flex flex-col items-center justify-center py-20">
-          <div className="relative mb-4">
-            <div className="w-12 h-12 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
-            <div
-              className="absolute inset-0 w-12 h-12 border-2 border-transparent border-t-primary-400 rounded-full animate-spin"
-              style={{ animationDirection: 'reverse', animationDuration: '1s' }}
-            />
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <span className="w-2.5 h-2.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+            <span className="w-2.5 h-2.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+            <span className="w-2.5 h-2.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
           </div>
-          <p className="text-sm text-slate-500 font-medium">
+          <p className="text-sm text-warm-500 font-medium">
             {generatingReview || v1Generating ? (
               <span className="flex items-center gap-2">
                 <IconSparkles size={16} className="text-purple-500" />
@@ -270,7 +268,7 @@ export default function RoundReviewPage() {
           <p className="text-red-500 mb-4">{error}</p>
           <button
             onClick={() => generateReview()}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2 mx-auto"
+            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2 mx-auto"
           >
             <IconRefresh size={16} />
             Try Again
@@ -285,7 +283,7 @@ export default function RoundReviewPage() {
     return (
       <div className="max-w-2xl mx-auto px-4 py-8">
         <div className="text-center py-20">
-          <p className="text-slate-500">Round not found</p>
+          <p className="text-warm-500">Round not found</p>
           <Link
             href="/golf/dashboard/rounds"
             className="text-primary-600 hover:text-primary-700 text-sm mt-2 inline-block"
@@ -318,7 +316,7 @@ export default function RoundReviewPage() {
       <m.div variants={itemVariants} className="flex items-center justify-between mb-6">
         <Link
           href="/golf/dashboard/rounds"
-          className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700"
+          className="flex items-center gap-2 text-sm text-warm-500 hover:text-warm-700"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -339,7 +337,7 @@ export default function RoundReviewPage() {
           <button
             onClick={() => generateReview()}
             disabled={generatingReview}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-warm-600 hover:text-warm-900 hover:bg-warm-100 rounded-lg transition-colors"
           >
             <IconRefresh size={14} className={generatingReview ? 'animate-spin' : ''} />
             Refresh
@@ -417,13 +415,13 @@ export default function RoundReviewPage() {
         <div className="max-w-2xl mx-auto flex gap-3">
           <Link
             href={`/golf/dashboard/rounds/${roundId}`}
-            className="flex-1 py-3 bg-slate-100 text-slate-700 rounded-xl text-center font-medium hover:bg-slate-200 transition-colors"
+            className="flex-1 py-3 bg-warm-100 text-warm-700 rounded-xl text-center font-medium hover:bg-warm-200 transition-colors"
           >
             View Full Stats
           </Link>
           <Link
             href="/golf/dashboard/stats"
-            className="flex-1 py-3 bg-green-600 text-white rounded-xl text-center font-medium hover:bg-green-700 transition-colors"
+            className="flex-1 py-3 bg-primary-600 text-white rounded-xl text-center font-medium hover:bg-primary-700 transition-colors"
           >
             View Stats
           </Link>

@@ -183,7 +183,7 @@ export default function ComparativeBenchmarks({
                       className={cn(
                         'py-3 pr-4',
                         bestScore.has(idx)
-                          ? 'font-bold text-green-600'
+                          ? 'font-bold text-primary-600'
                           : 'text-warm-900'
                       )}
                     >
@@ -192,7 +192,7 @@ export default function ComparativeBenchmarks({
                     <td
                       className={cn(
                         'py-3 pr-4',
-                        bestFw.has(idx) ? 'font-bold text-green-600' : 'text-warm-900'
+                        bestFw.has(idx) ? 'font-bold text-primary-600' : 'text-warm-900'
                       )}
                     >
                       {team.avgFairwayPct !== null
@@ -202,7 +202,7 @@ export default function ComparativeBenchmarks({
                     <td
                       className={cn(
                         'py-3 pr-4',
-                        bestGir.has(idx) ? 'font-bold text-green-600' : 'text-warm-900'
+                        bestGir.has(idx) ? 'font-bold text-primary-600' : 'text-warm-900'
                       )}
                     >
                       {team.avgGirPct !== null
@@ -213,7 +213,7 @@ export default function ComparativeBenchmarks({
                       className={cn(
                         'py-3 pr-4',
                         bestPutts.has(idx)
-                          ? 'font-bold text-green-600'
+                          ? 'font-bold text-primary-600'
                           : 'text-warm-900'
                       )}
                     >
@@ -225,7 +225,7 @@ export default function ComparativeBenchmarks({
                       className={cn(
                         'py-3 pr-4',
                         bestRounds.has(idx)
-                          ? 'font-bold text-green-600'
+                          ? 'font-bold text-primary-600'
                           : 'text-warm-500'
                       )}
                     >
@@ -237,7 +237,7 @@ export default function ComparativeBenchmarks({
                           className={cn(
                             'inline-flex items-center gap-1 text-sm font-medium',
                             team.improvementTrend > 0
-                              ? 'text-green-600'
+                              ? 'text-primary-600'
                               : team.improvementTrend < 0
                                 ? 'text-red-500'
                                 : 'text-warm-400'
@@ -257,7 +257,7 @@ export default function ComparativeBenchmarks({
                             <span>—</span>
                           )}
                           {bestTrend.has(idx) && team.improvementTrend > 0 && (
-                            <span className="ml-1 text-xs text-green-500">Best</span>
+                            <span className="ml-1 text-xs text-primary-500">Best</span>
                           )}
                         </span>
                       ) : (
@@ -313,7 +313,7 @@ export default function ComparativeBenchmarks({
                       {player.currentAvg !== null ? player.currentAvg.toFixed(1) : '—'}
                     </p>
                   </div>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-3 py-1 text-sm font-medium text-green-700">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-3 py-1 text-sm font-medium text-primary-700">
                     ↓ {Math.abs(player.improvement!).toFixed(1)} strokes
                   </span>
                 </div>
@@ -330,7 +330,7 @@ export default function ComparativeBenchmarks({
           {/* With AI */}
           <div className="rounded-xl bg-white/50 border border-white/30 p-5">
             <div className="flex items-center gap-2 mb-4">
-              <div className="h-2 w-2 rounded-full bg-green-500" />
+              <div className="h-2 w-2 rounded-full bg-primary-500" />
               <h3 className="text-sm font-semibold text-warm-900">With AI</h3>
               <span className="text-xs text-warm-400">
                 {aiCorrelation.playersWithAI} players
@@ -343,7 +343,7 @@ export default function ComparativeBenchmarks({
                   className={cn(
                     'text-2xl font-semibold',
                     aiScoreDiff !== null && aiScoreDiff > 0
-                      ? 'text-green-600'
+                      ? 'text-primary-600'
                       : 'text-warm-900'
                   )}
                 >
@@ -358,7 +358,7 @@ export default function ComparativeBenchmarks({
                   className={cn(
                     'text-lg font-medium',
                     aiImproveDiff !== null && aiImproveDiff > 0
-                      ? 'text-green-600'
+                      ? 'text-primary-600'
                       : 'text-warm-900'
                   )}
                 >
@@ -408,7 +408,7 @@ export default function ComparativeBenchmarks({
               <span
                 className={cn(
                   'text-sm font-semibold',
-                  aiScoreDiff > 0 ? 'text-green-600' : 'text-warm-900'
+                  aiScoreDiff > 0 ? 'text-primary-600' : 'text-warm-900'
                 )}
               >
                 {aiScoreDiff > 0

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { IconX, IconPlus, IconCheck, IconWarning } from '@/components/icons';
@@ -143,6 +144,7 @@ function detectConflicts(
 }
 
 export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingClasses = [] }: AddClassModalProps) {
+  const { modalRef } = useFocusTrap(isOpen, onClose);
   const [loading, setLoading] = useState(false);
   const [conflicts, setConflicts] = useState<ClassConflict[]>([]);
   const [showConflictWarning, setShowConflictWarning] = useState(false);
@@ -258,7 +260,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
       />
       
       {/* Modal */}
-      <div className="relative w-full max-w-lg mx-4 glass-prominent rounded-2xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col">
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="add-class-title" className="relative w-full max-w-lg mx-4 glass-prominent rounded-2xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Shine effect */}
         <div
           className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
@@ -268,17 +270,18 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
         />
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100">
-          <h2 className="text-lg font-semibold text-warm-900">
+          <h2 id="add-class-title" className="text-lg font-semibold text-warm-900">
             {editingClass ? 'Edit Class' : 'Add Class'}
           </h2>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="p-2 text-warm-400 hover:text-warm-600 hover:bg-warm-100 rounded-lg transition-colors"
           >
             <IconX size={20} />
           </button>
         </div>
-        
+
         {/* Content */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5">
           {/* Course Code & Name */}
@@ -321,7 +324,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
                   className={cn(
                     'w-10 h-10 rounded-lg text-sm font-medium transition-all',
                     formData.days.includes(day.abbrev)
-                      ? 'bg-green-600 text-white'
+                      ? 'bg-primary-600 text-white'
                       : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
                   )}
                 >
@@ -338,7 +341,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
                   className={cn(
                     'px-3 py-1 text-xs font-medium rounded-full transition-all',
                     JSON.stringify(formData.days) === JSON.stringify(pattern.days)
-                      ? 'bg-green-100 text-green-700'
+                      ? 'bg-primary-100 text-primary-700'
                       : 'bg-warm-100 text-warm-500 hover:bg-warm-200'
                   )}
                 >
@@ -436,7 +439,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
               <select
                 value={formData.semester}
                 onChange={(e) => setFormData(prev => ({ ...prev, semester: e.target.value }))}
-                className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/40"
+                className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/40"
               >
                 <option value="Spring 2025">Spring 2025</option>
                 <option value="Summer 2025">Summer 2025</option>
@@ -470,7 +473,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
               onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
               placeholder="Any additional notes... (optional)"
               rows={2}
-              className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/40 resize-none"
+              className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/40 resize-none"
             />
           </div>
         </form>

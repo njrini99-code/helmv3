@@ -7,6 +7,7 @@ import { SidebarProvider, useSidebar } from '@/contexts/sidebar-context';
 import { ToastProvider } from '@/components/ui/toast';
 import { SessionActivityProvider } from '@/components/providers/SessionActivityProvider';
 import { usePresence } from '@/hooks/use-presence';
+import { useAppearancePreferences } from '@/hooks/golf/use-appearance-preferences';
 import { MobileBottomNav } from '@/components/golf/MobileBottomNav';
 import { KeyboardShortcutHint } from '@/components/golf/KeyboardShortcutHint';
 import { MobileNavProvider } from '@/contexts/mobile-nav-context';
@@ -14,7 +15,7 @@ import { GolfUserProvider, type GolfUserData } from '@/contexts/golf-user-contex
 import { OfflineProvider } from '@/components/golf/OfflineProvider';
 import { NoTeamBanner } from '@/components/golf/NoTeamBanner';
 import { LastSeenUpdater } from '@/components/admin/LastSeenUpdater';
-import { LazyMotion, domAnimation } from 'framer-motion';
+import { LazyMotion, domAnimation, MotionConfig } from 'framer-motion';
 import { TamboProvider } from '@tambo-ai/react';
 import { components as tamboComponents } from '@/lib/tambo';
 import { cn } from '@/lib/utils';
@@ -30,6 +31,7 @@ const CommandPalette = dynamic(
 // ---------------------------------------------------------------------------
 function GolfDashboardContent({ children, userData }: { children: React.ReactNode; userData: GolfUserData }) {
   const { collapsed, mobileOpen, setMobileOpen } = useSidebar();
+  const { displayDensity, showAnimations } = useAppearancePreferences();
   const isCoach = userData.role === 'coach';
   const mobileSidebarRef = useRef<HTMLDivElement>(null);
 
@@ -73,7 +75,14 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
   }, [mobileOpen]);
 
   return (
-    <div className="flex h-dvh bg-dashboard-gradient" style={{ overscrollBehavior: 'none' }}>
+    <div
+      className={cn(
+        'flex h-dvh bg-dashboard-gradient',
+        displayDensity === 'compact' && 'density-compact',
+        !showAnimations && 'reduce-motion',
+      )}
+      style={{ overscrollBehavior: 'none' }}
+    >
       {/* Skip to main content link for keyboard navigation */}
       <a
         href="#main-content"
@@ -98,7 +107,7 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
       {/* Mobile Sidebar Overlay */}
       <div
         className={cn(
-          'fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 lg:hidden',
+          'fixed inset-0 bg-warm-900/50 backdrop-blur-sm z-40 lg:hidden',
           'transition-opacity duration-300 ease-out',
           mobileOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         )}
@@ -159,6 +168,18 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
 }
 
 // ---------------------------------------------------------------------------
+// MotionConfig wrapper that disables animations when user preference is off
+// ---------------------------------------------------------------------------
+function AppearanceMotionConfig({ children }: { children: React.ReactNode }) {
+  const { showAnimations } = useAppearancePreferences();
+  return (
+    <MotionConfig reducedMotion={showAnimations ? 'never' : 'always'}>
+      {children}
+    </MotionConfig>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Exported shell — wraps children with all client-side providers
 // ---------------------------------------------------------------------------
 export function GolfDashboardShell({
@@ -179,12 +200,14 @@ export function GolfDashboardShell({
             <SessionActivityProvider>
               <GolfUserProvider userData={userData}>
                 <LazyMotion features={domAnimation}>
-                  <OfflineProvider showSyncStatus={false} showWarningBanner={false}>
-                    <LastSeenUpdater />
-                    <GolfDashboardContent userData={userData}>
-                      {children}
-                    </GolfDashboardContent>
-                  </OfflineProvider>
+                  <AppearanceMotionConfig>
+                    <OfflineProvider showSyncStatus={false} showWarningBanner={false}>
+                      <LastSeenUpdater />
+                      <GolfDashboardContent userData={userData}>
+                        {children}
+                      </GolfDashboardContent>
+                    </OfflineProvider>
+                  </AppearanceMotionConfig>
                 </LazyMotion>
               </GolfUserProvider>
             </SessionActivityProvider>

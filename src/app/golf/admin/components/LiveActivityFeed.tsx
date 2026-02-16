@@ -42,9 +42,9 @@ const eventTypeConfig: Record<EventType, {
 }> = {
   signup: {
     icon: '👤',
-    color: 'text-emerald-600',
-    bgColor: 'bg-emerald-50',
-    borderColor: 'border-emerald-200',
+    color: 'text-primary-600',
+    bgColor: 'bg-primary-50',
+    borderColor: 'border-primary-200',
   },
   round: {
     icon: '⛳',
@@ -66,9 +66,9 @@ const eventTypeConfig: Record<EventType, {
   },
   login: {
     icon: '🔑',
-    color: 'text-slate-600',
-    bgColor: 'bg-slate-50',
-    borderColor: 'border-slate-200',
+    color: 'text-warm-600',
+    bgColor: 'bg-warm-50',
+    borderColor: 'border-warm-200',
   },
   feature: {
     icon: '✨',
@@ -162,7 +162,7 @@ function ActivityEventItem({
 
       {/* New indicator */}
       {isNew && (
-        <span className="flex-shrink-0 w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+        <span className="flex-shrink-0 w-2 h-2 rounded-full bg-primary-500 animate-pulse" />
       )}
     </motion.div>
   );
@@ -224,8 +224,8 @@ export function LiveActivityFeed({
       <div className="flex items-center justify-between px-5 py-4 border-b border-warm-100/80">
         <div className="flex items-center gap-2">
           <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+            <span className="absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-75 animate-ping" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-primary-500" />
           </span>
           <h3 className="text-sm font-semibold text-warm-900">Live Activity</h3>
           <span className="text-xs text-warm-400 tabular-nums">
@@ -234,7 +234,11 @@ export function LiveActivityFeed({
         </div>
         
         {isLoading && (
-          <div className="w-4 h-4 border-2 border-warm-300 border-t-emerald-500 rounded-full animate-spin" />
+          <span className="flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary-500 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-primary-500 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-primary-500 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+          </span>
         )}
       </div>
 
@@ -249,8 +253,8 @@ export function LiveActivityFeed({
             className={cn(
               'absolute top-14 left-1/2 -translate-x-1/2 z-10',
               'flex items-center gap-2 px-4 py-2 rounded-full',
-              'bg-emerald-500 text-white text-sm font-medium shadow-lg',
-              'hover:bg-emerald-600 transition-colors'
+              'bg-primary-500 text-white text-sm font-medium shadow-lg',
+              'hover:bg-primary-600 transition-colors'
             )}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

@@ -286,8 +286,8 @@ function ActionButton({
 }: ActionButtonProps) {
   const variantStyles = {
     success: {
-      base: 'bg-green-600 hover:bg-green-700 text-white border-green-600',
-      icon: 'bg-green-500/20',
+      base: 'bg-primary-600 hover:bg-primary-700 text-white border-primary-600',
+      icon: 'bg-primary-500/20',
     },
     primary: {
       base: 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600',
@@ -312,7 +312,7 @@ function ActionButton({
       className={cn(
         'group w-full flex items-center gap-4 p-4 rounded-xl border transition-all',
         'disabled:opacity-60 disabled:cursor-not-allowed',
-        state.success && 'bg-green-50 border-green-200',
+        state.success && 'bg-primary-50 border-primary-200',
         !state.success && style.base
       )}
     >
@@ -320,7 +320,7 @@ function ActionButton({
       <div
         className={cn(
           'w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors',
-          state.success ? 'bg-green-100' : style.icon
+          state.success ? 'bg-primary-100' : style.icon
         )}
       >
         <AnimatePresence mode="wait">
@@ -344,7 +344,7 @@ function ActionButton({
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
             >
-              <IconCheck size={18} className="text-green-600" />
+              <IconCheck size={18} className="text-primary-600" />
             </motion.div>
           ) : (
             <motion.div
@@ -363,7 +363,7 @@ function ActionButton({
         <p
           className={cn(
             'text-sm font-medium',
-            state.success ? 'text-green-700' : ''
+            state.success ? 'text-primary-700' : ''
           )}
         >
           {state.success ? 'Done!' : label}
@@ -374,7 +374,7 @@ function ActionButton({
             variant === 'success' || variant === 'primary'
               ? 'text-white/70'
               : 'text-warm-400',
-            state.success && 'text-green-600'
+            state.success && 'text-primary-600'
           )}
         >
           {state.error || description}

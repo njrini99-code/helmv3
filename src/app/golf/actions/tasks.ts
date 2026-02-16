@@ -643,6 +643,30 @@ export async function clearTaskReminder(taskId: string): Promise<ActionResult> {
       return { success: false, error: 'Only coaches can clear reminders' };
     }
 
+    // Verify task exists and belongs to coach's team
+    const { data: task } = await supabase
+      .from('golf_tasks')
+      .select('id, team_id')
+      .eq('id', taskId)
+      .single();
+
+    if (!task) {
+      return { success: false, error: 'Task not found' };
+    }
+
+    if (coach.organization_id) {
+      const { data: team } = await supabase
+        .from('golf_teams')
+        .select('id')
+        .eq('id', task.team_id)
+        .eq('organization_id', coach.organization_id)
+        .single();
+
+      if (!team) {
+        return { success: false, error: 'Not authorized to modify this task' };
+      }
+    }
+
     // Update task to clear reminder
     const { error: updateError } = await supabase
       .from('golf_tasks')
@@ -819,12 +843,37 @@ export async function updateTaskTemplate(
     // Verify user is a coach
     const { data: coach } = await supabase
       .from('golf_coaches')
-      .select('id')
+      .select('id, organization_id')
       .eq('user_id', user.id)
       .single();
 
     if (!coach) {
       return { success: false, error: 'Only coaches can update templates' };
+    }
+
+    // Verify template belongs to coach's team
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: template } = await (supabase as any)
+      .from('golf_task_templates')
+      .select('id, team_id')
+      .eq('id', templateId)
+      .single() as { data: { id: string; team_id: string } | null; error: Error | null };
+
+    if (!template) {
+      return { success: false, error: 'Template not found' };
+    }
+
+    if (coach.organization_id) {
+      const { data: team } = await supabase
+        .from('golf_teams')
+        .select('id')
+        .eq('id', template.team_id)
+        .eq('organization_id', coach.organization_id)
+        .single();
+
+      if (!team) {
+        return { success: false, error: 'Not authorized to update this template' };
+      }
     }
 
     // Build update object
@@ -872,12 +921,37 @@ export async function deleteTaskTemplate(templateId: string): Promise<ActionResu
     // Verify user is a coach
     const { data: coach } = await supabase
       .from('golf_coaches')
-      .select('id')
+      .select('id, organization_id')
       .eq('user_id', user.id)
       .single();
 
     if (!coach) {
       return { success: false, error: 'Only coaches can delete templates' };
+    }
+
+    // Verify template belongs to coach's team
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: template } = await (supabase as any)
+      .from('golf_task_templates')
+      .select('id, team_id')
+      .eq('id', templateId)
+      .single() as { data: { id: string; team_id: string } | null; error: Error | null };
+
+    if (!template) {
+      return { success: false, error: 'Template not found' };
+    }
+
+    if (coach.organization_id) {
+      const { data: team } = await supabase
+        .from('golf_teams')
+        .select('id')
+        .eq('id', template.team_id)
+        .eq('organization_id', coach.organization_id)
+        .single();
+
+      if (!team) {
+        return { success: false, error: 'Not authorized to delete this template' };
+      }
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

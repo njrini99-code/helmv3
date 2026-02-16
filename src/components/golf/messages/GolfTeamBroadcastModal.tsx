@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { cn } from '@/lib/utils';
 import { Modal, ModalFooter } from '@/components/ui/modal';
 import { SearchBar } from '@/components/ui/search-bar';
@@ -30,6 +31,7 @@ export function GolfTeamBroadcastModal({
   onSuccess,
   teamId,
 }: GolfTeamBroadcastModalProps) {
+  const { modalRef } = useFocusTrap(isOpen, onClose);
   const [step, setStep] = useState<'recipients' | 'details'>('recipients');
   const [searchQuery, setSearchQuery] = useState('');
   const [players, setPlayers] = useState<Player[]>([]);
@@ -163,6 +165,7 @@ export function GolfTeamBroadcastModal({
       }
       size="md"
     >
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="modal-title">
       {step === 'recipients' ? (
         <div className="space-y-4">
           {/* Error Display */}
@@ -206,7 +209,11 @@ export function GolfTeamBroadcastModal({
           <div className="min-h-[250px] max-h-[350px] overflow-y-auto -mx-6 px-6">
             {loading ? (
               <div className="flex items-center justify-center py-12">
-                <div className="animate-spin h-6 w-6 border-2 border-green-600 border-t-transparent rounded-full" />
+                <span className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+                </span>
               </div>
             ) : filteredPlayers.length > 0 ? (
               <div className="divide-y divide-warm-100">
@@ -219,13 +226,13 @@ export function GolfTeamBroadcastModal({
                       className={cn(
                         'w-full px-4 py-3 flex items-center gap-3 text-left transition-colors',
                         'hover:bg-warm-50 rounded-lg -mx-4',
-                        isSelected && 'bg-emerald-50 hover:bg-emerald-50'
+                        isSelected && 'bg-primary-50 hover:bg-primary-50'
                       )}
                     >
                       <div className={cn(
                         'w-5 h-5 rounded border-2 flex items-center justify-center transition-colors',
                         isSelected
-                          ? 'bg-emerald-500 border-emerald-500'
+                          ? 'bg-primary-500 border-primary-500'
                           : 'border-warm-300'
                       )}>
                         {isSelected && <IconCheck size={12} className="text-white" />}
@@ -280,7 +287,7 @@ export function GolfTeamBroadcastModal({
               placeholder="e.g., Team Updates, Practice Reminders"
               className={cn(
                 'w-full px-4 py-2.5 rounded-lg border border-warm-200',
-                'focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20',
+                'focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20',
                 'text-warm-900 placeholder:text-warm-400 transition-colors'
               )}
               autoFocus
@@ -332,7 +339,7 @@ export function GolfTeamBroadcastModal({
                   className={cn(
                     'px-3 py-1.5 text-xs font-medium rounded-full transition-colors',
                     broadcastTitle === suggestion
-                      ? 'bg-emerald-100 text-emerald-700'
+                      ? 'bg-primary-100 text-primary-700'
                       : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
                   )}
                 >
@@ -371,7 +378,11 @@ export function GolfTeamBroadcastModal({
             >
               {creating ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span className="flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+                  </span>
                   Creating...
                 </>
               ) : (
@@ -384,6 +395,7 @@ export function GolfTeamBroadcastModal({
           </>
         )}
       </ModalFooter>
+      </div>
     </Modal>
   );
 }

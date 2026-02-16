@@ -161,7 +161,7 @@ export function TaskFormWithReminder({
   };
 
   const priorityOptions: { value: TaskPriority; label: string; color: string }[] = [
-    { value: 'low', label: 'Low', color: 'bg-gray-100 text-gray-700' },
+    { value: 'low', label: 'Low', color: 'bg-warm-100 text-warm-700' },
     { value: 'medium', label: 'Medium', color: 'bg-blue-100 text-blue-700' },
     { value: 'high', label: 'High', color: 'bg-red-100 text-red-700' },
   ];
@@ -170,7 +170,7 @@ export function TaskFormWithReminder({
     <form onSubmit={handleSubmit} className={cn('space-y-4', className)}>
       {/* Title */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+        <label className="block text-sm font-medium text-warm-700 mb-1.5">
           Title <span className="text-red-500">*</span>
         </label>
         <input
@@ -181,13 +181,13 @@ export function TaskFormWithReminder({
           enterKeyHint="next"
           autoComplete="off"
           disabled={isPending}
-          className="w-full px-3 py-2.5 text-base md:text-sm bg-white border border-gray-200 rounded-lg placeholder:text-gray-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50 disabled:opacity-50"
+          className="w-full px-3 py-2.5 text-base md:text-sm bg-white border border-warm-200 rounded-lg placeholder:text-warm-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50 disabled:opacity-50"
         />
       </div>
 
       {/* Description */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+        <label className="block text-sm font-medium text-warm-700 mb-1.5">
           Description
         </label>
         <textarea
@@ -198,13 +198,13 @@ export function TaskFormWithReminder({
           autoComplete="off"
           rows={3}
           disabled={isPending}
-          className="w-full px-3 py-2.5 text-base md:text-sm bg-white border border-gray-200 rounded-lg placeholder:text-gray-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50 resize-none disabled:opacity-50"
+          className="w-full px-3 py-2.5 text-base md:text-sm bg-white border border-warm-200 rounded-lg placeholder:text-warm-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50 resize-none disabled:opacity-50"
         />
       </div>
 
       {/* Priority */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+        <label className="block text-sm font-medium text-warm-700 mb-1.5">
           Priority
         </label>
         <div className="flex gap-2">
@@ -220,7 +220,7 @@ export function TaskFormWithReminder({
                 'disabled:cursor-not-allowed disabled:opacity-50',
                 priority === option.value
                   ? option.color + ' border-transparent'
-                  : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+                  : 'bg-white text-warm-600 border-warm-200 hover:border-warm-300'
               )}
             >
               {option.label}
@@ -232,14 +232,14 @@ export function TaskFormWithReminder({
       {/* Assignee */}
       {teamMembers.length > 0 && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+          <label className="block text-sm font-medium text-warm-700 mb-1.5">
             Assign To
           </label>
           <select
             value={assignedTo}
             onChange={(e) => setAssignedTo(e.target.value)}
             disabled={isPending}
-            className="w-full px-3 py-2.5 text-base md:text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50 disabled:opacity-50"
+            className="w-full px-3 py-2.5 text-base md:text-sm bg-white border border-warm-200 rounded-lg focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50 disabled:opacity-50"
           >
             <option value="">Unassigned</option>
             {teamMembers.map((member) => (
@@ -254,7 +254,7 @@ export function TaskFormWithReminder({
       {/* Due Date & Time */}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+          <label className="block text-sm font-medium text-warm-700 mb-1.5">
             Due Date
           </label>
           <input
@@ -262,11 +262,11 @@ export function TaskFormWithReminder({
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
             disabled={isPending}
-            className="w-full px-3 py-2.5 text-base md:text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50 disabled:opacity-50"
+            className="w-full px-3 py-2.5 text-base md:text-sm bg-white border border-warm-200 rounded-lg focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50 disabled:opacity-50"
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+          <label className="block text-sm font-medium text-warm-700 mb-1.5">
             Due Time
           </label>
           <input
@@ -274,13 +274,13 @@ export function TaskFormWithReminder({
             value={dueTime}
             onChange={(e) => setDueTime(e.target.value)}
             disabled={isPending || !dueDate}
-            className="w-full px-3 py-2.5 text-base md:text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50 disabled:opacity-50"
+            className="w-full px-3 py-2.5 text-base md:text-sm bg-white border border-warm-200 rounded-lg focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50 disabled:opacity-50"
           />
         </div>
       </div>
 
       {/* Reminder */}
-      <div className="pt-2 border-t border-gray-100">
+      <div className="pt-2 border-t border-warm-100">
         <ReminderPicker
           dueDate={getFullDueDate()}
           value={reminderAt || undefined}
@@ -298,13 +298,13 @@ export function TaskFormWithReminder({
       )}
 
       {/* Actions */}
-      <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+      <div className="flex justify-end gap-3 pt-4 border-t border-warm-100">
         {onCancel && (
           <button
             type="button"
             onClick={onCancel}
             disabled={isPending}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+            className="px-4 py-2 text-sm font-medium text-warm-700 bg-white border border-warm-200 rounded-lg hover:bg-warm-50 transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
@@ -315,25 +315,11 @@ export function TaskFormWithReminder({
           className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
         >
           {isPending && (
-            <svg
-              className="animate-spin h-4 w-4"
-              viewBox="0 0 24 24"
-              fill="none"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              />
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-              />
-            </svg>
+            <span className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+              <span className="w-1.5 h-1.5 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+              <span className="w-1.5 h-1.5 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+            </span>
           )}
           {isEditing ? 'Update Task' : 'Create Task'}
         </button>

@@ -60,16 +60,16 @@ function DroppableTimeSlot({
       ref={setNodeRef}
       className={cn(
         'h-16 relative transition-all duration-200',
-        'border-b border-stone-200/[0.12]',
+        'border-b border-warm-200/[0.12]',
         // Subtle alternating row tint instead of hard borders
-        isEvenHour ? 'bg-white/30' : 'bg-stone-50/20',
-        isCurrentDay && 'bg-green-50/25',
+        isEvenHour ? 'bg-white/30' : 'bg-warm-50/20',
+        isCurrentDay && 'bg-primary-50/25',
         'hover:bg-white/50',
-        isOver && 'bg-green-100/50'
+        isOver && 'bg-primary-100/50'
       )}
     >
       {isOver && (
-        <div className="absolute inset-1 border-2 border-dashed border-green-400 rounded-lg bg-green-50/40" />
+        <div className="absolute inset-1 border-2 border-dashed border-primary-400 rounded-lg bg-primary-50/40" />
       )}
     </div>
   );
@@ -266,7 +266,7 @@ export function WeekView({
       <div className="min-w-[800px] px-3 md:px-5 pt-2">
         {/* Header row - Day names and dates */}
         <div
-          className="grid grid-cols-[56px_repeat(7,1fr)] sticky top-0 z-20 bg-[#fffefa]/85 backdrop-blur-xl border-b border-stone-200/[0.15] gap-0.5"
+          className="grid grid-cols-[56px_repeat(7,1fr)] sticky top-0 z-20 bg-cream/85 backdrop-blur-xl border-b border-warm-200/[0.15] gap-0.5"
         >
           <div className="h-16" />
           {weekDates.map((date, index) => {
@@ -279,12 +279,12 @@ export function WeekView({
                 key={index}
                 className={cn(
                   'h-16 flex flex-col items-center justify-center rounded-t-xl',
-                  isCurrentDay && 'bg-green-50/40'
+                  isCurrentDay && 'bg-primary-50/40'
                 )}
               >
                 <p className={cn(
                   'text-xs font-semibold uppercase tracking-wider',
-                  isCurrentDay ? 'text-green-600' : 'text-stone-400'
+                  isCurrentDay ? 'text-primary-600' : 'text-warm-400'
                 )}>
                   {dayName}
                 </p>
@@ -292,8 +292,8 @@ export function WeekView({
                   className={cn(
                     'w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold mt-0.5 transition-all',
                     isCurrentDay
-                      ? 'bg-gradient-to-br from-green-500 to-green-600 text-white shadow-[0_2px_10px_rgba(22,163,74,0.4)]'
-                      : 'text-stone-800'
+                      ? 'bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-[0_2px_10px_rgba(22,163,74,0.4)]'
+                      : 'text-warm-800'
                   )}
                 >
                   {dayNum}
@@ -314,9 +314,9 @@ export function WeekView({
                 <div key={hour} className="contents">
                   {/* Time label column — clean typography */}
                   <div
-                    className="h-16 flex items-start justify-end pr-3 pt-1 select-none border-b border-stone-200/[0.08]"
+                    className="h-16 flex items-start justify-end pr-3 pt-1 select-none border-b border-warm-200/[0.08]"
                   >
-                    <span className="text-xs font-medium tabular-nums text-stone-500/70">
+                    <span className="text-xs font-medium tabular-nums text-warm-500/70">
                       {hour === 0
                         ? '12 AM'
                         : hour < 12
@@ -345,9 +345,9 @@ export function WeekView({
                         className={cn(
                           'h-16 relative',
                           'transition-colors duration-150',
-                          'border-b border-stone-200/[0.12]',
-                          isEvenHour ? 'bg-white/30' : 'bg-stone-50/20',
-                          isCurrentDay && 'bg-green-50/25',
+                          'border-b border-warm-200/[0.12]',
+                          isEvenHour ? 'bg-white/30' : 'bg-warm-50/20',
+                          isCurrentDay && 'bg-primary-50/25',
                           'hover:bg-white/50',
                         )}
                       />
@@ -457,9 +457,9 @@ export function WeekView({
           {/* Selected player indicator */}
           {selectedPlayerName && (
             <div
-              className="absolute top-3 left-16 z-20 px-3 py-1.5 rounded-full bg-white/80 backdrop-blur-md border border-green-600/20 shadow-sm"
+              className="absolute top-3 left-16 z-20 px-3 py-1.5 rounded-full bg-white/80 backdrop-blur-md border border-primary-600/20 shadow-sm"
             >
-              <p className="text-xs font-medium text-green-700">
+              <p className="text-xs font-medium text-primary-700">
                 Viewing {selectedPlayerName}&apos;s schedule
               </p>
             </div>
@@ -479,11 +479,11 @@ export function WeekView({
               <div className="flex items-center -ml-1.5">
                 {/* Green dot with white border */}
                 <div
-                  className="w-3 h-3 rounded-full flex-shrink-0 bg-green-600 border-2 border-white shadow-[0_0_8px_rgba(22,163,74,0.5),0_2px_4px_rgba(0,0,0,0.1)]"
+                  className="w-3 h-3 rounded-full flex-shrink-0 bg-primary-600 border-2 border-white shadow-[0_0_8px_rgba(22,163,74,0.5),0_2px_4px_rgba(0,0,0,0.1)]"
                 />
                 {/* Green line */}
                 <div
-                  className="h-[2px] flex-1 bg-gradient-to-r from-green-600 to-green-600/40"
+                  className="h-[2px] flex-1 bg-gradient-to-r from-primary-600 to-primary-600/40"
                 />
               </div>
             </div>
@@ -493,13 +493,13 @@ export function WeekView({
         {/* Empty state for no events this week */}
         {events.length === 0 && (
           <div className="mt-16 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-stone-100/80 mx-auto flex items-center justify-center mb-4">
-              <Calendar className="w-7 h-7 text-stone-400" />
+            <div className="w-16 h-16 rounded-2xl bg-warm-100/80 mx-auto flex items-center justify-center mb-4">
+              <Calendar className="w-7 h-7 text-warm-400" />
             </div>
-            <h3 className="text-lg font-semibold text-stone-900 mb-2">
+            <h3 className="text-lg font-semibold text-warm-900 mb-2">
               No events this week
             </h3>
-            <p className="text-sm text-stone-500 max-w-xs mx-auto">
+            <p className="text-sm text-warm-500 max-w-xs mx-auto">
               Click &ldquo;Add Event&rdquo; to schedule something for this week
             </p>
           </div>

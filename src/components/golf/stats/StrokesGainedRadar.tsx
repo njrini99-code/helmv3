@@ -114,14 +114,14 @@ export function StrokesGainedRadar({
               cy={center}
               r={circle.r}
               fill="none"
-              stroke={circle.level === 0 ? '#94a3b8' : '#e2e8f0'}
+              stroke={circle.level === 0 ? '#94a3b8' : '#e7e5e4'}
               strokeWidth={circle.level === 0 ? 2 : 1}
               strokeDasharray={circle.level < 0 ? '4,4' : undefined}
             />
             <text
               x={center + 8}
               y={center - circle.r + 4}
-              className="text-xs fill-gray-400"
+              className="text-xs fill-warm-400"
             >
               {circle.label}
             </text>
@@ -136,7 +136,7 @@ export function StrokesGainedRadar({
             y1={line.y1}
             x2={line.x2}
             y2={line.y2}
-            stroke="#e2e8f0"
+            stroke="#e7e5e4"
             strokeWidth={1}
           />
         ))}
@@ -196,7 +196,7 @@ export function StrokesGainedRadar({
                 y={line.labelY}
                 dy={dy}
                 textAnchor={textAnchor}
-                className="text-sm font-medium fill-gray-700"
+                className="text-sm font-medium fill-warm-700"
               >
                 {line.category.label}
               </text>
@@ -211,7 +211,7 @@ export function StrokesGainedRadar({
             const value = data[cat.key];
             return (
               <div key={cat.key} className="flex items-center justify-between gap-3">
-                <span className="text-sm text-gray-600">{cat.shortLabel}:</span>
+                <span className="text-sm text-warm-600">{cat.shortLabel}:</span>
                 <span
                   className={cn('text-sm font-semibold', getStrokesGainedColor(value))}
                 >
@@ -227,12 +227,12 @@ export function StrokesGainedRadar({
       {showComparison && comparisonData && (
         <div className="mt-4 flex items-center gap-4 text-sm">
           <div className="flex items-center gap-2">
-            <div className="w-4 h-0.5 bg-green-500" />
-            <span className="text-gray-600">Your Performance</span>
+            <div className="w-4 h-0.5 bg-primary-500" />
+            <span className="text-warm-600">Your Performance</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-0.5 bg-gray-400 border-dashed" style={{ borderTopWidth: 2, borderStyle: 'dashed' }} />
-            <span className="text-gray-600">{comparisonLabel}</span>
+            <div className="w-4 h-0.5 bg-warm-400 border-dashed" style={{ borderTopWidth: 2, borderStyle: 'dashed' }} />
+            <span className="text-warm-600">{comparisonLabel}</span>
           </div>
         </div>
       )}

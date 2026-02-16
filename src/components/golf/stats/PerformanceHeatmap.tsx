@@ -28,9 +28,9 @@ interface PerformanceHeatmapProps {
 // ============================================================================
 
 function getScoreColor(toPar: number): string {
-  if (toPar <= -5) return 'bg-emerald-600 text-white'; // Great round
-  if (toPar <= -2) return 'bg-emerald-500 text-white';
-  if (toPar < 0) return 'bg-green-400 text-white';
+  if (toPar <= -5) return 'bg-primary-600 text-white'; // Great round
+  if (toPar <= -2) return 'bg-primary-500 text-white';
+  if (toPar < 0) return 'bg-primary-400 text-white';
   if (toPar === 0) return 'bg-warm-300 text-warm-700'; // Even par
   if (toPar <= 3) return 'bg-amber-400 text-amber-900';
   if (toPar <= 6) return 'bg-orange-400 text-orange-900';
@@ -225,13 +225,13 @@ const PerformanceHeatmap = memo(function PerformanceHeatmap({
             </div>
             <div className="text-center p-3 rounded-xl bg-warm-50">
               <p className="text-xs text-warm-500 mb-1">Best Round</p>
-              <p className="text-lg font-bold text-green-600 tabular-nums">
+              <p className="text-lg font-bold text-primary-600 tabular-nums">
                 {stats.bestRound ?? '--'}
               </p>
             </div>
-            <div className="text-center p-3 rounded-xl bg-green-50">
+            <div className="text-center p-3 rounded-xl bg-primary-50">
               <p className="text-xs text-warm-500 mb-1">Under Par</p>
-              <p className="text-lg font-bold text-green-600 tabular-nums">
+              <p className="text-lg font-bold text-primary-600 tabular-nums">
                 {stats.underParRounds}
               </p>
             </div>
@@ -332,9 +332,9 @@ const PerformanceHeatmap = memo(function PerformanceHeatmap({
             <div className="w-[10px] h-[10px] rounded-sm bg-orange-400" />
             <div className="w-[10px] h-[10px] rounded-sm bg-amber-400" />
             <div className="w-[10px] h-[10px] rounded-sm bg-warm-300" />
-            <div className="w-[10px] h-[10px] rounded-sm bg-green-400" />
-            <div className="w-[10px] h-[10px] rounded-sm bg-emerald-500" />
-            <div className="w-[10px] h-[10px] rounded-sm bg-emerald-600" />
+            <div className="w-[10px] h-[10px] rounded-sm bg-primary-400" />
+            <div className="w-[10px] h-[10px] rounded-sm bg-primary-500" />
+            <div className="w-[10px] h-[10px] rounded-sm bg-primary-600" />
           </div>
           <span className="text-xs text-warm-500">Better</span>
         </div>
@@ -357,7 +357,7 @@ const PerformanceHeatmap = memo(function PerformanceHeatmap({
               <div
                 className={`px-2 py-1 rounded-lg text-sm font-bold ${
                   hoveredRound.toPar < 0
-                    ? 'bg-green-100 text-green-700'
+                    ? 'bg-primary-100 text-primary-700'
                     : hoveredRound.toPar === 0
                     ? 'bg-warm-100 text-warm-700'
                     : 'bg-amber-100 text-amber-700'

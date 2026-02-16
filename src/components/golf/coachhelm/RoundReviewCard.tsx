@@ -64,9 +64,9 @@ const sentimentConfig: Record<
   { bg: string; ring: string; icon: React.ReactNode }
 > = {
   positive: {
-    bg: 'bg-green-50',
-    ring: 'ring-green-200',
-    icon: <IconTrendingUp size={12} className="text-green-600" />,
+    bg: 'bg-primary-50',
+    ring: 'ring-primary-200',
+    icon: <IconTrendingUp size={12} className="text-primary-600" />,
   },
   neutral: {
     bg: 'bg-blue-50',
@@ -81,7 +81,7 @@ const sentimentConfig: Record<
 };
 
 const gradeColors: Record<OverallGrade, string> = {
-  A: 'bg-green-500 text-white',
+  A: 'bg-primary-500 text-white',
   B: 'bg-blue-500 text-white',
   C: 'bg-amber-500 text-white',
   D: 'bg-orange-500 text-white',
@@ -144,7 +144,7 @@ export function RoundReviewCard({
             className={cn(
               'w-14 h-14 rounded-xl flex flex-col items-center justify-center flex-shrink-0',
               isUnderPar
-                ? 'bg-green-50 border border-green-100'
+                ? 'bg-primary-50 border border-primary-100'
                 : isOverPar
                   ? 'bg-amber-50 border border-amber-100'
                   : 'bg-warm-50 border border-warm-100'
@@ -154,7 +154,7 @@ export function RoundReviewCard({
               className={cn(
                 'text-xl font-bold',
                 isUnderPar
-                  ? 'text-green-600'
+                  ? 'text-primary-600'
                   : isOverPar
                     ? 'text-amber-600'
                     : 'text-warm-600'
@@ -166,7 +166,7 @@ export function RoundReviewCard({
               className={cn(
                 'text-xs font-medium',
                 isUnderPar
-                  ? 'text-green-500'
+                  ? 'text-primary-500'
                   : isOverPar
                     ? 'text-amber-500'
                     : 'text-warm-400'
@@ -345,7 +345,7 @@ export function CompactRoundReviewCard({
         className={cn(
           'w-10 h-10 rounded-lg flex flex-col items-center justify-center',
           isUnderPar
-            ? 'bg-green-50 text-green-600'
+            ? 'bg-primary-50 text-primary-600'
             : isOverPar
               ? 'bg-amber-50 text-amber-600'
               : 'bg-warm-50 text-warm-600'

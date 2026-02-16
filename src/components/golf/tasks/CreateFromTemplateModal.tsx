@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +28,7 @@ export function CreateFromTemplateModal({
   teamId,
   players,
 }: CreateFromTemplateModalProps) {
+  const { modalRef } = useFocusTrap(isOpen, onClose);
   const [loading, setLoading] = useState(false);
   const [customTitle, setCustomTitle] = useState(template.title);
   const [customDueDate, setCustomDueDate] = useState(() => {
@@ -87,6 +89,7 @@ export function CreateFromTemplateModal({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Create Task from Template">
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="modal-title">
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Template Info */}
         <div className="bg-warm-50 rounded-lg p-3 mb-4">
@@ -137,12 +140,12 @@ export function CreateFromTemplateModal({
               className={cn(
                 'w-full p-3 rounded-lg border-2 text-left transition-all',
                 assignToAll
-                  ? 'border-green-600 bg-green-50 shadow-sm'
+                  ? 'border-primary-600 bg-primary-50 shadow-sm'
                   : 'border-warm-200 hover:border-warm-300 hover:shadow-sm'
               )}
             >
               <div className="flex items-center gap-2">
-                <IconUsers size={16} className={assignToAll ? 'text-green-600' : 'text-warm-400'} />
+                <IconUsers size={16} className={assignToAll ? 'text-primary-600' : 'text-warm-400'} />
                 <div>
                   <p className="font-medium text-warm-900">All Team Members</p>
                   <p className="text-xs text-warm-500 mt-0.5">{players.length} players</p>
@@ -158,7 +161,7 @@ export function CreateFromTemplateModal({
               className={cn(
                 'w-full p-3 rounded-lg border-2 text-left transition-all',
                 !assignToAll
-                  ? 'border-green-600 bg-green-50 shadow-sm'
+                  ? 'border-primary-600 bg-primary-50 shadow-sm'
                   : 'border-warm-200 hover:border-warm-300 hover:shadow-sm'
               )}
             >
@@ -171,41 +174,44 @@ export function CreateFromTemplateModal({
             </motion.button>
           </div>
 
-          {!assignToAll && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.22 }}
-              className="mt-3 max-h-48 overflow-y-auto space-y-1 border border-warm-200 rounded-lg p-2"
-            >
-              {players.map((player, index) => (
-                <motion.button
-                  key={player.id}
-                  type="button"
-                  onClick={() => togglePlayer(player.id)}
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.03 }}
-                  whileHover={{ scale: 1.01, x: 2 }}
-                  whileTap={{ scale: 0.98 }}
-                  className={cn(
-                    'w-full px-3 py-2 rounded-md text-left text-sm flex items-center justify-between transition-all',
-                    selectedPlayers.includes(player.id)
-                      ? 'bg-green-100 text-green-900 shadow-sm'
-                      : 'hover:bg-warm-50 text-warm-700'
-                  )}
-                >
-                  <span>
-                    {player.first_name || ''} {player.last_name || ''}
-                  </span>
-                  {selectedPlayers.includes(player.id) && (
-                    <IconCheck size={14} className="text-green-600" />
-                  )}
-                </motion.button>
-              ))}
-            </motion.div>
-          )}
+          <AnimatePresence>
+            {!assignToAll && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
+                style={{ overflow: 'hidden' }}
+                className="mt-3 max-h-48 overflow-y-auto space-y-1 border border-warm-200 rounded-lg p-2"
+              >
+                {players.map((player, index) => (
+                  <motion.button
+                    key={player.id}
+                    type="button"
+                    onClick={() => togglePlayer(player.id)}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.03 }}
+                    whileHover={{ scale: 1.01, x: 2 }}
+                    whileTap={{ scale: 0.98 }}
+                    className={cn(
+                      'w-full px-3 py-2 rounded-md text-left text-sm flex items-center justify-between transition-all',
+                      selectedPlayers.includes(player.id)
+                        ? 'bg-primary-100 text-primary-900 shadow-sm'
+                        : 'hover:bg-warm-50 text-warm-700'
+                    )}
+                  >
+                    <span>
+                      {player.first_name || ''} {player.last_name || ''}
+                    </span>
+                    {selectedPlayers.includes(player.id) && (
+                      <IconCheck size={14} className="text-primary-600" />
+                    )}
+                  </motion.button>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Actions */}
@@ -218,6 +224,7 @@ export function CreateFromTemplateModal({
           </Button>
         </div>
       </form>
+      </div>
     </Modal>
   );
 }

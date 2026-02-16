@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 import { m, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { fadeUp, staggerContainer } from '@/lib/motion';
+import { useFormatDate } from '@/hooks/golf/use-appearance-preferences';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -104,9 +105,7 @@ function formatRelativeDate(dateStr: string) {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
+// Date formatting handled by useFormatDate() hook in each sub-component
 
 function formatTime(timeStr: string) {
   const parts = timeStr.split(':');
@@ -128,8 +127,8 @@ function getEventTypeStyle(type: string) {
     practice: { bg: 'bg-blue-50', text: 'text-blue-700', dot: 'bg-blue-500', label: 'Practice' },
     tournament: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500', label: 'Tournament' },
     qualifier: { bg: 'bg-purple-50', text: 'text-purple-700', dot: 'bg-purple-500', label: 'Qualifier' },
-    meeting: { bg: 'bg-slate-50', text: 'text-slate-700', dot: 'bg-slate-500', label: 'Meeting' },
-    workout: { bg: 'bg-green-50', text: 'text-green-700', dot: 'bg-green-500', label: 'Workout' },
+    meeting: { bg: 'bg-warm-50', text: 'text-warm-700', dot: 'bg-warm-500', label: 'Meeting' },
+    workout: { bg: 'bg-primary-50', text: 'text-primary-700', dot: 'bg-primary-500', label: 'Workout' },
     scrimmage: { bg: 'bg-orange-50', text: 'text-orange-700', dot: 'bg-orange-500', label: 'Scrimmage' },
   };
   return styles[type] || { bg: 'bg-warm-50', text: 'text-warm-700', dot: 'bg-warm-500', label: type };
@@ -142,11 +141,11 @@ function getTripStatus(trip: TripData) {
   const diffMs = departure.getTime() - now.getTime();
   const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
-  if (returnDate && now > returnDate) return { label: 'Completed', color: 'bg-slate-100 text-slate-500' };
-  if (now >= departure && returnDate && now <= returnDate) return { label: 'In Transit', color: 'bg-green-100 text-green-700', pulse: true };
+  if (returnDate && now > returnDate) return { label: 'Completed', color: 'bg-warm-100 text-warm-500' };
+  if (now >= departure && returnDate && now <= returnDate) return { label: 'In Transit', color: 'bg-primary-100 text-primary-700', pulse: true };
   if (diffDays <= 3 && diffDays > 0) return { label: `${diffDays}d away`, color: 'bg-amber-100 text-amber-700' };
   if (diffDays <= 7 && diffDays > 0) return { label: `${diffDays}d away`, color: 'bg-blue-100 text-blue-700' };
-  return { label: 'Upcoming', color: 'bg-slate-100 text-slate-600' };
+  return { label: 'Upcoming', color: 'bg-warm-100 text-warm-600' };
 }
 
 // ============================================================================
@@ -167,6 +166,7 @@ interface TabDef {
 // ============================================================================
 
 function TripCard({ trip, onExpand }: { trip: TripData; onExpand: () => void }) {
+  const fmtDate = useFormatDate();
   const status = getTripStatus(trip);
 
   return (
@@ -179,15 +179,15 @@ function TripCard({ trip, onExpand }: { trip: TripData; onExpand: () => void }) 
       {/* Colored top accent based on trip proximity */}
       <div className={cn(
         'h-1',
-        status.label === 'In Transit' ? 'bg-green-500' :
+        status.label === 'In Transit' ? 'bg-primary-500' :
         status.label.includes('away') ? 'bg-amber-400' :
-        'bg-slate-200'
+        'bg-warm-200'
       )} />
 
       <div className="p-5">
         <div className="flex items-start gap-4">
           {/* Transport icon */}
-          <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-2xl flex-shrink-0 group-hover:scale-105 transition-transform">
+          <div className="w-12 h-12 rounded-xl bg-warm-100 flex items-center justify-center text-2xl flex-shrink-0 group-hover:scale-105 transition-transform">
             {getTransportIcon(trip.transportation_type)}
           </div>
 
@@ -208,9 +208,9 @@ function TripCard({ trip, onExpand }: { trip: TripData; onExpand: () => void }) 
             <div className="flex items-center gap-4 text-xs text-warm-400">
               <span className="flex items-center gap-1">
                 <IconCalendar size={12} />
-                {formatDate(trip.departure_date)}
+                {fmtDate(trip.departure_date)}
                 {trip.return_date && trip.return_date !== trip.departure_date && (
-                  <> – {formatDate(trip.return_date)}</>
+                  <> – {fmtDate(trip.return_date)}</>
                 )}
               </span>
               {trip.departure_time && (
@@ -230,12 +230,13 @@ function TripCard({ trip, onExpand }: { trip: TripData; onExpand: () => void }) 
 }
 
 function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => void }) {
+  const fmtDate = useFormatDate();
   return (
     <m.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center"
+      className="fixed inset-0 bg-warm-900/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center"
       onClick={onClose}
     >
       <m.div
@@ -248,13 +249,13 @@ function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => voi
       >
         {/* Handle bar (mobile) */}
         <div className="sm:hidden flex justify-center pt-3 pb-1">
-          <div className="w-10 h-1 rounded-full bg-slate-300" />
+          <div className="w-10 h-1 rounded-full bg-warm-300" />
         </div>
 
         {/* Header */}
-        <div className="p-6 pb-4 border-b border-slate-100">
+        <div className="p-6 pb-4 border-b border-warm-100">
           <div className="flex items-start gap-4">
-            <div className="w-14 h-14 rounded-xl bg-slate-100 flex items-center justify-center text-3xl">
+            <div className="w-14 h-14 rounded-xl bg-warm-100 flex items-center justify-center text-3xl">
               {getTransportIcon(trip.transportation_type)}
             </div>
             <div className="flex-1">
@@ -271,9 +272,9 @@ function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => voi
         <div className="p-6 space-y-5">
           {/* Schedule */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="p-4 bg-slate-50 rounded-xl">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Depart</p>
-              <p className="font-semibold text-warm-900">{formatDate(trip.departure_date)}</p>
+            <div className="p-4 bg-warm-50 rounded-xl">
+              <p className="text-[10px] font-bold text-warm-400 uppercase tracking-widest mb-1.5">Depart</p>
+              <p className="font-semibold text-warm-900">{fmtDate(trip.departure_date)}</p>
               {trip.departure_time && (
                 <p className="text-sm text-warm-500 mt-0.5">{formatTime(trip.departure_time)}</p>
               )}
@@ -282,9 +283,9 @@ function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => voi
               )}
             </div>
             {trip.return_date && (
-              <div className="p-4 bg-slate-50 rounded-xl">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Return</p>
-                <p className="font-semibold text-warm-900">{formatDate(trip.return_date)}</p>
+              <div className="p-4 bg-warm-50 rounded-xl">
+                <p className="text-[10px] font-bold text-warm-400 uppercase tracking-widest mb-1.5">Return</p>
+                <p className="font-semibold text-warm-900">{fmtDate(trip.return_date)}</p>
                 {trip.return_time && (
                   <p className="text-sm text-warm-500 mt-0.5">{formatTime(trip.return_time)}</p>
                 )}
@@ -308,7 +309,7 @@ function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => voi
           {/* Room Assignments */}
           {trip.room_assignments && (
             <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Room Assignment</p>
+              <p className="text-[10px] font-bold text-warm-400 uppercase tracking-widest mb-1.5">Room Assignment</p>
               <p className="text-sm text-warm-700">{trip.room_assignments}</p>
             </div>
           )}
@@ -316,13 +317,13 @@ function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => voi
           {/* Uniform & Gear */}
           {trip.uniform_requirements && (
             <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Uniform</p>
+              <p className="text-[10px] font-bold text-warm-400 uppercase tracking-widest mb-1.5">Uniform</p>
               <p className="text-sm text-warm-700">{trip.uniform_requirements}</p>
             </div>
           )}
           {trip.gear_list && (
             <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Gear List</p>
+              <p className="text-[10px] font-bold text-warm-400 uppercase tracking-widest mb-1.5">Gear List</p>
               <p className="text-sm text-warm-700">{trip.gear_list}</p>
             </div>
           )}
@@ -330,7 +331,7 @@ function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => voi
           {/* Flight */}
           {trip.flight_info && (
             <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Flight Info</p>
+              <p className="text-[10px] font-bold text-warm-400 uppercase tracking-widest mb-1.5">Flight Info</p>
               <p className="text-sm text-warm-700">{trip.flight_info}</p>
             </div>
           )}
@@ -338,14 +339,14 @@ function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => voi
           {/* Notes */}
           {trip.notes && (
             <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Notes</p>
+              <p className="text-[10px] font-bold text-warm-400 uppercase tracking-widest mb-1.5">Notes</p>
               <p className="text-sm text-warm-700">{trip.notes}</p>
             </div>
           )}
         </div>
 
         {/* Close */}
-        <div className="p-6 pt-3 border-t border-slate-100">
+        <div className="p-6 pt-3 border-t border-warm-100">
           <Button variant="secondary" className="w-full" onClick={onClose}>
             Close
           </Button>
@@ -377,11 +378,11 @@ function PlayerTaskCard({
   const isCompleted = task.status === 'completed';
 
   const categoryColors: Record<string, string> = {
-    general: 'bg-slate-100 text-slate-600',
+    general: 'bg-warm-100 text-warm-600',
     conditioning: 'bg-orange-50 text-orange-600',
     academic: 'bg-blue-50 text-blue-600',
     administrative: 'bg-purple-50 text-purple-600',
-    practice: 'bg-green-50 text-green-600',
+    practice: 'bg-primary-50 text-primary-600',
     game_prep: 'bg-amber-50 text-amber-600',
   };
 
@@ -405,11 +406,12 @@ function PlayerTaskCard({
           <button
             onClick={handleComplete}
             disabled={isCompleted || completing}
+            aria-label={isCompleted ? 'Task completed' : 'Mark task complete'}
             className={cn(
               'w-7 h-7 rounded-lg border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all duration-200',
               isCompleted
-                ? 'bg-green-600 border-green-600 text-white'
-                : 'border-warm-300 hover:border-green-500 hover:bg-green-50 active:scale-90',
+                ? 'bg-primary-600 border-primary-600 text-white'
+                : 'border-warm-300 hover:border-primary-500 hover:bg-primary-50 active:scale-90',
               completing && 'animate-pulse',
             )}
           >
@@ -455,7 +457,7 @@ function PlayerTaskCard({
                 </span>
               )}
               {isCompleted && task.completed_at && (
-                <span className="flex items-center gap-1 text-green-600">
+                <span className="flex items-center gap-1 text-primary-600">
                   <IconCheckCheck size={12} />
                   Done {formatRelativeDate(task.completed_at)}
                 </span>
@@ -476,6 +478,7 @@ function EventRSVPCard({
   onRSVP: (status: 'accepted' | 'declined' | 'tentative') => void;
 }) {
   const [submitting, setSubmitting] = useState<string | null>(null);
+  const fmtDate = useFormatDate();
   const style = getEventTypeStyle(event.event_type);
   const eventDate = new Date(event.start_time);
   const isToday = new Date().toDateString() === eventDate.toDateString();
@@ -517,9 +520,9 @@ function EventRSVPCard({
             </div>
 
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-warm-400 mb-3">
-              <span className={cn('flex items-center gap-1', isToday && 'text-green-600 font-medium')}>
+              <span className={cn('flex items-center gap-1', isToday && 'text-primary-600 font-medium')}>
                 <IconCalendar size={12} />
-                {isToday ? 'Today' : formatDate(event.start_time)}
+                {isToday ? 'Today' : fmtDate(event.start_time)}
               </span>
               <span className="flex items-center gap-1">
                 <IconClock size={12} />
@@ -534,7 +537,7 @@ function EventRSVPCard({
               )}
               <span className="flex items-center gap-1.5">
                 <IconUsers size={12} />
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-semibold">
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-primary-50 text-primary-700 text-[10px] font-semibold">
                   {event.going_count} going
                 </span>
                 {event.maybe_count > 0 && (
@@ -559,8 +562,8 @@ function EventRSVPCard({
                   className={cn(
                     'px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200',
                     event.rsvp_status === 'accepted'
-                      ? 'bg-green-600 text-white shadow-sm'
-                      : 'bg-green-50 text-green-700 hover:bg-green-100 active:scale-95',
+                      ? 'bg-primary-600 text-white shadow-sm'
+                      : 'bg-primary-50 text-primary-700 hover:bg-primary-100 active:scale-95',
                     submitting === 'accepted' && 'animate-pulse',
                   )}
                 >
@@ -585,8 +588,8 @@ function EventRSVPCard({
                   className={cn(
                     'px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200',
                     event.rsvp_status === 'declined'
-                      ? 'bg-slate-600 text-white shadow-sm'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200 active:scale-95',
+                      ? 'bg-warm-600 text-white shadow-sm'
+                      : 'bg-warm-100 text-warm-600 hover:bg-warm-200 active:scale-95',
                     submitting === 'declined' && 'animate-pulse',
                   )}
                 >
@@ -635,7 +638,7 @@ function OverviewSection({
         </div>
         <button
           onClick={onViewAll}
-          className="text-xs font-medium text-green-600 hover:text-green-700 transition-colors"
+          className="text-xs font-medium text-primary-600 hover:text-primary-700 transition-colors"
         >
           View all
         </button>
@@ -689,7 +692,7 @@ export function PlayerHub({ trips, tasks, events, playerName, onCompleteTask, on
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-        className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10"
+        className="border-b border-warm-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10"
       >
         <div className="max-w-3xl mx-auto px-4 md:px-6 py-5">
           <div className="flex items-center gap-3">
@@ -697,7 +700,7 @@ export function PlayerHub({ trips, tasks, events, playerName, onCompleteTask, on
               onClick={toggleMobile}
               className={cn(
                 'lg:hidden p-2.5 -ml-2 rounded-xl',
-                'text-slate-500 hover:text-slate-700 hover:bg-slate-100/80',
+                'text-warm-500 hover:text-warm-700 hover:bg-warm-100/80',
                 'transition-colors duration-150 active:scale-95',
               )}
               aria-label="Open navigation menu"
@@ -721,7 +724,7 @@ export function PlayerHub({ trips, tasks, events, playerName, onCompleteTask, on
       </m.div>
 
       {/* Tab navigation */}
-      <div className="sticky top-[73px] z-10 bg-white/80 backdrop-blur-sm border-b border-slate-100">
+      <div className="sticky top-[73px] z-10 bg-white/80 backdrop-blur-sm border-b border-warm-100">
         <div className="max-w-3xl mx-auto px-4 md:px-6">
           <div className="flex gap-1 -mb-px overflow-x-auto pills-scroll">
             {tabs.map((tab) => (
@@ -731,7 +734,7 @@ export function PlayerHub({ trips, tasks, events, playerName, onCompleteTask, on
                 className={cn(
                   'relative px-4 py-3 text-sm font-medium whitespace-nowrap transition-all duration-200',
                   activeTab === tab.id
-                    ? 'text-green-600'
+                    ? 'text-primary-600'
                     : 'text-warm-500 hover:text-warm-700',
                 )}
               >
@@ -744,7 +747,7 @@ export function PlayerHub({ trips, tasks, events, playerName, onCompleteTask, on
                 {activeTab === tab.id && (
                   <m.div
                     layoutId="tab-indicator"
-                    className="absolute bottom-0 left-2 right-2 h-0.5 bg-green-600 rounded-full"
+                    className="absolute bottom-0 left-2 right-2 h-0.5 bg-primary-600 rounded-full"
                     transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                   />
                 )}

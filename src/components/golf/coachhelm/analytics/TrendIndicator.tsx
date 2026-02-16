@@ -64,7 +64,7 @@ export function TrendIndicator({
           size === 'sm' && 'w-5 h-5',
           size === 'md' && 'w-6 h-6',
           isFlat && 'bg-warm-100',
-          isPositive && !isFlat && 'bg-green-100',
+          isPositive && !isFlat && 'bg-primary-100',
           !isPositive && !isFlat && 'bg-red-100'
         )}
       >
@@ -75,12 +75,12 @@ export function TrendIndicator({
         ) : trend.direction === 'up' ? (
           <IconTrendingUp
             size={iconSizes[size]}
-            className={isPositive ? 'text-green-600' : 'text-red-500'}
+            className={isPositive ? 'text-primary-600' : 'text-red-500'}
           />
         ) : (
           <IconTrendingDown
             size={iconSizes[size]}
-            className={isPositive ? 'text-green-600' : 'text-red-500'}
+            className={isPositive ? 'text-primary-600' : 'text-red-500'}
           />
         )}
       </motion.div>
@@ -94,7 +94,7 @@ export function TrendIndicator({
           className={cn(
             'font-medium tabular-nums',
             textSizes[size],
-            isPositive ? 'text-green-600' : 'text-red-500'
+            isPositive ? 'text-primary-600' : 'text-red-500'
           )}
         >
           {trend.changePercent > 0 ? '+' : ''}{trend.changePercent}
@@ -158,7 +158,7 @@ export function TrendBadge({
       className={cn(
         'inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-medium',
         isFlat && 'bg-warm-100 text-warm-500',
-        isImprovement && !isFlat && 'bg-green-100 text-green-700',
+        isImprovement && !isFlat && 'bg-primary-100 text-primary-700',
         !isImprovement && !isFlat && 'bg-red-100 text-red-700',
         className
       )}
@@ -202,10 +202,10 @@ export function TrendSummary({ trends, className, animated = true }: TrendSummar
             animate={{ opacity: 1, scale: 1 }}
             className="flex items-center gap-2"
           >
-            <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
-              <IconTrendingUp size={12} className="text-green-600" />
+            <div className="w-5 h-5 rounded-full bg-primary-100 flex items-center justify-center">
+              <IconTrendingUp size={12} className="text-primary-600" />
             </div>
-            <span className="text-sm font-medium text-green-700">{improvements} improving</span>
+            <span className="text-sm font-medium text-primary-700">{improvements} improving</span>
           </motion.div>
         )}
 
@@ -247,7 +247,7 @@ export function TrendSummary({ trends, className, animated = true }: TrendSummar
             transition={animated ? { delay: 0.05 * index } : undefined}
             className={cn(
               'flex items-center justify-between p-2 rounded-lg',
-              trend.isImprovement && trend.direction !== 'flat' && 'bg-green-50',
+              trend.isImprovement && trend.direction !== 'flat' && 'bg-primary-50',
               !trend.isImprovement && trend.direction !== 'flat' && 'bg-red-50',
               trend.direction === 'flat' && 'bg-warm-50'
             )}
@@ -264,7 +264,7 @@ export function TrendSummary({ trends, className, animated = true }: TrendSummar
                 <span
                   className={cn(
                     'text-xs tabular-nums',
-                    trend.isImprovement ? 'text-green-600' : 'text-red-500'
+                    trend.isImprovement ? 'text-primary-600' : 'text-red-500'
                   )}
                 >
                   ({trend.changePercent > 0 ? '+' : ''}{trend.changePercent})

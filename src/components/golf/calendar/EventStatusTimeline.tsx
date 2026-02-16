@@ -115,13 +115,13 @@ function TimelineEntry({
             'w-8 h-8 rounded-full flex items-center justify-center',
             'border-2 bg-white',
             isCancellation && 'border-rose-500 bg-rose-50',
-            isConfirmation && 'border-emerald-500 bg-emerald-50',
+            isConfirmation && 'border-primary-500 bg-primary-50',
             isCreation && 'border-blue-500 bg-blue-50',
             !isCancellation && !isConfirmation && !isCreation && 'border-warm-300'
           )}
         >
           {isCancellation && <XCircle className="w-4 h-4 text-rose-600" />}
-          {isConfirmation && <CheckCircle className="w-4 h-4 text-emerald-600" />}
+          {isConfirmation && <CheckCircle className="w-4 h-4 text-primary-600" />}
           {isCreation && <Edit3 className="w-4 h-4 text-blue-600" />}
           {!isCancellation && !isConfirmation && !isCreation && (
             <Edit3 className="w-4 h-4 text-warm-400" />

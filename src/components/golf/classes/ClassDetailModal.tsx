@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { IconX, IconClock, IconMapPin, IconUser } from '@/components/icons';
@@ -30,6 +31,7 @@ interface ClassDetailModalProps {
 }
 
 export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData }: ClassDetailModalProps) {
+  const { modalRef } = useFocusTrap(isOpen, onClose);
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -65,7 +67,7 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
       />
       
       {/* Modal */}
-      <div className="relative w-full max-w-md mx-4 glass-prominent rounded-2xl shadow-2xl overflow-hidden">
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="class-detail-title" className="relative w-full max-w-md mx-4 glass-prominent rounded-2xl shadow-2xl overflow-hidden">
         {/* Shine effect */}
         <div
           className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
@@ -83,16 +85,17 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
         <div className="px-6 pt-5 pb-4">
           <div className="flex items-start justify-between">
             <div>
-              <span className="font-mono text-sm font-semibold text-green-600">
+              <span className="font-mono text-sm font-semibold text-primary-600">
                 {classData.course_code}
               </span>
-              <h2 className="text-xl font-semibold text-warm-900 mt-1">
+              <h2 id="class-detail-title" className="text-xl font-semibold text-warm-900 mt-1">
                 {classData.course_name || 'Untitled Class'}
               </h2>
               <p className="text-sm text-warm-500 mt-1">{classData.semester}</p>
             </div>
             <button
               onClick={onClose}
+              aria-label="Close"
               className="p-2 text-warm-400 hover:text-warm-600 hover:bg-warm-100 rounded-lg transition-colors"
             >
               <IconX size={20} />

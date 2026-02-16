@@ -161,12 +161,12 @@ export default async function GolfCalendarPage() {
   const upcomingEvents = events.filter(e => new Date(e.start_time || e.start_date) >= new Date()).length;
 
   const eventTypeConfig: Record<string, { label: string; dot: string }> = {
-    practice: { label: 'Practice', dot: 'bg-green-500' },
+    practice: { label: 'Practice', dot: 'bg-primary-500' },
     tournament: { label: 'Tournament', dot: 'bg-blue-500' },
     qualifying: { label: 'Qualifying', dot: 'bg-purple-500' },
     meeting: { label: 'Meeting', dot: 'bg-amber-500' },
-    travel: { label: 'Travel', dot: 'bg-slate-500' },
-    other: { label: 'Other', dot: 'bg-slate-400' },
+    travel: { label: 'Travel', dot: 'bg-warm-500' },
+    other: { label: 'Other', dot: 'bg-warm-400' },
   };
 
   return (
@@ -182,15 +182,15 @@ export default async function GolfCalendarPage() {
           {events.length > 0 && (
             <div className="flex-shrink-0 px-4 md:px-6 pt-4 md:pt-6 pb-2">
               <div className="flex items-center gap-4 overflow-x-auto scrollbar-hide">
-                <span className="text-sm font-medium text-slate-600 whitespace-nowrap">
+                <span className="text-sm font-medium text-warm-600 whitespace-nowrap">
                   {upcomingEvents} upcoming event{upcomingEvents !== 1 ? 's' : ''}
                 </span>
-                <span className="text-slate-300">|</span>
+                <span className="text-warm-300">|</span>
                 {Object.entries(eventTypeCounts).map(([type, count]) => {
-                  const fallback = { label: type, dot: 'bg-slate-400' };
+                  const fallback = { label: type, dot: 'bg-warm-400' };
                   const config = eventTypeConfig[type] ?? fallback;
                   return (
-                    <span key={type} className="flex items-center gap-1.5 text-xs text-slate-600 whitespace-nowrap">
+                    <span key={type} className="flex items-center gap-1.5 text-xs text-warm-600 whitespace-nowrap">
                       <span className={`w-2 h-2 rounded-full ${config.dot}`} />
                       {count} {config.label}
                     </span>

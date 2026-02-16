@@ -153,7 +153,7 @@ export function CoachHelmAnalyticsDashboard({
                   value={selectedRange}
                   onChange={(e) => handleDateRangeChange(e.target.value as DateRangeType)}
                   disabled={isPending}
-                  className="text-base md:text-sm px-3 py-1.5 rounded-lg border border-warm-200 bg-white text-warm-600 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500"
+                  className="text-base md:text-sm px-3 py-1.5 rounded-lg border border-warm-200 bg-white text-warm-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
                 >
                   {dateRanges.map((range) => (
                     <option key={range.id} value={range.id}>
@@ -171,7 +171,7 @@ export function CoachHelmAnalyticsDashboard({
                   'flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-lg transition-all',
                   isPending
                     ? 'bg-warm-100 text-warm-400 cursor-not-allowed'
-                    : 'bg-green-600 text-white hover:bg-green-700 shadow-sm'
+                    : 'bg-primary-600 text-white hover:bg-primary-700 shadow-sm'
                 )}
               >
                 {isPending ? (
@@ -364,7 +364,7 @@ export function CoachHelmAnalyticsDashboard({
             </p>
             <button
               onClick={handleRefresh}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
             >
               <IconRefresh size={16} />
               Load Data

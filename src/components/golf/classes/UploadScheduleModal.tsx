@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { Button } from '@/components/ui/button';
 import { IconX, IconUpload, IconFileText, IconSparkles } from '@/components/icons';
 import { parseScheduleText, type ParsedClass } from '@/lib/utils/schedule-parser';
@@ -51,6 +52,7 @@ const loadPdfJs = async () => {
 };
 
 export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadScheduleModalProps) {
+  const { modalRef } = useFocusTrap(isOpen, onClose);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [dragActive, setDragActive] = useState(false);
@@ -219,7 +221,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
       />
       
       {/* Modal */}
-      <div className="relative w-full max-w-xl mx-4 glass-prominent rounded-2xl shadow-2xl overflow-hidden">
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="upload-schedule-title" className="relative w-full max-w-xl mx-4 glass-prominent rounded-2xl shadow-2xl overflow-hidden">
         {/* Shine effect */}
         <div
           className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
@@ -230,22 +232,23 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center">
-              <IconSparkles size={20} className="text-green-600" />
+            <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center">
+              <IconSparkles size={20} className="text-primary-600" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-warm-900">Import Schedule</h2>
+              <h2 id="upload-schedule-title" className="text-lg font-semibold text-warm-900">Import Schedule</h2>
               <p className="text-sm text-warm-500">Upload or paste your class schedule</p>
             </div>
           </div>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="p-2 text-warm-400 hover:text-warm-600 hover:bg-warm-100 rounded-lg transition-colors"
           >
             <IconX size={20} />
           </button>
         </div>
-        
+
         {/* Content */}
         <div className="p-6">
           {/* Toggle */}
@@ -254,7 +257,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
               onClick={() => setPasteMode(false)}
               className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
                 !pasteMode 
-                  ? 'bg-green-600 text-white' 
+                  ? 'bg-primary-600 text-white' 
                   : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
               }`}
             >
@@ -264,7 +267,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
               onClick={() => setPasteMode(true)}
               className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
                 pasteMode 
-                  ? 'bg-green-600 text-white' 
+                  ? 'bg-primary-600 text-white' 
                   : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
               }`}
             >
@@ -283,7 +286,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
               className={`
                 border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all
                 ${dragActive 
-                  ? 'border-green-500 bg-green-50' 
+                  ? 'border-primary-500 bg-primary-50' 
                   : 'border-warm-200 hover:border-warm-300 hover:bg-warm-50'
                 }
               `}
@@ -298,7 +301,11 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
 
               <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
                 {loading ? (
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600" />
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                    <span className="w-2 h-2 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                    <span className="w-2 h-2 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+                  </span>
                 ) : (
                   <IconUpload size={28} className="text-warm-400" />
                 )}
@@ -326,7 +333,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
                 onChange={(e) => setPastedText(e.target.value)}
                 placeholder={`Paste your schedule here...\n\nExample format:\nBUAD 123 - Business Fundamentals\nMWF 9:30AM - 10:45AM\nHAL 101\nProf. Smith\n\nMATH 201 - Calculus II\nTTh 1:00PM - 2:15PM\nSCI 205`}
                 rows={10}
-                className="w-full px-4 py-3 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500/40 resize-none font-mono"
+                className="w-full px-4 py-3 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/40 resize-none font-mono"
               />
               
               <Button

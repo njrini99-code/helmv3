@@ -88,8 +88,8 @@ const MOBILE_EVENT_TYPE_PILLS: Array<{
   inactiveBg: string;
   inactiveText: string;
 }> = [
-  { type: 'practice', label: 'Practice', icon: Dumbbell, activeBg: 'bg-stone-800', activeText: 'text-white', inactiveBg: 'bg-stone-100', inactiveText: 'text-stone-600' },
-  { type: 'tournament', label: 'Tournament', icon: Trophy, activeBg: 'bg-emerald-600', activeText: 'text-white', inactiveBg: 'bg-emerald-50', inactiveText: 'text-emerald-700' },
+  { type: 'practice', label: 'Practice', icon: Dumbbell, activeBg: 'bg-warm-800', activeText: 'text-white', inactiveBg: 'bg-warm-100', inactiveText: 'text-warm-600' },
+  { type: 'tournament', label: 'Tournament', icon: Trophy, activeBg: 'bg-primary-600', activeText: 'text-white', inactiveBg: 'bg-primary-50', inactiveText: 'text-primary-700' },
   { type: 'qualifier', label: 'Qualifier', icon: ClipboardList, activeBg: 'bg-amber-500', activeText: 'text-white', inactiveBg: 'bg-amber-50', inactiveText: 'text-amber-700' },
   { type: 'meeting', label: 'Meeting', icon: Users, activeBg: 'bg-sky-600', activeText: 'text-white', inactiveBg: 'bg-sky-50', inactiveText: 'text-sky-700' },
   { type: 'travel', label: 'Travel', icon: Plane, activeBg: 'bg-purple-600', activeText: 'text-white', inactiveBg: 'bg-purple-50', inactiveText: 'text-purple-700' },
@@ -417,7 +417,7 @@ export function MobileEventSheet({
                   disabled={isViewMode || isSaving}
                   className={cn(
                     'relative w-11 h-6 rounded-full transition-colors duration-200',
-                    formData.allDay ? 'bg-emerald-500' : 'bg-warm-300',
+                    formData.allDay ? 'bg-primary-500' : 'bg-warm-300',
                     (isViewMode || isSaving) && 'opacity-50'
                   )}
                 >
@@ -444,7 +444,7 @@ export function MobileEventSheet({
                       className={cn(
                         'flex-1 bg-white rounded-xl px-3 py-2 text-base text-warm-900',
                         'border border-warm-200 outline-none min-h-[40px]',
-                        'focus-visible:ring-2 focus-visible:ring-emerald-500/40 focus-visible:border-emerald-300',
+                        'focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:border-primary-300',
                         'disabled:text-warm-600 disabled:bg-warm-50'
                       )}
                     />
@@ -458,7 +458,7 @@ export function MobileEventSheet({
                       className={cn(
                         'flex-1 bg-white rounded-xl px-3 py-2 text-base text-warm-900',
                         'border border-warm-200 outline-none min-h-[40px]',
-                        'focus-visible:ring-2 focus-visible:ring-emerald-500/40 focus-visible:border-emerald-300',
+                        'focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:border-primary-300',
                         'disabled:text-warm-600 disabled:bg-warm-50'
                       )}
                     />
@@ -541,9 +541,9 @@ export function MobileEventSheet({
                 </h4>
                 <div className="grid grid-cols-4 gap-2">
                   <div className="bg-white rounded-xl p-2.5 text-center shadow-sm">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 mx-auto mb-0.5" />
-                    <p className="text-lg font-bold text-emerald-700">{rsvpSummary.accepted}</p>
-                    <p className="text-xs text-emerald-600 font-medium">Going</p>
+                    <CheckCircle2 className="w-4 h-4 text-primary-600 mx-auto mb-0.5" />
+                    <p className="text-lg font-bold text-primary-700">{rsvpSummary.accepted}</p>
+                    <p className="text-xs text-primary-600 font-medium">Going</p>
                   </div>
                   <div className="bg-white rounded-xl p-2.5 text-center shadow-sm">
                     <HelpCircle className="w-4 h-4 text-amber-600 mx-auto mb-0.5" />
@@ -652,8 +652,8 @@ export function MobileEventSheet({
               disabled={isSaving}
               className={cn(
                 'w-full py-4 rounded-2xl font-semibold text-base',
-                'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white',
-                'shadow-lg shadow-emerald-600/25',
+                'bg-gradient-to-r from-primary-600 to-primary-500 text-white',
+                'shadow-lg shadow-primary-600/25',
                 'active:scale-[0.98] transition-all min-h-[52px]',
                 isSaving && 'opacity-50'
               )}

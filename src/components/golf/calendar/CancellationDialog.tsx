@@ -204,20 +204,20 @@ export function CancellationDialog({
                       'flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all',
                       'hover:border-warm-300 hover:bg-warm-50',
                       isSelected
-                        ? 'border-green-600 bg-green-50'
+                        ? 'border-primary-600 bg-primary-50'
                         : 'border-warm-200 bg-white'
                     )}
                   >
                     <Icon
                       className={cn(
                         'w-5 h-5',
-                        isSelected ? 'text-green-600' : 'text-warm-400'
+                        isSelected ? 'text-primary-600' : 'text-warm-400'
                       )}
                     />
                     <span
                       className={cn(
                         'text-xs font-medium',
-                        isSelected ? 'text-green-700' : 'text-warm-600'
+                        isSelected ? 'text-primary-700' : 'text-warm-600'
                       )}
                     >
                       {quickReason.label}
@@ -244,7 +244,7 @@ export function CancellationDialog({
               type="checkbox"
               checked={notifyParticipants}
               onChange={(e) => setNotifyParticipants(e.target.checked)}
-              className="w-4 h-4 text-green-600 rounded border-warm-300 focus:ring-2 focus:ring-green-100"
+              className="w-4 h-4 text-primary-600 rounded border-warm-300 focus:ring-2 focus:ring-primary-100"
             />
             <div className="flex-1">
               <p className="text-sm font-medium text-warm-900">

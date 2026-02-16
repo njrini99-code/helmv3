@@ -50,8 +50,11 @@ export function TrendChart({
                 <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
                 <div className="relative h-full flex items-center justify-center">
                     <div className="text-center space-y-2">
-                        <div className="h-8 w-8 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin mx-auto" />
-                        <p className="text-sm text-slate-500 font-medium">Loading chart...</p>
+                        <div className="space-y-2 w-32 mx-auto">
+                            <div className="h-3 w-full bg-warm-200 rounded skeleton-shimmer" />
+                            <div className="h-3 w-3/4 bg-warm-200 rounded skeleton-shimmer" />
+                        </div>
+                        <p className="text-sm text-warm-500 font-medium">Loading chart...</p>
                     </div>
                 </div>
             </div>
@@ -60,8 +63,8 @@ export function TrendChart({
 
     if (data.length === 0) {
         return (
-            <div className="h-[160px] sm:h-[180px] md:h-[200px] flex items-center justify-center bg-slate-50/50 rounded-xl border border-slate-100">
-                <p className="text-sm leading-relaxed text-slate-400 font-medium">No data available</p>
+            <div className="h-[160px] sm:h-[180px] md:h-[200px] flex items-center justify-center bg-warm-50/50 rounded-xl border border-warm-100">
+                <p className="text-sm leading-relaxed text-warm-400 font-medium">No data available</p>
             </div>
         );
     }
@@ -86,7 +89,7 @@ export function TrendChart({
         >
             {title && (
                 <m.h3 
-                    className="text-sm font-medium text-slate-500 mb-4 px-1"
+                    className="text-sm font-medium text-warm-500 mb-4 px-1"
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.2 }}
@@ -124,13 +127,13 @@ export function TrendChart({
                             </linearGradient>
                         </defs>
 
-                        <CartesianGrid vertical={false} stroke="#E2E8F0" strokeDasharray="3 3" opacity={0.5} />
+                        <CartesianGrid vertical={false} stroke="#e7e5e4" strokeDasharray="3 3" opacity={0.5} />
 
                         <XAxis
                             dataKey="label"
                             axisLine={false}
                             tickLine={false}
-                            tick={{ fontSize: 11, fill: '#64748B' }}
+                            tick={{ fontSize: 11, fill: '#78716c' }}
                             interval="preserveStartEnd"
                             dy={10}
                         />
@@ -138,7 +141,7 @@ export function TrendChart({
                         <YAxis
                             axisLine={false}
                             tickLine={false}
-                            tick={{ fontSize: 11, fill: '#64748B' }}
+                            tick={{ fontSize: 11, fill: '#78716c' }}
                             domain={[Math.floor(domainMin), Math.ceil(domainMax)]}
                             reversed={reverse}
                             width={35}
@@ -147,7 +150,7 @@ export function TrendChart({
                         <Tooltip
                             contentStyle={{
                                 backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                                border: '1px solid #E2E8F0',
+                                border: '1px solid #e7e5e4',
                                 borderRadius: '12px',
                                 boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
                                 fontSize: '12px',

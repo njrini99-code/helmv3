@@ -84,11 +84,11 @@ export default async function GolfQualifiersPage() {
       case 'upcoming':
         return { bg: 'bg-blue-50', text: 'text-blue-700', dot: 'bg-blue-500', label: 'Upcoming', icon: '\u{1F4C5}' };
       case 'in_progress':
-        return { bg: 'bg-green-50', text: 'text-green-700', dot: 'bg-green-500', pulse: true, label: 'Live', icon: '\u{1F3AF}' };
+        return { bg: 'bg-primary-50', text: 'text-primary-700', dot: 'bg-primary-500', pulse: true, label: 'Live', icon: '\u{1F3AF}' };
       case 'completed':
-        return { bg: 'bg-slate-100', text: 'text-slate-600', dot: 'bg-slate-400', label: 'Completed', icon: '\u2705' };
+        return { bg: 'bg-warm-100', text: 'text-warm-600', dot: 'bg-warm-400', label: 'Completed', icon: '\u2705' };
       default:
-        return { bg: 'bg-slate-100', text: 'text-slate-600', dot: 'bg-slate-400', label: status.replace('_', ' ') };
+        return { bg: 'bg-warm-100', text: 'text-warm-600', dot: 'bg-warm-400', label: status.replace('_', ' ') };
     }
   };
 
@@ -120,11 +120,11 @@ export default async function GolfQualifiersPage() {
         {qualifiers.length === 0 ? (
           <div className="relative glass-standard rounded-2xl overflow-hidden p-16 text-center">
             <ShineEffect />
-            <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
-              <IconFlag size={28} className="text-slate-400" />
+            <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
+              <IconFlag size={28} className="text-warm-400" />
             </div>
-            <h3 className="text-lg font-semibold text-slate-900 mb-2">No Qualifiers Yet</h3>
-            <p className="text-slate-500 mb-6 max-w-sm mx-auto">
+            <h3 className="text-lg font-semibold text-warm-900 mb-2">No Qualifiers Yet</h3>
+            <p className="text-warm-500 mb-6 max-w-sm mx-auto">
               {isCoach
                 ? 'Create a qualifier to track player performance for team selection'
                 : 'No qualifiers have been created by your coach yet'}
@@ -152,11 +152,11 @@ export default async function GolfQualifiersPage() {
                     {/* Header */}
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1 min-w-0 pr-4">
-                        <h3 className="text-lg font-semibold text-slate-900 group-hover:text-green-600 transition-colors truncate">
+                        <h3 className="text-lg font-semibold text-warm-900 group-hover:text-primary-600 transition-colors truncate">
                           {qualifier.name}
                         </h3>
                         {qualifier.description && (
-                          <p className="text-sm text-slate-500 mt-1 line-clamp-2">
+                          <p className="text-sm text-warm-500 mt-1 line-clamp-2">
                             {qualifier.description}
                           </p>
                         )}
@@ -169,8 +169,8 @@ export default async function GolfQualifiersPage() {
 
                     {/* Details Grid */}
                     <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div className="flex items-center gap-2 text-slate-600">
-                        <IconCalendar size={14} className="text-slate-400" />
+                      <div className="flex items-center gap-2 text-warm-600">
+                        <IconCalendar size={14} className="text-warm-400" />
                         <span>
                           {formatDate(qualifier.start_date)}
                           {qualifier.end_date && qualifier.end_date !== qualifier.start_date && (
@@ -180,15 +180,15 @@ export default async function GolfQualifiersPage() {
                       </div>
 
                       {qualifier.spots_available && (
-                        <div className="flex items-center gap-2 text-slate-600">
-                          <IconGolf size={14} className="text-slate-400" />
+                        <div className="flex items-center gap-2 text-warm-600">
+                          <IconGolf size={14} className="text-warm-400" />
                           <span>{qualifier.spots_available} spots available</span>
                         </div>
                       )}
 
                       {qualifier.course_name && (
-                        <div className="flex items-center gap-2 text-slate-600 col-span-2">
-                          <IconMapPin size={14} className="text-slate-400" />
+                        <div className="flex items-center gap-2 text-warm-600 col-span-2">
+                          <IconMapPin size={14} className="text-warm-400" />
                           <span className="truncate">{qualifier.course_name}</span>
                         </div>
                       )}
@@ -198,7 +198,7 @@ export default async function GolfQualifiersPage() {
                     {/* Progress indicator for in-progress qualifiers */}
                     {qualifier.status === 'in_progress' && (
                       <div className="mt-4">
-                        <div className="flex items-center justify-between text-xs text-slate-500 mb-1.5">
+                        <div className="flex items-center justify-between text-xs text-warm-500 mb-1.5">
                           <span>Progress</span>
                           <span className="tabular-nums font-medium">
                             {qualifier.spots_available
@@ -206,9 +206,9 @@ export default async function GolfQualifiersPage() {
                               : 'In progress'}
                           </span>
                         </div>
-                        <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div className="h-2 bg-warm-100 rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-gradient-to-r from-green-500 to-green-400 rounded-full transition-all duration-500"
+                            className="h-full bg-gradient-to-r from-primary-500 to-primary-400 rounded-full transition-all duration-500"
                             style={{ width: `${Math.min(100, 50)}%` }}
                           />
                         </div>
@@ -216,8 +216,8 @@ export default async function GolfQualifiersPage() {
                     )}
 
                     {/* Footer */}
-                    <div className="flex items-center justify-end mt-4 pt-4 border-t border-slate-100">
-                      <span className="flex items-center gap-1 text-sm text-slate-400 group-hover:text-green-600 transition-colors">
+                    <div className="flex items-center justify-end mt-4 pt-4 border-t border-warm-100">
+                      <span className="flex items-center gap-1 text-sm text-warm-400 group-hover:text-primary-600 transition-colors">
                         View Details
                         <IconChevronRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
                       </span>

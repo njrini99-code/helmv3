@@ -17,8 +17,8 @@ const statuses = [
   {
     value: 'active',
     label: 'Active',
-    dotColor: 'bg-emerald-500',
-    badgeStyle: 'bg-emerald-500/10 text-emerald-700 ring-emerald-500/20',
+    dotColor: 'bg-primary-500',
+    badgeStyle: 'bg-primary-500/10 text-primary-700 ring-primary-500/20',
   },
   {
     value: 'injured',
@@ -153,7 +153,7 @@ export function PlayerStatusBadge({
                     {status.label}
                   </span>
                   {status.value === currentStatus && (
-                    <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-4 h-4 text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                   )}

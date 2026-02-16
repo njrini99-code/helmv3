@@ -66,13 +66,13 @@ function RoundReviewCard({
         {/* Score badge */}
         <div className={cn(
           'w-14 h-14 rounded-xl flex flex-col items-center justify-center flex-shrink-0',
-          isUnderPar ? 'bg-green-50 border border-green-100' :
+          isUnderPar ? 'bg-primary-50 border border-primary-100' :
           isOverPar ? 'bg-amber-50 border border-amber-100' :
           'bg-warm-50 border border-warm-100'
         )}>
           <span className={cn(
             'text-xl font-bold',
-            isUnderPar ? 'text-green-600' :
+            isUnderPar ? 'text-primary-600' :
             isOverPar ? 'text-amber-600' :
             'text-warm-600'
           )}>
@@ -80,7 +80,7 @@ function RoundReviewCard({
           </span>
           <span className={cn(
             'text-xs font-medium',
-            isUnderPar ? 'text-green-500' :
+            isUnderPar ? 'text-primary-500' :
             isOverPar ? 'text-amber-500' :
             'text-warm-400'
           )}>

@@ -29,7 +29,7 @@ interface CausalRelationshipViewProps {
 }
 
 const relationshipTypeLabels = {
-  direct: { label: 'Direct', color: 'bg-green-100 text-green-700', desc: 'X directly causes Y' },
+  direct: { label: 'Direct', color: 'bg-primary-100 text-primary-700', desc: 'X directly causes Y' },
   mediated: { label: 'Mediated', color: 'bg-blue-100 text-blue-700', desc: 'X causes M which causes Y' },
   moderated: { label: 'Moderated', color: 'bg-purple-100 text-purple-700', desc: 'X causes Y, but depends on Z' },
   bidirectional: { label: 'Bidirectional', color: 'bg-amber-100 text-amber-700', desc: 'X and Y influence each other' },
@@ -50,7 +50,7 @@ export function CausalRelationshipView({
             {relationship.cause}
           </div>
           <IconArrowRight size={16} className="text-warm-400" />
-          <div className="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-sm font-medium">
+          <div className="px-3 py-1.5 bg-primary-100 text-primary-700 rounded-lg text-sm font-medium">
             {relationship.effect}
           </div>
         </div>
@@ -80,7 +80,7 @@ export function CausalRelationshipView({
   return (
     <div className="space-y-6">
       {/* Main cause-effect visualization */}
-      <div className="bg-gradient-to-r from-blue-50 via-white to-green-50 border border-warm-200 rounded-xl p-6">
+      <div className="bg-gradient-to-r from-blue-50 via-white to-primary-50 border border-warm-200 rounded-xl p-6">
         <div className="flex items-center justify-center gap-4">
           {/* Cause */}
           <div className="flex-1 max-w-[200px]">
@@ -114,15 +114,15 @@ export function CausalRelationshipView({
 
           {/* Effect */}
           <div className="flex-1 max-w-[200px]">
-            <div className="bg-green-100 border border-green-200 rounded-xl p-4 text-center">
-              <p className="text-xs text-green-600 uppercase tracking-wide font-medium mb-1">
+            <div className="bg-primary-100 border border-primary-200 rounded-xl p-4 text-center">
+              <p className="text-xs text-primary-600 uppercase tracking-wide font-medium mb-1">
                 Effect
               </p>
-              <p className="text-lg font-semibold text-green-800">
+              <p className="text-lg font-semibold text-primary-800">
                 {relationship.effect}
               </p>
               {relationship.effectMetric && (
-                <p className="text-xs text-green-500 mt-1">
+                <p className="text-xs text-primary-500 mt-1">
                   Metric: {relationship.effectMetric}
                 </p>
               )}
@@ -153,7 +153,7 @@ export function CausalRelationshipView({
               className={cn(
                 'h-full rounded-full',
                 relationship.strength >= 0.7
-                  ? 'bg-green-500'
+                  ? 'bg-primary-500'
                   : relationship.strength >= 0.4
                   ? 'bg-amber-500'
                   : 'bg-red-500'
@@ -182,7 +182,7 @@ export function CausalRelationshipView({
               className={cn(
                 'h-full rounded-full',
                 relationship.confidence >= 0.7
-                  ? 'bg-green-500'
+                  ? 'bg-primary-500'
                   : relationship.confidence >= 0.4
                   ? 'bg-amber-500'
                   : 'bg-red-500'
@@ -238,15 +238,15 @@ export function CausalRelationshipView({
         </div>
 
         {relationship.evidence.confoundersControlled.length > 0 && (
-          <div className="mt-3 p-3 bg-green-50 border border-green-100 rounded-lg">
-            <p className="text-xs font-medium text-green-700 mb-1">
+          <div className="mt-3 p-3 bg-primary-50 border border-primary-100 rounded-lg">
+            <p className="text-xs font-medium text-primary-700 mb-1">
               Confounders Controlled For:
             </p>
             <div className="flex flex-wrap gap-1">
               {relationship.evidence.confoundersControlled.map((c, i) => (
                 <span
                   key={i}
-                  className="px-2 py-0.5 bg-green-100 text-green-600 text-xs rounded"
+                  className="px-2 py-0.5 bg-primary-100 text-primary-600 text-xs rounded"
                 >
                   {c}
                 </span>
@@ -257,19 +257,19 @@ export function CausalRelationshipView({
       </div>
 
       {/* Intervention potential */}
-      <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
+      <div className="bg-gradient-to-r from-primary-50 to-primary-50 border border-primary-200 rounded-xl p-4">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
-            <IconTarget size={18} className="text-green-600" />
+            <IconTarget size={18} className="text-primary-600" />
             <h4 className="text-sm font-medium text-warm-900">Intervention Potential</h4>
           </div>
-          <span className="text-lg font-semibold text-green-600">
+          <span className="text-lg font-semibold text-primary-600">
             {Math.round(relationship.interventionPotential * 100)}%
           </span>
         </div>
-        <div className="h-2 bg-green-200 rounded-full overflow-hidden mb-2">
+        <div className="h-2 bg-primary-200 rounded-full overflow-hidden mb-2">
           <div
-            className="h-full bg-green-600 rounded-full"
+            className="h-full bg-primary-600 rounded-full"
             style={{ width: `${relationship.interventionPotential * 100}%` }}
           />
         </div>
@@ -328,12 +328,12 @@ function EvidenceIndicator({
       className={cn(
         'flex items-start gap-2 p-3 rounded-lg border',
         confirmed
-          ? 'bg-green-50 border-green-200'
+          ? 'bg-primary-50 border-primary-200'
           : 'bg-warm-50 border-warm-200'
       )}
     >
       {confirmed ? (
-        <IconCheck size={16} className="text-green-500 mt-0.5 flex-shrink-0" />
+        <IconCheck size={16} className="text-primary-500 mt-0.5 flex-shrink-0" />
       ) : (
         <IconX size={16} className="text-warm-400 mt-0.5 flex-shrink-0" />
       )}
@@ -341,7 +341,7 @@ function EvidenceIndicator({
         <p
           className={cn(
             'text-sm font-medium',
-            confirmed ? 'text-green-700' : 'text-warm-600'
+            confirmed ? 'text-primary-700' : 'text-warm-600'
           )}
         >
           {label}

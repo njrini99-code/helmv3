@@ -25,8 +25,6 @@ function DailyAreaChartCard({
   const total = data.reduce((s, d) => s + d.count, 0);
   const avg = data.length > 0 ? (total / data.length).toFixed(1) : '0';
   const todayCount = data[data.length - 1]?.count ?? 0;
-  const maxCount = Math.max(...data.map(d => d.count), 1);
-
   const chartData = data.map((d) => ({
     label: new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
     value: d.count,

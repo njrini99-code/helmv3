@@ -123,7 +123,7 @@ export function TemplateForm({
   };
 
   const priorityOptions: { value: TaskPriority; label: string; color: string }[] = [
-    { value: 'low', label: 'Low', color: 'bg-gray-100 text-gray-700' },
+    { value: 'low', label: 'Low', color: 'bg-warm-100 text-warm-700' },
     { value: 'normal', label: 'Normal', color: 'bg-blue-100 text-blue-700' },
     { value: 'high', label: 'High', color: 'bg-orange-100 text-orange-700' },
     { value: 'urgent', label: 'Urgent', color: 'bg-red-100 text-red-700' },
@@ -133,13 +133,13 @@ export function TemplateForm({
     <form onSubmit={handleSubmit} className={cn('space-y-6', className)}>
       {/* Template Info Section */}
       <div className="space-y-4">
-        <h4 className="text-sm font-semibold text-gray-900 pb-2 border-b border-gray-100">
+        <h4 className="text-sm font-semibold text-warm-900 pb-2 border-b border-warm-100">
           Template Information
         </h4>
 
         {/* Template Name */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+          <label className="block text-sm font-medium text-warm-700 mb-1.5">
             Template Name <span className="text-red-500">*</span>
           </label>
           <input
@@ -148,16 +148,16 @@ export function TemplateForm({
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g., Tournament Prep Checklist"
             disabled={isPending}
-            className="w-full px-3 py-2.5 text-base md:text-sm bg-white border border-gray-200 rounded-lg placeholder:text-gray-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50 disabled:opacity-50"
+            className="w-full px-3 py-2.5 text-base md:text-sm bg-white border border-warm-200 rounded-lg placeholder:text-warm-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50 disabled:opacity-50"
           />
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-1 text-xs text-warm-500">
             A descriptive name to identify this template
           </p>
         </div>
 
         {/* Template Description */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+          <label className="block text-sm font-medium text-warm-700 mb-1.5">
             Description
           </label>
           <textarea
@@ -166,20 +166,20 @@ export function TemplateForm({
             placeholder="Brief description of when to use this template and what it's for..."
             rows={3}
             disabled={isPending}
-            className="w-full px-3 py-2.5 text-base md:text-sm bg-white border border-gray-200 rounded-lg placeholder:text-gray-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50 resize-none disabled:opacity-50"
+            className="w-full px-3 py-2.5 text-base md:text-sm bg-white border border-warm-200 rounded-lg placeholder:text-warm-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50 resize-none disabled:opacity-50"
           />
         </div>
 
         {/* Category */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+          <label className="block text-sm font-medium text-warm-700 mb-1.5">
             Category
           </label>
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value as TaskCategory)}
             disabled={isPending}
-            className="w-full px-3 py-2.5 text-base md:text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50 disabled:opacity-50"
+            className="w-full px-3 py-2.5 text-base md:text-sm bg-white border border-warm-200 rounded-lg focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50 disabled:opacity-50"
           >
             <option value="">Select category...</option>
             {CATEGORIES.map((cat) => (
@@ -193,13 +193,13 @@ export function TemplateForm({
 
       {/* Task Defaults Section */}
       <div className="space-y-4">
-        <h4 className="text-sm font-semibold text-gray-900 pb-2 border-b border-gray-100">
+        <h4 className="text-sm font-semibold text-warm-900 pb-2 border-b border-warm-100">
           Task Defaults
         </h4>
 
         {/* Priority */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+          <label className="block text-sm font-medium text-warm-700 mb-1.5">
             Default Priority
           </label>
           <div className="flex gap-2">
@@ -215,7 +215,7 @@ export function TemplateForm({
                   'disabled:cursor-not-allowed disabled:opacity-50',
                   priority === option.value
                     ? option.color + ' border-transparent'
-                    : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+                    : 'bg-white text-warm-600 border-warm-200 hover:border-warm-300'
                 )}
               >
                 {option.label}
@@ -226,7 +226,7 @@ export function TemplateForm({
 
         {/* Due Date Offset */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
+          <label className="block text-sm font-medium text-warm-700 mb-1.5">
             Default Due Date (days from creation)
           </label>
           <input
@@ -239,9 +239,9 @@ export function TemplateForm({
             }
             placeholder="e.g., 7"
             disabled={isPending}
-            className="w-full px-3 py-2.5 text-base md:text-sm bg-white border border-gray-200 rounded-lg placeholder:text-gray-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50 disabled:opacity-50"
+            className="w-full px-3 py-2.5 text-base md:text-sm bg-white border border-warm-200 rounded-lg placeholder:text-warm-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50 disabled:opacity-50"
           />
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-1 text-xs text-warm-500">
             Leave empty to set manually when creating tasks
           </p>
         </div>
@@ -255,13 +255,13 @@ export function TemplateForm({
       )}
 
       {/* Actions */}
-      <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+      <div className="flex justify-end gap-3 pt-4 border-t border-warm-100">
         {onCancel && (
           <button
             type="button"
             onClick={onCancel}
             disabled={isPending}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+            className="px-4 py-2 text-sm font-medium text-warm-700 bg-white border border-warm-200 rounded-lg hover:bg-warm-50 transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
@@ -272,21 +272,11 @@ export function TemplateForm({
           className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
         >
           {isPending && (
-            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              />
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-              />
-            </svg>
+            <span className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+              <span className="w-1.5 h-1.5 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+              <span className="w-1.5 h-1.5 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+            </span>
           )}
           {isEditing ? 'Update Template' : 'Create Template'}
         </button>

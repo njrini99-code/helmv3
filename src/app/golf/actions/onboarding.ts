@@ -1,5 +1,6 @@
 'use server';
 
+import { randomInt } from 'crypto';
 import { createClient } from '@/lib/supabase/server';
 import { z } from 'zod';
 import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
@@ -407,7 +408,6 @@ export async function completePlayerOnboarding(input: PlayerOnboardingInput) {
  * Generate a random 6-character alphanumeric join code
  */
 function generateJoinCode(): string {
-  const { randomInt } = require('crypto');
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Removed I,O,0,1 for clarity
   let code = '';
   for (let i = 0; i < 8; i++) {

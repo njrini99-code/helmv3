@@ -35,8 +35,8 @@ function getTrendConfig(trend: FocusArea['trend']) {
     case 'improving':
       return {
         icon: IconTrendingUp,
-        color: 'text-green-500',
-        bgColor: 'bg-green-50',
+        color: 'text-primary-500',
+        bgColor: 'bg-primary-50',
         label: 'Improving',
       };
     case 'declining':
@@ -58,7 +58,7 @@ function getTrendConfig(trend: FocusArea['trend']) {
 
 // Get strokes color based on value
 function getStrokesColor(value: number) {
-  if (value > 0.2) return 'text-green-600';
+  if (value > 0.2) return 'text-primary-600';
   if (value < -0.5) return 'text-red-600';
   if (value < -0.2) return 'text-amber-600';
   return 'text-warm-600';
@@ -137,7 +137,7 @@ function FocusAreaCard({
           transition={{ duration: 0.5, delay: 0.2 + index * 0.1 }}
           className={cn(
             'absolute h-full rounded-full',
-            isPositive ? 'bg-green-400 right-0' : 'bg-red-400 left-0'
+            isPositive ? 'bg-primary-400 right-0' : 'bg-red-400 left-0'
           )}
           style={{
             [isPositive ? 'right' : 'left']: '50%',
@@ -225,7 +225,7 @@ export function FocusAreasGrid({ focusAreas, onAreaClick }: FocusAreasGridProps)
         className="flex items-center justify-center gap-6 mt-5 pt-4 border-t border-white/20"
       >
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-green-400" />
+          <div className="w-3 h-3 rounded-full bg-primary-400" />
           <span className="text-xs text-warm-500">Gaining strokes</span>
         </div>
         <div className="flex items-center gap-2">

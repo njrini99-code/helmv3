@@ -134,7 +134,11 @@ export function InvitePlayerButton({ teamName, existingCode }: InvitePlayerButto
           {/* Loading State */}
           {loading && (
             <div className="flex items-center justify-center py-8">
-              <div className="animate-spin h-6 w-6 border-2 border-green-600 border-t-transparent rounded-full" />
+              <span className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+              </span>
               <span className="ml-3 text-sm text-warm-500">Generating invite link...</span>
             </div>
           )}
@@ -195,19 +199,19 @@ export function InvitePlayerButton({ teamName, existingCode }: InvitePlayerButto
                 )}
               </Button>
 
-              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
-                <p className="text-xs font-semibold text-emerald-800 mb-2">How it works</p>
-                <ul className="text-xs text-emerald-700 space-y-1.5">
+              <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
+                <p className="text-xs font-semibold text-primary-800 mb-2">How it works</p>
+                <ul className="text-xs text-primary-700 space-y-1.5">
                   <li className="flex items-start gap-2">
-                    <span className="text-emerald-500">1.</span>
+                    <span className="text-primary-500">1.</span>
                     Player clicks the link or enters the code at signup
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-emerald-500">2.</span>
+                    <span className="text-primary-500">2.</span>
                     They create an account or log in
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-emerald-500">3.</span>
+                    <span className="text-primary-500">3.</span>
                     They&apos;re automatically added to your team roster
                   </li>
                 </ul>

@@ -4,7 +4,7 @@
  * RSVP Progress Ring Component
  *
  * SVG circular progress indicator showing RSVP breakdown:
- * - Accepted segment (emerald)
+ * - Accepted segment (primary)
  * - Declined segment (rose)
  * - Tentative segment (amber)
  * - Pending segment (slate)
@@ -202,7 +202,7 @@ export function RSVPProgressRing({
         <div className={cn('flex flex-wrap justify-center gap-3', config.labelSize)}>
           {confirmedPct > 0 && (
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
+              <div className="w-3 h-3 rounded-full bg-primary-500"></div>
               <span className="text-warm-700">
                 {confirmed} Accepted
               </span>

@@ -2,7 +2,8 @@
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
-import type { Coach, CoachStatus } from '../page';
+import { MoreHorizontal, MessageSquare, ArrowRight, Star, ChevronDown, Mail } from 'lucide-react';
+import type { Coach, CoachStatus } from '../crm-config';
 
 interface CoachTableProps {
   coaches: Coach[];
@@ -10,40 +11,33 @@ interface CoachTableProps {
   selectedIds: Set<string>;
   onSelectionChange: (ids: Set<string>) => void;
   onStatusChange: (coachId: string, status: CoachStatus) => void;
-  onPriorityChange: (coachId: string, priority: number) => void;
   onToggleStar: (coachId: string, currentStarred: boolean) => void;
   onCoachClick: (coach: Coach) => void;
-  statusConfig: Record<CoachStatus, { label: string; color: string; bgColor: string; icon: string; order: number }>;
-  priorityConfig: Record<number, { label: string; color: string; bgColor: string; icon: string }>;
+  onLogContact: (coach: Coach) => void;
+  statusConfig: Record<CoachStatus, { label: string; color: string; bgColor: string; icon: React.ReactNode; order: number }>;
+  priorityConfig: Record<number, { label: string; color: string; bgColor: string; icon: React.ReactNode; iconLabel: string }>;
 }
 
-const ALL_STATUSES: CoachStatus[] = ['new_lead', 'contacted', 'demo_scheduled', 'customer', 'closed'];
+const ALL_STATUSES: CoachStatus[] = [
+  'new_lead', 'researching', 'outreach_pending', 'initial_contact', 'follow_up',
+  'engaged', 'demo_scheduled', 'demo_completed', 'proposal_sent', 'negotiating',
+  'closed_won', 'closed_lost', 'not_interested', 'bad_timing', 'nurture',
+];
 
-type SortField = 'name' | 'school' | 'conference' | 'division' | 'status' | 'priority';
+type SortField = 'name' | 'school' | 'conference' | 'division' | 'status' | 'priority' | 'last_contacted_at';
 type SortDir = 'asc' | 'desc';
 
 const PAGE_SIZES = [25, 50, 100];
 
-// Conference abbreviations
-const CONF_ABBREV: Record<string, string> = {
-  'Northern Sun Intercollegiate Conference': 'NSIC',
-  'Great Northwest Athletic Conference': 'GNAC',
-  'Great Midwest Athletic Conference': 'G-MAC',
-  'Great Lakes Valley Conference': 'GLVC',
-  'Mid-America Intercollegiate Athletics Association': 'MIAA',
-  'Mountain East Conference': 'MEC',
-  'Northeast-10 Conference': 'NE10',
-  'Pacific West Conference': 'PacWest',
-  'Peach Belt Conference': 'PBC',
-  'Rocky Mountain Athletic Conference': 'RMAC',
-  'Sunshine State Conference': 'SSC',
-  'Lone Star Conference': 'LSC',
-  'Gulf South Conference': 'GSC',
-  'Pennsylvania State Athletic Conference': 'PSAC',
-  'Central Atlantic Collegiate Conference': 'CACC',
-  'South Atlantic Conference': 'SAC',
-  'Conference Carolinas': 'CC',
-};
+function formatRelativeDate(dateStr: string | null): string {
+  if (!dateStr) return 'Never';
+  const days = Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24));
+  if (days === 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return `${days}d ago`;
+  if (days < 30) return `${Math.floor(days / 7)}w ago`;
+  return `${Math.floor(days / 30)}mo ago`;
+}
 
 export function CoachTable({
   coaches,
@@ -51,31 +45,36 @@ export function CoachTable({
   selectedIds,
   onSelectionChange,
   onStatusChange,
-  onPriorityChange,
   onToggleStar,
   onCoachClick,
+  onLogContact,
   statusConfig,
   priorityConfig,
 }: CoachTableProps) {
-  const [openDropdown, setOpenDropdown] = useState<{ id: string; type: 'status' | 'priority' } | null>(null);
+  const [openStatusDropdown, setOpenStatusDropdown] = useState<string | null>(null);
+  const [openActionMenu, setOpenActionMenu] = useState<string | null>(null);
   const [sortField, setSortField] = useState<SortField | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(25);
+  const [pageSize, setPageSize] = useState(50);
   const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
 
-  useEffect(() => {
-    setPage(1);
-  }, [coaches.length]);
+  useEffect(() => { setPage(1); }, [coaches.length]);
 
-  // Sort coaches
+  // Close dropdowns on outside click
+  useEffect(() => {
+    if (!openStatusDropdown && !openActionMenu) return;
+    const handler = () => { setOpenStatusDropdown(null); setOpenActionMenu(null); };
+    document.addEventListener('click', handler);
+    return () => document.removeEventListener('click', handler);
+  }, [openStatusDropdown, openActionMenu]);
+
+  // Sort
   const sortedCoaches = useMemo(() => {
     if (!sortField) return coaches;
-    
     return [...coaches].sort((a, b) => {
       let aVal: string | number | null = null;
       let bVal: string | number | null = null;
-      
       switch (sortField) {
         case 'name': aVal = a.name.toLowerCase(); bVal = b.name.toLowerCase(); break;
         case 'school': aVal = a.school.toLowerCase(); bVal = b.school.toLowerCase(); break;
@@ -83,8 +82,11 @@ export function CoachTable({
         case 'division': aVal = a.division; bVal = b.division; break;
         case 'status': aVal = statusConfig[a.status]?.order || 0; bVal = statusConfig[b.status]?.order || 0; break;
         case 'priority': aVal = a.priority; bVal = b.priority; break;
+        case 'last_contacted_at':
+          aVal = a.last_contacted_at ? new Date(a.last_contacted_at).getTime() : 0;
+          bVal = b.last_contacted_at ? new Date(b.last_contacted_at).getTime() : 0;
+          break;
       }
-      
       if (aVal === null || bVal === null) return 0;
       if (aVal < bVal) return sortDir === 'asc' ? -1 : 1;
       if (aVal > bVal) return sortDir === 'asc' ? 1 : -1;
@@ -92,50 +94,33 @@ export function CoachTable({
     });
   }, [coaches, sortField, sortDir, statusConfig]);
 
-  // Paginate
   const totalPages = Math.ceil(sortedCoaches.length / pageSize);
   const paginatedCoaches = useMemo(() => {
     const start = (page - 1) * pageSize;
     return sortedCoaches.slice(start, start + pageSize);
   }, [sortedCoaches, page, pageSize]);
 
-  // Keyboard navigation
+  // Keyboard nav
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (paginatedCoaches.length === 0) return;
-    if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
-    
+    if (!paginatedCoaches.length) return;
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName)) return;
     switch (e.key) {
-      case 'j':
-        e.preventDefault();
-        setFocusedIndex(prev => prev === null ? 0 : Math.min(prev + 1, paginatedCoaches.length - 1));
-        break;
-      case 'k':
-        e.preventDefault();
-        setFocusedIndex(prev => prev === null ? 0 : Math.max(prev - 1, 0));
-        break;
+      case 'j': e.preventDefault(); setFocusedIndex(prev => prev === null ? 0 : Math.min(prev + 1, paginatedCoaches.length - 1)); break;
+      case 'k': e.preventDefault(); setFocusedIndex(prev => prev === null ? 0 : Math.max(prev - 1, 0)); break;
       case 's':
         if (focusedIndex !== null && paginatedCoaches[focusedIndex]) {
           e.preventDefault();
-          const coach = paginatedCoaches[focusedIndex];
-          onToggleStar(coach.id, coach.is_starred);
+          const c = paginatedCoaches[focusedIndex];
+          onToggleStar(c.id, c.is_starred);
         }
         break;
       case 'Enter':
-        if (focusedIndex !== null && paginatedCoaches[focusedIndex]) {
-          e.preventDefault();
-          onCoachClick(paginatedCoaches[focusedIndex]);
-        }
+        if (focusedIndex !== null && paginatedCoaches[focusedIndex]) { e.preventDefault(); onCoachClick(paginatedCoaches[focusedIndex]); }
         break;
       case 'x':
-        if (focusedIndex !== null && paginatedCoaches[focusedIndex]) {
-          e.preventDefault();
-          toggleSelection(paginatedCoaches[focusedIndex].id);
-        }
+        if (focusedIndex !== null && paginatedCoaches[focusedIndex]) { e.preventDefault(); toggleSelection(paginatedCoaches[focusedIndex].id); }
         break;
-      case 'Escape':
-        setFocusedIndex(null);
-        setOpenDropdown(null);
-        break;
+      case 'Escape': setFocusedIndex(null); setOpenStatusDropdown(null); setOpenActionMenu(null); break;
     }
   }, [paginatedCoaches, focusedIndex, onToggleStar, onCoachClick]);
 
@@ -145,52 +130,62 @@ export function CoachTable({
   }, [handleKeyDown]);
 
   const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortDir(prev => prev === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDir('asc');
-    }
+    if (sortField === field) setSortDir(prev => prev === 'asc' ? 'desc' : 'asc');
+    else { setSortField(field); setSortDir('asc'); }
   };
 
   const toggleSelection = (id: string) => {
-    const newSelection = new Set(selectedIds);
-    if (newSelection.has(id)) newSelection.delete(id);
-    else newSelection.add(id);
-    onSelectionChange(newSelection);
+    const next = new Set(selectedIds);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    onSelectionChange(next);
   };
 
   const toggleAll = () => {
     if (paginatedCoaches.every(c => selectedIds.has(c.id))) {
-      const newSelection = new Set(selectedIds);
-      paginatedCoaches.forEach(c => newSelection.delete(c.id));
-      onSelectionChange(newSelection);
+      const next = new Set(selectedIds);
+      paginatedCoaches.forEach(c => next.delete(c.id));
+      onSelectionChange(next);
     } else {
-      const newSelection = new Set(selectedIds);
-      paginatedCoaches.forEach(c => newSelection.add(c.id));
-      onSelectionChange(newSelection);
+      const next = new Set(selectedIds);
+      paginatedCoaches.forEach(c => next.add(c.id));
+      onSelectionChange(next);
     }
   };
 
+  const SortArrow = ({ field }: { field: SortField }) => (
+    <span className="ml-0.5 text-[10px]">{sortField === field ? (sortDir === 'asc' ? '↑' : '↓') : ''}</span>
+  );
+
+  // Loading skeleton
   if (loading) {
     return (
-      <div className="p-16">
-        <div className="flex flex-col items-center justify-center gap-4">
-          <div className="animate-spin w-10 h-10 border-4 border-primary-500 border-t-transparent rounded-full" />
-          <span className="text-warm-500 font-medium">Loading coaches...</span>
-        </div>
+      <div className="p-6 space-y-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-4 py-3">
+            <div className="w-4 h-4 rounded bg-warm-200/60 skeleton-shimmer" />
+            <div className="w-4 h-4 rounded bg-warm-200/60 skeleton-shimmer" />
+            <div className="flex-1 space-y-1.5">
+              <div className="h-3.5 w-36 bg-warm-200/60 rounded skeleton-shimmer" />
+              <div className="h-2.5 w-24 bg-warm-100/60 rounded skeleton-shimmer" />
+            </div>
+            <div className="h-3 w-32 bg-warm-100/60 rounded skeleton-shimmer" />
+            <div className="h-5 w-10 bg-warm-100/60 rounded-full skeleton-shimmer" />
+            <div className="h-5 w-20 bg-warm-100/60 rounded-full skeleton-shimmer" />
+            <div className="h-3 w-16 bg-warm-100/60 rounded skeleton-shimmer" />
+          </div>
+        ))}
       </div>
     );
   }
 
   if (coaches.length === 0) {
     return (
-      <div className="p-16 text-center">
-        <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
-          <span className="text-3xl">📋</span>
+      <div className="py-16 text-center">
+        <div className="w-14 h-14 rounded-2xl bg-warm-100/80 flex items-center justify-center mx-auto mb-4">
+          <MessageSquare size={24} className="text-warm-300" />
         </div>
-        <h3 className="text-lg font-bold text-warm-900 mb-2">No coaches found</h3>
-        <p className="text-warm-500 text-sm">Try adjusting your filters or import some data.</p>
+        <h3 className="text-base font-semibold text-warm-700 mb-1">No coaches found</h3>
+        <p className="text-sm text-warm-500 max-w-xs mx-auto">Try adjusting your filters or import some coaches.</p>
       </div>
     );
   }
@@ -200,171 +195,103 @@ export function CoachTable({
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="bg-warm-50/50 border-b border-warm-100/50">
-              <th className="w-10 px-3 py-3">
-                <input
-                  type="checkbox"
-                  checked={paginatedCoaches.length > 0 && paginatedCoaches.every(c => selectedIds.has(c.id))}
-                  onChange={toggleAll}
-                  className="w-4 h-4 rounded border-warm-300 text-primary-600 focus:ring-primary-500"
-                />
+            <tr className="border-b border-warm-100">
+              <th className="w-10 px-4 py-3">
+                <input type="checkbox" checked={paginatedCoaches.length > 0 && paginatedCoaches.every(c => selectedIds.has(c.id))} onChange={toggleAll}
+                  className="w-4 h-4 rounded-md border-warm-300 text-primary-600 focus:ring-primary-500/20 cursor-pointer" />
               </th>
-              <th className="w-10 px-2 py-3"></th>
-              <th 
-                className="text-left px-4 py-3 text-[11px] font-medium text-warm-400 uppercase tracking-wider cursor-pointer hover:text-warm-600 transition-colors"
-                onClick={() => handleSort('name')}
-              >
-                Coach {sortField === 'name' && (sortDir === 'asc' ? '↑' : '↓')}
-              </th>
-              <th 
-                className="text-left px-4 py-3 text-[11px] font-medium text-warm-400 uppercase tracking-wider cursor-pointer hover:text-warm-600 transition-colors"
-                onClick={() => handleSort('school')}
-              >
-                School {sortField === 'school' && (sortDir === 'asc' ? '↑' : '↓')}
-              </th>
-              <th 
-                className="text-left px-4 py-3 text-[11px] font-medium text-warm-400 uppercase tracking-wider cursor-pointer hover:text-warm-600 transition-colors w-24"
-                onClick={() => handleSort('division')}
-              >
-                Div {sortField === 'division' && (sortDir === 'asc' ? '↑' : '↓')}
-              </th>
-              <th 
-                className="text-left px-4 py-3 text-[11px] font-medium text-warm-400 uppercase tracking-wider cursor-pointer hover:text-warm-600 transition-colors"
-                onClick={() => handleSort('status')}
-              >
-                Status {sortField === 'status' && (sortDir === 'asc' ? '↑' : '↓')}
-              </th>
-              <th 
-                className="text-left px-4 py-3 text-[11px] font-medium text-warm-400 uppercase tracking-wider cursor-pointer hover:text-warm-600 transition-colors w-28"
-                onClick={() => handleSort('priority')}
-              >
-                Priority {sortField === 'priority' && (sortDir === 'asc' ? '↑' : '↓')}
-              </th>
+              <th className="w-10 px-2 py-3" />
+              <TH field="name" label="Coach" onSort={handleSort}><SortArrow field="name" /></TH>
+              <TH field="school" label="School" onSort={handleSort}><SortArrow field="school" /></TH>
+              <TH field="division" label="Div" onSort={handleSort} className="w-16"><SortArrow field="division" /></TH>
+              <TH field="conference" label="Conference" onSort={handleSort}><SortArrow field="conference" /></TH>
+              <TH field="status" label="Status" onSort={handleSort}><SortArrow field="status" /></TH>
+              <TH field="priority" label="Priority" onSort={handleSort} className="w-20"><SortArrow field="priority" /></TH>
+              <TH field="last_contacted_at" label="Last Contact" onSort={handleSort}><SortArrow field="last_contacted_at" /></TH>
+              <th className="w-12 px-4 py-3" />
             </tr>
           </thead>
           <tbody>
             {paginatedCoaches.map((coach, index) => {
               const isFocused = focusedIndex === index;
               const isSelected = selectedIds.has(coach.id);
-              
               return (
                 <tr
                   key={coach.id}
                   className={cn(
-                    'border-b border-warm-100/50 cursor-pointer group',
-                    'transition-colors duration-150',
-                    isSelected && 'bg-primary-50/60',
-                    isFocused && 'ring-2 ring-inset ring-primary-400 bg-primary-50/30',
-                    !isSelected && !isFocused && 'hover:bg-warm-50/60'
+                    'border-b border-warm-50 transition-all duration-150 cursor-pointer group',
+                    isSelected && 'bg-primary-50/50 border-l-2 border-l-primary-500',
+                    !isSelected && isFocused && 'bg-primary-50/30',
+                    !isSelected && !isFocused && 'hover:bg-primary-50/30'
                   )}
                   onClick={() => onCoachClick(coach)}
                   onMouseEnter={() => setFocusedIndex(index)}
                 >
                   {/* Checkbox */}
-                  <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => toggleSelection(coach.id)}
-                      className="w-4 h-4 rounded border-warm-300 text-primary-600 focus:ring-primary-500"
-                    />
+                  <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                    <input type="checkbox" checked={isSelected} onChange={() => toggleSelection(coach.id)}
+                      className="w-4 h-4 rounded-md border-warm-300 text-primary-600 focus:ring-primary-500/20 cursor-pointer" />
                   </td>
-                  
+
                   {/* Star */}
-                  <td className="px-2 py-3" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      onClick={() => onToggleStar(coach.id, coach.is_starred)}
-                      className={cn(
-                        'text-lg transition-transform hover:scale-110',
-                        coach.is_starred ? 'opacity-100' : 'opacity-30 group-hover:opacity-60'
-                      )}
-                    >
+                  <td className="px-2 py-3" onClick={e => e.stopPropagation()}>
+                    <button onClick={() => onToggleStar(coach.id, coach.is_starred)}
+                      className={cn('text-base transition-transform hover:scale-110', coach.is_starred ? 'opacity-100' : 'opacity-20 group-hover:opacity-50')}>
                       {coach.is_starred ? '⭐' : '☆'}
                     </button>
                   </td>
 
-                  {/* Coach Info */}
+                  {/* Coach name + title */}
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      {coach.priority > 0 && (
-                        <span className="flex-shrink-0">{priorityConfig[coach.priority]?.icon}</span>
-                      )}
-                      <div className="min-w-0">
-                        <div className="font-semibold text-warm-900 text-sm">{coach.name}</div>
-                        {coach.email && (
-                          <a
-                            href={`mailto:${coach.email}`}
-                            onClick={(e) => e.stopPropagation()}
-                            className="text-xs text-primary-600 hover:text-primary-700 hover:underline truncate block max-w-[200px]"
-                          >
-                            {coach.email}
-                          </a>
-                        )}
-                      </div>
-                    </div>
+                    <p className="text-sm font-medium text-warm-900 leading-tight">{coach.name}</p>
+                    {coach.title && <p className="text-[11px] text-warm-400 truncate max-w-[180px]">{coach.title}</p>}
                   </td>
 
                   {/* School */}
                   <td className="px-4 py-3">
-                    <div className="font-medium text-warm-900 text-sm truncate max-w-[200px]">{coach.school}</div>
-                    <div className="text-xs text-warm-400 truncate max-w-[200px]">
-                      {CONF_ABBREV[coach.conference] || coach.conference}
-                    </div>
+                    <p className="text-sm text-warm-800 truncate max-w-[180px]">{coach.school}</p>
                   </td>
 
-                  {/* Division */}
+                  {/* Division — D2=blue, D3=primary per spec */}
                   <td className="px-4 py-3">
                     <span className={cn(
-                      'inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold',
-                      coach.division === 'D2' 
-                        ? 'bg-blue-50 text-blue-700' 
-                        : 'bg-violet-50 text-violet-700'
+                      'text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded',
+                      coach.division === 'D2' ? 'bg-blue-100 text-blue-700' : 'bg-primary-100 text-primary-700'
                     )}>
                       {coach.division}
                     </span>
                   </td>
 
-                  {/* Status */}
-                  <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                  {/* Conference */}
+                  <td className="px-4 py-3">
+                    <p className="text-xs text-warm-500 truncate max-w-[160px]">{coach.conference}</p>
+                  </td>
+
+                  {/* Status dropdown */}
+                  <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                     <div className="relative">
                       <button
-                        onClick={() => setOpenDropdown(
-                          openDropdown?.id === coach.id && openDropdown.type === 'status' 
-                            ? null 
-                            : { id: coach.id, type: 'status' }
-                        )}
+                        onClick={e => { e.stopPropagation(); setOpenStatusDropdown(openStatusDropdown === coach.id ? null : coach.id); setOpenActionMenu(null); }}
                         className={cn(
-                          'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all',
-                          statusConfig[coach.status]?.bgColor,
-                          statusConfig[coach.status]?.color,
-                          'hover:ring-2 hover:ring-offset-1 hover:ring-warm-200'
+                          'inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all',
+                          statusConfig[coach.status]?.bgColor, statusConfig[coach.status]?.color,
+                          'hover:ring-1 hover:ring-warm-200'
                         )}
                       >
-                        <span>{statusConfig[coach.status]?.icon}</span>
+                        <span className="flex items-center">{statusConfig[coach.status]?.icon}</span>
                         <span>{statusConfig[coach.status]?.label}</span>
-                        <span className="text-[10px] opacity-50">▼</span>
+                        <ChevronDown size={10} className="opacity-50" />
                       </button>
-                      
-                      {openDropdown?.id === coach.id && openDropdown.type === 'status' && (
-                        <div className={cn(
-                          'absolute z-50 mt-1.5 py-1.5 min-w-[160px]',
-                          'bg-white/95 backdrop-blur-xl rounded-xl',
-                          'border border-warm-200/50 shadow-lg'
-                        )}>
-                          {ALL_STATUSES.map((status) => (
-                            <button
-                              key={status}
-                              onClick={() => {
-                                onStatusChange(coach.id, status);
-                                setOpenDropdown(null);
-                              }}
-                              className={cn(
-                                'w-full text-left px-3 py-2 text-sm transition-colors flex items-center gap-2',
-                                coach.status === status ? 'bg-warm-50' : 'hover:bg-warm-50'
-                              )}
-                            >
-                              <span>{statusConfig[status]?.icon}</span>
-                              <span className={statusConfig[status]?.color}>{statusConfig[status]?.label}</span>
+                      {openStatusDropdown === coach.id && (
+                        <div className="absolute z-50 mt-1 py-1 min-w-[160px] max-h-[320px] overflow-y-auto bg-white/95 backdrop-blur-xl rounded-xl border border-warm-200/50 shadow-xl" onClick={e => e.stopPropagation()}>
+                          {ALL_STATUSES.map(status => (
+                            <button key={status}
+                              onClick={() => { onStatusChange(coach.id, status); setOpenStatusDropdown(null); }}
+                              className={cn('w-full text-left px-3 py-1.5 text-sm flex items-center gap-2 transition-colors',
+                                coach.status === status ? 'bg-primary-50 font-semibold text-primary-700' : 'text-warm-700 hover:bg-warm-50'
+                              )}>
+                              <span className="flex items-center">{statusConfig[status]?.icon}</span>
+                              <span>{statusConfig[status]?.label}</span>
                             </button>
                           ))}
                         </div>
@@ -373,47 +300,58 @@ export function CoachTable({
                   </td>
 
                   {/* Priority */}
-                  <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                  <td className="px-4 py-3">
+                    {coach.priority > 0 ? (
+                      <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded', priorityConfig[coach.priority]?.bgColor, priorityConfig[coach.priority]?.color)}>
+                        {priorityConfig[coach.priority]?.iconLabel} {priorityConfig[coach.priority]?.label}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-warm-300">—</span>
+                    )}
+                  </td>
+
+                  {/* Last Contact */}
+                  <td className="px-4 py-3">
+                    <span className={cn(
+                      'text-xs tabular-nums',
+                      !coach.last_contacted_at ? 'text-red-500 font-medium' : 'text-warm-500'
+                    )}>
+                      {formatRelativeDate(coach.last_contacted_at)}
+                    </span>
+                  </td>
+
+                  {/* Three-dot action menu */}
+                  <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                     <div className="relative">
                       <button
-                        onClick={() => setOpenDropdown(
-                          openDropdown?.id === coach.id && openDropdown.type === 'priority' 
-                            ? null 
-                            : { id: coach.id, type: 'priority' }
-                        )}
+                        onClick={e => { e.stopPropagation(); setOpenActionMenu(openActionMenu === coach.id ? null : coach.id); setOpenStatusDropdown(null); }}
                         className={cn(
-                          'inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors',
-                          priorityConfig[coach.priority]?.bgColor,
-                          priorityConfig[coach.priority]?.color,
-                          'hover:ring-2 hover:ring-warm-200'
+                          'p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100',
+                          'opacity-0 group-hover:opacity-100 transition-all duration-200'
                         )}
                       >
-                        {priorityConfig[coach.priority]?.icon} {priorityConfig[coach.priority]?.label}
-                        <span className="text-[10px] opacity-50 ml-1">▼</span>
+                        <MoreHorizontal size={16} />
                       </button>
-                      
-                      {openDropdown?.id === coach.id && openDropdown.type === 'priority' && (
-                        <div className={cn(
-                          'absolute z-50 mt-1.5 py-1.5 min-w-[120px]',
-                          'bg-white/95 backdrop-blur-xl rounded-xl',
-                          'border border-warm-200/50 shadow-lg'
-                        )}>
-                          {[2, 1, 0].map((p) => (
-                            <button
-                              key={p}
-                              onClick={() => {
-                                onPriorityChange(coach.id, p);
-                                setOpenDropdown(null);
-                              }}
-                              className={cn(
-                                'w-full text-left px-3 py-2 text-sm transition-colors flex items-center gap-2',
-                                coach.priority === p ? 'bg-warm-50' : 'hover:bg-warm-50',
-                                priorityConfig[p]?.color
-                              )}
-                            >
-                              {priorityConfig[p]?.icon} {priorityConfig[p]?.label}
-                            </button>
-                          ))}
+                      {openActionMenu === coach.id && (
+                        <div className="absolute right-0 top-full mt-1 z-50 w-48 py-1 rounded-xl bg-white border border-warm-200/80 shadow-xl" onClick={e => e.stopPropagation()}>
+                          <button onClick={() => { onLogContact(coach); setOpenActionMenu(null); }}
+                            className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 flex items-center gap-2">
+                            <MessageSquare size={14} /> Log Contact
+                          </button>
+                          {coach.email && (
+                            <a href={`mailto:${coach.email}`} onClick={() => setOpenActionMenu(null)}
+                              className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 flex items-center gap-2">
+                              <Mail size={14} /> Send Email
+                            </a>
+                          )}
+                          <button onClick={() => { onStatusChange(coach.id, 'researching'); setOpenActionMenu(null); }}
+                            className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 flex items-center gap-2">
+                            <ArrowRight size={14} /> Move to Researching
+                          </button>
+                          <button onClick={() => { onToggleStar(coach.id, coach.is_starred); setOpenActionMenu(null); }}
+                            className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 flex items-center gap-2">
+                            <Star size={14} /> {coach.is_starred ? 'Unstar' : 'Star'}
+                          </button>
                         </div>
                       )}
                     </div>
@@ -424,12 +362,12 @@ export function CoachTable({
           </tbody>
         </table>
       </div>
-      
-      {/* Footer */}
-      <div className="bg-warm-50/30 border-t border-warm-100/50 px-4 py-3 flex items-center justify-between">
+
+      {/* Pagination */}
+      <div className="bg-warm-50/20 border-t border-warm-100/30 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-4 text-sm text-warm-600">
           <span className="font-medium tabular-nums">
-            {((page - 1) * pageSize) + 1}-{Math.min(page * pageSize, sortedCoaches.length)} of {sortedCoaches.length}
+            {((page - 1) * pageSize) + 1}–{Math.min(page * pageSize, sortedCoaches.length)} of {sortedCoaches.length}
           </span>
           {selectedIds.size > 0 && (
             <span className="px-2 py-0.5 bg-primary-100 text-primary-700 rounded-lg text-xs font-semibold tabular-nums">
@@ -437,57 +375,45 @@ export function CoachTable({
             </span>
           )}
         </div>
-        
         <div className="flex items-center gap-3">
-          <select
-            value={pageSize}
-            onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
-            className={cn(
-              'text-sm px-2.5 py-1.5 rounded-lg',
-              'bg-white/60 border border-warm-200/50',
-              'focus:ring-2 focus:ring-primary-500 focus:border-transparent'
-            )}
-          >
-            {PAGE_SIZES.map(size => (
-              <option key={size} value={size}>{size}/page</option>
-            ))}
+          <select value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setPage(1); }}
+            className="text-sm px-2.5 py-1.5 rounded-lg bg-white/60 border border-warm-200/50 focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+            {PAGE_SIZES.map(s => <option key={s} value={s}>{s}/page</option>)}
           </select>
-          
           <div className="flex items-center gap-1">
-            <button
-              onClick={() => setPage(1)}
-              disabled={page === 1}
-              className="px-2 py-1 rounded-lg hover:bg-white/60 disabled:opacity-40 text-sm font-medium transition-colors"
-            >
-              ««
-            </button>
-            <button
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="px-2 py-1 rounded-lg hover:bg-white/60 disabled:opacity-40 text-sm font-medium transition-colors"
-            >
-              ‹
-            </button>
-            <span className="px-3 text-sm font-semibold text-warm-700 tabular-nums">
-              {page} / {totalPages}
-            </span>
-            <button
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="px-2 py-1 rounded-lg hover:bg-white/60 disabled:opacity-40 text-sm font-medium transition-colors"
-            >
-              ›
-            </button>
-            <button
-              onClick={() => setPage(totalPages)}
-              disabled={page === totalPages}
-              className="px-2 py-1 rounded-lg hover:bg-white/60 disabled:opacity-40 text-sm font-medium transition-colors"
-            >
-              »»
-            </button>
+            <PaginationButton onClick={() => setPage(1)} disabled={page === 1}>««</PaginationButton>
+            <PaginationButton onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>‹</PaginationButton>
+            <span className="px-3 text-sm font-semibold text-warm-700 tabular-nums">{page} / {totalPages}</span>
+            <PaginationButton onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>›</PaginationButton>
+            <PaginationButton onClick={() => setPage(totalPages)} disabled={page === totalPages}>»»</PaginationButton>
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+// ============================================================================
+// HELPER COMPONENTS
+// ============================================================================
+function TH({ field, label, onSort, children, className }: {
+  field: SortField; label: string; onSort: (f: SortField) => void; children: React.ReactNode; className?: string;
+}) {
+  return (
+    <th
+      className={cn('text-left px-4 py-3 text-[11px] font-semibold text-warm-500 uppercase tracking-wider cursor-pointer hover:text-warm-700 transition-colors', className)}
+      onClick={() => onSort(field)}
+    >
+      {label}{children}
+    </th>
+  );
+}
+
+function PaginationButton({ onClick, disabled, children }: { onClick: () => void; disabled: boolean; children: React.ReactNode }) {
+  return (
+    <button onClick={onClick} disabled={disabled}
+      className="px-2 py-1 rounded-lg hover:bg-white/60 disabled:opacity-40 text-sm font-medium transition-colors">
+      {children}
+    </button>
   );
 }

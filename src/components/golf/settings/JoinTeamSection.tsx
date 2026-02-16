@@ -164,8 +164,8 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
   return (
     <div className="bg-white rounded-2xl border border-warm-200 p-6">
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-          <IconUsers size={20} className="text-green-600" />
+        <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
+          <IconUsers size={20} className="text-primary-600" />
         </div>
         <div>
           <h3 className="font-semibold text-warm-900">Team Membership</h3>
@@ -176,15 +176,15 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
       {/* Current Team Status */}
       {currentTeam ? (
         <div className="mb-6">
-          <div className="flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-xl">
+          <div className="flex items-center justify-between p-4 bg-primary-50 border border-primary-200 rounded-xl">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
+              <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center">
                 <IconCheck size={20} className="text-white" />
               </div>
               <div>
-                <p className="font-medium text-green-900">{currentTeam.name}</p>
+                <p className="font-medium text-primary-900">{currentTeam.name}</p>
                 {currentTeam.organization?.name && (
-                  <p className="text-sm text-green-700">{currentTeam.organization.name}</p>
+                  <p className="text-sm text-primary-700">{currentTeam.organization.name}</p>
                 )}
               </div>
             </div>
@@ -254,7 +254,9 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
                   >
                     {cancellingId === request.id ? (
                       <span className="flex items-center gap-1">
-                        <span className="w-3 h-3 border-2 border-amber-600 border-t-transparent rounded-full animate-spin" />
+                        <span className="w-1 h-1 rounded-full bg-amber-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                        <span className="w-1 h-1 rounded-full bg-amber-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                        <span className="w-1 h-1 rounded-full bg-amber-600 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
                       </span>
                     ) : (
                       <>
@@ -312,7 +314,7 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
                 type="submit"
                 disabled={!inviteCode.trim() || loading}
                 isLoading={loading}
-                className="w-full bg-green-600 hover:bg-green-700"
+                className="w-full bg-primary-600 hover:bg-primary-700"
               >
                 Request to Join
               </Button>
@@ -327,9 +329,9 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
           )}
 
           {success && (
-            <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-              <IconCheck size={16} className="text-green-600 flex-shrink-0" />
-              <p className="text-sm text-green-600">{success}</p>
+            <div className="flex items-center gap-2 p-3 bg-primary-50 border border-primary-200 rounded-lg">
+              <IconCheck size={16} className="text-primary-600 flex-shrink-0" />
+              <p className="text-sm text-primary-600">{success}</p>
             </div>
           )}
         </form>

@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { IconX, IconFile, IconImage, IconVideo, IconUpload, IconAlertCircle, IconMusic } from '@/components/icons';
+import { IconX, IconFile, IconImage, IconVideo, IconAlertCircle, IconMusic } from '@/components/icons';
 import {
   type PendingAttachment,
   formatFileSize,
@@ -126,9 +126,11 @@ function AttachmentPreviewItem({ attachment, onRemove }: AttachmentPreviewItemPr
       {/* Upload Progress Overlay */}
       {status === 'uploading' && (
         <div className="absolute inset-0 bg-white/80 flex flex-col items-center justify-center">
-          <div className="animate-spin">
-            <IconUpload size={18} className="text-green-600" />
-          </div>
+          <span className="flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+          </span>
           <span className="text-xs text-warm-600 mt-1">{uploadProgress}%</span>
         </div>
       )}
@@ -147,7 +149,7 @@ function AttachmentPreviewItem({ attachment, onRemove }: AttachmentPreviewItemPr
       {status === 'uploading' && (
         <div className="absolute bottom-0 left-0 right-0 h-1 bg-warm-200">
           <div
-            className="h-full bg-green-500 transition-all duration-200"
+            className="h-full bg-primary-500 transition-all duration-200"
             style={{ width: `${uploadProgress}%` }}
           />
         </div>
@@ -187,7 +189,7 @@ function FileTypeIcon({ mimeType }: { mimeType: string }) {
     return <span className="text-xs font-bold text-blue-500">DOC</span>;
   }
   if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) {
-    return <span className="text-xs font-bold text-green-500">XLS</span>;
+    return <span className="text-xs font-bold text-primary-500">XLS</span>;
   }
   return <IconFile size={20} className="text-warm-500" />;
 }

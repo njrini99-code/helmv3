@@ -95,12 +95,12 @@ export function MobileEventCard({
   // Get accent color based on event type (matches event-styles.ts)
   const getAccentColor = () => {
     switch (event.event_type) {
-      case 'practice': return 'bg-stone-400';
-      case 'tournament': return 'bg-emerald-600';
+      case 'practice': return 'bg-warm-400';
+      case 'tournament': return 'bg-primary-600';
       case 'qualifier': return 'bg-amber-500';
       case 'meeting': return 'bg-sky-500';
       case 'travel': return 'bg-purple-500';
-      default: return 'bg-stone-400';
+      default: return 'bg-warm-400';
     }
   };
 
@@ -128,7 +128,7 @@ export function MobileEventCard({
         onClick={handleCardClick}
         className={cn(
           'w-full text-left pl-4 pr-3 py-4',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-green-500'
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-500'
         )}
       >
         <div className="flex items-start gap-3">
@@ -141,7 +141,7 @@ export function MobileEventCard({
                   <span className={cn(
                     'text-xs font-bold uppercase tracking-wide px-2 py-0.5 rounded-md',
                     relativeLabel === 'Today'
-                      ? 'bg-green-500/10 text-green-700'
+                      ? 'bg-primary-500/10 text-primary-700'
                       : 'bg-warm-100 text-warm-500'
                   )}>
                     {relativeLabel}
@@ -187,7 +187,7 @@ export function MobileEventCard({
             {userRsvpStatus && (
               <div className={cn(
                 'w-8 h-8 rounded-xl flex items-center justify-center font-bold text-sm',
-                userRsvpStatus === 'accepted' && 'bg-green-500/10 text-green-600',
+                userRsvpStatus === 'accepted' && 'bg-primary-500/10 text-primary-600',
                 userRsvpStatus === 'tentative' && 'bg-amber-500/10 text-amber-600',
                 userRsvpStatus === 'declined' && 'bg-rose-500/10 text-rose-500'
               )}>
@@ -304,7 +304,7 @@ export function MobileEmptyEventsState({
   return (
     <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
       <div className="relative mb-6">
-        <div className="absolute inset-0 bg-green-500/10 rounded-3xl blur-2xl scale-150" />
+        <div className="absolute inset-0 bg-primary-500/10 rounded-3xl blur-2xl scale-150" />
         <div className="relative w-20 h-20 rounded-3xl bg-gradient-to-br from-warm-50 to-warm-100 border border-warm-200/50 flex items-center justify-center shadow-sm">
           <Calendar className="w-10 h-10 text-warm-300" />
         </div>
@@ -324,9 +324,9 @@ export function MobileEmptyEventsState({
           className={cn(
             'group flex items-center gap-2',
             'px-5 py-2.5 rounded-2xl font-semibold text-sm',
-            'bg-green-600 text-white',
-            'shadow-lg shadow-green-600/20',
-            'hover:bg-green-700 hover:shadow-green-600/25',
+            'bg-primary-600 text-white',
+            'shadow-lg shadow-primary-600/20',
+            'hover:bg-primary-700 hover:shadow-primary-600/25',
             'active:scale-95',
             'transition-all duration-200'
           )}

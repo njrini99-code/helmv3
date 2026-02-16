@@ -171,8 +171,8 @@ export function AbsenceReasonSheet({
               <div
                 className={cn(
                   'w-11 h-6 rounded-full transition-colors',
-                  'peer-focus:ring-4 peer-focus:ring-green-100',
-                  isExcused ? 'bg-green-600' : 'bg-warm-300'
+                  'peer-focus:ring-4 peer-focus:ring-primary-100',
+                  isExcused ? 'bg-primary-600' : 'bg-warm-300'
                 )}
               >
                 <div

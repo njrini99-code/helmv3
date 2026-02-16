@@ -11,19 +11,19 @@ interface Props {
 }
 
 const statusColors = {
-  healthy: 'bg-emerald-500',
+  healthy: 'bg-primary-500',
   warning: 'bg-amber-500',
   critical: 'bg-red-500',
 };
 
 const statusBg = {
-  healthy: 'bg-emerald-50/50',
+  healthy: 'bg-primary-50/50',
   warning: 'bg-amber-50/50',
   critical: 'bg-red-50/50',
 };
 
 const statusText = {
-  healthy: 'text-emerald-700',
+  healthy: 'text-primary-700',
   warning: 'text-amber-700',
   critical: 'text-red-700',
 };

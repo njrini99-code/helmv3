@@ -121,9 +121,9 @@ export function InsightsFeed({
     <div className="space-y-3 overflow-hidden">
       {/* Header - Compact for narrow dashboard column */}
       <div className="relative overflow-hidden rounded-xl border border-white/70 bg-white/70 px-3 py-3 shadow-glass-sm backdrop-blur-xl">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-white/0 to-emerald-400/10 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-white/0 to-primary-400/10 pointer-events-none" />
         <div className="absolute -right-8 -top-8 h-20 w-20 rounded-full bg-primary-500/10 blur-2xl pointer-events-none" />
-        <div className="absolute -bottom-8 -left-6 h-16 w-16 rounded-full bg-emerald-400/10 blur-2xl pointer-events-none" />
+        <div className="absolute -bottom-8 -left-6 h-16 w-16 rounded-full bg-primary-400/10 blur-2xl pointer-events-none" />
 
         <div className="relative flex flex-col gap-2.5">
           <div className="flex items-center gap-2.5 min-w-0">
@@ -152,7 +152,7 @@ export function InsightsFeed({
               'w-full inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wide transition-all',
               isPending
                 ? 'bg-warm-200 text-warm-500 cursor-not-allowed'
-                : 'bg-gradient-to-r from-primary-500 to-emerald-500 text-white shadow-glass hover:shadow-glass-hover'
+                : 'bg-gradient-to-r from-primary-500 to-primary-500 text-white shadow-glass hover:shadow-glass-hover'
             )}
           >
             {isPending ? (
@@ -312,7 +312,7 @@ function EmptyState({
 }) {
   return (
     <div className="relative overflow-hidden rounded-xl border border-white/70 bg-white/70 px-3 py-6 text-center shadow-glass-sm">
-      <div className="absolute inset-0 bg-gradient-to-br from-primary-500/8 via-white/0 to-emerald-400/8 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-br from-primary-500/8 via-white/0 to-primary-400/8 pointer-events-none" />
       <div className="relative flex flex-col items-center">
         <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-white/80 shadow-glass-sm text-primary-600">
           {icon}

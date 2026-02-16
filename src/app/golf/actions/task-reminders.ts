@@ -440,7 +440,7 @@ async function sendEmailNotification(task: GolfTask): Promise<void> {
 
               <h2 style="color: #1c1917; margin-bottom: 16px; font-size: 20px;">Task Reminder</h2>
 
-              <div style="background-color: #FFFEFA; border: 1px solid #E2E8F0; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+              <div style="background-color: #FFFEFA; border: 1px solid #e7e5e4; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
                 <h3 style="color: #16A34A; margin: 0 0 12px 0; font-size: 18px;">${escapeHtml(task.title)}</h3>
                 ${task.description ? `<p style="color: #525252; margin: 0 0 12px 0; font-size: 14px; line-height: 1.5;">${escapeHtml(task.description)}</p>` : ''}
                 <p style="color: #78716c; margin: 0; font-size: 14px;">

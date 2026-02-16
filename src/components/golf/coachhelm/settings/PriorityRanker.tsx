@@ -48,7 +48,7 @@ function SortableItem({ metric, rank }: { metric: PriorityMetric; rank: number }
             className={cn(
                 'flex items-center gap-4 p-4 rounded-xl border bg-white transition-all duration-150',
                 isDragging
-                    ? 'shadow-xl border-green-300 scale-[1.02] z-10 relative'
+                    ? 'shadow-xl border-primary-300 scale-[1.02] z-10 relative'
                     : 'border-warm-200 hover:border-warm-300'
             )}
         >
@@ -68,8 +68,8 @@ function SortableItem({ metric, rank }: { metric: PriorityMetric; rank: number }
             <div
                 className={cn(
                     'w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold',
-                    rank === 1 && 'bg-green-100 text-green-700',
-                    rank === 2 && 'bg-green-50 text-green-600',
+                    rank === 1 && 'bg-primary-100 text-primary-700',
+                    rank === 2 && 'bg-primary-50 text-primary-600',
                     rank === 3 && 'bg-warm-100 text-warm-600',
                     rank === 4 && 'bg-warm-50 text-warm-500',
                     rank === 5 && 'bg-warm-50 text-warm-400'
@@ -90,7 +90,7 @@ function SortableItem({ metric, rank }: { metric: PriorityMetric; rank: number }
             {/* Priority bar */}
             <div className="w-12 h-1.5 bg-warm-100 rounded-full overflow-hidden">
                 <div
-                    className="h-full bg-green-500 rounded-full transition-all duration-300"
+                    className="h-full bg-primary-500 rounded-full transition-all duration-300"
                     style={{ width: `${(6 - rank) * 20}%` }}
                 />
             </div>

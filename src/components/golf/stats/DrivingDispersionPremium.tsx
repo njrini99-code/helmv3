@@ -182,7 +182,7 @@ function FairwayVisualization({
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
       >
-        <rect x="105" y="125" width="30" height="10" rx="2" fill="#64748b" />
+        <rect x="105" y="125" width="30" height="10" rx="2" fill="#78716c" />
         <text x="120" y="133" textAnchor="middle" fontSize="6" fill="white" fontWeight="500">
           TEE
         </text>
@@ -271,10 +271,10 @@ function ZoneStatCard({
 }) {
   const colorClasses = {
     green: {
-      bg: 'bg-green-50/80',
-      border: 'border-green-200/60',
-      text: 'text-green-700',
-      ring: 'ring-green-500/40',
+      bg: 'bg-primary-50/80',
+      border: 'border-primary-200/60',
+      text: 'text-primary-700',
+      ring: 'ring-primary-500/40',
     },
     red: {
       bg: 'bg-red-50/80',
@@ -380,7 +380,7 @@ export const DrivingDispersionPremium = memo(function DrivingDispersionPremium({
           </div>
           <div className="text-right">
             <motion.div
-              className="text-4xl font-bold text-green-600 tabular-nums tracking-tight leading-none"
+              className="text-4xl font-bold text-primary-600 tabular-nums tracking-tight leading-none"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.1, type: 'spring', stiffness: 200 }}
@@ -416,7 +416,7 @@ export const DrivingDispersionPremium = memo(function DrivingDispersionPremium({
               <span
                 className={cn(
                   'inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium',
-                  hoveredZone === 'fairway' && 'bg-green-100 text-green-700',
+                  hoveredZone === 'fairway' && 'bg-primary-100 text-primary-700',
                   hoveredZone === 'left' && 'bg-red-100 text-red-700',
                   hoveredZone === 'right' && 'bg-orange-100 text-orange-700',
                 )}
@@ -491,7 +491,7 @@ export const DrivingDispersionPremium = memo(function DrivingDispersionPremium({
               <div className="flex items-center gap-3">
                 <div className="w-24 h-2 bg-warm-100 rounded-full overflow-hidden">
                   <motion.div
-                    className="h-full bg-green-500 rounded-full"
+                    className="h-full bg-primary-500 rounded-full"
                     initial={{ width: 0 }}
                     animate={{ width: `${driverFairwayPct}%` }}
                     transition={{ delay: 0.4, duration: 0.5 }}

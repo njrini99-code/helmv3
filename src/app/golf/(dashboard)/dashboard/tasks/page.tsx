@@ -164,7 +164,7 @@ export default function GolfTasksPage() {
                 onClick={toggleMobile}
                 className={cn(
                   'lg:hidden p-2.5 -ml-2 rounded-xl',
-                  'text-slate-500 hover:text-slate-700 hover:bg-slate-100/80',
+                  'text-warm-500 hover:text-warm-700 hover:bg-warm-100/80',
                   'transition-colors duration-150 active:scale-95',
                   'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
                 )}
@@ -172,17 +172,17 @@ export default function GolfTasksPage() {
               >
                 <IconMenu size={22} />
               </button>
-              <h1 className="text-2xl font-semibold text-slate-900">Tasks</h1>
+              <h1 className="text-2xl font-semibold text-warm-900">Tasks</h1>
               {/* Real-time indicator */}
-              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-primary-600 bg-primary-50 px-2 py-1 rounded-full">
                 <span className="relative flex h-1.5 w-1.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500" />
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary-500" />
                 </span>
                 Live
               </span>
             </div>
-            <p className="text-slate-500 mt-1">
+            <p className="text-warm-500 mt-1">
               {userRole === 'coach' ? 'Assign and track player tasks' : 'View and complete your assigned tasks'}
             </p>
           </div>
@@ -241,8 +241,8 @@ export default function GolfTasksPage() {
             className={cn(
               'px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap',
               filter === 'all'
-                ? 'bg-green-600 text-white shadow-md'
-                : 'bg-white text-slate-600 hover:bg-slate-50 shadow-sm'
+                ? 'bg-primary-600 text-white shadow-md'
+                : 'bg-white text-warm-600 hover:bg-warm-50 shadow-sm'
             )}
           >
             All ({tasks.length})
@@ -254,8 +254,8 @@ export default function GolfTasksPage() {
             className={cn(
               'px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap relative',
               filter === 'active'
-                ? 'bg-green-600 text-white shadow-md'
-                : 'bg-white text-slate-600 hover:bg-slate-50 shadow-sm'
+                ? 'bg-primary-600 text-white shadow-md'
+                : 'bg-white text-warm-600 hover:bg-warm-50 shadow-sm'
             )}
           >
             Active ({activeCount})
@@ -272,8 +272,8 @@ export default function GolfTasksPage() {
             className={cn(
               'px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap',
               filter === 'completed'
-                ? 'bg-green-600 text-white shadow-md'
-                : 'bg-white text-slate-600 hover:bg-slate-50 shadow-sm'
+                ? 'bg-primary-600 text-white shadow-md'
+                : 'bg-white text-warm-600 hover:bg-warm-50 shadow-sm'
             )}
           >
             Completed ({completedCount})
@@ -300,16 +300,16 @@ export default function GolfTasksPage() {
                 <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/20 shadow-lg overflow-hidden">
                   <button
                     onClick={() => setShowTemplates(!showTemplates)}
-                    className="w-full flex items-center justify-between p-4 hover:bg-slate-50/50 transition-colors"
+                    className="w-full flex items-center justify-between p-4 hover:bg-warm-50/50 transition-colors"
                   >
                     <div className="flex items-center gap-2">
-                      <IconClipboardList size={18} className="text-slate-600" />
-                      <span className="font-semibold text-slate-900">Templates</span>
+                      <IconClipboardList size={18} className="text-warm-600" />
+                      <span className="font-semibold text-warm-900">Templates</span>
                     </div>
                     {showTemplates ? (
-                      <IconChevronDown size={18} className="text-slate-400" />
+                      <IconChevronDown size={18} className="text-warm-400" />
                     ) : (
-                      <IconChevronRight size={18} className="text-slate-400" />
+                      <IconChevronRight size={18} className="text-warm-400" />
                     )}
                   </button>
 
@@ -319,8 +319,8 @@ export default function GolfTasksPage() {
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="border-t border-slate-200"
+                        transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
+                        className="border-t border-warm-200"
                       >
                         <div className="p-4">
                           <TaskTemplateList
@@ -340,17 +340,17 @@ export default function GolfTasksPage() {
                   transition={{ delay: 0.3 }}
                   className="mt-4 bg-white/70 backdrop-blur-xl rounded-2xl border border-white/20 shadow-lg p-4"
                 >
-                  <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">
+                  <h3 className="text-sm font-semibold text-warm-400 uppercase tracking-wider mb-3">
                     Quick Stats
                   </h3>
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="text-center p-3 bg-slate-50 rounded-lg">
-                      <p className="text-2xl font-semibold text-slate-900">{activeCount}</p>
-                      <p className="text-xs text-slate-500">Active</p>
+                    <div className="text-center p-3 bg-warm-50 rounded-lg">
+                      <p className="text-2xl font-semibold text-warm-900">{activeCount}</p>
+                      <p className="text-xs text-warm-500">Active</p>
                     </div>
-                    <div className="text-center p-3 bg-green-50 rounded-lg">
-                      <p className="text-2xl font-semibold text-green-600">{completedCount}</p>
-                      <p className="text-xs text-slate-500">Completed</p>
+                    <div className="text-center p-3 bg-primary-50 rounded-lg">
+                      <p className="text-2xl font-semibold text-primary-600">{completedCount}</p>
+                      <p className="text-xs text-warm-500">Completed</p>
                     </div>
                   </div>
                   {stats.overdue_tasks > 0 && (

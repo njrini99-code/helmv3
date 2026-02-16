@@ -47,15 +47,15 @@ const QUICK_ACTIONS: QuickAction[] = [
     type: 'practice',
     label: 'Practice',
     icon: Dumbbell,
-    color: 'text-stone-700',
-    bgColor: 'bg-stone-100',
+    color: 'text-warm-700',
+    bgColor: 'bg-warm-100',
   },
   {
     type: 'tournament',
     label: 'Tournament',
     icon: Trophy,
-    color: 'text-emerald-700',
-    bgColor: 'bg-emerald-100',
+    color: 'text-primary-700',
+    bgColor: 'bg-primary-100',
   },
   {
     type: 'qualifier',
@@ -203,7 +203,7 @@ export function QuickAddEventFAB({
                   'transition-all duration-200',
                   'hover:shadow-xl active:scale-95',
                   'touch-manipulation',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40'
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
                 )}
                 style={{
                   transitionDelay: isExpanded ? `${(QUICK_ACTIONS.length - 1 - index) * 50}ms` : '0ms',
@@ -233,7 +233,7 @@ export function QuickAddEventFAB({
               'transition-all duration-200',
               'hover:shadow-xl active:scale-95',
               'touch-manipulation',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40'
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
             )}
             style={{
               transitionDelay: isExpanded ? `${QUICK_ACTIONS.length * 50}ms` : '0ms',
@@ -261,10 +261,10 @@ export function QuickAddEventFAB({
             'flex items-center justify-center',
             'transition-all duration-300 ease-out',
             'touch-manipulation',
-            'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-300',
+            'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-300',
             isExpanded
-              ? 'bg-emerald-800 rotate-0 rounded-xl'
-              : 'bg-emerald-600 hover:bg-emerald-500 hover:scale-105 shadow-lg shadow-emerald-600/40',
+              ? 'bg-primary-800 rotate-0 rounded-xl'
+              : 'bg-primary-600 hover:bg-primary-500 hover:scale-105 shadow-lg shadow-primary-600/40',
             'active:scale-95',
             disabled && 'opacity-50 cursor-not-allowed'
           )}
@@ -313,12 +313,12 @@ export function SimpleAddEventFAB({
       className={cn(
         'fixed right-4 z-40',
         'w-14 h-14 rounded-full',
-        'bg-emerald-600 hover:bg-emerald-700',
+        'bg-primary-600 hover:bg-primary-700',
         'flex items-center justify-center',
         'shadow-xl hover:shadow-2xl',
         'transition-all duration-200',
         'touch-manipulation',
-        'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-300',
+        'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary-300',
         'hover:scale-105 active:scale-95',
         disabled && 'opacity-50 cursor-not-allowed',
         className
@@ -359,9 +359,9 @@ export function MiniAddEventButton({
       className={cn(
         'inline-flex items-center gap-2',
         'px-4 py-2.5 rounded-xl',
-        'bg-emerald-600 text-white',
+        'bg-primary-600 text-white',
         'font-semibold text-sm',
-        'hover:bg-emerald-700 active:scale-95',
+        'hover:bg-primary-700 active:scale-95',
         'transition-all duration-200',
         'touch-manipulation min-h-[44px]',
         className

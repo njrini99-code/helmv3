@@ -215,6 +215,7 @@ export function CoachAlertCenter({
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
           exit={{ opacity: 0, height: 0 }}
+          transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
           className="p-3 bg-red-50 border border-red-100 rounded-xl text-sm text-red-600"
         >
           {error}
@@ -270,9 +271,9 @@ function EmptyAlertState() {
     >
       <div className={cn(
         'w-12 h-12 rounded-full flex items-center justify-center mb-3',
-        'bg-gradient-to-br from-green-100 to-emerald-100'
+        'bg-gradient-to-br from-primary-100 to-primary-100'
       )}>
-        <IconBell size={24} className="text-green-600" />
+        <IconBell size={24} className="text-primary-600" />
       </div>
       <h4 className="text-sm font-semibold text-warm-700 mb-1">
         All Clear!

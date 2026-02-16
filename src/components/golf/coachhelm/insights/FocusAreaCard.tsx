@@ -18,7 +18,7 @@ export function FocusAreaCard({ focusArea, onClick }: FocusAreaCardProps) {
     <GlassCard
       className={cn(
         'group transition-all duration-200',
-        onClick && 'cursor-pointer hover:shadow-md hover:border-green-200'
+        onClick && 'cursor-pointer hover:shadow-md hover:border-primary-200'
       )}
       padding="md"
       onClick={onClick}
@@ -28,8 +28,8 @@ export function FocusAreaCard({ focusArea, onClick }: FocusAreaCardProps) {
         <div
           className={cn(
             'w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0',
-            focusArea.priority === 1 && 'bg-green-100 text-green-700',
-            focusArea.priority === 2 && 'bg-green-50 text-green-600',
+            focusArea.priority === 1 && 'bg-primary-100 text-primary-700',
+            focusArea.priority === 2 && 'bg-primary-50 text-primary-600',
             focusArea.priority === 3 && 'bg-warm-100 text-warm-600',
             focusArea.priority === 4 && 'bg-warm-50 text-warm-500',
             focusArea.priority === 5 && 'bg-warm-50 text-warm-400'
@@ -52,7 +52,7 @@ export function FocusAreaCard({ focusArea, onClick }: FocusAreaCardProps) {
 
           {/* Target Improvement */}
           {focusArea.target_improvement && (
-            <div className="mt-2 inline-flex items-center gap-2 px-2 py-1 bg-green-50 text-green-700 text-xs font-medium rounded-full">
+            <div className="mt-2 inline-flex items-center gap-2 px-2 py-1 bg-primary-50 text-primary-700 text-xs font-medium rounded-full">
               🎯 {focusArea.target_improvement}
             </div>
           )}
@@ -69,7 +69,7 @@ export function FocusAreaCard({ focusArea, onClick }: FocusAreaCardProps) {
         {onClick && (
           <IconChevronRight
             size={16}
-            className="text-warm-300 group-hover:text-green-500 transition-colors flex-shrink-0"
+            className="text-warm-300 group-hover:text-primary-500 transition-colors flex-shrink-0"
           />
         )}
       </div>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { cn } from '@/lib/utils';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
@@ -41,8 +42,8 @@ const FORMAT_OPTIONS: {
     label: 'CSV',
     description: 'Spreadsheet format for Excel, Google Sheets',
     icon: (
-      <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
-        <span className="text-sm font-bold text-green-700">CSV</span>
+      <div className="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center">
+        <span className="text-sm font-bold text-primary-700">CSV</span>
       </div>
     ),
   },
@@ -68,6 +69,7 @@ export function InsightExportModal({
   selectedIds,
   onExportComplete,
 }: InsightExportModalProps) {
+  const { modalRef } = useFocusTrap(open, onClose);
   const [selectedFormat, setSelectedFormat] = useState<ExportFormat>('csv');
   const [isExporting, setIsExporting] = useState(false);
   const [exportResult, setExportResult] = useState<{
@@ -135,7 +137,7 @@ export function InsightExportModal({
       title="Export Insights"
       description={`Export ${selectedIds.length} selected insight${selectedIds.length !== 1 ? 's' : ''}`}
     >
-      <div className="space-y-6">
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="modal-title" className="space-y-6">
         {/* Format Selection */}
         <div>
           <label className="block text-sm font-medium text-warm-700 mb-3">
@@ -199,7 +201,7 @@ export function InsightExportModal({
             className={cn(
               'p-3 rounded-lg text-sm',
               exportResult.success
-                ? 'bg-green-50 text-green-700'
+                ? 'bg-primary-50 text-primary-700'
                 : 'bg-red-50 text-red-700'
             )}
           >

@@ -40,7 +40,7 @@ const operatorLabels: Record<ConditionOperator, string> = {
 };
 
 const trendIcons = {
-  strengthening: { icon: IconTrendingUp, color: 'text-green-500', label: 'Strengthening' },
+  strengthening: { icon: IconTrendingUp, color: 'text-primary-500', label: 'Strengthening' },
   stable: { icon: IconMinus, color: 'text-warm-400', label: 'Stable' },
   weakening: { icon: IconTrendingDown, color: 'text-amber-500', label: 'Weakening' },
   new: { icon: IconTarget, color: 'text-blue-500', label: 'New' },
@@ -62,7 +62,7 @@ export function PatternDetailsView({ pattern, compact = false }: PatternDetailsV
         <div className="text-sm">
           <span className="font-medium text-blue-600">IF </span>
           <span className="text-warm-700">{conditions}</span>
-          <span className="font-medium text-green-600"> THEN </span>
+          <span className="font-medium text-primary-600"> THEN </span>
           <span className="text-warm-700">{outcome}</span>
         </div>
 
@@ -79,7 +79,7 @@ export function PatternDetailsView({ pattern, compact = false }: PatternDetailsV
             <span
               className={cn(
                 'font-medium',
-                isPositiveImpact ? 'text-green-600' : 'text-red-600'
+                isPositiveImpact ? 'text-primary-600' : 'text-red-600'
               )}
             >
               {isPositiveImpact ? '' : '+'}
@@ -106,7 +106,7 @@ export function PatternDetailsView({ pattern, compact = false }: PatternDetailsV
             <p className="text-sm text-warm-700">{conditions}</p>
           </div>
           <div className="flex items-start gap-2">
-            <span className="flex-shrink-0 px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded">
+            <span className="flex-shrink-0 px-2 py-0.5 bg-primary-100 text-primary-700 text-xs font-medium rounded">
               THEN
             </span>
             <p className="text-sm text-warm-700">{outcome}</p>
@@ -175,7 +175,7 @@ export function PatternDetailsView({ pattern, compact = false }: PatternDetailsV
             <span
               className={cn(
                 'text-lg font-semibold',
-                isPositiveImpact ? 'text-green-600' : 'text-red-600'
+                isPositiveImpact ? 'text-primary-600' : 'text-red-600'
               )}
             >
               {isPositiveImpact ? '' : '+'}
@@ -189,7 +189,7 @@ export function PatternDetailsView({ pattern, compact = false }: PatternDetailsV
               className={cn(
                 'absolute inset-y-0 rounded-full',
                 isPositiveImpact
-                  ? 'right-1/2 bg-green-500'
+                  ? 'right-1/2 bg-primary-500'
                   : 'left-1/2 bg-red-500'
               )}
               style={{
@@ -235,16 +235,16 @@ export function PatternDetailsView({ pattern, compact = false }: PatternDetailsV
       </div>
 
       {/* Actionability score */}
-      <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
+      <div className="bg-gradient-to-r from-primary-50 to-primary-50 border border-primary-200 rounded-xl p-4">
         <div className="flex items-center justify-between mb-2">
           <h4 className="text-sm font-medium text-warm-900">Actionability Score</h4>
-          <span className="text-lg font-semibold text-green-600">
+          <span className="text-lg font-semibold text-primary-600">
             {Math.round(pattern.actionability * 100)}%
           </span>
         </div>
-        <div className="h-2 bg-green-200 rounded-full overflow-hidden">
+        <div className="h-2 bg-primary-200 rounded-full overflow-hidden">
           <div
-            className="h-full bg-green-600 rounded-full"
+            className="h-full bg-primary-600 rounded-full"
             style={{ width: `${pattern.actionability * 100}%` }}
           />
         </div>
@@ -285,14 +285,14 @@ function MetricCard({
     <div
       className={cn(
         'bg-white border rounded-lg p-3',
-        highlight ? 'border-green-200 bg-green-50' : 'border-warm-200'
+        highlight ? 'border-primary-200 bg-primary-50' : 'border-warm-200'
       )}
     >
       <p className="text-xs text-warm-500 mb-1">{label}</p>
       <p
         className={cn(
           'text-lg font-semibold',
-          highlight ? 'text-green-600' : 'text-warm-900'
+          highlight ? 'text-primary-600' : 'text-warm-900'
         )}
       >
         {value}

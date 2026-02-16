@@ -1079,6 +1079,11 @@ export async function acknowledgeInsight(insightId: string) {
   const supabase = await createClient();
 
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
       .from('golf_coach_insights')
@@ -1109,6 +1114,11 @@ export async function dismissInsight(insightId: string) {
   const supabase = await createClient();
 
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
       .from('golf_coach_insights')
@@ -1138,6 +1148,11 @@ export async function resolveInsight(insightId: string) {
   const supabase = await createClient();
 
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error } = await (supabase as any)
       .from('golf_coach_insights')
@@ -1249,6 +1264,11 @@ export async function getPlayerFocusAreas(playerId: string) {
   const supabase = await createClient();
 
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated', focus_areas: [] };
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: focusAreas, error } = await (supabase as any)
       .from('golf_player_focus_areas')

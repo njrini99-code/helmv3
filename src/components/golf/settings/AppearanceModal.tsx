@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { useToast } from '@/components/ui/toast';
+import { useAppearancePreferences } from '@/hooks/golf/use-appearance-preferences';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -15,12 +17,14 @@ type DisplayDensity = 'comfortable' | 'compact';
 type DateFormat = 'MM/DD/YYYY' | 'DD/MM/YYYY' | 'YYYY-MM-DD';
 
 export function AppearanceModal({ isOpen, onClose }: AppearanceModalProps) {
+  const { modalRef } = useFocusTrap(isOpen, onClose);
   const [loading, setLoading] = useState(false);
   const [loadingPrefs, setLoadingPrefs] = useState(true);
   const [density, setDensity] = useState<DisplayDensity>('comfortable');
   const [dateFormat, setDateFormat] = useState<DateFormat>('MM/DD/YYYY');
   const [showAnimations, setShowAnimations] = useState(true);
   const { showToast } = useToast();
+  const { updatePreferences } = useAppearancePreferences();
 
   useEffect(() => {
     if (isOpen) {
@@ -49,12 +53,11 @@ export function AppearanceModal({ isOpen, onClose }: AppearanceModalProps) {
     setLoading(true);
 
     try {
-      const prefs = {
-        display_density: density,
-        date_format: dateFormat,
-        show_animations: showAnimations,
-      };
-      localStorage.setItem('golf_appearance_preferences', JSON.stringify(prefs));
+      updatePreferences({
+        displayDensity: density,
+        dateFormat,
+        showAnimations,
+      });
 
       showToast('Appearance preferences updated', 'success');
       onClose();
@@ -67,9 +70,14 @@ export function AppearanceModal({ isOpen, onClose }: AppearanceModalProps) {
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Appearance">
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="modal-title">
       {loadingPrefs ? (
         <div className="flex items-center justify-center py-8">
-          <div className="animate-spin h-6 w-6 border-2 border-emerald-600 border-t-transparent rounded-full" />
+          <span className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+          </span>
         </div>
       ) : (
         <div className="space-y-6">
@@ -81,7 +89,7 @@ export function AppearanceModal({ isOpen, onClose }: AppearanceModalProps) {
                 className={cn(
                   'p-4 rounded-lg border-2 text-left transition-all',
                   density === 'comfortable'
-                    ? 'border-emerald-600 bg-emerald-50'
+                    ? 'border-primary-600 bg-primary-50'
                     : 'border-warm-200 hover:border-warm-300'
                 )}
               >
@@ -93,7 +101,7 @@ export function AppearanceModal({ isOpen, onClose }: AppearanceModalProps) {
                 className={cn(
                   'p-4 rounded-lg border-2 text-left transition-all',
                   density === 'compact'
-                    ? 'border-emerald-600 bg-emerald-50'
+                    ? 'border-primary-600 bg-primary-50'
                     : 'border-warm-200 hover:border-warm-300'
                 )}
               >
@@ -113,7 +121,7 @@ export function AppearanceModal({ isOpen, onClose }: AppearanceModalProps) {
                   className={cn(
                     'w-full p-3 rounded-lg border-2 text-left transition-all flex items-center justify-between',
                     dateFormat === format
-                      ? 'border-emerald-600 bg-emerald-50'
+                      ? 'border-primary-600 bg-primary-50'
                       : 'border-warm-200 hover:border-warm-300'
                   )}
                 >
@@ -139,7 +147,7 @@ export function AppearanceModal({ isOpen, onClose }: AppearanceModalProps) {
               </div>
               <div className={cn(
                 'w-11 h-6 rounded-full transition-colors relative flex-shrink-0',
-                showAnimations ? 'bg-emerald-600' : 'bg-warm-200'
+                showAnimations ? 'bg-primary-600' : 'bg-warm-200'
               )}>
                 <div className={cn(
                   'absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform',
@@ -159,6 +167,7 @@ export function AppearanceModal({ isOpen, onClose }: AppearanceModalProps) {
           </div>
         </div>
       )}
+      </div>
     </Modal>
   );
 }

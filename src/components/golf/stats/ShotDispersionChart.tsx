@@ -158,7 +158,7 @@ export function DrivingDispersionVisualLegacy({
       {/* Header */}
       <div className="px-6 py-5 border-b border-warm-100 relative overflow-hidden">
         {/* Subtle gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-green-50/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary-50/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
         <div className="flex items-start justify-between relative">
           <motion.div
@@ -175,7 +175,7 @@ export function DrivingDispersionVisualLegacy({
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2, type: 'spring' }}
           >
-            <div className="text-3xl font-bold text-green-600 tabular-nums tracking-tight">
+            <div className="text-3xl font-bold text-primary-600 tabular-nums tracking-tight">
               {animatedFairway.toFixed(0)}%
             </div>
             <div className="text-xs font-medium text-warm-400 uppercase tracking-wide">Fairways</div>
@@ -339,7 +339,7 @@ export function DrivingDispersionVisualLegacy({
               x="35" y="95"
               textAnchor="middle"
               fontSize="10"
-              fill={isHovered === 'left' ? '#ef4444' : '#64748b'}
+              fill={isHovered === 'left' ? '#ef4444' : '#78716c'}
               fontWeight={isHovered === 'left' ? '600' : '500'}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -363,7 +363,7 @@ export function DrivingDispersionVisualLegacy({
               x="205" y="95"
               textAnchor="middle"
               fontSize="10"
-              fill={isHovered === 'right' ? '#f97316' : '#64748b'}
+              fill={isHovered === 'right' ? '#f97316' : '#78716c'}
               fontWeight={isHovered === 'right' ? '600' : '500'}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -416,8 +416,8 @@ export function DrivingDispersionVisualLegacy({
           {/* Fairway */}
           <motion.div
             className={cn(
-              "text-center p-4 rounded-xl bg-gradient-to-br from-green-50 to-green-100/50 border transition-all cursor-default",
-              isHovered === 'fairway' ? 'border-green-400 shadow-lg scale-105' : 'border-green-200'
+              "text-center p-4 rounded-xl bg-gradient-to-br from-primary-50 to-primary-100/50 border transition-all cursor-default",
+              isHovered === 'fairway' ? 'border-primary-400 shadow-lg scale-105' : 'border-primary-200'
             )}
             variants={statCardVariants}
             initial="hidden"
@@ -427,7 +427,7 @@ export function DrivingDispersionVisualLegacy({
             onMouseEnter={() => setIsHovered('fairway')}
             onMouseLeave={() => setIsHovered(null)}
           >
-            <div className="text-2xl font-bold text-green-600 tabular-nums">{fairway.toFixed(0)}%</div>
+            <div className="text-2xl font-bold text-primary-600 tabular-nums">{fairway.toFixed(0)}%</div>
             <div className="text-xs font-medium text-warm-600 mt-1">Fairway</div>
             <div className="text-xs text-warm-400 mt-0.5">{fairwaysHit}/{fairwayOpportunities}</div>
           </motion.div>
@@ -507,7 +507,7 @@ export function DrivingDispersionVisualLegacy({
             <div className="flex items-center justify-between text-sm">
               <span className="text-warm-600 font-medium">Driver fairway %</span>
               <div className="flex items-center gap-3">
-                <AnimatedProgressBar value={driverFairwayPct} color="bg-green-500" delay={0.7} />
+                <AnimatedProgressBar value={driverFairwayPct} color="bg-primary-500" delay={0.7} />
                 <span className="font-semibold text-warm-900 tabular-nums w-10 text-right">{driverFairwayPct.toFixed(0)}%</span>
               </div>
             </div>
@@ -619,7 +619,7 @@ export function ApproachDispersionVisualLegacy({
       {/* Header */}
       <div className="px-6 py-5 border-b border-warm-100 relative overflow-hidden">
         {/* Subtle gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-green-50/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary-50/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
         <div className="flex items-start justify-between relative">
           <motion.div
@@ -636,7 +636,7 @@ export function ApproachDispersionVisualLegacy({
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2, type: 'spring' }}
           >
-            <div className="text-3xl font-bold text-green-600 tabular-nums tracking-tight">
+            <div className="text-3xl font-bold text-primary-600 tabular-nums tracking-tight">
               {animatedGir.toFixed(0)}%
             </div>
             <div className="text-xs font-medium text-warm-400 uppercase tracking-wide">GIR</div>
@@ -854,8 +854,8 @@ export function ApproachDispersionVisualLegacy({
           {/* Hit Green */}
           <motion.div
             className={cn(
-              "text-center p-4 rounded-xl bg-gradient-to-br from-green-50 to-green-100/50 border transition-all cursor-default",
-              isHovered === 'green' ? 'border-green-400 shadow-lg scale-105' : 'border-green-200'
+              "text-center p-4 rounded-xl bg-gradient-to-br from-primary-50 to-primary-100/50 border transition-all cursor-default",
+              isHovered === 'green' ? 'border-primary-400 shadow-lg scale-105' : 'border-primary-200'
             )}
             variants={statCardVariants}
             initial="hidden"
@@ -865,7 +865,7 @@ export function ApproachDispersionVisualLegacy({
             onMouseEnter={() => setIsHovered('green')}
             onMouseLeave={() => setIsHovered(null)}
           >
-            <div className="text-2xl font-bold text-green-600 tabular-nums">{gir.toFixed(0)}%</div>
+            <div className="text-2xl font-bold text-primary-600 tabular-nums">{gir.toFixed(0)}%</div>
             <div className="text-xs font-medium text-warm-600 mt-1">Hit Green</div>
             <div className="text-xs text-warm-400 mt-0.5">{girTotal} of {girOpportunities}</div>
           </motion.div>
@@ -909,7 +909,7 @@ export function ApproachDispersionVisualLegacy({
               >
                 <div className="flex items-center gap-2">
                   <motion.div
-                    className="w-3 h-3 rounded-full bg-green-500"
+                    className="w-3 h-3 rounded-full bg-primary-500"
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     transition={{ delay: 0.7, type: 'spring' }}
@@ -917,7 +917,7 @@ export function ApproachDispersionVisualLegacy({
                   <span className="text-sm text-warm-600">From Fairway</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <AnimatedProgressBar value={girFromFairway} color="bg-green-500" delay={0.7} />
+                  <AnimatedProgressBar value={girFromFairway} color="bg-primary-500" delay={0.7} />
                   <span className="text-sm font-semibold text-warm-900 tabular-nums w-12 text-right">
                     {girFromFairway.toFixed(0)}%
                   </span>
@@ -1166,7 +1166,7 @@ function ApproachProximityChart({ stats }: { stats: GolfStats }) {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.1, type: 'spring', stiffness: 200 }}
             >
-              <div className="text-4xl font-bold text-green-600 tabular-nums tracking-tight leading-none">
+              <div className="text-4xl font-bold text-primary-600 tabular-nums tracking-tight leading-none">
                 {Math.round(avgProx)}&apos;
               </div>
               <div className="text-xs font-medium text-warm-400 uppercase tracking-wide mt-1">Avg</div>
@@ -1232,7 +1232,7 @@ function ApproachProximityChart({ stats }: { stats: GolfStats }) {
         >
           <div className="flex items-center gap-5 text-xs text-warm-400">
             <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-green-600" />
+              <div className="w-2.5 h-2.5 rounded-full bg-primary-600" />
               <span>Close</span>
             </div>
             <div className="flex items-center gap-2">
@@ -1455,7 +1455,7 @@ export function PuttingDispersionVisualLegacy({
               <motion.text
                 x="40" y="120"
                 textAnchor="middle" fontSize="8"
-                fill={hoveredZone === 'left' ? '#ef4444' : '#64748b'}
+                fill={hoveredZone === 'left' ? '#ef4444' : '#78716c'}
                 fontWeight={hoveredZone === 'left' ? '700' : '500'}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -1494,7 +1494,7 @@ export function PuttingDispersionVisualLegacy({
               <motion.text
                 x="160" y="120"
                 textAnchor="middle" fontSize="8"
-                fill={hoveredZone === 'right' ? '#f97316' : '#64748b'}
+                fill={hoveredZone === 'right' ? '#f97316' : '#78716c'}
                 fontWeight={hoveredZone === 'right' ? '700' : '500'}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -1533,7 +1533,7 @@ export function PuttingDispersionVisualLegacy({
               <motion.text
                 x="100" y="178"
                 textAnchor="middle" fontSize="8"
-                fill={hoveredZone === 'short' ? '#3b82f6' : '#64748b'}
+                fill={hoveredZone === 'short' ? '#3b82f6' : '#78716c'}
                 fontWeight={hoveredZone === 'short' ? '700' : '500'}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -1572,7 +1572,7 @@ export function PuttingDispersionVisualLegacy({
               <motion.text
                 x="100" y="56"
                 textAnchor="middle" fontSize="8"
-                fill={hoveredZone === 'long' ? '#8b5cf6' : '#64748b'}
+                fill={hoveredZone === 'long' ? '#8b5cf6' : '#78716c'}
                 fontWeight={hoveredZone === 'long' ? '700' : '500'}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -1607,14 +1607,14 @@ export function PuttingDispersionVisualLegacy({
         <div className="grid grid-cols-2 gap-4 mb-4">
           {/* 1-Putts */}
           <motion.div
-            className="text-center p-4 rounded-xl bg-gradient-to-br from-green-50 to-green-100/50 border border-green-200 cursor-default"
+            className="text-center p-4 rounded-xl bg-gradient-to-br from-primary-50 to-primary-100/50 border border-primary-200 cursor-default"
             variants={statCardVariants}
             initial="hidden"
             animate="visible"
             custom={0}
             whileHover={{ scale: 1.05, boxShadow: '0 10px 20px rgba(34,197,94,0.15)' }}
           >
-            <div className="text-2xl font-bold text-green-600 tabular-nums">
+            <div className="text-2xl font-bold text-primary-600 tabular-nums">
               {Math.round(animatedOnePutts)}
             </div>
             <div className="text-xs font-medium text-warm-600 mt-1">1-Putts</div>

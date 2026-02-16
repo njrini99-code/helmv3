@@ -110,7 +110,7 @@ export function ShotByShot({ roundId, className }: ShotByShopProps) {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
           >
             <div className="p-6 bg-warm-50/30">
               {/* Loading state */}

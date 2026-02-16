@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion, useSpring, useTransform } from 'framer-motion';
+import { motion, useSpring } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 // ---------------------------------------------------------------------------
@@ -32,9 +32,9 @@ export interface HealthRingProps {
 function getScoreColor(score: number): { primary: string; secondary: string; text: string } {
   if (score >= 80) {
     return {
-      primary: '#10B981', // emerald-500
-      secondary: '#34D399', // emerald-400
-      text: 'text-emerald-600',
+      primary: '#10B981', // primary-500
+      secondary: '#34D399', // primary-400
+      text: 'text-primary-600',
     };
   }
   if (score >= 60) {

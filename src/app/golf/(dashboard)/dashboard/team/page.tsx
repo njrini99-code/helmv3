@@ -4,6 +4,12 @@ import { redirect } from 'next/navigation';
 import { TeamSettingsClient } from './team-settings-client';
 import { TeamInfoPlayer } from './team-info-player';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Team | GolfHelm',
+  description: 'View and manage your golf team information, settings, and roster details.',
+};
 
 // Type for the team data that the client component expects
 interface TeamForClient {

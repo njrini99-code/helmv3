@@ -74,7 +74,7 @@ function CheckCircleIcon() {
       viewBox="0 0 16 16"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className="shrink-0 text-green-500"
+      className="shrink-0 text-primary-500"
     >
       <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.2" />
       <path
@@ -131,7 +131,7 @@ function DiffSection({ oldData, newData }: { oldData: Record<string, unknown> | 
                   <span className="text-red-400 pl-2">- {JSON.stringify(oldVal)}</span>
                 )}
                 {newVal !== undefined && (
-                  <span className="text-green-500 pl-2">+ {JSON.stringify(newVal)}</span>
+                  <span className="text-primary-500 pl-2">+ {JSON.stringify(newVal)}</span>
                 )}
               </div>
             );
@@ -277,7 +277,7 @@ export function AuditFeed({ auditLog, loginSecurity }: Props) {
         {loginSecurity.recentAttempts.length === 0 ? (
           <div className="flex items-center justify-center gap-2 py-6">
             <CheckCircleIcon />
-            <p className="text-sm text-green-600 font-medium">No suspicious login activity</p>
+            <p className="text-sm text-primary-600 font-medium">No suspicious login activity</p>
           </div>
         ) : (
           <div className="space-y-2">

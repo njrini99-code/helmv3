@@ -94,7 +94,7 @@ const EventCardInner = forwardRef<
         'shadow-[0_2px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.5)]',
 
         isDragging && 'opacity-50 shadow-lg scale-105',
-        isOverlay && 'shadow-xl scale-105 cursor-grabbing ring-2 ring-stone-200',
+        isOverlay && 'shadow-xl scale-105 cursor-grabbing ring-2 ring-warm-200',
         isDraggable && !isDragging && 'cursor-grab',
         !isDraggable && 'cursor-pointer',
         styles.bgColor,

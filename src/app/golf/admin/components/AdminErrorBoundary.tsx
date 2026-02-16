@@ -44,7 +44,7 @@ export class AdminErrorBoundary extends Component<
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     // Log error to console in development
     console.error('[AdminErrorBoundary] Caught error:', error, errorInfo);
 
@@ -56,7 +56,7 @@ export class AdminErrorBoundary extends Component<
     this.setState({ hasError: false, error: null });
   };
 
-  render(): ReactNode {
+  override render(): ReactNode {
     if (this.state.hasError) {
       // Custom fallback
       if (this.props.fallback) {
@@ -214,9 +214,10 @@ export function SectionErrorBoundary({
 interface SkeletonProps {
   className?: string;
   animate?: boolean;
+  style?: React.CSSProperties;
 }
 
-export function Skeleton({ className, animate = true }: SkeletonProps) {
+export function Skeleton({ className, animate = true, style }: SkeletonProps) {
   return (
     <div
       className={cn(
@@ -224,6 +225,7 @@ export function Skeleton({ className, animate = true }: SkeletonProps) {
         animate && 'animate-pulse',
         className
       )}
+      style={style}
     />
   );
 }

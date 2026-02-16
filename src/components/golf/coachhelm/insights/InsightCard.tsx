@@ -88,7 +88,7 @@ export function InsightCard({ insight, coachId, onUpdate }: InsightCardProps) {
     <GlassCard
       className={cn(
         'transition-all duration-200',
-        expanded && 'ring-2 ring-green-500/20'
+        expanded && 'ring-2 ring-primary-500/20'
       )}
       padding="none"
     >
@@ -165,12 +165,12 @@ export function InsightCard({ insight, coachId, onUpdate }: InsightCardProps) {
 
           {/* Recommendation */}
           {insight.recommendation && (
-            <div className="bg-green-50 rounded-lg p-3">
+            <div className="bg-primary-50 rounded-lg p-3">
               <div className="flex items-start gap-2">
-                <IconSparkles size={16} className="text-green-600 flex-shrink-0 mt-0.5" />
+                <IconSparkles size={16} className="text-primary-600 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-xs font-medium text-green-900 mb-1">Recommendation</p>
-                  <p className="text-sm text-green-800 leading-relaxed">
+                  <p className="text-xs font-medium text-primary-900 mb-1">Recommendation</p>
+                  <p className="text-sm text-primary-800 leading-relaxed">
                     {insight.recommendation}
                   </p>
                 </div>
@@ -223,7 +223,7 @@ export function InsightCard({ insight, coachId, onUpdate }: InsightCardProps) {
               <button
                 onClick={handleCreateFocusArea}
                 disabled={loading || creatingFocusArea}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors"
               >
                 <IconTarget size={16} />
                 {creatingFocusArea ? 'Creating...' : 'Create Focus Area'}
@@ -243,7 +243,7 @@ export function InsightCard({ insight, coachId, onUpdate }: InsightCardProps) {
                 'flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-lg disabled:opacity-50 transition-colors',
                 canCreateFocusArea
                   ? 'flex-1 bg-warm-100 text-warm-700 hover:bg-warm-200'
-                  : 'flex-1 bg-green-600 text-white hover:bg-green-700'
+                  : 'flex-1 bg-primary-600 text-white hover:bg-primary-700'
               )}
             >
               <IconCheck size={16} />
@@ -261,6 +261,7 @@ export function InsightCard({ insight, coachId, onUpdate }: InsightCardProps) {
               disabled={loading || creatingFocusArea}
               className="px-3 py-2 bg-warm-100 text-warm-500 rounded-lg hover:bg-warm-200 disabled:opacity-50 transition-colors"
               title="Dismiss"
+              aria-label="Dismiss insight"
             >
               <IconX size={16} />
             </button>

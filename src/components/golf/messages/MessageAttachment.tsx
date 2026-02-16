@@ -338,7 +338,7 @@ function AudioAttachment({
       className={cn(
         'flex items-center gap-3 p-3 rounded-lg',
         isOwnMessage
-          ? 'bg-green-700/50'
+          ? 'bg-primary-700/50'
           : 'bg-warm-200/70',
         'w-64',
         className
@@ -394,7 +394,7 @@ function AudioAttachment({
                 : '[&::-webkit-slider-thumb]:bg-purple-600'
             )}
             style={{
-              background: `linear-gradient(to right, ${isOwnMessage ? 'rgba(255,255,255,0.8)' : '#9333ea'} ${progress}%, ${isOwnMessage ? 'rgba(255,255,255,0.2)' : '#e2e8f0'} ${progress}%)`,
+              background: `linear-gradient(to right, ${isOwnMessage ? 'rgba(255,255,255,0.8)' : '#9333ea'} ${progress}%, ${isOwnMessage ? 'rgba(255,255,255,0.2)' : '#e7e5e4'} ${progress}%)`,
             }}
           />
         </div>
@@ -403,7 +403,7 @@ function AudioAttachment({
         <div
           className={cn(
             'flex items-center justify-between text-xs mt-1',
-            isOwnMessage ? 'text-green-200' : 'text-warm-500'
+            isOwnMessage ? 'text-primary-200' : 'text-warm-500'
           )}
         >
           <span>{formatTime(currentTime)}</span>
@@ -456,7 +456,7 @@ function DocumentAttachment({
         'flex items-center gap-3 p-3 rounded-lg cursor-pointer',
         'transition-colors duration-200',
         isOwnMessage
-          ? 'bg-green-700/50 hover:bg-green-700/60'
+          ? 'bg-primary-700/50 hover:bg-primary-700/60'
           : 'bg-warm-200/70 hover:bg-warm-200',
         className
       )}
@@ -488,7 +488,7 @@ function DocumentAttachment({
         <p
           className={cn(
             'text-xs',
-            isOwnMessage ? 'text-green-200' : 'text-warm-500'
+            isOwnMessage ? 'text-primary-200' : 'text-warm-500'
           )}
         >
           {formatFileSize(fileSize)}
@@ -514,7 +514,7 @@ function FileTypeIcon({ mimeType, isOwnMessage }: { mimeType: string; isOwnMessa
     return <span className={cn('text-xs font-bold', isOwnMessage ? 'text-white' : 'text-blue-500')}>DOC</span>;
   }
   if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) {
-    return <span className={cn('text-xs font-bold', isOwnMessage ? 'text-white' : 'text-green-600')}>XLS</span>;
+    return <span className={cn('text-xs font-bold', isOwnMessage ? 'text-white' : 'text-primary-600')}>XLS</span>;
   }
   return <IconFile size={20} className={baseClass} />;
 }

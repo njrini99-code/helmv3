@@ -241,7 +241,7 @@ function StatPill({
   onClick?: () => void;
 }) {
   const colorClasses = {
-    green: 'bg-green-50/80 border-green-200/60 text-green-700',
+    green: 'bg-primary-50/80 border-primary-200/60 text-primary-700',
     slate: 'bg-warm-50/80 border-warm-200/60 text-warm-700',
     red: 'bg-red-50/80 border-red-200/60 text-red-600',
     orange: 'bg-orange-50/80 border-orange-200/60 text-orange-600',
@@ -250,7 +250,7 @@ function StatPill({
   };
 
   const ringClasses = {
-    green: 'ring-green-500/40',
+    green: 'ring-primary-500/40',
     slate: 'ring-warm-400/40',
     red: 'ring-red-500/40',
     orange: 'ring-orange-500/40',
@@ -378,7 +378,7 @@ export const ApproachDispersionPremium = memo(function ApproachDispersionPremium
           </div>
           <div className="text-right">
             <motion.div
-              className="text-4xl font-bold text-green-600 tabular-nums tracking-tight leading-none"
+              className="text-4xl font-bold text-primary-600 tabular-nums tracking-tight leading-none"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.1, type: 'spring', stiffness: 200 }}

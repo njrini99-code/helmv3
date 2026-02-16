@@ -20,7 +20,7 @@ const CATEGORY_CONFIG: Record<ExpenseCategory, { icon: string; label: string; co
   lodging: { icon: '🏨', label: 'Lodging', color: 'bg-blue-100 text-blue-700' },
   transportation: { icon: '🚗', label: 'Transportation', color: 'bg-purple-100 text-purple-700' },
   meals: { icon: '🍽️', label: 'Meals', color: 'bg-orange-100 text-orange-700' },
-  entry_fees: { icon: '🎟️', label: 'Entry Fees', color: 'bg-green-100 text-green-700' },
+  entry_fees: { icon: '🎟️', label: 'Entry Fees', color: 'bg-primary-100 text-primary-700' },
   equipment: { icon: '⛳', label: 'Equipment', color: 'bg-teal-100 text-teal-700' },
   other: { icon: '📦', label: 'Other', color: 'bg-warm-100 text-warm-700' },
 };
@@ -130,7 +130,7 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
               <div className="text-right">
                 <p className="font-semibold text-warm-900">{formatCurrency(expense.amount)}</p>
                 <span className={`text-xs px-2 py-0.5 rounded-full ${
-                  expense.paid_by === 'team' ? 'bg-green-100 text-green-700' :
+                  expense.paid_by === 'team' ? 'bg-primary-100 text-primary-700' :
                   expense.paid_by === 'pending_reimbursement' ? 'bg-amber-100 text-amber-700' :
                   'bg-warm-100 text-warm-600'
                 }`}>
@@ -151,7 +151,7 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: 'auto', opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
+                  transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
                   className="overflow-hidden"
                 >
                   <div className="px-4 pb-4 pt-2 border-t border-warm-100">
@@ -176,7 +176,7 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
                               e.stopPropagation();
                               setViewingReceipt(expense.receipt_url);
                             }}
-                            className="text-green-600 hover:text-green-700 flex items-center gap-1"
+                            className="text-primary-600 hover:text-primary-700 flex items-center gap-1"
                           >
                             <IconEye size={14} />
                             View

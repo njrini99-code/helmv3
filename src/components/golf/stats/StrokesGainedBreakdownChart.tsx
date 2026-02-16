@@ -112,8 +112,8 @@ export function StrokesGainedBreakdownChart({
               <div className="flex items-center gap-2">
                 <span className="text-lg">{cat.icon}</span>
                 <div>
-                  <div className="font-medium text-gray-900">{cat.label}</div>
-                  <div className="text-xs text-gray-500">{cat.description}</div>
+                  <div className="font-medium text-warm-900">{cat.label}</div>
+                  <div className="text-xs text-warm-500">{cat.description}</div>
                 </div>
               </div>
               <div className="text-right">
@@ -121,7 +121,7 @@ export function StrokesGainedBreakdownChart({
                   {formatStrokesGained(value)}
                 </div>
                 {shotCount !== null && (
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-warm-500">
                     {shotCount} shots
                     {showPerShot && perShot !== null && (
                       <span className="ml-1">
@@ -134,15 +134,15 @@ export function StrokesGainedBreakdownChart({
             </div>
 
             {/* Bar chart */}
-            <div className="relative h-8 bg-gray-100 rounded-lg overflow-hidden">
+            <div className="relative h-8 bg-warm-100 rounded-lg overflow-hidden">
               {/* Center line */}
-              <div className="absolute top-0 bottom-0 left-1/2 w-px bg-gray-300 z-10" />
+              <div className="absolute top-0 bottom-0 left-1/2 w-px bg-warm-300 z-10" />
 
               {/* Player bar */}
               <div
                 className={cn(
                   'absolute top-1 bottom-1 rounded transition-all duration-300',
-                  isPositive ? 'bg-green-500' : 'bg-red-400'
+                  isPositive ? 'bg-primary-500' : 'bg-red-400'
                 )}
                 style={{
                   width: `${getBarWidth(value) / 2}%`,
@@ -156,7 +156,7 @@ export function StrokesGainedBreakdownChart({
                 <div
                   className={cn(
                     'absolute top-2 bottom-2 rounded opacity-50 border-2',
-                    compValue >= 0 ? 'border-green-700' : 'border-red-600'
+                    compValue >= 0 ? 'border-primary-700' : 'border-red-600'
                   )}
                   style={{
                     width: `${getBarWidth(compValue) / 2}%`,
@@ -168,19 +168,19 @@ export function StrokesGainedBreakdownChart({
               )}
 
               {/* Scale labels */}
-              <div className="absolute bottom-0 left-2 text-xs text-gray-400">-{maxValue}</div>
-              <div className="absolute bottom-0 right-2 text-xs text-gray-400">+{maxValue}</div>
+              <div className="absolute bottom-0 left-2 text-xs text-warm-400">-{maxValue}</div>
+              <div className="absolute bottom-0 right-2 text-xs text-warm-400">+{maxValue}</div>
             </div>
           </div>
         );
       })}
 
       {/* Total */}
-      <div className="pt-4 border-t border-gray-200">
+      <div className="pt-4 border-t border-warm-200">
         <div className="flex items-center justify-between">
           <div>
-            <div className="font-semibold text-gray-900">Total Strokes Gained</div>
-            <div className="text-sm text-gray-500">Combined performance vs. scratch</div>
+            <div className="font-semibold text-warm-900">Total Strokes Gained</div>
+            <div className="text-sm text-warm-500">Combined performance vs. scratch</div>
           </div>
           <div className={cn('text-2xl font-bold', getStrokesGainedColor(data.sg_total))}>
             {formatStrokesGained(data.sg_total)}
@@ -188,12 +188,12 @@ export function StrokesGainedBreakdownChart({
         </div>
 
         {/* Total bar */}
-        <div className="mt-2 relative h-10 bg-gray-100 rounded-lg overflow-hidden">
-          <div className="absolute top-0 bottom-0 left-1/2 w-px bg-gray-300 z-10" />
+        <div className="mt-2 relative h-10 bg-warm-100 rounded-lg overflow-hidden">
+          <div className="absolute top-0 bottom-0 left-1/2 w-px bg-warm-300 z-10" />
           <div
             className={cn(
               'absolute top-1 bottom-1 rounded transition-all duration-300',
-              data.sg_total >= 0 ? 'bg-green-500' : 'bg-red-400'
+              data.sg_total >= 0 ? 'bg-primary-500' : 'bg-red-400'
             )}
             style={{
               width: `${getBarWidth(data.sg_total) / 2}%`,
@@ -208,12 +208,12 @@ export function StrokesGainedBreakdownChart({
       {comparisonData && (
         <div className="flex items-center justify-center gap-4 text-sm pt-2">
           <div className="flex items-center gap-2">
-            <div className="w-4 h-3 rounded bg-green-500" />
-            <span className="text-gray-600">Your Performance</span>
+            <div className="w-4 h-3 rounded bg-primary-500" />
+            <span className="text-warm-600">Your Performance</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-3 rounded border-2 border-green-700" />
-            <span className="text-gray-600">{comparisonLabel}</span>
+            <div className="w-4 h-3 rounded border-2 border-primary-700" />
+            <span className="text-warm-600">{comparisonLabel}</span>
           </div>
         </div>
       )}
@@ -248,21 +248,21 @@ export function StrokesGainedCompact({
               getStrokesGainedBgColor(value)
             )}
           >
-            <span className="text-xs text-gray-500">{cat.label}</span>
+            <span className="text-xs text-warm-500">{cat.label}</span>
             <span className={cn('text-sm font-semibold', getStrokesGainedColor(value))}>
               {formatStrokesGained(value)}
             </span>
           </div>
         );
       })}
-      <div className="h-8 w-px bg-gray-200" />
+      <div className="h-8 w-px bg-warm-200" />
       <div
         className={cn(
           'flex flex-col items-center px-2 py-1 rounded',
           getStrokesGainedBgColor(data.sg_total)
         )}
       >
-        <span className="text-xs text-gray-500">Total</span>
+        <span className="text-xs text-warm-500">Total</span>
         <span className={cn('text-sm font-bold', getStrokesGainedColor(data.sg_total))}>
           {formatStrokesGained(data.sg_total)}
         </span>

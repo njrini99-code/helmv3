@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
-import type { Division, ProgramType } from '../page';
+import type { Division, ProgramType } from '../crm-config';
 import { X, Check, AlertTriangle } from 'lucide-react';
 
 interface ImportModalProps {
@@ -183,6 +183,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
           <h2 className="text-lg font-semibold text-warm-900">Import Coaches</h2>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="p-2 rounded-lg hover:bg-warm-100 text-warm-500 transition-colors"
           >
             <X className="w-5 h-5" />
@@ -197,7 +198,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
                 <select
                   value={division}
                   onChange={(e) => setDivision(e.target.value as Division)}
-                  className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                  className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
                 >
                   <option value="D2">Division II</option>
                   <option value="D3">Division III</option>
@@ -210,7 +211,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
                   type="file"
                   accept=".csv"
                   onChange={handleFileUpload}
-                  className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
               </div>
 
@@ -220,7 +221,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
                   value={csvText}
                   onChange={(e) => setCsvText(e.target.value)}
                   placeholder="Conference,School,Coach Name,Title,Email,Program"
-                  className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono text-sm resize-none"
+                  className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono text-sm resize-none"
                   rows={10}
                 />
               </div>
@@ -252,7 +253,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
                 <button
                   onClick={parseCSV}
                   disabled={!csvText.trim()}
-                  className="px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+                  className="px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50 transition-colors"
                 >
                   Parse & Preview
                 </button>
@@ -320,7 +321,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
                 </button>
                 <button
                   onClick={handleImport}
-                  className="px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
+                  className="px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors"
                 >
                   Import {parsedData.length} Coaches
                 </button>
@@ -330,7 +331,11 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
 
           {step === 'importing' && (
             <div className="text-center py-8">
-              <div className="animate-spin w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full mx-auto mb-4" />
+              <div className="flex items-center justify-center gap-2 mx-auto mb-4">
+                <span className="w-2.5 h-2.5 rounded-full bg-primary-500 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                <span className="w-2.5 h-2.5 rounded-full bg-primary-500 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                <span className="w-2.5 h-2.5 rounded-full bg-primary-500 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+              </div>
               <p className="text-warm-700 font-medium">
                 Importing coaches... {importProgress.current} / {importProgress.total}
               </p>
@@ -341,7 +346,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
               )}
               <div className="w-full bg-warm-200 rounded-full h-2 mt-4 max-w-md mx-auto">
                 <div
-                  className="bg-emerald-500 h-2 rounded-full transition-all"
+                  className="bg-primary-500 h-2 rounded-full transition-all"
                   style={{ width: `${(importProgress.current / importProgress.total) * 100}%` }}
                 />
               </div>
@@ -352,11 +357,11 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
             <div className="text-center py-8">
               <div className={cn(
                 'w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4',
-                importProgress.errors === 0 ? 'bg-emerald-100' : 'bg-yellow-100'
+                importProgress.errors === 0 ? 'bg-primary-100' : 'bg-yellow-100'
               )}>
                 <Check className={cn(
                   'w-8 h-8',
-                  importProgress.errors === 0 ? 'text-emerald-600' : 'text-yellow-600'
+                  importProgress.errors === 0 ? 'text-primary-600' : 'text-yellow-600'
                 )} />
               </div>
               <h3 className="text-lg font-semibold text-warm-900 mb-2">Import Complete!</h3>
@@ -381,7 +386,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
 
               <button
                 onClick={onSuccess}
-                className="mt-6 px-6 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
+                className="mt-6 px-6 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors"
               >
                 Done
               </button>

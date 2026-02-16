@@ -84,7 +84,7 @@ export function PredictionAccuracyPanel({
           <StatCard
             label="Accuracy"
             value={`${Math.round(data.summary.overallAccuracy * 100)}%`}
-            icon={<IconTarget size={14} className="text-green-500" />}
+            icon={<IconTarget size={14} className="text-primary-500" />}
             color={data.summary.overallAccuracy >= 0.7 ? 'green' : 'amber'}
           />
           <StatCard
@@ -182,7 +182,7 @@ export function PredictionAccuracyPanel({
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={accuracyChartData} margin={{ left: 10, right: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" />
                 <XAxis
                   dataKey="date"
                   tick={{ fontSize: 11 }}
@@ -225,7 +225,7 @@ export function PredictionAccuracyPanel({
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={calibrationChartData} margin={{ left: 10, right: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" vertical={false} />
                 <XAxis dataKey="range" tick={{ fontSize: 11 }} tickLine={false} />
                 <YAxis
                   domain={[0, 100]}
@@ -235,7 +235,7 @@ export function PredictionAccuracyPanel({
                   tickFormatter={(v) => `${v}%`}
                 />
                 <Tooltip content={<CalibrationTooltip />} />
-                <Bar dataKey="expected" fill="#E2E8F0" radius={[4, 4, 0, 0]} name="Expected" />
+                <Bar dataKey="expected" fill="#e7e5e4" radius={[4, 4, 0, 0]} name="Expected" />
                 <Bar dataKey="actual" radius={[4, 4, 0, 0]} name="Actual">
                   {calibrationChartData.map((entry, index) => {
                     const diff = Math.abs(entry.actual - entry.expected);
@@ -252,7 +252,7 @@ export function PredictionAccuracyPanel({
           </div>
           <div className="flex items-center justify-center gap-4 mt-3 text-xs">
             <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-green-500" />
+              <span className="w-2 h-2 rounded-full bg-primary-500" />
               Well Calibrated
             </span>
             <span className="flex items-center gap-1">
@@ -371,7 +371,7 @@ function StatCard({
   color: 'green' | 'amber' | 'slate';
 }) {
   const colors = {
-    green: 'bg-green-50 border-green-100',
+    green: 'bg-primary-50 border-primary-100',
     amber: 'bg-amber-50 border-amber-100',
     slate: 'bg-warm-50 border-warm-100',
   };
@@ -404,7 +404,7 @@ function StatCardLarge({
       <p
         className={cn(
           'text-2xl font-bold tabular-nums',
-          color === 'green' && 'text-green-600',
+          color === 'green' && 'text-primary-600',
           color === 'amber' && 'text-amber-600',
           color === 'slate' && 'text-warm-900'
         )}
@@ -478,7 +478,7 @@ function AccuracyTooltip({
         <div className="space-y-1 text-xs">
           <div className="flex justify-between gap-4">
             <span className="text-warm-500">Accuracy:</span>
-            <span className="font-medium text-green-600">{data.accuracyRate}%</span>
+            <span className="font-medium text-primary-600">{data.accuracyRate}%</span>
           </div>
           <div className="flex justify-between gap-4">
             <span className="text-warm-500">Predictions:</span>
@@ -518,7 +518,7 @@ function CalibrationTooltip({
             <span
               className={cn(
                 'font-medium',
-                Math.abs(diff) <= 10 ? 'text-green-600' : 'text-amber-600'
+                Math.abs(diff) <= 10 ? 'text-primary-600' : 'text-amber-600'
               )}
             >
               {data.actual}%

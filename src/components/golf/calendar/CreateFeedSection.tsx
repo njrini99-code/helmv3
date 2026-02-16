@@ -40,20 +40,20 @@ const FEED_TYPE_OPTIONS = [
     icon: Users,
     label: 'Team Events',
     description: 'All events for your team',
-    colorClass: 'text-green-700',
-    bgClass: 'bg-green-50',
-    borderClass: 'border-green-200',
-    selectedClass: 'bg-green-600 text-white ring-4 ring-green-200 shadow-lg',
+    colorClass: 'text-primary-700',
+    bgClass: 'bg-primary-50',
+    borderClass: 'border-primary-200',
+    selectedClass: 'bg-primary-600 text-white ring-4 ring-primary-200 shadow-lg',
   },
   {
     type: 'personal' as FeedType,
     icon: Calendar,
     label: 'Personal Events',
     description: 'Only your events',
-    colorClass: 'text-emerald-700',
-    bgClass: 'bg-emerald-50',
-    borderClass: 'border-emerald-200',
-    selectedClass: 'bg-emerald-600 text-white ring-4 ring-emerald-200 shadow-lg',
+    colorClass: 'text-primary-700',
+    bgClass: 'bg-primary-50',
+    borderClass: 'border-primary-200',
+    selectedClass: 'bg-primary-600 text-white ring-4 ring-primary-200 shadow-lg',
   },
   {
     type: 'tournament' as FeedType,
@@ -132,7 +132,7 @@ export function CreateFeedSection({
       {/* Header */}
       <div>
         <div className="flex items-center gap-2 mb-2">
-          <Sparkles className="w-5 h-5 text-emerald-600" />
+          <Sparkles className="w-5 h-5 text-primary-600" />
           <h3 className="text-lg font-semibold text-warm-900">Create Calendar Feed</h3>
         </div>
         <p className="text-sm text-warm-600">
@@ -219,7 +219,7 @@ export function CreateFeedSection({
             placeholder="e.g., My Team Events"
             disabled={loading}
             className="w-full px-4 py-2.5 rounded-lg border border-warm-200
-                     focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100
+                     focus:border-primary-500 focus:ring-2 focus:ring-primary-100
                      text-warm-900 placeholder:text-warm-400 transition-colors
                      disabled:opacity-50 disabled:cursor-not-allowed"
           />
@@ -268,7 +268,7 @@ export function CreateFeedSection({
           onClick={handleCreate}
           disabled={loading || !selectedType || (showNameInput && !feedName.trim())}
           className="px-4 py-2.5 rounded-lg font-medium text-sm
-                   bg-emerald-600 text-white hover:bg-emerald-700
+                   bg-primary-600 text-white hover:bg-primary-700
                    disabled:opacity-50 disabled:cursor-not-allowed
                    transition-colors"
         >

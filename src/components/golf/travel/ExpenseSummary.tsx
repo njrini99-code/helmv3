@@ -25,7 +25,7 @@ const CATEGORY_CONFIG: Record<ExpenseCategory, { label: string; color: string }>
   meals: { label: 'Meals', color: '#F97316' },
   entry_fees: { label: 'Entry Fees', color: '#22C55E' },
   equipment: { label: 'Equipment', color: '#14B8A6' },
-  other: { label: 'Other', color: '#64748B' },
+  other: { label: 'Other', color: '#78716c' },
 };
 
 const ALL_CATEGORIES: ExpenseCategory[] = [
@@ -126,17 +126,17 @@ export function ExpenseSummary({
   return (
     <div className="space-y-6">
       {/* Total Summary Card */}
-      <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-100">
+      <div className="bg-gradient-to-br from-primary-50 to-primary-50 rounded-2xl p-6 border border-primary-100">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-sm font-medium text-green-700 mb-1">Total Expenses</p>
-            <p className="text-3xl font-bold text-green-900">{formatCurrency(summary.total)}</p>
+            <p className="text-sm font-medium text-primary-700 mb-1">Total Expenses</p>
+            <p className="text-3xl font-bold text-primary-900">{formatCurrency(summary.total)}</p>
             {totalBudget > 0 && (
               <div className="flex items-center gap-2 mt-2">
                 {summary.total <= totalBudget ? (
                   <>
-                    <IconTrendingDown size={16} className="text-green-600" />
-                    <span className="text-sm text-green-600">
+                    <IconTrendingDown size={16} className="text-primary-600" />
+                    <span className="text-sm text-primary-600">
                       {formatCurrency(totalBudget - summary.total)} under budget
                     </span>
                   </>
@@ -167,7 +167,7 @@ export function ExpenseSummary({
             <div className="h-2 bg-white/50 rounded-full overflow-hidden">
               <motion.div
                 className={`h-full rounded-full ${
-                  summary.total <= totalBudget ? 'bg-green-500' : 'bg-red-500'
+                  summary.total <= totalBudget ? 'bg-primary-500' : 'bg-red-500'
                 }`}
                 initial={{ width: 0 }}
                 animate={{
@@ -259,7 +259,7 @@ export function ExpenseSummary({
                           <button
                             onClick={() => handleSaveBudget(category)}
                             disabled={savingBudget}
-                            className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+                            className="px-2 py-1 text-xs bg-primary-600 text-white rounded hover:bg-primary-700"
                           >
                             Save
                           </button>
@@ -321,9 +321,9 @@ export function ExpenseSummary({
       <div className="bg-white rounded-2xl border border-warm-200 p-6">
         <h3 className="font-semibold text-warm-900 mb-4">Payment Status</h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="p-4 bg-green-50 rounded-xl">
-            <p className="text-sm text-green-700 mb-1">Team Paid</p>
-            <p className="text-xl font-bold text-green-900">
+          <div className="p-4 bg-primary-50 rounded-xl">
+            <p className="text-sm text-primary-700 mb-1">Team Paid</p>
+            <p className="text-xl font-bold text-primary-900">
               {formatCurrency(summary.byPaidBy.team)}
             </p>
           </div>

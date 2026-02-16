@@ -161,7 +161,7 @@ function EvidenceRoundCard({ round, index }: EvidenceRoundCardProps) {
 
   const scoreColor =
     scoreToPar <= 0
-      ? 'text-green-600 bg-green-50'
+      ? 'text-primary-600 bg-primary-50'
       : scoreToPar <= 5
       ? 'text-amber-600 bg-amber-50'
       : 'text-red-600 bg-red-50';
@@ -177,7 +177,7 @@ function EvidenceRoundCard({ round, index }: EvidenceRoundCardProps) {
     >
       <Link
         href={`/golf/dashboard/rounds/${round.id}`}
-        className="block bg-white border border-warm-200 rounded-xl p-4 hover:border-green-200 hover:shadow-sm transition-all group"
+        className="block bg-white border border-warm-200 rounded-xl p-4 hover:border-primary-200 hover:shadow-sm transition-all group"
       >
         <div className="flex items-start justify-between">
           <div className="flex-1">
@@ -236,7 +236,7 @@ function EvidenceRoundCard({ round, index }: EvidenceRoundCardProps) {
             </div>
             <IconChevronRight
               size={16}
-              className="text-warm-300 group-hover:text-green-500 transition-colors"
+              className="text-warm-300 group-hover:text-primary-500 transition-colors"
             />
           </div>
         </div>
@@ -245,8 +245,8 @@ function EvidenceRoundCard({ round, index }: EvidenceRoundCardProps) {
         <div className="mt-3 pt-3 border-t border-warm-100 flex items-center gap-2">
           {scoreToPar <= 0 ? (
             <>
-              <IconTrendingUp size={14} className="text-green-500" />
-              <span className="text-xs text-green-600 font-medium">
+              <IconTrendingUp size={14} className="text-primary-500" />
+              <span className="text-xs text-primary-600 font-medium">
                 Strong performance
               </span>
             </>

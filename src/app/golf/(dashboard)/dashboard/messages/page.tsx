@@ -262,8 +262,8 @@ export default function GolfMessagesPage() {
           <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
             <IconAlertCircle size={32} className="text-amber-500" />
           </div>
-          <h2 className="text-xl font-semibold text-slate-900 mb-2">No Team Found</h2>
-          <p className="text-slate-500 mb-6">
+          <h2 className="text-xl font-semibold text-warm-900 mb-2">No Team Found</h2>
+          <p className="text-warm-500 mb-6">
             You need to be assigned to a team before you can send messages.
             {userRole === 'coach'
               ? ' Please create a team in Team Settings or contact support.'
@@ -283,11 +283,11 @@ export default function GolfMessagesPage() {
     <AnimatedPage className="h-[calc(100vh-64px)] flex">
       {/* Conversation List */}
       <div className={cn(
-        'w-full lg:w-80 xl:w-96 flex-shrink-0 border-r border-slate-200/60 glass-standard flex flex-col',
+        'w-full lg:w-80 xl:w-96 flex-shrink-0 border-r border-warm-200/60 glass-standard flex flex-col',
         mobileShowChat && 'hidden lg:flex'
       )}>
         {/* Header */}
-        <div className="p-4 border-b border-slate-100">
+        <div className="p-4 border-b border-warm-100">
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-2">
               {/* Mobile hamburger menu */}
@@ -295,7 +295,7 @@ export default function GolfMessagesPage() {
                 onClick={toggleMobile}
                 className={cn(
                   'lg:hidden p-2.5 -ml-2 rounded-xl',
-                  'text-slate-500 hover:text-slate-700 hover:bg-slate-100/80',
+                  'text-warm-500 hover:text-warm-700 hover:bg-warm-100/80',
                   'transition-colors duration-150 active:scale-95',
                   'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
                 )}
@@ -303,7 +303,7 @@ export default function GolfMessagesPage() {
               >
                 <IconMenu size={22} />
               </button>
-              <h1 className="text-xl font-semibold text-slate-900">Messages</h1>
+              <h1 className="text-xl font-semibold text-warm-900">Messages</h1>
             </div>
             <div className="flex items-center gap-2">
               {userRole === 'coach' && (
@@ -328,17 +328,17 @@ export default function GolfMessagesPage() {
               </Button>
             </div>
           </div>
-          <p className="text-sm text-slate-500">{teamName || 'Team'} communication</p>
+          <p className="text-sm text-warm-500">{teamName || 'Team'} communication</p>
         </div>
 
         {/* Conversation List */}
         <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }} data-scroll-container>
           {!conversations || conversations.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-              <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-3">
-                <IconMail size={20} className="text-slate-400" />
+              <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mb-3">
+                <IconMail size={20} className="text-warm-400" />
               </div>
-              <p className="text-sm text-slate-500 mb-4">No conversations yet</p>
+              <p className="text-sm text-warm-500 mb-4">No conversations yet</p>
               <Button size="sm" onClick={() => setShowNewMessageModal(true)}>
                 Start a Conversation
               </Button>
@@ -384,23 +384,23 @@ export default function GolfMessagesPage() {
 
       {/* Chat Window */}
       <div className={cn(
-        'flex-1 min-w-0 flex flex-col bg-slate-50',
+        'flex-1 min-w-0 flex flex-col bg-warm-50',
         !mobileShowChat && 'hidden lg:flex'
       )}>
         {selectedConversation ? (
           <>
             {/* Chat Header */}
-            <div className="p-4 border-b border-slate-200/60 glass-standard flex items-center gap-3">
+            <div className="p-4 border-b border-warm-200/60 glass-standard flex items-center gap-3">
               <button
                 onClick={handleBack}
-                className="lg:hidden p-2 -ml-2 text-slate-400 hover:text-slate-600"
+                className="lg:hidden p-2 -ml-2 text-warm-400 hover:text-warm-600"
                 aria-label="Back to conversations"
               >
                 <IconArrowLeft size={20} />
               </button>
               {selectedConversation.is_group ? (
-                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
-                  <IconUsers size={20} className="text-emerald-600" />
+                <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
+                  <IconUsers size={20} className="text-primary-600" />
                 </div>
               ) : (
                 <Avatar
@@ -410,12 +410,12 @@ export default function GolfMessagesPage() {
                 />
               )}
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-slate-900 truncate">
+                <p className="font-medium text-warm-900 truncate">
                   {selectedConversation.is_group
                     ? selectedConversation.title || 'Team Group'
                     : selectedConversation.other_participant?.name || 'Unknown User'}
                 </p>
-                <p className="text-sm text-slate-500 truncate">
+                <p className="text-sm text-warm-500 truncate">
                   {selectedConversation.is_group
                     ? 'Group Conversation'
                     : selectedConversation.other_participant?.subtitle || ''}
@@ -426,16 +426,18 @@ export default function GolfMessagesPage() {
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }} data-scroll-container>
               {messagesLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin h-6 w-6 border-2 border-green-600 border-t-transparent rounded-full" />
+                <div className="space-y-3 py-8 px-4">
+                  <div className="h-4 w-3/4 bg-warm-200 rounded skeleton-shimmer" />
+                  <div className="h-4 w-1/2 bg-warm-200 rounded skeleton-shimmer" />
+                  <div className="h-4 w-2/3 bg-warm-200 rounded skeleton-shimmer" />
                 </div>
               ) : !messages || messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <div className="w-12 h-12 rounded-full bg-slate-200 flex items-center justify-center mb-3">
-                    <IconMessageSquare size={20} className="text-slate-400" />
+                  <div className="w-12 h-12 rounded-full bg-warm-200 flex items-center justify-center mb-3">
+                    <IconMessageSquare size={20} className="text-warm-400" />
                   </div>
-                  <p className="text-sm text-slate-500">No messages yet</p>
-                  <p className="text-xs text-slate-400 mt-1">Start the conversation!</p>
+                  <p className="text-sm text-warm-500">No messages yet</p>
+                  <p className="text-xs text-warm-400 mt-1">Start the conversation!</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -483,14 +485,14 @@ export default function GolfMessagesPage() {
                             )}>
                               <button
                                 onClick={() => handleStartEdit(msg.id, msg.content)}
-                                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                                className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
                                 title="Edit message"
                               >
                                 <IconPencil size={14} />
                               </button>
                               <button
                                 onClick={() => handleDeleteClick(msg.id)}
-                                className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                                className="p-1.5 rounded-lg text-warm-400 hover:text-red-500 hover:bg-red-50 transition-colors"
                                 title="Delete message"
                               >
                                 <IconTrash size={14} />
@@ -506,13 +508,15 @@ export default function GolfMessagesPage() {
                                 onClick={handleConfirmDelete}
                                 className="p-1 rounded text-red-600 hover:bg-red-100 transition-colors"
                                 title="Confirm delete"
+                                aria-label="Confirm delete"
                               >
                                 <IconCheck size={14} />
                               </button>
                               <button
                                 onClick={handleCancelDelete}
-                                className="p-1 rounded text-slate-500 hover:bg-slate-200 transition-colors"
+                                className="p-1 rounded text-warm-500 hover:bg-warm-200 transition-colors"
                                 title="Cancel"
+                                aria-label="Cancel delete"
                               >
                                 <IconX size={14} />
                               </button>
@@ -523,20 +527,20 @@ export default function GolfMessagesPage() {
                           {editingMessageId === msg.id ? (
                             <div className={cn(
                               'w-full px-3 py-2',
-                              'bg-emerald-50 border-2 border-emerald-300 shadow-sm',
+                              'bg-primary-50 border-2 border-primary-300 shadow-sm',
                               'rounded-2xl'
                             )}>
                               <textarea
                                 value={editContent}
                                 onChange={(e) => setEditContent(e.target.value)}
-                                className="w-full bg-transparent text-sm text-slate-900 resize-none focus:outline-none min-w-[200px]"
+                                className="w-full bg-transparent text-sm text-warm-900 resize-none focus:outline-none min-w-[200px]"
                                 rows={Math.min(5, editContent.split('\n').length || 1)}
                                 autoFocus
                               />
-                              <div className="flex items-center justify-end gap-1 mt-2 pt-2 border-t border-emerald-200">
+                              <div className="flex items-center justify-end gap-1 mt-2 pt-2 border-t border-primary-200">
                                 <button
                                   onClick={handleCancelEdit}
-                                  className="px-2 py-1 text-xs text-slate-500 hover:text-slate-700 rounded transition-colors"
+                                  className="px-2 py-1 text-xs text-warm-500 hover:text-warm-700 rounded transition-colors"
                                   disabled={isEditSaving}
                                 >
                                   Cancel
@@ -547,8 +551,8 @@ export default function GolfMessagesPage() {
                                   className={cn(
                                     'px-2 py-1 text-xs rounded transition-colors',
                                     isEditSaving || !editContent.trim()
-                                      ? 'text-slate-400 cursor-not-allowed'
-                                      : 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100'
+                                      ? 'text-warm-400 cursor-not-allowed'
+                                      : 'text-primary-600 hover:text-primary-700 hover:bg-primary-100'
                                   )}
                                 >
                                   {isEditSaving ? 'Saving...' : 'Save'}
@@ -560,8 +564,8 @@ export default function GolfMessagesPage() {
                             <div className={cn(
                               'px-4 py-2.5',
                               isOwn
-                                ? 'bg-emerald-500 text-white'
-                                : 'bg-white/70 backdrop-blur-sm border border-white/30 text-slate-900 shadow-glass-sm',
+                                ? 'bg-primary-500 text-white'
+                                : 'bg-white/70 backdrop-blur-sm border border-white/30 text-warm-900 shadow-glass-sm',
                               // Dynamic border radius based on position in group
                               isFirstInGroup && isLastInGroup && (isOwn ? 'rounded-2xl rounded-br-md' : 'rounded-2xl rounded-bl-md'),
                               isFirstInGroup && !isLastInGroup && (isOwn ? 'rounded-2xl rounded-br-lg' : 'rounded-2xl rounded-bl-lg'),
@@ -575,7 +579,7 @@ export default function GolfMessagesPage() {
                               {'edited_at' in msg && (msg as MessageWithReadStatus & { edited_at?: string }).edited_at && (
                                 <span className={cn(
                                   'text-xs mt-1 block',
-                                  isOwn ? 'text-emerald-200' : 'text-slate-400'
+                                  isOwn ? 'text-primary-200' : 'text-warm-400'
                                 )}>
                                   (edited)
                                 </span>
@@ -590,7 +594,7 @@ export default function GolfMessagesPage() {
                             'flex items-center gap-1 pb-1',
                             isOwn ? 'flex-row-reverse' : ''
                           )}>
-                            <span className="text-xs text-slate-400">
+                            <span className="text-xs text-warm-400">
                               {formatTime(msg.created_at)}
                             </span>
                             {/* Read receipt indicator for own messages */}
@@ -626,13 +630,13 @@ export default function GolfMessagesPage() {
           </>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
-            <div className="w-16 h-16 rounded-full bg-slate-200 flex items-center justify-center mb-4">
-              <IconMessageSquare size={28} className="text-slate-400" />
+            <div className="w-16 h-16 rounded-full bg-warm-200 flex items-center justify-center mb-4">
+              <IconMessageSquare size={28} className="text-warm-400" />
             </div>
-            <h3 className="text-lg font-medium text-slate-900 mb-2">
+            <h3 className="text-lg font-medium text-warm-900 mb-2">
               Select a conversation
             </h3>
-            <p className="text-sm text-slate-500 mb-4">
+            <p className="text-sm text-warm-500 mb-4">
               Choose a conversation from the left to start messaging
             </p>
             <Button onClick={() => setShowNewMessageModal(true)}>
@@ -670,7 +674,7 @@ function ReadReceiptIcon({ isRead }: { isRead?: boolean }) {
     // Double checkmark (read)
     return (
       <svg
-        className="w-4 h-4 text-emerald-500"
+        className="w-4 h-4 text-primary-500"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -688,7 +692,7 @@ function ReadReceiptIcon({ isRead }: { isRead?: boolean }) {
   // Single checkmark (sent but not read)
   return (
     <svg
-      className="w-3.5 h-3.5 text-slate-400"
+      className="w-3.5 h-3.5 text-warm-400"
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -702,11 +706,11 @@ function ReadReceiptIcon({ isRead }: { isRead?: boolean }) {
 // Typing Indicator Component
 function TypingIndicator() {
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
+    <div className="bg-white border border-warm-200 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
       <div className="flex items-center gap-1">
-        <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-        <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-        <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+        <span className="w-2 h-2 bg-warm-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+        <span className="w-2 h-2 bg-warm-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+        <span className="w-2 h-2 bg-warm-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
       </div>
     </div>
   );
@@ -796,7 +800,7 @@ function MessageInput({ onSend, onTyping }: MessageInputProps) {
       <div className={cn(
         'flex items-end gap-3 p-1.5 rounded-2xl',
         'bg-white/50 border border-white/30',
-        'focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20',
+        'focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20',
         'transition-all duration-200'
       )}>
         <textarea
@@ -808,7 +812,7 @@ function MessageInput({ onSend, onTyping }: MessageInputProps) {
           rows={1}
           className={cn(
             'flex-1 resize-none bg-transparent px-3 py-2 text-sm',
-            'placeholder:text-slate-400',
+            'placeholder:text-warm-400',
             'focus:outline-none'
           )}
           style={{ minHeight: '40px', maxHeight: '120px' }}
@@ -816,22 +820,27 @@ function MessageInput({ onSend, onTyping }: MessageInputProps) {
         <button
           type="submit"
           disabled={!message.trim() || sending}
+          aria-label="Send message"
           className={cn(
             'h-11 w-11 md:h-10 md:w-10 rounded-xl flex items-center justify-center',
             'transition-all duration-200',
             message.trim() && !sending
-              ? 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-sm'
-              : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+              ? 'bg-primary-500 text-white hover:bg-primary-600 shadow-sm'
+              : 'bg-warm-200 text-warm-400 cursor-not-allowed'
           )}
         >
           {sending ? (
-            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            <span className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+              <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+              <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+            </span>
           ) : (
             <IconSend size={18} />
           )}
         </button>
       </div>
-      <p className="text-xs text-slate-400 mt-1.5 px-2">
+      <p className="text-xs text-warm-400 mt-1.5 px-2">
         Press Enter to send, Shift+Enter for new line
       </p>
     </form>
@@ -905,7 +914,7 @@ function ConversationGroup({
 }) {
   return (
     <div className="mb-2">
-      <h3 className="px-4 py-1.5 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+      <h3 className="px-4 py-1.5 text-xs font-semibold text-warm-400 uppercase tracking-wider">
         {label}
       </h3>
       <div className="space-y-0.5 px-2">
@@ -947,15 +956,15 @@ function ConversationRow({
         'w-full p-3 flex items-start gap-3 text-left rounded-xl',
         'transition-all duration-150',
         isSelected
-          ? 'bg-emerald-50 shadow-sm'
-          : 'hover:bg-slate-50'
+          ? 'bg-primary-50 shadow-sm'
+          : 'hover:bg-warm-50'
       )}
     >
       {/* Avatar with unread indicator */}
       <div className="relative">
         {isGroup ? (
-          <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
-            <IconUsers size={20} className="text-emerald-600" />
+          <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
+            <IconUsers size={20} className="text-primary-600" />
           </div>
         ) : (
           <Avatar
@@ -966,7 +975,7 @@ function ConversationRow({
         )}
         {hasUnread && (
           <span className="absolute -top-1 -right-1 w-5 h-5
-                          bg-emerald-500 rounded-full
+                          bg-primary-500 rounded-full
                           flex items-center justify-center
                           text-xs font-bold text-white
                           ring-2 ring-white shadow-sm">
@@ -981,12 +990,12 @@ function ConversationRow({
           <div className="flex items-center gap-1.5 min-w-0">
             <span className={cn(
               'truncate',
-              hasUnread ? 'font-semibold text-slate-900' : 'font-medium text-slate-700'
+              hasUnread ? 'font-semibold text-warm-900' : 'font-medium text-warm-700'
             )}>
               {displayName}
             </span>
             {isGroup && (
-              <span className="px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide bg-emerald-100 text-emerald-700 rounded flex-shrink-0">
+              <span className="px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide bg-primary-100 text-primary-700 rounded flex-shrink-0">
                 Group
               </span>
             )}
@@ -994,7 +1003,7 @@ function ConversationRow({
           {conv.last_message && (
             <span className={cn(
               'text-xs flex-shrink-0',
-              hasUnread ? 'text-emerald-600 font-medium' : 'text-slate-400'
+              hasUnread ? 'text-primary-600 font-medium' : 'text-warm-400'
             )}>
               {formatTime(conv.last_message.created_at)}
             </span>
@@ -1004,7 +1013,7 @@ function ConversationRow({
         {/* Preview */}
         <p className={cn(
           'text-sm truncate',
-          hasUnread ? 'text-slate-900' : 'text-slate-500'
+          hasUnread ? 'text-warm-900' : 'text-warm-500'
         )}>
           {conv.last_message?.content || 'No messages yet'}
         </p>

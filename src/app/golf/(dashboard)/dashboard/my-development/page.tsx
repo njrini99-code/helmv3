@@ -41,21 +41,21 @@ interface AreaTypeConfig {
 
 const AREA_TYPES: Record<string, AreaTypeConfig> = {
   driving: { label: 'Driving', icon: IconWind, color: 'text-blue-600', bgColor: 'bg-blue-50' },
-  iron_play: { label: 'Iron Play', icon: IconCrosshair, color: 'text-emerald-600', bgColor: 'bg-emerald-50' },
+  iron_play: { label: 'Iron Play', icon: IconCrosshair, color: 'text-primary-600', bgColor: 'bg-primary-50' },
   short_game: { label: 'Short Game', icon: IconFlag, color: 'text-amber-600', bgColor: 'bg-amber-50' },
   putting: { label: 'Putting', icon: IconCircleDot, color: 'text-violet-600', bgColor: 'bg-violet-50' },
   course_management: { label: 'Course Mgmt', icon: IconMap, color: 'text-teal-600', bgColor: 'bg-teal-50' },
   mental_game: { label: 'Mental Game', icon: IconBrain, color: 'text-rose-600', bgColor: 'bg-rose-50' },
   fitness: { label: 'Fitness', icon: IconDumbbell, color: 'text-orange-600', bgColor: 'bg-orange-50' },
-  other: { label: 'Other', icon: IconClipboardList, color: 'text-slate-600', bgColor: 'bg-slate-50' },
+  other: { label: 'Other', icon: IconClipboardList, color: 'text-warm-600', bgColor: 'bg-warm-50' },
 };
 
 const DEFAULT_AREA: AreaTypeConfig = AREA_TYPES.other!;
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; borderColor: string }> = {
-  active: { label: 'Active', color: 'bg-green-50 text-green-700', borderColor: 'border-green-200' },
+  active: { label: 'Active', color: 'bg-primary-50 text-primary-700', borderColor: 'border-primary-200' },
   in_progress: { label: 'In Progress', color: 'bg-blue-50 text-blue-700', borderColor: 'border-blue-200' },
-  completed: { label: 'Completed', color: 'bg-slate-50 text-slate-600', borderColor: 'border-slate-200' },
+  completed: { label: 'Completed', color: 'bg-warm-50 text-warm-600', borderColor: 'border-warm-200' },
   paused: { label: 'Paused', color: 'bg-amber-50 text-amber-700', borderColor: 'border-amber-200' },
 };
 
@@ -108,18 +108,18 @@ export default async function MyDevelopmentPage() {
   return (
     <AnimatedPage className="min-h-full">
       <AnimatedItem>
-        <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+        <div className="border-b border-warm-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
           <div className="max-w-5xl mx-auto px-4 md:px-6 py-5">
             <div className="flex items-center gap-3">
               <MobileMenuButton />
-              <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center">
-                <IconTarget size={20} className="text-green-600" />
+              <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center">
+                <IconTarget size={20} className="text-primary-600" />
               </div>
               <div>
-                <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+                <h1 className="text-2xl font-semibold tracking-tight text-warm-900">
                   My Development
                 </h1>
-                <p className="text-sm text-slate-500 mt-0.5">
+                <p className="text-sm text-warm-500 mt-0.5">
                   Focus areas assigned by your coach to help you improve
                 </p>
               </div>
@@ -127,23 +127,23 @@ export default async function MyDevelopmentPage() {
 
             {/* Summary stats bar */}
             {(focusAreas || []).length > 0 && (
-              <div className="flex items-center gap-6 mt-4 pt-4 border-t border-slate-100">
+              <div className="flex items-center gap-6 mt-4 pt-4 border-t border-warm-100">
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-green-500" />
-                  <span className="text-sm text-slate-600">
-                    <span className="font-semibold text-slate-900">{activeAreas.length}</span> Active
+                  <div className="w-2 h-2 rounded-full bg-primary-500" />
+                  <span className="text-sm text-warm-600">
+                    <span className="font-semibold text-warm-900">{activeAreas.length}</span> Active
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-slate-300" />
-                  <span className="text-sm text-slate-600">
-                    <span className="font-semibold text-slate-900">{completedAreas.length}</span> Completed
+                  <div className="w-2 h-2 rounded-full bg-warm-300" />
+                  <span className="text-sm text-warm-600">
+                    <span className="font-semibold text-warm-900">{completedAreas.length}</span> Completed
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <IconActivity size={14} className="text-slate-400" />
-                  <span className="text-sm text-slate-600">
-                    <span className="font-semibold text-slate-900">{(focusAreas || []).length}</span> Total
+                  <IconActivity size={14} className="text-warm-400" />
+                  <span className="text-sm text-warm-600">
+                    <span className="font-semibold text-warm-900">{(focusAreas || []).length}</span> Total
                   </span>
                 </div>
               </div>
@@ -157,16 +157,16 @@ export default async function MyDevelopmentPage() {
         {(focusAreas || []).length === 0 ? (
           <div className="relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-hidden p-8 md:p-16 text-center">
             <ShineEffect />
-            <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
-              <IconTarget size={28} className="text-slate-400" />
+            <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
+              <IconTarget size={28} className="text-warm-400" />
             </div>
-            <h3 className="text-lg font-semibold text-slate-900 mb-2">No Development Plans Yet</h3>
-            <p className="text-slate-500 max-w-sm mx-auto mb-4">
+            <h3 className="text-lg font-semibold text-warm-900 mb-2">No Development Plans Yet</h3>
+            <p className="text-warm-500 max-w-sm mx-auto mb-4">
               Your coach hasn&apos;t assigned any focus areas yet. Check back later or talk to your coach about your development goals.
             </p>
             <a
               href="/golf/dashboard/messages"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
             >
               Message Coach
             </a>
@@ -176,10 +176,10 @@ export default async function MyDevelopmentPage() {
             {/* Active Focus Areas */}
             {activeAreas.length > 0 && (
               <div>
-                <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                  <IconClock size={20} className="text-green-600" />
+                <h2 className="text-lg font-semibold text-warm-900 mb-4 flex items-center gap-2">
+                  <IconClock size={20} className="text-primary-600" />
                   Active Focus Areas
-                  <span className="ml-auto text-sm font-normal text-slate-400">
+                  <span className="ml-auto text-sm font-normal text-warm-400">
                     {activeAreas.length} {activeAreas.length === 1 ? 'area' : 'areas'}
                   </span>
                 </h2>
@@ -209,7 +209,7 @@ export default async function MyDevelopmentPage() {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-start justify-between gap-4">
                                 <div>
-                                  <h3 className="font-semibold text-slate-900">{fa.title || 'Untitled'}</h3>
+                                  <h3 className="font-semibold text-warm-900">{fa.title || 'Untitled'}</h3>
                                   <p className={cn('text-sm font-medium mt-0.5', areaConfig.color)}>
                                     {areaConfig.label}
                                   </p>
@@ -226,41 +226,41 @@ export default async function MyDevelopmentPage() {
                               </div>
 
                               {fa.description && (
-                                <p className="text-sm text-slate-600 mt-3 leading-relaxed">{fa.description}</p>
+                                <p className="text-sm text-warm-600 mt-3 leading-relaxed">{fa.description}</p>
                               )}
 
                               {/* Progress bar if metrics exist */}
                               {fa.target_value != null && fa.target_value > 0 && (
                                 <div className="mt-5">
                                   <div className="flex items-center justify-between text-sm mb-2">
-                                    <span className="text-slate-500 font-medium">
+                                    <span className="text-warm-500 font-medium">
                                       {fa.target_metric || 'Progress'}
                                     </span>
-                                    <span className="font-semibold text-slate-700">
+                                    <span className="font-semibold text-warm-700">
                                       {fa.current_value ?? 0}
-                                      <span className="text-slate-400 font-normal mx-1">/</span>
+                                      <span className="text-warm-400 font-normal mx-1">/</span>
                                       {fa.target_value}
                                       {progress > 0 && (
                                         <span className={cn(
                                           'ml-2 text-xs font-medium px-1.5 py-0.5 rounded',
-                                          progress >= 100 ? 'bg-green-100 text-green-700' :
+                                          progress >= 100 ? 'bg-primary-100 text-primary-700' :
                                           progress >= 50 ? 'bg-blue-100 text-blue-700' :
-                                          'bg-slate-100 text-slate-600'
+                                          'bg-warm-100 text-warm-600'
                                         )}>
                                           {progress}%
                                         </span>
                                       )}
                                     </span>
                                   </div>
-                                  <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                                  <div className="h-2.5 bg-warm-100 rounded-full overflow-hidden">
                                     <div
                                       className={cn(
                                         'h-full rounded-full transition-all duration-700 ease-out',
                                         progress >= 100
-                                          ? 'bg-gradient-to-r from-green-500 to-green-400'
+                                          ? 'bg-gradient-to-r from-primary-500 to-primary-400'
                                           : progress >= 50
                                             ? 'bg-gradient-to-r from-blue-500 to-blue-400'
-                                            : 'bg-gradient-to-r from-slate-400 to-slate-300'
+                                            : 'bg-gradient-to-r from-warm-400 to-warm-300'
                                       )}
                                       style={{ width: `${Math.min(progress, 100)}%` }}
                                     />
@@ -270,7 +270,7 @@ export default async function MyDevelopmentPage() {
 
                               {/* Date */}
                               {fa.started_at && (
-                                <p className="text-xs text-slate-400 mt-4">
+                                <p className="text-xs text-warm-400 mt-4">
                                   Started {new Date(fa.started_at).toLocaleDateString('en-US', {
                                     month: 'short',
                                     day: 'numeric',
@@ -291,10 +291,10 @@ export default async function MyDevelopmentPage() {
             {/* Completed Focus Areas */}
             {completedAreas.length > 0 && (
               <div>
-                <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                  <IconCheck size={20} className="text-slate-500" />
+                <h2 className="text-lg font-semibold text-warm-900 mb-4 flex items-center gap-2">
+                  <IconCheck size={20} className="text-warm-500" />
                   Completed
-                  <span className="ml-auto text-sm font-normal text-slate-400">
+                  <span className="ml-auto text-sm font-normal text-warm-400">
                     {completedAreas.length} {completedAreas.length === 1 ? 'area' : 'areas'}
                   </span>
                 </h2>
@@ -311,19 +311,19 @@ export default async function MyDevelopmentPage() {
                         <ShineEffect />
                         <div className="p-5">
                           <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0">
-                              <AreaIcon size={18} className="text-slate-400" />
+                            <div className="w-10 h-10 rounded-xl bg-warm-100 flex items-center justify-center flex-shrink-0">
+                              <AreaIcon size={18} className="text-warm-400" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <h3 className="font-medium text-slate-700 truncate">{fa.title || 'Untitled'}</h3>
-                              <p className="text-xs text-slate-400 mt-0.5">{areaConfig.label}</p>
+                              <h3 className="font-medium text-warm-700 truncate">{fa.title || 'Untitled'}</h3>
+                              <p className="text-xs text-warm-400 mt-0.5">{areaConfig.label}</p>
                             </div>
-                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-50 border border-green-200">
-                              <IconCheck size={14} className="text-green-600" />
-                              <span className="text-xs font-medium text-green-700">Complete</span>
+                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary-50 border border-primary-200">
+                              <IconCheck size={14} className="text-primary-600" />
+                              <span className="text-xs font-medium text-primary-700">Complete</span>
                             </div>
                             {fa.completed_at && (
-                              <span className="text-xs text-slate-400 hidden sm:block">
+                              <span className="text-xs text-warm-400 hidden sm:block">
                                 {new Date(fa.completed_at).toLocaleDateString('en-US', {
                                   month: 'short',
                                   day: 'numeric',

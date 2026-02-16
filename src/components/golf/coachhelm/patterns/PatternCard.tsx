@@ -92,8 +92,8 @@ export function PatternCard({
 
   const severity = severityConfig[pattern.severity];
   const isNegative = pattern.strokeImpact > 0;
-  const impactColor = isNegative ? 'text-red-600' : 'text-green-600';
-  const impactBgColor = isNegative ? 'bg-red-500' : 'bg-green-500';
+  const impactColor = isNegative ? 'text-red-600' : 'text-primary-600';
+  const impactBgColor = isNegative ? 'bg-red-500' : 'bg-primary-500';
 
   // Pattern type icon
   const getPatternIcon = () => {
@@ -125,7 +125,7 @@ export function PatternCard({
     }
     if (pattern.trend === 'weakening') {
       return (
-        <span className="flex items-center gap-1 text-xs text-green-600">
+        <span className="flex items-center gap-1 text-xs text-primary-600">
           <IconTrendingDown size={12} />
           Weakening
         </span>
@@ -143,7 +143,7 @@ export function PatternCard({
   const getLifecycleBadge = () => {
     const badges: Record<string, { bg: string; text: string; label: string }> = {
       detected: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Detected' },
-      confirmed: { bg: 'bg-green-100', text: 'text-green-700', label: 'Confirmed' },
+      confirmed: { bg: 'bg-primary-100', text: 'text-primary-700', label: 'Confirmed' },
       addressed: { bg: 'bg-amber-100', text: 'text-amber-700', label: 'In Progress' },
       resolved: { bg: 'bg-warm-100', text: 'text-warm-600', label: 'Resolved' },
       dismissed: { bg: 'bg-warm-100', text: 'text-warm-400', label: 'Dismissed' },
@@ -251,8 +251,8 @@ export function PatternCard({
                     <div className="absolute left-1/2 top-0 bottom-0 w-px bg-warm-300" />
                     {/* Impact bar */}
                     <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${impactWidth / 2}%` }}
+                      initial={{ scaleX: 0 }}
+                      animate={{ scaleX: 1 }}
                       transition={{ duration: 0.5, delay: 0.2 }}
                       className={cn(
                         'h-full rounded-full absolute top-0',
@@ -260,6 +260,7 @@ export function PatternCard({
                         isNegative ? 'right-1/2' : 'left-1/2'
                       )}
                       style={{
+                        width: `${impactWidth / 2}%`,
                         [isNegative ? 'right' : 'left']: '50%',
                         transformOrigin: isNegative ? 'right' : 'left',
                       }}
@@ -307,6 +308,7 @@ export function PatternCard({
             {/* Expand button */}
             <button
               onClick={() => setExpanded(!expanded)}
+              aria-label={expanded ? 'Collapse pattern details' : 'Expand pattern details'}
               className="p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
             >
               <motion.div
@@ -325,7 +327,7 @@ export function PatternCard({
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2 }}
+                transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
                 className="overflow-hidden"
               >
                 <div className="pt-4 mt-4 border-t border-warm-100">
@@ -357,7 +359,7 @@ export function PatternCard({
                     </h4>
                     <span className={cn(
                       'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium',
-                      isNegative ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
+                      isNegative ? 'bg-red-100 text-red-700' : 'bg-primary-100 text-primary-700'
                     )}>
                       {isNegative ? (
                         <IconTrendingDown size={14} />
@@ -398,11 +400,11 @@ export function PatternCard({
 
                   {/* Recommendation */}
                   {pattern.recommendation && (
-                    <div className="p-3 bg-green-50 rounded-lg border border-green-100 mb-4">
-                      <h4 className="text-xs font-semibold text-green-700 uppercase tracking-wide mb-1">
+                    <div className="p-3 bg-primary-50 rounded-lg border border-primary-100 mb-4">
+                      <h4 className="text-xs font-semibold text-primary-700 uppercase tracking-wide mb-1">
                         Recommendation
                       </h4>
-                      <p className="text-sm text-green-800">
+                      <p className="text-sm text-primary-800">
                         {pattern.recommendation}
                       </p>
                     </div>
@@ -428,7 +430,7 @@ export function PatternCard({
                         {onValidate && (
                           <button
                             onClick={() => onValidate(pattern)}
-                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-green-600 hover:bg-green-50 transition-colors"
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-primary-600 hover:bg-primary-50 transition-colors"
                           >
                             <IconCheck size={14} />
                             Validate
@@ -459,7 +461,7 @@ export function PatternCard({
                     {pattern.lifecycleState === 'addressed' && onResolve && (
                       <button
                         onClick={() => onResolve(pattern)}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-green-600 hover:bg-green-50 transition-colors"
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-primary-600 hover:bg-primary-50 transition-colors"
                       >
                         <IconCheck size={14} />
                         Mark Resolved

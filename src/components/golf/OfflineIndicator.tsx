@@ -117,7 +117,7 @@ export function OfflineIndicator({
                 : syncError
                   ? 'bg-red-500/20 text-red-400 border border-red-500/30'
                   : pendingCount.total > 0
-                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                    ? 'bg-primary-500/20 text-primary-400 border border-primary-500/30'
                     : 'bg-warm-500/20 text-warm-400 border border-warm-500/30'
             }
           `}
@@ -171,7 +171,7 @@ export function OfflineIndicator({
                 {/* Connection Status */}
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-warm-400">Connection</span>
-                  <span className={`text-xs font-medium ${isOnline ? 'text-emerald-400' : 'text-amber-400'}`}>
+                  <span className={`text-xs font-medium ${isOnline ? 'text-primary-400' : 'text-amber-400'}`}>
                     {isOnline ? 'Online' : 'Offline'}
                   </span>
                 </div>
@@ -214,7 +214,7 @@ export function OfflineIndicator({
                   {isOnline && pendingCount.total > 0 && onSyncNow && !isSyncing && (
                     <button
                       onClick={onSyncNow}
-                      className="flex-1 px-3 py-1.5 text-xs font-medium text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 rounded transition-colors"
+                      className="flex-1 px-3 py-1.5 text-xs font-medium text-primary-400 bg-primary-500/10 hover:bg-primary-500/20 rounded transition-colors"
                     >
                       Sync Now
                     </button>
@@ -256,7 +256,7 @@ export function OfflineIndicator({
               ? 'bg-amber-500/95'
               : syncError
                 ? 'bg-red-500/95'
-                : 'bg-emerald-500/95'
+                : 'bg-primary-500/95'
             }
             backdrop-blur-sm shadow-lg p-3
           `}

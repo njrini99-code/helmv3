@@ -46,12 +46,12 @@ function FileTypeIcon({ mimeType, className }: { mimeType: string; className?: s
     return <FileVideoIcon className={cn('text-purple-500', className)} />;
   }
   if (mimeType.includes('spreadsheet') || mimeType.includes('excel') || mimeType === 'text/csv') {
-    return <FileSpreadsheetIcon className={cn('text-green-500', className)} />;
+    return <FileSpreadsheetIcon className={cn('text-primary-500', className)} />;
   }
   if (mimeType.startsWith('text/') || mimeType === 'application/json') {
-    return <FileTextIcon className={cn('text-gray-500', className)} />;
+    return <FileTextIcon className={cn('text-warm-500', className)} />;
   }
-  return <FileIcon className={cn('text-gray-400', className)} />;
+  return <FileIcon className={cn('text-warm-400', className)} />;
 }
 
 export function DocumentPreview({

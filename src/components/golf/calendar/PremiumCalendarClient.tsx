@@ -588,7 +588,7 @@ export function PremiumCalendarClient({
                     }}
                     className={`flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap min-h-[44px] transition-colors ${
                       selectedPlayerIds.length === 0
-                        ? 'bg-emerald-500 text-white'
+                        ? 'bg-primary-500 text-white'
                         : 'bg-white/50 text-warm-700'
                     }`}
                   >

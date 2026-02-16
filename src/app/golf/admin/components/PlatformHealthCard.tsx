@@ -10,19 +10,19 @@ interface Props {
 }
 
 const statusColors = {
-  healthy: 'bg-emerald-500',
+  healthy: 'bg-primary-500',
   warning: 'bg-amber-500',
   critical: 'bg-red-500',
 };
 
 const statusTextColors = {
-  healthy: 'text-emerald-700',
+  healthy: 'text-primary-700',
   warning: 'text-amber-700',
   critical: 'text-red-700',
 };
 
 const statusGradients = {
-  healthy: 'bg-gradient-to-r from-emerald-50/80 to-emerald-50/30',
+  healthy: 'bg-gradient-to-r from-primary-50/80 to-primary-50/30',
   warning: 'bg-gradient-to-r from-amber-50/80 to-amber-50/30',
   critical: 'bg-gradient-to-r from-red-50/80 to-red-50/30',
 };
@@ -216,7 +216,7 @@ export function PlatformHealthCard({ health }: Props) {
         <div className="mt-2 flex items-center gap-1.5">
           <div className={cn(
             'w-1.5 h-1.5 rounded-full',
-            health.dataFreshness === 'live' ? 'bg-emerald-500' : health.dataFreshness === 'stale' ? 'bg-amber-500' : 'bg-red-500',
+            health.dataFreshness === 'live' ? 'bg-primary-500' : health.dataFreshness === 'stale' ? 'bg-amber-500' : 'bg-red-500',
           )} />
           <span className="text-[11px] text-warm-400">Data Status: {freshnessLabel}</span>
         </div>

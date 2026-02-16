@@ -255,7 +255,7 @@ export function AttachmentUploader({
       className={cn(
         'relative rounded-2xl border-2 border-dashed transition-all duration-200',
         isDragging
-          ? 'border-green-500 bg-green-50'
+          ? 'border-primary-500 bg-primary-50'
           : 'border-warm-200 hover:border-warm-300 bg-white',
         disabled && 'opacity-50 cursor-not-allowed',
         overlay ? 'p-12' : 'p-8',
@@ -291,12 +291,12 @@ export function AttachmentUploader({
         <div
           className={cn(
             'w-16 h-16 rounded-full flex items-center justify-center mb-4 transition-colors',
-            isDragging ? 'bg-green-100' : 'bg-warm-100'
+            isDragging ? 'bg-primary-100' : 'bg-warm-100'
           )}
         >
           <IconUpload
             size={28}
-            className={cn(isDragging ? 'text-green-600' : 'text-warm-400')}
+            className={cn(isDragging ? 'text-primary-600' : 'text-warm-400')}
           />
         </div>
 
@@ -306,7 +306,7 @@ export function AttachmentUploader({
         </h3>
         <p className="text-sm text-warm-500 mb-4">
           Drag and drop or{' '}
-          <span className="text-green-600 font-medium">browse</span>
+          <span className="text-primary-600 font-medium">browse</span>
         </p>
 
         {/* File type buttons */}
@@ -363,7 +363,7 @@ export function AttachmentUploader({
           disabled={disabled}
           className={cn(
             'flex items-center gap-2 px-4 py-2 rounded-lg',
-            'bg-green-50 text-green-700 hover:bg-green-100',
+            'bg-primary-50 text-primary-700 hover:bg-primary-100',
             'transition-colors duration-200 lg:hidden',
             disabled && 'opacity-50 cursor-not-allowed'
           )}

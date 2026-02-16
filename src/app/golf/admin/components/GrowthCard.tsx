@@ -15,8 +15,8 @@ interface Props {
 }
 
 const HEALTH_LABELS: Record<string, { label: string; color: string }> = {
-  excellent: { label: 'Excellent', color: 'text-emerald-700' },
-  good: { label: 'Good', color: 'text-emerald-600' },
+  excellent: { label: 'Excellent', color: 'text-primary-700' },
+  good: { label: 'Good', color: 'text-primary-600' },
   fair: { label: 'Fair', color: 'text-amber-600' },
   poor: { label: 'Needs Work', color: 'text-red-600' },
 };
@@ -100,13 +100,13 @@ export function GrowthCard({ growth, users, usage, coachhelm, userJourney, stick
             <p className="text-xs text-warm-500 mb-0.5">User Growth</p>
             <div className="flex items-center gap-1">
               {growth.userGrowthRate >= 0 ? (
-                <TrendingUp size={14} className="text-emerald-600" />
+                <TrendingUp size={14} className="text-primary-600" />
               ) : (
                 <TrendingDown size={14} className="text-red-500" />
               )}
               <span className={cn(
                 'text-lg font-semibold tabular-nums',
-                growth.userGrowthRate >= 0 ? 'text-emerald-700' : 'text-red-600'
+                growth.userGrowthRate >= 0 ? 'text-primary-700' : 'text-red-600'
               )}>
                 {growth.userGrowthRate > 0 ? '+' : ''}{growth.userGrowthRate}%
               </span>
@@ -116,13 +116,13 @@ export function GrowthCard({ growth, users, usage, coachhelm, userJourney, stick
             <p className="text-xs text-warm-500 mb-0.5">Round Growth</p>
             <div className="flex items-center gap-1">
               {growth.roundGrowthRate >= 0 ? (
-                <TrendingUp size={14} className="text-emerald-600" />
+                <TrendingUp size={14} className="text-primary-600" />
               ) : (
                 <TrendingDown size={14} className="text-red-500" />
               )}
               <span className={cn(
                 'text-lg font-semibold tabular-nums',
-                growth.roundGrowthRate >= 0 ? 'text-emerald-700' : 'text-red-600'
+                growth.roundGrowthRate >= 0 ? 'text-primary-700' : 'text-red-600'
               )}>
                 {growth.roundGrowthRate > 0 ? '+' : ''}{growth.roundGrowthRate}%
               </span>
@@ -192,7 +192,7 @@ export function GrowthCard({ growth, users, usage, coachhelm, userJourney, stick
               <p className="text-[10px] text-warm-400 uppercase tracking-wide">Week {c.week}</p>
               <p className={cn(
                 'text-xl font-bold tabular-nums mt-0.5',
-                c.rate >= 50 ? 'text-emerald-600' : c.rate >= 25 ? 'text-amber-600' : 'text-red-500'
+                c.rate >= 50 ? 'text-primary-600' : c.rate >= 25 ? 'text-amber-600' : 'text-red-500'
               )}>
                 {c.rate}%
               </p>

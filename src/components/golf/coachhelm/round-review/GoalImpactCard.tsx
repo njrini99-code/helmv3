@@ -26,7 +26,7 @@ export function GoalImpactCard({ impacts }: GoalImpactCardProps) {
             key={impact.goalId}
             className={cn(
               'flex items-center gap-3 p-3 rounded-lg',
-              impact.direction === 'positive' && 'bg-green-50',
+              impact.direction === 'positive' && 'bg-primary-50',
               impact.direction === 'negative' && 'bg-red-50',
               impact.direction === 'neutral' && 'bg-warm-50',
             )}
@@ -34,7 +34,7 @@ export function GoalImpactCard({ impacts }: GoalImpactCardProps) {
             {/* Direction indicator */}
             <div className={cn(
               'w-8 h-8 rounded-full flex items-center justify-center text-sm',
-              impact.direction === 'positive' && 'bg-green-100 text-green-600',
+              impact.direction === 'positive' && 'bg-primary-100 text-primary-600',
               impact.direction === 'negative' && 'bg-red-100 text-red-600',
               impact.direction === 'neutral' && 'bg-warm-100 text-warm-600',
             )}>
@@ -51,7 +51,7 @@ export function GoalImpactCard({ impacts }: GoalImpactCardProps) {
             {impact.change !== 0 && (
               <div className={cn(
                 'text-sm font-semibold tabular-nums',
-                impact.direction === 'positive' ? 'text-green-600' : 'text-red-500',
+                impact.direction === 'positive' ? 'text-primary-600' : 'text-red-500',
               )}>
                 {impact.change > 0 ? '+' : ''}{impact.change.toFixed(1)}
               </div>

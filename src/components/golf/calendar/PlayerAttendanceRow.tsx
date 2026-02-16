@@ -33,7 +33,7 @@ export interface PlayerAttendanceRowProps {
 }
 
 const RSVP_INDICATOR_COLORS = {
-  accepted: 'bg-emerald-500',
+  accepted: 'bg-primary-500',
   tentative: 'bg-amber-500',
   declined: 'bg-rose-400',
   pending: 'bg-warm-300',
@@ -85,7 +85,7 @@ export function PlayerAttendanceRow({
       className={cn(
         'flex items-center gap-3 p-3 bg-white rounded-xl border border-warm-200',
         'transition-all duration-200',
-        isPresent && 'bg-emerald-50 border-emerald-200',
+        isPresent && 'bg-primary-50 border-primary-200',
         isAbsent && !isExcused && 'bg-rose-50 border-rose-200',
         isExcused && 'bg-amber-50 border-amber-200',
         disabled && 'opacity-50',
@@ -137,7 +137,7 @@ export function PlayerAttendanceRow({
       {attendance && (
         <div className="shrink-0">
           {isPresent && (
-            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-medium">
+            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-primary-100 text-primary-700 text-xs font-medium">
               <Check className="w-3 h-3" />
               Present
             </span>
@@ -170,12 +170,13 @@ export function PlayerAttendanceRow({
             'touch-manipulation',
             'active:scale-95',
             isPresent
-              ? 'bg-emerald-600 text-white shadow-lg ring-4 ring-emerald-200'
-              : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-2 border-emerald-200',
+              ? 'bg-primary-600 text-white shadow-lg ring-4 ring-primary-200'
+              : 'bg-primary-50 text-primary-700 hover:bg-primary-100 border-2 border-primary-200',
             disabled && 'cursor-not-allowed',
             loading && 'opacity-50'
           )}
           title="Mark present"
+          aria-label="Mark present"
         >
           <Check className={cn('shrink-0', isPresent ? 'w-6 h-6' : 'w-5 h-5')} />
         </button>
@@ -197,6 +198,7 @@ export function PlayerAttendanceRow({
             loading && 'opacity-50'
           )}
           title="Mark absent"
+          aria-label="Mark absent"
         >
           <X className={cn('shrink-0', isAbsent ? 'w-6 h-6' : 'w-5 h-5')} />
         </button>
@@ -262,10 +264,11 @@ export function CompactPlayerAttendanceRow({
             'min-w-[44px] min-h-[44px] p-2 rounded-lg',
             'transition-all active:scale-95',
             isPresent
-              ? 'bg-emerald-600 text-white'
-              : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+              ? 'bg-primary-600 text-white'
+              : 'bg-primary-50 text-primary-700 hover:bg-primary-100'
           )}
           title="Present"
+          aria-label="Mark present"
         >
           <Check className="w-5 h-5" />
         </button>
@@ -281,6 +284,7 @@ export function CompactPlayerAttendanceRow({
               : 'bg-rose-50 text-rose-700 hover:bg-rose-100'
           )}
           title="Absent"
+          aria-label="Mark absent"
         >
           <X className="w-5 h-5" />
         </button>

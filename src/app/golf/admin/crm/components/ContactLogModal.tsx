@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
-import type { Coach, CoachStatus } from '../page';
+import type { Coach, CoachStatus } from '../crm-config';
 import { X, Mail, Phone, Calendar, Plus } from 'lucide-react';
 
 interface ContactLogModalProps {
@@ -164,6 +164,7 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
           </div>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="p-2 rounded-lg hover:bg-warm-100 text-warm-500 transition-colors"
           >
             <X className="w-5 h-5" />
@@ -201,7 +202,7 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
             {!showAddForm && (
               <button
                 onClick={() => setShowAddForm(true)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200 text-sm transition-colors"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary-100 text-primary-700 hover:bg-primary-200 text-sm transition-colors"
               >
                 <Plus className="w-4 h-4" />
                 Log Contact
@@ -221,7 +222,7 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
                     className={cn(
                       'px-3 py-1.5 rounded-lg text-sm transition-colors',
                       newLog.contact_type === type.value
-                        ? 'bg-emerald-600 text-white'
+                        ? 'bg-primary-600 text-white'
                         : 'bg-white border border-warm-200 hover:bg-warm-100'
                     )}
                   >
@@ -234,7 +235,7 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
                 placeholder="Notes about this contact..."
                 value={newLog.notes}
                 onChange={(e) => setNewLog({ ...newLog, notes: e.target.value })}
-                className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+                className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
                 rows={3}
               />
 
@@ -246,7 +247,7 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
                     placeholder="Follow up with demo offer..."
                     value={newLog.next_action}
                     onChange={(e) => setNewLog({ ...newLog, next_action: e.target.value })}
-                    className="w-full px-3 py-2 border border-warm-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                    className="w-full px-3 py-2 border border-warm-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
                   />
                 </div>
                 <div>
@@ -255,7 +256,7 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
                     type="date"
                     value={newLog.next_action_date}
                     onChange={(e) => setNewLog({ ...newLog, next_action_date: e.target.value })}
-                    className="w-full px-3 py-2 border border-warm-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                    className="w-full px-3 py-2 border border-warm-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
                   />
                 </div>
               </div>
@@ -265,7 +266,7 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
                 <select
                   value={newLog.update_status}
                   onChange={(e) => setNewLog({ ...newLog, update_status: e.target.value as CoachStatus | '' })}
-                  className="w-full px-3 py-2 border border-warm-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm bg-white"
+                  className="w-full px-3 py-2 border border-warm-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm bg-white"
                 >
                   <option value="">Keep current status</option>
                   {STATUS_OPTIONS.map((opt) => (
@@ -285,7 +286,7 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 text-sm transition-colors"
+                  className="px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50 text-sm transition-colors"
                 >
                   {submitting ? 'Saving...' : 'Save Log'}
                 </button>

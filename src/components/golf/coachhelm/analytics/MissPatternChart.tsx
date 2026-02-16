@@ -159,7 +159,7 @@ export function MissPatternChart({
             cy={center}
             r={radius}
             fill="none"
-            stroke="#e2e8f0"
+            stroke="#e7e5e4"
             strokeWidth="1"
             strokeDasharray="4 4"
           />
@@ -168,7 +168,7 @@ export function MissPatternChart({
             cy={center}
             r={radius * 0.66}
             fill="none"
-            stroke="#e2e8f0"
+            stroke="#e7e5e4"
             strokeWidth="1"
             strokeDasharray="4 4"
           />
@@ -177,7 +177,7 @@ export function MissPatternChart({
             cy={center}
             r={radius * 0.33}
             fill="none"
-            stroke="#e2e8f0"
+            stroke="#e7e5e4"
             strokeWidth="1"
             strokeDasharray="4 4"
           />
@@ -194,7 +194,7 @@ export function MissPatternChart({
                 y1={center}
                 x2={x2}
                 y2={y2}
-                stroke="#e2e8f0"
+                stroke="#e7e5e4"
                 strokeWidth="1"
               />
             );

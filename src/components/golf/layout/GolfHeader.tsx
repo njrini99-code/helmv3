@@ -50,7 +50,7 @@ export function GolfHeader({ title, subtitle, children, backHref }: GolfHeaderPr
             className={cn(
               'p-2.5 -ml-2 rounded-xl text-warm-500 hover:text-warm-700 hover:bg-warm-100',
               'transition-colors duration-150 active:scale-95',
-              'focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500/40'
+              'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
             )}
             aria-label="Toggle sidebar"
           >
@@ -62,6 +62,7 @@ export function GolfHeader({ title, subtitle, children, backHref }: GolfHeaderPr
             <Link
               href={backHref}
               className="p-1.5 text-warm-400 hover:text-warm-600 rounded-lg hover:bg-warm-100 transition-all duration-200 active:scale-95"
+              aria-label="Go back"
             >
               <IconChevronLeft size={20} />
             </Link>

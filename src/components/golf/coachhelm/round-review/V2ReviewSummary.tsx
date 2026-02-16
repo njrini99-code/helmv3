@@ -48,20 +48,20 @@ export function V2ReviewSummary({ review }: V2ReviewSummaryProps) {
       {/* AI Summary Card */}
       <div className="rounded-2xl bg-white/80 backdrop-blur-sm border border-warm-200 overflow-hidden shadow-sm">
         {/* Header bar */}
-        <div className="px-5 py-3.5 bg-gradient-to-r from-emerald-50 to-green-50 border-b border-green-100/60 flex items-center gap-3">
-          <div className="p-1.5 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg shadow-sm shadow-green-500/20">
+        <div className="px-5 py-3.5 bg-gradient-to-r from-primary-50 to-primary-50 border-b border-primary-100/60 flex items-center gap-3">
+          <div className="p-1.5 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg shadow-sm shadow-primary-500/20">
             <IconSparkles size={14} className="text-white" />
           </div>
           <h3 className="text-sm font-semibold text-warm-900">AI Round Analysis</h3>
           <div className="ml-auto flex items-center gap-2.5">
-            <div className="h-1.5 w-20 bg-green-200/50 rounded-full overflow-hidden">
+            <div className="h-1.5 w-20 bg-primary-200/50 rounded-full overflow-hidden">
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${calibratedConfidence * 100}%` }}
                 transition={{ delay: 0.5, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                 className={cn(
                   'h-full rounded-full',
-                  calibratedConfidence >= 0.75 ? 'bg-green-500' :
+                  calibratedConfidence >= 0.75 ? 'bg-primary-500' :
                   calibratedConfidence >= 0.5 ? 'bg-amber-500' :
                   'bg-warm-400'
                 )}
@@ -101,15 +101,15 @@ export function V2ReviewSummary({ review }: V2ReviewSummaryProps) {
           initial={{ opacity: 0, x: -10 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.5, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          className="rounded-xl bg-green-50/70 border border-green-200/50 p-4 shadow-sm"
+          className="rounded-xl bg-primary-50/70 border border-primary-200/50 p-4 shadow-sm"
         >
           <div className="flex items-center gap-2 mb-2">
-            <div className="p-1 bg-green-100 rounded-md">
-              <IconTarget size={12} className="text-green-600" />
+            <div className="p-1 bg-primary-100 rounded-md">
+              <IconTarget size={12} className="text-primary-600" />
             </div>
-            <span className="text-[11px] font-semibold text-green-700 uppercase tracking-wider">Key Takeaway</span>
+            <span className="text-[11px] font-semibold text-primary-700 uppercase tracking-wider">Key Takeaway</span>
           </div>
-          <p className="text-sm font-medium text-green-900 leading-relaxed">
+          <p className="text-sm font-medium text-primary-900 leading-relaxed">
             {takeaway}
           </p>
         </motion.div>

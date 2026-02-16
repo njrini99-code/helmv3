@@ -213,29 +213,29 @@ export default function GolfSettingsPage() {
   if (loading) {
     return (
       <AnimatedPage className="min-h-full">
-        <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+        <div className="border-b border-warm-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
           <div className="max-w-2xl mx-auto px-4 md:px-6 py-4 md:py-5">
-            <div className="h-7 w-32 bg-slate-200 rounded-lg animate-pulse" />
-            <div className="h-4 w-56 bg-slate-100 rounded mt-2 animate-pulse" />
+            <div className="h-7 w-32 bg-warm-200 rounded-lg animate-pulse" />
+            <div className="h-4 w-56 bg-warm-100 rounded mt-2 animate-pulse" />
           </div>
         </div>
         <div className="max-w-2xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6">
           <div className="glass-standard rounded-2xl p-5 animate-pulse">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-full bg-slate-200" />
+              <div className="w-14 h-14 rounded-full bg-warm-200" />
               <div className="flex-1">
-                <div className="h-5 w-40 bg-slate-200 rounded mb-2" />
-                <div className="h-4 w-24 bg-slate-100 rounded" />
+                <div className="h-5 w-40 bg-warm-200 rounded mb-2" />
+                <div className="h-4 w-24 bg-warm-100 rounded" />
               </div>
             </div>
           </div>
           {[1, 2, 3].map((i) => (
             <div key={i} className="glass-standard rounded-2xl p-4 animate-pulse">
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-slate-200" />
+                <div className="w-10 h-10 rounded-xl bg-warm-200" />
                 <div className="flex-1">
-                  <div className="h-4 w-36 bg-slate-200 rounded mb-2" />
-                  <div className="h-3 w-48 bg-slate-100 rounded" />
+                  <div className="h-4 w-36 bg-warm-200 rounded mb-2" />
+                  <div className="h-3 w-48 bg-warm-100 rounded" />
                 </div>
               </div>
             </div>
@@ -249,19 +249,19 @@ export default function GolfSettingsPage() {
   return (
     <AnimatedPage className="min-h-full">
       {/* Header */}
-      <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+      <div className="border-b border-warm-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 md:px-6 py-4 md:py-5">
           <div className="flex items-center gap-3">
             <button
               onClick={toggleMobile}
-              className="lg:hidden p-2 -ml-2 rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100/80 transition-colors active:scale-95"
+              className="lg:hidden p-2 -ml-2 rounded-xl text-warm-500 hover:text-warm-700 hover:bg-warm-100/80 transition-colors active:scale-95"
               aria-label="Open navigation menu"
             >
               <IconMenu size={22} />
             </button>
             <div>
-              <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-slate-900">Settings</h1>
-              <p className="text-slate-500 mt-0.5 text-sm">Manage your account and preferences</p>
+              <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">Settings</h1>
+              <p className="text-warm-500 mt-0.5 text-sm">Manage your account and preferences</p>
             </div>
           </div>
         </div>
@@ -276,12 +276,12 @@ export default function GolfSettingsPage() {
             <div className="flex items-center gap-4">
               <Avatar src={profile.avatarUrl} name={profile.name} size="lg" />
               <div className="flex-1 min-w-0">
-                <h2 className="text-lg font-semibold text-slate-900">{profile.name}</h2>
-                <p className="text-sm text-slate-500 flex items-center gap-2">
+                <h2 className="text-lg font-semibold text-warm-900">{profile.name}</h2>
+                <p className="text-sm text-warm-500 flex items-center gap-2">
                   <span className="capitalize">{profile.role}</span>
                   {profile.teamName && (
                     <>
-                      <span className="text-slate-300">·</span>
+                      <span className="text-warm-300">·</span>
                       <span className="truncate">{profile.teamName}</span>
                     </>
                   )}
@@ -495,8 +495,8 @@ export default function GolfSettingsPage() {
             <ShineEffect />
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
-                <p className="font-medium text-slate-900">Delete account</p>
-                <p className="text-sm text-slate-500">
+                <p className="font-medium text-warm-900">Delete account</p>
+                <p className="text-sm text-warm-500">
                   Permanently remove your account and all data.
                 </p>
               </div>
@@ -522,7 +522,7 @@ export default function GolfSettingsPage() {
         </AnimatedItem>
 
         {/* App Info */}
-        <AnimatedItem className="text-center text-sm text-slate-400 py-4">
+        <AnimatedItem className="text-center text-sm text-warm-400 py-4">
           <p>GolfHelm v1.0.0</p>
           <p className="text-xs mt-1">© 2026 Helm Sports Labs</p>
         </AnimatedItem>
@@ -537,7 +537,7 @@ export default function GolfSettingsPage() {
 
 function SectionHeader({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">
+    <h3 className="text-xs font-semibold text-warm-400 uppercase tracking-wider mb-3 px-1">
       {children}
     </h3>
   );
@@ -561,21 +561,21 @@ function SettingsExpandableRow({
   children: React.ReactNode;
 }) {
   return (
-    <div className={cn(!isLast && !isExpanded && 'border-b border-slate-100')}>
+    <div className={cn(!isLast && !isExpanded && 'border-b border-warm-100')}>
       <button
         onClick={onToggle}
         className={cn(
           'w-full flex items-center gap-4 p-4 text-left transition-colors',
-          isExpanded ? 'bg-slate-50/50' : 'hover:bg-slate-50/50',
+          isExpanded ? 'bg-warm-50/50' : 'hover:bg-warm-50/50',
         )}
       >
-        <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0 text-slate-600">
+        <div className="w-10 h-10 rounded-xl bg-warm-100 flex items-center justify-center flex-shrink-0 text-warm-600">
           {icon}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-slate-900">{label}</p>
+          <p className="font-medium text-warm-900">{label}</p>
           {description && (
-            <p className="text-sm text-slate-500 truncate">{description}</p>
+            <p className="text-sm text-warm-500 truncate">{description}</p>
           )}
         </div>
         <m.div
@@ -583,7 +583,7 @@ function SettingsExpandableRow({
           transition={{ duration: 0.2 }}
           className="flex-shrink-0"
         >
-          <IconChevronDown size={18} className="text-slate-300" />
+          <IconChevronDown size={18} className="text-warm-300" />
         </m.div>
       </button>
 
@@ -593,11 +593,11 @@ function SettingsExpandableRow({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: 'easeInOut' }}
+            transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
             className="overflow-hidden"
           >
-            <div className={cn('px-4 pb-4', !isLast && 'border-b border-slate-100')}>
-              <div className="bg-white rounded-xl border border-slate-200 p-4">
+            <div className={cn('px-4 pb-4', !isLast && 'border-b border-warm-100')}>
+              <div className="bg-white rounded-xl border border-warm-200 p-4">
                 {children}
               </div>
             </div>
@@ -625,20 +625,20 @@ function SettingsLinkRow({
     <Link
       href={href}
       className={cn(
-        'w-full flex items-center gap-4 p-4 text-left hover:bg-slate-50/50 transition-colors',
-        !isLast && 'border-b border-slate-100'
+        'w-full flex items-center gap-4 p-4 text-left hover:bg-warm-50/50 transition-colors',
+        !isLast && 'border-b border-warm-100'
       )}
     >
-      <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0 text-slate-600">
+      <div className="w-10 h-10 rounded-xl bg-warm-100 flex items-center justify-center flex-shrink-0 text-warm-600">
         {icon}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-slate-900">{label}</p>
+        <p className="font-medium text-warm-900">{label}</p>
         {description && (
-          <p className="text-sm text-slate-500 truncate">{description}</p>
+          <p className="text-sm text-warm-500 truncate">{description}</p>
         )}
       </div>
-      <IconChevronRight size={18} className="text-slate-300 flex-shrink-0" />
+      <IconChevronRight size={18} className="text-warm-300 flex-shrink-0" />
     </Link>
   );
 }
@@ -667,14 +667,14 @@ function ToggleSwitch({
       className="w-full flex items-center justify-between py-2.5 group"
     >
       <div className="text-left flex-1 mr-3">
-        <p className="text-sm font-medium text-slate-900">{label}</p>
-        {description && <p className="text-xs text-slate-500">{description}</p>}
+        <p className="text-sm font-medium text-warm-900">{label}</p>
+        {description && <p className="text-xs text-warm-500">{description}</p>}
       </div>
       <div
         aria-hidden="true"
         className={cn(
           'w-11 h-6 rounded-full transition-colors relative flex-shrink-0',
-          checked ? 'bg-green-600' : 'bg-slate-200'
+          checked ? 'bg-primary-600' : 'bg-warm-200'
         )}
       >
         <div
@@ -700,7 +700,7 @@ function SaveBar({
   label?: string;
 }) {
   return (
-    <div className="flex justify-end gap-2 pt-4 border-t border-slate-100 mt-4">
+    <div className="flex justify-end gap-2 pt-4 border-t border-warm-100 mt-4">
       {onCancel && (
         <Button variant="secondary" size="sm" onClick={onCancel} disabled={loading}>
           Cancel
@@ -758,7 +758,7 @@ function PersonalInfoPanel({ profile, onUpdate }: { profile: UserProfile; onUpda
   return (
     <div className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-2">Profile Picture</label>
+        <label className="block text-sm font-medium text-warm-700 mb-2">Profile Picture</label>
         <AvatarUpload
           currentAvatarUrl={avatarUrl}
           name={profile.role === 'coach' ? fullName : `${firstName} ${lastName}`}
@@ -818,11 +818,11 @@ function EmailPanel({ currentEmail, onUpdate }: { currentEmail: string; onUpdate
   return (
     <div className="space-y-3">
       <div>
-        <label className="text-sm font-medium text-slate-700 block mb-1">Current Email</label>
-        <div className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-600">{currentEmail}</div>
+        <label className="text-sm font-medium text-warm-700 block mb-1">Current Email</label>
+        <div className="px-3 py-2 bg-warm-50 border border-warm-200 rounded-lg text-sm text-warm-600">{currentEmail}</div>
       </div>
       <Input label="New Email Address" type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="new@example.com" />
-      <p className="text-xs text-slate-500">We'll send a confirmation email to verify the change.</p>
+      <p className="text-xs text-warm-500">We'll send a confirmation email to verify the change.</p>
       <SaveBar onSave={handleSave} loading={saving} label="Send Confirmation" />
     </div>
   );
@@ -867,7 +867,7 @@ function PasswordPanel() {
     <div className="space-y-3">
       <Input label="New Password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="••••••••" />
       <Input label="Confirm Password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" />
-      <p className="text-xs text-slate-500">At least 6 characters. Use a unique password.</p>
+      <p className="text-xs text-warm-500">At least 6 characters. Use a unique password.</p>
       <SaveBar onSave={handleSave} loading={saving} label="Update Password" />
     </div>
   );
@@ -932,13 +932,13 @@ function NotificationsPanel() {
   }
 
   if (!loaded) {
-    return <div className="flex justify-center py-4"><div className="animate-spin h-5 w-5 border-2 border-green-600 border-t-transparent rounded-full" /></div>;
+    return <div className="flex justify-center py-4"><div className="space-y-2 w-32"><div className="h-3 w-full bg-warm-200 rounded skeleton-shimmer" /><div className="h-3 w-2/3 bg-warm-200 rounded skeleton-shimmer" /></div></div>;
   }
 
   return (
     <div className="space-y-4">
       <div>
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Email</p>
+        <p className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-2">Email</p>
         <div className="space-y-1">
           <ToggleSwitch label="Messages" description="Email for new messages" checked={prefs.email_messages} onChange={() => toggle('email_messages')} />
           <ToggleSwitch label="Announcements" description="Team announcements" checked={prefs.email_announcements} onChange={() => toggle('email_announcements')} />
@@ -947,8 +947,8 @@ function NotificationsPanel() {
         </div>
       </div>
 
-      <div className="border-t border-slate-100 pt-4">
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Push</p>
+      <div className="border-t border-warm-100 pt-4">
+        <p className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-2">Push</p>
         <div className="space-y-1">
           <ToggleSwitch label="Messages" description="Instant push notifications" checked={prefs.push_messages} onChange={() => toggle('push_messages')} />
           <ToggleSwitch label="Events" description="Event and schedule updates" checked={prefs.push_events} onChange={() => toggle('push_events')} />
@@ -1013,7 +1013,7 @@ function AppearancePanel() {
     <div className="space-y-5">
       {/* Density */}
       <div>
-        <p className="text-sm font-medium text-slate-700 mb-2">Display Density</p>
+        <p className="text-sm font-medium text-warm-700 mb-2">Display Density</p>
         <div className="grid grid-cols-2 gap-2">
           {(['comfortable', 'compact'] as const).map((opt) => (
             <button
@@ -1021,11 +1021,11 @@ function AppearancePanel() {
               onClick={() => setDensity(opt)}
               className={cn(
                 'p-3 rounded-lg border-2 text-left transition-all',
-                density === opt ? 'border-green-600 bg-green-50' : 'border-slate-200 hover:border-slate-300'
+                density === opt ? 'border-primary-600 bg-primary-50' : 'border-warm-200 hover:border-warm-300'
               )}
             >
-              <p className="text-sm font-medium text-slate-900 capitalize">{opt}</p>
-              <p className="text-xs text-slate-500 mt-0.5">{opt === 'comfortable' ? 'More spacing' : 'Denser layout'}</p>
+              <p className="text-sm font-medium text-warm-900 capitalize">{opt}</p>
+              <p className="text-xs text-warm-500 mt-0.5">{opt === 'comfortable' ? 'More spacing' : 'Denser layout'}</p>
             </button>
           ))}
         </div>
@@ -1033,7 +1033,7 @@ function AppearancePanel() {
 
       {/* Date format */}
       <div>
-        <p className="text-sm font-medium text-slate-700 mb-2">Date Format</p>
+        <p className="text-sm font-medium text-warm-700 mb-2">Date Format</p>
         <div className="space-y-1.5">
           {([
             { val: 'MM/DD/YYYY' as const, ex: '01/28/2026' },
@@ -1045,11 +1045,11 @@ function AppearancePanel() {
               onClick={() => setDateFormat(val)}
               className={cn(
                 'w-full p-2.5 rounded-lg border-2 text-left text-sm flex justify-between items-center transition-all',
-                dateFormat === val ? 'border-green-600 bg-green-50' : 'border-slate-200 hover:border-slate-300'
+                dateFormat === val ? 'border-primary-600 bg-primary-50' : 'border-warm-200 hover:border-warm-300'
               )}
             >
-              <span className="font-medium text-slate-900">{val}</span>
-              <span className="text-slate-500 text-xs">{ex}</span>
+              <span className="font-medium text-warm-900">{val}</span>
+              <span className="text-warm-500 text-xs">{ex}</span>
             </button>
           ))}
         </div>
@@ -1057,27 +1057,27 @@ function AppearancePanel() {
 
       {/* Score Display */}
       <div>
-        <p className="text-sm font-medium text-slate-700 mb-2">Score Display</p>
+        <p className="text-sm font-medium text-warm-700 mb-2">Score Display</p>
         <div className="grid grid-cols-2 gap-2">
           <button
             onClick={() => setScoreDisplay('to_par')}
             className={cn(
               'p-3 rounded-lg border-2 text-left transition-all',
-              scoreDisplay === 'to_par' ? 'border-green-600 bg-green-50' : 'border-slate-200 hover:border-slate-300'
+              scoreDisplay === 'to_par' ? 'border-primary-600 bg-primary-50' : 'border-warm-200 hover:border-warm-300'
             )}
           >
-            <p className="text-sm font-medium text-slate-900">Score to Par</p>
-            <p className="text-xs text-slate-500 mt-0.5">E, +2, -1</p>
+            <p className="text-sm font-medium text-warm-900">Score to Par</p>
+            <p className="text-xs text-warm-500 mt-0.5">E, +2, -1</p>
           </button>
           <button
             onClick={() => setScoreDisplay('raw')}
             className={cn(
               'p-3 rounded-lg border-2 text-left transition-all',
-              scoreDisplay === 'raw' ? 'border-green-600 bg-green-50' : 'border-slate-200 hover:border-slate-300'
+              scoreDisplay === 'raw' ? 'border-primary-600 bg-primary-50' : 'border-warm-200 hover:border-warm-300'
             )}
           >
-            <p className="text-sm font-medium text-slate-900">Raw Score</p>
-            <p className="text-xs text-slate-500 mt-0.5">72, 74, 71</p>
+            <p className="text-sm font-medium text-warm-900">Raw Score</p>
+            <p className="text-xs text-warm-500 mt-0.5">72, 74, 71</p>
           </button>
         </div>
       </div>
@@ -1141,7 +1141,7 @@ function LocationPanel() {
         <Input label="City" value={defaultCity} onChange={(e) => setDefaultCity(e.target.value)} placeholder="Pebble Beach" />
         <Input label="State" value={defaultState} onChange={(e) => setDefaultState(e.target.value)} placeholder="CA" maxLength={2} />
       </div>
-      <p className="text-xs text-slate-500">Pre-filled when creating new rounds or tracking shots.</p>
+      <p className="text-xs text-warm-500">Pre-filled when creating new rounds or tracking shots.</p>
       <SaveBar onSave={handleSave} loading={saving} />
     </div>
   );
@@ -1208,13 +1208,13 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
   }
 
   if (!loaded) {
-    return <div className="flex justify-center py-4"><div className="animate-spin h-5 w-5 border-2 border-green-600 border-t-transparent rounded-full" /></div>;
+    return <div className="flex justify-center py-4"><div className="space-y-2 w-32"><div className="h-3 w-full bg-warm-200 rounded skeleton-shimmer" /><div className="h-3 w-2/3 bg-warm-200 rounded skeleton-shimmer" /></div></div>;
   }
 
   return (
     <div className="space-y-4">
       <div>
-        <label className="text-sm font-medium text-slate-700 block mb-2">Scoring Format</label>
+        <label className="text-sm font-medium text-warm-700 block mb-2">Scoring Format</label>
         <div className="grid grid-cols-2 gap-2">
           {[
             { val: 'stroke_play', label: 'Stroke Play', desc: 'Total strokes' },
@@ -1225,22 +1225,22 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
               onClick={() => setScoringFormat(val)}
               className={cn(
                 'p-3 rounded-lg border-2 text-left transition-all',
-                scoringFormat === val ? 'border-green-600 bg-green-50' : 'border-slate-200 hover:border-slate-300'
+                scoringFormat === val ? 'border-primary-600 bg-primary-50' : 'border-warm-200 hover:border-warm-300'
               )}
             >
-              <p className="text-sm font-medium text-slate-900">{label}</p>
-              <p className="text-xs text-slate-500">{desc}</p>
+              <p className="text-sm font-medium text-warm-900">{label}</p>
+              <p className="text-xs text-warm-500">{desc}</p>
             </button>
           ))}
         </div>
       </div>
 
       <div>
-        <label className="text-sm font-medium text-slate-700 block mb-2">Handicap System</label>
+        <label className="text-sm font-medium text-warm-700 block mb-2">Handicap System</label>
         <select
           value={handicapSystem}
           onChange={(e) => setHandicapSystem(e.target.value)}
-          className="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm text-slate-900 focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-colors"
+          className="w-full px-3 py-2.5 rounded-lg border border-warm-200 text-sm text-warm-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 transition-colors"
         >
           <option value="usga">USGA Handicap</option>
           <option value="world">World Handicap System</option>
@@ -1249,7 +1249,7 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
       </div>
 
       <div>
-        <label className="text-sm font-medium text-slate-700 block mb-2">Default Tees</label>
+        <label className="text-sm font-medium text-warm-700 block mb-2">Default Tees</label>
         <div className="grid grid-cols-4 gap-1.5">
           {['black', 'blue', 'white', 'gold'].map((tee) => (
             <button
@@ -1257,7 +1257,7 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
               onClick={() => setDefaultTees(tee)}
               className={cn(
                 'px-2 py-2 rounded-lg border-2 text-center text-sm font-medium capitalize transition-all',
-                defaultTees === tee ? 'border-green-600 bg-green-50 text-green-700' : 'border-slate-200 hover:border-slate-300 text-slate-700'
+                defaultTees === tee ? 'border-primary-600 bg-primary-50 text-primary-700' : 'border-warm-200 hover:border-warm-300 text-warm-700'
               )}
             >
               {tee}
@@ -1267,11 +1267,11 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
       </div>
 
       <div>
-        <label className="text-sm font-medium text-slate-700 block mb-2">Timezone</label>
+        <label className="text-sm font-medium text-warm-700 block mb-2">Timezone</label>
         <select
           value={timezone}
           onChange={(e) => setTimezone(e.target.value)}
-          className="w-full px-3 py-2.5 rounded-lg border border-slate-200 text-sm text-slate-900 focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-colors"
+          className="w-full px-3 py-2.5 rounded-lg border border-warm-200 text-sm text-warm-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 transition-colors"
         >
           <option value="America/New_York">Eastern (ET)</option>
           <option value="America/Chicago">Central (CT)</option>
@@ -1283,9 +1283,9 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
       </div>
 
       {/* E-12: Strokes Gained Benchmark Level */}
-      <div className="border-t border-slate-100 pt-4">
-        <label className="text-sm font-medium text-slate-700 block mb-1">Strokes Gained Benchmark</label>
-        <p className="text-xs text-slate-500 mb-3">
+      <div className="border-t border-warm-100 pt-4">
+        <label className="text-sm font-medium text-warm-700 block mb-1">Strokes Gained Benchmark</label>
+        <p className="text-xs text-warm-500 mb-3">
           Baseline skill level for SG calculations. Pick the level closest to your team.
         </p>
         <div className="grid grid-cols-2 gap-2">
@@ -1298,15 +1298,15 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
                 className={cn(
                   'p-2.5 rounded-lg border-2 text-left transition-all',
                   sgBenchmark === level
-                    ? 'border-green-600 bg-green-50'
-                    : 'border-slate-200 hover:border-slate-300'
+                    ? 'border-primary-600 bg-primary-50'
+                    : 'border-warm-200 hover:border-warm-300'
                 )}
               >
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-slate-900">{meta.shortLabel}</p>
-                  <span className="text-xs text-slate-400">~{meta.approximateHandicap > 0 ? '+' : ''}{meta.approximateHandicap} hcp</span>
+                  <p className="text-sm font-medium text-warm-900">{meta.shortLabel}</p>
+                  <span className="text-xs text-warm-400">~{meta.approximateHandicap > 0 ? '+' : ''}{meta.approximateHandicap} hcp</span>
                 </div>
-                <p className="text-xs text-slate-500 mt-0.5">{meta.description}</p>
+                <p className="text-xs text-warm-500 mt-0.5">{meta.description}</p>
               </button>
             );
           })}
@@ -1492,7 +1492,7 @@ function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
   }
 
   if (!loaded) {
-    return <div className="flex justify-center py-4"><div className="animate-spin h-5 w-5 border-2 border-green-600 border-t-transparent rounded-full" /></div>;
+    return <div className="flex justify-center py-4"><div className="space-y-2 w-32"><div className="h-3 w-full bg-warm-200 rounded skeleton-shimmer" /><div className="h-3 w-2/3 bg-warm-200 rounded skeleton-shimmer" /></div></div>;
   }
 
   return (
@@ -1502,8 +1502,8 @@ function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
 
       {organizationId && (
         <>
-          <div className="border-t border-slate-100 pt-4">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Organization</p>
+          <div className="border-t border-warm-100 pt-4">
+            <p className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-3">Organization</p>
           </div>
           <Input label="School Name" value={orgName} onChange={(e) => setOrgName(e.target.value)} placeholder="University" />
           <div className="grid grid-cols-2 gap-3">
@@ -1595,7 +1595,7 @@ function InviteSettingsPanel() {
   }
 
   if (!loaded) {
-    return <div className="flex justify-center py-4"><div className="animate-spin h-5 w-5 border-2 border-green-600 border-t-transparent rounded-full" /></div>;
+    return <div className="flex justify-center py-4"><div className="space-y-2 w-32"><div className="h-3 w-full bg-warm-200 rounded skeleton-shimmer" /><div className="h-3 w-2/3 bg-warm-200 rounded skeleton-shimmer" /></div></div>;
   }
 
   const inviteUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/golf/join/${inviteCode}`;
@@ -1603,21 +1603,21 @@ function InviteSettingsPanel() {
   return (
     <div className="space-y-4">
       <div>
-        <label className="text-sm font-medium text-slate-700 block mb-2">Invite Code</label>
+        <label className="text-sm font-medium text-warm-700 block mb-2">Invite Code</label>
         <div className="flex gap-2">
-          <div className="flex-1 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg font-mono text-lg font-semibold text-slate-900">
+          <div className="flex-1 px-3 py-2.5 bg-warm-50 border border-warm-200 rounded-lg font-mono text-lg font-semibold text-warm-900">
             {inviteCode || '—'}
           </div>
-          <Button variant="secondary" onClick={generateNewCode} isLoading={loading} className="px-3">
+          <Button variant="secondary" onClick={generateNewCode} isLoading={loading} className="px-3" aria-label="Regenerate invite code">
             <IconRefresh size={18} />
           </Button>
         </div>
       </div>
 
       <div>
-        <label className="text-sm font-medium text-slate-700 block mb-2">Invite Link</label>
+        <label className="text-sm font-medium text-warm-700 block mb-2">Invite Link</label>
         <div className="flex gap-2">
-          <div className="flex-1 px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-600 truncate">
+          <div className="flex-1 px-3 py-2.5 bg-warm-50 border border-warm-200 rounded-lg text-sm text-warm-600 truncate">
             {inviteUrl}
           </div>
           <Button variant="secondary" onClick={copyLink} className="px-3">
@@ -1626,8 +1626,8 @@ function InviteSettingsPanel() {
         </div>
       </div>
 
-      <div className="bg-slate-50 border border-slate-100 rounded-lg p-3">
-        <ul className="text-xs text-slate-600 space-y-1 ml-3 list-disc">
+      <div className="bg-warm-50 border border-warm-100 rounded-lg p-3">
+        <ul className="text-xs text-warm-600 space-y-1 ml-3 list-disc">
           <li>Share the code or link with players to join</li>
           <li>Generate a new code to revoke old invites</li>
           <li>Players will need coach approval to join</li>

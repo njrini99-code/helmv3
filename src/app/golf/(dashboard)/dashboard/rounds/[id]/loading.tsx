@@ -40,7 +40,7 @@ export default function Loading() {
           </div>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-6 border-t border-slate-200">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-6 border-t border-warm-200">
             {[1, 2, 3, 4].map((i) => (
               <div key={i}>
                 <Skeleton className="h-4 w-24 mb-2" />
@@ -61,7 +61,7 @@ export default function Loading() {
           <div className="overflow-x-auto overscroll-x-contain touch-pan-x" style={{ WebkitOverflowScrolling: 'touch' }}>
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-200">
+                <tr className="border-b border-warm-200">
                   <th className="text-left py-3 px-3">
                     <Skeleton className="h-4 w-12" />
                   </th>
@@ -87,7 +87,7 @@ export default function Loading() {
               </thead>
               <tbody>
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
-                  <tr key={i} className="border-b border-slate-100">
+                  <tr key={i} className="border-b border-warm-100">
                     <td className="py-3 px-3">
                       <Skeleton className="h-4 w-4" />
                     </td>

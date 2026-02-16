@@ -80,8 +80,8 @@ function getQualityLevel(score: number): {
 } {
   if (score >= 90) return {
     label: 'Excellent',
-    color: 'text-green-600',
-    bgColor: 'bg-green-50',
+    color: 'text-primary-600',
+    bgColor: 'bg-primary-50',
     ringColor: '#16A34A',
     description: 'Nearly all shots have full SG data',
   };
@@ -186,7 +186,7 @@ function FieldBar({
   important?: boolean;
 }) {
   const pct = total > 0 ? Math.round((count / total) * 100) : 0;
-  const barColor = pct >= 90 ? 'bg-green-500' : pct >= 70 ? 'bg-blue-500' : pct >= 50 ? 'bg-amber-500' : 'bg-red-500';
+  const barColor = pct >= 90 ? 'bg-primary-500' : pct >= 70 ? 'bg-blue-500' : pct >= 50 ? 'bg-amber-500' : 'bg-red-500';
 
   return (
     <div className="space-y-1">
@@ -306,7 +306,7 @@ export function DataCompletenessCard({
               </div>
               <div className="flex justify-between text-warm-500">
                 <span>SG-Ready</span>
-                <span className="font-medium text-green-600">{data.sgReadyShots}</span>
+                <span className="font-medium text-primary-600">{data.sgReadyShots}</span>
               </div>
               <div className="flex justify-between text-warm-500">
                 <span>Estimated</span>
@@ -374,7 +374,7 @@ export function DataCompletenessCard({
                         <div
                           className={cn(
                             'h-full rounded-full transition-all',
-                            rq.qualityPct >= 90 ? 'bg-green-500' :
+                            rq.qualityPct >= 90 ? 'bg-primary-500' :
                             rq.qualityPct >= 70 ? 'bg-blue-500' :
                             rq.qualityPct >= 50 ? 'bg-amber-500' : 'bg-red-500'
                           )}

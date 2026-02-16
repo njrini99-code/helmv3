@@ -74,7 +74,7 @@ export function WeightDistributor({ values, onChange }: WeightDistributorProps) 
           <div className="relative h-6">
             <div className="absolute inset-0 bg-warm-100 rounded-lg overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-green-400 to-green-500 transition-all duration-150"
+                className="h-full bg-gradient-to-r from-primary-400 to-primary-500 transition-all duration-150"
                 style={{ width: `${values[weight.key]}%` }}
               />
             </div>
@@ -95,7 +95,7 @@ export function WeightDistributor({ values, onChange }: WeightDistributorProps) 
       <div
         className={cn(
           'flex items-center justify-between pt-3 border-t border-warm-200 text-sm font-medium',
-          isValid ? 'text-green-600' : 'text-red-500'
+          isValid ? 'text-primary-600' : 'text-red-500'
         )}
       >
         <span>Total</span>

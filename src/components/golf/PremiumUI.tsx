@@ -22,7 +22,7 @@ interface PageHeaderProps {
 export function PageHeader({ title, description, badge, actions, breadcrumb }: PageHeaderProps) {
   const badgeColors = {
     default: 'bg-warm-100 text-warm-600',
-    success: 'bg-emerald-50 text-emerald-700',
+    success: 'bg-primary-50 text-primary-700',
     warning: 'bg-amber-50 text-amber-700',
     info: 'bg-blue-50 text-blue-700',
   };
@@ -111,9 +111,9 @@ export function MetricCard({
   const content = (
     <div 
       className={cn(
-        'group relative bg-white rounded-xl p-4 transition-all duration-200',
-        'border border-warm-200/60 hover:border-warm-300/80',
-        'hover:shadow-sm',
+        'group relative bg-white/70 backdrop-blur-glass rounded-2xl p-4 transition-all duration-200',
+        'border border-white/40 hover:border-warm-300/80',
+        'shadow-glass hover:shadow-glass-hover',
         href && 'cursor-pointer',
         className
       )}
@@ -132,7 +132,7 @@ export function MetricCard({
               <span className={cn(
                 'flex items-center gap-0.5 text-xs font-semibold px-1.5 py-0.5 rounded-full',
                 trend.positive 
-                  ? 'text-emerald-700 bg-emerald-50' 
+                  ? 'text-primary-700 bg-primary-50' 
                   : 'text-red-600 bg-red-50'
               )}>
                 <svg 
@@ -202,7 +202,7 @@ export function DataTable<T extends { id: string }>({
 }: DataTableProps<T>) {
   if (loading) {
     return (
-      <div className={cn('bg-white rounded-xl border border-warm-200/60 overflow-hidden', className)}>
+      <div className={cn('bg-white/70 backdrop-blur-glass rounded-2xl border border-white/40 shadow-glass overflow-hidden', className)}>
         <div className="animate-pulse">
           <div className="h-12 bg-warm-50 border-b border-warm-100" />
           {[...Array(5)].map((_, i) => (
@@ -219,14 +219,14 @@ export function DataTable<T extends { id: string }>({
 
   if (data.length === 0 && emptyState) {
     return (
-      <div className={cn('bg-white rounded-xl border border-warm-200/60 overflow-hidden', className)}>
+      <div className={cn('bg-white/70 backdrop-blur-glass rounded-2xl border border-white/40 shadow-glass overflow-hidden', className)}>
         {emptyState}
       </div>
     );
   }
 
   return (
-    <div className={cn('bg-white rounded-xl border border-warm-200/60 overflow-hidden', className)}>
+    <div className={cn('bg-white/70 backdrop-blur-glass rounded-2xl border border-white/40 shadow-glass overflow-hidden', className)}>
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
@@ -541,17 +541,17 @@ export function ScoreBadge({ score, toPar, size = 'md' }: ScoreBadgeProps) {
     <div className={cn(
       'rounded-xl flex flex-col items-center justify-center',
       sizes[size],
-      toPar < 0 ? 'bg-emerald-50' : toPar === 0 ? 'bg-warm-100' : 'bg-amber-50'
+      toPar < 0 ? 'bg-primary-50' : toPar === 0 ? 'bg-warm-100' : 'bg-amber-50'
     )}>
       <span className={cn(
         'font-bold tabular-nums leading-none',
-        toPar < 0 ? 'text-emerald-600' : toPar === 0 ? 'text-warm-700' : 'text-amber-600'
+        toPar < 0 ? 'text-primary-600' : toPar === 0 ? 'text-warm-700' : 'text-amber-600'
       )}>
         {score}
       </span>
       <span className={cn(
         'text-xs font-medium mt-0.5',
-        toPar < 0 ? 'text-emerald-500' : toPar === 0 ? 'text-warm-500' : 'text-amber-500'
+        toPar < 0 ? 'text-primary-500' : toPar === 0 ? 'text-warm-500' : 'text-amber-500'
       )}>
         {toPar > 0 ? '+' : ''}{toPar}
       </span>
@@ -585,7 +585,7 @@ export function StatGrid({ stats, columns = 4, className }: StatGridProps) {
 
   const colors = {
     default: 'text-warm-700',
-    success: 'text-emerald-600',
+    success: 'text-primary-600',
     warning: 'text-amber-600',
     danger: 'text-red-600',
   };
@@ -647,10 +647,11 @@ export const PremiumButton = forwardRef<HTMLButtonElement, ButtonProps>(
         {...props}
       >
         {loading ? (
-          <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-          </svg>
+          <span className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+          </span>
         ) : leftIcon}
         {children}
         {!loading && rightIcon}
@@ -661,18 +662,7 @@ export const PremiumButton = forwardRef<HTMLButtonElement, ButtonProps>(
 PremiumButton.displayName = 'PremiumButton';
 
 // ============================================================================
-// KEYFRAMES - Animation keyframes for inline styles
+// KEYFRAMES — fadeInUp is defined in globals.css and available globally.
+// Components using inline style `animation: 'fadeInUp ...'` rely on that
+// global definition. For Tailwind usage, use the `animate-fade-up` class.
 // ============================================================================
-
-export const keyframeStyles = `
-  @keyframes fadeInUp {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-`;

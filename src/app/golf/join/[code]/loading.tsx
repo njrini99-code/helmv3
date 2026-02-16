@@ -1,9 +1,35 @@
 export default function Loading() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#FAF6F1]">
-      <div className="flex flex-col items-center gap-3">
-        <div className="animate-spin h-8 w-8 border-2 border-green-600 border-t-transparent rounded-full" />
-        <p className="text-sm text-slate-500">Validating invite...</p>
+    <div className="min-h-screen bg-[#FFFEFA] flex items-center justify-center p-4">
+      <div className="w-full max-w-md space-y-6">
+        {/* Team logo placeholder */}
+        <div className="flex justify-center">
+          <div className="skeleton-shimmer h-16 w-16 rounded-2xl" />
+        </div>
+
+        {/* Team info card */}
+        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-8 space-y-5">
+          {/* Team name */}
+          <div className="text-center space-y-2">
+            <div className="skeleton-shimmer h-7 w-48 mx-auto rounded-lg" />
+            <div className="skeleton-shimmer h-4 w-36 mx-auto rounded" />
+          </div>
+
+          {/* Team details */}
+          <div className="space-y-3 pt-2">
+            <div className="flex items-center gap-3">
+              <div className="skeleton-shimmer h-5 w-5 rounded" />
+              <div className="skeleton-shimmer h-4 w-40 rounded" />
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="skeleton-shimmer h-5 w-5 rounded" />
+              <div className="skeleton-shimmer h-4 w-32 rounded" />
+            </div>
+          </div>
+
+          {/* Join button */}
+          <div className="skeleton-shimmer h-10 w-full rounded-lg mt-4" />
+        </div>
       </div>
     </div>
   );

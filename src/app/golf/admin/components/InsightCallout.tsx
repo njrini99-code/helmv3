@@ -18,13 +18,13 @@ interface Insight {
 const severityStyles = {
   info: 'bg-blue-50/80 border-blue-200/50 text-blue-800',
   warning: 'bg-amber-50/80 border-amber-200/50 text-amber-800',
-  success: 'bg-emerald-50/80 border-emerald-200/50 text-emerald-800',
+  success: 'bg-primary-50/80 border-primary-200/50 text-primary-800',
 };
 
 const severityDots = {
   info: 'bg-blue-400',
   warning: 'bg-amber-400',
-  success: 'bg-emerald-400',
+  success: 'bg-primary-400',
 };
 
 function generateInsights(data: AdminDashboardData, tab: TabId): Insight[] {

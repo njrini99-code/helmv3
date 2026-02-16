@@ -57,16 +57,16 @@ const FEED_TYPE_CONFIGS = {
   team: {
     icon: Users,
     label: 'Team Events',
-    colorClass: 'text-green-700',
-    bgClass: 'bg-green-50',
-    borderClass: 'border-green-200',
+    colorClass: 'text-primary-700',
+    bgClass: 'bg-primary-50',
+    borderClass: 'border-primary-200',
   },
   personal: {
     icon: Calendar,
     label: 'Personal Events',
-    colorClass: 'text-emerald-700',
-    bgClass: 'bg-emerald-50',
-    borderClass: 'border-emerald-200',
+    colorClass: 'text-primary-700',
+    bgClass: 'bg-primary-50',
+    borderClass: 'border-primary-200',
   },
   tournament: {
     icon: Trophy,
@@ -187,7 +187,7 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
               className={cn(
                 'shrink-0 p-2.5 rounded-lg font-medium text-sm transition-all',
                 copied
-                  ? 'bg-emerald-100 text-emerald-700'
+                  ? 'bg-primary-100 text-primary-700'
                   : 'bg-warm-100 text-warm-700 hover:bg-warm-200'
               )}
               title="Copy URL"
@@ -350,7 +350,7 @@ export function CompactFeedCard({
         className={cn(
           'shrink-0 p-2 rounded-lg transition-colors',
           copied
-            ? 'bg-emerald-100 text-emerald-700'
+            ? 'bg-primary-100 text-primary-700'
             : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
         )}
         aria-label={copied ? 'URL copied' : 'Copy feed URL'}

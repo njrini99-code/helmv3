@@ -1,0 +1,137 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
+import { AlertTriangle, Info, X } from 'lucide-react';
+import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
+
+interface Props {
+  items: AdminDashboardData['needsAttention'];
+  onNavigateTab?: (tab: string) => void;
+}
+
+const DISMISSED_KEY = 'admin-alerts-dismissed';
+
+const severityConfig = {
+  critical: {
+    bg: 'bg-red-50/80 border-red-200/50',
+    iconBg: 'bg-red-100',
+    iconColor: 'text-red-600',
+    titleColor: 'text-red-900',
+    descColor: 'text-red-600',
+    btnColor: 'text-red-600 hover:text-red-800 hover:bg-red-100',
+    dismissColor: 'text-red-400 hover:text-red-600',
+  },
+  warning: {
+    bg: 'bg-amber-50/80 border-amber-200/50',
+    iconBg: 'bg-amber-100',
+    iconColor: 'text-amber-600',
+    titleColor: 'text-amber-900',
+    descColor: 'text-amber-600',
+    btnColor: 'text-amber-600 hover:text-amber-800 hover:bg-amber-100',
+    dismissColor: 'text-amber-400 hover:text-amber-600',
+  },
+  info: {
+    bg: 'bg-blue-50/80 border-blue-200/50',
+    iconBg: 'bg-blue-100',
+    iconColor: 'text-blue-600',
+    titleColor: 'text-blue-900',
+    descColor: 'text-blue-600',
+    btnColor: 'text-blue-600 hover:text-blue-800 hover:bg-blue-100',
+    dismissColor: 'text-blue-400 hover:text-blue-600',
+  },
+};
+
+const severityOrder: Record<string, number> = { critical: 0, warning: 1, info: 2 };
+
+export function CriticalAlertsBanner({ items, onNavigateTab }: Props) {
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+  const [showAll, setShowAll] = useState(false);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(DISMISSED_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored) as { ids: string[]; ts: number };
+        // Clear dismissed after 24h
+        if (Date.now() - parsed.ts < 86400000) {
+          setDismissed(new Set(parsed.ids));
+        }
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  function dismiss(id: string) {
+    const next = new Set(dismissed);
+    next.add(id);
+    setDismissed(next);
+    try {
+      localStorage.setItem(DISMISSED_KEY, JSON.stringify({ ids: [...next], ts: Date.now() }));
+    } catch { /* ignore */ }
+  }
+
+  // Only show non-"all clear" items
+  const alertItems = items
+    .filter((item) => !(item.severity === 'info' && item.label.includes('All clear')))
+    .sort((a, b) => (severityOrder[a.severity] ?? 2) - (severityOrder[b.severity] ?? 2));
+
+  const visible = alertItems.filter((item) => !dismissed.has(item.label));
+  if (visible.length === 0) return null;
+
+  const maxVisible = 3;
+  const displayed = showAll ? visible : visible.slice(0, maxVisible);
+  const hiddenCount = visible.length - maxVisible;
+
+  return (
+    <div className="space-y-2">
+      {displayed.map((item) => {
+        const config = severityConfig[item.severity];
+        const Icon = item.severity === 'info' ? Info : AlertTriangle;
+
+        return (
+          <div
+            key={item.label}
+            className={cn(
+              'flex items-center gap-3 px-4 py-3 rounded-2xl',
+              'border backdrop-blur-sm',
+              config.bg
+            )}
+          >
+            <div className={cn('w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0', config.iconBg)}>
+              <Icon size={16} className={config.iconColor} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className={cn('text-sm font-semibold', config.titleColor)}>{item.label}</p>
+              <p className={cn('text-xs mt-0.5', config.descColor)}>{item.detail}</p>
+            </div>
+            {onNavigateTab && item.tab && (
+              <button
+                onClick={() => onNavigateTab(item.tab)}
+                className={cn(
+                  'text-xs font-medium px-3 py-1.5 rounded-lg transition-colors flex-shrink-0',
+                  config.btnColor
+                )}
+              >
+                View
+              </button>
+            )}
+            <button
+              onClick={() => dismiss(item.label)}
+              className={cn('p-1 transition-colors flex-shrink-0', config.dismissColor)}
+            >
+              <X size={16} />
+            </button>
+          </div>
+        );
+      })}
+      {!showAll && hiddenCount > 0 && (
+        <button
+          onClick={() => setShowAll(true)}
+          className="text-xs font-medium text-warm-500 hover:text-warm-700 px-4 py-1 transition-colors"
+        >
+          Show {hiddenCount} more alert{hiddenCount > 1 ? 's' : ''}
+        </button>
+      )}
+    </div>
+  );
+}

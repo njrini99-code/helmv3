@@ -4,7 +4,7 @@ export default function Loading() {
   return (
     <div className="min-h-full">
       {/* Header Skeleton */}
-      <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm">
+      <div className="border-b border-warm-200/60 bg-white/50 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-6 py-5">
           <div className="flex items-center justify-between">
             <div>
@@ -32,7 +32,7 @@ export default function Loading() {
                 <Skeleton className="h-4 w-full" />
                 <Skeleton className="h-4 w-full" />
               </div>
-              <div className="mt-4 pt-4 border-t border-slate-100">
+              <div className="mt-4 pt-4 border-t border-warm-100">
                 <Skeleton className="h-4 w-24" />
               </div>
             </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +25,7 @@ const DAYS = [
 ];
 
 export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses }: ConfirmClassesModalProps) {
+  const { modalRef } = useFocusTrap(isOpen, onClose);
   const [classes, setClasses] = useState<ParsedClass[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
@@ -108,9 +110,9 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-2xl glass-prominent rounded-2xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col">
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="confirm-classes-title" className="relative w-full max-w-2xl glass-prominent rounded-2xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Top accent bar */}
-        <div className="h-1 bg-gradient-to-r from-green-500 via-emerald-400 to-teal-500" />
+        <div className="h-1 bg-gradient-to-r from-primary-500 via-primary-400 to-teal-500" />
 
         {/* Shine effect */}
         <div
@@ -122,11 +124,11 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
         <div className="px-6 pt-5 pb-4">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center">
-                <IconSparkles size={20} className="text-green-600" />
+              <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center">
+                <IconSparkles size={20} className="text-primary-600" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-warm-900">Review Your Schedule</h2>
+                <h2 id="confirm-classes-title" className="text-lg font-semibold text-warm-900">Review Your Schedule</h2>
                 <p className="text-sm text-warm-500 mt-0.5">
                   We found {classes.length} class{classes.length !== 1 ? 'es' : ''} — review and confirm
                 </p>
@@ -134,6 +136,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
             </div>
             <button
               onClick={onClose}
+              aria-label="Close"
               className="p-2 text-warm-400 hover:text-warm-600 hover:bg-warm-100 rounded-lg transition-colors -mt-1 -mr-1"
             >
               <IconX size={18} />
@@ -187,7 +190,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                   className={cn(
                     'rounded-xl border transition-all duration-200',
                     editingIndex === index
-                      ? 'border-green-400 ring-2 ring-green-400/20 bg-white shadow-md'
+                      ? 'border-primary-400 ring-2 ring-primary-400/20 bg-white shadow-md'
                       : 'border-warm-150 bg-white/60 hover:bg-white hover:shadow-sm hover:border-warm-200'
                   )}
                 >
@@ -366,7 +369,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                       <div className="flex items-center gap-0.5 flex-shrink-0">
                         <button
                           onClick={() => handleEdit(index)}
-                          className="p-2 text-warm-300 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all duration-150"
+                          className="p-2 text-warm-300 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all duration-150"
                           title="Edit class"
                         >
                           <IconPencil size={16} />

@@ -82,7 +82,7 @@ export function CalendarHeader({
         </button>
 
         {/* Title — larger, bolder */}
-        <h2 className="text-lg md:text-xl font-bold text-stone-900 tracking-tight">
+        <h2 className="text-lg md:text-xl font-bold text-warm-900 tracking-tight">
           {getTitle()}
         </h2>
 
@@ -94,7 +94,7 @@ export function CalendarHeader({
             aria-label={`Previous ${view}`}
             className={cn(
               'rounded-lg transition-all duration-150 active:scale-95',
-              'text-stone-500 hover:text-stone-700 hover:bg-stone-100/60',
+              'text-warm-500 hover:text-warm-700 hover:bg-warm-100/60',
               isMobile ? 'w-12 h-12' : 'w-8 h-8',
               'flex items-center justify-center'
             )}
@@ -107,7 +107,7 @@ export function CalendarHeader({
             aria-label={`Next ${view}`}
             className={cn(
               'rounded-lg transition-all duration-150 active:scale-95',
-              'text-stone-500 hover:text-stone-700 hover:bg-stone-100/60',
+              'text-warm-500 hover:text-warm-700 hover:bg-warm-100/60',
               isMobile ? 'w-12 h-12' : 'w-8 h-8',
               'flex items-center justify-center'
             )}
@@ -122,8 +122,8 @@ export function CalendarHeader({
           onClick={() => onNavigate('today')}
           className={cn(
             'rounded-lg text-sm font-medium transition-all duration-150 active:scale-95',
-            'text-stone-600 hover:text-stone-800',
-            'bg-white/50 hover:bg-white/70 border border-stone-200/40',
+            'text-warm-600 hover:text-warm-800',
+            'bg-white/50 hover:bg-white/70 border border-warm-200/40',
             isMobile ? 'px-3 py-2 min-h-[40px]' : 'px-3 py-1.5',
           )}
         >
@@ -138,7 +138,7 @@ export function CalendarHeader({
           <div
             role="radiogroup"
             aria-label="Calendar view"
-            className="inline-flex rounded-xl p-1 bg-stone-100/60 border border-stone-300/20"
+            className="inline-flex rounded-xl p-1 bg-warm-100/60 border border-warm-300/20"
           >
             {(['day', 'week', 'month'] as const).map((v) => (
               <button
@@ -150,8 +150,8 @@ export function CalendarHeader({
                 className={cn(
                   'px-3.5 py-1.5 text-[13px] font-medium rounded-lg transition-all duration-200',
                   view === v
-                    ? 'bg-white text-stone-900 shadow-sm'
-                    : 'text-stone-400 hover:text-stone-600'
+                    ? 'bg-white text-warm-900 shadow-sm'
+                    : 'text-warm-400 hover:text-warm-600'
                 )}
               >
                 {v.charAt(0).toUpperCase() + v.slice(1)}
@@ -165,7 +165,7 @@ export function CalendarHeader({
           <button
             type="button"
             onClick={onAddEvent}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white active:scale-95 transition-all duration-150 bg-gradient-to-br from-green-500 to-green-600 shadow-[0_2px_10px_rgba(22,163,74,0.3),inset_0_1px_0_rgba(255,255,255,0.2)]"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white active:scale-95 transition-all duration-150 bg-gradient-to-br from-primary-500 to-primary-600 shadow-[0_2px_10px_rgba(22,163,74,0.3),inset_0_1px_0_rgba(255,255,255,0.2)]"
           >
             <Plus className="w-4 h-4" />
             Add Event

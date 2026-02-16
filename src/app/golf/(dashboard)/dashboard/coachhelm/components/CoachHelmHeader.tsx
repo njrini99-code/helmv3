@@ -68,8 +68,8 @@ function getAlertLevelConfig(level: PlayerCoachHelmDashboardData['alertLevel']) 
     case 'none':
     default:
       return {
-        bgColor: 'bg-slate-100',
-        textColor: 'text-slate-600',
+        bgColor: 'bg-warm-100',
+        textColor: 'text-warm-600',
         label: 'All Good',
       };
   }
@@ -81,13 +81,13 @@ function getAlertLevelConfig(level: PlayerCoachHelmDashboardData['alertLevel']) 
 function getStateLabel(state: PlayerCoachHelmDashboardData['playerState']) {
   switch (state) {
     case 'improving':
-      return { text: 'Trending Up', color: 'text-green-600', bgColor: 'bg-green-100' };
+      return { text: 'Trending Up', color: 'text-primary-600', bgColor: 'bg-primary-100' };
     case 'struggling':
       return { text: 'Focus Needed', color: 'text-amber-600', bgColor: 'bg-amber-100' };
     case 'stable':
-      return { text: 'Steady Form', color: 'text-slate-600', bgColor: 'bg-slate-100' };
+      return { text: 'Steady Form', color: 'text-warm-600', bgColor: 'bg-warm-100' };
     default:
-      return { text: 'Analyzing...', color: 'text-slate-500', bgColor: 'bg-slate-100' };
+      return { text: 'Analyzing...', color: 'text-warm-500', bgColor: 'bg-warm-100' };
   }
 }
 
@@ -102,7 +102,7 @@ export function CoachHelmHeader({
   const stateLabel = getStateLabel(playerState);
 
   return (
-    <div className="relative border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+    <div className="relative border-b border-warm-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
       <div className="max-w-7xl mx-auto px-6 py-5">
         <div className="flex items-center justify-between">
           {/* Left side: Icon and title */}
@@ -175,6 +175,7 @@ export function CoachHelmHeader({
                   isRefreshing && 'animate-spin pointer-events-none'
                 )}
                 title="Refresh insights"
+                aria-label="Refresh insights"
               >
                 <IconRefresh size={18} />
               </button>

@@ -19,7 +19,7 @@ const EVENT_TYPE_CONFIG: Record<string, { dot: string; bg: string; text: string;
     meeting: { dot: 'bg-warm-400', bg: 'bg-warm-50', text: 'text-warm-600', label: 'Meeting', border: 'border-warm-200' },
     travel: { dot: 'bg-cyan-500', bg: 'bg-cyan-50', text: 'text-cyan-700', label: 'Travel', border: 'border-cyan-200' },
     workout: { dot: 'bg-orange-500', bg: 'bg-orange-50', text: 'text-orange-700', label: 'Workout', border: 'border-orange-200' },
-    game: { dot: 'bg-emerald-500', bg: 'bg-emerald-50', text: 'text-emerald-700', label: 'Match', border: 'border-emerald-200' },
+    game: { dot: 'bg-primary-500', bg: 'bg-primary-50', text: 'text-primary-700', label: 'Match', border: 'border-primary-200' },
     scrimmage: { dot: 'bg-teal-500', bg: 'bg-teal-50', text: 'text-teal-700', label: 'Scrimmage', border: 'border-teal-200' },
     class: { dot: 'bg-indigo-500', bg: 'bg-indigo-50', text: 'text-indigo-700', label: 'Class', border: 'border-indigo-200' },
     other: { dot: 'bg-warm-400', bg: 'bg-warm-50', text: 'text-warm-600', label: 'Event', border: 'border-warm-200' },

@@ -17,7 +17,6 @@ import { IconArrowLeft, IconCheck, IconMenu } from '@/components/icons';
 import { useSidebar } from '@/contexts/sidebar-context';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
-import { Toaster } from 'sonner';
 
 type PriorityValues = Pick<
     CoachPhilosophy,
@@ -89,17 +88,15 @@ export default function CoachingIntelligenceSettingsPage() {
 
     return (
         <AnimatedPage className="min-h-full pb-20">
-            <Toaster position="bottom-right" />
-
             {/* Header */}
-            <AnimatedItem className="bg-white border-b border-slate-200 sticky top-0 z-20">
+            <AnimatedItem className="bg-white border-b border-warm-200 sticky top-0 z-20">
                 <div className="max-w-3xl mx-auto px-6 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <button
                             onClick={toggleMobile}
                             className={cn(
                                 'lg:hidden p-2.5 -ml-2 rounded-xl',
-                                'text-slate-500 hover:text-slate-700 hover:bg-slate-100/80',
+                                'text-warm-500 hover:text-warm-700 hover:bg-warm-100/80',
                                 'transition-colors duration-150 active:scale-95',
                                 'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
                             )}
@@ -109,18 +106,18 @@ export default function CoachingIntelligenceSettingsPage() {
                         </button>
                         <Link
                             href="/golf/dashboard/settings"
-                            className="hidden lg:flex p-2 -ml-2 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors"
+                            className="hidden lg:flex p-2 -ml-2 rounded-lg hover:bg-warm-100 text-warm-500 transition-colors"
                         >
                             <IconArrowLeft size={20} />
                         </Link>
-                        <h1 className="text-lg font-semibold text-slate-900">Coaching Philosophy</h1>
+                        <h1 className="text-lg font-semibold text-warm-900">Coaching Philosophy</h1>
                     </div>
 
                     <div className="flex items-center gap-2">
                         {saving ? (
-                            <span className="text-xs text-slate-400">Saving...</span>
+                            <span className="text-xs text-warm-400">Saving...</span>
                         ) : (
-                            <span className="flex items-center gap-1.5 text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                            <span className="flex items-center gap-1.5 text-xs font-medium text-primary-600 bg-primary-50 px-2 py-1 rounded-full">
                                 <IconCheck size={12} />
                                 Saved
                             </span>
@@ -133,21 +130,21 @@ export default function CoachingIntelligenceSettingsPage() {
 
                 {/* Intro */}
                 <AnimatedItem className="prose prose-sm prose-slate max-w-none">
-                    <p className="text-slate-500 text-[15px] leading-relaxed">
+                    <p className="text-warm-500 text-[15px] leading-relaxed">
                         Configure how CoachHelm analyzes your team's performance. These settings control insight generation,
                         alert sensitivity, and how players are ranked against your specific coaching priorities.
                     </p>
                 </AnimatedItem>
 
                 {/* Priority Section */}
-                <AnimatedItem><section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                    <div className="p-6 border-b border-slate-100">
-                        <h2 className="text-base font-semibold text-slate-900">Metric Priorities</h2>
-                        <p className="text-sm text-slate-500 mt-1">
+                <AnimatedItem><section className="bg-white rounded-xl border border-warm-200 shadow-sm overflow-hidden">
+                    <div className="p-6 border-b border-warm-100">
+                        <h2 className="text-base font-semibold text-warm-900">Metric Priorities</h2>
+                        <p className="text-sm text-warm-500 mt-1">
                             Drag to reorder. The top metrics will have the most influence on player ratings and "Needs Attention" flags.
                         </p>
                     </div>
-                    <div className="p-6 bg-slate-50/50">
+                    <div className="p-6 bg-warm-50/50">
                         <PriorityRanker
                             values={{
                                 priorityBallStriking: philosophy.priorityBallStriking,
@@ -162,10 +159,10 @@ export default function CoachingIntelligenceSettingsPage() {
                 </section></AnimatedItem>
 
                 {/* Sensitivity Section */}
-                <AnimatedItem><section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                    <div className="p-6 border-b border-slate-100">
-                        <h2 className="text-base font-semibold text-slate-900">Alert Sensitivity</h2>
-                        <p className="text-sm text-slate-500 mt-1">
+                <AnimatedItem><section className="bg-white rounded-xl border border-warm-200 shadow-sm overflow-hidden">
+                    <div className="p-6 border-b border-warm-100">
+                        <h2 className="text-base font-semibold text-warm-900">Alert Sensitivity</h2>
+                        <p className="text-sm text-warm-500 mt-1">
                             Global control for how aggressively CoachHelm flags issues.
                         </p>
                     </div>
@@ -178,10 +175,10 @@ export default function CoachingIntelligenceSettingsPage() {
                 </section></AnimatedItem>
 
                 {/* Thresholds Section */}
-                <AnimatedItem><section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                    <div className="p-6 border-b border-slate-100">
-                        <h2 className="text-base font-semibold text-slate-900">Fine-tune Thresholds</h2>
-                        <p className="text-sm text-slate-500 mt-1">
+                <AnimatedItem><section className="bg-white rounded-xl border border-warm-200 shadow-sm overflow-hidden">
+                    <div className="p-6 border-b border-warm-100">
+                        <h2 className="text-base font-semibold text-warm-900">Fine-tune Thresholds</h2>
+                        <p className="text-sm text-warm-500 mt-1">
                             Specific triggers for different types of alerts.
                         </p>
                     </div>
@@ -194,7 +191,7 @@ export default function CoachingIntelligenceSettingsPage() {
                             {...THRESHOLD_RANGES.declineThreshold}
                             unit="sg"
                         />
-                        <div className="h-px bg-slate-100" />
+                        <div className="h-px bg-warm-100" />
                         <ThresholdSlider
                             label="Pressure Gap"
                             description="Difference between practice and tournament scoring that triggers a mental game alert."
@@ -203,7 +200,7 @@ export default function CoachingIntelligenceSettingsPage() {
                             {...THRESHOLD_RANGES.pressureGapThreshold}
                             unit="strokes"
                         />
-                        <div className="h-px bg-slate-100" />
+                        <div className="h-px bg-warm-100" />
                         <ThresholdSlider
                             label="Bubble Zone"
                             description="Range from the cut line (in strokes) to consider a player 'on the bubble'."
@@ -216,10 +213,10 @@ export default function CoachingIntelligenceSettingsPage() {
                 </section></AnimatedItem>
 
                 {/* Weight Distributor Section */}
-                <AnimatedItem><section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                    <div className="p-6 border-b border-slate-100">
-                        <h2 className="text-base font-semibold text-slate-900">Comparison Weighting</h2>
-                        <p className="text-sm text-slate-500 mt-1">
+                <AnimatedItem><section className="bg-white rounded-xl border border-warm-200 shadow-sm overflow-hidden">
+                    <div className="p-6 border-b border-warm-100">
+                        <h2 className="text-base font-semibold text-warm-900">Comparison Weighting</h2>
+                        <p className="text-sm text-warm-500 mt-1">
                             When comparing players for roster decisions, how much should each factor matter?
                         </p>
                     </div>
@@ -238,10 +235,10 @@ export default function CoachingIntelligenceSettingsPage() {
                 </section></AnimatedItem>
 
                 {/* Alert Toggles Section */}
-                <AnimatedItem><section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                    <div className="p-6 border-b border-slate-100">
-                        <h2 className="text-base font-semibold text-slate-900">Active Alerts</h2>
-                        <p className="text-sm text-slate-500 mt-1">
+                <AnimatedItem><section className="bg-white rounded-xl border border-warm-200 shadow-sm overflow-hidden">
+                    <div className="p-6 border-b border-warm-100">
+                        <h2 className="text-base font-semibold text-warm-900">Active Alerts</h2>
+                        <p className="text-sm text-warm-500 mt-1">
                             Select which types of automated insights you want to receive.
                         </p>
                     </div>
@@ -254,10 +251,10 @@ export default function CoachingIntelligenceSettingsPage() {
                 </section></AnimatedItem>
 
                 {/* Display Preferences Section */}
-                <AnimatedItem><section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                    <div className="p-6 border-b border-slate-100">
-                        <h2 className="text-base font-semibold text-slate-900">Display Preferences</h2>
-                        <p className="text-sm text-slate-500 mt-1">
+                <AnimatedItem><section className="bg-white rounded-xl border border-warm-200 shadow-sm overflow-hidden">
+                    <div className="p-6 border-b border-warm-100">
+                        <h2 className="text-base font-semibold text-warm-900">Display Preferences</h2>
+                        <p className="text-sm text-warm-500 mt-1">
                             Control what data is shown on dashboards and reports.
                         </p>
                     </div>
@@ -271,14 +268,14 @@ export default function CoachingIntelligenceSettingsPage() {
                                     type="checkbox"
                                     checked={philosophy[key]}
                                     onChange={(e) => handleDisplayChange(key, e.target.checked)}
-                                    className="w-4 h-4 rounded border-slate-300 text-green-600 focus:ring-green-500"
+                                    className="w-4 h-4 rounded border-warm-300 text-primary-600 focus:ring-primary-500"
                                 />
-                                <span className="text-sm text-slate-700">{label}</span>
+                                <span className="text-sm text-warm-700">{label}</span>
                             </label>
                         ))}
 
-                        <div className="pt-4 border-t border-slate-100">
-                            <label className="block text-sm font-medium text-slate-700 mb-2">
+                        <div className="pt-4 border-t border-warm-100">
+                            <label className="block text-sm font-medium text-warm-700 mb-2">
                                 Insight Detail Level
                             </label>
                             <div className="flex gap-2">
@@ -288,8 +285,8 @@ export default function CoachingIntelligenceSettingsPage() {
                                         onClick={() => handleDisplayChange('insightVerbosity', option)}
                                         className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors capitalize ${
                                             philosophy.insightVerbosity === option
-                                                ? 'bg-green-500 text-white'
-                                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                                ? 'bg-primary-500 text-white'
+                                                : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
                                         }`}
                                     >
                                         {option}

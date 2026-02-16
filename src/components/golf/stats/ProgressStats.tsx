@@ -48,8 +48,8 @@ function formatDate(dateStr: string, short = false) {
 }
 
 function getScoreColor(toPar: number) {
-  if (toPar <= -5) return 'text-emerald-700 bg-emerald-50';
-  if (toPar < 0) return 'text-emerald-600 bg-emerald-50';
+  if (toPar <= -5) return 'text-primary-700 bg-primary-50';
+  if (toPar < 0) return 'text-primary-600 bg-primary-50';
   if (toPar === 0) return 'text-warm-700 bg-warm-50';
   if (toPar <= 5) return 'text-amber-600 bg-amber-50';
   return 'text-red-600 bg-red-50';
@@ -135,7 +135,7 @@ const ScoringTrendChart = memo(function ScoringTrendChart({ rounds }: { rounds: 
         <div className="flex items-center gap-2">
           {trend.direction !== 'stable' && (
             <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-              trend.direction === 'up' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
+              trend.direction === 'up' ? 'bg-primary-50 text-primary-700' : 'bg-red-50 text-red-700'
             }`}>
               {trend.direction === 'up' ? (
                 <IconTrendingUp size={14} />
@@ -148,7 +148,7 @@ const ScoringTrendChart = memo(function ScoringTrendChart({ rounds }: { rounds: 
           <button
             onClick={() => setShowMovingAvg(!showMovingAvg)}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              showMovingAvg ? 'bg-green-100 text-green-700' : 'bg-warm-100 text-warm-600'
+              showMovingAvg ? 'bg-primary-100 text-primary-700' : 'bg-warm-100 text-warm-600'
             }`}
           >
             3-Round Avg
@@ -166,17 +166,17 @@ const ScoringTrendChart = memo(function ScoringTrendChart({ rounds }: { rounds: 
                   <stop offset="95%" stopColor="#16a34a" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" />
               <XAxis
                 dataKey="date"
-                tick={{ fontSize: 11, fill: '#64748b' }}
-                axisLine={{ stroke: '#e2e8f0' }}
+                tick={{ fontSize: 11, fill: '#78716c' }}
+                axisLine={{ stroke: '#e7e5e4' }}
                 tickLine={false}
               />
               <YAxis
                 domain={['dataMin - 2', 'dataMax + 2']}
-                tick={{ fontSize: 11, fill: '#64748b' }}
-                axisLine={{ stroke: '#e2e8f0' }}
+                tick={{ fontSize: 11, fill: '#78716c' }}
+                axisLine={{ stroke: '#e7e5e4' }}
                 tickLine={false}
               />
               <Tooltip content={<CustomTooltip />} />
@@ -217,7 +217,7 @@ const ScoreDistributionChart = memo(function ScoreDistributionChart({ stats }: {
   const distribution = [
     { label: 'Eagles', count: stats.totalEagles, color: '#eab308', pct: (stats.totalEagles / total) * 100 },
     { label: 'Birdies', count: stats.totalBirdies, color: '#16a34a', pct: (stats.totalBirdies / total) * 100 },
-    { label: 'Pars', count: stats.totalPars, color: '#64748b', pct: (stats.totalPars / total) * 100 },
+    { label: 'Pars', count: stats.totalPars, color: '#78716c', pct: (stats.totalPars / total) * 100 },
     { label: 'Bogeys', count: stats.totalBogeys, color: '#f97316', pct: (stats.totalBogeys / total) * 100 },
     { label: 'Double+', count: stats.totalDoublePlus, color: '#dc2626', pct: (stats.totalDoublePlus / total) * 100 },
   ].filter(d => d.count > 0);
@@ -240,7 +240,7 @@ const ScoreDistributionChart = memo(function ScoreDistributionChart({ stats }: {
         <div className="h-48">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 30, left: 60, bottom: 5 }}>
-              <XAxis type="number" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
+              <XAxis type="number" tick={{ fontSize: 11, fill: '#78716c' }} axisLine={false} tickLine={false} />
               <YAxis
                 type="category"
                 dataKey="name"
@@ -294,7 +294,7 @@ const RecentRounds = memo(function RecentRounds({ rounds }: { rounds: RoundData[
         {rounds.length > 5 && (
           <button
             onClick={() => setExpanded(!expanded)}
-            className="flex items-center gap-1 text-sm text-green-600 hover:text-green-700 font-medium transition-colors"
+            className="flex items-center gap-1 text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors"
           >
             {expanded ? (
               <>Show Less <IconChevronUp size={16} /></>
@@ -341,8 +341,8 @@ const RecentRounds = memo(function RecentRounds({ rounds }: { rounds: RoundData[
 
 const ProgressMetrics = memo(function ProgressMetrics({ stats }: { stats: GolfStats }) {
   const metrics = [
-    { label: 'Avg Score', value: stats.scoringAverage?.toFixed(1) || '-', subtext: 'per round', color: 'text-green-600' },
-    { label: 'Best Round', value: stats.bestRound?.toString() || '-', subtext: 'career low', color: 'text-emerald-600' },
+    { label: 'Avg Score', value: stats.scoringAverage?.toFixed(1) || '-', subtext: 'per round', color: 'text-primary-600' },
+    { label: 'Best Round', value: stats.bestRound?.toString() || '-', subtext: 'career low', color: 'text-primary-600' },
     { label: 'GIR %', value: stats.girPercentage ? `${stats.girPercentage.toFixed(0)}%` : '-', subtext: 'hit greens', color: 'text-blue-600' },
     { label: 'Putts/Round', value: stats.puttsPerRound?.toFixed(1) || '-', subtext: 'average', color: 'text-purple-600' },
     { label: 'Fairway %', value: stats.fairwayPercentage ? `${stats.fairwayPercentage.toFixed(0)}%` : '-', subtext: 'accuracy', color: 'text-amber-600' },
@@ -495,17 +495,17 @@ const PuttMakeChart = memo(function PuttMakeChart({ stats }: { stats: GolfStats 
         <div className="h-48">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data} margin={{ top: 5, right: 5, left: -10, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" />
               <XAxis
                 dataKey="distance"
-                tick={{ fontSize: 11, fill: '#64748b' }}
-                axisLine={{ stroke: '#e2e8f0' }}
+                tick={{ fontSize: 11, fill: '#78716c' }}
+                axisLine={{ stroke: '#e7e5e4' }}
                 tickLine={false}
               />
               <YAxis
                 domain={[0, 100]}
-                tick={{ fontSize: 11, fill: '#64748b' }}
-                axisLine={{ stroke: '#e2e8f0' }}
+                tick={{ fontSize: 11, fill: '#78716c' }}
+                axisLine={{ stroke: '#e7e5e4' }}
                 tickLine={false}
                 tickFormatter={(value) => `${value}%`}
               />
@@ -514,7 +514,7 @@ const PuttMakeChart = memo(function PuttMakeChart({ stats }: { stats: GolfStats 
                 contentStyle={{
                   backgroundColor: 'rgba(255,255,255,0.95)',
                   borderRadius: '8px',
-                  border: '1px solid #e2e8f0',
+                  border: '1px solid #e7e5e4',
                 }}
               />
               <Bar dataKey="pct" radius={[6, 6, 0, 0]} />
@@ -551,17 +551,17 @@ const GirByParChart = memo(function GirByParChart({ stats }: { stats: GolfStats 
         <div className="h-48">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data} margin={{ top: 5, right: 5, left: -10, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" />
               <XAxis
                 dataKey="par"
                 tick={{ fontSize: 12, fill: '#374151', fontWeight: 500 }}
-                axisLine={{ stroke: '#e2e8f0' }}
+                axisLine={{ stroke: '#e7e5e4' }}
                 tickLine={false}
               />
               <YAxis
                 domain={[0, 100]}
-                tick={{ fontSize: 11, fill: '#64748b' }}
-                axisLine={{ stroke: '#e2e8f0' }}
+                tick={{ fontSize: 11, fill: '#78716c' }}
+                axisLine={{ stroke: '#e7e5e4' }}
                 tickLine={false}
                 tickFormatter={(value) => `${value}%`}
               />
@@ -570,7 +570,7 @@ const GirByParChart = memo(function GirByParChart({ stats }: { stats: GolfStats 
                 contentStyle={{
                   backgroundColor: 'rgba(255,255,255,0.95)',
                   borderRadius: '8px',
-                  border: '1px solid #e2e8f0',
+                  border: '1px solid #e7e5e4',
                 }}
               />
               <Bar dataKey="pct" radius={[6, 6, 0, 0]} />
@@ -634,7 +634,7 @@ const StrokesGainedChart = memo(function StrokesGainedChart({ stats }: { stats: 
         </div>
         <div className={`px-3 py-1.5 rounded-lg text-sm font-bold ${
           (stats.sgTotalPerRound ?? 0) >= 0
-            ? 'bg-green-100 text-green-700'
+            ? 'bg-primary-100 text-primary-700'
             : 'bg-red-100 text-red-700'
         }`}>
           {(stats.sgTotalPerRound ?? 0) >= 0 ? '+' : ''}{stats.sgTotalPerRound?.toFixed(2) ?? '0.00'}
@@ -645,11 +645,11 @@ const StrokesGainedChart = memo(function StrokesGainedChart({ stats }: { stats: 
         <div className="h-52">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data} layout="vertical" margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" horizontal={false} />
               <XAxis
                 type="number"
-                tick={{ fontSize: 11, fill: '#64748b' }}
-                axisLine={{ stroke: '#e2e8f0' }}
+                tick={{ fontSize: 11, fill: '#78716c' }}
+                axisLine={{ stroke: '#e7e5e4' }}
                 tickLine={false}
                 domain={['dataMin - 0.5', 'dataMax + 0.5']}
               />
@@ -672,7 +672,7 @@ const StrokesGainedChart = memo(function StrokesGainedChart({ stats }: { stats: 
                 contentStyle={{
                   backgroundColor: 'rgba(255,255,255,0.95)',
                   borderRadius: '8px',
-                  border: '1px solid #e2e8f0',
+                  border: '1px solid #e7e5e4',
                 }}
               />
               <Bar dataKey="value" radius={[0, 6, 6, 0]} />
@@ -725,7 +725,7 @@ const KeyStatsSummary = memo(function KeyStatsSummary({ stats }: { stats: GolfSt
   const getColorClasses = (color: string, isAboveTarget: boolean) => {
     if (!isAboveTarget) return 'bg-warm-100 text-warm-600';
     switch (color) {
-      case 'green': return 'bg-green-100 text-green-700';
+      case 'green': return 'bg-primary-100 text-primary-700';
       case 'blue': return 'bg-blue-100 text-blue-700';
       case 'purple': return 'bg-purple-100 text-purple-700';
       case 'amber': return 'bg-amber-100 text-amber-700';
@@ -839,11 +839,11 @@ const InsightCard = memo(function InsightCard({ stats }: { stats: GolfStats }) {
       <div className="space-y-4">
         {strengths.length > 0 && (
           <div>
-            <div className="text-xs font-medium text-green-600 uppercase tracking-wider mb-2">Strengths</div>
+            <div className="text-xs font-medium text-primary-600 uppercase tracking-wider mb-2">Strengths</div>
             <div className="space-y-2">
               {strengths.map((insight, i) => (
-                <div key={i} className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-green-50/60 border border-green-100/80">
-                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
+                <div key={i} className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary-50/60 border border-primary-100/80">
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary-500 shrink-0" />
                   <div className="flex-1 min-w-0">
                     <span className="text-sm font-medium text-warm-800">{insight.label}</span>
                     <span className="text-sm text-warm-500 ml-1.5">{insight.detail}</span>

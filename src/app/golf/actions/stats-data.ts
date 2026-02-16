@@ -25,6 +25,48 @@ async function requireAuth() {
   return { supabase, user };
 }
 
+/**
+ * Verify the authenticated user has access to the given player's stats.
+ * Access is granted if the user IS the player, or is a coach on their team.
+ */
+async function verifyPlayerAccess(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  playerId: string
+): Promise<boolean> {
+  // Check if user IS the player
+  const { data: player } = await supabase
+    .from('golf_players')
+    .select('id, user_id')
+    .eq('id', playerId)
+    .single();
+
+  if (player?.user_id === userId) return true;
+
+  // Check if user is a coach on the player's team
+  const { data: coach } = await supabase
+    .from('golf_coaches')
+    .select('organization_id')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (coach?.organization_id && player) {
+    const { data: membership } = await supabase
+      .from('golf_team_members')
+      .select('team_id, team:golf_teams(organization_id)')
+      .eq('player_id', playerId)
+      .eq('status', 'active')
+      .limit(1)
+      .maybeSingle();
+
+    if (membership?.team && (membership.team as { organization_id: string }).organization_id === coach.organization_id) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -515,7 +557,20 @@ export interface TrendAnalysisResponse {
  * Includes round-by-round data, rolling averages, and period comparisons
  */
 export async function getTrendAnalysis(playerId: string): Promise<TrendAnalysisResponse> {
-  const { supabase } = await requireAuth();
+  const { supabase, user } = await requireAuth();
+
+  if (!(await verifyPlayerAccess(supabase, user.id, playerId))) {
+    return {
+      rounds: [],
+      trends: { score: [], gir: [], fairway: [], putts: [] },
+      rollingAverages: { score5: [], score10: [], score20: [] },
+      periodComparison: {
+        last30Days: { roundCount: 0, scoringAvg: null, girPct: null, fairwayPct: null, puttsPerRound: null },
+        previous30Days: { roundCount: 0, scoringAvg: null, girPct: null, fairwayPct: null, puttsPerRound: null },
+      },
+      personalBests: { bestScore: null, bestToPar: null, bestGir: null, lowestPutts: null },
+    };
+  }
 
   // Fetch all completed rounds with stats
   const { data: roundsData, error } = await supabase
@@ -889,7 +944,11 @@ export interface FilterOptions {
  * Get available filter options for a player
  */
 export async function getFilterOptions(playerId: string): Promise<FilterOptions> {
-  const { supabase } = await requireAuth();
+  const { supabase, user } = await requireAuth();
+
+  if (!(await verifyPlayerAccess(supabase, user.id, playerId))) {
+    return { courses: [], seasons: [], roundTypes: [] };
+  }
 
   const { data: roundsData } = await supabase
     .from('golf_rounds')
@@ -949,7 +1008,11 @@ export interface CourseBreakdownResponse {
  * Get stats broken down by course
  */
 export async function getCourseBreakdown(playerId: string): Promise<CourseBreakdownResponse> {
-  const { supabase } = await requireAuth();
+  const { supabase, user } = await requireAuth();
+
+  if (!(await verifyPlayerAccess(supabase, user.id, playerId))) {
+    return { courses: [], bestCourse: null, worstCourse: null };
+  }
 
   const { data: roundsData } = await supabase
     .from('golf_rounds')
@@ -1065,7 +1128,11 @@ export interface WorstHoleResponse {
  * Get worst hole analysis
  */
 export async function getWorstHoleAnalysis(playerId: string): Promise<WorstHoleResponse> {
-  const { supabase } = await requireAuth();
+  const { supabase, user } = await requireAuth();
+
+  if (!(await verifyPlayerAccess(supabase, user.id, playerId))) {
+    return { holes: [], worstHoles: [], bestHoles: [], par3Average: null, par4Average: null, par5Average: null, closingHolesAverage: null };
+  }
 
   // Get all holes with their scores
   const { data: holesData } = await supabase
@@ -1209,6 +1276,12 @@ export async function getPlayerStrengthsWeaknesses(
   strengths: StatisticalStrengthWeakness[];
   weaknesses: StatisticalStrengthWeakness[];
 } | null> {
+  const { supabase, user } = await requireAuth();
+
+  if (!(await verifyPlayerAccess(supabase, user.id, playerId))) {
+    return null;
+  }
+
   const stats = await getDetailedStats(playerId, 'overall', filter);
 
   if (stats.roundsPlayed < 3) {

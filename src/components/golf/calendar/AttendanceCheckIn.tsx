@@ -156,7 +156,7 @@ export function AttendanceCheckIn({
               {isComplete && onComplete && (
                 <button
                   onClick={onComplete}
-                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
+                  className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-colors"
                 >
                   Complete
                 </button>
@@ -174,7 +174,7 @@ export function AttendanceCheckIn({
 
               <div className="h-2.5 bg-warm-100 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-green-600 transition-all duration-500 ease-out rounded-full"
+                  className="h-full bg-primary-600 transition-all duration-500 ease-out rounded-full"
                   style={{ width: `${stats.percentage}%` }}
                 />
               </div>
@@ -182,7 +182,7 @@ export function AttendanceCheckIn({
               {/* Stats row */}
               <div className="flex items-center gap-4 pt-2">
                 <div className="flex items-center gap-2 text-sm">
-                  <CheckCircle className="w-4 h-4 text-emerald-600" />
+                  <CheckCircle className="w-4 h-4 text-primary-600" />
                   <span className="font-medium text-warm-700">{stats.present} present</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
@@ -202,7 +202,7 @@ export function AttendanceCheckIn({
             <div className="px-5 pb-4 flex gap-2">
               <button
                 onClick={handleMarkAllPresent}
-                className="flex-1 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-sm font-medium rounded-lg border border-emerald-200 transition-colors"
+                className="flex-1 px-3 py-2 bg-primary-50 hover:bg-primary-100 text-primary-700 text-sm font-medium rounded-lg border border-primary-200 transition-colors"
               >
                 Mark All Present
               </button>
@@ -241,14 +241,14 @@ export function AttendanceCheckIn({
 
         {/* Completion message */}
         {isComplete && (
-          <div className="p-5 border-t border-warm-200 bg-emerald-50">
+          <div className="p-5 border-t border-warm-200 bg-primary-50">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center">
                 <CheckCircle className="w-6 h-6 text-white" />
               </div>
               <div>
-                <p className="font-semibold text-emerald-900">All players checked in</p>
-                <p className="text-sm text-emerald-700 mt-0.5">
+                <p className="font-semibold text-primary-900">All players checked in</p>
+                <p className="text-sm text-primary-700 mt-0.5">
                   {stats.present} present, {stats.absent} absent
                 </p>
               </div>
@@ -289,7 +289,7 @@ export function CompactAttendanceSummary({
     <div className={cn('space-y-2', className)}>
       <div className="flex items-center gap-3 text-sm">
         <div className="flex items-center gap-1">
-          <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+          <CheckCircle className="w-3.5 h-3.5 text-primary-600" />
           <span className="font-medium text-warm-700">{present}</span>
         </div>
         <div className="flex items-center gap-1">
@@ -306,7 +306,7 @@ export function CompactAttendanceSummary({
 
       <div className="h-1.5 bg-warm-100 rounded-full overflow-hidden">
         <div
-          className="h-full bg-green-600 transition-all duration-300"
+          className="h-full bg-primary-600 transition-all duration-300"
           style={{ width: `${percentage}%` }}
         />
       </div>

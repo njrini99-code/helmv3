@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { createClient } from '@/lib/supabase/client';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { useToast } from '@/components/ui/toast';
@@ -19,6 +20,7 @@ interface CreateTaskModalProps {
 }
 
 export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, players }: CreateTaskModalProps) {
+  const { modalRef } = useFocusTrap(isOpen, onClose);
   const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -121,6 +123,7 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Create New Task">
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="modal-title">
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
           label="Task Title"
@@ -141,7 +144,7 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
             placeholder="Add more details about this task..."
             rows={3}
             className="w-full px-4 py-2.5 rounded-lg border border-warm-200
-                     focus:border-green-500 focus:ring-2 focus:ring-green-100
+                     focus:border-primary-500 focus:ring-2 focus:ring-primary-100
                      text-warm-900 placeholder:text-warm-400 transition-colors resize-none"
           />
         </div>
@@ -178,7 +181,7 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
               whileTap={{ scale: 0.99 }}
               className={`w-full p-3 rounded-lg border-2 text-left transition-all ${
                 assignToAll
-                  ? 'border-green-600 bg-green-50 shadow-sm'
+                  ? 'border-primary-600 bg-primary-50 shadow-sm'
                   : 'border-warm-200 hover:border-warm-300 hover:shadow-sm'
               }`}
             >
@@ -193,7 +196,7 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
               whileTap={{ scale: 0.99 }}
               className={`w-full p-3 rounded-lg border-2 text-left transition-all ${
                 !assignToAll
-                  ? 'border-green-600 bg-green-50 shadow-sm'
+                  ? 'border-primary-600 bg-primary-50 shadow-sm'
                   : 'border-warm-200 hover:border-warm-300 hover:shadow-sm'
               }`}
             >
@@ -204,35 +207,38 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
             </motion.button>
           </div>
 
-          {!assignToAll && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.22 }}
-              className="mt-3 max-h-48 overflow-y-auto space-y-1 border border-warm-200 rounded-lg p-2"
-            >
-              {players.map((player, index) => (
-                <motion.button
-                  key={player.id}
-                  type="button"
-                  onClick={() => togglePlayer(player.id)}
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.03 }}
-                  whileHover={{ scale: 1.01, x: 2 }}
-                  whileTap={{ scale: 0.98 }}
-                  className={`w-full px-3 py-2 rounded-md text-left text-sm transition-all ${
-                    selectedPlayers.includes(player.id)
-                      ? 'bg-green-100 text-green-900 shadow-sm'
-                      : 'hover:bg-warm-50 text-warm-700'
-                  }`}
-                >
-                  {player.first_name || ''} {player.last_name || ''}
-                </motion.button>
-              ))}
-            </motion.div>
-          )}
+          <AnimatePresence>
+            {!assignToAll && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
+                style={{ overflow: 'hidden' }}
+                className="mt-3 max-h-48 overflow-y-auto space-y-1 border border-warm-200 rounded-lg p-2"
+              >
+                {players.map((player, index) => (
+                  <motion.button
+                    key={player.id}
+                    type="button"
+                    onClick={() => togglePlayer(player.id)}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.03 }}
+                    whileHover={{ scale: 1.01, x: 2 }}
+                    whileTap={{ scale: 0.98 }}
+                    className={`w-full px-3 py-2 rounded-md text-left text-sm transition-all ${
+                      selectedPlayers.includes(player.id)
+                        ? 'bg-primary-100 text-primary-900 shadow-sm'
+                        : 'hover:bg-warm-50 text-warm-700'
+                    }`}
+                  >
+                    {player.first_name || ''} {player.last_name || ''}
+                  </motion.button>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         <div className="flex justify-end gap-3 pt-4 border-t border-warm-200">
@@ -244,6 +250,7 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
           </Button>
         </div>
       </form>
+      </div>
     </Modal>
   );
 }

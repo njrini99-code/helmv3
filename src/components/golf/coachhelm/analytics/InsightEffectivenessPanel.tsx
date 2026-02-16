@@ -61,7 +61,7 @@ export function InsightEffectivenessPanel({
           <StatCard
             label="Improvement"
             value={`${Math.round(data.overall.overallImprovementRate * 100)}%`}
-            icon={<IconTrendingUp size={14} className="text-green-500" />}
+            icon={<IconTrendingUp size={14} className="text-primary-500" />}
             color="green"
           />
           <StatCard
@@ -93,7 +93,7 @@ export function InsightEffectivenessPanel({
                     className={cn(
                       'text-xs font-medium px-1.5 py-0.5 rounded',
                       m.effectivenessScore >= 0.7
-                        ? 'bg-green-100 text-green-700'
+                        ? 'bg-primary-100 text-primary-700'
                         : m.effectivenessScore >= 0.4
                         ? 'bg-amber-100 text-amber-700'
                         : 'bg-warm-100 text-warm-600'
@@ -149,7 +149,7 @@ export function InsightEffectivenessPanel({
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} layout="vertical" margin={{ left: 80, right: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" horizontal={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" horizontal={false} />
                 <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 12 }} tickLine={false} />
                 <YAxis
                   type="category"
@@ -242,7 +242,7 @@ function StatCard({
 }) {
   const colors = {
     blue: 'bg-blue-50 border-blue-100',
-    green: 'bg-green-50 border-green-100',
+    green: 'bg-primary-50 border-primary-100',
     purple: 'bg-purple-50 border-purple-100',
   };
 
@@ -274,7 +274,7 @@ function StatCardLarge({
       <p
         className={cn(
           'text-2xl font-bold tabular-nums',
-          color === 'green' && 'text-green-600',
+          color === 'green' && 'text-primary-600',
           color === 'amber' && 'text-amber-600',
           color === 'slate' && 'text-warm-900'
         )}
@@ -315,10 +315,10 @@ function TableRow({ metrics }: { metrics: InsightTypeMetrics }) {
 function RateIndicator({ value, highlighted }: { value: number; highlighted?: boolean }) {
   const percentage = Math.round(value * 100);
   const color =
-    percentage >= 70 ? 'text-green-600' : percentage >= 40 ? 'text-amber-600' : 'text-warm-500';
+    percentage >= 70 ? 'text-primary-600' : percentage >= 40 ? 'text-amber-600' : 'text-warm-500';
   const bgColor = highlighted
     ? percentage >= 70
-      ? 'bg-green-100'
+      ? 'bg-primary-100'
       : percentage >= 40
       ? 'bg-amber-100'
       : 'bg-warm-100'
@@ -357,7 +357,7 @@ function CustomTooltip({
           </div>
           <div className="flex justify-between gap-4">
             <span className="text-warm-500">Improvement Rate:</span>
-            <span className="font-medium text-green-600">{data.improvementRate}%</span>
+            <span className="font-medium text-primary-600">{data.improvementRate}%</span>
           </div>
           <div className="flex justify-between gap-4 pt-1 border-t border-warm-100">
             <span className="text-warm-500">Effectiveness:</span>

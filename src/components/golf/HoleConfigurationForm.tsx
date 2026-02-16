@@ -89,17 +89,17 @@ export function HoleConfigurationForm({
 
       {/* Summary Cards */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="bg-white rounded-lg p-4 border border-warm-200 shadow-sm shadow-emerald-950/5 ring-1 ring-warm-100 text-center">
-          <div className="text-2xl font-bold text-emerald-600">{totalPar}</div>
+        <div className="bg-white rounded-lg p-4 border border-warm-200 shadow-sm shadow-primary-950/5 ring-1 ring-warm-100 text-center">
+          <div className="text-2xl font-bold text-primary-600">{totalPar}</div>
           <div className="text-xs font-bold text-warm-500 uppercase tracking-wider">Total Par</div>
         </div>
-        <div className="bg-white rounded-lg p-4 border border-warm-200 shadow-sm shadow-emerald-950/5 ring-1 ring-warm-100 text-center">
+        <div className="bg-white rounded-lg p-4 border border-warm-200 shadow-sm shadow-primary-950/5 ring-1 ring-warm-100 text-center">
           <div className="text-2xl font-bold text-warm-900">
             {totalYards.toLocaleString()}
           </div>
           <div className="text-xs font-bold text-warm-500 uppercase tracking-wider">Total Yards</div>
         </div>
-        <div className="bg-white rounded-lg p-4 border border-warm-200 shadow-sm shadow-emerald-950/5 ring-1 ring-warm-100 text-center">
+        <div className="bg-white rounded-lg p-4 border border-warm-200 shadow-sm shadow-primary-950/5 ring-1 ring-warm-100 text-center">
           <div className="text-2xl font-bold text-warm-600">{holesPerRound}</div>
           <div className="text-xs font-bold text-warm-500 uppercase tracking-wider">Holes</div>
         </div>
@@ -132,7 +132,7 @@ export function HoleConfigurationForm({
       )}
 
       {/* Hole Configuration Grid */}
-      <div className="bg-white rounded-lg border border-warm-200 overflow-hidden shadow-sm shadow-emerald-950/5 ring-1 ring-warm-100">
+      <div className="bg-white rounded-lg border border-warm-200 overflow-hidden shadow-sm shadow-primary-950/5 ring-1 ring-warm-100">
         {/* Header */}
         <div className="grid grid-cols-[60px_1fr_1fr] gap-0 bg-warm-50 border-b border-warm-200">
           <div className="px-3 py-2 text-xs font-bold text-warm-500 uppercase tracking-wider">
@@ -160,7 +160,7 @@ export function HoleConfigurationForm({
                 text-sm font-bold
                 ${hole.par === 3 ? 'bg-rose-50 text-rose-600 ring-1 ring-rose-200' : ''}
                 ${hole.par === 4 ? 'bg-warm-100 text-warm-700 ring-1 ring-warm-200' : ''}
-                ${hole.par === 5 ? 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200' : ''}
+                ${hole.par === 5 ? 'bg-primary-50 text-primary-600 ring-1 ring-primary-200' : ''}
               `}>
                 {hole.holeNumber}
               </span>
@@ -178,7 +178,7 @@ export function HoleConfigurationForm({
                         ? par === 3
                           ? 'bg-rose-600 text-white shadow-sm shadow-rose-950/10 ring-1 ring-rose-700'
                           : par === 5
-                            ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-700'
+                            ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10 ring-1 ring-primary-700'
                             : 'bg-warm-700 text-white shadow-sm shadow-warm-950/10 ring-1 ring-warm-800'
                         : 'bg-warm-100 text-warm-600 hover:bg-warm-200 ring-1 ring-warm-200'
                       }`}
@@ -196,7 +196,7 @@ export function HoleConfigurationForm({
                 value={hole.yardage}
                 onChange={(e) => updateHole(hole.holeNumber, 'yardage', parseInt(e.target.value) || 0)}
                 className="w-20 px-3 py-2 text-center text-sm font-medium border border-warm-200
-                           rounded-lg focus:ring-2 focus:ring-emerald-600 focus:border-transparent"
+                           rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent"
                 min="50"
                 max="700"
               />
@@ -221,8 +221,8 @@ export function HoleConfigurationForm({
       {/* Save Button */}
       <button
         onClick={handleSubmit}
-        className="w-full py-4 bg-emerald-600 text-white font-semibold rounded-lg
-                   hover:bg-emerald-700 transition-colors shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-700"
+        className="w-full py-4 bg-primary-600 text-white font-semibold rounded-lg
+                   hover:bg-primary-700 transition-colors shadow-sm shadow-primary-950/10 ring-1 ring-primary-700"
       >
         Save Course & Start Round
       </button>

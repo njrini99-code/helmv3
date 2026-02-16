@@ -59,7 +59,7 @@ export function PatternsDashboardClient({
               {/* Back button */}
               <button
                 onClick={() => router.push('/golf/dashboard')}
-                className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                className="p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
               >
                 <IconArrowLeft size={20} />
               </button>
@@ -70,10 +70,10 @@ export function PatternsDashboardClient({
                   <IconSparkles size={20} className="text-white" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-semibold text-slate-900">
+                  <h1 className="text-xl font-semibold text-warm-900">
                     Pattern Management
                   </h1>
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-warm-500">
                     Review and manage AI-detected performance patterns
                   </p>
                 </div>
@@ -87,8 +87,8 @@ export function PatternsDashboardClient({
                 disabled={isPending}
                 className={cn(
                   'flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors',
-                  'bg-white border border-slate-200 text-slate-700',
-                  'hover:bg-slate-50 hover:border-slate-300',
+                  'bg-white border border-warm-200 text-warm-700',
+                  'hover:bg-warm-50 hover:border-warm-300',
                   isPending && 'opacity-50 cursor-not-allowed'
                 )}
               >

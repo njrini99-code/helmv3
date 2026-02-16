@@ -41,7 +41,7 @@ export function UserBreakdownCard({ users }: Props) {
         </div>
         <div className={cn(
           'flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full',
-          isGrowth ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
+          isGrowth ? 'bg-primary-50 text-primary-700' : 'bg-red-50 text-red-700'
         )}>
           {isGrowth ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
           {isGrowth ? '+' : ''}{signupDelta} this week

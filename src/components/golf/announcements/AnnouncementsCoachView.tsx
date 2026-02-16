@@ -124,7 +124,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
             <div className="flex items-center gap-2 mb-1">
               <h3 className="text-sm font-semibold text-warm-900 truncate">{ann.title}</h3>
               {isRecent && (
-                <span className="px-1.5 py-0.5 text-xs font-medium rounded-full bg-green-50 text-green-600 flex-shrink-0">
+                <span className="px-1.5 py-0.5 text-xs font-medium rounded-full bg-primary-50 text-primary-600 flex-shrink-0">
                   New
                 </span>
               )}
@@ -179,13 +179,17 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.25 }}
+              transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
               className="overflow-hidden"
             >
               <div className="px-5 pb-4 border-t border-warm-100">
                 {loadingDetail ? (
                   <div className="py-6 flex items-center justify-center">
-                    <div className="animate-spin h-5 w-5 border-2 border-green-600 border-t-transparent rounded-full" />
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+                    </span>
                   </div>
                 ) : detail ? (
                   <div className="pt-4 space-y-4">
@@ -227,7 +231,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
                                   <span className="text-sm font-medium text-warm-900">{t.task?.title || 'Task'}</span>
                                   <span className={cn(
                                     'text-xs font-medium tabular-nums',
-                                    completed === total && total > 0 ? 'text-green-600' : 'text-warm-500'
+                                    completed === total && total > 0 ? 'text-primary-600' : 'text-warm-500'
                                   )}>
                                     {completed}/{total} done
                                   </span>
@@ -244,7 +248,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
                                         className={cn(
                                           'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium',
                                           a.status === 'completed'
-                                            ? 'bg-green-50 text-green-700'
+                                            ? 'bg-primary-50 text-primary-700'
                                             : 'bg-warm-100 text-warm-500'
                                         )}
                                       >
@@ -271,7 +275,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
                           <div
                             className={cn(
                               'h-full rounded-full transition-all',
-                              detail.acknowledged_count >= detail.total_recipients ? 'bg-green-500' : 'bg-blue-400'
+                              detail.acknowledged_count >= detail.total_recipients ? 'bg-primary-500' : 'bg-blue-400'
                             )}
                             style={{ width: `${detail.total_recipients > 0 ? (detail.acknowledged_count / detail.total_recipients) * 100 : 0}%` }}
                           />
@@ -283,8 +287,8 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
                               const player = taskAssignmentPlayers.find(a => a.player_id === ack.player_id)?.player;
                               return (
                                 <div key={ack.id} className="flex items-center gap-2 py-1 px-2">
-                                  <div className="w-4 h-4 rounded-full bg-green-100 flex items-center justify-center">
-                                    <IconCheck size={8} className="text-green-600" />
+                                  <div className="w-4 h-4 rounded-full bg-primary-100 flex items-center justify-center">
+                                    <IconCheck size={8} className="text-primary-600" />
                                   </div>
                                   <span className="text-xs text-warm-600 flex-1">
                                     {player ? `${player.first_name || ''} ${player.last_name || ''}` : 'Player'}

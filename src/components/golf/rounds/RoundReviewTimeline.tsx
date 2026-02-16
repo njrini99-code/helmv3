@@ -59,12 +59,12 @@ function TimelineItem({
         <div className={cn(
           'w-3 h-3 rounded-full border-2',
           review.status === 'shared' ? 'bg-primary-500 border-primary-500' :
-          review.status === 'approved' ? 'bg-green-500 border-green-500' :
+          review.status === 'approved' ? 'bg-primary-500 border-primary-500' :
           review.status === 'failed' ? 'bg-red-500 border-red-500' :
-          'bg-white border-gray-300'
+          'bg-white border-warm-300'
         )} />
         {!isLast && (
-          <div className="w-0.5 flex-1 bg-gray-200 my-1" />
+          <div className="w-0.5 flex-1 bg-warm-200 my-1" />
         )}
       </div>
 
@@ -77,23 +77,23 @@ function TimelineItem({
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-sm font-medium text-gray-900 truncate">
+                <span className="text-sm font-medium text-warm-900 truncate">
                   {review.course_name || 'Unknown Course'}
                 </span>
                 <StatusBadge status={review.status} />
               </div>
-              <p className="text-xs text-gray-500">{formattedDate}</p>
+              <p className="text-xs text-warm-500">{formattedDate}</p>
             </div>
             <div className="text-right flex-shrink-0">
               {review.total_score != null && (
                 <div className={cn(
                   'text-xl font-semibold',
-                  review.score_to_par != null ? getScoreColor(review.total_score, review.total_score - review.score_to_par) : 'text-gray-900'
+                  review.score_to_par != null ? getScoreColor(review.total_score, review.total_score - review.score_to_par) : 'text-warm-900'
                 )}>
                   {review.total_score}
                 </div>
               )}
-              <div className="text-xs text-gray-500">
+              <div className="text-xs text-warm-500">
                 {scoreVsPar >= 0 ? '+' : ''}{scoreVsPar}
               </div>
             </div>
@@ -127,31 +127,31 @@ function StatsSummary({
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-cream-50 rounded-xl mb-6">
       <div>
-        <p className="text-xs text-gray-500">Total Rounds</p>
-        <p className="text-xl font-semibold text-gray-900">{totalRounds}</p>
+        <p className="text-xs text-warm-500">Total Rounds</p>
+        <p className="text-xl font-semibold text-warm-900">{totalRounds}</p>
       </div>
       <div>
-        <p className="text-xs text-gray-500">Reviewed</p>
-        <p className="text-xl font-semibold text-gray-900">
+        <p className="text-xs text-warm-500">Reviewed</p>
+        <p className="text-xl font-semibold text-warm-900">
           {reviewedRounds}
-          <span className="text-sm font-normal text-gray-500 ml-1">
+          <span className="text-sm font-normal text-warm-500 ml-1">
             ({totalRounds > 0 ? Math.round((reviewedRounds / totalRounds) * 100) : 0}%)
           </span>
         </p>
       </div>
       <div>
-        <p className="text-xs text-gray-500">Avg Score</p>
-        <p className="text-xl font-semibold text-gray-900">{averageScore.toFixed(1)}</p>
+        <p className="text-xs text-warm-500">Avg Score</p>
+        <p className="text-xl font-semibold text-warm-900">{averageScore.toFixed(1)}</p>
       </div>
       <div>
-        <p className="text-xs text-gray-500">Trend</p>
+        <p className="text-xs text-warm-500">Trend</p>
         <div className="flex items-center gap-2">
           {improvementTrend === 'improving' && (
             <>
-              <svg className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <svg className="w-5 h-5 text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
               </svg>
-              <span className="text-green-600 font-medium">Improving</span>
+              <span className="text-primary-600 font-medium">Improving</span>
             </>
           )}
           {improvementTrend === 'declining' && (
@@ -164,14 +164,14 @@ function StatsSummary({
           )}
           {improvementTrend === 'stable' && (
             <>
-              <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <svg className="w-5 h-5 text-warm-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
               </svg>
-              <span className="text-gray-600 font-medium">Stable</span>
+              <span className="text-warm-600 font-medium">Stable</span>
             </>
           )}
           {!improvementTrend && (
-            <span className="text-gray-400">Not enough data</span>
+            <span className="text-warm-400">Not enough data</span>
           )}
         </div>
       </div>
@@ -197,12 +197,12 @@ export function RoundReviewTimeline({
       <div className="bg-white border border-border-light rounded-xl p-8">
         <div className="flex flex-col items-center text-center">
           <div className="w-12 h-12 rounded-full bg-cream-200 flex items-center justify-center mb-4">
-            <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+            <svg className="w-6 h-6 text-warm-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h3 className="text-base font-semibold text-gray-900 mb-1">No Reviews Yet</h3>
-          <p className="text-sm text-gray-500">
+          <h3 className="text-base font-semibold text-warm-900 mb-1">No Reviews Yet</h3>
+          <p className="text-sm text-warm-500">
             Reviews will appear here once rounds are completed and reviewed.
           </p>
         </div>
@@ -215,7 +215,7 @@ export function RoundReviewTimeline({
       {/* Header with filters */}
       <div className="px-6 py-4 border-b border-border-light">
         <div className="flex items-center justify-between">
-          <h3 className="text-base font-semibold text-gray-900">Review History</h3>
+          <h3 className="text-base font-semibold text-warm-900">Review History</h3>
           <div className="flex gap-1 p-1 bg-cream-100 rounded-lg">
             {(['all', 'shared', 'approved', 'draft'] as const).map((status) => (
               <button
@@ -224,8 +224,8 @@ export function RoundReviewTimeline({
                 className={cn(
                   'px-3 py-1 text-xs font-medium rounded-md transition-colors',
                   filter === status
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-white text-warm-900 shadow-sm'
+                    : 'text-warm-600 hover:text-warm-900'
                 )}
               >
                 {status === 'all' ? 'All' : status.charAt(0).toUpperCase() + status.slice(1)}
@@ -238,7 +238,7 @@ export function RoundReviewTimeline({
       {/* Timeline */}
       <div className="p-6">
         {filteredReviews.length === 0 ? (
-          <p className="text-sm text-gray-500 text-center py-4">
+          <p className="text-sm text-warm-500 text-center py-4">
             No reviews match this filter.
           </p>
         ) : (
@@ -267,8 +267,8 @@ export function PlayerReviewTimeline({ history }: PlayerReviewTimelineProps) {
           {playerName.split(' ').map(n => n[0]).join('')}
         </div>
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">{playerName}</h2>
-          <p className="text-sm text-gray-500">
+          <h2 className="text-lg font-semibold text-warm-900">{playerName}</h2>
+          <p className="text-sm text-warm-500">
             {total_reviews} review{total_reviews !== 1 ? 's' : ''}
           </p>
         </div>

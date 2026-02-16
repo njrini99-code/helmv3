@@ -165,7 +165,7 @@ export function UploadNewVersion({
             className={cn(
               'relative border-2 border-dashed rounded-lg p-6 transition-colors',
               isDragging && 'border-primary bg-primary/5',
-              file && 'border-solid border-green-500 bg-green-50 dark:bg-green-950',
+              file && 'border-solid border-primary-500 bg-primary-50 dark:bg-primary-950',
               error && 'border-destructive',
               !file && !isDragging && 'border-muted-foreground/25 hover:border-muted-foreground/50'
             )}
@@ -183,8 +183,8 @@ export function UploadNewVersion({
 
             {file ? (
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
-                  <FileIcon className="h-6 w-6 text-green-600" />
+                <div className="p-2 bg-primary-100 dark:bg-primary-900 rounded-lg">
+                  <FileIcon className="h-6 w-6 text-primary-600" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium truncate">{file.name}</p>
@@ -233,7 +233,7 @@ export function UploadNewVersion({
 
           {/* Success message */}
           {success && (
-            <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-400 rounded-lg">
+            <div className="flex items-center gap-2 p-3 bg-primary-50 dark:bg-primary-950 text-primary-700 dark:text-primary-400 rounded-lg">
               <CheckCircleIcon className="h-5 w-5" />
               <span>Version {nextVersion} uploaded successfully!</span>
             </div>

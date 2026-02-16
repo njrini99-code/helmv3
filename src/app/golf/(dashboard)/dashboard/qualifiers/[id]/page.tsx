@@ -130,13 +130,13 @@ export default async function QualifierDetailPage({ params }: PageProps) {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'upcoming':
-        return 'bg-slate-100 text-slate-700';
+        return 'bg-warm-100 text-warm-700';
       case 'in_progress':
-        return 'bg-green-100 text-green-700';
+        return 'bg-primary-100 text-primary-700';
       case 'completed':
-        return 'bg-slate-100 text-slate-600';
+        return 'bg-warm-100 text-warm-600';
       default:
-        return 'bg-slate-100 text-slate-600';
+        return 'bg-warm-100 text-warm-600';
     }
   };
 
@@ -155,7 +155,7 @@ export default async function QualifierDetailPage({ params }: PageProps) {
         <AnimatedItem>
         <Link
           href="/golf/dashboard/qualifiers"
-          className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 mb-6"
+          className="inline-flex items-center gap-2 text-sm text-warm-600 hover:text-warm-900 mb-6"
         >
           <IconChevronLeft size={16} />
           Back to Qualifiers
@@ -168,11 +168,11 @@ export default async function QualifierDetailPage({ params }: PageProps) {
           <ShineEffect />
           <div className="flex items-start justify-between mb-4">
             <div>
-              <h1 className="text-2xl font-semibold text-slate-900 mb-2">
+              <h1 className="text-2xl font-semibold text-warm-900 mb-2">
                 {qualifierData.name}
               </h1>
               {qualifierData.description && (
-                <p className="text-slate-600">{qualifierData.description}</p>
+                <p className="text-warm-600">{qualifierData.description}</p>
               )}
             </div>
             <span
@@ -184,10 +184,10 @@ export default async function QualifierDetailPage({ params }: PageProps) {
             </span>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-slate-200">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-warm-200">
             <div>
-              <p className="text-sm text-slate-500 mb-1">Dates</p>
-              <p className="font-medium text-slate-900">
+              <p className="text-sm text-warm-500 mb-1">Dates</p>
+              <p className="font-medium text-warm-900">
                 {formatDate(qualifierData.start_date)}
                 {qualifierData.end_date && qualifierData.end_date !== qualifierData.start_date && (
                   <> - {formatDate(qualifierData.end_date)}</>
@@ -197,28 +197,28 @@ export default async function QualifierDetailPage({ params }: PageProps) {
 
             {qualifierData.spots_available && (
               <div>
-                <p className="text-sm text-slate-500 mb-1">Spots Available</p>
-                <p className="font-medium text-slate-900">{qualifierData.spots_available}</p>
+                <p className="text-sm text-warm-500 mb-1">Spots Available</p>
+                <p className="font-medium text-warm-900">{qualifierData.spots_available}</p>
               </div>
             )}
 
             <div>
-              <p className="text-sm text-slate-500 mb-1">Players</p>
-              <p className="font-medium text-slate-900">{qualifierData.entries.length}</p>
+              <p className="text-sm text-warm-500 mb-1">Players</p>
+              <p className="font-medium text-warm-900">{qualifierData.entries.length}</p>
             </div>
 
             {qualifierData.entry_deadline && (
               <div>
-                <p className="text-sm text-slate-500 mb-1">Entry Deadline</p>
-                <p className="font-medium text-slate-900">{formatDate(qualifierData.entry_deadline)}</p>
+                <p className="text-sm text-warm-500 mb-1">Entry Deadline</p>
+                <p className="font-medium text-warm-900">{formatDate(qualifierData.entry_deadline)}</p>
               </div>
             )}
           </div>
 
           {qualifierData.course_name && (
-            <div className="mt-4 pt-4 border-t border-slate-200">
-              <p className="text-sm text-slate-500">Course</p>
-              <p className="font-medium text-slate-900">{qualifierData.course_name}</p>
+            <div className="mt-4 pt-4 border-t border-warm-200">
+              <p className="text-sm text-warm-500">Course</p>
+              <p className="font-medium text-warm-900">{qualifierData.course_name}</p>
             </div>
           )}
         </div>
@@ -228,7 +228,7 @@ export default async function QualifierDetailPage({ params }: PageProps) {
         <AnimatedItem>
         <div className="relative glass-standard rounded-2xl overflow-hidden p-6">
           <ShineEffect />
-          <h2 className="text-lg font-semibold text-slate-900 mb-4">Leaderboard</h2>
+          <h2 className="text-lg font-semibold text-warm-900 mb-4">Leaderboard</h2>
           <QualifierLeaderboardRealtime
             qualifierId={id}
             numRounds={1}

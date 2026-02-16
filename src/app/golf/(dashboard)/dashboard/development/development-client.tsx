@@ -108,8 +108,8 @@ const AREA_TYPES: AreaTypeConfig[] = [
     value: 'iron_play',
     label: 'Iron Play',
     icon: IconCrosshair,
-    color: 'text-emerald-600',
-    bgColor: 'bg-emerald-50',
+    color: 'text-primary-600',
+    bgColor: 'bg-primary-50',
     suggestedMetrics: ['GIR %', 'Proximity to Hole', 'Iron Accuracy'],
   },
   {
@@ -156,16 +156,16 @@ const AREA_TYPES: AreaTypeConfig[] = [
     value: 'other',
     label: 'Other',
     icon: IconClipboardList,
-    color: 'text-slate-600',
-    bgColor: 'bg-slate-50',
+    color: 'text-warm-600',
+    bgColor: 'bg-warm-50',
     suggestedMetrics: ['Custom Metric'],
   },
 ];
 
 const STATUS_OPTIONS = [
-  { value: 'active', label: 'Active', color: 'bg-green-50 text-green-700 border-green-200' },
+  { value: 'active', label: 'Active', color: 'bg-primary-50 text-primary-700 border-primary-200' },
   { value: 'in_progress', label: 'In Progress', color: 'bg-blue-50 text-blue-700 border-blue-200' },
-  { value: 'completed', label: 'Completed', color: 'bg-slate-50 text-slate-600 border-slate-200' },
+  { value: 'completed', label: 'Completed', color: 'bg-warm-50 text-warm-600 border-warm-200' },
   { value: 'paused', label: 'Paused', color: 'bg-amber-50 text-amber-700 border-amber-200' },
 ];
 
@@ -189,26 +189,29 @@ function PlayerSnapshotCard({ player, stats, existingAreas }: {
   const activeAreas = existingAreas.filter(a => a.status === 'active' || a.status === 'in_progress');
 
   return (
-    <div className="rounded-xl border border-slate-200/80 bg-gradient-to-br from-slate-50 to-white p-4">
+    <div className="rounded-xl border border-warm-200/80 bg-gradient-to-br from-warm-50 to-white p-4">
       <div className="flex items-center gap-3 mb-3">
         {player.avatar_url ? (
-          <img
+          <Image
             src={player.avatar_url}
-            alt=""
+            alt={`${player.first_name} ${player.last_name}`}
+            width={40}
+            height={40}
             className="w-10 h-10 rounded-full object-cover"
+            unoptimized
           />
         ) : (
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center">
             <span className="text-white font-semibold text-sm">
               {player.first_name?.[0]}{player.last_name?.[0]}
             </span>
           </div>
         )}
         <div className="min-w-0">
-          <p className="font-semibold text-slate-900 text-sm">
+          <p className="font-semibold text-warm-900 text-sm">
             {player.first_name} {player.last_name}
           </p>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-warm-500">
             {player.graduation_year && `'${String(player.graduation_year).slice(-2)}`}
             {player.handicap != null && ` | ${player.handicap > 0 ? '+' : ''}${player.handicap} HCP`}
           </p>
@@ -217,30 +220,30 @@ function PlayerSnapshotCard({ player, stats, existingAreas }: {
 
       {stats.rounds_played > 0 ? (
         <div className="grid grid-cols-4 gap-2">
-          <div className="text-center p-2 rounded-lg bg-white border border-slate-100">
-            <p className="text-xs text-slate-500">Avg Score</p>
-            <p className="text-sm font-semibold text-slate-900 tabular-nums">{stats.avg_score}</p>
+          <div className="text-center p-2 rounded-lg bg-white border border-warm-100">
+            <p className="text-xs text-warm-500">Avg Score</p>
+            <p className="text-sm font-semibold text-warm-900 tabular-nums">{stats.avg_score}</p>
           </div>
-          <div className="text-center p-2 rounded-lg bg-white border border-slate-100">
-            <p className="text-xs text-slate-500">Avg Putts</p>
-            <p className="text-sm font-semibold text-slate-900 tabular-nums">{stats.avg_putts ?? '--'}</p>
+          <div className="text-center p-2 rounded-lg bg-white border border-warm-100">
+            <p className="text-xs text-warm-500">Avg Putts</p>
+            <p className="text-sm font-semibold text-warm-900 tabular-nums">{stats.avg_putts ?? '--'}</p>
           </div>
-          <div className="text-center p-2 rounded-lg bg-white border border-slate-100">
-            <p className="text-xs text-slate-500">FW %</p>
-            <p className="text-sm font-semibold text-slate-900 tabular-nums">{stats.fairway_pct != null ? `${stats.fairway_pct}%` : '--'}</p>
+          <div className="text-center p-2 rounded-lg bg-white border border-warm-100">
+            <p className="text-xs text-warm-500">FW %</p>
+            <p className="text-sm font-semibold text-warm-900 tabular-nums">{stats.fairway_pct != null ? `${stats.fairway_pct}%` : '--'}</p>
           </div>
-          <div className="text-center p-2 rounded-lg bg-white border border-slate-100">
-            <p className="text-xs text-slate-500">GIR %</p>
-            <p className="text-sm font-semibold text-slate-900 tabular-nums">{stats.gir_pct != null ? `${stats.gir_pct}%` : '--'}</p>
+          <div className="text-center p-2 rounded-lg bg-white border border-warm-100">
+            <p className="text-xs text-warm-500">GIR %</p>
+            <p className="text-sm font-semibold text-warm-900 tabular-nums">{stats.gir_pct != null ? `${stats.gir_pct}%` : '--'}</p>
           </div>
         </div>
       ) : (
-        <p className="text-xs text-slate-400 italic">No rounds recorded yet</p>
+        <p className="text-xs text-warm-400 italic">No rounds recorded yet</p>
       )}
 
       {activeAreas.length > 0 && (
-        <div className="mt-3 pt-3 border-t border-slate-100">
-          <p className="text-xs font-medium text-slate-500 mb-1.5">{activeAreas.length} active focus area{activeAreas.length !== 1 ? 's' : ''}</p>
+        <div className="mt-3 pt-3 border-t border-warm-100">
+          <p className="text-xs font-medium text-warm-500 mb-1.5">{activeAreas.length} active focus area{activeAreas.length !== 1 ? 's' : ''}</p>
           <div className="flex flex-wrap gap-1.5">
             {activeAreas.slice(0, 4).map(a => {
               const at = getAreaType(a.area_type);
@@ -252,7 +255,7 @@ function PlayerSnapshotCard({ player, stats, existingAreas }: {
               );
             })}
             {activeAreas.length > 4 && (
-              <span className="text-xs text-slate-400">+{activeAreas.length - 4} more</span>
+              <span className="text-xs text-warm-400">+{activeAreas.length - 4} more</span>
             )}
           </div>
         </div>
@@ -471,7 +474,7 @@ export function DevelopmentPlansClient({
         className={cn(
           'group relative rounded-2xl border transition-all duration-200',
           isCompleted
-            ? 'bg-white/40 border-slate-200/60'
+            ? 'bg-white/40 border-warm-200/60'
             : 'bg-white/70 backdrop-blur-xl border-white/20 shadow-sm hover:shadow-md',
         )}
         style={{
@@ -488,7 +491,7 @@ export function DevelopmentPlansClient({
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className={cn('font-semibold text-slate-900 truncate', isCompleted && 'text-slate-500')}>{fa.title}</h3>
+                  <h3 className={cn('font-semibold text-warm-900 truncate', isCompleted && 'text-warm-500')}>{fa.title}</h3>
                   <span className={cn('px-2 py-0.5 text-xs font-medium rounded-full border', status.color)}>
                     {status.label}
                   </span>
@@ -497,14 +500,14 @@ export function DevelopmentPlansClient({
                   <span className={cn('text-xs font-medium', at.color)}>{at.label}</span>
                   {showPlayerName && fa.player && (
                     <>
-                      <span className="text-slate-300">|</span>
-                      <span className="text-xs text-slate-500">{fa.player.first_name} {fa.player.last_name}</span>
+                      <span className="text-warm-300">|</span>
+                      <span className="text-xs text-warm-500">{fa.player.first_name} {fa.player.last_name}</span>
                     </>
                   )}
                   {fa.started_at && (
                     <>
-                      <span className="text-slate-300">|</span>
-                      <span className="text-xs text-slate-400">
+                      <span className="text-warm-300">|</span>
+                      <span className="text-xs text-warm-400">
                         {new Date(fa.started_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                       </span>
                     </>
@@ -515,7 +518,7 @@ export function DevelopmentPlansClient({
 
             <button
               onClick={() => setExpandedCardId(isExpanded ? null : fa.id)}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+              className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
             >
               <IconChevronDown size={16} className={cn('transition-transform duration-200', isExpanded && 'rotate-180')} />
             </button>
@@ -525,27 +528,27 @@ export function DevelopmentPlansClient({
           {pct !== null && !isCompleted && (
             <div className="mt-3">
               <div className="flex items-center justify-between text-xs mb-1">
-                <span className="text-slate-500 font-medium">{fa.target_metric || 'Progress'}</span>
-                <span className="font-semibold text-slate-700 tabular-nums">
+                <span className="text-warm-500 font-medium">{fa.target_metric || 'Progress'}</span>
+                <span className="font-semibold text-warm-700 tabular-nums">
                   {fa.current_value ?? 0} / {fa.target_value}
                   <span className={cn(
                     'ml-1.5 px-1.5 py-0.5 rounded text-xs font-semibold',
-                    pct >= 100 ? 'bg-green-100 text-green-700'
+                    pct >= 100 ? 'bg-primary-100 text-primary-700'
                     : pct >= 75 ? 'bg-blue-50 text-blue-700'
-                    : 'bg-slate-100 text-slate-600',
+                    : 'bg-warm-100 text-warm-600',
                   )}>
                     {pct}%
                   </span>
                 </span>
               </div>
-              <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+              <div className="h-2 bg-warm-100 rounded-full overflow-hidden">
                 <div
                   className={cn(
                     'h-full rounded-full transition-all duration-700',
-                    pct >= 100 ? 'bg-gradient-to-r from-green-500 to-emerald-400'
+                    pct >= 100 ? 'bg-gradient-to-r from-primary-500 to-primary-400'
                     : pct >= 75 ? 'bg-gradient-to-r from-blue-500 to-blue-400'
                     : pct >= 50 ? 'bg-gradient-to-r from-amber-500 to-amber-400'
-                    : 'bg-gradient-to-r from-slate-400 to-slate-300',
+                    : 'bg-gradient-to-r from-warm-400 to-warm-300',
                   )}
                   style={{ width: `${pct}%` }}
                 />
@@ -555,13 +558,13 @@ export function DevelopmentPlansClient({
 
           {/* Expanded details */}
           {isExpanded && (
-            <div className="mt-4 pt-4 border-t border-slate-100 space-y-3">
+            <div className="mt-4 pt-4 border-t border-warm-100 space-y-3">
               {fa.description && (
-                <p className="text-sm text-slate-600 leading-relaxed">{fa.description}</p>
+                <p className="text-sm text-warm-600 leading-relaxed">{fa.description}</p>
               )}
 
               {fa.completed_at && (
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-warm-400">
                   Completed {new Date(fa.completed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </p>
               )}
@@ -579,7 +582,7 @@ export function DevelopmentPlansClient({
                 )}
                 <button
                   onClick={() => handleDelete(fa.id)}
-                  className="ml-auto p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                  className="ml-auto p-2 rounded-lg text-warm-400 hover:text-red-600 hover:bg-red-50 transition-colors"
                 >
                   <IconTrash size={14} />
                 </button>
@@ -600,14 +603,14 @@ export function DevelopmentPlansClient({
       {/* Player selection (create only) */}
       {!isEdit && (
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1.5">Player</label>
+          <label className="block text-sm font-medium text-warm-700 mb-1.5">Player</label>
           <select
             value={formData.player_id}
             onChange={e => {
               const pid = e.target.value;
               setFormData(prev => ({ ...prev, player_id: pid }));
             }}
-            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 text-slate-900 bg-white transition-colors"
+            className="w-full px-4 py-2.5 rounded-xl border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-warm-900 bg-white transition-colors"
           >
             <option value="">Select a player...</option>
             {players.map(p => (
@@ -634,7 +637,7 @@ export function DevelopmentPlansClient({
 
       {/* Area type selector */}
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1.5">Focus Area</label>
+        <label className="block text-sm font-medium text-warm-700 mb-1.5">Focus Area</label>
         <div className="grid grid-cols-4 gap-2">
           {AREA_TYPES.map(type => {
             const Icon = type.icon;
@@ -646,14 +649,14 @@ export function DevelopmentPlansClient({
                 className={cn(
                   'flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all duration-150',
                   formData.area_type === type.value
-                    ? 'border-green-500 bg-green-50 shadow-sm'
-                    : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50',
+                    ? 'border-primary-500 bg-primary-50 shadow-sm'
+                    : 'border-warm-200 hover:border-warm-300 hover:bg-warm-50',
                 )}
               >
-                <Icon size={18} className={formData.area_type === type.value ? 'text-green-600' : 'text-slate-400'} />
+                <Icon size={18} className={formData.area_type === type.value ? 'text-primary-600' : 'text-warm-400'} />
                 <span className={cn(
                   'text-xs font-medium leading-tight text-center',
-                  formData.area_type === type.value ? 'text-green-700' : 'text-slate-600',
+                  formData.area_type === type.value ? 'text-primary-700' : 'text-warm-600',
                 )}>{type.label}</span>
               </button>
             );
@@ -663,36 +666,36 @@ export function DevelopmentPlansClient({
 
       {/* Title */}
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1.5">Title</label>
+        <label className="block text-sm font-medium text-warm-700 mb-1.5">Title</label>
         <input
           type="text"
           value={formData.title}
           onChange={e => setFormData({ ...formData, title: e.target.value })}
           placeholder={`e.g., Improve ${currentAreaType.label.toLowerCase()}...`}
-          className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 text-slate-900 placeholder:text-slate-400 transition-colors"
+          className="w-full px-4 py-2.5 rounded-xl border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-warm-900 placeholder:text-warm-400 transition-colors"
         />
       </div>
 
       {/* Description */}
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1.5">
+        <label className="block text-sm font-medium text-warm-700 mb-1.5">
           Notes for player
-          <span className="text-slate-400 font-normal ml-1">(optional)</span>
+          <span className="text-warm-400 font-normal ml-1">(optional)</span>
         </label>
         <textarea
           value={formData.description}
           onChange={e => setFormData({ ...formData, description: e.target.value })}
           rows={3}
           placeholder="Describe the focus area, drills to work on, or specific goals..."
-          className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 text-slate-900 placeholder:text-slate-400 resize-none transition-colors"
+          className="w-full px-4 py-2.5 rounded-xl border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-warm-900 placeholder:text-warm-400 resize-none transition-colors"
         />
       </div>
 
       {/* Metric tracking */}
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1.5">
+        <label className="block text-sm font-medium text-warm-700 mb-1.5">
           Metric tracking
-          <span className="text-slate-400 font-normal ml-1">(optional)</span>
+          <span className="text-warm-400 font-normal ml-1">(optional)</span>
         </label>
         <div className="space-y-3">
           {/* Metric name with suggestions */}
@@ -706,8 +709,8 @@ export function DevelopmentPlansClient({
                   className={cn(
                     'px-2 py-0.5 rounded-full text-xs font-medium transition-colors',
                     formData.target_metric === m
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-slate-100 text-slate-500 hover:bg-slate-200',
+                      ? 'bg-primary-100 text-primary-700'
+                      : 'bg-warm-100 text-warm-500 hover:bg-warm-200',
                   )}
                 >
                   {m}
@@ -719,30 +722,30 @@ export function DevelopmentPlansClient({
               value={formData.target_metric}
               onChange={e => setFormData({ ...formData, target_metric: e.target.value })}
               placeholder="Metric name"
-              className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 text-slate-900 text-sm placeholder:text-slate-400 transition-colors"
+              className="w-full px-4 py-2 rounded-xl border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-warm-900 text-sm placeholder:text-warm-400 transition-colors"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1">Current value</label>
+              <label className="block text-xs font-medium text-warm-500 mb-1">Current value</label>
               <input
                 type="number"
                 step="0.1"
                 value={formData.current_value}
                 onChange={e => setFormData({ ...formData, current_value: e.target.value })}
                 placeholder="e.g., 32"
-                className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 text-slate-900 text-sm placeholder:text-slate-400 transition-colors"
+                className="w-full px-4 py-2 rounded-xl border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-warm-900 text-sm placeholder:text-warm-400 transition-colors"
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-500 mb-1">Target value</label>
+              <label className="block text-xs font-medium text-warm-500 mb-1">Target value</label>
               <input
                 type="number"
                 step="0.1"
                 value={formData.target_value}
                 onChange={e => setFormData({ ...formData, target_value: e.target.value })}
                 placeholder="e.g., 28"
-                className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 text-slate-900 text-sm placeholder:text-slate-400 transition-colors"
+                className="w-full px-4 py-2 rounded-xl border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-warm-900 text-sm placeholder:text-warm-400 transition-colors"
               />
             </div>
           </div>
@@ -783,7 +786,7 @@ export function DevelopmentPlansClient({
   return (
     <div className="min-h-full">
       {/* Header */}
-      <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+      <div className="border-b border-warm-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -791,7 +794,7 @@ export function DevelopmentPlansClient({
                 onClick={toggleMobile}
                 className={cn(
                   'lg:hidden p-2 -ml-2 rounded-xl',
-                  'text-slate-500 hover:text-slate-700 hover:bg-slate-100/80',
+                  'text-warm-500 hover:text-warm-700 hover:bg-warm-100/80',
                   'transition-colors duration-150 active:scale-95',
                   'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
                 )}
@@ -800,10 +803,10 @@ export function DevelopmentPlansClient({
                 <IconMenu size={22} />
               </button>
               <div>
-                <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-slate-900">
+                <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">
                   Development Plans
                 </h1>
-                <p className="text-slate-500 mt-0.5 text-sm">
+                <p className="text-warm-500 mt-0.5 text-sm">
                   Create and track focus areas for your players
                 </p>
               </div>
@@ -827,8 +830,8 @@ export function DevelopmentPlansClient({
                 className={cn(
                   'px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all duration-150',
                   selectedPlayerId === null
-                    ? 'bg-green-600 text-white shadow-sm'
-                    : 'bg-white/70 text-slate-600 hover:bg-white border border-slate-200/60',
+                    ? 'bg-primary-600 text-white shadow-sm'
+                    : 'bg-white/70 text-warm-600 hover:bg-white border border-warm-200/60',
                 )}
               >
                 All Players
@@ -842,8 +845,8 @@ export function DevelopmentPlansClient({
                     className={cn(
                       'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all duration-150',
                       selectedPlayerId === player.id
-                        ? 'bg-green-600 text-white shadow-sm'
-                        : 'bg-white/70 text-slate-600 hover:bg-white border border-slate-200/60',
+                        ? 'bg-primary-600 text-white shadow-sm'
+                        : 'bg-white/70 text-warm-600 hover:bg-white border border-warm-200/60',
                     )}
                   >
                     {player.first_name} {player.last_name?.[0]}.
@@ -852,7 +855,7 @@ export function DevelopmentPlansClient({
                         'text-xs rounded-full w-5 h-5 flex items-center justify-center',
                         selectedPlayerId === player.id
                           ? 'bg-white/20 text-white'
-                          : 'bg-slate-100 text-slate-500',
+                          : 'bg-warm-100 text-warm-500',
                       )}>
                         {playerAreaCount}
                       </span>
@@ -871,39 +874,39 @@ export function DevelopmentPlansClient({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-xl p-4 shadow-sm">
               <div className="flex items-center gap-2 mb-1">
-                <IconActivity size={14} className="text-green-600" />
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Active</p>
+                <IconActivity size={14} className="text-primary-600" />
+                <p className="text-xs font-semibold text-warm-400 uppercase tracking-wider">Active</p>
               </div>
-              <p className="text-2xl font-bold text-slate-900">{summaryStats.activeCount}</p>
-              <p className="text-xs text-slate-500 mt-0.5">{summaryStats.playersWithAreas} player{summaryStats.playersWithAreas !== 1 ? 's' : ''}</p>
+              <p className="text-2xl font-bold text-warm-900">{summaryStats.activeCount}</p>
+              <p className="text-xs text-warm-500 mt-0.5">{summaryStats.playersWithAreas} player{summaryStats.playersWithAreas !== 1 ? 's' : ''}</p>
             </div>
             <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-xl p-4 shadow-sm">
               <div className="flex items-center gap-2 mb-1">
-                <IconCheck size={14} className="text-green-600" />
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Completed</p>
+                <IconCheck size={14} className="text-primary-600" />
+                <p className="text-xs font-semibold text-warm-400 uppercase tracking-wider">Completed</p>
               </div>
-              <p className="text-2xl font-bold text-green-600">{summaryStats.completedCount}</p>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-2xl font-bold text-primary-600">{summaryStats.completedCount}</p>
+              <p className="text-xs text-warm-500 mt-0.5">
                 {summaryStats.total > 0 ? `${Math.round((summaryStats.completedCount / summaryStats.total) * 100)}% completion` : 'none yet'}
               </p>
             </div>
             <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-xl p-4 shadow-sm">
               <div className="flex items-center gap-2 mb-1">
                 <IconTrendingUp size={14} className="text-blue-600" />
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Avg Progress</p>
+                <p className="text-xs font-semibold text-warm-400 uppercase tracking-wider">Avg Progress</p>
               </div>
-              <p className="text-2xl font-bold text-slate-900">{summaryStats.avgProgress}%</p>
-              <div className="mt-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                <div className="h-full bg-green-500 rounded-full transition-all duration-500" style={{ width: `${summaryStats.avgProgress}%` }} />
+              <p className="text-2xl font-bold text-warm-900">{summaryStats.avgProgress}%</p>
+              <div className="mt-1 h-1.5 bg-warm-100 rounded-full overflow-hidden">
+                <div className="h-full bg-primary-500 rounded-full transition-all duration-500" style={{ width: `${summaryStats.avgProgress}%` }} />
               </div>
             </div>
             <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-xl p-4 shadow-sm">
               <div className="flex items-center gap-2 mb-1">
                 <IconTarget size={14} className="text-violet-600" />
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total</p>
+                <p className="text-xs font-semibold text-warm-400 uppercase tracking-wider">Total</p>
               </div>
-              <p className="text-2xl font-bold text-slate-900">{summaryStats.total}</p>
-              <p className="text-xs text-slate-500 mt-0.5">focus areas assigned</p>
+              <p className="text-2xl font-bold text-warm-900">{summaryStats.total}</p>
+              <p className="text-xs text-warm-500 mt-0.5">focus areas assigned</p>
             </div>
           </div>
         </div>
@@ -914,22 +917,22 @@ export function DevelopmentPlansClient({
         {players.length === 0 ? (
           <div className="relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-hidden p-16 text-center">
             <ShineEffect />
-            <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
-              <IconUser size={24} className="text-slate-400" />
+            <div className="w-14 h-14 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
+              <IconUser size={24} className="text-warm-400" />
             </div>
-            <h3 className="text-lg font-semibold text-slate-900 mb-2">No Players Yet</h3>
-            <p className="text-slate-500 text-sm max-w-sm mx-auto">
+            <h3 className="text-lg font-semibold text-warm-900 mb-2">No Players Yet</h3>
+            <p className="text-warm-500 text-sm max-w-sm mx-auto">
               Add players to your roster to create development plans and focus areas.
             </p>
           </div>
         ) : filteredFocusAreas.length === 0 ? (
           <div className="relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-hidden p-16 text-center">
             <ShineEffect />
-            <div className="w-14 h-14 rounded-2xl bg-green-50 flex items-center justify-center mx-auto mb-4">
-              <IconTarget size={24} className="text-green-600" />
+            <div className="w-14 h-14 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto mb-4">
+              <IconTarget size={24} className="text-primary-600" />
             </div>
-            <h3 className="text-lg font-semibold text-slate-900 mb-2">No Focus Areas</h3>
-            <p className="text-slate-500 text-sm mb-6 max-w-sm mx-auto">
+            <h3 className="text-lg font-semibold text-warm-900 mb-2">No Focus Areas</h3>
+            <p className="text-warm-500 text-sm mb-6 max-w-sm mx-auto">
               {selectedPlayerId
                 ? 'Create a focus area for this player to help guide their development.'
                 : 'Start creating focus areas for your players to track their progress.'}
@@ -959,22 +962,22 @@ export function DevelopmentPlansClient({
                 <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-5 mb-4">
                   <div className="flex items-center gap-4">
                     {p.avatar_url ? (
-                      <Image src={p.avatar_url} alt="" width={48} height={48} className="w-12 h-12 rounded-full object-cover" unoptimized />
+                      <Image src={p.avatar_url} alt={`${p.first_name} ${p.last_name}`} width={48} height={48} className="w-12 h-12 rounded-full object-cover" unoptimized />
                     ) : (
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center">
                         <span className="text-white font-bold text-base">{p.first_name?.[0]}{p.last_name?.[0]}</span>
                       </div>
                     )}
                     <div className="flex-1">
-                      <h2 className="text-lg font-semibold text-slate-900">{p.first_name} {p.last_name}</h2>
-                      <div className="flex items-center gap-3 text-sm text-slate-500">
+                      <h2 className="text-lg font-semibold text-warm-900">{p.first_name} {p.last_name}</h2>
+                      <div className="flex items-center gap-3 text-sm text-warm-500">
                         {p.handicap != null && <span>{p.handicap > 0 ? '+' : ''}{p.handicap} HCP</span>}
                         {stats?.avg_score != null && <span>Avg: {stats.avg_score}</span>}
                         {stats?.rounds_played != null && stats.rounds_played > 0 && <span>{stats.rounds_played} rounds</span>}
                         {stats?.recent_trend && (
                           <span className={cn(
                             'inline-flex items-center gap-1',
-                            stats.recent_trend === 'improving' ? 'text-green-600' : stats.recent_trend === 'declining' ? 'text-red-500' : 'text-slate-400',
+                            stats.recent_trend === 'improving' ? 'text-primary-600' : stats.recent_trend === 'declining' ? 'text-red-500' : 'text-warm-400',
                           )}>
                             {stats.recent_trend === 'improving' ? <IconTrendingDown size={13} /> : stats.recent_trend === 'declining' ? <IconTrendingUp size={13} /> : null}
                             {stats.recent_trend === 'improving' ? 'Improving' : stats.recent_trend === 'declining' ? 'Declining' : 'Stable'}
@@ -1009,15 +1012,15 @@ export function DevelopmentPlansClient({
                 <div className="flex items-center justify-between p-5 pb-0">
                   <div className="flex items-center gap-3">
                     {player.avatar_url ? (
-                      <Image src={player.avatar_url} alt="" width={40} height={40} className="w-10 h-10 rounded-full object-cover" unoptimized />
+                      <Image src={player.avatar_url} alt={`${player.first_name} ${player.last_name}`} width={40} height={40} className="w-10 h-10 rounded-full object-cover" unoptimized />
                     ) : (
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center">
                         <span className="text-white font-semibold text-sm">{player.first_name?.[0]}{player.last_name?.[0]}</span>
                       </div>
                     )}
                     <div>
-                      <h3 className="font-semibold text-slate-900">{player.first_name} {player.last_name}</h3>
-                      <div className="flex items-center gap-2 text-xs text-slate-500">
+                      <h3 className="font-semibold text-warm-900">{player.first_name} {player.last_name}</h3>
+                      <div className="flex items-center gap-2 text-xs text-warm-500">
                         <span>{areas.length} focus area{areas.length !== 1 ? 's' : ''}</span>
                         {player.handicap != null && <span>{player.handicap > 0 ? '+' : ''}{player.handicap} HCP</span>}
                         {stats?.avg_score != null && <span>Avg: {stats.avg_score}</span>}
@@ -1032,7 +1035,7 @@ export function DevelopmentPlansClient({
                 {/* Focus areas list */}
                 <div className="p-5 pt-3">
                   {areas.length === 0 ? (
-                    <p className="text-sm text-slate-400 italic py-2">No focus areas assigned</p>
+                    <p className="text-sm text-warm-400 italic py-2">No focus areas assigned</p>
                   ) : (
                     <div className="space-y-2">
                       {areas.slice(0, 3).map(fa => {
@@ -1041,26 +1044,26 @@ export function DevelopmentPlansClient({
                         const pct = fa.target_value ? getProgressPercent(fa.current_value, fa.target_value) : null;
 
                         return (
-                          <div key={fa.id} className="flex items-center gap-3 p-3 bg-slate-50/80 rounded-xl">
+                          <div key={fa.id} className="flex items-center gap-3 p-3 bg-warm-50/80 rounded-xl">
                             <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0', at.bgColor)}>
                               <at.icon size={14} className={at.color} />
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium text-slate-700 truncate">{fa.title}</span>
+                                <span className="text-sm font-medium text-warm-700 truncate">{fa.title}</span>
                                 <span className={cn('px-1.5 py-0.5 text-xs font-medium rounded-full border flex-shrink-0', status.color)}>
                                   {status.label}
                                 </span>
                               </div>
                               {pct !== null && (
                                 <div className="flex items-center gap-2 mt-1">
-                                  <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                                  <div className="flex-1 h-1.5 bg-warm-200 rounded-full overflow-hidden">
                                     <div
-                                      className={cn('h-full rounded-full transition-all', pct >= 100 ? 'bg-green-500' : pct >= 50 ? 'bg-blue-500' : 'bg-slate-400')}
+                                      className={cn('h-full rounded-full transition-all', pct >= 100 ? 'bg-primary-500' : pct >= 50 ? 'bg-blue-500' : 'bg-warm-400')}
                                       style={{ width: `${pct}%` }}
                                     />
                                   </div>
-                                  <span className="text-xs font-medium text-slate-500 tabular-nums w-7 text-right">{pct}%</span>
+                                  <span className="text-xs font-medium text-warm-500 tabular-nums w-7 text-right">{pct}%</span>
                                 </div>
                               )}
                             </div>
@@ -1070,7 +1073,7 @@ export function DevelopmentPlansClient({
                       {areas.length > 3 && (
                         <button
                           onClick={() => setSelectedPlayerId(player.id)}
-                          className="w-full text-center text-sm text-green-600 hover:text-green-700 font-medium py-2 rounded-lg hover:bg-green-50 transition-colors"
+                          className="w-full text-center text-sm text-primary-600 hover:text-primary-700 font-medium py-2 rounded-lg hover:bg-primary-50 transition-colors"
                         >
                           +{areas.length - 3} more
                         </button>

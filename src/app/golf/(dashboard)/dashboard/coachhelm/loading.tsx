@@ -7,7 +7,7 @@ function SkeletonPulse({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        'skeleton-shimmer bg-slate-200/60',
+        'skeleton-shimmer bg-warm-200/60',
         className
       )}
     />
@@ -113,7 +113,7 @@ function InsightsPanelSkeleton() {
         {[1, 2, 3].map((i) => (
           <div
             key={i}
-            className="relative rounded-xl border border-slate-200/60 bg-white/50 p-4 overflow-hidden"
+            className="relative rounded-xl border border-warm-200/60 bg-white/50 p-4 overflow-hidden"
           >
             <SkeletonPulse className="absolute top-0 left-0 right-0 h-0.5" />
             <div className="flex items-start gap-3">
@@ -171,7 +171,7 @@ export default function CoachHelmLoading() {
       <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-transparent to-transparent pointer-events-none" />
 
       {/* Header skeleton */}
-      <div className="relative border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+      <div className="relative border-b border-warm-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">

@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { Avatar } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
+import { useFormatDate } from '@/hooks/golf/use-appearance-preferences';
 
 interface PremiumRoundHeaderProps {
   playerName: string;
@@ -65,14 +66,10 @@ export function PremiumRoundHeader({
 
   const scoreColor = scoreToPar === null || scoreToPar === undefined
     ? 'text-warm-600'
-    : scoreToPar < 0 ? 'text-emerald-600' : scoreToPar > 0 ? 'text-red-600' : 'text-warm-600';
+    : scoreToPar < 0 ? 'text-primary-600' : scoreToPar > 0 ? 'text-red-600' : 'text-warm-600';
 
-  const formattedDate = new Date(roundDate).toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
+  const fmtDate = useFormatDate();
+  const formattedDate = fmtDate(roundDate);
 
   const stats = [
     {

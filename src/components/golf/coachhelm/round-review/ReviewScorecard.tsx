@@ -63,7 +63,7 @@ function HoleChip({ hole, delay }: { hole: ScorecardHole; delay: number }) {
 
   const colors = {
     eagle: 'bg-purple-500 text-white',
-    birdie: 'bg-green-500 text-white',
+    birdie: 'bg-primary-500 text-white',
     par: 'bg-warm-100 text-warm-700',
     bogey: 'bg-amber-100 text-amber-700',
     double: 'bg-red-100 text-red-700',

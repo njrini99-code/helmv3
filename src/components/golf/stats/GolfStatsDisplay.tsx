@@ -374,7 +374,7 @@ function StatCard({
     if (!trend) return null;
     switch (trend) {
       case 'improving':
-        return { icon: '↑', color: 'text-green-500', bg: 'bg-green-50' };
+        return { icon: '↑', color: 'text-primary-500', bg: 'bg-primary-50' };
       case 'declining':
         return { icon: '↓', color: 'text-red-500', bg: 'bg-red-50' };
       case 'stable':
@@ -430,7 +430,7 @@ function StatCard({
         )}
       </div>
       <motion.div
-        className={`font-bold ${large ? 'text-3xl' : 'text-2xl'} ${highlight ? 'text-green-600' : 'text-warm-900'} tabular-nums`}
+        className={`font-bold ${large ? 'text-3xl' : 'text-2xl'} ${highlight ? 'text-primary-600' : 'text-warm-900'} tabular-nums`}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: index * 0.05 }}
@@ -455,7 +455,7 @@ function StatCard({
           transition={{ delay: 0.3 }}
         >
           <span className="text-warm-400">{comparisonLabel || 'vs team'}:</span>
-          <span className={comparisonValue > 0 ? 'text-red-500' : comparisonValue < 0 ? 'text-green-500' : 'text-warm-500'}>
+          <span className={comparisonValue > 0 ? 'text-red-500' : comparisonValue < 0 ? 'text-primary-500' : 'text-warm-500'}>
             {comparisonValue > 0 ? '+' : ''}{comparisonValue.toFixed(1)}
           </span>
         </motion.div>
@@ -552,7 +552,7 @@ function StatSection({
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
+              transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
               className="mt-3"
             >
               {children}
@@ -892,7 +892,7 @@ function ApproachStats({ stats }: { stats: GolfStats }) {
             <thead>
               <tr className="border-b border-warm-200">
                 <th className="text-left py-2 px-2 font-semibold text-warm-700">Distance</th>
-                <th className="text-center py-2 px-2 font-semibold text-green-600">Fairway</th>
+                <th className="text-center py-2 px-2 font-semibold text-primary-600">Fairway</th>
                 <th className="text-center py-2 px-2 font-semibold text-amber-600">Rough</th>
                 <th className="text-center py-2 px-2 font-semibold text-orange-600">Sand</th>
               </tr>
@@ -1032,8 +1032,8 @@ function PuttingStats({ stats }: { stats: GolfStats }) {
       <StatSection title="Make % by Distance" delay={0.1}>
         <div className="grid grid-cols-3 md:grid-cols-5 gap-2 mb-4">
           {[
-            { range: '0-3 ft', value: stats.puttMakePct0_3, bg: 'bg-green-50', color: 'text-green-600' },
-            { range: '3-5 ft', value: stats.puttMakePct3_5, bg: 'bg-green-50', color: 'text-green-600' },
+            { range: '0-3 ft', value: stats.puttMakePct0_3, bg: 'bg-primary-50', color: 'text-primary-600' },
+            { range: '3-5 ft', value: stats.puttMakePct3_5, bg: 'bg-primary-50', color: 'text-primary-600' },
             { range: '5-10 ft', value: stats.puttMakePct5_10, bg: 'bg-yellow-50', color: 'text-yellow-600' },
             { range: '10-15 ft', value: stats.puttMakePct10_15, bg: 'bg-orange-50', color: 'text-orange-600' },
             { range: '15-20 ft', value: stats.puttMakePct15_20, bg: 'bg-red-50', color: 'text-red-600' },
@@ -1117,7 +1117,7 @@ function PuttingStats({ stats }: { stats: GolfStats }) {
               onClick={() => setSelectedBreak(selectedBreak === key ? null : key)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 selectedBreak === key
-                  ? 'bg-green-600 text-white shadow-md'
+                  ? 'bg-primary-600 text-white shadow-md'
                   : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
               }`}
             >
@@ -1137,13 +1137,13 @@ function PuttingStats({ stats }: { stats: GolfStats }) {
               </div>
               <div className="grid grid-cols-3 md:grid-cols-5 gap-2 mb-2">
                 <div className="text-center p-2 bg-white rounded">
-                  <div className="text-lg font-bold text-green-600">
+                  <div className="text-lg font-bold text-primary-600">
                     {formatStat(stats.puttingByBreak[selectedBreak].makePct0_3, '%', 0)}
                   </div>
                   <div className="text-xs text-warm-500">0-3 ft</div>
                 </div>
                 <div className="text-center p-2 bg-white rounded">
-                  <div className="text-lg font-bold text-green-600">
+                  <div className="text-lg font-bold text-primary-600">
                     {formatStat(stats.puttingByBreak[selectedBreak].makePct3_5, '%', 0)}
                   </div>
                   <div className="text-xs text-warm-500">3-5 ft</div>
@@ -1305,7 +1305,7 @@ function ScramblingStats({ stats }: { stats: GolfStats }) {
               <thead>
                 <tr className="border-b border-warm-200">
                   <th className="text-left py-2 px-2 font-semibold text-warm-700">Distance</th>
-                  <th className="text-center py-2 px-2 font-semibold text-green-600">Fairway</th>
+                  <th className="text-center py-2 px-2 font-semibold text-primary-600">Fairway</th>
                   <th className="text-center py-2 px-2 font-semibold text-amber-600">Rough</th>
                   <th className="text-center py-2 px-2 font-semibold text-orange-600">Sand</th>
                 </tr>
@@ -1433,7 +1433,7 @@ function StrokesGainedStats({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {statisticalStrengths && statisticalStrengths.length > 0 && (
               <div>
-                <p className="text-xs font-semibold text-green-700 uppercase tracking-wide mb-2">Strengths</p>
+                <p className="text-xs font-semibold text-primary-700 uppercase tracking-wide mb-2">Strengths</p>
                 <div className="space-y-2">
                   {statisticalStrengths.map((item, i) => (
                     <OverviewSWCard key={i} item={item} type="strength" />
@@ -1497,7 +1497,7 @@ function OverviewSWCard({
     <motion.div
       className={`rounded-xl p-3.5 border ${
         isStrength
-          ? 'bg-green-50/60 border-green-200/60'
+          ? 'bg-primary-50/60 border-primary-200/60'
           : 'bg-red-50/50 border-red-200/60'
       }`}
       initial={{ opacity: 0, y: 10 }}
@@ -1511,7 +1511,7 @@ function OverviewSWCard({
         </div>
         <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-bold tabular-nums ${
           isStrength
-            ? 'bg-green-100 text-green-700'
+            ? 'bg-primary-100 text-primary-700'
             : 'bg-red-100 text-red-700'
         }`}>
           {impactStr}
@@ -1587,7 +1587,7 @@ function OverviewStats({
                 </span>
               )}
               {playerProfile?.handicap !== null && playerProfile?.handicap !== undefined && (
-                <span className="px-2.5 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">
+                <span className="px-2.5 py-1 text-xs font-medium bg-primary-100 text-primary-700 rounded-full">
                   {playerProfile.handicap > 0 ? '+' : ''}{playerProfile.handicap} HCP
                 </span>
               )}
@@ -1604,7 +1604,7 @@ function OverviewStats({
             <div className="text-xs text-warm-500 mt-0.5">Rounds</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-green-600 tabular-nums">
+            <div className="text-2xl font-bold text-primary-600 tabular-nums">
               {stats.scoringAverage !== null ? stats.scoringAverage.toFixed(1) : '--'}
             </div>
             <div className="text-xs text-warm-500 mt-0.5">Scoring Avg</div>
@@ -1664,7 +1664,7 @@ function OverviewStats({
           <div className="glass-standard rounded-xl p-4">
             <div className="flex items-center justify-between mb-4">
               <span className="text-sm font-medium text-warm-600">Total</span>
-              <span className={`text-xl font-bold tabular-nums ${stats.strokesGainedTotal >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+              <span className={`text-xl font-bold tabular-nums ${stats.strokesGainedTotal >= 0 ? 'text-primary-600' : 'text-red-500'}`}>
                 {stats.strokesGainedTotal >= 0 ? '+' : ''}{stats.strokesGainedTotal.toFixed(2)}
               </span>
             </div>
@@ -1676,7 +1676,7 @@ function OverviewStats({
                 { label: 'Putting', value: stats.strokesGainedPutting },
               ].map(sg => (
                 <div key={sg.label} className="text-center p-2 rounded-lg bg-warm-50/80">
-                  <div className={`text-sm font-bold tabular-nums ${sg.value !== null && sg.value >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                  <div className={`text-sm font-bold tabular-nums ${sg.value !== null && sg.value >= 0 ? 'text-primary-600' : 'text-red-500'}`}>
                     {sg.value !== null ? (sg.value >= 0 ? '+' : '') + sg.value.toFixed(2) : '--'}
                   </div>
                   <div className="text-xs text-warm-500 mt-0.5">{sg.label}</div>
@@ -1879,13 +1879,13 @@ function AnalysisStats({
             )}
             {trendData.personalBests.bestToPar && (
               <motion.div
-                className="p-4 rounded-xl bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200"
+                className="p-4 rounded-xl bg-gradient-to-br from-primary-50 to-primary-50 border border-primary-200"
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.15 }}
               >
-                <div className="text-xs text-green-600 font-medium mb-1">Best vs Par</div>
-                <div className="text-2xl font-bold text-green-700">
+                <div className="text-xs text-primary-600 font-medium mb-1">Best vs Par</div>
+                <div className="text-2xl font-bold text-primary-700">
                   {trendData.personalBests.bestToPar.value > 0 ? '+' : ''}{trendData.personalBests.bestToPar.value}
                 </div>
                 <div className="text-xs text-warm-500 mt-1">
@@ -2112,8 +2112,8 @@ function AnalysisStats({
                   transition={{ delay: idx * 0.05 }}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center">
-                      <span className="text-sm font-bold text-green-600">#{hole.holeNumber}</span>
+                    <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center">
+                      <span className="text-sm font-bold text-primary-600">#{hole.holeNumber}</span>
                     </div>
                     <div>
                       <p className="text-sm font-medium text-warm-800">Par {hole.par}</p>
@@ -2121,7 +2121,7 @@ function AnalysisStats({
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-bold text-green-600">
+                    <p className="text-sm font-bold text-primary-600">
                       {hole.averageToPar > 0 ? '+' : ''}{hole.averageToPar.toFixed(2)}
                     </p>
                     <p className="text-xs text-warm-400">avg {hole.averageScore.toFixed(1)}</p>
@@ -2138,7 +2138,7 @@ function AnalysisStats({
                 <motion.div
                   key={hole.holeNumber}
                   className={`p-3 rounded-lg text-center ${
-                    hole.averageToPar <= -0.1 ? 'bg-green-50 border border-green-200' :
+                    hole.averageToPar <= -0.1 ? 'bg-primary-50 border border-primary-200' :
                     hole.averageToPar >= 0.3 ? 'bg-red-50 border border-red-200' :
                     'bg-warm-50 border border-warm-200'
                   }`}
@@ -2148,7 +2148,7 @@ function AnalysisStats({
                 >
                   <div className="text-xs text-warm-500">Hole {hole.holeNumber}</div>
                   <div className={`text-sm font-bold ${
-                    hole.averageToPar <= -0.1 ? 'text-green-600' :
+                    hole.averageToPar <= -0.1 ? 'text-primary-600' :
                     hole.averageToPar >= 0.3 ? 'text-red-600' :
                     'text-warm-700'
                   }`}>
@@ -2156,7 +2156,7 @@ function AnalysisStats({
                   </div>
                   <div className="text-xs text-warm-400">Par {hole.par}</div>
                   {hole.trend !== 'stable' && (
-                    <span className={`text-xs ${hole.trend === 'improving' ? 'text-green-500' : 'text-red-500'}`}>
+                    <span className={`text-xs ${hole.trend === 'improving' ? 'text-primary-500' : 'text-red-500'}`}>
                       {hole.trend === 'improving' ? '↑' : '↓'}
                     </span>
                   )}
@@ -2181,12 +2181,12 @@ function AnalysisStats({
               >
                 <div className="flex items-center gap-3">
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                    course.courseName === courseBreakdown.bestCourse ? 'bg-green-100' :
+                    course.courseName === courseBreakdown.bestCourse ? 'bg-primary-100' :
                     course.courseName === courseBreakdown.worstCourse ? 'bg-red-100' :
                     'bg-warm-100'
                   }`}>
                     <span className={`text-xs font-bold ${
-                      course.courseName === courseBreakdown.bestCourse ? 'text-green-600' :
+                      course.courseName === courseBreakdown.bestCourse ? 'text-primary-600' :
                       course.courseName === courseBreakdown.worstCourse ? 'text-red-600' :
                       'text-warm-500'
                     }`}>
@@ -2205,7 +2205,7 @@ function AnalysisStats({
                   </div>
                   <div className="text-center hidden md:block">
                     <p className="text-xs text-warm-400">Best</p>
-                    <p className="text-sm font-semibold text-green-600">{course.bestRound || '--'}</p>
+                    <p className="text-sm font-semibold text-primary-600">{course.bestRound || '--'}</p>
                   </div>
                   <div className="text-center hidden md:block">
                     <p className="text-xs text-warm-400">GIR%</p>
@@ -2322,56 +2322,56 @@ export default function GolfStatsDisplay({
           <h1 style="font-size: 28px; font-weight: 700; color: #0f172a; margin: 0 0 8px 0;">
             ${playerName || 'Golf'} Stats Report
           </h1>
-          <p style="font-size: 14px; color: #64748b; margin: 0;">
+          <p style="font-size: 14px; color: #78716c; margin: 0;">
             Generated on ${exportDate} • ${stats.roundsPlayed} rounds • ${stats.holesPlayed} holes
           </p>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px;">
           <div style="background: #f8fafc; border-radius: 12px; padding: 20px;">
-            <h2 style="font-size: 14px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 16px 0;">
+            <h2 style="font-size: 14px; font-weight: 600; color: #78716c; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 16px 0;">
               Scoring Overview
             </h2>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
               <div>
                 <div style="font-size: 28px; font-weight: 700; color: #16a34a;">${formatStat(summary.avgScore, '', 1)}</div>
-                <div style="font-size: 12px; color: #64748b;">Scoring Avg</div>
+                <div style="font-size: 12px; color: #78716c;">Scoring Avg</div>
               </div>
               <div>
                 <div style="font-size: 28px; font-weight: 700; color: #0f172a;">${summary.bestRound || '-'}</div>
-                <div style="font-size: 12px; color: #64748b;">Best Round</div>
+                <div style="font-size: 12px; color: #78716c;">Best Round</div>
               </div>
               <div>
                 <div style="font-size: 20px; font-weight: 600; color: #0f172a;">${summary.worstRound || '-'}</div>
-                <div style="font-size: 12px; color: #64748b;">Worst Round</div>
+                <div style="font-size: 12px; color: #78716c;">Worst Round</div>
               </div>
               <div>
                 <div style="font-size: 20px; font-weight: 600; color: #0f172a;">${stats.roundsPlayed}</div>
-                <div style="font-size: 12px; color: #64748b;">Rounds Played</div>
+                <div style="font-size: 12px; color: #78716c;">Rounds Played</div>
               </div>
             </div>
           </div>
 
           <div style="background: #f8fafc; border-radius: 12px; padding: 20px;">
-            <h2 style="font-size: 14px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 16px 0;">
+            <h2 style="font-size: 14px; font-weight: 600; color: #78716c; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 16px 0;">
               Performance Metrics
             </h2>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
               <div>
                 <div style="font-size: 28px; font-weight: 700; color: #16a34a;">${formatStat(summary.girPct, '%', 1)}</div>
-                <div style="font-size: 12px; color: #64748b;">GIR %</div>
+                <div style="font-size: 12px; color: #78716c;">GIR %</div>
               </div>
               <div>
                 <div style="font-size: 28px; font-weight: 700; color: #0f172a;">${formatStat(summary.fairwayPct, '%', 1)}</div>
-                <div style="font-size: 12px; color: #64748b;">Fairways Hit</div>
+                <div style="font-size: 12px; color: #78716c;">Fairways Hit</div>
               </div>
               <div>
                 <div style="font-size: 20px; font-weight: 600; color: #0f172a;">${formatStat(summary.avgPutts, '', 1)}</div>
-                <div style="font-size: 12px; color: #64748b;">Putts/Round</div>
+                <div style="font-size: 12px; color: #78716c;">Putts/Round</div>
               </div>
               <div>
                 <div style="font-size: 20px; font-weight: 600; color: #0f172a;">${formatStat(summary.scramblingPct, '%', 1)}</div>
-                <div style="font-size: 12px; color: #64748b;">Scrambling</div>
+                <div style="font-size: 12px; color: #78716c;">Scrambling</div>
               </div>
             </div>
           </div>
@@ -2387,31 +2387,31 @@ export default function GolfStatsDisplay({
               <div style="font-size: 24px; font-weight: 700; color: ${(summary.sgTotal || 0) >= 0 ? '#16a34a' : '#dc2626'};">
                 ${(summary.sgTotal || 0) >= 0 ? '+' : ''}${formatStat(summary.sgTotal, '', 2)}
               </div>
-              <div style="font-size: 11px; color: #64748b;">Total</div>
+              <div style="font-size: 11px; color: #78716c;">Total</div>
             </div>
             <div style="text-align: center;">
               <div style="font-size: 18px; font-weight: 600; color: ${(summary.sgTee || 0) >= 0 ? '#16a34a' : '#dc2626'};">
                 ${(summary.sgTee || 0) >= 0 ? '+' : ''}${formatStat(summary.sgTee, '', 2)}
               </div>
-              <div style="font-size: 11px; color: #64748b;">Tee</div>
+              <div style="font-size: 11px; color: #78716c;">Tee</div>
             </div>
             <div style="text-align: center;">
               <div style="font-size: 18px; font-weight: 600; color: ${(summary.sgApproach || 0) >= 0 ? '#16a34a' : '#dc2626'};">
                 ${(summary.sgApproach || 0) >= 0 ? '+' : ''}${formatStat(summary.sgApproach, '', 2)}
               </div>
-              <div style="font-size: 11px; color: #64748b;">Approach</div>
+              <div style="font-size: 11px; color: #78716c;">Approach</div>
             </div>
             <div style="text-align: center;">
               <div style="font-size: 18px; font-weight: 600; color: ${(summary.sgAroundGreen || 0) >= 0 ? '#16a34a' : '#dc2626'};">
                 ${(summary.sgAroundGreen || 0) >= 0 ? '+' : ''}${formatStat(summary.sgAroundGreen, '', 2)}
               </div>
-              <div style="font-size: 11px; color: #64748b;">Around Green</div>
+              <div style="font-size: 11px; color: #78716c;">Around Green</div>
             </div>
             <div style="text-align: center;">
               <div style="font-size: 18px; font-weight: 600; color: ${(summary.sgPutting || 0) >= 0 ? '#16a34a' : '#dc2626'};">
                 ${(summary.sgPutting || 0) >= 0 ? '+' : ''}${formatStat(summary.sgPutting, '', 2)}
               </div>
-              <div style="font-size: 11px; color: #64748b;">Putting</div>
+              <div style="font-size: 11px; color: #78716c;">Putting</div>
             </div>
           </div>
         </div>
@@ -2453,7 +2453,7 @@ export default function GolfStatsDisplay({
         </div>
         ` : ''}
 
-        <div style="margin-top: 32px; padding-top: 16px; border-top: 1px solid #e2e8f0;">
+        <div style="margin-top: 32px; padding-top: 16px; border-top: 1px solid #e7e5e4;">
           <p style="font-size: 11px; color: #94a3b8; text-align: center; margin: 0;">
             Generated by GolfHelm • helm.app
           </p>
@@ -2603,7 +2603,7 @@ export default function GolfStatsDisplay({
                 className={`p-2.5 rounded-lg border transition-all ${
                   isExporting
                     ? 'bg-warm-100 border-warm-200 text-warm-400 cursor-not-allowed'
-                    : 'bg-white border-warm-200 text-warm-500 hover:border-green-300 hover:text-green-600'
+                    : 'bg-white border-warm-200 text-warm-500 hover:border-primary-300 hover:text-primary-600'
                 }`}
                 whileHover={isExporting ? {} : { scale: 1.05 }}
                 whileTap={isExporting ? {} : { scale: 0.95 }}
@@ -2611,7 +2611,7 @@ export default function GolfStatsDisplay({
               >
                 {isExporting ? (
                   <motion.div
-                    className="h-[18px] w-[18px] border-2 border-warm-300 border-t-green-500 rounded-full"
+                    className="h-[18px] w-[18px] border-2 border-warm-300 border-t-primary-500 rounded-full"
                     animate={{ rotate: 360 }}
                     transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                   />
@@ -2623,7 +2623,7 @@ export default function GolfStatsDisplay({
               {/* Print Button */}
               <motion.button
                 onClick={handlePrint}
-                className="p-2.5 rounded-lg border bg-white border-warm-200 text-warm-500 hover:border-green-300 hover:text-green-600 transition-all"
+                className="p-2.5 rounded-lg border bg-white border-warm-200 text-warm-500 hover:border-primary-300 hover:text-primary-600 transition-all"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 title="Print stats"
@@ -2636,8 +2636,8 @@ export default function GolfStatsDisplay({
                 onClick={() => setShowFilters(!showFilters)}
                 className={`p-2.5 rounded-lg border transition-all ${
                   showFilters
-                    ? 'bg-green-50 border-green-200 text-green-600'
-                    : 'bg-white border-warm-200 text-warm-500 hover:border-green-300 hover:text-green-600'
+                    ? 'bg-primary-50 border-primary-200 text-primary-600'
+                    : 'bg-white border-warm-200 text-warm-500 hover:border-primary-300 hover:text-primary-600'
                 }`}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -2660,7 +2660,7 @@ export default function GolfStatsDisplay({
                   <select
                     value={selectedRoundId}
                     onChange={(e) => onRoundChange(e.target.value as string | 'overall')}
-                    className="w-full px-2 sm:px-3 py-2 rounded-lg border border-warm-200 text-xs sm:text-sm font-medium text-warm-700 bg-white hover:border-green-300 focus:border-green-500 focus:ring-2 focus:ring-green-100 outline-none transition-all"
+                    className="w-full px-2 sm:px-3 py-2 rounded-lg border border-warm-200 text-xs sm:text-sm font-medium text-warm-700 bg-white hover:border-primary-300 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 outline-none transition-all"
                   >
                     <option value="overall">Overall</option>
                     <optgroup label="Individual Rounds">
@@ -2684,7 +2684,7 @@ export default function GolfStatsDisplay({
               animate={{ opacity: 1, y: 0 }}
             >
               <span className="text-xs text-warm-500">Filtered by:</span>
-              <span className="px-2.5 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">
+              <span className="px-2.5 py-1 text-xs font-medium bg-primary-100 text-primary-700 rounded-full">
                 {getActiveFilterLabel()}
               </span>
               <button
@@ -2724,8 +2724,8 @@ export default function GolfStatsDisplay({
                       onClick={() => handleFilterClick(preset.filter)}
                       className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${
                         isFilterActive(preset.filter)
-                          ? 'bg-green-600 text-white border border-green-600'
-                          : 'bg-white border border-warm-200 text-warm-600 hover:border-green-300 hover:bg-green-50 hover:text-green-700'
+                          ? 'bg-primary-600 text-white border border-primary-600'
+                          : 'bg-white border border-warm-200 text-warm-600 hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700'
                       }`}
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
@@ -2748,8 +2748,8 @@ export default function GolfStatsDisplay({
                       onClick={() => setShowCourseDropdown(!showCourseDropdown)}
                       className={`w-full px-3 py-2 rounded-lg border text-sm font-medium text-left flex items-center justify-between transition-all ${
                         activeFilter?.courseName
-                          ? 'bg-green-50 border-green-300 text-green-700'
-                          : 'bg-white border-warm-200 text-warm-600 hover:border-green-300'
+                          ? 'bg-primary-50 border-primary-300 text-primary-700'
+                          : 'bg-white border-warm-200 text-warm-600 hover:border-primary-300'
                       }`}
                     >
                       <span>{activeFilter?.courseName || 'All Courses'}</span>
@@ -2776,7 +2776,7 @@ export default function GolfStatsDisplay({
                               onClick={() => handleCourseFilter(course)}
                               className={`w-full px-3 py-2 text-sm text-left transition-colors ${
                                 activeFilter?.courseName === course
-                                  ? 'bg-green-50 text-green-700'
+                                  ? 'bg-primary-50 text-primary-700'
                                   : 'hover:bg-warm-50 text-warm-600'
                               }`}
                             >
@@ -2806,8 +2806,8 @@ export default function GolfStatsDisplay({
               onClick={() => setActiveCategory(cat.id)}
               className={`relative flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
                 activeCategory === cat.id
-                  ? 'bg-green-600 text-white shadow-lg shadow-green-600/25'
-                  : 'bg-white text-warm-600 border border-warm-200 hover:border-green-300 hover:shadow-md'
+                  ? 'bg-primary-600 text-white shadow-lg shadow-primary-600/25'
+                  : 'bg-white text-warm-600 border border-warm-200 hover:border-primary-300 hover:shadow-md'
               }`}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -2818,7 +2818,7 @@ export default function GolfStatsDisplay({
               {/* Active indicator pulse */}
               {activeCategory === cat.id && (
                 <motion.div
-                  className="absolute inset-0 rounded-full bg-green-400"
+                  className="absolute inset-0 rounded-full bg-primary-400"
                   initial={{ scale: 1 }}
                   animate={{ scale: [1, 1.1, 1] }}
                   transition={{ duration: 0.3 }}

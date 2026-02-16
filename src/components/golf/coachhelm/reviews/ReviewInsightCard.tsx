@@ -135,7 +135,7 @@ function MetricDisplay({ name, value, baseline, comparison }: MetricDisplayProps
           </p>
           <p className={cn(
             'text-sm font-medium',
-            isPositive && 'text-green-600',
+            isPositive && 'text-primary-600',
             isNegative && 'text-red-600',
             !isPositive && !isNegative && 'text-warm-600'
           )}>
@@ -285,7 +285,7 @@ export function ReviewInsightCard({
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
+              transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
               className="overflow-hidden"
             >
               <div className="pt-4 space-y-3 border-t border-warm-100 mt-4">

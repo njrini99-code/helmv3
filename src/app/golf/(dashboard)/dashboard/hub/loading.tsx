@@ -2,7 +2,7 @@ export default function HubLoading() {
   return (
     <div className="min-h-full">
       {/* Header skeleton */}
-      <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+      <div className="border-b border-warm-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-4 md:px-6 py-5">
           <div className="h-7 w-52 skeleton-sweep rounded-lg" />
           <div className="h-4 w-36 skeleton-sweep rounded-md mt-2" />
@@ -10,7 +10,7 @@ export default function HubLoading() {
       </div>
 
       {/* Tab bar skeleton */}
-      <div className="sticky top-[73px] z-10 bg-white/80 backdrop-blur-sm border-b border-slate-100">
+      <div className="sticky top-[73px] z-10 bg-white/80 backdrop-blur-sm border-b border-warm-100">
         <div className="max-w-3xl mx-auto px-4 md:px-6 flex gap-4 py-3">
           {[...Array(4)].map((_, i) => (
             <div key={i} className="h-5 w-16 skeleton-sweep rounded" />

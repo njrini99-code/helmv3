@@ -122,7 +122,7 @@ const ScoringTrendMini = memo(function ScoringTrendMini({ rounds }: { rounds: Ro
         {scores.length >= 4 && (
           <div className={cn(
             'flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium',
-            improving ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+            improving ? 'bg-primary-50 text-primary-700' : 'bg-amber-50 text-amber-700'
           )}>
             {improving ? <IconTrendingDown size={12} /> : <IconTrendingUp size={12} />}
             {improving ? 'Improving' : 'Rising'}
@@ -150,7 +150,7 @@ const ScoringTrendMini = memo(function ScoringTrendMini({ rounds }: { rounds: Ro
                 contentStyle={{
                   backgroundColor: 'rgba(255,255,255,0.95)',
                   borderRadius: '8px',
-                  border: '1px solid #e2e8f0',
+                  border: '1px solid #e7e5e4',
                   fontSize: '12px',
                 }}
               />
@@ -174,7 +174,7 @@ const ScoreDistribution = memo(function ScoreDistribution({ stats }: { stats: Go
   const distribution = [
     { name: 'Eagles', count: stats.totalEagles, color: '#059669' },
     { name: 'Birdies', count: stats.totalBirdies, color: '#16a34a' },
-    { name: 'Pars', count: stats.totalPars, color: '#64748b' },
+    { name: 'Pars', count: stats.totalPars, color: '#78716c' },
     { name: 'Bogeys', count: stats.totalBogeys, color: '#f59e0b' },
     { name: 'Doubles+', count: stats.totalDoublePlus, color: '#ef4444' },
   ].filter(d => d.count > 0);
@@ -202,7 +202,7 @@ const ScoreDistribution = memo(function ScoreDistribution({ stats }: { stats: Go
               <YAxis
                 type="category"
                 dataKey="name"
-                tick={{ fontSize: 11, fill: '#64748b' }}
+                tick={{ fontSize: 11, fill: '#78716c' }}
                 axisLine={false}
                 tickLine={false}
                 width={60}
@@ -211,7 +211,7 @@ const ScoreDistribution = memo(function ScoreDistribution({ stats }: { stats: Go
                 contentStyle={{
                   backgroundColor: 'rgba(255,255,255,0.95)',
                   borderRadius: '8px',
-                  border: '1px solid #e2e8f0',
+                  border: '1px solid #e7e5e4',
                   fontSize: '12px',
                 }}
                 formatter={(value) => {
@@ -240,7 +240,7 @@ function StatRow({ label, value, highlight }: { label: string; value: string; hi
   return (
     <div className="flex justify-between items-center py-2.5 border-b border-warm-100 last:border-0">
       <span className="text-sm text-warm-600">{label}</span>
-      <span className={cn('text-sm font-semibold tabular-nums', highlight ? 'text-green-600' : 'text-warm-900')}>
+      <span className={cn('text-sm font-semibold tabular-nums', highlight ? 'text-primary-600' : 'text-warm-900')}>
         {value}
       </span>
     </div>
@@ -342,7 +342,7 @@ const DetailedStatsTabs = memo(function DetailedStatsTabs({ stats }: { stats: Go
             className={cn(
               'flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all',
               activeTab === tab.id
-                ? 'bg-green-600 text-white shadow-sm'
+                ? 'bg-primary-600 text-white shadow-sm'
                 : 'text-warm-600 hover:bg-warm-100'
             )}
           >
@@ -489,7 +489,7 @@ export const PlayerStatsSection = memo(function PlayerStatsSection({
                     onClick={() => { setSelectedRoundId('overall'); setDropdownOpen(false); }}
                     className={cn(
                       'w-full px-4 py-2.5 text-left text-sm hover:bg-warm-50 transition-colors',
-                      selectedRoundId === 'overall' && 'bg-green-50 text-green-700 font-medium'
+                      selectedRoundId === 'overall' && 'bg-primary-50 text-primary-700 font-medium'
                     )}
                   >
                     Overall (All Rounds)
@@ -503,7 +503,7 @@ export const PlayerStatsSection = memo(function PlayerStatsSection({
                       onClick={() => { setSelectedRoundId(round.id); setDropdownOpen(false); }}
                       className={cn(
                         'w-full px-4 py-2.5 text-left text-sm hover:bg-warm-50 transition-colors',
-                        selectedRoundId === round.id && 'bg-green-50 text-green-700 font-medium'
+                        selectedRoundId === round.id && 'bg-primary-50 text-primary-700 font-medium'
                       )}
                     >
                       <div className="font-medium">{round.course_name || 'Round'}</div>

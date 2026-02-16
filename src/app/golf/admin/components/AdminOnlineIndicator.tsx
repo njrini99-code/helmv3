@@ -52,11 +52,11 @@ export function AdminOnlineIndicator({
           <div
             className={cn(
               'w-2 h-2 rounded-full',
-              isConnected ? 'bg-emerald-500' : 'bg-warm-300'
+              isConnected ? 'bg-primary-500' : 'bg-warm-300'
             )}
           />
           {isConnected && (
-            <div className="absolute inset-0 w-2 h-2 rounded-full bg-emerald-500 animate-ping opacity-75" />
+            <div className="absolute inset-0 w-2 h-2 rounded-full bg-primary-500 animate-ping opacity-75" />
           )}
         </div>
 
@@ -156,7 +156,7 @@ export function AdminOnlineIndicator({
                 <span
                   className={cn(
                     'text-xs font-medium',
-                    isConnected ? 'text-emerald-600' : 'text-amber-600'
+                    isConnected ? 'text-primary-600' : 'text-amber-600'
                   )}
                 >
                   {isConnected ? '● Connected' : '○ Disconnected'}
@@ -236,7 +236,7 @@ function AdminListItem({ admin, isCurrentUser }: AdminListItemProps) {
       </div>
 
       {/* Active indicator */}
-      <div className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" />
+      <div className="w-2 h-2 rounded-full bg-primary-500 flex-shrink-0" />
     </div>
   );
 }

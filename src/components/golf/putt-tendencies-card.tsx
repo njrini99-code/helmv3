@@ -1,6 +1,5 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import { IconAlertCircle } from '@/components/icons';
 import { PlayerPuttTendencies, PUTT_MISS_TAG_CONFIG } from '@/lib/types/golf';
 import { cn } from '@/lib/utils';
@@ -56,11 +55,9 @@ export function PuttTendenciesCard({ data }: PuttTendenciesCardProps) {
           </span>
         </div>
         <div className="relative h-2 bg-warm-200 rounded-full overflow-hidden">
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: `${percentages.underReadTendency}%` }}
-            transition={{ duration: 0.8, ease: 'easeOut' }}
-            className="absolute left-0 top-0 h-full bg-gradient-to-r from-blue-500 to-amber-500"
+          <div
+            className="absolute left-0 top-0 h-full w-full bg-gradient-to-r from-blue-500 to-amber-500 origin-left transition-transform duration-700 ease-out"
+            style={{ transform: `scaleX(${percentages.underReadTendency / 100})` }}
           />
           {/* Center marker */}
           <div className="absolute left-1/2 top-0 w-0.5 h-full bg-white/50" />
@@ -80,11 +77,9 @@ export function PuttTendenciesCard({ data }: PuttTendenciesCardProps) {
           </span>
         </div>
         <div className="relative h-2 bg-warm-200 rounded-full overflow-hidden">
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: `${percentages.leaveShortTendency}%` }}
-            transition={{ duration: 0.8, ease: 'easeOut', delay: 0.1 }}
-            className="absolute left-0 top-0 h-full bg-gradient-to-r from-red-500 to-orange-500"
+          <div
+            className="absolute left-0 top-0 h-full w-full bg-gradient-to-r from-red-500 to-orange-500 origin-left transition-transform duration-700 ease-out"
+            style={{ transform: `scaleX(${percentages.leaveShortTendency / 100})` }}
           />
           <div className="absolute left-1/2 top-0 w-0.5 h-full bg-white/50" />
         </div>

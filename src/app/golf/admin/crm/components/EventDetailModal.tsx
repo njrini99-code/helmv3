@@ -24,15 +24,15 @@ const EVENT_TYPE_CONFIG: Record<CRMEventType, {
 }> = {
   demo: { label: 'Demo', icon: '🖥️', bgColor: 'bg-violet-500', textColor: 'text-white' },
   follow_up: { label: 'Follow-up', icon: '📞', bgColor: 'bg-blue-500', textColor: 'text-white' },
-  call: { label: 'Call', icon: '☎️', bgColor: 'bg-emerald-500', textColor: 'text-white' },
+  call: { label: 'Call', icon: '☎️', bgColor: 'bg-primary-500', textColor: 'text-white' },
   meeting: { label: 'Meeting', icon: '🤝', bgColor: 'bg-amber-500', textColor: 'text-white' },
-  email_reminder: { label: 'Email', icon: '✉️', bgColor: 'bg-slate-500', textColor: 'text-white' },
-  other: { label: 'Other', icon: '📌', bgColor: 'bg-gray-500', textColor: 'text-white' },
+  email_reminder: { label: 'Email', icon: '✉️', bgColor: 'bg-warm-500', textColor: 'text-white' },
+  other: { label: 'Other', icon: '📌', bgColor: 'bg-warm-500', textColor: 'text-white' },
 };
 
 const STATUS_OPTIONS = [
   { value: 'scheduled', label: 'Scheduled', icon: '📅', color: 'bg-blue-100 text-blue-700' },
-  { value: 'completed', label: 'Completed', icon: '✅', color: 'bg-green-100 text-green-700' },
+  { value: 'completed', label: 'Completed', icon: '✅', color: 'bg-primary-100 text-primary-700' },
   { value: 'cancelled', label: 'Cancelled', icon: '❌', color: 'bg-red-100 text-red-700' },
   { value: 'rescheduled', label: 'Rescheduled', icon: '🔄', color: 'bg-amber-100 text-amber-700' },
 ];
@@ -165,23 +165,23 @@ export function EventDetailModal({
         {/* Body */}
         <div className="p-6 space-y-5">
           {/* Time Info */}
-          <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl">
+          <div className="flex items-center gap-4 p-4 bg-warm-50 rounded-xl">
             <div className="text-center">
-              <div className="text-2xl font-bold text-slate-800">
+              <div className="text-2xl font-bold text-warm-800">
                 {format(startTime, 'd')}
               </div>
-              <div className="text-xs font-medium text-slate-500 uppercase">
+              <div className="text-xs font-medium text-warm-500 uppercase">
                 {format(startTime, 'MMM')}
               </div>
             </div>
             <div className="flex-1">
-              <div className="font-semibold text-slate-800">
+              <div className="font-semibold text-warm-800">
                 {format(startTime, 'EEEE')}
               </div>
-              <div className="text-sm text-slate-600">
+              <div className="text-sm text-warm-600">
                 {format(startTime, 'h:mm a')} - {format(endTime, 'h:mm a')}
               </div>
-              <div className="text-xs text-slate-500 mt-0.5">
+              <div className="text-xs text-warm-500 mt-0.5">
                 {duration} minutes
               </div>
             </div>
@@ -189,11 +189,11 @@ export function EventDetailModal({
 
           {/* Coach Info */}
           {event.coach_name && (
-            <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-xl">
+            <div className="flex items-center gap-3 p-3 bg-primary-50 rounded-xl">
               <span className="text-xl">👤</span>
               <div>
-                <div className="font-semibold text-slate-800">{event.coach_school}</div>
-                <div className="text-sm text-slate-600">{event.coach_name}</div>
+                <div className="font-semibold text-warm-800">{event.coach_school}</div>
+                <div className="text-sm text-warm-600">{event.coach_name}</div>
               </div>
             </div>
           )}
@@ -202,7 +202,7 @@ export function EventDetailModal({
           {(event.location || event.meeting_url) && (
             <div className="space-y-2">
               {event.location && (
-                <div className="flex items-center gap-2 text-sm text-slate-600">
+                <div className="flex items-center gap-2 text-sm text-warm-600">
                   <span>📍</span>
                   <span>{event.location}</span>
                 </div>
@@ -224,10 +224,10 @@ export function EventDetailModal({
           {/* Description */}
           {event.description && (
             <div>
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1 block">
+              <label className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1 block">
                 Notes
               </label>
-              <p className="text-sm text-slate-700 bg-slate-50 rounded-xl p-3">
+              <p className="text-sm text-warm-700 bg-warm-50 rounded-xl p-3">
                 {event.description}
               </p>
             </div>
@@ -235,7 +235,7 @@ export function EventDetailModal({
 
           {/* Status */}
           <div>
-            <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 block">
+            <label className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-2 block">
               Status
             </label>
             <div className="flex flex-wrap gap-2">
@@ -247,8 +247,8 @@ export function EventDetailModal({
                   className={cn(
                     'px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
                     status === opt.value
-                      ? `${opt.color} ring-2 ring-offset-1 ring-slate-300`
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      ? `${opt.color} ring-2 ring-offset-1 ring-warm-300`
+                      : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
                   )}
                 >
                   {opt.icon} {opt.label}
@@ -259,13 +259,13 @@ export function EventDetailModal({
 
           {/* Outcome Form (when completing) */}
           {showOutcomeForm && (
-            <div className="p-4 bg-green-50 rounded-xl border border-green-200 space-y-3">
-              <h4 className="font-semibold text-green-800">✅ Mark as Completed</h4>
+            <div className="p-4 bg-primary-50 rounded-xl border border-primary-200 space-y-3">
+              <h4 className="font-semibold text-primary-800">✅ Mark as Completed</h4>
               <textarea
                 value={outcome}
                 onChange={(e) => setOutcome(e.target.value)}
                 placeholder="How did it go? Any notes?"
-                className="w-full px-3 py-2 border border-green-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
+                className="w-full px-3 py-2 border border-primary-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
                 rows={3}
                 autoFocus
               />
@@ -275,14 +275,14 @@ export function EventDetailModal({
                     setShowOutcomeForm(false);
                     setStatus(event.status);
                   }}
-                  className="px-3 py-1.5 text-sm text-slate-600 hover:text-slate-800"
+                  className="px-3 py-1.5 text-sm text-warm-600 hover:text-warm-800"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleComplete}
                   disabled={submitting}
-                  className="px-4 py-1.5 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700 disabled:opacity-50"
+                  className="px-4 py-1.5 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700 disabled:opacity-50"
                 >
                   {submitting ? 'Saving...' : 'Complete'}
                 </button>
@@ -292,7 +292,7 @@ export function EventDetailModal({
 
           {/* Google Calendar Sync Status */}
           {event.google_event_id && (
-            <div className="flex items-center gap-2 text-xs text-slate-500 p-2 bg-slate-50 rounded-lg">
+            <div className="flex items-center gap-2 text-xs text-warm-500 p-2 bg-warm-50 rounded-lg">
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
               </svg>
@@ -302,7 +302,7 @@ export function EventDetailModal({
         </div>
 
         {/* Footer Actions */}
-        <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+        <div className="px-6 py-4 bg-warm-50 border-t border-warm-200 flex items-center justify-between">
           <button
             onClick={handleDelete}
             disabled={submitting}
@@ -313,7 +313,7 @@ export function EventDetailModal({
           
           <button
             onClick={onEdit}
-            className="px-5 py-2.5 bg-slate-800 text-white rounded-xl font-semibold hover:bg-slate-700 transition-colors"
+            className="px-5 py-2.5 bg-warm-800 text-white rounded-xl font-semibold hover:bg-warm-700 transition-colors"
           >
             ✏️ Edit
           </button>

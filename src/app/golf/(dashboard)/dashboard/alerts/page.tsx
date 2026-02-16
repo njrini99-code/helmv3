@@ -255,7 +255,7 @@ export default function AlertsPage() {
                 onClick={toggleMobile}
                 className={cn(
                   'lg:hidden p-2.5 -ml-2 rounded-xl',
-                  'text-slate-500 hover:text-slate-700 hover:bg-slate-100/80',
+                  'text-warm-500 hover:text-warm-700 hover:bg-warm-100/80',
                   'transition-colors duration-150 active:scale-95',
                   'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
                 )}
@@ -265,16 +265,16 @@ export default function AlertsPage() {
               </button>
               <button
                 onClick={() => router.back()}
-                className="hidden lg:block p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-white/50 transition-colors"
+                className="hidden lg:block p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-white/50 transition-colors"
               >
                 <IconChevronLeft size={20} />
               </button>
               <div>
-                <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
+                <h1 className="text-2xl font-bold tracking-tight text-warm-900 flex items-center gap-2">
                   <IconBell size={24} className="text-primary-600" />
                   Player Alerts
                 </h1>
-                <p className="text-slate-500 mt-0.5 text-sm">
+                <p className="text-warm-500 mt-0.5 text-sm">
                   AI-generated insights about players who need attention
                 </p>
               </div>
@@ -286,7 +286,7 @@ export default function AlertsPage() {
               className={cn(
                 'flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all',
                 isPending
-                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                  ? 'bg-warm-100 text-warm-400 cursor-not-allowed'
                   : 'bg-primary-600 text-white hover:bg-primary-700 shadow-md'
               )}
             >
@@ -320,6 +320,7 @@ export default function AlertsPage() {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
+              transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
               className="mb-6 p-4 bg-red-50 border border-red-100 rounded-xl text-red-600 flex items-center justify-between"
             >
               <span>{error}</span>
@@ -334,7 +335,7 @@ export default function AlertsPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           {/* Level Filters */}
           <div className="flex items-center gap-2">
-            <IconFilter size={16} className="text-slate-400" />
+            <IconFilter size={16} className="text-warm-400" />
             <div className="flex gap-1 p-1 bg-white/60 backdrop-blur-sm rounded-xl border border-white/30 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex-nowrap snap-x snap-mandatory">
               {(['all', 'critical', 'warning', 'info', 'suggestion'] as FilterLevel[]).map((level) => (
                 <button
@@ -343,8 +344,8 @@ export default function AlertsPage() {
                   className={cn(
                     'px-3 py-1.5 text-sm font-medium rounded-lg transition-all flex-shrink-0 snap-center',
                     filterLevel === level
-                      ? 'bg-white text-slate-900 shadow-sm'
-                      : 'text-slate-500 hover:text-slate-700'
+                      ? 'bg-white text-warm-900 shadow-sm'
+                      : 'text-warm-500 hover:text-warm-700'
                   )}
                 >
                   {level === 'all' ? 'All' : level.charAt(0).toUpperCase() + level.slice(1)}
@@ -354,7 +355,7 @@ export default function AlertsPage() {
                       level === 'critical' ? 'bg-red-100 text-red-700' :
                       level === 'warning' ? 'bg-amber-100 text-amber-700' :
                       level === 'info' ? 'bg-blue-100 text-blue-700' :
-                      'bg-green-100 text-green-700'
+                      'bg-primary-100 text-primary-700'
                     )}>
                       {countByLevel[level]}
                     </span>
@@ -366,12 +367,12 @@ export default function AlertsPage() {
 
           {/* Bulk Actions */}
           <div className="flex items-center gap-2">
-            <label className="flex items-center gap-2 text-sm text-slate-500 cursor-pointer">
+            <label className="flex items-center gap-2 text-sm text-warm-500 cursor-pointer">
               <input
                 type="checkbox"
                 checked={showAcknowledged}
                 onChange={(e) => setShowAcknowledged(e.target.checked)}
-                className="rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                className="rounded border-warm-300 text-primary-600 focus:ring-primary-500"
               />
               Show acknowledged
             </label>
@@ -381,7 +382,7 @@ export default function AlertsPage() {
                 <button
                   onClick={handleAcknowledgeAll}
                   disabled={isPending}
-                  className="flex items-center gap-1 text-sm font-medium text-slate-500 hover:text-slate-700 px-3 py-1.5 rounded-lg hover:bg-white/50 transition-colors"
+                  className="flex items-center gap-1 text-sm font-medium text-warm-500 hover:text-warm-700 px-3 py-1.5 rounded-lg hover:bg-white/50 transition-colors"
                 >
                   <IconCheck size={14} />
                   Acknowledge All
@@ -432,14 +433,14 @@ function EmptyAlertsState({ filter }: { filter: FilterLevel }) {
     >
       <div className={cn(
         'w-16 h-16 rounded-full flex items-center justify-center mb-4',
-        'bg-gradient-to-br from-green-100 to-emerald-100'
+        'bg-gradient-to-br from-primary-100 to-primary-100'
       )}>
-        <IconBell size={32} className="text-green-600" />
+        <IconBell size={32} className="text-primary-600" />
       </div>
-      <h3 className="text-lg font-semibold text-slate-700 mb-2">
+      <h3 className="text-lg font-semibold text-warm-700 mb-2">
         {filter === 'all' ? 'All Clear!' : `No ${filter} alerts`}
       </h3>
-      <p className="text-sm text-slate-400 max-w-[300px]">
+      <p className="text-sm text-warm-400 max-w-[300px]">
         {filter === 'all'
           ? 'No alerts at the moment. Your players are on track.'
           : `There are no ${filter} level alerts right now.`}

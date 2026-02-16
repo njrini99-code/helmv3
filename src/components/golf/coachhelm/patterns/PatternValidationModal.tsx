@@ -150,6 +150,7 @@ export function PatternValidationModal({
                 </div>
                 <button
                   onClick={onClose}
+                  aria-label="Close"
                   className="p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
                 >
                   <IconX size={20} />
@@ -176,7 +177,7 @@ export function PatternValidationModal({
                       Impact:{' '}
                       <span className={cn(
                         'font-semibold',
-                        pattern.strokeImpact > 0 ? 'text-red-600' : 'text-green-600'
+                        pattern.strokeImpact > 0 ? 'text-red-600' : 'text-primary-600'
                       )}>
                         {pattern.strokeImpact > 0 ? '+' : ''}{pattern.strokeImpact.toFixed(1)} strokes
                       </span>
@@ -253,16 +254,16 @@ export function PatternValidationModal({
                 </div>
 
                 {/* Create focus area toggle */}
-                <div className="flex items-center justify-between p-4 bg-green-50 rounded-xl border border-green-200">
+                <div className="flex items-center justify-between p-4 bg-primary-50 rounded-xl border border-primary-200">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center">
-                      <IconTarget size={16} className="text-green-600" />
+                    <div className="w-8 h-8 rounded-lg bg-primary-100 flex items-center justify-center">
+                      <IconTarget size={16} className="text-primary-600" />
                     </div>
                     <div>
-                      <div className="font-medium text-green-800">
+                      <div className="font-medium text-primary-800">
                         Create Focus Area
                       </div>
-                      <div className="text-sm text-green-600">
+                      <div className="text-sm text-primary-600">
                         Add to player&apos;s development focus areas
                       </div>
                     </div>
@@ -274,7 +275,7 @@ export function PatternValidationModal({
                     onClick={() => setCreateFocusArea(!createFocusArea)}
                     className={cn(
                       'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-                      createFocusArea ? 'bg-green-600' : 'bg-warm-300'
+                      createFocusArea ? 'bg-primary-600' : 'bg-warm-300'
                     )}
                   >
                     <span
@@ -312,7 +313,11 @@ export function PatternValidationModal({
                   )}
                 >
                   {isLoading ? (
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span className="flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+                    </span>
                   ) : (
                     <IconCheck size={16} />
                   )}

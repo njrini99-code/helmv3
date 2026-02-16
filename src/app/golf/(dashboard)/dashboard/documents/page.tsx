@@ -55,8 +55,8 @@ export default async function GolfDocumentsPage() {
     return (
       <div className="min-h-full bg-transparent flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-xl font-semibold text-slate-900 mb-2">No Team Found</h1>
-          <p className="text-slate-600">You must be on a team to access documents.</p>
+          <h1 className="text-xl font-semibold text-warm-900 mb-2">No Team Found</h1>
+          <p className="text-warm-600">You must be on a team to access documents.</p>
         </div>
       </div>
     );

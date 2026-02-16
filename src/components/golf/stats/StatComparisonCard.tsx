@@ -73,7 +73,7 @@ function getComparisonColor(
 function getColorClass(comparison: 'better' | 'worse' | 'same'): string {
   switch (comparison) {
     case 'better':
-      return 'text-green-600';
+      return 'text-primary-600';
     case 'worse':
       return 'text-red-500';
     default:
@@ -84,7 +84,7 @@ function getColorClass(comparison: 'better' | 'worse' | 'same'): string {
 function getBgClass(comparison: 'better' | 'worse' | 'same'): string {
   switch (comparison) {
     case 'better':
-      return 'bg-green-50';
+      return 'bg-primary-50';
     case 'worse':
       return 'bg-red-50';
     default:
@@ -177,7 +177,7 @@ const StatComparisonCard = memo(function StatComparisonCard({
                   <YAxis
                     type="category"
                     dataKey="name"
-                    tick={{ fontSize: 11, fill: '#64748b' }}
+                    tick={{ fontSize: 11, fill: '#78716c' }}
                     axisLine={false}
                     tickLine={false}
                     width={40}
@@ -187,7 +187,7 @@ const StatComparisonCard = memo(function StatComparisonCard({
                     contentStyle={{
                       backgroundColor: 'rgba(255,255,255,0.95)',
                       borderRadius: '8px',
-                      border: '1px solid #e2e8f0',
+                      border: '1px solid #e7e5e4',
                       fontSize: '12px',
                     }}
                   />
@@ -396,7 +396,7 @@ export const PeriodComparisonCard = memo(function PeriodComparisonCard({
           <h4 className="text-sm font-semibold text-warm-900">Period Comparison</h4>
           <div className="flex items-center gap-3 text-xs text-warm-500">
             <span className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-green-500" />
+              <div className="w-2 h-2 rounded-full bg-primary-500" />
               {current.label} ({current.roundCount})
             </span>
             <span className="flex items-center gap-1">

@@ -24,14 +24,14 @@ function getStateConfig(state: PlayerCoachHelmDashboardData['playerState']) {
     case 'improving':
       return {
         icon: IconTrendingUp,
-        iconColor: 'text-green-500',
-        iconBgColor: 'bg-green-100',
-        accentColor: 'bg-gradient-to-r from-green-400 to-green-600',
+        iconColor: 'text-primary-500',
+        iconBgColor: 'bg-primary-100',
+        accentColor: 'bg-gradient-to-r from-primary-400 to-primary-600',
         title: 'On the Rise',
         subtitle: 'Your game is trending upward',
         message: 'Great work! Your recent performance shows consistent improvement. Keep building on this momentum.',
-        borderColor: 'border-green-200',
-        glowColor: 'before:bg-green-500/10',
+        borderColor: 'border-primary-200',
+        glowColor: 'before:bg-primary-500/10',
       };
     case 'stable':
       return {
@@ -61,14 +61,14 @@ function getStateConfig(state: PlayerCoachHelmDashboardData['playerState']) {
     default:
       return {
         icon: IconActivity,
-        iconColor: 'text-slate-500',
-        iconBgColor: 'bg-slate-100',
-        accentColor: 'bg-gradient-to-r from-slate-400 to-slate-600',
+        iconColor: 'text-warm-500',
+        iconBgColor: 'bg-warm-100',
+        accentColor: 'bg-gradient-to-r from-warm-400 to-warm-600',
         title: 'Building Your Profile',
         subtitle: 'More data needed',
         message: 'Play more rounds to unlock personalized AI insights and performance predictions.',
-        borderColor: 'border-slate-200',
-        glowColor: 'before:bg-slate-500/5',
+        borderColor: 'border-warm-200',
+        glowColor: 'before:bg-warm-500/5',
       };
   }
 }

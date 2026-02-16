@@ -22,8 +22,8 @@ export function PatternCard({ pattern, onDismiss }: PatternCardProps) {
   const [expanded, setExpanded] = useState(false);
 
   const isNegative = pattern.strokeImpact > 0;
-  const impactColor = isNegative ? 'text-red-600' : 'text-green-600';
-  const impactBg = isNegative ? 'bg-red-50' : 'bg-green-50';
+  const impactColor = isNegative ? 'text-red-600' : 'text-primary-600';
+  const impactBg = isNegative ? 'bg-red-50' : 'bg-primary-50';
 
   const getPatternIcon = () => {
     switch (pattern.patternType) {
@@ -112,7 +112,7 @@ export function PatternCard({ pattern, onDismiss }: PatternCardProps) {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
             className="overflow-hidden"
           >
             <div className="px-4 pb-4 pt-0 border-t border-warm-100">
@@ -157,11 +157,11 @@ export function PatternCard({ pattern, onDismiss }: PatternCardProps) {
 
               {/* Recommendation */}
               {pattern.recommendation && (
-                <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-100">
-                  <h4 className="text-xs font-medium text-green-700 uppercase mb-1">
+                <div className="mt-4 p-3 bg-primary-50 rounded-lg border border-primary-100">
+                  <h4 className="text-xs font-medium text-primary-700 uppercase mb-1">
                     Recommendation
                   </h4>
-                  <p className="text-sm text-green-800">
+                  <p className="text-sm text-primary-800">
                     {pattern.recommendation}
                   </p>
                 </div>

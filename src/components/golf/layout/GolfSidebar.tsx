@@ -138,7 +138,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
           aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           className={cn(
             'absolute -right-3 top-7 z-50',
-            'w-6 h-6 rounded-full bg-[#1C1917] border border-white/20',
+            'w-6 h-6 rounded-full bg-warm-900 border border-white/20',
             'flex items-center justify-center',
             'shadow-lg hover:bg-white/10 hover:border-white/30',
             'transition-all duration-200',

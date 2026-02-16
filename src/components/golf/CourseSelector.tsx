@@ -44,7 +44,7 @@ export function CourseSelector({
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full px-4 py-3 pl-10 border border-warm-200 rounded-lg
-                     focus:ring-2 focus:ring-emerald-600 focus:border-transparent
+                     focus:ring-2 focus:ring-primary-600 focus:border-transparent
                      bg-white text-warm-900"
         />
         <svg
@@ -61,8 +61,8 @@ export function CourseSelector({
       {/* Create New Course Button */}
       <button
         onClick={onCreateNew}
-        className="w-full p-4 border-2 border-dashed border-emerald-300 rounded-lg
-                   text-emerald-600 font-medium hover:bg-emerald-50 transition-colors
+        className="w-full p-4 border-2 border-dashed border-primary-300 rounded-lg
+                   text-primary-600 font-medium hover:bg-primary-50 transition-colors
                    flex items-center justify-center gap-2"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -75,8 +75,11 @@ export function CourseSelector({
       {/* Saved Courses Grid */}
       {loading ? (
         <div className="flex justify-center py-8">
-          <div className="animate-spin h-6 w-6 border-2 border-emerald-600
-                          border-t-transparent rounded-full" />
+          <span className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+          </span>
         </div>
       ) : filteredCourses.length > 0 ? (
         <div className="grid gap-3">
@@ -86,8 +89,8 @@ export function CourseSelector({
               onClick={() => onSelectCourse(course)}
               className={`p-4 rounded-lg border text-left transition-all
                 ${selectedCourseId === course.id
-                  ? 'border-emerald-500 bg-emerald-50 shadow-sm shadow-emerald-950/10 ring-1 ring-emerald-600'
-                  : 'border-warm-200 bg-white hover:border-emerald-300 shadow-sm shadow-warm-950/5 ring-1 ring-warm-100'
+                  ? 'border-primary-500 bg-primary-50 shadow-sm shadow-primary-950/10 ring-1 ring-primary-600'
+                  : 'border-warm-200 bg-white hover:border-primary-300 shadow-sm shadow-warm-950/5 ring-1 ring-warm-100'
                 }`}
             >
               <div className="flex justify-between items-start">

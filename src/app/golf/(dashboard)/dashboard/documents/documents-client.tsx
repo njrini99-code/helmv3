@@ -53,14 +53,14 @@ const CATEGORIES = ['Schedule', 'Rules', 'Forms', 'Training', 'Other'];
 // ─── File Type Helpers ───────────────────────────────────────────────
 
 function getFileIcon(fileType: string | null, size = 24) {
-  if (!fileType) return <IconFile size={size} className="text-slate-400" />;
+  if (!fileType) return <IconFile size={size} className="text-warm-400" />;
   if (fileType === 'application/pdf') return <IconFileText size={size} className="text-red-500" />;
   if (fileType.startsWith('image/')) return <IconImage size={size} className="text-blue-500" />;
   if (fileType.includes('word') || fileType.includes('document')) return <IconFileText size={size} className="text-blue-600" />;
-  if (fileType.includes('sheet') || fileType.includes('excel') || fileType === 'text/csv') return <IconFileSpreadsheet size={size} className="text-emerald-500" />;
+  if (fileType.includes('sheet') || fileType.includes('excel') || fileType === 'text/csv') return <IconFileSpreadsheet size={size} className="text-primary-500" />;
   if (fileType.startsWith('video/')) return <IconVideo size={size} className="text-purple-500" />;
-  if (fileType.startsWith('text/')) return <IconFileText size={size} className="text-slate-500" />;
-  return <IconFile size={size} className="text-slate-400" />;
+  if (fileType.startsWith('text/')) return <IconFileText size={size} className="text-warm-500" />;
+  return <IconFile size={size} className="text-warm-400" />;
 }
 
 function getFileTypeLabel(fileType: string | null) {
@@ -75,13 +75,13 @@ function getFileTypeLabel(fileType: string | null) {
 }
 
 function getFileTypeColor(fileType: string | null) {
-  if (!fileType) return 'bg-slate-100 text-slate-500';
+  if (!fileType) return 'bg-warm-100 text-warm-500';
   if (fileType === 'application/pdf') return 'bg-red-50 text-red-600';
   if (fileType.startsWith('image/')) return 'bg-blue-50 text-blue-600';
   if (fileType.includes('word') || fileType.includes('document')) return 'bg-blue-50 text-blue-700';
-  if (fileType.includes('sheet') || fileType.includes('excel')) return 'bg-emerald-50 text-emerald-600';
+  if (fileType.includes('sheet') || fileType.includes('excel')) return 'bg-primary-50 text-primary-600';
   if (fileType.startsWith('video/')) return 'bg-purple-50 text-purple-600';
-  return 'bg-slate-50 text-slate-500';
+  return 'bg-warm-50 text-warm-500';
 }
 
 function formatFileSize(bytes: number | null) {
@@ -477,11 +477,11 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
     >
       {/* Global drag overlay */}
       {isDragOver && (
-        <div className="fixed inset-0 z-40 bg-green-600/10 backdrop-blur-sm flex items-center justify-center pointer-events-none">
-          <div className="bg-white/90 backdrop-blur-xl rounded-3xl p-12 shadow-2xl border-2 border-dashed border-green-400">
-            <IconUpload size={48} className="mx-auto text-green-600 mb-4" />
-            <p className="text-xl font-semibold text-slate-900">Drop files to upload</p>
-            <p className="text-sm text-slate-500 mt-1">Release to add files</p>
+        <div className="fixed inset-0 z-40 bg-primary-600/10 backdrop-blur-sm flex items-center justify-center pointer-events-none">
+          <div className="bg-white/90 backdrop-blur-xl rounded-3xl p-12 shadow-2xl border-2 border-dashed border-primary-400">
+            <IconUpload size={48} className="mx-auto text-primary-600 mb-4" />
+            <p className="text-xl font-semibold text-warm-900">Drop files to upload</p>
+            <p className="text-sm text-warm-500 mt-1">Release to add files</p>
           </div>
         </div>
       )}
@@ -494,7 +494,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               onClick={toggleMobile}
               className={cn(
                 'lg:hidden p-2.5 -ml-2 rounded-xl',
-                'text-slate-500 hover:text-slate-700 hover:bg-slate-100/80',
+                'text-warm-500 hover:text-warm-700 hover:bg-warm-100/80',
                 'transition-colors duration-150 active:scale-95',
                 'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
               )}
@@ -503,8 +503,8 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               <IconMenu size={22} />
             </button>
             <div>
-              <h1 className="text-2xl font-semibold text-slate-900">Documents</h1>
-              <p className="text-slate-500 mt-1">
+              <h1 className="text-2xl font-semibold text-warm-900">Documents</h1>
+              <p className="text-warm-500 mt-1">
                 {documents.length} file{documents.length !== 1 ? 's' : ''} {folders.length > 0 ? `across ${folders.length} folder${folders.length !== 1 ? 's' : ''}` : ''}
               </p>
             </div>
@@ -513,7 +513,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowNewFolderInput(true)}
-                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-warm-600 bg-white border border-warm-200 rounded-lg hover:bg-warm-50 transition-colors"
               >
                 <IconFolderPlus size={16} />
                 New Folder
@@ -528,7 +528,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               />
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors text-sm"
+                className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors text-sm"
               >
                 <IconUpload size={16} />
                 Upload Files
@@ -539,24 +539,24 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
 
         {/* Create Folder Modal */}
         {showNewFolderInput && (
-          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl max-w-sm w-full shadow-2xl overflow-hidden">
-              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center">
-                    <IconFolderPlus size={16} className="text-green-600" />
+                  <div className="w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
+                    <IconFolderPlus size={16} className="text-primary-600" />
                   </div>
-                  <h2 className="text-lg font-semibold text-slate-900">Create Folder</h2>
+                  <h2 className="text-lg font-semibold text-warm-900">Create Folder</h2>
                 </div>
                 <button
                   onClick={() => { setShowNewFolderInput(false); setNewFolderName(''); }}
-                  className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                  className="p-2 hover:bg-warm-100 rounded-lg transition-colors"
                 >
                   <IconX size={18} />
                 </button>
               </div>
               <div className="px-6 py-5">
-                <label className="block text-xs font-medium text-slate-600 mb-1.5">Folder Name</label>
+                <label className="block text-xs font-medium text-warm-600 mb-1.5">Folder Name</label>
                 <input
                   type="text"
                   value={newFolderName}
@@ -565,24 +565,24 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                   placeholder="e.g. Practice Plans"
                   enterKeyHint="done"
                   autoComplete="off"
-                  className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-green-600/20 focus:border-green-500"
+                  className="w-full px-3 py-2.5 text-sm border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-500"
                   autoFocus
                 />
                 {newFolderName.trim() && folders.includes(newFolderName.trim()) && (
                   <p className="text-xs text-amber-600 mt-1.5">A folder with this name already exists</p>
                 )}
               </div>
-              <div className="flex gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/50">
+              <div className="flex gap-3 px-6 py-4 border-t border-warm-100 bg-warm-50/50">
                 <button
                   onClick={() => { setShowNewFolderInput(false); setNewFolderName(''); }}
-                  className="flex-1 px-4 py-2.5 border border-slate-200 rounded-lg font-medium text-slate-700 hover:bg-white transition-colors text-sm"
+                  className="flex-1 px-4 py-2.5 border border-warm-200 rounded-lg font-medium text-warm-700 hover:bg-white transition-colors text-sm"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleCreateFolder}
                   disabled={!newFolderName.trim() || folders.includes(newFolderName.trim())}
-                  className="flex-1 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                  className="flex-1 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                 >
                   Create Folder
                 </button>
@@ -598,8 +598,8 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               onClick={() => setCurrentFolder(null)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
                 currentFolder === null
-                  ? 'bg-slate-900 text-white shadow-sm'
-                  : 'bg-white/70 text-slate-600 border border-slate-200 hover:bg-white'
+                  ? 'bg-warm-900 text-white shadow-sm'
+                  : 'bg-white/70 text-warm-600 border border-warm-200 hover:bg-white'
               }`}
             >
               All Files
@@ -608,8 +608,8 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               onClick={() => setCurrentFolder('')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
                 currentFolder === ''
-                  ? 'bg-slate-900 text-white shadow-sm'
-                  : 'bg-white/70 text-slate-600 border border-slate-200 hover:bg-white'
+                  ? 'bg-warm-900 text-white shadow-sm'
+                  : 'bg-white/70 text-warm-600 border border-warm-200 hover:bg-white'
               }`}
             >
               <IconFolder size={12} />
@@ -621,8 +621,8 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                 onClick={() => setCurrentFolder(currentFolder === folder ? null : folder)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
                   currentFolder === folder
-                    ? 'bg-green-600 text-white shadow-sm'
-                    : 'bg-white/70 text-slate-600 border border-slate-200 hover:bg-white'
+                    ? 'bg-primary-600 text-white shadow-sm'
+                    : 'bg-white/70 text-warm-600 border border-warm-200 hover:bg-white'
                 }`}
               >
                 <IconFolder size={12} />
@@ -643,8 +643,8 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                 onClick={() => setCategoryFilter('')}
                 className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
                   !categoryFilter
-                    ? 'bg-slate-900 text-white shadow-sm'
-                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                    ? 'bg-warm-900 text-white shadow-sm'
+                    : 'bg-white text-warm-600 border border-warm-200 hover:bg-warm-50'
                 }`}
               >
                 All ({documents.length})
@@ -658,8 +658,8 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                     onClick={() => setCategoryFilter(categoryFilter === cat ? '' : cat)}
                     className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
                       categoryFilter === cat
-                        ? 'bg-green-600 text-white shadow-sm'
-                        : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                        ? 'bg-primary-600 text-white shadow-sm'
+                        : 'bg-white text-warm-600 border border-warm-200 hover:bg-warm-50'
                     }`}
                   >
                     {cat} ({count})
@@ -669,7 +669,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
             </div>
 
             <div className="relative">
-              <IconSearch size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <IconSearch size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
               <input
                 type="search"
                 value={searchQuery}
@@ -677,12 +677,12 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                 placeholder="Search documents..."
                 enterKeyHint="search"
                 autoComplete="off"
-                className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200/60 focus:ring-2 focus:ring-green-600/20 focus:border-green-500 text-slate-900 placeholder:text-slate-400 bg-white/60 backdrop-blur-sm transition-all"
+                className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-warm-200/60 focus:ring-2 focus:ring-primary-600/20 focus:border-primary-500 text-warm-900 placeholder:text-warm-400 bg-white/60 backdrop-blur-sm transition-all"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-warm-400 hover:text-warm-600"
                 >
                   <IconX size={16} />
                 </button>
@@ -700,11 +700,11 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
           >
             <ShineEffect />
             <div className="relative">
-              <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-6">
-                <IconFolder size={28} className="text-slate-400" />
+              <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-6">
+                <IconFolder size={28} className="text-warm-400" />
               </div>
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">No Documents Yet</h3>
-              <p className="text-sm text-slate-500 mb-6 max-w-sm mx-auto">
+              <h3 className="text-lg font-semibold text-warm-900 mb-2">No Documents Yet</h3>
+              <p className="text-sm text-warm-500 mb-6 max-w-sm mx-auto">
                 {isCoach
                   ? 'Upload documents to share with your team. Drag & drop files or click upload.'
                   : 'Your team files and resources will appear here.'}
@@ -712,7 +712,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               {isCoach && (
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-lg font-medium transition-colors"
+                  className="inline-flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-5 py-2.5 rounded-lg font-medium transition-colors"
                 >
                   <IconUpload size={16} />
                   Upload First Document
@@ -724,12 +724,12 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
           <div className="relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-hidden p-8 md:p-12 text-center">
             <ShineEffect />
             <div className="relative">
-              <IconSearch size={36} className="mx-auto text-slate-300 mb-4" />
-              <h3 className="text-lg font-medium text-slate-900 mb-2">No Matching Documents</h3>
-              <p className="text-sm text-slate-500 mb-4">Try adjusting your search or filters</p>
+              <IconSearch size={36} className="mx-auto text-warm-300 mb-4" />
+              <h3 className="text-lg font-medium text-warm-900 mb-2">No Matching Documents</h3>
+              <p className="text-sm text-warm-500 mb-4">Try adjusting your search or filters</p>
               <button
                 onClick={() => { setSearchQuery(''); setCategoryFilter(''); setCurrentFolder(null); }}
-                className="text-sm text-green-600 hover:text-green-700 font-medium"
+                className="text-sm text-primary-600 hover:text-primary-700 font-medium"
               >
                 Clear all filters
               </button>
@@ -748,9 +748,9 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                   doc.file_type === 'application/pdf' ? 'bg-red-400'
                   : doc.file_type?.startsWith('image/') ? 'bg-blue-400'
                   : doc.file_type?.includes('word') ? 'bg-blue-500'
-                  : doc.file_type?.includes('sheet') ? 'bg-emerald-400'
+                  : doc.file_type?.includes('sheet') ? 'bg-primary-400'
                   : doc.file_type?.startsWith('video/') ? 'bg-purple-400'
-                  : 'bg-slate-300'
+                  : 'bg-warm-300'
                 }`} />
 
                 <div className="p-5">
@@ -763,7 +763,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                     <div className="flex items-center gap-1">
                       {/* Version badge */}
                       {doc.version_count && doc.version_count > 1 && (
-                        <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-slate-100 text-slate-600 flex items-center gap-0.5">
+                        <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-warm-100 text-warm-600 flex items-center gap-0.5">
                           <IconLayers size={10} />
                           v{doc.version_count}
                         </span>
@@ -776,7 +776,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                               e.stopPropagation();
                               setActiveDropdown(activeDropdown === doc.id ? null : doc.id);
                             }}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100/80 opacity-0 group-hover:opacity-100 transition-all"
+                            className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100/80 opacity-0 group-hover:opacity-100 transition-all"
                           >
                             <IconMoreVertical size={14} />
                           </button>
@@ -784,38 +784,38 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                           {activeDropdown === doc.id && (
                             <>
                               <div className="fixed inset-0 z-30" onClick={(e) => { e.stopPropagation(); setActiveDropdown(null); }} />
-                              <div className="absolute right-0 top-8 z-40 w-48 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
+                              <div className="absolute right-0 top-8 z-40 w-48 bg-white rounded-xl shadow-xl border border-warm-200 py-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
                                 <button
                                   onClick={(e) => { e.stopPropagation(); openPreview(doc); setActiveDropdown(null); }}
-                                  className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                                  className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 transition-colors"
                                 >
                                   <IconEye size={14} /> Preview
                                 </button>
                                 <button
                                   onClick={(e) => { e.stopPropagation(); openVersionHistory(doc); }}
-                                  className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                                  className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 transition-colors"
                                 >
                                   <IconClock size={14} /> Version History
                                 </button>
                                 <button
                                   onClick={(e) => { e.stopPropagation(); openUploadVersionModal(doc); }}
-                                  className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                                  className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 transition-colors"
                                 >
                                   <IconUpload size={14} /> Upload New Version
                                 </button>
                                 <button
                                   onClick={(e) => { e.stopPropagation(); openEditModal(doc); }}
-                                  className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                                  className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 transition-colors"
                                 >
                                   <IconEdit size={14} /> Edit Details
                                 </button>
                                 <button
                                   onClick={(e) => { e.stopPropagation(); openMoveModal(doc); }}
-                                  className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                                  className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 transition-colors"
                                 >
                                   <IconFolder size={14} /> Move to Folder
                                 </button>
-                                <div className="my-1 h-px bg-slate-100" />
+                                <div className="my-1 h-px bg-warm-100" />
                                 <button
                                   onClick={(e) => { e.stopPropagation(); handleDelete(doc); setActiveDropdown(null); }}
                                   className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
@@ -831,13 +831,13 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                   </div>
 
                   {/* Title */}
-                  <h3 className="font-semibold text-slate-900 mb-1 truncate text-[15px] leading-tight">
+                  <h3 className="font-semibold text-warm-900 mb-1 truncate text-[15px] leading-tight">
                     {doc.title}
                   </h3>
 
                   {/* Description */}
                   {doc.description && (
-                    <p className="text-xs text-slate-500 mb-3 line-clamp-2 leading-relaxed">{doc.description}</p>
+                    <p className="text-xs text-warm-500 mb-3 line-clamp-2 leading-relaxed">{doc.description}</p>
                   )}
 
                   {/* Tags */}
@@ -846,12 +846,12 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                       {getFileTypeLabel(doc.file_type)}
                     </span>
                     {doc.category && (
-                      <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-md bg-green-50 text-green-700">
+                      <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-md bg-primary-50 text-primary-700">
                         {doc.category}
                       </span>
                     )}
                     {doc.folder && (
-                      <span className="inline-flex items-center gap-0.5 px-2 py-0.5 text-xs font-medium rounded-md bg-slate-100 text-slate-600">
+                      <span className="inline-flex items-center gap-0.5 px-2 py-0.5 text-xs font-medium rounded-md bg-warm-100 text-warm-600">
                         <IconFolder size={9} /> {doc.folder}
                       </span>
                     )}
@@ -863,15 +863,15 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                   </div>
 
                   {/* Footer */}
-                  <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-                    <div className="flex items-center gap-3 text-xs text-slate-400">
+                  <div className="flex items-center justify-between pt-3 border-t border-warm-100">
+                    <div className="flex items-center gap-3 text-xs text-warm-400">
                       <span>{formatFileSize(doc.file_size)}</span>
                       <span>{timeAgo(doc.created_at)}</span>
                     </div>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
                       <button
                         onClick={(e) => { e.stopPropagation(); openPreview(doc); }}
-                        className="p-1.5 rounded-lg hover:bg-green-50 text-green-600 transition-colors"
+                        className="p-1.5 rounded-lg hover:bg-primary-50 text-primary-600 transition-colors"
                         title="Preview"
                       >
                         <IconEye size={14} />
@@ -880,7 +880,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                         href={doc.file_url}
                         download
                         onClick={(e) => e.stopPropagation()}
-                        className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors"
+                        className="p-1.5 rounded-lg hover:bg-warm-100 text-warm-500 transition-colors"
                         title="Download"
                       >
                         <IconDownload size={14} />
@@ -896,17 +896,17 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
 
       {/* ─── Upload Modal (Multi-file) ────────────────────────────── */}
       {showUploadModal && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-xl w-full shadow-2xl overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100">
               <div>
-                <h2 className="text-lg font-semibold text-slate-900">Upload Documents</h2>
-                <p className="text-sm text-slate-500">{pendingFiles.length} file{pendingFiles.length !== 1 ? 's' : ''} selected</p>
+                <h2 className="text-lg font-semibold text-warm-900">Upload Documents</h2>
+                <p className="text-sm text-warm-500">{pendingFiles.length} file{pendingFiles.length !== 1 ? 's' : ''} selected</p>
               </div>
               <button
                 onClick={() => { setShowUploadModal(false); setPendingFiles([]); setError(null); }}
-                className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-warm-100 rounded-lg transition-colors"
               >
                 <IconX size={18} />
               </button>
@@ -921,12 +921,12 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
 
               {/* Drop zone / Add more files */}
               <div
-                className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center hover:border-green-400 hover:bg-green-50/30 transition-all cursor-pointer"
+                className="border-2 border-dashed border-warm-200 rounded-xl p-6 text-center hover:border-primary-400 hover:bg-primary-50/30 transition-all cursor-pointer"
                 onClick={() => fileInputRef.current?.click()}
               >
-                <IconPlus size={24} className="mx-auto text-slate-400 mb-2" />
-                <p className="text-sm font-medium text-slate-600">Add more files</p>
-                <p className="text-xs text-slate-400 mt-0.5">Click or drag & drop</p>
+                <IconPlus size={24} className="mx-auto text-warm-400 mb-2" />
+                <p className="text-sm font-medium text-warm-600">Add more files</p>
+                <p className="text-xs text-warm-400 mt-0.5">Click or drag & drop</p>
               </div>
 
               {/* Pending files list */}
@@ -935,7 +935,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                   {pendingFiles.map((pf) => (
                     <div
                       key={pf.id}
-                      className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl"
+                      className="flex items-center gap-3 p-3 bg-warm-50 rounded-xl"
                     >
                       <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${getFileTypeColor(pf.file.type)}`}>
                         {getFileIcon(pf.file.type, 16)}
@@ -945,16 +945,16 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                           type="text"
                           value={pf.title}
                           onChange={(e) => updatePendingTitle(pf.id, e.target.value)}
-                          className="w-full bg-transparent text-sm font-medium text-slate-900 border-b border-transparent focus:border-green-500 focus:outline-none px-0 py-0.5"
+                          className="w-full bg-transparent text-sm font-medium text-warm-900 border-b border-transparent focus:border-primary-500 focus:outline-none px-0 py-0.5"
                           placeholder="Document title"
                         />
-                        <p className="text-xs text-slate-400 mt-0.5">
+                        <p className="text-xs text-warm-400 mt-0.5">
                           {pf.file.name} &middot; {formatFileSize(pf.file.size)}
                         </p>
                       </div>
                       <button
                         onClick={() => removePendingFile(pf.id)}
-                        className="p-1 text-slate-400 hover:text-red-500 transition-colors flex-shrink-0"
+                        className="p-1 text-warm-400 hover:text-red-500 transition-colors flex-shrink-0"
                       >
                         <IconX size={14} />
                       </button>
@@ -966,22 +966,22 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               {/* Shared settings */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1.5">Category</label>
+                  <label className="block text-xs font-medium text-warm-600 mb-1.5">Category</label>
                   <select
                     value={uploadCategory}
                     onChange={(e) => setUploadCategory(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-green-600/20 focus:border-green-500 bg-white"
+                    className="w-full px-3 py-2 text-sm border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-500 bg-white"
                   >
                     <option value="">None</option>
                     {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1.5">Folder</label>
+                  <label className="block text-xs font-medium text-warm-600 mb-1.5">Folder</label>
                   <select
                     value={uploadFolder}
                     onChange={(e) => setUploadFolder(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-green-600/20 focus:border-green-500 bg-white"
+                    className="w-full px-3 py-2 text-sm border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-500 bg-white"
                   >
                     <option value="">No folder</option>
                     {folders.map(f => <option key={f} value={f}>{f}</option>)}
@@ -993,22 +993,22 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               </div>
 
               <label className="flex items-center gap-2.5 cursor-pointer select-none">
-                <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${uploadIsPublic ? 'bg-green-600 border-green-600' : 'border-slate-300 hover:border-slate-400'}`}>
+                <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${uploadIsPublic ? 'bg-primary-600 border-primary-600' : 'border-warm-300 hover:border-warm-400'}`}>
                   {uploadIsPublic && <IconCheck size={12} className="text-white" />}
                 </div>
-                <span className="text-sm text-slate-700">Visible to players</span>
+                <span className="text-sm text-warm-700">Visible to players</span>
               </label>
 
               {/* Progress bar */}
               {uploading && (
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs text-slate-500">
+                  <div className="flex items-center justify-between text-xs text-warm-500">
                     <span>Uploading...</span>
                     <span>{uploadProgress}%</span>
                   </div>
-                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-2 bg-warm-100 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-green-600 rounded-full transition-all duration-300 ease-out"
+                      className="h-full bg-primary-600 rounded-full transition-all duration-300 ease-out"
                       style={{ width: `${uploadProgress}%` }}
                     />
                   </div>
@@ -1017,10 +1017,10 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
             </div>
 
             {/* Footer */}
-            <div className="flex gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/50">
+            <div className="flex gap-3 px-6 py-4 border-t border-warm-100 bg-warm-50/50">
               <button
                 onClick={() => { setShowUploadModal(false); setPendingFiles([]); setError(null); }}
-                className="flex-1 px-4 py-2.5 border border-slate-200 rounded-lg font-medium text-slate-700 hover:bg-white transition-colors text-sm"
+                className="flex-1 px-4 py-2.5 border border-warm-200 rounded-lg font-medium text-warm-700 hover:bg-white transition-colors text-sm"
               >
                 Cancel
               </button>
@@ -1031,7 +1031,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               <button
                 onClick={handleUpload}
                 disabled={uploading || pendingFiles.length === 0}
-                className="flex-1 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                className="flex-1 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
               >
                 {uploading ? `Uploading... ${uploadProgress}%` : `Upload ${pendingFiles.length} File${pendingFiles.length !== 1 ? 's' : ''}`}
               </button>
@@ -1042,11 +1042,11 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
 
       {/* ─── Edit Modal ───────────────────────────────────────────── */}
       {showEditModal && editingDocument && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-              <h2 className="text-lg font-semibold text-slate-900">Edit Document</h2>
-              <button onClick={() => { setShowEditModal(false); setEditingDocument(null); }} className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100">
+              <h2 className="text-lg font-semibold text-warm-900">Edit Document</h2>
+              <button onClick={() => { setShowEditModal(false); setEditingDocument(null); }} className="p-2 hover:bg-warm-100 rounded-lg transition-colors">
                 <IconX size={18} />
               </button>
             </div>
@@ -1057,21 +1057,21 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               )}
 
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1.5">Title *</label>
+                <label className="block text-xs font-medium text-warm-600 mb-1.5">Title *</label>
                 <input
                   type="text"
                   value={editForm.title}
                   onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full px-3 py-2 text-base md:text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-green-600/20 focus:border-green-500"
+                  className="w-full px-3 py-2 text-base md:text-sm border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1.5">Description</label>
+                <label className="block text-xs font-medium text-warm-600 mb-1.5">Description</label>
                 <textarea
                   value={editForm.description}
                   onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
-                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-green-600/20 focus:border-green-500"
+                  className="w-full px-3 py-2 text-sm border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-500"
                   rows={3}
                   placeholder="Optional description"
                 />
@@ -1079,22 +1079,22 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1.5">Category</label>
+                  <label className="block text-xs font-medium text-warm-600 mb-1.5">Category</label>
                   <select
                     value={editForm.category}
                     onChange={(e) => setEditForm(prev => ({ ...prev, category: e.target.value }))}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-green-600/20 focus:border-green-500 bg-white"
+                    className="w-full px-3 py-2 text-sm border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-500 bg-white"
                   >
                     <option value="">No category</option>
                     {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-600 mb-1.5">Folder</label>
+                  <label className="block text-xs font-medium text-warm-600 mb-1.5">Folder</label>
                   <select
                     value={editForm.folder}
                     onChange={(e) => setEditForm(prev => ({ ...prev, folder: e.target.value }))}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-green-600/20 focus:border-green-500 bg-white"
+                    className="w-full px-3 py-2 text-sm border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-500 bg-white"
                   >
                     <option value="">No folder</option>
                     {folders.map(f => <option key={f} value={f}>{f}</option>)}
@@ -1108,18 +1108,18 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               <label className="flex items-center gap-2.5 cursor-pointer select-none">
                 <div
                   onClick={() => setEditForm(prev => ({ ...prev, is_public: !prev.is_public }))}
-                  className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all cursor-pointer ${editForm.is_public ? 'bg-green-600 border-green-600' : 'border-slate-300 hover:border-slate-400'}`}
+                  className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all cursor-pointer ${editForm.is_public ? 'bg-primary-600 border-primary-600' : 'border-warm-300 hover:border-warm-400'}`}
                 >
                   {editForm.is_public && <IconCheck size={12} className="text-white" />}
                 </div>
-                <span className="text-sm text-slate-700">Visible to players</span>
+                <span className="text-sm text-warm-700">Visible to players</span>
               </label>
 
               {isCoach && (
-                <div className="pt-3 border-t border-slate-100">
+                <div className="pt-3 border-t border-warm-100">
                   <button
                     onClick={() => { setShowEditModal(false); openUploadVersionModal(editingDocument); }}
-                    className="flex items-center gap-2 text-sm text-green-600 hover:text-green-700 font-medium"
+                    className="flex items-center gap-2 text-sm text-primary-600 hover:text-primary-700 font-medium"
                   >
                     <IconUpload size={14} />
                     Upload new version of this file
@@ -1128,17 +1128,17 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               )}
             </div>
 
-            <div className="flex gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/50">
+            <div className="flex gap-3 px-6 py-4 border-t border-warm-100 bg-warm-50/50">
               <button
                 onClick={() => { setShowEditModal(false); setEditingDocument(null); }}
-                className="flex-1 px-4 py-2.5 border border-slate-200 rounded-lg font-medium text-slate-700 hover:bg-white transition-colors text-sm"
+                className="flex-1 px-4 py-2.5 border border-warm-200 rounded-lg font-medium text-warm-700 hover:bg-white transition-colors text-sm"
               >
                 Cancel
               </button>
               <button
                 onClick={handleUpdate}
                 disabled={updating}
-                className="flex-1 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 text-sm"
+                className="flex-1 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 text-sm"
               >
                 {updating ? 'Saving...' : 'Save Changes'}
               </button>
@@ -1158,11 +1158,11 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
 
       {/* ─── Version History ──────────────────────────────────────── */}
       {showVersionHistory && versionHistoryDocument && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl max-h-[90vh] overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-              <h2 className="text-lg font-semibold text-slate-900">Version History</h2>
-              <button onClick={closeVersionHistory} className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100">
+              <h2 className="text-lg font-semibold text-warm-900">Version History</h2>
+              <button onClick={closeVersionHistory} aria-label="Close" className="p-2 hover:bg-warm-100 rounded-lg transition-colors">
                 <IconX size={18} />
               </button>
             </div>
@@ -1191,26 +1191,26 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
 
       {/* ─── Move to Folder Modal ──────────────────────────────────── */}
       {showMoveModal && movingDocument && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-sm w-full shadow-2xl overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-              <h2 className="text-lg font-semibold text-slate-900">Move to Folder</h2>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100">
+              <h2 className="text-lg font-semibold text-warm-900">Move to Folder</h2>
               <button
                 onClick={() => { setShowMoveModal(false); setMovingDocument(null); }}
-                className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-warm-100 rounded-lg transition-colors"
               >
                 <IconX size={18} />
               </button>
             </div>
             <div className="px-6 py-5">
-              <p className="text-sm text-slate-500 mb-3">
+              <p className="text-sm text-warm-500 mb-3">
                 Moving &ldquo;{movingDocument.title}&rdquo;
               </p>
-              <label className="block text-xs font-medium text-slate-600 mb-1.5">Destination Folder</label>
+              <label className="block text-xs font-medium text-warm-600 mb-1.5">Destination Folder</label>
               <select
                 value={moveTargetFolder}
                 onChange={(e) => setMoveTargetFolder(e.target.value)}
-                className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-green-600/20 focus:border-green-500 bg-white"
+                className="w-full px-3 py-2.5 text-sm border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-500 bg-white"
               >
                 <option value="">No folder (unfiled)</option>
                 {folders.map(f => <option key={f} value={f}>{f}</option>)}
@@ -1219,16 +1219,16 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                 )}
               </select>
             </div>
-            <div className="flex gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/50">
+            <div className="flex gap-3 px-6 py-4 border-t border-warm-100 bg-warm-50/50">
               <button
                 onClick={() => { setShowMoveModal(false); setMovingDocument(null); }}
-                className="flex-1 px-4 py-2.5 border border-slate-200 rounded-lg font-medium text-slate-700 hover:bg-white transition-colors text-sm"
+                className="flex-1 px-4 py-2.5 border border-warm-200 rounded-lg font-medium text-warm-700 hover:bg-white transition-colors text-sm"
               >
                 Cancel
               </button>
               <button
                 onClick={handleMoveToFolder}
-                className="flex-1 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors text-sm"
+                className="flex-1 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors text-sm"
               >
                 Move
               </button>

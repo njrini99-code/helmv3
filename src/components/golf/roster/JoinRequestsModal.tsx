@@ -178,6 +178,7 @@ export function JoinRequestsModal({ onClose }: JoinRequestsModalProps) {
               <button
                 onClick={onClose}
                 className="p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                aria-label="Close"
               >
                 <IconX size={20} />
               </button>
@@ -194,7 +195,10 @@ export function JoinRequestsModal({ onClose }: JoinRequestsModalProps) {
 
             {loading ? (
               <div className="p-8 text-center">
-                <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto" />
+                <div className="space-y-3 w-32 mx-auto">
+                  <div className="h-3 w-full bg-warm-200 rounded skeleton-shimmer" />
+                  <div className="h-3 w-2/3 bg-warm-200 rounded skeleton-shimmer" />
+                </div>
                 <p className="text-warm-500 mt-3">Loading requests...</p>
               </div>
             ) : (
@@ -260,7 +264,11 @@ export function JoinRequestsModal({ onClose }: JoinRequestsModalProps) {
                             className="flex-1 bg-primary-600 hover:bg-primary-700"
                           >
                             {processingId === request.id ? (
-                              <span className="w-4 h-4 border-2 border-white/50 border-t-transparent rounded-full animate-spin" />
+                              <span className="flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                                <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                                <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+                              </span>
                             ) : (
                               <>
                                 <IconCheck size={16} className="mr-1.5" />
@@ -276,7 +284,11 @@ export function JoinRequestsModal({ onClose }: JoinRequestsModalProps) {
                             className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
                           >
                             {processingId === request.id ? (
-                              <span className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+                              <span className="flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-400 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-400 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-400 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+                              </span>
                             ) : (
                               <>
                                 <IconX size={16} className="mr-1.5" />

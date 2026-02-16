@@ -77,7 +77,7 @@ export function ShotAnalyticsPanel({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-sm">
+          <div className="p-2 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl shadow-sm">
             <IconChartRadar size={18} className="text-white" />
           </div>
           <div>
@@ -96,7 +96,7 @@ export function ShotAnalyticsPanel({
             value={selectedPeriod}
             onChange={(e) => handlePeriodChange(Number(e.target.value))}
             disabled={isPending}
-            className="text-xs px-2 py-1.5 rounded-lg border border-warm-200 bg-white text-warm-600 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500"
+            className="text-xs px-2 py-1.5 rounded-lg border border-warm-200 bg-white text-warm-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
           >
             <option value={7}>7 days</option>
             <option value={14}>14 days</option>
@@ -113,7 +113,7 @@ export function ShotAnalyticsPanel({
               'flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-lg transition-all',
               isPending
                 ? 'bg-warm-100 text-warm-400 cursor-not-allowed'
-                : 'bg-green-600 text-white hover:bg-green-700 shadow-sm'
+                : 'bg-primary-600 text-white hover:bg-primary-700 shadow-sm'
             )}
           >
             {isPending ? (
@@ -200,14 +200,14 @@ export function ShotAnalyticsPanel({
 
               {/* Strengths & Weaknesses */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="p-4 rounded-xl bg-green-50 border border-green-100">
+                <div className="p-4 rounded-xl bg-primary-50 border border-primary-100">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center">
-                      <IconTrendingUp size={14} className="text-green-600" />
+                    <div className="w-6 h-6 rounded-full bg-primary-100 flex items-center justify-center">
+                      <IconTrendingUp size={14} className="text-primary-600" />
                     </div>
-                    <span className="text-xs font-medium text-green-800 uppercase tracking-wide">Strength</span>
+                    <span className="text-xs font-medium text-primary-800 uppercase tracking-wide">Strength</span>
                   </div>
-                  <p className="text-sm font-medium text-green-900">
+                  <p className="text-sm font-medium text-primary-900">
                     {data.primaryStrength}
                   </p>
                 </div>
@@ -297,7 +297,7 @@ export function ShotAnalyticsPanel({
                             <span className="text-xs text-warm-500">GIR:</span>
                             <span className={cn(
                               'text-xs font-medium',
-                              range.greenHitRate >= 50 ? 'text-green-600' :
+                              range.greenHitRate >= 50 ? 'text-primary-600' :
                               range.greenHitRate >= 30 ? 'text-amber-600' : 'text-red-600'
                             )}>
                               {range.greenHitRate}%
@@ -389,7 +389,7 @@ export function ShotAnalyticsPanel({
               </p>
               <button
                 onClick={handleRefresh}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
               >
                 <IconSparkles size={16} />
                 Analyze Shots
@@ -421,7 +421,7 @@ function StatCard({
       </p>
       <p className={cn(
         'text-2xl font-semibold tabular-nums',
-        color === 'green' && 'text-green-600',
+        color === 'green' && 'text-primary-600',
         color === 'amber' && 'text-amber-600',
         color === 'red' && 'text-red-600',
         (!color || color === 'slate') && 'text-warm-900'

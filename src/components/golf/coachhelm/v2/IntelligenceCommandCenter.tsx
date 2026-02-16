@@ -106,12 +106,12 @@ const TONE_CONFIG: Record<InsightTone, {
     label: 'Trending concern',
   },
   encouraging: {
-    bg: 'bg-green-50/80',
-    border: 'border-green-200/60',
-    icon: 'text-green-600',
-    badge: 'bg-green-100 text-green-700',
+    bg: 'bg-primary-50/80',
+    border: 'border-primary-200/60',
+    icon: 'text-primary-600',
+    badge: 'bg-primary-100 text-primary-700',
     badgeText: 'Positive',
-    accentBar: 'bg-gradient-to-r from-green-500 to-emerald-500',
+    accentBar: 'bg-gradient-to-r from-primary-500 to-primary-500',
     label: 'Good trend',
   },
   celebratory: {
@@ -168,7 +168,7 @@ const OverviewSummary = memo(function OverviewSummary({
   if (!healthScore && insights.length === 0) return null;
 
   const getHealthColor = (score: number) => {
-    if (score >= 80) return 'text-green-600';
+    if (score >= 80) return 'text-primary-600';
     if (score >= 60) return 'text-amber-600';
     return 'text-red-600';
   };
@@ -243,7 +243,7 @@ const OverviewSummary = memo(function OverviewSummary({
             </div>
           )}
           <div className="flex items-center gap-2">
-            <div className={cn('rounded-full bg-green-500', isPage ? 'w-2 h-2' : 'w-1.5 h-1.5')} />
+            <div className={cn('rounded-full bg-primary-500', isPage ? 'w-2 h-2' : 'w-1.5 h-1.5')} />
             <span className={cn('text-warm-500', isPage ? 'text-sm' : 'text-xs')}>{positiveCount} positive</span>
           </div>
         </div>
@@ -415,7 +415,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
             className="overflow-hidden"
           >
             <div className={cn('pt-0 space-y-2.5', isPage ? 'px-5 pb-5 space-y-4' : 'px-3 pb-3')}>
@@ -463,7 +463,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                           <div className={cn(
                             'mt-1 font-medium',
                             isPage ? 'text-xs' : 'text-[8px]',
-                            metric.belowBenchmark ? 'text-red-500' : 'text-green-500'
+                            metric.belowBenchmark ? 'text-red-500' : 'text-primary-500'
                           )}>
                             vs {metric.benchmark}{String(metric.value).includes('%') ? '%' : ''}
                           </div>
@@ -472,7 +472,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                           <div className={cn(
                             'mt-0.5 font-medium',
                             isPage ? 'text-xs' : 'text-[8px]',
-                            metric.trend === 'improving' ? 'text-green-500' :
+                            metric.trend === 'improving' ? 'text-primary-500' :
                             metric.trend === 'declining' ? 'text-red-500' :
                             'text-warm-400'
                           )}>
@@ -525,7 +525,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                             'mt-1 font-medium',
                             isPage ? 'text-xs' : 'text-[8px]',
                             step.conclusion?.includes('below') ? 'text-red-500' :
-                            step.conclusion?.includes('above') ? 'text-green-500' :
+                            step.conclusion?.includes('above') ? 'text-primary-500' :
                             'text-warm-400'
                           )}>
                             vs {step.inference.replace('Benchmark: ', '')}
@@ -583,9 +583,9 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                   isPage ? 'p-4' : 'p-2.5'
                 )}>
                   <div className={cn('flex items-center gap-2', isPage ? 'mb-2' : 'mb-1')}>
-                    <IconTarget size={isPage ? 14 : 12} className="text-green-600" />
+                    <IconTarget size={isPage ? 14 : 12} className="text-primary-600" />
                     <span className={cn(
-                      'font-bold text-green-700 uppercase tracking-wider',
+                      'font-bold text-primary-700 uppercase tracking-wider',
                       isPage ? 'text-xs' : 'text-[9px]'
                     )}>
                       Coach Action Plan
@@ -603,7 +603,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                   <button
                     onClick={(e) => { e.stopPropagation(); onAction('acknowledge'); }}
                     className={cn(
-                      'flex items-center gap-1 font-semibold text-green-700 bg-green-100 hover:bg-green-200 rounded-lg transition-colors',
+                      'flex items-center gap-1 font-semibold text-primary-700 bg-primary-100 hover:bg-primary-200 rounded-lg transition-colors',
                       isPage ? 'text-xs px-4 py-2' : 'text-xs px-2.5 py-1.5'
                     )}
                   >
@@ -813,7 +813,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
             className="overflow-hidden"
           >
             <div className={cn('pt-0 space-y-2.5', isPage ? 'px-5 pb-5 space-y-4' : 'px-3 pb-3')}>
@@ -869,9 +869,9 @@ const InsightGroupCard = memo(function InsightGroupCard({
                   isPage ? 'p-4' : 'p-2.5'
                 )}>
                   <div className={cn('flex items-center gap-2', isPage ? 'mb-2' : 'mb-1')}>
-                    <IconTarget size={isPage ? 14 : 12} className="text-green-600" />
+                    <IconTarget size={isPage ? 14 : 12} className="text-primary-600" />
                     <span className={cn(
-                      'font-bold text-green-700 uppercase tracking-wider',
+                      'font-bold text-primary-700 uppercase tracking-wider',
                       isPage ? 'text-xs' : 'text-[9px]'
                     )}>
                       Coach Action Plan
@@ -890,7 +890,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
                     <button
                       onClick={(e) => { e.stopPropagation(); onAcknowledgeGroup(group); }}
                       className={cn(
-                        'flex items-center gap-1 font-semibold text-green-700 bg-green-100 hover:bg-green-200 rounded-lg transition-colors',
+                        'flex items-center gap-1 font-semibold text-primary-700 bg-primary-100 hover:bg-primary-200 rounded-lg transition-colors',
                         isPage ? 'text-xs px-4 py-2' : 'text-xs px-2.5 py-1.5'
                       )}
                     >
@@ -974,7 +974,7 @@ const EnhancedPatternCard = memo(function EnhancedPatternCard({
             <IconTrendingUp size={10} className="text-red-400 ml-auto" />
           )}
           {pattern.trend === 'weakening' && (
-            <IconTrendingDown size={10} className="text-green-400 ml-auto" />
+            <IconTrendingDown size={10} className="text-primary-400 ml-auto" />
           )}
           <motion.div
             animate={{ rotate: expanded ? 180 : 0 }}
@@ -998,7 +998,7 @@ const EnhancedPatternCard = memo(function EnhancedPatternCard({
             <span className={cn(
               'font-bold tabular-nums',
               isPage ? 'text-sm' : 'text-xs',
-              isNegative ? 'text-red-600' : 'text-green-600'
+              isNegative ? 'text-red-600' : 'text-primary-600'
             )}>
               {isNegative ? '+' : '-'}{impactAbs.toFixed(1)} strokes/round
             </span>
@@ -1015,7 +1015,7 @@ const EnhancedPatternCard = memo(function EnhancedPatternCard({
                 'h-full rounded-full',
                 isNegative
                   ? 'bg-gradient-to-r from-red-400 to-red-500'
-                  : 'bg-gradient-to-r from-green-400 to-green-500'
+                  : 'bg-gradient-to-r from-primary-400 to-primary-500'
               )}
             />
           </div>
@@ -1029,6 +1029,7 @@ const EnhancedPatternCard = memo(function EnhancedPatternCard({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
+            transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
             className="overflow-hidden"
           >
             <div className="px-3 pb-3 space-y-2.5 border-t border-warm-100/80 pt-2.5">
@@ -1072,12 +1073,12 @@ const EnhancedPatternCard = memo(function EnhancedPatternCard({
 
               {/* Recommendation */}
               {pattern.recommendation && (
-                <div className="p-2.5 bg-green-50/80 rounded-lg border border-green-100/60">
+                <div className="p-2.5 bg-primary-50/80 rounded-lg border border-primary-100/60">
                   <div className="flex items-center gap-2 mb-1">
-                    <IconTarget size={10} className="text-green-600" />
-                    <span className="text-[9px] font-bold text-green-700 uppercase">Recommendation</span>
+                    <IconTarget size={10} className="text-primary-600" />
+                    <span className="text-[9px] font-bold text-primary-700 uppercase">Recommendation</span>
                   </div>
-                  <p className="text-xs text-green-800 leading-relaxed">
+                  <p className="text-xs text-primary-800 leading-relaxed">
                     {pattern.recommendation}
                   </p>
                 </div>
@@ -1151,7 +1152,7 @@ const EnhancedPredictionCard = memo(function EnhancedPredictionCard({
         </div>
         <span className={cn(
           'text-xs font-medium px-1.5 py-0.5 rounded-full',
-          prediction.trend === 'improving' ? 'bg-green-100 text-green-700' :
+          prediction.trend === 'improving' ? 'bg-primary-100 text-primary-700' :
           prediction.trend === 'declining' ? 'bg-red-100 text-red-700' :
           'bg-warm-100 text-warm-600'
         )}>
@@ -1165,7 +1166,7 @@ const EnhancedPredictionCard = memo(function EnhancedPredictionCard({
         <span className={cn(
           'font-bold tabular-nums',
           isPage ? 'text-4xl' : 'text-2xl',
-          isNeutral ? 'text-warm-700' : isPositive ? 'text-green-600' : 'text-red-600'
+          isNeutral ? 'text-warm-700' : isPositive ? 'text-primary-600' : 'text-red-600'
         )}>
           {formatScore(prediction.predictedValue)}
         </span>
@@ -1183,7 +1184,7 @@ const EnhancedPredictionCard = memo(function EnhancedPredictionCard({
               transition={{ duration: 0.5, delay: 0.1 }}
               className={cn(
                 'h-full rounded-full',
-                confidencePct >= 70 ? 'bg-green-500' :
+                confidencePct >= 70 ? 'bg-primary-500' :
                 confidencePct >= 50 ? 'bg-amber-500' : 'bg-red-500'
               )}
             />
@@ -1210,7 +1211,7 @@ const EnhancedPredictionCard = memo(function EnhancedPredictionCard({
               <span className="text-warm-500">{f.name}</span>
               <span className={cn(
                 'font-medium tabular-nums',
-                f.contribution > 0 ? 'text-red-500' : 'text-green-500'
+                f.contribution > 0 ? 'text-red-500' : 'text-primary-500'
               )}>
                 {f.contribution > 0 ? '+' : ''}{f.contribution.toFixed(1)}
               </span>
@@ -1228,9 +1229,9 @@ const EnhancedPredictionCard = memo(function EnhancedPredictionCard({
               {Math.round(prediction.tailRisks.blowupProbability * 100)}%
             </div>
           </div>
-          <div className="flex-1 text-center bg-green-50/60 rounded-lg py-1.5">
-            <div className="text-xs text-green-400">Great Round</div>
-            <div className="text-xs font-bold text-green-600 tabular-nums">
+          <div className="flex-1 text-center bg-primary-50/60 rounded-lg py-1.5">
+            <div className="text-xs text-primary-400">Great Round</div>
+            <div className="text-xs font-bold text-primary-600 tabular-nums">
               {Math.round(prediction.tailRisks.greatRoundProbability * 100)}%
             </div>
           </div>
@@ -1383,7 +1384,7 @@ export function IntelligenceCommandCenter({
           <div className={cn('flex items-center justify-between', isPage ? 'mb-6' : 'mb-2.5')}>
             <div className={cn('flex items-center', isPage ? 'gap-4' : 'gap-2')}>
               <div className={cn(
-                'rounded-lg bg-gradient-to-br from-primary-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-primary-500/25',
+                'rounded-lg bg-gradient-to-br from-primary-500 to-primary-500 flex items-center justify-center shadow-lg shadow-primary-500/25',
                 isPage ? 'w-12 h-12 rounded-xl' : 'w-8 h-8'
               )}>
                 <IconSparkles size={isPage ? 22 : 14} className="text-white" />
@@ -1420,7 +1421,7 @@ export function IntelligenceCommandCenter({
               isPage ? 'px-6 py-4 text-sm rounded-xl' : 'px-3 py-2 text-xs',
               isPending
                 ? 'bg-white/10 text-white/40 cursor-not-allowed'
-                : 'bg-gradient-to-r from-primary-500 to-emerald-500 text-white shadow-lg shadow-primary-500/25 hover:shadow-primary-500/40 active:scale-[0.98]'
+                : 'bg-gradient-to-r from-primary-500 to-primary-500 text-white shadow-lg shadow-primary-500/25 hover:shadow-primary-500/40 active:scale-[0.98]'
             )}
           >
             {isPending ? (
@@ -1727,7 +1728,7 @@ export function IntelligenceCommandCenter({
         )}>
           <div className="flex flex-col items-center text-center">
             <div className={cn(
-              'rounded-xl bg-gradient-to-br from-primary-50 to-emerald-50 flex items-center justify-center shadow-sm',
+              'rounded-xl bg-gradient-to-br from-primary-50 to-primary-50 flex items-center justify-center shadow-sm',
               isPage ? 'w-20 h-20 rounded-2xl mb-5' : 'w-12 h-12 mb-3'
             )}>
               <IconSparkles size={isPage ? 36 : 22} className="text-primary-500" />

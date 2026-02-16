@@ -139,8 +139,8 @@ function PlayerPatternCard({
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="overflow-hidden"
+              transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
+              style={{ overflow: 'hidden' }}
             >
               <div className="px-4 pb-4 space-y-3 border-t border-warm-100 pt-4">
                 {group.patterns.length === 0 ? (

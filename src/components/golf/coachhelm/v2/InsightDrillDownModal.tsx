@@ -12,6 +12,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { Modal } from '@/components/ui/modal';
 import { cn } from '@/lib/utils';
 import {
@@ -56,10 +57,10 @@ const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
 
 const toneColors = {
   encouraging: {
-    bg: 'bg-green-50',
-    border: 'border-green-200',
-    text: 'text-green-700',
-    accent: 'bg-green-500',
+    bg: 'bg-primary-50',
+    border: 'border-primary-200',
+    text: 'text-primary-700',
+    accent: 'bg-primary-500',
   },
   neutral: {
     bg: 'bg-warm-50',
@@ -97,6 +98,7 @@ export function InsightDrillDownModal({
   causalRelationship,
   onAction,
 }: InsightDrillDownModalProps) {
+  const { modalRef } = useFocusTrap(open, onClose);
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const toneStyle = toneColors[insight.tone] || toneColors.neutral;
 
@@ -109,7 +111,7 @@ export function InsightDrillDownModal({
 
   return (
     <Modal open={open} onClose={onClose} size="xl">
-      <div className="min-h-[500px] flex flex-col -mx-6 -mb-6">
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="insight-drilldown-title" className="min-h-[500px] flex flex-col -mx-6 -mb-6">
         {/* Header with tone accent */}
         <div className={cn('px-6 pt-4 pb-3 border-b', toneStyle.bg, toneStyle.border)}>
           {/* Tone indicator */}
@@ -127,7 +129,7 @@ export function InsightDrillDownModal({
           </div>
 
           {/* Headline */}
-          <h2 className="text-xl font-semibold text-warm-900 mb-2">
+          <h2 id="insight-drilldown-title" className="text-xl font-semibold text-warm-900 mb-2">
             {insight.headline}
           </h2>
 
@@ -162,7 +164,7 @@ export function InsightDrillDownModal({
                 className={cn(
                   'relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors',
                   activeTab === tab.id
-                    ? 'text-green-600'
+                    ? 'text-primary-600'
                     : 'text-warm-500 hover:text-warm-700'
                 )}
               >
@@ -171,7 +173,7 @@ export function InsightDrillDownModal({
                 {activeTab === tab.id && (
                   <motion.div
                     layoutId="insight-tab-indicator"
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-600"
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600"
                     transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                   />
                 )}

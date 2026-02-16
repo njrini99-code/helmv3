@@ -61,9 +61,9 @@ export function CoachHelmToggle({ coachId, onToggle }: CoachHelmToggleProps) {
           enabled ? 'border-primary-100/70 ring-1 ring-primary-200/60' : 'border-white/60 ring-1 ring-warm-200/60'
         )}
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-white/0 to-emerald-400/10 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-white/0 to-primary-400/10 pointer-events-none" />
         <div className="absolute -right-10 -top-10 h-24 w-24 rounded-full bg-primary-500/12 blur-2xl pointer-events-none" />
-        <div className="absolute -bottom-12 -left-10 h-24 w-24 rounded-full bg-emerald-400/10 blur-2xl pointer-events-none" />
+        <div className="absolute -bottom-12 -left-10 h-24 w-24 rounded-full bg-primary-400/10 blur-2xl pointer-events-none" />
 
         <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center">
           {/* Icon */}
@@ -111,7 +111,7 @@ export function CoachHelmToggle({ coachId, onToggle }: CoachHelmToggleProps) {
             className={cn(
               'relative h-8 w-16 rounded-full border transition-all',
               enabled
-                ? 'border-primary-400/40 bg-gradient-to-r from-primary-500 to-emerald-500 shadow-glass-sm'
+                ? 'border-primary-400/40 bg-gradient-to-r from-primary-500 to-primary-500 shadow-glass-sm'
                 : 'border-warm-200 bg-warm-200',
               saving && 'opacity-60 cursor-not-allowed'
             )}

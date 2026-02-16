@@ -143,18 +143,18 @@ export function SaveRoundModal({
                 className={cn(
                   'w-full p-4 rounded-xl border-2 transition-all duration-200',
                   'flex items-center gap-4',
-                  'border-emerald-200 bg-emerald-50 hover:bg-emerald-100',
+                  'border-primary-200 bg-primary-50 hover:bg-primary-100',
                   'disabled:opacity-50 disabled:cursor-not-allowed'
                 )}
               >
-                <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 rounded-xl bg-primary-500 flex items-center justify-center flex-shrink-0">
                   <IconClock size={20} className="text-white" />
                 </div>
                 <div className="flex-1 text-left">
-                  <p className="font-semibold text-emerald-900">
+                  <p className="font-semibold text-primary-900">
                     {saving ? 'Saving...' : 'Save for Later'}
                   </p>
-                  <p className="text-xs text-emerald-700 mt-0.5">
+                  <p className="text-xs text-primary-700 mt-0.5">
                     Resume this round anytime from the Rounds tab
                   </p>
                 </div>

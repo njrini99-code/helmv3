@@ -44,9 +44,9 @@ const RSVP_OPTIONS: RSVPOption[] = [
     label: 'Going',
     shortLabel: 'Yes',
     icon: CheckCircle2,
-    activeStyles: 'bg-emerald-600 text-white shadow-lg shadow-emerald-200/50',
-    inactiveStyles: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 active:bg-emerald-200',
-    ringColor: 'ring-emerald-300',
+    activeStyles: 'bg-primary-600 text-white shadow-lg shadow-primary-200/50',
+    inactiveStyles: 'bg-primary-50 text-primary-700 hover:bg-primary-100 active:bg-primary-200',
+    ringColor: 'ring-primary-300',
   },
   {
     value: 'tentative',
@@ -268,7 +268,7 @@ export function RSVPStatusBadge({
   const getStatusConfig = (s: RSVPResponseType | null) => {
     switch (s) {
       case 'accepted':
-        return { label: 'Going', icon: CheckCircle2, className: 'bg-emerald-100 text-emerald-700' };
+        return { label: 'Going', icon: CheckCircle2, className: 'bg-primary-100 text-primary-700' };
       case 'tentative':
         return { label: 'Maybe', icon: HelpCircle, className: 'bg-amber-100 text-amber-700' };
       case 'declined':

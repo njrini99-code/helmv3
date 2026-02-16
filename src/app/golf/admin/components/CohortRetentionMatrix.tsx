@@ -22,7 +22,7 @@ function getCellClasses(value: number | undefined): string {
     return 'bg-warm-50 text-warm-300';
   }
   if (value >= 60) {
-    return 'bg-emerald-100 text-emerald-800';
+    return 'bg-primary-100 text-primary-800';
   }
   if (value >= 30) {
     return 'bg-amber-100 text-amber-800';

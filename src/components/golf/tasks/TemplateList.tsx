@@ -111,8 +111,8 @@ export function TemplateList({
       practice: 'bg-blue-50 text-blue-700 border-blue-100',
       tournament: 'bg-purple-50 text-purple-700 border-purple-100',
       academic: 'bg-amber-50 text-amber-700 border-amber-100',
-      equipment: 'bg-gray-50 text-gray-700 border-gray-100',
-      travel: 'bg-green-50 text-green-700 border-green-100',
+      equipment: 'bg-warm-50 text-warm-700 border-warm-100',
+      travel: 'bg-primary-50 text-primary-700 border-primary-100',
       fitness: 'bg-cyan-50 text-cyan-700 border-cyan-100',
       mental: 'bg-purple-50 text-purple-700 border-purple-100',
       administrative: 'bg-orange-50 text-orange-700 border-orange-100',
@@ -126,22 +126,11 @@ export function TemplateList({
   if (loading) {
     return (
       <div className={cn('flex items-center justify-center py-12', className)}>
-        <svg className="animate-spin h-6 w-6 text-primary-600" viewBox="0 0 24 24">
-          <circle
-            className="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            strokeWidth="4"
-            fill="none"
-          />
-          <path
-            className="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-          />
-        </svg>
+        <span className="flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+          <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+          <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+        </span>
       </div>
     );
   }
@@ -159,8 +148,8 @@ export function TemplateList({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">Task Templates</h3>
-          <p className="text-sm text-gray-500">
+          <h3 className="text-lg font-semibold text-warm-900">Task Templates</h3>
+          <p className="text-sm text-warm-500">
             Create tasks quickly using pre-defined templates
           </p>
         </div>
@@ -197,7 +186,7 @@ export function TemplateList({
                 'px-3 py-1.5 text-xs font-medium rounded-full border whitespace-nowrap transition-colors',
                 selectedCategory === category
                   ? 'bg-primary-50 text-primary-700 border-primary-200'
-                  : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+                  : 'bg-white text-warm-600 border-warm-200 hover:border-warm-300'
               )}
             >
               {category === 'all' ? 'All Templates' : category.charAt(0).toUpperCase() + category.slice(1)}
@@ -209,7 +198,7 @@ export function TemplateList({
       {/* Templates list */}
       {filteredTemplates.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-4 text-gray-400">
+          <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mb-4 text-warm-400">
             <svg
               width="24"
               height="24"
@@ -224,8 +213,8 @@ export function TemplateList({
               <path d="M14 2v6h6M12 18v-6M9 15h6" />
             </svg>
           </div>
-          <h3 className="text-base font-medium text-gray-900 mb-1">No templates yet</h3>
-          <p className="text-sm text-gray-500 mb-4 max-w-sm">
+          <h3 className="text-base font-medium text-warm-900 mb-1">No templates yet</h3>
+          <p className="text-sm text-warm-500 mb-4 max-w-sm">
             Create templates to quickly assign common tasks to your team.
           </p>
           {onCreateTemplate && (
@@ -242,12 +231,12 @@ export function TemplateList({
           {filteredTemplates.map((template) => (
             <div
               key={template.id}
-              className="bg-white border border-gray-200 rounded-xl p-4 hover:border-gray-300 transition-colors"
+              className="bg-white border border-warm-200 rounded-xl p-4 hover:border-warm-300 transition-colors"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-medium text-gray-900 truncate">
+                    <h4 className="font-medium text-warm-900 truncate">
                       {template.name}
                     </h4>
                     {template.is_active && (
@@ -256,9 +245,9 @@ export function TemplateList({
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-gray-600 truncate">{template.description}</p>
+                  <p className="text-sm text-warm-600 truncate">{template.description}</p>
                   {template.description && (
-                    <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                    <p className="text-xs text-warm-500 mt-1 line-clamp-2">
                       {template.description}
                     </p>
                   )}
@@ -274,7 +263,7 @@ export function TemplateList({
                       </span>
                     )}
                     {template.default_due_days && (
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-warm-500">
                         Due in {template.default_due_days} day
                         {template.default_due_days !== 1 ? 's' : ''}
                       </span>
@@ -290,27 +279,14 @@ export function TemplateList({
                     disabled={isPending && actionInProgress === template.id}
                     className="p-2 text-primary-600 hover:bg-primary-50 rounded-lg transition-colors disabled:opacity-50"
                     title="Create task from template"
+                    aria-label="Create task from template"
                   >
                     {isPending && actionInProgress === template.id ? (
-                      <svg
-                        className="animate-spin h-4 w-4"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                        />
-                      </svg>
+                      <span className="flex items-center gap-1">
+                        <span className="w-1 h-1 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                        <span className="w-1 h-1 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                        <span className="w-1 h-1 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+                      </span>
                     ) : (
                       <svg
                         width="18"
@@ -332,8 +308,9 @@ export function TemplateList({
                     <button
                       onClick={() => onEditTemplate(template)}
                       disabled={isPending}
-                      className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+                      className="p-2 text-warm-500 hover:bg-warm-100 rounded-lg transition-colors disabled:opacity-50"
                       title="Edit template"
+                      aria-label="Edit template"
                     >
                       <svg
                         width="18"
@@ -355,8 +332,9 @@ export function TemplateList({
                   <button
                     onClick={() => handleDuplicate(template.id)}
                     disabled={isPending}
-                    className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+                    className="p-2 text-warm-500 hover:bg-warm-100 rounded-lg transition-colors disabled:opacity-50"
                     title="Duplicate template"
+                    aria-label="Duplicate template"
                   >
                     <svg
                       width="18"
@@ -377,8 +355,9 @@ export function TemplateList({
                   <button
                     onClick={() => handleDelete(template.id)}
                     disabled={isPending}
-                    className="p-2 text-gray-500 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors disabled:opacity-50"
+                    className="p-2 text-warm-500 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors disabled:opacity-50"
                     title="Delete template"
+                    aria-label="Delete template"
                   >
                     <svg
                       width="18"

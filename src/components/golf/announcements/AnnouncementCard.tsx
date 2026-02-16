@@ -68,13 +68,13 @@ export function AnnouncementCard({ announcement, isCoach: _isCoach, playerId: _p
       <div className="relative flex items-start gap-4">
         <div
           className={`w-10 h-10 rounded-full ${
-            isUrgent ? 'bg-red-100' : 'bg-green-100'
+            isUrgent ? 'bg-red-100' : 'bg-primary-100'
           } flex items-center justify-center flex-shrink-0`}
         >
           {isUrgent ? (
             <IconAlertCircle size={20} className="text-red-600" />
           ) : (
-            <IconBell size={20} className="text-green-600" />
+            <IconBell size={20} className="text-primary-600" />
           )}
         </div>
 

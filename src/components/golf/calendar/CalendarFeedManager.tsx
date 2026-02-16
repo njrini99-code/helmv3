@@ -110,7 +110,7 @@ export function CalendarFeedManager({
               'transition-all duration-200',
               showCreateSection
                 ? 'bg-warm-100 text-warm-700'
-                : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                : 'bg-primary-600 text-white hover:bg-primary-700'
             )}
           >
             <Plus className="w-4 h-4" />
@@ -130,7 +130,7 @@ export function CalendarFeedManager({
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search feeds..."
                 className="w-full pl-9 pr-4 py-2 rounded-lg border border-warm-200 text-sm
-                         focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100
+                         focus:border-primary-500 focus:ring-2 focus:ring-primary-100
                          placeholder:text-warm-400 transition-colors"
               />
             </div>
@@ -144,8 +144,8 @@ export function CalendarFeedManager({
                   onChange={(e) => setFilterType(e.target.value as FeedType | 'all')}
                   className="pl-9 pr-10 py-2 rounded-lg border border-warm-200 text-sm font-medium
                            bg-white text-warm-700 cursor-pointer
-                           hover:border-warm-300 focus:outline-none focus:ring-2 focus:ring-emerald-100
-                           focus:border-emerald-500 appearance-none"
+                           hover:border-warm-300 focus:outline-none focus:ring-2 focus:ring-primary-100
+                           focus:border-primary-500 appearance-none"
                 >
                   <option value="all">All Types</option>
                   {allowedTypeList.includes('team') && <option value="team">Team Events</option>}
@@ -161,7 +161,7 @@ export function CalendarFeedManager({
 
       {/* Create feed section (collapsible) */}
       {showCreateSection && (
-        <div className="p-6 border-b border-warm-200 bg-emerald-50/30">
+        <div className="p-6 border-b border-warm-200 bg-primary-50/30">
           <CreateFeedSection
             onCreate={handleCreateFeed}
             onCancel={() => setShowCreateSection(false)}
@@ -179,8 +179,8 @@ export function CalendarFeedManager({
             {feeds.length === 0 ? (
               // Empty state - no feeds at all
               <>
-                <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center mx-auto mb-4">
-                  <Calendar className="w-8 h-8 text-emerald-600" />
+                <div className="w-16 h-16 rounded-full bg-primary-50 flex items-center justify-center mx-auto mb-4">
+                  <Calendar className="w-8 h-8 text-primary-600" />
                 </div>
                 <h3 className="text-lg font-semibold text-warm-900 mb-2">
                   No calendar feeds yet
@@ -193,7 +193,7 @@ export function CalendarFeedManager({
                   type="button"
                   onClick={() => setShowCreateSection(true)}
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg
-                           bg-emerald-600 hover:bg-emerald-700 text-white font-medium
+                           bg-primary-600 hover:bg-primary-700 text-white font-medium
                            transition-colors"
                 >
                   <Plus className="w-4 h-4" />
@@ -271,7 +271,7 @@ export function CompactFeedManager({
         <div className="space-y-2 mb-3">
           {feeds.slice(0, 3).map((feed) => (
             <div key={feed.id} className="flex items-center gap-2 text-xs">
-              <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+              <div className="w-2 h-2 rounded-full bg-primary-500"></div>
               <span className="text-warm-700 truncate">{feed.name}</span>
             </div>
           ))}

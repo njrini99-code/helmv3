@@ -57,7 +57,7 @@ export function DraftIndicator({
           <div className="flex items-center gap-2">
             <IconRefresh
               size={compact ? 14 : 16}
-              className="text-emerald-600 animate-spin"
+              className="text-primary-600 animate-spin"
             />
             {!compact && (
               <span className="text-sm text-warm-500">Saving...</span>
@@ -71,18 +71,18 @@ export function DraftIndicator({
             <div className="relative">
               <IconCheck
                 size={compact ? 14 : 16}
-                className="text-emerald-600"
+                className="text-primary-600"
               />
               {/* Subtle pulse animation on save */}
               <div className="absolute inset-0 animate-ping">
                 <IconCheck
                   size={compact ? 14 : 16}
-                  className="text-emerald-600 opacity-50"
+                  className="text-primary-600 opacity-50"
                 />
               </div>
             </div>
             {!compact && (
-              <span className="text-sm text-emerald-600">
+              <span className="text-sm text-primary-600">
                 Auto-saved {displayTime || 'just now'}
               </span>
             )}
@@ -156,7 +156,7 @@ export function DraftIndicator({
           : saveStatus.status === 'offline'
           ? 'bg-warm-50 border border-warm-200'
           : saveStatus.status === 'saved'
-          ? 'bg-emerald-50 border border-emerald-200'
+          ? 'bg-primary-50 border border-primary-200'
           : 'bg-white/60 border border-warm-200',
         'transition-all duration-300',
         className

@@ -591,7 +591,7 @@ export function RoundReviewEditor({
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-gradient-to-br from-primary-500 to-emerald-600 rounded-xl shadow-lg shadow-primary-500/20">
+            <div className="p-2 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl shadow-lg shadow-primary-500/20">
               <IconSparkles size={18} className="text-white" />
             </div>
             <div>
@@ -615,7 +615,7 @@ export function RoundReviewEditor({
           {!isPublished && (
             <Button
               onClick={() => setShowPublishConfirm(true)}
-              className="bg-gradient-to-r from-primary-600 to-emerald-600"
+              className="bg-gradient-to-r from-primary-600 to-primary-600"
             >
               <IconSend size={14} className="mr-1.5" />
               Publish to Player
@@ -623,7 +623,7 @@ export function RoundReviewEditor({
           )}
 
           {isPublished && (
-            <span className="px-3 py-1.5 text-xs font-medium bg-green-100 text-green-700 rounded-full flex items-center gap-1">
+            <span className="px-3 py-1.5 text-xs font-medium bg-primary-100 text-primary-700 rounded-full flex items-center gap-1">
               <IconCheck size={12} />
               Published
             </span>
@@ -649,7 +649,7 @@ export function RoundReviewEditor({
         </div>
         <div className="w-px h-4 bg-warm-200" />
         <div className="flex items-center gap-2">
-          <IconCheck size={14} className="text-green-500" />
+          <IconCheck size={14} className="text-primary-500" />
           <span className="text-sm font-medium text-warm-700">
             {reviewedCount}/{localReview.insights.length} reviewed
           </span>
@@ -711,7 +711,7 @@ export function RoundReviewEditor({
               <p className="text-xs text-warm-500">Review includes:</p>
               <ul className="text-sm text-warm-700 space-y-1">
                 <li className="flex items-center gap-2">
-                  <IconCheck size={14} className="text-green-500" />
+                  <IconCheck size={14} className="text-primary-500" />
                   {localReview.insights.length - hiddenCount} visible insights
                 </li>
                 <li className="flex items-center gap-2">

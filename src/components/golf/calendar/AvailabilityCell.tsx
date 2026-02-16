@@ -231,7 +231,7 @@ export function AvailabilityBar({
         {/* Available segment */}
         {availablePercentage > 0 && (
           <div
-            className="bg-emerald-500 transition-all duration-300"
+            className="bg-primary-500 transition-all duration-300"
             style={{ width: `${availablePercentage}%` }}
             aria-hidden="true"
           />

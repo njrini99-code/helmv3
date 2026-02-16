@@ -94,13 +94,13 @@ function FileTypeIcon({ mimeType, className }: { mimeType: string; className?: s
     case 'audio':
       return <FileMusicIcon className={cn('text-pink-500', className)} />;
     case 'spreadsheet':
-      return <FileSpreadsheetIcon className={cn('text-green-500', className)} />;
+      return <FileSpreadsheetIcon className={cn('text-primary-500', className)} />;
     case 'document':
       return <FileTextIcon className={cn('text-blue-600', className)} />;
     case 'text':
-      return <FileTextIcon className={cn('text-gray-500', className)} />;
+      return <FileTextIcon className={cn('text-warm-500', className)} />;
     default:
-      return <FileIcon className={cn('text-gray-400', className)} />;
+      return <FileIcon className={cn('text-warm-400', className)} />;
   }
 }
 
@@ -181,6 +181,7 @@ export function DocumentCard({
                     size="icon-sm"
                     onClick={handlePreview}
                     title="Preview"
+                    aria-label="Preview document"
                   >
                     <EyeIcon className="h-4 w-4" />
                   </Button>
@@ -190,6 +191,7 @@ export function DocumentCard({
                   size="icon-sm"
                   onClick={handleDownload}
                   title="Download"
+                  aria-label="Download document"
                 >
                   <DownloadIcon className="h-4 w-4" />
                 </Button>
@@ -197,7 +199,7 @@ export function DocumentCard({
                 {/* More actions dropdown */}
                 <Dropdown
                   trigger={
-                    <Button variant="ghost" size="icon-sm">
+                    <Button variant="ghost" size="icon-sm" aria-label="More actions">
                       <MoreVerticalIcon className="h-4 w-4" />
                     </Button>
                   }
@@ -274,7 +276,7 @@ export function DocumentCard({
                 className={cn(
                   'text-xs gap-1',
                   document.is_public
-                    ? 'text-green-600 border-green-200 bg-green-50 dark:bg-green-950'
+                    ? 'text-primary-600 border-primary-200 bg-primary-50 dark:bg-primary-950'
                     : 'text-amber-600 border-amber-200 bg-amber-50 dark:bg-amber-950'
                 )}
               >

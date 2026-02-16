@@ -275,7 +275,8 @@ export function PatternDashboard({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden"
+            transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
+            style={{ overflow: 'hidden' }}
           >
             <GlassCard padding="md" hover={false}>
               <div className="flex flex-wrap gap-6">

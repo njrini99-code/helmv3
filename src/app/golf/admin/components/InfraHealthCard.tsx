@@ -39,13 +39,13 @@ function formatBytes(bytes: number): string {
 }
 
 function responseTimeColor(ms: number): string {
-  if (ms < 500) return 'text-green-600';
+  if (ms < 500) return 'text-primary-600';
   if (ms < 2000) return 'text-amber-600';
   return 'text-red-600';
 }
 
 function errorRateColor(rate: number): string {
-  if (rate < 1) return 'text-green-600';
+  if (rate < 1) return 'text-primary-600';
   if (rate < 5) return 'text-amber-600';
   return 'text-red-600';
 }
@@ -253,7 +253,7 @@ export default function InfraHealthCard({
           <div>
             <p className="text-sm text-warm-500 mb-1">Connection Pool</p>
             <p className="text-lg font-semibold text-warm-900">
-              <span className="text-green-600">
+              <span className="text-primary-600">
                 {dbHealth.activeConnections} active
               </span>
               {' / '}

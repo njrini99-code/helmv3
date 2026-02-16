@@ -45,9 +45,9 @@ const RSVP_OPTIONS: RSVPOption[] = [
     label: 'Going',
     shortLabel: 'Going',
     icon: CheckCircle2,
-    activeClass: 'bg-emerald-600 text-white shadow-lg shadow-emerald-200',
-    inactiveClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    hoverClass: 'hover:bg-emerald-100 active:bg-emerald-200',
+    activeClass: 'bg-primary-600 text-white shadow-lg shadow-primary-200',
+    inactiveClass: 'bg-primary-50 text-primary-700 border-primary-200',
+    hoverClass: 'hover:bg-primary-100 active:bg-primary-200',
   },
   {
     value: 'tentative',

@@ -147,8 +147,8 @@ export function TemplateSelector({
       practice: 'bg-blue-50 text-blue-700',
       tournament: 'bg-purple-50 text-purple-700',
       academic: 'bg-amber-50 text-amber-700',
-      equipment: 'bg-gray-50 text-gray-700',
-      travel: 'bg-green-50 text-green-700',
+      equipment: 'bg-warm-50 text-warm-700',
+      travel: 'bg-primary-50 text-primary-700',
       fitness: 'bg-cyan-50 text-cyan-700',
       mental: 'bg-purple-50 text-purple-700',
       administrative: 'bg-orange-50 text-orange-700',
@@ -176,7 +176,7 @@ export function TemplateSelector({
             strokeWidth="1.5"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="text-gray-400"
+            className="text-warm-400"
           >
             <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
             <path d="M14 2v6h6M12 18v-6M9 15h6" />
@@ -190,7 +190,7 @@ export function TemplateSelector({
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder="Search templates..."
-          className="w-full pl-10 pr-4 py-2.5 text-sm bg-white border border-gray-200 rounded-lg placeholder:text-gray-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50"
+          className="w-full pl-10 pr-4 py-2.5 text-sm bg-white border border-warm-200 rounded-lg placeholder:text-warm-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50"
         />
         {searchQuery && (
           <button
@@ -198,7 +198,8 @@ export function TemplateSelector({
               setSearchQuery('');
               inputRef.current?.focus();
             }}
-            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+            className="absolute inset-y-0 right-0 pr-3 flex items-center text-warm-400 hover:text-warm-600"
+            aria-label="Clear search"
           >
             <svg
               width="14"
@@ -218,29 +219,18 @@ export function TemplateSelector({
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-80 overflow-hidden">
+        <div className="absolute z-50 w-full mt-1 bg-white border border-warm-200 rounded-xl shadow-lg max-h-80 overflow-hidden">
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <svg className="animate-spin h-5 w-5 text-primary-600" viewBox="0 0 24 24">
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                  fill="none"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                />
-              </svg>
+              <span className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+              </span>
             </div>
           ) : filteredTemplates.length === 0 ? (
             <div className="py-6 px-4 text-center">
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-warm-500">
                 {searchQuery ? 'No templates match your search' : 'No templates available'}
               </p>
             </div>
@@ -248,8 +238,8 @@ export function TemplateSelector({
             <div className="overflow-y-auto max-h-72">
               {/* Quick Access Section (when no search) */}
               {!searchQuery && recentTemplates.length > 0 && (
-                <div className="px-3 py-2 border-b border-gray-100">
-                  <p className="text-xs font-medium text-gray-500 mb-2">Quick Access</p>
+                <div className="px-3 py-2 border-b border-warm-100">
+                  <p className="text-xs font-medium text-warm-500 mb-2">Quick Access</p>
                   <div className="flex flex-wrap gap-2">
                     {recentTemplates.map((template) => (
                       <button
@@ -259,25 +249,11 @@ export function TemplateSelector({
                         className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors disabled:opacity-50"
                       >
                         {creatingId === template.id ? (
-                          <svg
-                            className="animate-spin h-3 w-3"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                          >
-                            <circle
-                              className="opacity-25"
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                            />
-                            <path
-                              className="opacity-75"
-                              fill="currentColor"
-                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                            />
-                          </svg>
+                          <span className="flex items-center gap-0.5">
+                            <span className="w-1 h-1 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                            <span className="w-1 h-1 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                            <span className="w-1 h-1 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+                          </span>
                         ) : (
                           <svg
                             width="12"
@@ -308,31 +284,17 @@ export function TemplateSelector({
                     className={cn(
                       'w-full px-3 py-2.5 text-left flex items-start gap-3 transition-colors',
                       'disabled:opacity-50',
-                      selectedIndex === index ? 'bg-primary-50' : 'hover:bg-gray-50'
+                      selectedIndex === index ? 'bg-primary-50' : 'hover:bg-warm-50'
                     )}
                   >
                     {/* Icon */}
-                    <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-warm-100 flex items-center justify-center text-warm-500">
                       {creatingId === template.id ? (
-                        <svg
-                          className="animate-spin h-4 w-4"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          />
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                          />
-                        </svg>
+                        <span className="flex items-center gap-0.5">
+                          <span className="w-1 h-1 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                          <span className="w-1 h-1 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                          <span className="w-1 h-1 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+                        </span>
                       ) : (
                         <svg
                           width="16"
@@ -351,7 +313,7 @@ export function TemplateSelector({
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-sm text-gray-900 truncate">
+                        <span className="font-medium text-sm text-warm-900 truncate">
                           {template.name}
                         </span>
                         {template.is_active && (
@@ -360,7 +322,7 @@ export function TemplateSelector({
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-gray-500 truncate">{template.description}</p>
+                      <p className="text-xs text-warm-500 truncate">{template.description}</p>
                       <div className="flex items-center gap-2 mt-1">
                         {template.category && (
                           <span
@@ -373,7 +335,7 @@ export function TemplateSelector({
                           </span>
                         )}
                         {template.default_due_days && (
-                          <span className="text-xs text-gray-400">
+                          <span className="text-xs text-warm-400">
                             {template.default_due_days}d
                           </span>
                         )}
@@ -395,17 +357,17 @@ export function TemplateSelector({
           )}
 
           {/* Footer hint */}
-          <div className="px-3 py-2 border-t border-gray-100 bg-gray-50">
-            <p className="text-xs text-gray-500 flex items-center gap-2">
-              <kbd className="px-1.5 py-0.5 bg-white border border-gray-200 rounded text-gray-600">
+          <div className="px-3 py-2 border-t border-warm-100 bg-warm-50">
+            <p className="text-xs text-warm-500 flex items-center gap-2">
+              <kbd className="px-1.5 py-0.5 bg-white border border-warm-200 rounded text-warm-600">
                 ↑↓
               </kbd>
               Navigate
-              <kbd className="px-1.5 py-0.5 bg-white border border-gray-200 rounded text-gray-600">
+              <kbd className="px-1.5 py-0.5 bg-white border border-warm-200 rounded text-warm-600">
                 ↵
               </kbd>
               Select
-              <kbd className="px-1.5 py-0.5 bg-white border border-gray-200 rounded text-gray-600">
+              <kbd className="px-1.5 py-0.5 bg-white border border-warm-200 rounded text-warm-600">
                 Esc
               </kbd>
               Close

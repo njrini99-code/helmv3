@@ -1,0 +1,362 @@
+'use client';
+
+import { useState, useMemo } from 'react';
+import { cn } from '@/lib/utils';
+import { ChevronRight, Search, AlertTriangle, Sparkles, Target } from 'lucide-react';
+import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
+import { ActivityDot } from './ActivityDot';
+import { timeAgo } from './admin-utils';
+
+type TeamMember = AdminDashboardData['userActivity']['teams'][0]['members'][0];
+type TeamData = AdminDashboardData['userActivity']['teams'][0];
+
+interface Props {
+  teams: AdminDashboardData['userActivity']['teams'];
+  unassigned: AdminDashboardData['userActivity']['unassigned'];
+  onSelectUser?: (userId: string) => void;
+  expandedTeamId?: string | null;
+}
+
+const roleColors: Record<string, string> = {
+  coach: 'bg-blue-50 text-blue-700',
+  player: 'bg-primary-50 text-primary-700',
+  admin: 'bg-violet-50 text-violet-700',
+};
+
+type RoleFilter = 'all' | 'coach' | 'player' | 'admin';
+type ActivityFilter = 'all' | 'active_7d' | 'inactive_30d' | 'never';
+
+function getInitials(name: string | null, email: string): string {
+  if (name && name.trim()) {
+    const parts = name.trim().split(/\s+/);
+    return parts.length >= 2
+      ? `${parts[0]![0]}${parts[parts.length - 1]![0]}`.toUpperCase()
+      : (parts[0]?.[0] ?? '?').toUpperCase();
+  }
+  return (email[0] ?? '?').toUpperCase();
+}
+
+function TeamSection({
+  team,
+  isExpanded,
+  onToggle,
+  onSelectUser,
+  searchQuery,
+  roleFilter,
+  activityFilter,
+}: {
+  team: TeamData;
+  isExpanded: boolean;
+  onToggle: () => void;
+  onSelectUser?: (userId: string) => void;
+  searchQuery: string;
+  roleFilter: RoleFilter;
+  activityFilter: ActivityFilter;
+}) {
+  const filteredMembers = useMemo(() => {
+    return team.members.filter((m) => {
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        if (!m.email.toLowerCase().includes(q) && !(m.name ?? '').toLowerCase().includes(q)) return false;
+      }
+      if (roleFilter !== 'all' && m.role !== roleFilter) return false;
+      if (activityFilter === 'active_7d' && m.activityStatus !== 'active_today' && m.activityStatus !== 'active_week') return false;
+      if (activityFilter === 'inactive_30d' && m.activityStatus !== 'inactive') return false;
+      if (activityFilter === 'never' && m.activityStatus !== 'never') return false;
+      return true;
+    });
+  }, [team.members, searchQuery, roleFilter, activityFilter]);
+
+  if (filteredMembers.length === 0 && searchQuery) return null;
+
+  return (
+    <div className="border-b border-warm-100/50 last:border-b-0">
+      {/* Team header */}
+      <button
+        onClick={onToggle}
+        className={cn(
+          'w-full flex items-center gap-3 px-4 py-3',
+          'hover:bg-warm-50/50 transition-colors duration-200',
+          'text-left'
+        )}
+      >
+        <ChevronRight
+          size={16}
+          className={cn(
+            'text-warm-400 transition-transform duration-200 flex-shrink-0',
+            isExpanded && 'rotate-90'
+          )}
+        />
+        <span className="text-sm font-semibold text-warm-900">{team.teamName}</span>
+        {team.season && <span className="text-[10px] text-warm-400">{team.season}</span>}
+        <span className="text-xs text-warm-400 font-medium">{team.memberCount} members</span>
+        <div className="ml-auto flex items-center gap-2">
+          <span className={cn(
+            'px-2 py-0.5 rounded-full text-[10px] font-semibold',
+            team.healthStatus === 'healthy' ? 'bg-primary-50 text-primary-700' :
+            team.healthStatus === 'warning' ? 'bg-amber-50 text-amber-700' :
+            'bg-red-50 text-red-700'
+          )}>
+            {team.activeCount} active
+          </span>
+        </div>
+      </button>
+
+      {/* Members table */}
+      {isExpanded && (
+        <div className="px-2 pb-2">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-warm-100">
+                <th className="px-3 py-2 text-left text-[10px] font-semibold text-warm-400 uppercase tracking-wider">User</th>
+                <th className="px-3 py-2 text-left text-[10px] font-semibold text-warm-400 uppercase tracking-wider">Role</th>
+                <th className="px-3 py-2 text-left text-[10px] font-semibold text-warm-400 uppercase tracking-wider hidden md:table-cell">Last Active</th>
+                <th className="px-3 py-2 text-right text-[10px] font-semibold text-warm-400 uppercase tracking-wider hidden lg:table-cell">Rounds</th>
+                <th className="px-3 py-2 text-right text-[10px] font-semibold text-warm-400 uppercase tracking-wider hidden lg:table-cell">AI Insights</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredMembers.map((member) => (
+                <MemberRow key={member.id} member={member} onSelect={onSelectUser} />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MemberRow({ member, onSelect }: { member: TeamMember; onSelect?: (id: string) => void }) {
+  return (
+    <tr
+      onClick={() => onSelect?.(member.id)}
+      className={cn(
+        'border-b border-warm-50 transition-colors duration-150',
+        'hover:bg-warm-50/50 cursor-pointer'
+      )}
+    >
+      <td className="px-3 py-2.5">
+        <div className="flex items-center gap-2.5">
+          <div className="relative">
+            <div className="w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
+              <span className="text-xs font-bold text-primary-600">
+                {getInitials(member.name, member.email)}
+              </span>
+            </div>
+            <div className="absolute -bottom-0.5 -right-0.5">
+              <ActivityDot status={member.activityStatus} size="sm" />
+            </div>
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-warm-900 truncate">{member.name || member.email.split('@')[0]}</p>
+            <p className="text-[11px] text-warm-400 truncate">{member.email}</p>
+          </div>
+        </div>
+      </td>
+      <td className="px-3 py-2.5">
+        <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase', roleColors[member.role] ?? 'bg-warm-100 text-warm-500')}>
+          {member.role}
+        </span>
+      </td>
+      <td className="px-3 py-2.5 hidden md:table-cell">
+        <ActivityDot status={member.activityStatus} showLabel labelOverride={timeAgo(member.last_seen)} />
+      </td>
+      <td className="px-3 py-2.5 text-right hidden lg:table-cell">
+        <div className="flex items-center justify-end gap-1">
+          <Target size={12} className="text-warm-300" />
+          <span className="text-sm font-medium text-warm-700 tabular-nums">{member.roundsEntered}</span>
+        </div>
+      </td>
+      <td className="px-3 py-2.5 text-right hidden lg:table-cell">
+        <div className="flex items-center justify-end gap-1">
+          <Sparkles size={12} className="text-warm-300" />
+          <span className="text-sm font-medium text-warm-700 tabular-nums">{member.insightsReceived}</span>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+export function TeamUserDirectory({ teams, unassigned, onSelectUser, expandedTeamId }: Props) {
+  const [expanded, setExpanded] = useState<Set<string>>(() => {
+    const initial = new Set<string>();
+    if (expandedTeamId) initial.add(expandedTeamId);
+    else if (teams.length > 0 && teams[0]) initial.add(teams[0].teamId);
+    return initial;
+  });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
+  const [activityFilter, setActivityFilter] = useState<ActivityFilter>('all');
+
+  function toggleTeam(teamId: string) {
+    const next = new Set(expanded);
+    if (next.has(teamId)) next.delete(teamId);
+    else next.add(teamId);
+    setExpanded(next);
+  }
+
+  const roles: { label: string; value: RoleFilter }[] = [
+    { label: 'All', value: 'all' },
+    { label: 'Coaches', value: 'coach' },
+    { label: 'Players', value: 'player' },
+    { label: 'Admin', value: 'admin' },
+  ];
+
+  const filteredUnassigned = useMemo(() => {
+    return unassigned.filter((u) => {
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        if (!u.email.toLowerCase().includes(q)) return false;
+      }
+      if (roleFilter !== 'all' && u.role !== roleFilter) return false;
+      if (activityFilter === 'active_7d' && u.activityStatus !== 'active_today' && u.activityStatus !== 'active_week') return false;
+      if (activityFilter === 'inactive_30d' && u.activityStatus !== 'inactive') return false;
+      if (activityFilter === 'never' && u.activityStatus !== 'never') return false;
+      return true;
+    });
+  }, [unassigned, searchQuery, roleFilter, activityFilter]);
+
+  return (
+    <div className={cn(
+      'bg-white/70 backdrop-blur-xl',
+      'border border-white/20 rounded-2xl',
+      'shadow-glass overflow-hidden'
+    )}>
+      {/* Filter bar */}
+      <div className="flex flex-wrap items-center gap-2 px-4 py-3 border-b border-warm-100 bg-warm-50/30">
+        {/* Search */}
+        <div className="relative flex-1 min-w-[200px] max-w-xs">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
+          <input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search users..."
+            className={cn(
+              'w-full pl-9 pr-3 py-2 rounded-[10px] text-sm',
+              'bg-white/80 border border-warm-200/50',
+              'text-warm-900 placeholder:text-warm-400',
+              'focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300',
+              'transition-all duration-200'
+            )}
+          />
+        </div>
+
+        {/* Role pills */}
+        <div className="flex items-center gap-1">
+          {roles.map((r) => (
+            <button
+              key={r.value}
+              onClick={() => setRoleFilter(r.value)}
+              className={cn(
+                'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors duration-200',
+                roleFilter === r.value
+                  ? 'bg-warm-900 text-white'
+                  : 'bg-white/60 text-warm-600 hover:bg-warm-100 border border-warm-200/50'
+              )}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Activity filter */}
+        <select
+          value={activityFilter}
+          onChange={(e) => setActivityFilter(e.target.value as ActivityFilter)}
+          className={cn(
+            'px-3 py-2 rounded-[10px] text-xs font-medium',
+            'bg-white/80 border border-warm-200/50 text-warm-600',
+            'focus:outline-none focus:ring-2 focus:ring-primary-500/20'
+          )}
+        >
+          <option value="all">All Activity</option>
+          <option value="active_7d">Active (7d)</option>
+          <option value="inactive_30d">Inactive (30d+)</option>
+          <option value="never">Never Logged In</option>
+        </select>
+      </div>
+
+      {/* Team sections */}
+      <div>
+        {teams.map((team) => (
+          <TeamSection
+            key={team.teamId}
+            team={team}
+            isExpanded={expanded.has(team.teamId)}
+            onToggle={() => toggleTeam(team.teamId)}
+            onSelectUser={onSelectUser}
+            searchQuery={searchQuery}
+            roleFilter={roleFilter}
+            activityFilter={activityFilter}
+          />
+        ))}
+
+        {/* Unassigned users */}
+        {filteredUnassigned.length > 0 && (
+          <div className="border-t border-warm-200/50">
+            <div className="border-l-2 border-l-amber-400 mx-2">
+              <button
+                onClick={() => toggleTeam('__unassigned__')}
+                className={cn(
+                  'w-full flex items-center gap-3 px-4 py-3',
+                  'hover:bg-warm-50/50 transition-colors duration-200',
+                  'text-left'
+                )}
+              >
+                <ChevronRight
+                  size={16}
+                  className={cn(
+                    'text-warm-400 transition-transform duration-200 flex-shrink-0',
+                    expanded.has('__unassigned__') && 'rotate-90'
+                  )}
+                />
+                <AlertTriangle size={14} className="text-amber-500 flex-shrink-0" />
+                <span className="text-sm font-semibold text-warm-700">No Team Assigned</span>
+                <span className="text-xs text-amber-600 font-medium">{filteredUnassigned.length} users</span>
+              </button>
+
+              {expanded.has('__unassigned__') && (
+                <div className="px-2 pb-2">
+                  <table className="w-full">
+                    <tbody>
+                      {filteredUnassigned.map((u) => (
+                        <tr
+                          key={u.id}
+                          onClick={() => onSelectUser?.(u.id)}
+                          className="border-b border-warm-50 hover:bg-warm-50/50 cursor-pointer transition-colors"
+                        >
+                          <td className="px-3 py-2.5">
+                            <div className="flex items-center gap-2.5">
+                              <div className="relative">
+                                <div className="w-8 h-8 rounded-lg bg-warm-100 flex items-center justify-center">
+                                  <span className="text-xs font-bold text-warm-500">
+                                    {(u.email[0] ?? '?').toUpperCase()}
+                                  </span>
+                                </div>
+                                <div className="absolute -bottom-0.5 -right-0.5">
+                                  <ActivityDot status={u.activityStatus} size="sm" />
+                                </div>
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium text-warm-900 truncate">{u.email}</p>
+                                <p className="text-[11px] text-warm-400">{u.role}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-3 py-2.5 hidden md:table-cell">
+                            <ActivityDot status={u.activityStatus} showLabel labelOverride={timeAgo(u.last_seen)} />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

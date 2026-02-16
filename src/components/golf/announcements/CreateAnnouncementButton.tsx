@@ -89,7 +89,7 @@ export function CreateAnnouncementButton() {
                     name="body"
                     rows={4}
                     required
-                    className="w-full px-4 py-2.5 rounded-xl border border-warm-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 text-warm-900 placeholder:text-warm-400 transition-colors resize-none text-sm"
+                    className="w-full px-4 py-2.5 rounded-xl border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-warm-900 placeholder:text-warm-400 transition-colors resize-none text-sm"
                     placeholder="Announcement details..."
                   />
                 </div>
@@ -101,7 +101,7 @@ export function CreateAnnouncementButton() {
                   <select
                     name="urgency"
                     defaultValue="normal"
-                    className="w-full px-4 py-2.5 rounded-xl border border-warm-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 text-warm-900 bg-white transition-colors text-sm"
+                    className="w-full px-4 py-2.5 rounded-xl border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-warm-900 bg-white transition-colors text-sm"
                   >
                     <option value="low">Low - General information</option>
                     <option value="normal">Normal - Standard update</option>
@@ -115,7 +115,7 @@ export function CreateAnnouncementButton() {
                     type="checkbox"
                     name="requiresAcknowledgement"
                     id="requiresAcknowledgement"
-                    className="w-4 h-4 mt-0.5 rounded border-warm-300 text-green-600 focus:ring-green-500"
+                    className="w-4 h-4 mt-0.5 rounded border-warm-300 text-primary-600 focus:ring-primary-500"
                   />
                   <div>
                     <label htmlFor="requiresAcknowledgement" className="text-sm font-medium text-warm-700 cursor-pointer">

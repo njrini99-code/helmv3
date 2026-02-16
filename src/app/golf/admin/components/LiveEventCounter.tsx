@@ -54,8 +54,8 @@ export function LiveEventCounter({
       <div className="relative flex items-center gap-1.5">
         {connectionState === 'connected' ? (
           <>
-            <div className="w-2 h-2 rounded-full bg-emerald-500" />
-            <span className="text-[10px] font-medium text-emerald-600 uppercase tracking-wider">
+            <div className="w-2 h-2 rounded-full bg-primary-500" />
+            <span className="text-[10px] font-medium text-primary-600 uppercase tracking-wider">
               Live
             </span>
           </>
@@ -136,8 +136,8 @@ export function LiveEventCounterMini({
   if (!hasIssues && isConnected) {
     return (
       <div className={cn('flex items-center gap-1', className)}>
-        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-        <span className="text-[10px] text-emerald-600">All clear</span>
+        <div className="w-1.5 h-1.5 rounded-full bg-primary-500" />
+        <span className="text-[10px] text-primary-600">All clear</span>
       </div>
     );
   }
@@ -186,7 +186,7 @@ export function LiveEventBadge({
   count,
   variant = 'error',
   className,
-  pulse = false,
+  pulse: _pulse = false,
 }: LiveEventBadgeProps) {
   if (count === 0) return null;
 

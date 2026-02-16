@@ -327,6 +327,7 @@ export function useGolfConversations() {
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const supabase = createClient();
+  const conversationIdsRef = useRef<Set<string>>(new Set());
 
   // Get the current user on mount
   useEffect(() => {
@@ -392,6 +393,15 @@ export function useGolfConversations() {
     const existingIds = new Set(conversationsData?.map(c => c.id) || []);
 
     if (groupConvs) {
+      // Collect team chat conversations that aren't already in the RPC results
+      const teamChats: Array<{
+        id: string;
+        created_at: string;
+        updated_at: string;
+        title: string | null;
+        created_by: string | null;
+      }> = [];
+
       for (const gc of groupConvs) {
         const conv = gc.conversation as {
           id: string;
@@ -403,46 +413,77 @@ export function useGolfConversations() {
         } | null;
 
         if (conv && conv.is_team_chat && !existingIds.has(conv.id)) {
-          // Fetch participant count and last message for team chat
-          const [{ count: participantCount }, { data: lastMsg }] = await Promise.all([
-            supabase
-              .from('golf_conversation_participants')
-              .select('*', { count: 'exact', head: true })
-              .eq('conversation_id', conv.id),
-            supabase
-              .from('golf_messages')
-              .select('content, created_at, sender_id')
-              .eq('conversation_id', conv.id)
-              .order('created_at', { ascending: false })
-              .limit(1)
-              .maybeSingle()
-          ]);
+          teamChats.push(conv);
+        }
+      }
 
-          // Fetch unread count for user
-          const { data: participantData } = await supabase
+      // Batch fetch all group chat metadata in parallel (instead of N+1 per chat)
+      if (teamChats.length > 0) {
+        const teamChatIds = teamChats.map(c => c.id);
+
+        const [participantCounts, lastMessages, userParticipantData] = await Promise.all([
+          // Participant counts for all group chats
+          supabase
             .from('golf_conversation_participants')
-            .select('last_read_at')
-            .eq('conversation_id', conv.id)
-            .eq('user_id', userId)
-            .single();
+            .select('conversation_id')
+            .in('conversation_id', teamChatIds),
+          // Last messages for all group chats
+          supabase
+            .from('golf_messages')
+            .select('conversation_id, content, created_at, sender_id')
+            .in('conversation_id', teamChatIds)
+            .order('created_at', { ascending: false }),
+          // User's last_read_at for all group chats
+          supabase
+            .from('golf_conversation_participants')
+            .select('conversation_id, last_read_at')
+            .in('conversation_id', teamChatIds)
+            .eq('user_id', userId),
+        ]);
+
+        // Build lookup maps
+        const countByConv = new Map<string, number>();
+        (participantCounts.data || []).forEach(p => {
+          countByConv.set(p.conversation_id, (countByConv.get(p.conversation_id) || 0) + 1);
+        });
+
+        const lastMsgByConv = new Map<string, { content: string | null; created_at: string | null; sender_id: string }>();
+        (lastMessages.data || []).forEach(m => {
+          if (!lastMsgByConv.has(m.conversation_id)) {
+            lastMsgByConv.set(m.conversation_id, { content: m.content, created_at: m.created_at, sender_id: m.sender_id });
+          }
+        });
+
+        const lastReadByConv = new Map<string, string | null>();
+        (userParticipantData.data || []).forEach(p => {
+          lastReadByConv.set(p.conversation_id, p.last_read_at);
+        });
+
+        // Batch fetch unread counts — get all messages from others in these conversations
+        const { data: allOtherMessages } = await supabase
+          .from('golf_messages')
+          .select('conversation_id, created_at')
+          .in('conversation_id', teamChatIds)
+          .neq('sender_id', userId);
+
+        const otherMsgsByConv = new Map<string, Array<{ created_at: string | null }>>();
+        (allOtherMessages || []).forEach(m => {
+          if (!otherMsgsByConv.has(m.conversation_id)) {
+            otherMsgsByConv.set(m.conversation_id, []);
+          }
+          otherMsgsByConv.get(m.conversation_id)!.push({ created_at: m.created_at });
+        });
+
+        for (const conv of teamChats) {
+          const lastMsg = lastMsgByConv.get(conv.id);
+          const lastReadAt = lastReadByConv.get(conv.id);
+          const otherMsgs = otherMsgsByConv.get(conv.id) || [];
 
           let unreadCount = 0;
-          if (participantData?.last_read_at) {
-            const { count } = await supabase
-              .from('golf_messages')
-              .select('*', { count: 'exact', head: true })
-              .eq('conversation_id', conv.id)
-              .gt('created_at', participantData.last_read_at)
-              .neq('sender_id', userId);
-            unreadCount = count || 0;
+          if (lastReadAt) {
+            unreadCount = otherMsgs.filter(m => m.created_at && m.created_at > lastReadAt).length;
           } else if (lastMsg) {
-            // If never read but there are messages, count all from others as unread
-            const { count } = await supabase
-              .from('golf_messages')
-              .select('*', { count: 'exact', head: true })
-              .eq('conversation_id', conv.id)
-              .neq('sender_id', userId);
-            unreadCount = count || 0;
+            unreadCount = otherMsgs.length;
           }
 
           groupConversations.push({
@@ -458,7 +499,7 @@ export function useGolfConversations() {
             participant_names: [],
             is_group: true,
             title: conv.title,
-            participant_count: participantCount || 0,
+            participant_count: countByConv.get(conv.id) || 0,
           });
         }
       }
@@ -611,6 +652,7 @@ export function useGolfConversations() {
     });
 
     setConversations(transformedConversations);
+    conversationIdsRef.current = new Set(transformedConversations.map(c => c.id));
     setLoading(false);
   }, [userId, supabase]);
 
@@ -652,15 +694,10 @@ export function useGolfConversations() {
         },
         (payload) => {
           // Only refetch if this conversation involves the current user
-          // The conversations table updated_at changes when new messages come in
-          setConversations((prev) => {
-            const exists = prev.some((c) => c.id === payload.new.id);
-            if (exists) {
-              // Trigger a refetch to get updated last_message
-              fetchConversations();
-            }
-            return prev;
-          });
+          // Use ref to avoid stale closure and async side effects in state updater
+          if (conversationIdsRef.current.has(payload.new.id as string)) {
+            fetchConversations();
+          }
         }
       )
       .subscribe();

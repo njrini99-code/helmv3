@@ -167,7 +167,7 @@ export function TeamInfoPlayer({ team, coach, roster, announcements, tasks = [] 
                       <span className={`px-1.5 py-0.5 text-xs font-semibold rounded uppercase tracking-wider flex-shrink-0 ${
                         task.priority === 'high' || task.priority === 'urgent'
                           ? 'bg-red-50 text-red-600'
-                          : 'bg-slate-100 text-slate-500'
+                          : 'bg-warm-100 text-warm-500'
                       }`}>
                         {task.priority}
                       </span>
@@ -198,7 +198,7 @@ export function TeamInfoPlayer({ team, coach, roster, announcements, tasks = [] 
               ) : (
                 roster.slice(0, 5).map((player) => (
                   <div key={player.id} className="flex items-center gap-3 p-4">
-                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-medium">
+                    <div className="w-10 h-10 rounded-full bg-warm-100 flex items-center justify-center text-warm-600 font-medium">
                       {(player.first_name || 'P').charAt(0)}{(player.last_name || '').charAt(0)}
                     </div>
                     <div className="flex-1">

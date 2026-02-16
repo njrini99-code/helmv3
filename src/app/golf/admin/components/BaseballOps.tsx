@@ -16,10 +16,10 @@ const PIPELINE_LABELS: Record<string, string> = {
 };
 
 const PIPELINE_COLORS: Record<string, string> = {
-  watchlist: 'bg-slate-400',
+  watchlist: 'bg-warm-400',
   high_priority: 'bg-amber-400',
-  offer_extended: 'bg-emerald-400',
-  committed: 'bg-emerald-600',
+  offer_extended: 'bg-primary-400',
+  committed: 'bg-primary-600',
   uninterested: 'bg-warm-300',
 };
 
@@ -60,7 +60,7 @@ export function BaseballOps({ baseball }: Props) {
         <div className="bg-white/50 rounded-xl p-3 text-center">
           <p className={cn(
             'text-xl font-semibold tabular-nums',
-            bbOnboardingRate > 60 ? 'text-emerald-700' : 'text-amber-600'
+            bbOnboardingRate > 60 ? 'text-primary-700' : 'text-amber-600'
           )}>{bbOnboardingRate}%</p>
           <p className="text-[10px] text-warm-400 mt-0.5">Onboarded</p>
         </div>

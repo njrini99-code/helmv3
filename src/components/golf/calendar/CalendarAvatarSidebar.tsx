@@ -13,8 +13,11 @@ export interface TeamMember {
   avatar_url?: string;
 }
 
-// Color palette for multi-player selection
-// These use Tailwind color values but remain as objects for dynamic style computation
+// Color palette for multi-player selection — intentional hardcoded hex values.
+// These are applied via inline `style` objects for dynamic avatar backgrounds,
+// so they cannot use Tailwind classes. Each color maps to a standard Tailwind
+// palette value (green-500, blue-500, amber-500, pink-500, purple-500, teal-500,
+// orange-500, cyan-500) for visual consistency.
 export const PLAYER_COLORS = [
   { bg: '#22c55e', light: 'rgba(34, 197, 94, 0.15)', border: 'rgba(34, 197, 94, 0.4)', name: 'Green' },
   { bg: '#3b82f6', light: 'rgba(59, 130, 246, 0.15)', border: 'rgba(59, 130, 246, 0.4)', name: 'Blue' },
@@ -108,6 +111,7 @@ export function CalendarAvatarSidebar({
           <button
             onClick={() => setIsCollapsed(false)}
             className="absolute left-0 top-3 z-30 w-6 h-10 bg-glass backdrop-blur-sm border border-white/40 rounded-r-xl flex items-center justify-center hover:bg-white hover:scale-105 shadow-sm transition-all duration-200"
+            aria-label="Expand player filter"
           >
             <ChevronLeft className="w-3.5 h-3.5 text-warm-500 rotate-180" />
           </button>
@@ -139,7 +143,7 @@ export function CalendarAvatarSidebar({
           className={cn(
             'w-12 h-12 rounded-[14px] flex items-center justify-center font-bold text-[11px] tracking-wide cursor-pointer transition-all duration-200 border-none flex-shrink-0',
             isAllSelected
-              ? 'bg-gradient-to-br from-green-500 to-green-600 text-white shadow-[0_4px_14px_rgba(22,163,74,0.4)]'
+              ? 'bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-[0_4px_14px_rgba(22,163,74,0.4)]'
               : 'bg-warm-100/90 text-warm-500'
           )}
         >
@@ -200,7 +204,7 @@ export function CalendarAvatarSidebar({
                     aria-label={getFullName(member)}
                     className={cn(
                       'w-12 h-12 rounded-[14px] flex items-center justify-center text-sm font-semibold cursor-pointer transition-all duration-200 border-none flex-shrink-0 relative overflow-visible',
-                      !selected && 'bg-gradient-to-br from-stone-50 to-stone-200 text-stone-600 shadow-sm',
+                      !selected && 'bg-gradient-to-br from-warm-50 to-warm-200 text-warm-600 shadow-sm',
                       selected && 'scale-[1.08]',
                     )}
                     style={
@@ -286,6 +290,7 @@ export function CalendarAvatarSidebar({
           <button
             onClick={() => onSyncSettings?.()}
             className="w-12 h-12 rounded-[14px] flex items-center justify-center bg-warm-100/60 text-warm-400 cursor-pointer transition-all duration-200 border-none flex-shrink-0 hover:text-warm-600 hover:bg-warm-100"
+            aria-label="Manage feeds"
           >
             <Settings2 className="w-5 h-5" />
           </button>

@@ -16,13 +16,13 @@ export function PredictionCard({ prediction, playerName }: PredictionCardProps) 
 
   const getTrendIcon = () => {
     if (isNeutral) return <IconTarget size={18} className="text-warm-400" />;
-    if (isPositive) return <IconTrendingDown size={18} className="text-green-500" />;
+    if (isPositive) return <IconTrendingDown size={18} className="text-primary-500" />;
     return <IconTrendingUp size={18} className="text-red-500" />;
   };
 
   const getScoreColor = () => {
     if (isNeutral) return 'text-warm-600';
-    if (isPositive) return 'text-green-600';
+    if (isPositive) return 'text-primary-600';
     return 'text-red-600';
   };
 
@@ -114,7 +114,7 @@ export function PredictionCard({ prediction, playerName }: PredictionCardProps) 
                 <span
                   className={cn(
                     'font-medium',
-                    factor.contribution > 0 ? 'text-red-500' : 'text-green-500'
+                    factor.contribution > 0 ? 'text-red-500' : 'text-primary-500'
                   )}
                 >
                   {factor.contribution > 0 ? '+' : ''}
@@ -137,7 +137,7 @@ export function PredictionCard({ prediction, playerName }: PredictionCardProps) 
           </div>
           <div className="text-center">
             <div className="text-xs text-warm-400">Great Round</div>
-            <div className="text-sm font-medium text-green-500">
+            <div className="text-sm font-medium text-primary-500">
               {Math.round(prediction.tailRisks.greatRoundProbability * 100)}%
             </div>
           </div>

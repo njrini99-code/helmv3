@@ -37,10 +37,10 @@ function DayCellContent({
           className={cn(
             'w-7 h-7 flex items-center justify-center rounded-full text-[13px] font-bold transition-all',
             isCurrentDay
-              ? 'bg-gradient-to-br from-green-500 to-green-600 text-white shadow-[0_2px_10px_rgba(22,163,74,0.4)]'
+              ? 'bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-[0_2px_10px_rgba(22,163,74,0.4)]'
               : isCurrentMonth
-              ? 'text-stone-800'
-              : 'text-stone-350'
+              ? 'text-warm-800'
+              : 'text-warm-350'
           )}
           style={!isCurrentDay && !isCurrentMonth ? { color: 'rgb(168 162 158 / 0.6)' } : undefined}
         >
@@ -49,7 +49,7 @@ function DayCellContent({
         {/* Event count badge for days with many events */}
         {dayEvents.length > 3 && (
           <span
-            className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-green-600/[0.08] text-green-600/70"
+            className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-primary-600/[0.08] text-primary-600/70"
           >
             {dayEvents.length}
           </span>
@@ -94,7 +94,7 @@ function DayCellContent({
 
         {/* +N more indicator */}
         {dayEvents.length > 3 && (
-          <p className="text-xs text-stone-400 pl-2.5 font-medium">
+          <p className="text-xs text-warm-400 pl-2.5 font-medium">
             +{dayEvents.length - 3} more
           </p>
         )}
@@ -145,14 +145,14 @@ function DroppableDayCell({
       }}
       className={cn(
         'min-h-[110px] p-2.5 cursor-pointer transition-all duration-200 relative rounded-xl',
-        isCurrentMonth ? 'bg-white/60' : 'bg-stone-50/30',
+        isCurrentMonth ? 'bg-white/60' : 'bg-warm-50/30',
         'hover:bg-white/80 hover:shadow-sm',
-        isCurrentDay && 'bg-green-50/40 ring-1 ring-green-200/40',
-        isOver && 'bg-green-100/60 ring-2 ring-green-400'
+        isCurrentDay && 'bg-primary-50/40 ring-1 ring-primary-200/40',
+        isOver && 'bg-primary-100/60 ring-2 ring-primary-400'
       )}
     >
       {isOver && (
-        <div className="absolute inset-1 border-2 border-dashed border-green-400 rounded-lg bg-green-50/40 pointer-events-none" aria-hidden="true" />
+        <div className="absolute inset-1 border-2 border-dashed border-primary-400 rounded-lg bg-primary-50/40 pointer-events-none" aria-hidden="true" />
       )}
       <DayCellContent
         date={date}
@@ -201,7 +201,7 @@ export function MonthView({ month, events, onDateClick, onEventClick, isDraggabl
         {DAYS.map((day) => (
           <div
             key={day}
-            className="px-3 py-2.5 text-center text-xs font-semibold uppercase tracking-wider rounded-lg text-stone-500/60"
+            className="px-3 py-2.5 text-center text-xs font-semibold uppercase tracking-wider rounded-lg text-warm-500/60"
           >
             {day}
           </div>
@@ -238,9 +238,9 @@ export function MonthView({ month, events, onDateClick, onEventClick, isDraggabl
               }}
               className={cn(
                 'min-h-[110px] p-2.5 cursor-pointer transition-all duration-200 rounded-xl',
-                isCurrentMonth ? 'bg-white/60' : 'bg-stone-50/30',
+                isCurrentMonth ? 'bg-white/60' : 'bg-warm-50/30',
                 'hover:bg-white/80 hover:shadow-sm',
-                isCurrentDay && 'bg-green-50/40 ring-1 ring-green-200/40'
+                isCurrentDay && 'bg-primary-50/40 ring-1 ring-primary-200/40'
               )}
             >
               <DayCellContent
@@ -258,13 +258,13 @@ export function MonthView({ month, events, onDateClick, onEventClick, isDraggabl
       {/* Empty state for no events this month */}
       {events.length === 0 && (
         <div className="mt-12 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-stone-100/80 mx-auto flex items-center justify-center mb-4">
-            <Calendar className="w-7 h-7 text-stone-400" />
+          <div className="w-16 h-16 rounded-2xl bg-warm-100/80 mx-auto flex items-center justify-center mb-4">
+            <Calendar className="w-7 h-7 text-warm-400" />
           </div>
-          <h3 className="text-lg font-semibold text-stone-900 mb-2">
+          <h3 className="text-lg font-semibold text-warm-900 mb-2">
             No events this month
           </h3>
-          <p className="text-sm text-stone-500 max-w-xs mx-auto">
+          <p className="text-sm text-warm-500 max-w-xs mx-auto">
             Click &ldquo;Add Event&rdquo; or tap a date to schedule something
           </p>
         </div>

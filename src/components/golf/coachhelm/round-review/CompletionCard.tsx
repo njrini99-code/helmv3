@@ -36,7 +36,7 @@ export function CompletionCard({ review }: CompletionCardProps) {
             <span className="text-5xl font-bold">{review.roundScore}</span>
             <span className={cn(
               'text-2xl font-semibold px-3 py-1 rounded-lg',
-              scoreToPar < 0 && 'bg-green-500/20 text-green-400',
+              scoreToPar < 0 && 'bg-primary-500/20 text-primary-400',
               scoreToPar === 0 && 'bg-warm-500/20 text-warm-300',
               scoreToPar > 0 && 'bg-red-500/20 text-red-400',
             )}>
@@ -56,7 +56,7 @@ export function CompletionCard({ review }: CompletionCardProps) {
                 {avgChange !== null && avgChange !== 0 && (
                   <span className={cn(
                     'text-xs font-medium',
-                    avgChange < 0 ? 'text-green-400' : 'text-red-400'
+                    avgChange < 0 ? 'text-primary-400' : 'text-red-400'
                   )}>
                     {avgChange > 0 ? '+' : ''}{avgChange.toFixed(1)}
                   </span>
@@ -76,7 +76,7 @@ export function CompletionCard({ review }: CompletionCardProps) {
           {/* Birdies */}
           <div className="text-center">
             <div className="text-xs text-warm-400 mb-1">Birdies</div>
-            <div className="text-lg font-semibold text-green-400">
+            <div className="text-lg font-semibold text-primary-400">
               {review.roundStats.birdies}
             </div>
           </div>

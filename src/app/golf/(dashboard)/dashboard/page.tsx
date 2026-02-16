@@ -181,17 +181,17 @@ export default function GolfDashboardPage() {
                         {/* Header skeleton */}
                         <div className="flex items-center justify-between">
                             <div>
-                                <div className="h-7 w-48 bg-slate-200/60 rounded-lg animate-pulse" />
-                                <div className="h-4 w-32 bg-slate-200/40 rounded-md animate-pulse mt-2" />
+                                <div className="h-7 w-48 bg-warm-200/60 rounded-lg animate-pulse" />
+                                <div className="h-4 w-32 bg-warm-200/40 rounded-md animate-pulse mt-2" />
                             </div>
-                            <div className="h-9 w-24 bg-slate-200/50 rounded-lg animate-pulse" />
+                            <div className="h-9 w-24 bg-warm-200/50 rounded-lg animate-pulse" />
                         </div>
                         {/* Stats grid skeleton */}
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
                             {[...Array(4)].map((_, i) => (
                                 <div key={i} className="bg-white/70 backdrop-blur-sm rounded-2xl border border-white/20 p-4 md:p-6">
-                                    <div className="h-3 w-20 bg-slate-200/50 rounded animate-pulse mb-3" />
-                                    <div className="h-8 w-16 bg-slate-200/60 rounded-lg animate-pulse" />
+                                    <div className="h-3 w-20 bg-warm-200/50 rounded animate-pulse mb-3" />
+                                    <div className="h-8 w-16 bg-warm-200/60 rounded-lg animate-pulse" />
                                 </div>
                             ))}
                         </div>
@@ -201,13 +201,13 @@ export default function GolfDashboardPage() {
                                 {[...Array(3)].map((_, i) => (
                                     <div key={i} className="bg-white/70 backdrop-blur-sm rounded-2xl border border-white/20 p-5">
                                         <div className="flex items-center gap-3 mb-3">
-                                            <div className="h-10 w-10 bg-slate-200/50 rounded-full animate-pulse" />
+                                            <div className="h-10 w-10 bg-warm-200/50 rounded-full animate-pulse" />
                                             <div>
-                                                <div className="h-4 w-32 bg-slate-200/50 rounded animate-pulse" />
-                                                <div className="h-3 w-24 bg-slate-200/40 rounded animate-pulse mt-1.5" />
+                                                <div className="h-4 w-32 bg-warm-200/50 rounded animate-pulse" />
+                                                <div className="h-3 w-24 bg-warm-200/40 rounded animate-pulse mt-1.5" />
                                             </div>
                                         </div>
-                                        <div className="h-3 w-full bg-slate-200/30 rounded animate-pulse" />
+                                        <div className="h-3 w-full bg-warm-200/30 rounded animate-pulse" />
                                     </div>
                                 ))}
                             </div>
@@ -224,8 +224,8 @@ export default function GolfDashboardPage() {
             return (
                 <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
                     <div className="text-center">
-                        <h2 className="text-xl font-semibold text-slate-900 mb-2">Error Loading Dashboard</h2>
-                        <p className="text-slate-600 mb-4">{state.message}</p>
+                        <h2 className="text-xl font-semibold text-warm-900 mb-2">Error Loading Dashboard</h2>
+                        <p className="text-warm-600 mb-4">{state.message}</p>
                         <button
                             onClick={() => {
                                 dispatch({ type: 'RETRY' });
@@ -249,8 +249,8 @@ export default function GolfDashboardPage() {
             return (
                 <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
                     <div className="text-center">
-                        <h2 className="text-xl font-semibold text-slate-900 mb-2">Dashboard Unavailable</h2>
-                        <p className="text-slate-600 mb-4">Unable to load your dashboard. Please check your account setup.</p>
+                        <h2 className="text-xl font-semibold text-warm-900 mb-2">Dashboard Unavailable</h2>
+                        <p className="text-warm-600 mb-4">Unable to load your dashboard. Please check your account setup.</p>
                         <a
                             href="/golf"
                             className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 inline-block"

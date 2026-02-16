@@ -42,8 +42,8 @@ function StatCard({ label, value, suffix = '', trend, trendValue, highlight }: S
   if (value === null || value === undefined) {
     return (
       <div className="bg-white border border-border-light rounded-xl p-4">
-        <p className="text-xs text-gray-500 mb-1">{label}</p>
-        <p className="text-lg text-gray-300">--</p>
+        <p className="text-xs text-warm-500 mb-1">{label}</p>
+        <p className="text-lg text-warm-300">--</p>
       </div>
     );
   }
@@ -53,20 +53,20 @@ function StatCard({ label, value, suffix = '', trend, trendValue, highlight }: S
       'bg-white border rounded-xl p-4',
       highlight ? 'border-primary-200 bg-primary-50/30' : 'border-border-light'
     )}>
-      <p className="text-xs text-gray-500 mb-1">{label}</p>
+      <p className="text-xs text-warm-500 mb-1">{label}</p>
       <div className="flex items-baseline gap-1">
         <p className={cn(
           'text-2xl font-semibold',
-          highlight ? 'text-primary-700' : 'text-gray-900'
+          highlight ? 'text-primary-700' : 'text-warm-900'
         )}>
           {value}
         </p>
-        {suffix && <span className="text-sm text-gray-500">{suffix}</span>}
+        {suffix && <span className="text-sm text-warm-500">{suffix}</span>}
       </div>
       {trend && trendValue && (
         <div className={cn(
           'flex items-center gap-1 mt-1 text-xs',
-          trend === 'up' ? 'text-green-600' : trend === 'down' ? 'text-red-600' : 'text-gray-500'
+          trend === 'up' ? 'text-primary-600' : trend === 'down' ? 'text-red-600' : 'text-warm-500'
         )}>
           {trend === 'up' && (
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -182,7 +182,7 @@ export function RoundStatsGrid({ round }: RoundStatsGridProps) {
       {/* Strokes Gained (if available) */}
       {round.strokes_gained_total != null && (
         <div className="pt-4 border-t border-border-light">
-          <h4 className="text-sm font-medium text-gray-700 mb-3">Strokes Gained</h4>
+          <h4 className="text-sm font-medium text-warm-700 mb-3">Strokes Gained</h4>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <StatCard
               label="Total"

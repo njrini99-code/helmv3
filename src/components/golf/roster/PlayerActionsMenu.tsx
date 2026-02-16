@@ -26,8 +26,8 @@ const statuses: Array<{
     value: 'active',
     label: 'Active',
     description: 'Player is actively participating in team activities',
-    dotColor: 'bg-emerald-500',
-    badgeStyle: 'bg-emerald-500/10 text-emerald-700 ring-emerald-500/20',
+    dotColor: 'bg-primary-500',
+    badgeStyle: 'bg-primary-500/10 text-primary-700 ring-primary-500/20',
   },
   {
     value: 'injured',
@@ -218,7 +218,11 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
               >
                 {removing ? (
                   <>
-                    <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span className="flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+                    </span>
                     Removing...
                   </>
                 ) : (
@@ -253,7 +257,7 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
                     'hover:border-warm-300 hover:bg-warm-50',
                     'disabled:opacity-50 disabled:cursor-not-allowed',
                     selectedStatus === status.value
-                      ? 'border-green-500 bg-green-50/50'
+                      ? 'border-primary-500 bg-primary-50/50'
                       : 'border-warm-200 bg-white'
                   )}
                 >
@@ -271,7 +275,7 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
                       </span>
                     </div>
                     {selectedStatus === status.value && (
-                      <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="w-5 h-5 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
                     )}
@@ -301,11 +305,15 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
               <button
                 onClick={handleStatusChange}
                 disabled={updatingStatus || !selectedStatus || selectedStatus === currentStatus}
-                className="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white font-medium transition-colors disabled:opacity-50 disabled:bg-warm-300 flex items-center gap-2"
+                className="px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-medium transition-colors disabled:opacity-50 disabled:bg-warm-300 flex items-center gap-2"
               >
                 {updatingStatus ? (
                   <>
-                    <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span className="flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+                    </span>
                     Updating...
                   </>
                 ) : (

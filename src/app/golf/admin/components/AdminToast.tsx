@@ -187,9 +187,9 @@ const variantConfig: Record<AdminToastVariant, {
 }> = {
   success: {
     icon: Check,
-    iconClass: 'bg-emerald-500 text-white',
-    borderClass: 'border-emerald-200/50',
-    bgClass: 'bg-emerald-50/50',
+    iconClass: 'bg-primary-500 text-white',
+    borderClass: 'border-primary-200/50',
+    bgClass: 'bg-primary-50/50',
   },
   warning: {
     icon: AlertTriangle,

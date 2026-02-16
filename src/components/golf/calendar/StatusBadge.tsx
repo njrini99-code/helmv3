@@ -47,9 +47,9 @@ const STATUS_CONFIGS: Record<StatusBadgeProps['status'], StatusConfig> = {
   confirmed: {
     icon: CheckCircle,
     label: 'Confirmed',
-    colorClass: 'text-emerald-700',
-    bgClass: 'bg-emerald-100',
-    borderClass: 'border-emerald-200',
+    colorClass: 'text-primary-700',
+    bgClass: 'bg-primary-100',
+    borderClass: 'border-primary-200',
   },
   cancelled: {
     icon: XCircle,

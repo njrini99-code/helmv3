@@ -228,6 +228,9 @@ export async function getAnnouncementsWithMeta(
   try {
     const supabase = await createClient();
 
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Not authenticated' };
+
     // Fetch all announcements for this team
     const { data: announcements, error } = await supabase
       .from('golf_announcements')

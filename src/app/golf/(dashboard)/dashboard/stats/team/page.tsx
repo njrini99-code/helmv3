@@ -65,8 +65,8 @@ export default async function TeamStatsPage() {
     return (
       <div className="min-h-full flex items-center justify-center">
         <div className="text-center max-w-md">
-          <h2 className="text-xl font-semibold text-slate-900 mb-2">No Team Found</h2>
-          <p className="text-slate-500">
+          <h2 className="text-xl font-semibold text-warm-900 mb-2">No Team Found</h2>
+          <p className="text-warm-500">
             Create a team first to view team statistics.
           </p>
         </div>
@@ -95,14 +95,14 @@ export default async function TeamStatsPage() {
   if (!players || players.length === 0) {
     return (
       <div className="min-h-full">
-        <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+        <div className="border-b border-warm-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
           <div className="max-w-7xl mx-auto px-4 md:px-6 py-5">
-            <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Team Stats Overview</h1>
-            <p className="text-slate-500 mt-0.5">{team?.name || 'Your Team'}</p>
+            <h1 className="text-2xl font-semibold tracking-tight text-warm-900">Team Stats Overview</h1>
+            <p className="text-warm-500 mt-0.5">{team?.name || 'Your Team'}</p>
           </div>
         </div>
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-16 text-center">
-          <p className="text-slate-500">No players on your roster yet.</p>
+          <p className="text-warm-500">No players on your roster yet.</p>
         </div>
       </div>
     );
@@ -246,12 +246,12 @@ export default async function TeamStatsPage() {
     <AnimatedPage className="min-h-full">
       {/* Header */}
       <AnimatedItem>
-      <div className="border-b border-slate-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+      <div className="border-b border-warm-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-5">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Team Stats Overview</h1>
-              <p className="text-slate-500 mt-0.5">
+              <h1 className="text-2xl font-semibold tracking-tight text-warm-900">Team Stats Overview</h1>
+              <p className="text-warm-500 mt-0.5">
                 {team?.name || 'Your Team'} • {playersWithStats.length} player{playersWithStats.length !== 1 ? 's' : ''}
               </p>
             </div>

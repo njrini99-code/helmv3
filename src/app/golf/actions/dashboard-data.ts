@@ -214,6 +214,12 @@ export async function getCoachDashboardData(
 ): Promise<CoachDashboardPayload> {
     const supabase = await createClient();
 
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+
+    // Verify the authenticated user matches the requested userId
+    if (user.id !== userId) throw new Error('Unauthorized');
+
     // Fetch team timezone from settings table (canonical source for timezone)
     const { data: teamSettingsRow } = await supabase
         .from('golf_team_settings')
@@ -611,6 +617,9 @@ export async function getPlayerDashboardData(
     teamId: string | null
 ): Promise<PlayerDashboardPayload> {
     const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
 
     // Fetch team timezone from settings table (canonical source for timezone)
     let playerTeamTimezone = 'America/New_York';

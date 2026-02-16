@@ -50,11 +50,11 @@ export function PlayerStatsCard({
   };
 
   const getTrendColor = (trend?: TrendDirection, isHigherBetter: boolean = false) => {
-    if (!trend || trend === 'stable') return 'text-gray-500';
+    if (!trend || trend === 'stable') return 'text-warm-500';
     const isGood = isHigherBetter
       ? trend === 'improving'   // Higher is better (GIR%, fairway%, SG)
       : trend === 'declining';  // Lower is better (scoring avg, putts)
-    return isGood ? 'text-green-500' : 'text-red-500';
+    return isGood ? 'text-primary-500' : 'text-red-500';
   };
 
   // Get initials for avatar fallback
@@ -85,12 +85,12 @@ export function PlayerStatsCard({
                 className="w-12 h-12 rounded-full object-cover"
               />
             ) : (
-              <div className="w-12 h-12 rounded-full bg-green-100 text-green-700 flex items-center justify-center font-medium">
+              <div className="w-12 h-12 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-medium">
                 {initials}
               </div>
             )}
             {rank && (
-              <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gray-900 text-white text-xs flex items-center justify-center font-semibold">
+              <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-warm-900 text-white text-xs flex items-center justify-center font-semibold">
                 {rank}
               </div>
             )}
@@ -98,8 +98,8 @@ export function PlayerStatsCard({
 
           {/* Name and basic info */}
           <div className="flex-1 min-w-0">
-            <h4 className="font-semibold text-gray-900 truncate">{playerName}</h4>
-            <p className="text-sm text-gray-500">
+            <h4 className="font-semibold text-warm-900 truncate">{playerName}</h4>
+            <p className="text-sm text-warm-500">
               {stats.total_rounds} round{stats.total_rounds !== 1 ? 's' : ''}
             </p>
           </div>
@@ -109,7 +109,7 @@ export function PlayerStatsCard({
             {/* Scoring Average */}
             <div className="text-center">
               <div className="flex items-center gap-1">
-                <span className="text-lg font-bold text-gray-900">
+                <span className="text-lg font-bold text-warm-900">
                   {stats.scoring_avg > 0 ? stats.scoring_avg.toFixed(1) : '-'}
                 </span>
                 {trends?.scoring && (
@@ -118,15 +118,15 @@ export function PlayerStatsCard({
                   </span>
                 )}
               </div>
-              <span className="text-xs text-gray-500">Avg Score</span>
+              <span className="text-xs text-warm-500">Avg Score</span>
             </div>
 
             {/* GIR % */}
             <div className="text-center">
-              <span className="text-lg font-bold text-gray-900">
+              <span className="text-lg font-bold text-warm-900">
                 {stats.gir_percentage > 0 ? `${stats.gir_percentage.toFixed(0)}%` : '-'}
               </span>
-              <span className="text-xs text-gray-500 block">GIR</span>
+              <span className="text-xs text-warm-500 block">GIR</span>
             </div>
 
             {/* Strokes Gained */}
@@ -146,14 +146,14 @@ export function PlayerStatsCard({
                   </span>
                 )}
               </div>
-              <span className="text-xs text-gray-500">SG Total</span>
+              <span className="text-xs text-warm-500">SG Total</span>
             </div>
           </div>
 
           {/* Expand indicator */}
           {onExpandClick && (
             <svg
-              className="w-5 h-5 text-gray-400"
+              className="w-5 h-5 text-warm-400"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -170,29 +170,29 @@ export function PlayerStatsCard({
 
         {/* Expanded view */}
         {showExpandedView && (
-          <div className="mt-4 pt-4 border-t border-gray-100">
+          <div className="mt-4 pt-4 border-t border-warm-100">
             <div className="grid grid-cols-4 gap-4 text-sm">
               <div>
-                <span className="text-gray-500 block">Best Round</span>
+                <span className="text-warm-500 block">Best Round</span>
                 <span className="font-semibold">{stats.best_round || '-'}</span>
               </div>
               <div>
-                <span className="text-gray-500 block">Putts/Rnd</span>
+                <span className="text-warm-500 block">Putts/Rnd</span>
                 <span className="font-semibold">{stats.avg_putts > 0 ? stats.avg_putts.toFixed(1) : '-'}</span>
               </div>
               <div>
-                <span className="text-gray-500 block">Fairways</span>
+                <span className="text-warm-500 block">Fairways</span>
                 <span className="font-semibold">{stats.fairway_percentage > 0 ? `${stats.fairway_percentage.toFixed(0)}%` : '-'}</span>
               </div>
               <div>
-                <span className="text-gray-500 block">Up & Down</span>
+                <span className="text-warm-500 block">Up & Down</span>
                 <span className="font-semibold">{stats.up_and_down_percentage > 0 ? `${stats.up_and_down_percentage.toFixed(0)}%` : '-'}</span>
               </div>
             </div>
 
             {/* Mini SG breakdown */}
             <div className="mt-3 flex items-center gap-2">
-              <span className="text-xs text-gray-500">SG:</span>
+              <span className="text-xs text-warm-500">SG:</span>
               {[
                 { key: 'sg_off_tee', label: 'OTT' },
                 { key: 'sg_approach', label: 'APP' },
@@ -275,9 +275,9 @@ export function PlayerStatsMini({
 }) {
   return (
     <div className={cn('flex items-center justify-between', className)}>
-      <span className="text-sm font-medium text-gray-700 truncate">{playerName}</span>
+      <span className="text-sm font-medium text-warm-700 truncate">{playerName}</span>
       <div className="flex items-center gap-3 text-sm">
-        <span className="text-gray-900 font-semibold">{stats.scoring_avg.toFixed(1)}</span>
+        <span className="text-warm-900 font-semibold">{stats.scoring_avg.toFixed(1)}</span>
         <span className={cn('font-medium', getStrokesGainedColor(stats.strokes_gained.sg_total))}>
           {formatStrokesGained(stats.strokes_gained.sg_total)}
         </span>

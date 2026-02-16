@@ -47,8 +47,8 @@ function formatScoreToPar(toPar: number | null): string {
 // Get color class for scoring (lower is better)
 function getScoringColor(toPar: number | null): string {
   if (toPar === null) return 'text-warm-900';
-  if (toPar <= -2) return 'text-emerald-600';
-  if (toPar < 0) return 'text-green-600';
+  if (toPar <= -2) return 'text-primary-600';
+  if (toPar < 0) return 'text-primary-600';
   if (toPar === 0) return 'text-warm-900';
   if (toPar <= 3) return 'text-amber-600';
   return 'text-red-600';
@@ -57,8 +57,8 @@ function getScoringColor(toPar: number | null): string {
 // Get color class for percentage (higher is better)
 function getPercentageColor(pct: number | null, goodThreshold: number = 50): string {
   if (pct === null) return 'text-warm-900';
-  if (pct >= goodThreshold + 15) return 'text-emerald-600';
-  if (pct >= goodThreshold) return 'text-green-600';
+  if (pct >= goodThreshold + 15) return 'text-primary-600';
+  if (pct >= goodThreshold) return 'text-primary-600';
   if (pct >= goodThreshold - 15) return 'text-amber-600';
   return 'text-red-600';
 }
@@ -139,7 +139,7 @@ export const KeyMetricsGrid = memo(function KeyMetricsGrid({
     {
       label: 'Handicap',
       value: formatHandicap(handicap),
-      colorClass: handicap !== null && handicap <= 5 ? 'text-emerald-600' : 'text-warm-900',
+      colorClass: handicap !== null && handicap <= 5 ? 'text-primary-600' : 'text-warm-900',
     },
     {
       label: 'Rounds',

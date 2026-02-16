@@ -28,7 +28,7 @@ interface ReasoningChainViewProps {
 
 const reasoningTypeLabels: Record<ReasoningType, { label: string; color: string }> = {
   deductive: { label: 'Deductive', color: 'bg-blue-100 text-blue-700' },
-  inductive: { label: 'Inductive', color: 'bg-green-100 text-green-700' },
+  inductive: { label: 'Inductive', color: 'bg-primary-100 text-primary-700' },
   abductive: { label: 'Abductive', color: 'bg-purple-100 text-purple-700' },
 };
 
@@ -43,8 +43,8 @@ export function ReasoningChainView({ reasoning }: ReasoningChainViewProps) {
   return (
     <div className="space-y-6">
       {/* Conclusion summary */}
-      <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4">
-        <h3 className="text-xs font-medium text-green-600 uppercase tracking-wide mb-2">
+      <div className="bg-gradient-to-r from-primary-50 to-primary-50 border border-primary-200 rounded-xl p-4">
+        <h3 className="text-xs font-medium text-primary-600 uppercase tracking-wide mb-2">
           Conclusion
         </h3>
         <p className="text-sm text-warm-800 font-medium leading-relaxed">
@@ -62,7 +62,7 @@ export function ReasoningChainView({ reasoning }: ReasoningChainViewProps) {
               <span className="text-xs text-warm-500">Calibrated:</span>
               <span className={cn(
                 'text-xs font-medium',
-                calibrationDiff > 0 ? 'text-green-600' : 'text-amber-600'
+                calibrationDiff > 0 ? 'text-primary-600' : 'text-amber-600'
               )}>
                 {Math.round(reasoning.calibratedConfidence * 100)}%
                 <span className="text-xs ml-1">
@@ -104,7 +104,7 @@ export function ReasoningChainView({ reasoning }: ReasoningChainViewProps) {
                 key={i}
                 className="flex items-start gap-2 text-sm text-warm-600 bg-warm-50 rounded-lg px-3 py-2"
               >
-                <IconCheck size={14} className="text-green-500 mt-0.5 flex-shrink-0" />
+                <IconCheck size={14} className="text-primary-500 mt-0.5 flex-shrink-0" />
                 <span>{citation}</span>
               </div>
             ))}
@@ -138,7 +138,7 @@ export function ReasoningChainView({ reasoning }: ReasoningChainViewProps) {
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2 }}
+                transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
                 className="overflow-hidden"
               >
                 <div className="p-4 space-y-3 border-t border-warm-200">
@@ -194,7 +194,7 @@ export function ReasoningChainView({ reasoning }: ReasoningChainViewProps) {
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2 }}
+                transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
                 className="overflow-hidden"
               >
                 <div className="p-4 space-y-3 border-t border-warm-200">
@@ -257,7 +257,7 @@ function ReasoningStepCard({
         className={cn(
           'w-full text-left bg-white border rounded-xl p-4 transition-all',
           isExpanded
-            ? 'border-green-200 shadow-sm'
+            ? 'border-primary-200 shadow-sm'
             : 'border-warm-200 hover:border-warm-300'
         )}
       >
@@ -267,7 +267,7 @@ function ReasoningStepCard({
             className={cn(
               'w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0',
               isExpanded
-                ? 'bg-green-600 text-white'
+                ? 'bg-primary-600 text-white'
                 : 'bg-warm-100 text-warm-600'
             )}
           >
@@ -286,7 +286,7 @@ function ReasoningStepCard({
                     className={cn(
                       'h-full rounded-full transition-all',
                       confidencePercent >= 70
-                        ? 'bg-green-500'
+                        ? 'bg-primary-500'
                         : confidencePercent >= 40
                         ? 'bg-amber-500'
                         : 'bg-red-500'
@@ -321,10 +321,10 @@ function ReasoningStepCard({
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
+              transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
               className="overflow-hidden"
             >
-              <div className="mt-4 ml-13 pl-4 border-l-2 border-green-200 space-y-3">
+              <div className="mt-4 ml-13 pl-4 border-l-2 border-primary-200 space-y-3">
                 {/* Premise */}
                 <div>
                   <h5 className="text-xs font-medium text-warm-500 uppercase tracking-wide mb-1">
@@ -353,7 +353,7 @@ function ReasoningStepCard({
                           key={i}
                           className="flex items-start gap-2 text-sm text-warm-600"
                         >
-                          <IconCheck size={12} className="text-green-500 mt-1 flex-shrink-0" />
+                          <IconCheck size={12} className="text-primary-500 mt-1 flex-shrink-0" />
                           <span>{ev}</span>
                         </li>
                       ))}

@@ -83,7 +83,7 @@ export function V2CausalInsights({ insights }: V2CausalInsightsProps) {
                       transition={{ delay: 0.15 * index + 0.3, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
                       className={cn(
                         'h-full rounded-full',
-                        strengthPct >= 70 ? 'bg-green-500' :
+                        strengthPct >= 70 ? 'bg-primary-500' :
                         strengthPct >= 40 ? 'bg-amber-500' :
                         'bg-warm-400'
                       )}
@@ -103,7 +103,7 @@ export function V2CausalInsights({ insights }: V2CausalInsightsProps) {
                 {insight.doseResponse && (
                   <>
                     <span className="text-warm-200">|</span>
-                    <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-md text-[10px] font-bold border border-green-200/50">
+                    <span className="px-2 py-0.5 bg-primary-100 text-primary-700 rounded-md text-[10px] font-bold border border-primary-200/50">
                       Actionable
                     </span>
                   </>

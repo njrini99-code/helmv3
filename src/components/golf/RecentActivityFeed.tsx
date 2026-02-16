@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
+import { useFormatDate } from '@/hooks/golf/use-appearance-preferences';
 import {
   IconGolf, IconFlag, IconBook, IconCalendar, IconUser,
   IconAward
@@ -32,6 +33,7 @@ export function RecentActivityFeed({
 }: RecentActivityFeedProps) {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const fmtDate = useFormatDate();
 
   const loadActivities = useCallback(async () => {
     const supabase = createClient();
@@ -114,7 +116,7 @@ export function RecentActivityFeed({
               id: `event-${event.id}`,
               type: 'event',
               title: event.title,
-              subtitle: `${event.event_type} on ${new Date(event.start_time).toLocaleDateString()}`,
+              subtitle: `${event.event_type} on ${new Date(event.start_time).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
               timestamp: event.start_time,
             });
           }
@@ -178,7 +180,7 @@ export function RecentActivityFeed({
   const getIconBg = (type: ActivityItem['type']) => {
     switch (type) {
       case 'round':
-        return 'bg-green-100 text-green-600';
+        return 'bg-primary-100 text-primary-600';
       case 'qualifier':
         return 'bg-amber-100 text-amber-600';
       case 'announcement':
@@ -207,7 +209,7 @@ export function RecentActivityFeed({
     } else if (diffDays < 7) {
       return `${diffDays} days ago`;
     } else {
-      return date.toLocaleDateString();
+      return fmtDate(date);
     }
   };
 

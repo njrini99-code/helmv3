@@ -48,7 +48,7 @@ export function UnfinishedRoundsSection({ rounds }: UnfinishedRoundsSectionProps
     <>
       <div className="mb-8">
         <div className="flex items-center gap-2 mb-4">
-          <h2 className="text-lg font-semibold text-slate-900">Unfinished Rounds</h2>
+          <h2 className="text-lg font-semibold text-warm-900">Unfinished Rounds</h2>
           <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-amber-100 text-amber-700">
             {localRounds.length} unfinished
           </span>
@@ -83,10 +83,10 @@ export function UnfinishedRoundsSection({ rounds }: UnfinishedRoundsSectionProps
 
                     {/* Details */}
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-slate-900 mb-1">
+                      <h3 className="font-semibold text-warm-900 mb-1">
                         {round.course_name}
                       </h3>
-                      <div className="flex items-center gap-3 text-sm text-slate-500">
+                      <div className="flex items-center gap-3 text-sm text-warm-500">
                         <span className="flex items-center gap-1">
                           <IconCalendar size={14} />
                           {new Date(round.round_date).toLocaleDateString()}
@@ -97,7 +97,7 @@ export function UnfinishedRoundsSection({ rounds }: UnfinishedRoundsSectionProps
                     </div>
 
                     {/* Arrow */}
-                    <IconChevronRight size={20} className="text-slate-400" />
+                    <IconChevronRight size={20} className="text-warm-400" />
                   </div>
                 </div>
               </button>

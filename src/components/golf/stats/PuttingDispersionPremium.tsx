@@ -381,8 +381,8 @@ export const PuttingDispersionPremium = memo(function PuttingDispersionPremium({
       <div className="px-6 py-5 bg-white border-t border-warm-100">
         {/* Quick stats row */}
         <div className="grid grid-cols-3 gap-3 mb-5">
-          <div className="text-center p-3 rounded-xl bg-green-50 border border-green-200">
-            <div className="text-2xl font-bold text-green-700 tabular-nums">{onePuttsTotal}</div>
+          <div className="text-center p-3 rounded-xl bg-primary-50 border border-primary-200">
+            <div className="text-2xl font-bold text-primary-700 tabular-nums">{onePuttsTotal}</div>
             <div className="text-xs font-medium text-warm-600">1-Putts</div>
           </div>
           <div className="text-center p-3 rounded-xl bg-warm-50 border border-warm-200">

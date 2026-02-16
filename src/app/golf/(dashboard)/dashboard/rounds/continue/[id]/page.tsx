@@ -6,6 +6,12 @@ import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPag
 import type { HoleStats, ShotRecord } from '@/components/golf/ShotTrackingComprehensive';
 import type { Tables } from '@/lib/types/database';
 import type { ApproachMissDirection, PuttMissTag } from '@/lib/types/golf';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Continue Round | GolfHelm',
+  description: 'Resume tracking your in-progress golf round shot by shot.',
+};
 
 type GolfShot = Tables<'golf_shots'>;
 // The golf_holes table schema - penalty_strokes is now part of the schema

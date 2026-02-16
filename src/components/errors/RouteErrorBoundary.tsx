@@ -131,7 +131,7 @@ export function RouteErrorBoundary({
 
   return (
     <div className="min-h-screen bg-[#FAF6F1] flex items-center justify-center p-6">
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-lg p-8 max-w-md w-full text-center">
+      <div className="bg-white rounded-2xl border border-warm-200 shadow-lg p-8 max-w-md w-full text-center">
         {/* Error Icon */}
         <div className="w-16 h-16 mx-auto rounded-2xl bg-red-100 flex items-center justify-center mb-4">
           <svg
@@ -151,22 +151,22 @@ export function RouteErrorBoundary({
         </div>
 
         {/* Error Title */}
-        <h2 className="text-xl font-semibold tracking-tight text-slate-900 mb-2">
+        <h2 className="text-xl font-semibold tracking-tight text-warm-900 mb-2">
           {title}
         </h2>
 
         {/* Error Message */}
-        <p className="text-sm leading-relaxed text-slate-600 mb-6">
+        <p className="text-sm leading-relaxed text-warm-600 mb-6">
           {message || defaultMessage}
         </p>
 
         {/* Error Details (Development Only) */}
         {process.env.NODE_ENV === 'development' && (
           <details className="mb-6 text-left">
-            <summary className="text-xs font-medium text-slate-500 cursor-pointer hover:text-slate-700 mb-2">
+            <summary className="text-xs font-medium text-warm-500 cursor-pointer hover:text-warm-700 mb-2">
               Error Details
             </summary>
-            <pre className="text-xs bg-slate-50 border border-slate-200 rounded-lg p-3 overflow-auto max-h-32 text-red-600">
+            <pre className="text-xs bg-warm-50 border border-warm-200 rounded-lg p-3 overflow-auto max-h-32 text-red-600">
               {error.message}
               {error.stack && `\n\n${error.stack}`}
               {error.digest && `\n\nDigest: ${error.digest}`}
@@ -176,7 +176,7 @@ export function RouteErrorBoundary({
 
         {/* Retry indicator */}
         {isRetrying && (
-          <div className="mb-4 flex items-center justify-center gap-2 text-sm text-slate-500">
+          <div className="mb-4 flex items-center justify-center gap-2 text-sm text-warm-500">
             <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
@@ -187,7 +187,7 @@ export function RouteErrorBoundary({
 
         {/* Retry count indicator */}
         {retryCount > 0 && !isRetrying && (
-          <p className="text-xs text-slate-400 mb-4">
+          <p className="text-xs text-warm-400 mb-4">
             {retryCount === 1 ? 'Retried once' : `Retried ${retryCount} times`}
           </p>
         )}
@@ -264,12 +264,12 @@ export function CompactRouteErrorBoundary({
       </div>
 
       {/* Error Title */}
-      <h3 className="text-lg font-semibold text-slate-900 mb-2">
+      <h3 className="text-lg font-semibold text-warm-900 mb-2">
         {title}
       </h3>
 
       {/* Error Message */}
-      <p className="text-sm leading-relaxed text-slate-500 mb-4 max-w-md">
+      <p className="text-sm leading-relaxed text-warm-500 mb-4 max-w-md">
         {message || error.message || 'Please try again.'}
       </p>
 

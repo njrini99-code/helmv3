@@ -68,10 +68,10 @@ const RSVP_OPTIONS: Array<{
     label: "I'm Going",
     shortLabel: 'Going',
     icon: CheckCircle2,
-    colorClass: 'text-emerald-700',
-    bgClass: 'bg-emerald-50',
-    hoverClass: 'hover:bg-emerald-100',
-    selectedClass: 'bg-emerald-600 text-white ring-4 ring-emerald-200 shadow-lg',
+    colorClass: 'text-primary-700',
+    bgClass: 'bg-primary-50',
+    hoverClass: 'hover:bg-primary-100',
+    selectedClass: 'bg-primary-600 text-white ring-4 ring-primary-200 shadow-lg',
   },
   {
     value: 'tentative',
@@ -294,9 +294,9 @@ export function PlayerRSVPCard({
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -4 }}
                     transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-                    className="mt-4 p-3.5 bg-emerald-50 border border-emerald-200 rounded-lg"
+                    className="mt-4 p-3.5 bg-primary-50 border border-primary-200 rounded-lg"
                   >
-                    <p className="text-sm text-emerald-800 text-center font-medium">
+                    <p className="text-sm text-primary-800 text-center font-medium">
                       ✓ Response saved! You can change this anytime before the deadline.
                     </p>
                   </m.div>
