@@ -18,11 +18,11 @@ import type {
 import { extractAllFeatures } from '../features';
 
 const THRESHOLDS = {
-  minSupport: 0.1,
-  minConfidence: 0.6,
-  minLift: 1.5,
-  minSampleSize: 10,
-  minStrokeImpact: 0.3,
+  minSupport: 0.08,      // 8% of rounds (was 10%)
+  minConfidence: 0.55,   // 55% confidence (was 60%)
+  minLift: 1.3,          // 1.3x lift (was 1.5x)
+  minSampleSize: 5,      // 5 rounds minimum (was 10)
+  minStrokeImpact: 0.25, // 0.25 strokes (was 0.3)
 };
 
 function normalizeRoundType(roundType?: string | null): string | null {
