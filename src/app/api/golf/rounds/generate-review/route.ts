@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
     // Log successful AI generation (fire-and-forget)
     logAIGeneration(playerData.user_id, '', 'round_review', true, {
       roundId,
-      reviewId: v2Review.reviewId,
+      reviewId: v2Review.roundId,
     }).catch(() => {});
 
     return NextResponse.json({

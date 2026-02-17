@@ -1,7 +1,7 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Playfair_Display, DM_Sans } from 'next/font/google';
 import './globals.css';
-import '../../sentry.client.config';
+// Client instrumentation is auto-loaded via instrumentation-client.ts
 import { ToastContainer } from '@/components/ui/toast';
 import { DatadogProvider } from '@/components/providers/DatadogProvider';
 import { Analytics } from '@vercel/analytics/next';
@@ -52,12 +52,6 @@ export const metadata: Metadata = {
   other: {
     'mobile-web-app-capable': 'yes',
   },
-  // Viewport settings - allows zoom for accessibility (WCAG 2.1 Level AA compliance)
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    viewportFit: 'cover',
-  },
   openGraph: {
     title: 'Helm Sports Labs',
     description: 'The modern platform for athletic development and college recruiting',
@@ -82,6 +76,13 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
+};
+
+// Viewport settings - allows zoom for accessibility (WCAG 2.1 Level AA compliance)
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

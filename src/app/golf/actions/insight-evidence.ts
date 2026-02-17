@@ -43,6 +43,10 @@ export async function getInsightEvidenceSources(
   metadata: EvidenceMetadata
 ): Promise<GetEvidenceResult> {
   const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { success: false, error: 'Unauthorized' };
+  }
 
   try {
     // Base query for player rounds
@@ -162,6 +166,10 @@ export async function getPatternMatchingRounds(
   limit: number = 10
 ): Promise<GetEvidenceResult> {
   const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { success: false, error: 'Unauthorized' };
+  }
 
   try {
     // First, get the pattern to understand its conditions
@@ -223,6 +231,10 @@ export async function getTrendEvidenceRounds(
   endDate: string
 ): Promise<GetEvidenceResult> {
   const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { success: false, error: 'Unauthorized' };
+  }
 
   try {
     const { data: rounds, error } = await supabase
@@ -279,6 +291,10 @@ export async function getComparisonRounds(
   error?: string;
 }> {
   const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { success: false, error: 'Unauthorized' };
+  }
 
   try {
     // Get tournament rounds

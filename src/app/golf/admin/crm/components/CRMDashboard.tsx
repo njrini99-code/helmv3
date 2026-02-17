@@ -14,7 +14,6 @@ import {
   ArrowRight,
   BarChart3,
   Target,
-  ChevronRight,
 } from 'lucide-react';
 import type { Coach, CoachStatus, PipelineStage } from '../crm-config';
 
@@ -35,6 +34,7 @@ interface CRMDashboardProps {
   onBulkUpdate: (ids: string[], updates: Partial<Coach>) => Promise<void>;
   onRefresh: () => void;
   onNavigate: (tab: 'dashboard' | 'list' | 'pipeline') => void;
+  onCoachClick?: (coach: Coach) => void;
 }
 
 export function CRMDashboard({
@@ -45,6 +45,7 @@ export function CRMDashboard({
   onBulkUpdate,
   onRefresh,
   onNavigate,
+  onCoachClick,
 }: CRMDashboardProps) {
   const [processing, setProcessing] = useState<string | null>(null);
 
@@ -125,6 +126,10 @@ export function CRMDashboard({
     } finally {
       setProcessing(null);
     }
+  };
+
+  const handleCoachRowClick = (coach: Coach) => {
+    onCoachClick?.(coach);
   };
 
   return (
@@ -236,7 +241,7 @@ export function CRMDashboard({
               const widthPct = (stage.count / maxCount) * 100;
               return (
                 <div key={stage.id} className="flex items-center gap-4 group">
-                  <div className="w-28 text-right flex-shrink-0">
+                  <div className="w-24 text-right flex-shrink-0">
                     <p className="text-sm font-medium text-warm-700 group-hover:text-warm-900 transition-colors">{stage.label}</p>
                   </div>
                   <div className="flex-1 relative">
@@ -245,6 +250,7 @@ export function CRMDashboard({
                         className={cn(
                           'h-full rounded-lg transition-all duration-700 ease-out flex items-center',
                           `bg-gradient-to-r ${stage.gradient}`,
+                          'group-hover:brightness-110',
                           stage.count === 0 && 'opacity-0'
                         )}
                         style={{ width: `${Math.max(widthPct, stage.count > 0 ? 3 : 0)}%` }}
@@ -254,8 +260,14 @@ export function CRMDashboard({
                         )}
                       </div>
                     </div>
+                    {/* Hover tooltip showing exact numbers */}
+                    <div className="absolute inset-0 flex items-center justify-end pr-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                      {widthPct <= 15 && stage.count > 0 && (
+                        <span className="text-[11px] font-semibold text-warm-600 bg-white/80 rounded px-1.5 py-0.5">{stage.pct}%</span>
+                      )}
+                    </div>
                   </div>
-                  <div className="w-14 text-right flex-shrink-0">
+                  <div className="w-12 text-right flex-shrink-0">
                     <span className="text-sm font-bold text-warm-900 tabular-nums">{stage.count}</span>
                   </div>
                 </div>
@@ -296,7 +308,7 @@ export function CRMDashboard({
         </div>
       </div>
 
-      {/* ── Two-column: Follow-ups + Stale Leads / Activity ── */}
+      {/* ── Three-column: Follow-ups + Stale Leads + Activity ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Today's Follow-ups */}
         <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-5">
@@ -314,11 +326,18 @@ export function CRMDashboard({
           ) : (
             <div className="space-y-1.5 max-h-[280px] overflow-y-auto">
               {followUpsDueToday.slice(0, 8).map(coach => (
-                <CoachRow key={coach.id} coach={coach} statusConfig={statusConfig} badge={
-                  coach.next_follow_up_at
-                    ? formatRelative(coach.next_follow_up_at)
-                    : undefined
-                } badgeColor="text-amber-600" />
+                <CoachRow
+                  key={coach.id}
+                  coach={coach}
+                  statusConfig={statusConfig}
+                  onClick={handleCoachRowClick}
+                  badge={
+                    coach.next_follow_up_at
+                      ? formatRelative(coach.next_follow_up_at)
+                      : undefined
+                  }
+                  badgeColor="text-amber-600"
+                />
               ))}
               {followUpsDueToday.length > 8 && (
                 <p className="text-xs text-warm-400 text-center pt-2">+{followUpsDueToday.length - 8} more</p>
@@ -343,11 +362,18 @@ export function CRMDashboard({
           ) : (
             <div className="space-y-1.5 max-h-[280px] overflow-y-auto">
               {staleLeads.slice(0, 8).map(coach => (
-                <CoachRow key={coach.id} coach={coach} statusConfig={statusConfig} badge={
-                  coach.last_contacted_at
-                    ? `${Math.floor((Date.now() - new Date(coach.last_contacted_at).getTime()) / 86400000)}d ago`
-                    : 'Never'
-                } badgeColor="text-red-600" />
+                <CoachRow
+                  key={coach.id}
+                  coach={coach}
+                  statusConfig={statusConfig}
+                  onClick={handleCoachRowClick}
+                  badge={
+                    coach.last_contacted_at
+                      ? `${Math.floor((Date.now() - new Date(coach.last_contacted_at).getTime()) / 86400000)}d ago`
+                      : 'Never'
+                  }
+                  badgeColor="text-red-600"
+                />
               ))}
               {staleLeads.length > 8 && (
                 <p className="text-xs text-warm-400 text-center pt-2">+{staleLeads.length - 8} more</p>
@@ -372,7 +398,13 @@ export function CRMDashboard({
           ) : (
             <div className="space-y-1.5 max-h-[280px] overflow-y-auto">
               {recentlyUpdated.map(coach => (
-                <CoachRow key={coach.id} coach={coach} statusConfig={statusConfig} badge={formatRelative(coach.updated_at)} />
+                <CoachRow
+                  key={coach.id}
+                  coach={coach}
+                  statusConfig={statusConfig}
+                  onClick={handleCoachRowClick}
+                  badge={formatRelative(coach.updated_at)}
+                />
               ))}
             </div>
           )}
@@ -381,27 +413,32 @@ export function CRMDashboard({
 
       {/* ── Quick Actions + Division Breakdown ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Quick Actions */}
+        {/* Quick Actions — cleaner callout */}
         {!allNewLeads && (
-          <div className="bg-gradient-to-br from-primary-50/80 to-primary-100/30 border border-primary-200/30 rounded-2xl p-5">
+          <div className="bg-white/70 backdrop-blur-xl border border-primary-100/40 rounded-2xl shadow-glass p-5">
             <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-semibold text-warm-900">Quick Actions</h3>
-                <p className="text-xs text-warm-500 mt-0.5">
-                  {stats.byStatus.new_lead || 0} new leads remaining
-                </p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center">
+                  <Zap size={18} className="text-primary-600" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-warm-900">Quick Actions</h3>
+                  <p className="text-xs text-warm-500 mt-0.5">
+                    {stats.byStatus.new_lead || 0} new leads remaining
+                  </p>
+                </div>
               </div>
               <div className="flex gap-2">
                 <button
                   onClick={() => handleResearchNext(10)}
                   disabled={processing === 'research' || (stats.byStatus.new_lead || 0) === 0}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm bg-primary-600 text-white hover:bg-primary-700 transition-all shadow-sm shadow-primary-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm bg-primary-600 text-white hover:bg-primary-700 transition-all shadow-sm shadow-primary-500/25 disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5 hover:shadow-md"
                 >
                   <Zap size={16} /> Research Next 10
                 </button>
                 <button
                   onClick={() => onNavigate('pipeline')}
-                  className="px-4 py-2.5 bg-white border border-warm-200/50 text-warm-700 rounded-xl font-medium hover:bg-warm-50 transition-all text-sm"
+                  className="px-4 py-2.5 bg-white border border-warm-200/50 text-warm-700 rounded-xl font-medium hover:bg-warm-50 transition-all text-sm hover:-translate-y-0.5"
                 >
                   Open Pipeline
                 </button>
@@ -420,40 +457,6 @@ export function CRMDashboard({
             <DivisionCard label="D2" count={divisionStats.d2} total={stats.total} color="blue" />
             <DivisionCard label="D3" count={divisionStats.d3} total={stats.total} color="primary" />
           </div>
-        </div>
-      </div>
-
-      {/* ── Pipeline Stage Cards (mobile-friendly funnel summary) ── */}
-      <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-warm-500 uppercase tracking-wider">Stage Overview</h3>
-          <button
-            onClick={() => onNavigate('pipeline')}
-            className="text-xs font-medium text-primary-600 hover:text-primary-700 flex items-center gap-1"
-          >
-            Kanban View <ChevronRight size={12} />
-          </button>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-          {pipelineStages.map((stage) => {
-            const count = stats.byStage[stage.id] || 0;
-            return (
-              <button
-                key={stage.id}
-                onClick={() => onNavigate('pipeline')}
-                className={cn(
-                  'p-3 rounded-xl text-center transition-all hover:scale-[1.02] hover:shadow-md',
-                  count > 0 ? `${stage.bgColor} border border-transparent` : 'bg-warm-50/50 border border-warm-100/50'
-                )}
-              >
-                <span className="text-lg block mb-1">{stage.emoji}</span>
-                <p className="text-2xl font-bold text-warm-900 tabular-nums">{count}</p>
-                <p className={cn('text-[10px] font-medium uppercase tracking-wider mt-0.5', count > 0 ? stage.color : 'text-warm-400')}>
-                  {stage.label}
-                </p>
-              </button>
-            );
-          })}
         </div>
       </div>
     </div>
@@ -481,9 +484,10 @@ function KPICard({
       'relative overflow-hidden',
       'bg-white/70 backdrop-blur-xl',
       'border rounded-2xl',
-      'shadow-glass hover:shadow-card-hover',
+      'shadow-glass',
       'p-4 lg:p-5',
       'transition-all duration-200 group',
+      'hover:-translate-y-0.5 hover:shadow-lg',
       accent ? 'border-l-[3px] border-l-primary-500 border-t-white/20 border-r-white/20 border-b-white/20' : 'border-white/20',
       className
     )}>
@@ -530,15 +534,19 @@ function DivisionCard({ label, count, total, color }: { label: string; count: nu
 }
 
 function CoachRow({
-  coach, badge, badgeColor,
+  coach, badge, badgeColor, onClick,
 }: {
   coach: Coach;
   statusConfig?: Record<CoachStatus, { label: string; color: string; bgColor: string; icon: React.ReactNode }>;
   badge?: string;
   badgeColor?: string;
+  onClick?: (coach: Coach) => void;
 }) {
   return (
-    <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-warm-50/50 transition-colors cursor-pointer">
+    <div
+      onClick={() => onClick?.(coach)}
+      className="flex items-center gap-3 p-2 rounded-xl hover:bg-warm-50/50 transition-colors cursor-pointer"
+    >
       <span className={cn(
         'text-[10px] font-bold px-1.5 py-0.5 rounded flex-shrink-0',
         coach.division === 'D2' ? 'bg-blue-100 text-blue-700' : 'bg-primary-100 text-primary-700'

@@ -56,7 +56,6 @@ export function ConferenceGroupView({
   const [openActionMenu, setOpenActionMenu] = useState<string | null>(null);
   const [openStatusDropdown, setOpenStatusDropdown] = useState<string | null>(null);
 
-  // Group coaches by conference
   const conferenceGroups = useMemo((): ConferenceGroup[] => {
     const groups: Record<string, Coach[]> = {};
     coaches.forEach(coach => {
@@ -150,7 +149,7 @@ export function ConferenceGroupView({
       {/* Controls */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-warm-500">
-          <span className="font-semibold text-warm-700">{conferenceGroups.length}</span> conferences ·{' '}
+          <span className="font-semibold text-warm-700">{conferenceGroups.length}</span> conferences &middot;{' '}
           <span className="font-semibold text-warm-700">{coaches.length}</span> coaches
         </p>
         <div className="flex items-center gap-2">
@@ -186,7 +185,6 @@ export function ConferenceGroupView({
               onClick={() => toggleConference(group.conference)}
               className="w-full flex items-center gap-3 p-4 hover:bg-warm-50/30 transition-colors"
             >
-              {/* Checkbox */}
               <div onClick={e => { e.stopPropagation(); toggleGroupSelection(group); }}>
                 <input
                   type="checkbox"
@@ -197,12 +195,10 @@ export function ConferenceGroupView({
                 />
               </div>
 
-              {/* Expand/Collapse */}
               <div className="text-warm-400">
                 {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
               </div>
 
-              {/* Conference Name */}
               <div className="flex-1 text-left">
                 <div className="flex items-center gap-2">
                   <h3 className="text-sm font-semibold text-warm-900">{group.conference}</h3>
@@ -217,7 +213,6 @@ export function ConferenceGroupView({
                 </div>
               </div>
 
-              {/* Division chips */}
               <div className="flex items-center gap-1.5">
                 {group.divisions.d2 > 0 && (
                   <span className="px-2 py-0.5 rounded-md bg-blue-50 text-[10px] font-bold text-blue-700 tabular-nums">
@@ -231,7 +226,6 @@ export function ConferenceGroupView({
                 )}
               </div>
 
-              {/* Status mini-dots */}
               <div className="flex items-center gap-0.5">
                 {Object.entries(group.statusBreakdown)
                   .sort(([, a], [, b]) => b - a)
@@ -254,16 +248,16 @@ export function ConferenceGroupView({
             {/* Expanded Coach List */}
             {isExpanded && (
               <div className="border-t border-warm-100/50">
-                <table className="w-full">
+                <table className="w-full table-fixed">
                   <thead>
                     <tr className="border-b border-warm-100/30">
                       <th className="w-10 px-4 py-2" />
                       <th className="w-8 px-2 py-2" />
                       <th className="text-left px-4 py-2 text-[10px] font-semibold text-warm-500 uppercase tracking-wider">Coach</th>
                       <th className="text-left px-4 py-2 text-[10px] font-semibold text-warm-500 uppercase tracking-wider">School</th>
-                      <th className="text-left px-4 py-2 text-[10px] font-semibold text-warm-500 uppercase tracking-wider w-14">Div</th>
+                      <th className="text-left px-4 py-2 text-[10px] font-semibold text-warm-500 uppercase tracking-wider w-14 hidden sm:table-cell">Div</th>
                       <th className="text-left px-4 py-2 text-[10px] font-semibold text-warm-500 uppercase tracking-wider">Status</th>
-                      <th className="text-left px-4 py-2 text-[10px] font-semibold text-warm-500 uppercase tracking-wider">Last Contact</th>
+                      <th className="text-left px-4 py-2 text-[10px] font-semibold text-warm-500 uppercase tracking-wider hidden lg:table-cell">Last Contact</th>
                       <th className="w-10 px-4 py-2" />
                     </tr>
                   </thead>
@@ -276,7 +270,7 @@ export function ConferenceGroupView({
                           className={cn(
                             'border-b border-warm-50/50 transition-all duration-150 cursor-pointer group',
                             isSelected && 'bg-primary-50/50',
-                            !isSelected && 'hover:bg-warm-50/30'
+                            !isSelected && 'hover:bg-primary-50/20'
                           )}
                           onClick={() => onCoachClick(coach)}
                         >
@@ -296,19 +290,19 @@ export function ConferenceGroupView({
                           <td className="px-2 py-2.5" onClick={e => e.stopPropagation()}>
                             <button
                               onClick={() => onToggleStar(coach.id, coach.is_starred)}
-                              className={cn('text-sm transition-transform hover:scale-110', coach.is_starred ? 'opacity-100' : 'opacity-20 group-hover:opacity-50')}
+                              className={cn('transition-transform hover:scale-110', coach.is_starred ? 'opacity-100' : 'opacity-20 group-hover:opacity-50')}
                             >
-                              {coach.is_starred ? '⭐' : '☆'}
+                              <Star size={14} className={cn(coach.is_starred ? 'fill-amber-400 text-amber-400' : 'text-warm-300')} />
                             </button>
                           </td>
                           <td className="px-4 py-2.5">
-                            <p className="text-sm font-medium text-warm-900">{coach.name}</p>
-                            {coach.title && <p className="text-[11px] text-warm-400 truncate max-w-[160px]">{coach.title}</p>}
+                            <p className="text-sm font-medium text-warm-900 truncate">{coach.name}</p>
+                            {coach.title && <p className="text-[11px] text-warm-400 truncate">{coach.title}</p>}
                           </td>
                           <td className="px-4 py-2.5">
-                            <p className="text-sm text-warm-700 truncate max-w-[160px]">{coach.school}</p>
+                            <p className="text-sm text-warm-700 truncate">{coach.school}</p>
                           </td>
-                          <td className="px-4 py-2.5">
+                          <td className="hidden sm:table-cell px-4 py-2.5">
                             <span className={cn(
                               'text-[10px] font-bold uppercase px-1.5 py-0.5 rounded',
                               coach.division === 'D2' ? 'bg-blue-100 text-blue-700' : 'bg-primary-100 text-primary-700'
@@ -321,7 +315,7 @@ export function ConferenceGroupView({
                               <button
                                 onClick={e => { e.stopPropagation(); setOpenStatusDropdown(openStatusDropdown === coach.id ? null : coach.id); setOpenActionMenu(null); }}
                                 className={cn(
-                                  'inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold transition-all',
+                                  'inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-medium transition-all',
                                   statusConfig[coach.status]?.bgColor,
                                   statusConfig[coach.status]?.color,
                                   'hover:ring-1 hover:ring-warm-200'
@@ -346,7 +340,7 @@ export function ConferenceGroupView({
                               )}
                             </div>
                           </td>
-                          <td className="px-4 py-2.5">
+                          <td className="hidden lg:table-cell px-4 py-2.5">
                             <span className={cn(
                               'text-xs tabular-nums',
                               !coach.last_contacted_at ? 'text-red-500 font-medium' : 'text-warm-500'

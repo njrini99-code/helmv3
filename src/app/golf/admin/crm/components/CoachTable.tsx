@@ -192,200 +192,200 @@ export function CoachTable({
 
   return (
     <div className="overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-warm-100">
-              <th className="w-10 px-4 py-3">
-                <input type="checkbox" checked={paginatedCoaches.length > 0 && paginatedCoaches.every(c => selectedIds.has(c.id))} onChange={toggleAll}
-                  className="w-4 h-4 rounded-md border-warm-300 text-primary-600 focus:ring-primary-500/20 cursor-pointer" />
-              </th>
-              <th className="w-10 px-2 py-3" />
-              <TH field="name" label="Coach" onSort={handleSort}><SortArrow field="name" /></TH>
-              <TH field="school" label="School" onSort={handleSort}><SortArrow field="school" /></TH>
-              <TH field="division" label="Div" onSort={handleSort} className="w-16"><SortArrow field="division" /></TH>
-              <TH field="conference" label="Conference" onSort={handleSort}><SortArrow field="conference" /></TH>
-              <TH field="status" label="Status" onSort={handleSort}><SortArrow field="status" /></TH>
-              <TH field="priority" label="Priority" onSort={handleSort} className="w-20"><SortArrow field="priority" /></TH>
-              <TH field="last_contacted_at" label="Last Contact" onSort={handleSort}><SortArrow field="last_contacted_at" /></TH>
-              <th className="w-12 px-4 py-3" />
-            </tr>
-          </thead>
-          <tbody>
-            {paginatedCoaches.map((coach, index) => {
-              const isFocused = focusedIndex === index;
-              const isSelected = selectedIds.has(coach.id);
-              return (
-                <tr
-                  key={coach.id}
-                  className={cn(
-                    'border-b border-warm-50 transition-all duration-150 cursor-pointer group',
-                    isSelected && 'bg-primary-50/50 border-l-2 border-l-primary-500',
-                    !isSelected && isFocused && 'bg-primary-50/30',
-                    !isSelected && !isFocused && 'hover:bg-primary-50/30'
-                  )}
-                  onClick={() => onCoachClick(coach)}
-                  onMouseEnter={() => setFocusedIndex(index)}
-                >
-                  {/* Checkbox */}
-                  <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
-                    <input type="checkbox" checked={isSelected} onChange={() => toggleSelection(coach.id)}
-                      className="w-4 h-4 rounded-md border-warm-300 text-primary-600 focus:ring-primary-500/20 cursor-pointer" />
-                  </td>
+      <table className="w-full table-fixed">
+        <thead>
+          <tr className="border-b border-warm-100">
+            <th className="w-10 px-4 py-3">
+              <input type="checkbox" checked={paginatedCoaches.length > 0 && paginatedCoaches.every(c => selectedIds.has(c.id))} onChange={toggleAll}
+                className="w-4 h-4 rounded-md border-warm-300 text-primary-600 focus:ring-primary-500/20 cursor-pointer" />
+            </th>
+            <th className="w-10 px-2 py-3" />
+            <TH field="name" label="Coach" onSort={handleSort}><SortArrow field="name" /></TH>
+            <TH field="school" label="School" onSort={handleSort}><SortArrow field="school" /></TH>
+            <TH field="division" label="Div" onSort={handleSort} className="w-16"><SortArrow field="division" /></TH>
+            <TH field="conference" label="Conference" onSort={handleSort} className="hidden xl:table-cell"><SortArrow field="conference" /></TH>
+            <TH field="status" label="Status" onSort={handleSort}><SortArrow field="status" /></TH>
+            <TH field="priority" label="Priority" onSort={handleSort} className="hidden lg:table-cell w-20"><SortArrow field="priority" /></TH>
+            <TH field="last_contacted_at" label="Last Contact" onSort={handleSort} className="hidden lg:table-cell"><SortArrow field="last_contacted_at" /></TH>
+            <th className="w-12 px-4 py-3" />
+          </tr>
+        </thead>
+        <tbody>
+          {paginatedCoaches.map((coach, index) => {
+            const isFocused = focusedIndex === index;
+            const isSelected = selectedIds.has(coach.id);
+            return (
+              <tr
+                key={coach.id}
+                className={cn(
+                  'border-b border-warm-50 transition-all duration-150 cursor-pointer group',
+                  isSelected && 'bg-primary-50/50 border-l-2 border-l-primary-400',
+                  !isSelected && isFocused && 'bg-primary-50/20',
+                  !isSelected && !isFocused && 'hover:bg-primary-50/20'
+                )}
+                onClick={() => onCoachClick(coach)}
+                onMouseEnter={() => setFocusedIndex(index)}
+              >
+                {/* Checkbox */}
+                <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                  <input type="checkbox" checked={isSelected} onChange={() => toggleSelection(coach.id)}
+                    className="w-4 h-4 rounded-md border-warm-300 text-primary-600 focus:ring-primary-500/20 cursor-pointer" />
+                </td>
 
-                  {/* Star */}
-                  <td className="px-2 py-3" onClick={e => e.stopPropagation()}>
-                    <button onClick={() => onToggleStar(coach.id, coach.is_starred)}
-                      className={cn('text-base transition-transform hover:scale-110', coach.is_starred ? 'opacity-100' : 'opacity-20 group-hover:opacity-50')}>
-                      {coach.is_starred ? '⭐' : '☆'}
+                {/* Star */}
+                <td className="px-2 py-3" onClick={e => e.stopPropagation()}>
+                  <button onClick={() => onToggleStar(coach.id, coach.is_starred)}
+                    className={cn('transition-transform hover:scale-110', coach.is_starred ? 'opacity-100' : 'opacity-20 group-hover:opacity-50')}>
+                    <Star size={14} className={cn(coach.is_starred ? 'fill-amber-400 text-amber-400' : 'text-warm-300')} />
+                  </button>
+                </td>
+
+                {/* Coach name + title */}
+                <td className="px-4 py-3">
+                  <p className="text-sm font-medium text-warm-900 leading-tight truncate">{coach.name}</p>
+                  {coach.title && <p className="text-[11px] text-warm-400 truncate">{coach.title}</p>}
+                </td>
+
+                {/* School */}
+                <td className="px-4 py-3">
+                  <p className="text-sm text-warm-800 truncate">{coach.school}</p>
+                </td>
+
+                {/* Division */}
+                <td className="px-4 py-3">
+                  <span className={cn(
+                    'text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded',
+                    coach.division === 'D2' ? 'bg-blue-100 text-blue-700' : 'bg-primary-100 text-primary-700'
+                  )}>
+                    {coach.division}
+                  </span>
+                </td>
+
+                {/* Conference — hidden below xl */}
+                <td className="hidden xl:table-cell px-4 py-3">
+                  <p className="text-xs text-warm-500 truncate">{coach.conference}</p>
+                </td>
+
+                {/* Status dropdown */}
+                <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                  <div className="relative">
+                    <button
+                      onClick={e => { e.stopPropagation(); setOpenStatusDropdown(openStatusDropdown === coach.id ? null : coach.id); setOpenActionMenu(null); }}
+                      className={cn(
+                        'inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-medium transition-all',
+                        statusConfig[coach.status]?.bgColor, statusConfig[coach.status]?.color,
+                        'hover:ring-1 hover:ring-warm-200'
+                      )}
+                    >
+                      <span className="flex items-center">{statusConfig[coach.status]?.icon}</span>
+                      <span>{statusConfig[coach.status]?.label}</span>
+                      <ChevronDown size={9} className="opacity-40" />
                     </button>
-                  </td>
-
-                  {/* Coach name + title */}
-                  <td className="px-4 py-3">
-                    <p className="text-sm font-medium text-warm-900 leading-tight">{coach.name}</p>
-                    {coach.title && <p className="text-[11px] text-warm-400 truncate max-w-[180px]">{coach.title}</p>}
-                  </td>
-
-                  {/* School */}
-                  <td className="px-4 py-3">
-                    <p className="text-sm text-warm-800 truncate max-w-[180px]">{coach.school}</p>
-                  </td>
-
-                  {/* Division — D2=blue, D3=primary per spec */}
-                  <td className="px-4 py-3">
-                    <span className={cn(
-                      'text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded',
-                      coach.division === 'D2' ? 'bg-blue-100 text-blue-700' : 'bg-primary-100 text-primary-700'
-                    )}>
-                      {coach.division}
-                    </span>
-                  </td>
-
-                  {/* Conference */}
-                  <td className="px-4 py-3">
-                    <p className="text-xs text-warm-500 truncate max-w-[160px]">{coach.conference}</p>
-                  </td>
-
-                  {/* Status dropdown */}
-                  <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
-                    <div className="relative">
-                      <button
-                        onClick={e => { e.stopPropagation(); setOpenStatusDropdown(openStatusDropdown === coach.id ? null : coach.id); setOpenActionMenu(null); }}
-                        className={cn(
-                          'inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all',
-                          statusConfig[coach.status]?.bgColor, statusConfig[coach.status]?.color,
-                          'hover:ring-1 hover:ring-warm-200'
-                        )}
-                      >
-                        <span className="flex items-center">{statusConfig[coach.status]?.icon}</span>
-                        <span>{statusConfig[coach.status]?.label}</span>
-                        <ChevronDown size={10} className="opacity-50" />
-                      </button>
-                      {openStatusDropdown === coach.id && (
-                        <div className="absolute z-50 mt-1 py-1 min-w-[160px] max-h-[320px] overflow-y-auto bg-white/95 backdrop-blur-xl rounded-xl border border-warm-200/50 shadow-xl" onClick={e => e.stopPropagation()}>
-                          {ALL_STATUSES.map(status => (
-                            <button key={status}
-                              onClick={() => { onStatusChange(coach.id, status); setOpenStatusDropdown(null); }}
-                              className={cn('w-full text-left px-3 py-1.5 text-sm flex items-center gap-2 transition-colors',
-                                coach.status === status ? 'bg-primary-50 font-semibold text-primary-700' : 'text-warm-700 hover:bg-warm-50'
-                              )}>
-                              <span className="flex items-center">{statusConfig[status]?.icon}</span>
-                              <span>{statusConfig[status]?.label}</span>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </td>
-
-                  {/* Priority */}
-                  <td className="px-4 py-3">
-                    {coach.priority > 0 ? (
-                      <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded', priorityConfig[coach.priority]?.bgColor, priorityConfig[coach.priority]?.color)}>
-                        {priorityConfig[coach.priority]?.iconLabel} {priorityConfig[coach.priority]?.label}
-                      </span>
-                    ) : (
-                      <span className="text-[10px] text-warm-300">—</span>
+                    {openStatusDropdown === coach.id && (
+                      <div className="absolute z-50 mt-1 py-1 min-w-[160px] max-h-[320px] overflow-y-auto bg-white/95 backdrop-blur-xl rounded-xl border border-warm-200/50 shadow-xl" onClick={e => e.stopPropagation()}>
+                        {ALL_STATUSES.map(status => (
+                          <button key={status}
+                            onClick={() => { onStatusChange(coach.id, status); setOpenStatusDropdown(null); }}
+                            className={cn('w-full text-left px-3 py-1.5 text-sm flex items-center gap-2 transition-colors',
+                              coach.status === status ? 'bg-primary-50 font-semibold text-primary-700' : 'text-warm-700 hover:bg-warm-50'
+                            )}>
+                            <span className="flex items-center">{statusConfig[status]?.icon}</span>
+                            <span>{statusConfig[status]?.label}</span>
+                          </button>
+                        ))}
+                      </div>
                     )}
-                  </td>
+                  </div>
+                </td>
 
-                  {/* Last Contact */}
-                  <td className="px-4 py-3">
-                    <span className={cn(
-                      'text-xs tabular-nums',
-                      !coach.last_contacted_at ? 'text-red-500 font-medium' : 'text-warm-500'
-                    )}>
-                      {formatRelativeDate(coach.last_contacted_at)}
+                {/* Priority — hidden below lg */}
+                <td className="hidden lg:table-cell px-4 py-3">
+                  {coach.priority > 0 ? (
+                    <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded', priorityConfig[coach.priority]?.bgColor, priorityConfig[coach.priority]?.color)}>
+                      {priorityConfig[coach.priority]?.iconLabel} {priorityConfig[coach.priority]?.label}
                     </span>
-                  </td>
+                  ) : (
+                    <span className="text-[10px] text-warm-300">&mdash;</span>
+                  )}
+                </td>
 
-                  {/* Three-dot action menu */}
-                  <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
-                    <div className="relative">
-                      <button
-                        onClick={e => { e.stopPropagation(); setOpenActionMenu(openActionMenu === coach.id ? null : coach.id); setOpenStatusDropdown(null); }}
-                        className={cn(
-                          'p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100',
-                          'opacity-0 group-hover:opacity-100 transition-all duration-200'
-                        )}
-                      >
-                        <MoreHorizontal size={16} />
-                      </button>
-                      {openActionMenu === coach.id && (
-                        <div className="absolute right-0 top-full mt-1 z-50 w-48 py-1 rounded-xl bg-white border border-warm-200/80 shadow-xl" onClick={e => e.stopPropagation()}>
-                          <button onClick={() => { onLogContact(coach); setOpenActionMenu(null); }}
-                            className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 flex items-center gap-2">
-                            <MessageSquare size={14} /> Log Contact
-                          </button>
-                          {coach.email && (
-                            <a href={`mailto:${coach.email}`} onClick={() => setOpenActionMenu(null)}
-                              className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 flex items-center gap-2">
-                              <Mail size={14} /> Send Email
-                            </a>
-                          )}
-                          <button onClick={() => { onStatusChange(coach.id, 'researching'); setOpenActionMenu(null); }}
-                            className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 flex items-center gap-2">
-                            <ArrowRight size={14} /> Move to Researching
-                          </button>
-                          <button onClick={() => { onToggleStar(coach.id, coach.is_starred); setOpenActionMenu(null); }}
-                            className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 flex items-center gap-2">
-                            <Star size={14} /> {coach.is_starred ? 'Unstar' : 'Star'}
-                          </button>
-                        </div>
+                {/* Last Contact — hidden below lg */}
+                <td className="hidden lg:table-cell px-4 py-3">
+                  <span className={cn(
+                    'text-xs tabular-nums',
+                    !coach.last_contacted_at ? 'text-red-500 font-medium' : 'text-warm-500'
+                  )}>
+                    {formatRelativeDate(coach.last_contacted_at)}
+                  </span>
+                </td>
+
+                {/* Three-dot action menu */}
+                <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                  <div className="relative">
+                    <button
+                      onClick={e => { e.stopPropagation(); setOpenActionMenu(openActionMenu === coach.id ? null : coach.id); setOpenStatusDropdown(null); }}
+                      className={cn(
+                        'p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100',
+                        'opacity-0 group-hover:opacity-100 transition-all duration-200'
                       )}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+                    >
+                      <MoreHorizontal size={16} />
+                    </button>
+                    {openActionMenu === coach.id && (
+                      <div className="absolute right-0 top-full mt-1 z-50 w-48 py-1 rounded-xl bg-white border border-warm-200/80 shadow-xl" onClick={e => e.stopPropagation()}>
+                        <button onClick={() => { onLogContact(coach); setOpenActionMenu(null); }}
+                          className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 flex items-center gap-2">
+                          <MessageSquare size={14} /> Log Contact
+                        </button>
+                        {coach.email && (
+                          <a href={`mailto:${coach.email}`} onClick={() => setOpenActionMenu(null)}
+                            className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 flex items-center gap-2">
+                            <Mail size={14} /> Send Email
+                          </a>
+                        )}
+                        <button onClick={() => { onStatusChange(coach.id, 'researching'); setOpenActionMenu(null); }}
+                          className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 flex items-center gap-2">
+                          <ArrowRight size={14} /> Move to Researching
+                        </button>
+                        <button onClick={() => { onToggleStar(coach.id, coach.is_starred); setOpenActionMenu(null); }}
+                          className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 flex items-center gap-2">
+                          <Star size={14} /> {coach.is_starred ? 'Unstar' : 'Star'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
 
       {/* Pagination */}
-      <div className="bg-warm-50/20 border-t border-warm-100/30 px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-4 text-sm text-warm-600">
-          <span className="font-medium tabular-nums">
-            {((page - 1) * pageSize) + 1}–{Math.min(page * pageSize, sortedCoaches.length)} of {sortedCoaches.length}
-          </span>
-          {selectedIds.size > 0 && (
-            <span className="px-2 py-0.5 bg-primary-100 text-primary-700 rounded-lg text-xs font-semibold tabular-nums">
-              {selectedIds.size} selected
+      <div className="bg-warm-50/20 border-t border-warm-100/30 px-4 py-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-4 text-sm text-warm-600">
+            <span className="font-medium tabular-nums">
+              {((page - 1) * pageSize) + 1}&ndash;{Math.min(page * pageSize, sortedCoaches.length)} of {sortedCoaches.length}
             </span>
-          )}
-        </div>
-        <div className="flex items-center gap-3">
-          <select value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setPage(1); }}
-            className="text-sm px-2.5 py-1.5 rounded-lg bg-white/60 border border-warm-200/50 focus:ring-2 focus:ring-primary-500 focus:border-transparent">
-            {PAGE_SIZES.map(s => <option key={s} value={s}>{s}/page</option>)}
-          </select>
-          <div className="flex items-center gap-1">
-            <PaginationButton onClick={() => setPage(1)} disabled={page === 1}>««</PaginationButton>
-            <PaginationButton onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>‹</PaginationButton>
-            <span className="px-3 text-sm font-semibold text-warm-700 tabular-nums">{page} / {totalPages}</span>
-            <PaginationButton onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>›</PaginationButton>
-            <PaginationButton onClick={() => setPage(totalPages)} disabled={page === totalPages}>»»</PaginationButton>
+            {selectedIds.size > 0 && (
+              <span className="px-2 py-0.5 bg-primary-100 text-primary-700 rounded-lg text-xs font-semibold tabular-nums">
+                {selectedIds.size} selected
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-3">
+            <select value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setPage(1); }}
+              className="text-sm px-2.5 py-1.5 rounded-lg bg-white/60 border border-warm-200/50 focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+              {PAGE_SIZES.map(s => <option key={s} value={s}>{s}/page</option>)}
+            </select>
+            <div className="flex items-center gap-1">
+              <PaginationButton onClick={() => setPage(1)} disabled={page === 1}>&laquo;</PaginationButton>
+              <PaginationButton onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>&lsaquo;</PaginationButton>
+              <span className="px-3 text-sm font-semibold text-warm-700 tabular-nums">{page} / {totalPages}</span>
+              <PaginationButton onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>&rsaquo;</PaginationButton>
+              <PaginationButton onClick={() => setPage(totalPages)} disabled={page === totalPages}>&raquo;</PaginationButton>
+            </div>
           </div>
         </div>
       </div>

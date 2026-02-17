@@ -154,10 +154,10 @@ export async function POST(request: NextRequest) {
       description: buildEventDescription(event),
       location: event.location || undefined,
       start: event.all_day
-        ? { date: event.start_time.split('T')[0] }
+        ? { date: event.start_time.split('T')[0]! }
         : { dateTime: event.start_time },
       end: event.all_day
-        ? { date: event.end_time.split('T')[0] }
+        ? { date: event.end_time.split('T')[0]! }
         : { dateTime: event.end_time },
     };
 
@@ -279,7 +279,7 @@ function buildEventDescription(event: Record<string, unknown>): string {
  * GET /api/crm/google-calendar/sync
  * Sync all pending events to Google Calendar
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -321,10 +321,10 @@ export async function GET(request: NextRequest) {
           description: buildEventDescription(event),
           location: event.location || undefined,
           start: event.all_day
-            ? { date: event.start_time.split('T')[0] }
+            ? { date: event.start_time.split('T')[0]! }
             : { dateTime: event.start_time },
           end: event.all_day
-            ? { date: event.end_time.split('T')[0] }
+            ? { date: event.end_time.split('T')[0]! }
             : { dateTime: event.end_time },
         };
 

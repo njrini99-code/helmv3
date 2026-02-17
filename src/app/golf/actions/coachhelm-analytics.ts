@@ -141,6 +141,10 @@ export async function getInsightEffectiveness(
   dateRange?: DateRange
 ): Promise<{ success: boolean; data?: InsightEffectivenessData; error?: string }> {
   const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { success: false, error: 'Unauthorized' };
+  }
 
   try {
     // Default to last 30 days if no range provided
@@ -266,6 +270,10 @@ export async function getPredictionPerformance(
   dateRange?: DateRange
 ): Promise<{ success: boolean; data?: PredictionPerformanceData; error?: string }> {
   const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { success: false, error: 'Unauthorized' };
+  }
 
   try {
     const end = dateRange?.end || new Date();
@@ -380,6 +388,10 @@ export async function getPatternImpact(
   dateRange?: DateRange
 ): Promise<{ success: boolean; data?: PatternImpactData; error?: string }> {
   const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { success: false, error: 'Unauthorized' };
+  }
 
   try {
     const end = dateRange?.end || new Date();
@@ -522,6 +534,10 @@ export async function getCoachHelmOverview(
   teamId: string
 ): Promise<{ success: boolean; data?: CoachHelmOverviewData; error?: string }> {
   const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { success: false, error: 'Unauthorized' };
+  }
 
   try {
     const now = new Date();

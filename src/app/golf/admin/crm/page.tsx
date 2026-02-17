@@ -18,6 +18,8 @@ import {
   Clock,
   Flame,
   Building2,
+  Target,
+  AlertTriangle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -299,7 +301,7 @@ export default function CRMPage() {
       <div className="min-h-screen bg-[#FFFEF8] flex items-center justify-center p-8">
         <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/20 shadow-glass p-8 text-center max-w-md">
           <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4">
-            <span className="text-3xl">⚠️</span>
+            <AlertTriangle size={28} className="text-red-500" />
           </div>
           <h2 className="text-xl font-bold text-warm-900 mb-2">Error Loading CRM</h2>
           <p className="text-warm-600 mb-6">{error}</p>
@@ -319,7 +321,43 @@ export default function CRMPage() {
   // ============================================================================
   return (
     <div className="min-h-screen bg-[#FFFEF8] flex">
-      {/* ═══════════════════ Sidebar ═══════════════════ */}
+      {/* ═══════════════════ Mobile Header ═══════════════════ */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-[#1C1917] border-b border-white/10">
+        <div className="flex items-center gap-2 px-3 h-12">
+          <a href="/golf/admin" className="flex-shrink-0 p-1.5 rounded-lg text-warm-400 hover:text-white transition-colors">
+            <ArrowLeft size={16} />
+          </a>
+          <div className="flex items-center gap-1.5 flex-1 overflow-x-auto scrollbar-hide">
+            {TABS.map((tab) => {
+              const isActive = activeTab === tab.id;
+              const TabIcon = tab.Icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={cn(
+                    'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors flex-shrink-0',
+                    isActive
+                      ? 'bg-white/15 text-white'
+                      : 'text-warm-400 hover:text-white'
+                  )}
+                >
+                  <TabIcon size={14} />
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="flex-shrink-0 p-1.5 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors"
+          >
+            <Plus size={16} />
+          </button>
+        </div>
+      </div>
+
+      {/* ═══════════════════ Desktop Sidebar ═══════════════════ */}
       <aside className={cn(
         'fixed left-0 top-0 bottom-0 z-50 flex flex-col',
         'bg-[#1C1917] border-r border-white/5',
@@ -330,7 +368,7 @@ export default function CRMPage() {
         {/* Logo */}
         <div className={cn('flex items-center gap-3 px-4 h-16', sidebarCollapsed && 'justify-center px-0')}>
           <div className="w-9 h-9 rounded-[10px] bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/25">
-            <span className="text-lg">🎯</span>
+            <Target size={18} className="text-white" />
           </div>
           {!sidebarCollapsed && <span className="font-bold text-lg text-white tracking-tight">Coach CRM</span>}
         </div>
@@ -380,60 +418,7 @@ export default function CRMPage() {
               );
             })}
           </div>
-
-          {/* Pipeline Summary in sidebar */}
-          {!sidebarCollapsed && (
-            <div className="mt-6 space-y-1">
-              <div className="text-[11px] font-semibold text-warm-500 uppercase tracking-wider px-1 mb-2">Pipeline</div>
-              {PIPELINE_STAGES.map((stage) => {
-                const count = stats.byStage[stage.id] || 0;
-                return (
-                  <button
-                    key={stage.id}
-                    onClick={() => setActiveTab('pipeline')}
-                    className="flex items-center justify-between w-full px-3 py-1.5 rounded-lg text-warm-400 hover:bg-white/5 hover:text-white transition-colors group"
-                  >
-                    <span className="flex items-center gap-2 text-sm">
-                      <span className="text-xs">{stage.emoji}</span>
-                      <span>{stage.label}</span>
-                    </span>
-                    <span className="text-xs font-bold tabular-nums text-warm-500 group-hover:text-warm-300">{count}</span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
         </nav>
-
-        {/* Sidebar Stats */}
-        {!sidebarCollapsed && (
-          <div className="p-3 border-t border-white/10 space-y-3">
-            <div className="grid grid-cols-2 gap-2">
-              <div className="rounded-[10px] p-3 bg-white/5 border border-white/5">
-                <div className="text-xl font-bold text-primary-400 tabular-nums">{stats.byStatus.closed_won || 0}</div>
-                <div className="text-[10px] text-warm-500 font-medium uppercase tracking-wider mt-0.5">Won</div>
-              </div>
-              <div className="rounded-[10px] p-3 bg-white/5 border border-white/5">
-                <div className="text-xl font-bold text-cyan-400 tabular-nums">{(stats.byStatus.demo_scheduled || 0) + (stats.byStatus.demo_completed || 0)}</div>
-                <div className="text-[10px] text-warm-500 font-medium uppercase tracking-wider mt-0.5">Demos</div>
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-[10px] p-2 bg-white/5 border border-white/5 text-center">
-                <div className="text-sm font-bold text-orange-400 tabular-nums">{stats.hot}</div>
-                <div className="text-[9px] text-warm-500">🔥 Hot</div>
-              </div>
-              <div className="rounded-[10px] p-2 bg-white/5 border border-white/5 text-center">
-                <div className="text-sm font-bold text-amber-400 tabular-nums">{stats.followUpsDue}</div>
-                <div className="text-[9px] text-warm-500">⏰ Due</div>
-              </div>
-              <div className="rounded-[10px] p-2 bg-white/5 border border-white/5 text-center">
-                <div className="text-sm font-bold text-yellow-400 tabular-nums">{stats.starred}</div>
-                <div className="text-[9px] text-warm-500">⭐ Star</div>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Action Buttons */}
         <div className="p-3 border-t border-white/10 space-y-2">
@@ -471,22 +456,23 @@ export default function CRMPage() {
       {/* ═══════════════════ Main Content ═══════════════════ */}
       <main className={cn(
         'flex-1 flex flex-col min-h-screen transition-all duration-300',
+        'pt-12 lg:pt-0',
         sidebarCollapsed ? 'lg:ml-[72px]' : 'lg:ml-[260px]'
       )}>
         {/* Top Bar */}
-        <header className="sticky top-0 z-30 bg-[#FFFEF8]/95 backdrop-blur-sm border-b border-warm-200/50 px-6 py-3">
+        <header className="sticky top-12 lg:top-0 z-30 bg-[#FFFEF8]/95 backdrop-blur-sm border-b border-warm-200/50 px-4 sm:px-6 py-3">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-xl font-bold text-warm-900">{TABS.find(t => t.id === activeTab)?.label}</h2>
-              <p className="text-sm text-warm-500 mt-0.5">{TABS.find(t => t.id === activeTab)?.description}</p>
+              <p className="text-sm text-warm-500 mt-0.5 hidden sm:block">{TABS.find(t => t.id === activeTab)?.description}</p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/70 border border-white/30 shadow-glass-sm">
                 <Users size={14} className="text-warm-500" />
                 <span className="text-sm font-bold text-warm-800 tabular-nums">{stats.total}</span>
-                <span className="text-xs text-warm-500">coaches</span>
+                <span className="text-xs text-warm-500 hidden sm:inline">coaches</span>
               </div>
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/70 border border-white/30 shadow-glass-sm">
+              <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/70 border border-white/30 shadow-glass-sm">
                 <TrendingUp size={14} className="text-primary-500" />
                 <span className="text-sm font-bold text-warm-800 tabular-nums">{stats.inPipeline}</span>
                 <span className="text-xs text-warm-500">in pipeline</span>
@@ -495,11 +481,11 @@ export default function CRMPage() {
                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200/50">
                   <Clock size={14} className="text-amber-600" />
                   <span className="text-sm font-bold text-amber-700 tabular-nums">{stats.followUpsDue}</span>
-                  <span className="text-xs text-amber-600">due</span>
+                  <span className="text-xs text-amber-600 hidden sm:inline">due</span>
                 </div>
               )}
               {stats.hot > 0 && (
-                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-50 border border-orange-200/50">
+                <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-50 border border-orange-200/50">
                   <Flame size={14} className="text-orange-600" />
                   <span className="text-sm font-bold text-orange-700 tabular-nums">{stats.hot}</span>
                   <span className="text-xs text-orange-600">hot</span>
@@ -510,7 +496,7 @@ export default function CRMPage() {
         </header>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-auto p-6">
+        <div className="flex-1 overflow-auto p-4 sm:p-6">
           {/* ── Dashboard Tab ── */}
           {activeTab === 'dashboard' && (
             <CRMDashboard
@@ -521,6 +507,7 @@ export default function CRMPage() {
               onBulkUpdate={bulkUpdateCoaches}
               onRefresh={refreshData}
               onNavigate={setActiveTab}
+              {...({ onCoachClick: handleCoachClick } as Record<string, unknown>)}
             />
           )}
 

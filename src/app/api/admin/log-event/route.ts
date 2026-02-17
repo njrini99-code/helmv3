@@ -97,6 +97,7 @@ function validatePayload(payload: unknown): payload is LogEventPayload {
 // ============================================
 
 function sanitizeString(str: string, maxLength: number): string {
+  // eslint-disable-next-line no-control-regex
   return str.slice(0, maxLength).replace(/[\x00-\x1F\x7F]/g, '');
 }
 
@@ -165,20 +166,18 @@ export async function POST(request: NextRequest) {
     // Insert via admin client (service role)
     const adminDb = createAdminClient();
     
+    type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
     const { data, error } = await adminDb
       .from('admin_events')
       .insert({
         event_type: sanitized.eventType,
         title: sanitized.title,
-        severity: sanitized.severity,
+        severity: (sanitized.severity ?? 'info') as 'info' | 'warning' | 'error' | 'critical',
         message: sanitized.message ?? null,
-        metadata: sanitized.metadata ?? {},
+        metadata: (sanitized.metadata ?? {}) as Json,
         url: sanitized.url ?? null,
         stack_trace: sanitized.stackTrace ?? null,
-        browser_info: sanitized.browserInfo ?? null,
-        // Note: user_id and user_email are not set from client
-        // They would need to be extracted from the session on the server
-        // For now, client events are anonymous
+        browser_info: (sanitized.browserInfo ?? null) as Json,
       })
       .select('id')
       .single();

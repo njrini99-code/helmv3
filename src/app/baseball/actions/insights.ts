@@ -34,6 +34,15 @@ export async function generateTeamInsights(
 ): Promise<InsightGenerationResult> {
   const supabase = await createClient();
 
+  // Auth check: verify user is authenticated and is the coach
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { success: false, error: 'Unauthorized' };
+  }
+  if (user.id !== coachId) {
+    return { success: false, error: 'Forbidden: You can only generate insights for yourself' };
+  }
+
   // Get coach philosophy (or use defaults)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: philosophy } = await (supabase as any)
@@ -368,6 +377,23 @@ function getDefaultPhilosophy(): BaseballCoachPhilosophy {
 export async function dismissInsight(insightId: string): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient();
 
+  // Auth check: verify user is authenticated
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { success: false, error: 'Unauthorized' };
+  }
+
+  // Ownership check: verify user owns this insight
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: insight } = await (supabase as any)
+    .from('baseball_coach_insights')
+    .select('coach_id')
+    .eq('id', insightId)
+    .single();
+  if (!insight || insight.coach_id !== user.id) {
+    return { success: false, error: 'Forbidden: You can only dismiss your own insights' };
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any)
     .from('baseball_coach_insights')
@@ -387,6 +413,23 @@ export async function dismissInsight(insightId: string): Promise<{ success: bool
  */
 export async function markInsightAddressed(insightId: string): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient();
+
+  // Auth check: verify user is authenticated
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { success: false, error: 'Unauthorized' };
+  }
+
+  // Ownership check: verify user owns this insight
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: insight } = await (supabase as any)
+    .from('baseball_coach_insights')
+    .select('coach_id')
+    .eq('id', insightId)
+    .single();
+  if (!insight || insight.coach_id !== user.id) {
+    return { success: false, error: 'Forbidden: You can only update your own insights' };
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any)

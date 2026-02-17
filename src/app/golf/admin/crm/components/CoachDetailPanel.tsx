@@ -3,7 +3,25 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
-import { X, Mail, Phone, Plus, Clock, MessageSquare } from 'lucide-react';
+import {
+  X,
+  Mail,
+  Phone,
+  Plus,
+  Clock,
+  MessageSquare,
+  Star,
+  FileText,
+  History,
+  Tag,
+  ListChecks,
+  ClipboardCheck,
+  Monitor,
+  Users,
+  StickyNote,
+  Check,
+  Pencil,
+} from 'lucide-react';
 import type { Coach, CoachStatus } from '../crm-config';
 
 interface CoachDetailPanelProps {
@@ -24,11 +42,11 @@ interface ContactLog {
 }
 
 const CONTACT_TYPES = [
-  { value: 'email', label: 'Email', icon: '✉️', dotColor: 'bg-blue-500' },
-  { value: 'call', label: 'Call', icon: '📞', dotColor: 'bg-primary-500' },
-  { value: 'demo', label: 'Demo', icon: '🖥️', dotColor: 'bg-violet-500' },
-  { value: 'meeting', label: 'Meeting', icon: '🤝', dotColor: 'bg-cyan-500' },
-  { value: 'note', label: 'Note', icon: '📝', dotColor: 'bg-warm-400' },
+  { value: 'email', label: 'Email', Icon: Mail, dotColor: 'bg-blue-500' },
+  { value: 'call', label: 'Call', Icon: Phone, dotColor: 'bg-primary-500' },
+  { value: 'demo', label: 'Demo', Icon: Monitor, dotColor: 'bg-violet-500' },
+  { value: 'meeting', label: 'Meeting', Icon: Users, dotColor: 'bg-cyan-500' },
+  { value: 'note', label: 'Note', Icon: StickyNote, dotColor: 'bg-warm-400' },
 ] as const;
 
 const ALL_STATUSES: CoachStatus[] = [
@@ -123,7 +141,7 @@ export function CoachDetailPanel({
         <div className="absolute inset-0 bg-black/10 backdrop-blur-[2px] transition-opacity duration-200" />
       </div>
 
-      {/* Panel — max-w-lg per spec */}
+      {/* Panel */}
       <aside className={cn(
         'fixed right-0 top-0 bottom-0 z-50 w-full max-w-lg',
         'bg-[#FFFEF8] border-l border-warm-200/60 shadow-2xl',
@@ -131,29 +149,39 @@ export function CoachDetailPanel({
         isVisible ? 'translate-x-0' : 'translate-x-full',
         'flex flex-col'
       )}>
-        {/* Header */}
-        <div className="bg-gradient-to-r from-warm-900 to-warm-800 text-white p-5 flex-shrink-0">
+        {/* Primary accent bar */}
+        <div className="h-1 bg-gradient-to-r from-primary-500 to-primary-600 flex-shrink-0" />
+
+        {/* Header — clean white background */}
+        <div className="bg-white border-b border-warm-100 p-5 flex-shrink-0">
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <button onClick={() => onUpdate({ is_starred: !coach.is_starred })} className="text-xl hover:scale-110 transition-transform">
-                  {coach.is_starred ? '⭐' : '☆'}
+                <button
+                  onClick={() => onUpdate({ is_starred: !coach.is_starred })}
+                  className="hover:scale-110 transition-transform"
+                >
+                  <Star size={18} className={cn(coach.is_starred ? 'fill-amber-400 text-amber-400' : 'text-warm-300 hover:text-warm-400')} />
                 </button>
-                <h2 className="text-xl font-bold truncate">{coach.name}</h2>
-                {coach.priority > 0 && <span className="text-sm">{priorityConfig[coach.priority]?.iconLabel}</span>}
+                <h2 className="text-xl font-bold text-warm-900 truncate">{coach.name}</h2>
+                {coach.priority > 0 && (
+                  <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded', priorityConfig[coach.priority]?.bgColor, priorityConfig[coach.priority]?.color)}>
+                    {priorityConfig[coach.priority]?.iconLabel} {priorityConfig[coach.priority]?.label}
+                  </span>
+                )}
               </div>
-              <p className="text-warm-300 text-sm">{coach.title || 'Coach'}</p>
-              <p className="text-white font-medium mt-1">{coach.school}</p>
+              <p className="text-warm-500 text-sm">{coach.title || 'Coach'}</p>
+              <p className="text-warm-900 font-medium mt-1">{coach.school}</p>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-warm-400 text-sm">{coach.conference}</span>
-                <span className="text-warm-500">·</span>
+                <span className="text-warm-500 text-sm">{coach.conference}</span>
+                <span className="text-warm-300">&middot;</span>
                 <span className={cn('px-1.5 py-0.5 rounded text-[10px] font-bold',
-                  coach.division === 'D2' ? 'bg-blue-500/20 text-blue-300' : 'bg-primary-500/20 text-primary-300')}>
+                  coach.division === 'D2' ? 'bg-blue-100 text-blue-700' : 'bg-primary-100 text-primary-700')}>
                   {coach.division}
                 </span>
               </div>
             </div>
-            <button onClick={handleClose} className="p-2 rounded-xl hover:bg-white/10 transition-colors text-white/70 hover:text-white">
+            <button onClick={handleClose} className="p-2 rounded-xl hover:bg-warm-50 transition-colors text-warm-400 hover:text-warm-600">
               <X size={18} />
             </button>
           </div>
@@ -173,7 +201,7 @@ export function CoachDetailPanel({
               <span className="text-xs text-warm-500 font-medium">Priority</span>
               <select value={coach.priority} onChange={e => onUpdate({ priority: parseInt(e.target.value) })}
                 className="px-2.5 py-1.5 rounded-xl text-xs font-medium border border-warm-200/30 cursor-pointer bg-white/50">
-                <option value={0}>Normal</option><option value={1}>⚡ High</option><option value={2}>🔥 Hot</option>
+                <option value={0}>Normal</option><option value={1}>High</option><option value={2}>Hot</option>
               </select>
             </div>
           </div>
@@ -200,11 +228,16 @@ export function CoachDetailPanel({
         )}
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-5">
+        <div className="flex-1 overflow-y-auto p-5 space-y-6">
 
-          {/* ── Notes ── */}
-          <Section title="Notes" emoji="📝"
-            action={<button onClick={() => { if (editingNotes) saveNotes(); else setEditingNotes(true); }} className="text-xs text-primary-600 hover:text-primary-700 font-semibold">{editingNotes ? '✓ Save' : '✎ Edit'}</button>}>
+          {/* Notes */}
+          <Section title="Notes" icon={<FileText size={14} className="text-warm-400" />}
+            action={
+              <button onClick={() => { if (editingNotes) saveNotes(); else setEditingNotes(true); }}
+                className="text-xs text-primary-600 hover:text-primary-700 font-semibold flex items-center gap-1">
+                {editingNotes ? <><Check size={12} /> Save</> : <><Pencil size={12} /> Edit</>}
+              </button>
+            }>
             {editingNotes ? (
               <textarea value={notesValue} onChange={e => setNotesValue(e.target.value)} autoFocus rows={5}
                 className="w-full px-3 py-2 border border-warm-200/30 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white/50" placeholder="Add notes..." />
@@ -215,20 +248,28 @@ export function CoachDetailPanel({
             )}
           </Section>
 
-          {/* ── Contact Log Timeline ── */}
-          <Section title="Contact Log" emoji="📅"
-            action={<button onClick={() => setShowContactForm(!showContactForm)} className="text-xs text-primary-600 hover:text-primary-700 font-semibold flex items-center gap-1"><Plus size={12} /> Log Contact</button>}>
+          {/* Contact Log Timeline */}
+          <Section title="Contact Log" icon={<History size={14} className="text-warm-400" />}
+            action={
+              <button onClick={() => setShowContactForm(!showContactForm)}
+                className="text-xs text-primary-600 hover:text-primary-700 font-semibold flex items-center gap-1">
+                <Plus size={12} /> Log Contact
+              </button>
+            }>
 
             {showContactForm && (
               <div className="mb-4 p-3 rounded-xl border border-primary-200/50 bg-primary-50/20 space-y-3">
                 <div className="flex gap-1.5 flex-wrap">
-                  {CONTACT_TYPES.map(type => (
-                    <button key={type.value} onClick={() => setNewContact({ ...newContact, type: type.value })}
-                      className={cn('px-3 py-1.5 rounded-xl text-xs font-medium transition-all',
-                        newContact.type === type.value ? 'bg-primary-600 text-white shadow-sm' : 'bg-white/60 border border-warm-200/30 text-warm-600 hover:bg-warm-50')}>
-                      {type.icon} {type.label}
-                    </button>
-                  ))}
+                  {CONTACT_TYPES.map(type => {
+                    const TypeIcon = type.Icon;
+                    return (
+                      <button key={type.value} onClick={() => setNewContact({ ...newContact, type: type.value })}
+                        className={cn('px-3 py-1.5 rounded-xl text-xs font-medium transition-all inline-flex items-center gap-1.5',
+                          newContact.type === type.value ? 'bg-primary-600 text-white shadow-sm' : 'bg-white/60 border border-warm-200/30 text-warm-600 hover:bg-warm-50')}>
+                        <TypeIcon size={12} /> {type.label}
+                      </button>
+                    );
+                  })}
                 </div>
                 <textarea placeholder="Notes..." value={newContact.notes} onChange={e => setNewContact({ ...newContact, notes: e.target.value })}
                   className="w-full px-3 py-2 border border-warm-200/30 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white/50" rows={2} />
@@ -269,22 +310,23 @@ export function CoachDetailPanel({
                 </button>
               </div>
             ) : (
-              /* Timeline with left-border dots per spec */
               <div className="space-y-0 relative">
                 <div className="absolute left-4 top-6 bottom-2 w-px bg-warm-200" />
                 {logs.map((log) => {
                   const ct = CONTACT_TYPES.find(t => t.value === log.contact_type);
+                  const LogIcon = ct?.Icon || MessageSquare;
                   return (
                     <div key={log.id} className="relative flex gap-3 pb-4 pl-4">
-                      {/* Dot */}
                       <div className={cn(
                         'absolute left-[11px] top-1.5 w-[10px] h-[10px] rounded-full border-2 border-white z-10',
                         ct?.dotColor || 'bg-warm-400'
                       )} />
-                      {/* Content */}
                       <div className="ml-4 flex-1">
                         <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium text-warm-900">{ct?.icon} {ct?.label || log.contact_type}</p>
+                          <p className="text-sm font-medium text-warm-900 flex items-center gap-1.5">
+                            <LogIcon size={12} className="text-warm-400" />
+                            {ct?.label || log.contact_type}
+                          </p>
                           <span className="text-xs text-warm-400 tabular-nums">{formatDate(log.contact_date)}</span>
                         </div>
                         {log.notes && <p className="text-xs text-warm-600 mt-0.5 leading-relaxed">{log.notes}</p>}
@@ -302,8 +344,8 @@ export function CoachDetailPanel({
             )}
           </Section>
 
-          {/* ── Tags ── */}
-          <Section title="Tags" emoji="🏷️">
+          {/* Tags */}
+          <Section title="Tags" icon={<Tag size={14} className="text-warm-400" />}>
             <div className="flex flex-wrap gap-1.5">
               {(coach.tags || []).map((tag, i) => (
                 <span key={i} className="inline-flex items-center gap-1 px-2 py-1 bg-primary-50 text-primary-700 rounded-lg text-xs font-medium">
@@ -325,16 +367,16 @@ export function CoachDetailPanel({
             </div>
           </Section>
 
-          {/* ── Next Steps ── */}
-          <Section title="Next Steps" emoji="🎯">
+          {/* Next Steps */}
+          <Section title="Next Steps" icon={<ListChecks size={14} className="text-warm-400" />}>
             <div className="flex items-center justify-between py-1">
               <span className="text-xs text-warm-500">Follow-up Date</span>
               {editingFollowUp ? (
                 <div className="flex items-center gap-1">
                   <input type="date" value={followUpDate} onChange={e => setFollowUpDate(e.target.value)}
                     className="px-2 py-1 border border-warm-200/30 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary-500" />
-                  <button onClick={saveFollowUp} className="text-xs text-primary-600 font-semibold px-1">✓</button>
-                  <button onClick={() => setEditingFollowUp(false)} className="text-xs text-warm-400 px-1">✕</button>
+                  <button onClick={saveFollowUp} className="text-xs text-primary-600 font-semibold px-1"><Check size={12} /></button>
+                  <button onClick={() => setEditingFollowUp(false)} className="text-xs text-warm-400 px-1"><X size={12} /></button>
                 </div>
               ) : (
                 <button onClick={() => setEditingFollowUp(true)}
@@ -351,8 +393,8 @@ export function CoachDetailPanel({
             </div>
           </Section>
 
-          {/* ── Qualification ── */}
-          <Section title="Qualification" emoji="📋">
+          {/* Qualification */}
+          <Section title="Qualification" icon={<ClipboardCheck size={14} className="text-warm-400" />}>
             <Row label="Program" value={coach.program === 'mens' ? "Men's" : coach.program === 'womens' ? "Women's" : 'Both'} />
             <Row label="Team Size" value={coach.team_size?.toString()} />
             <Row label="Current Software" value={coach.current_software} />
@@ -370,12 +412,12 @@ export function CoachDetailPanel({
 // ============================================================================
 // HELPERS
 // ============================================================================
-function Section({ title, emoji, action, children }: { title: string; emoji: string; action?: React.ReactNode; children: React.ReactNode }) {
+function Section({ title, icon, action, children }: { title: string; icon: React.ReactNode; action?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-xs font-semibold text-warm-500 uppercase tracking-wider flex items-center gap-1.5">
-          <span>{emoji}</span> {title}
+          {icon} {title}
         </h3>
         {action}
       </div>
@@ -388,7 +430,7 @@ function Row({ label, value }: { label: string; value: string | null | undefined
   return (
     <div className="flex justify-between items-center py-1">
       <span className="text-xs text-warm-500">{label}</span>
-      <span className="text-xs font-medium text-warm-800 truncate max-w-[200px]">{value || <span className="text-warm-300">—</span>}</span>
+      <span className="text-xs font-medium text-warm-800 truncate max-w-[200px]">{value || <span className="text-warm-300">&mdash;</span>}</span>
     </div>
   );
 }

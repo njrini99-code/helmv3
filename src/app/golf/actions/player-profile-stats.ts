@@ -52,6 +52,10 @@ export async function getPlayerProfileStats(
   roundId: string | 'overall' = 'overall'
 ): Promise<PlayerProfileStatsResponse> {
   const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { success: false, error: 'Unauthorized', stats: null, rounds: [] };
+  }
 
   try {
     // 1. Get all completed rounds for this player
@@ -236,6 +240,12 @@ export async function getPlayerProfileStats(
 // FAST SUMMARY - For initial page load (no shots needed)
 // ============================================================================
 
+export interface QuickSummaryResponse {
+  success: boolean;
+  error?: string;
+  data?: QuickSummary;
+}
+
 export interface QuickSummary {
   roundsPlayed: number;
   scoringAverage: number | null;
@@ -249,8 +259,12 @@ export interface QuickSummary {
  * Get lightweight summary stats without shot data
  * Uses aggregated data from rounds table - much faster
  */
-export async function getPlayerQuickSummary(playerId: string): Promise<QuickSummary> {
+export async function getPlayerQuickSummary(playerId: string): Promise<QuickSummaryResponse> {
   const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { success: false, error: 'Unauthorized' };
+  }
 
   const { data: roundsData, error } = await supabase
     .from('golf_rounds')
@@ -268,12 +282,15 @@ export async function getPlayerQuickSummary(playerId: string): Promise<QuickSumm
 
   if (error || !roundsData || roundsData.length === 0) {
     return {
-      roundsPlayed: 0,
-      scoringAverage: null,
-      avgScoreToPar: null,
-      bestRound: null,
-      girPercentage: null,
-      fairwayPercentage: null,
+      success: true,
+      data: {
+        roundsPlayed: 0,
+        scoringAverage: null,
+        avgScoreToPar: null,
+        bestRound: null,
+        girPercentage: null,
+        fairwayPercentage: null,
+      },
     };
   }
 
@@ -299,15 +316,18 @@ export async function getPlayerQuickSummary(playerId: string): Promise<QuickSumm
   }
 
   return {
-    roundsPlayed: rounds.length,
-    scoringAverage: totalScores.length > 0
-      ? totalScores.reduce((a, b) => a + b, 0) / totalScores.length
-      : null,
-    avgScoreToPar: toParScores.length > 0
-      ? toParScores.reduce((a, b) => a + b, 0) / toParScores.length
-      : null,
-    bestRound: totalScores.length > 0 ? Math.min(...totalScores) : null,
-    girPercentage: totalGirOpps > 0 ? (totalGir / totalGirOpps) * 100 : null,
-    fairwayPercentage: totalFairwayOpps > 0 ? (totalFairwaysHit / totalFairwayOpps) * 100 : null,
+    success: true,
+    data: {
+      roundsPlayed: rounds.length,
+      scoringAverage: totalScores.length > 0
+        ? totalScores.reduce((a, b) => a + b, 0) / totalScores.length
+        : null,
+      avgScoreToPar: toParScores.length > 0
+        ? toParScores.reduce((a, b) => a + b, 0) / toParScores.length
+        : null,
+      bestRound: totalScores.length > 0 ? Math.min(...totalScores) : null,
+      girPercentage: totalGirOpps > 0 ? (totalGir / totalGirOpps) * 100 : null,
+      fairwayPercentage: totalFairwayOpps > 0 ? (totalFairwaysHit / totalFairwayOpps) * 100 : null,
+    },
   };
 }

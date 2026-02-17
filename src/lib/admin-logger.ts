@@ -59,19 +59,20 @@ export async function logAdminEvent(input: AdminEventInput): Promise<string | nu
   try {
     const adminDb = createAdminClient();
     
+    type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
     const { data, error } = await adminDb
       .from('admin_events')
       .insert({
-        event_type: input.eventType,
+        event_type: input.eventType as string,
         title: input.title,
-        severity: input.severity ?? 'info',
+        severity: (input.severity ?? 'info') as 'info' | 'warning' | 'error' | 'critical',
         message: input.message ?? null,
-        metadata: input.metadata ?? {},
+        metadata: (input.metadata ?? {}) as Json,
         user_id: input.userId ?? null,
         user_email: input.userEmail ?? null,
         url: input.url ?? null,
         stack_trace: input.stackTrace ?? null,
-        browser_info: input.browserInfo ?? null,
+        browser_info: (input.browserInfo ?? null) as Json,
       })
       .select('id')
       .single();

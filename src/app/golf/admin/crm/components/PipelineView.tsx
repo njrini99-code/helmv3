@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { ChevronRight, ArrowRight, Rocket, Star, Zap } from 'lucide-react';
+import { ArrowRight, Rocket, Star, Zap } from 'lucide-react';
 import type { Coach, CoachStatus, PipelineStage } from '../crm-config';
 
 interface PipelineViewProps {
@@ -133,7 +133,7 @@ export function PipelineView({
 
   return (
     <div className="space-y-4">
-      {/* Getting Started state */}
+      {/* Getting Started — only when ALL coaches are new leads */}
       {allNewLeads && (
         <div className={cn(
           'p-6 rounded-2xl text-center',
@@ -165,32 +165,32 @@ export function PipelineView({
         </div>
       )}
 
-      {/* Pipeline Funnel Summary */}
-      <div className="flex items-center gap-1 p-4 bg-white/70 backdrop-blur-xl rounded-2xl border border-white/20 shadow-glass overflow-x-auto">
+      {/* Pipeline Funnel Summary — pill-shaped stages */}
+      <div className="flex items-center gap-2 p-3 bg-white/70 backdrop-blur-xl rounded-2xl border border-white/20 shadow-glass">
         {pipelineStages.map((stage, index) => {
           const count = coachesByStage[stage.id]?.length || 0;
           return (
-            <div key={stage.id} className="flex items-center">
+            <div key={stage.id} className="flex items-center flex-1 min-w-0">
               <div className={cn(
-                'flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all',
+                'flex items-center gap-2 px-3 py-2 rounded-full transition-all w-full',
                 count > 0 ? `${stage.bgColor} ${stage.color}` : 'bg-warm-50 text-warm-400'
               )}>
-                <span className="text-base">{stage.emoji}</span>
-                <div className="text-left">
-                  <div className="text-xs font-medium whitespace-nowrap">{stage.label}</div>
-                  <div className="text-lg font-bold tabular-nums">{count}</div>
+                <span className="text-sm flex-shrink-0">{stage.emoji}</span>
+                <div className="min-w-0">
+                  <div className="text-[11px] font-medium truncate">{stage.label}</div>
+                  <div className="text-base font-bold tabular-nums leading-tight">{count}</div>
                 </div>
               </div>
               {index < pipelineStages.length - 1 && (
-                <ChevronRight size={16} className="mx-1 text-warm-300 flex-shrink-0" />
+                <ArrowRight size={14} className="mx-1 text-warm-300 flex-shrink-0" />
               )}
             </div>
           );
         })}
       </div>
 
-      {/* Kanban Columns */}
-      <div className="flex gap-4 overflow-x-auto pb-6" style={{ minHeight: 'calc(100vh - 360px)' }}>
+      {/* Kanban Columns — CSS grid, no horizontal scroll */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
         {pipelineStages.map((stage) => {
           const columnCoaches = coachesByStage[stage.id] || [];
           const isDropping = dropTarget === stage.id;
@@ -202,54 +202,40 @@ export function PipelineView({
           return (
             <div
               key={stage.id}
-              className="flex-shrink-0 w-[260px] flex flex-col group/col"
+              className="min-w-0 flex flex-col"
               onDragOver={(e) => handleDragOver(e, stage.id)}
               onDragLeave={() => setDropTarget(null)}
               onDrop={(e) => handleDrop(e, stage)}
             >
-              {/* Column Header — colored top border */}
+              {/* Column Header — clean, minimal */}
               <div className={cn(
-                'rounded-xl px-4 py-3 mb-3 border-t-[3px]',
+                'rounded-xl px-3 py-2.5 mb-2 border-t-[3px]',
                 'bg-white/70 backdrop-blur-xl border border-white/30 shadow-glass-sm',
                 stage.borderColor
               )}>
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm">{stage.emoji}</span>
-                    <h3 className="text-sm font-semibold text-warm-900">{stage.label}</h3>
-                    <span className={cn(
-                      'min-w-[22px] h-[22px] px-1.5 rounded-full flex items-center justify-center',
-                      'text-[11px] font-bold tabular-nums',
-                      columnCoaches.length > 0
-                        ? `bg-gradient-to-r ${stage.gradient} text-white`
-                        : 'bg-warm-100 text-warm-400'
-                    )}>
-                      {columnCoaches.length}
-                    </span>
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="text-sm flex-shrink-0">{stage.emoji}</span>
+                    <h3 className="text-sm font-semibold text-warm-900 truncate">{stage.label}</h3>
                   </div>
+                  <span className={cn(
+                    'min-w-[22px] h-[22px] px-1.5 rounded-full flex items-center justify-center flex-shrink-0',
+                    'text-[11px] font-bold tabular-nums',
+                    columnCoaches.length > 0
+                      ? `bg-gradient-to-r ${stage.gradient} text-white`
+                      : 'bg-warm-100 text-warm-400'
+                  )}>
+                    {columnCoaches.length}
+                  </span>
                 </div>
-                {/* Sub-status breakdown */}
-                {stage.statuses.length > 1 && columnCoaches.length > 0 && (
-                  <div className="flex items-center gap-2 mt-2 pt-2 border-t border-warm-100/50">
-                    {stage.statuses.map(status => {
-                      const count = columnCoaches.filter(c => c.status === status).length;
-                      if (count === 0) return null;
-                      return (
-                        <span key={status} className="text-[10px] text-warm-500 font-medium">
-                          {statusConfig[status]?.label}: {count}
-                        </span>
-                      );
-                    })}
-                  </div>
-                )}
               </div>
 
               {/* Cards Container */}
               <div className={cn(
-                'rounded-2xl p-2.5 space-y-2 flex-1 overflow-y-auto transition-all',
+                'rounded-2xl p-2 space-y-2 flex-1 overflow-y-auto transition-all',
                 'bg-warm-50/30 border border-warm-100/30',
                 isDropping && 'bg-primary-50/40 border-primary-200/50 ring-2 ring-primary-200/50'
-              )}>
+              )} style={{ maxHeight: '70vh' }}>
                 {columnCoaches.length === 0 ? (
                   <EmptyColumn stage={stage} />
                 ) : (
@@ -270,12 +256,12 @@ export function PipelineView({
                       />
                     ))}
                     {hasMore && (
-                      <button onClick={() => toggleExpanded(stage.id)} className="w-full py-2.5 text-center text-sm font-medium text-primary-600 hover:bg-primary-50/50 rounded-xl transition-colors">
-                        Show {columnCoaches.length - CARDS_PER_PAGE} more...
+                      <button onClick={() => toggleExpanded(stage.id)} className="w-full py-2 text-center text-sm font-medium text-primary-600 hover:bg-primary-50/50 rounded-xl transition-colors">
+                        Show {columnCoaches.length - CARDS_PER_PAGE} more…
                       </button>
                     )}
                     {isExpanded && columnCoaches.length > CARDS_PER_PAGE && (
-                      <button onClick={() => toggleExpanded(stage.id)} className="w-full py-2.5 text-center text-sm font-medium text-warm-500 hover:bg-warm-50/50 rounded-xl transition-colors">
+                      <button onClick={() => toggleExpanded(stage.id)} className="w-full py-2 text-center text-sm font-medium text-warm-500 hover:bg-warm-50/50 rounded-xl transition-colors">
                         Show less
                       </button>
                     )}
@@ -291,7 +277,7 @@ export function PipelineView({
 }
 
 // ============================================================================
-// KANBAN CARD — per spec
+// KANBAN CARD — premium hover lift
 // ============================================================================
 function KanbanCard({
   coach, nextStatus, isDragging,
@@ -317,8 +303,9 @@ function KanbanCard({
       onDragEnd={onDragEnd}
       onClick={onClick}
       className={cn(
-        'p-3 rounded-xl bg-white border border-warm-200/60',
-        'hover:shadow-md hover:border-warm-300 transition-all duration-200',
+        'p-3 rounded-xl bg-white border border-warm-200/60 shadow-sm',
+        'hover:shadow-md hover:-translate-y-0.5 hover:border-warm-300',
+        'transition-all duration-200',
         'cursor-grab active:cursor-grabbing group',
         isDragging && 'opacity-40 scale-95',
       )}
