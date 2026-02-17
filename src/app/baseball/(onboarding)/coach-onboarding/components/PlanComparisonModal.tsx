@@ -88,8 +88,9 @@ export function PlanComparisonModal({ isOpen, onClose }: PlanComparisonModalProp
                 <button
                   onClick={onClose}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  aria-label="Close comparison modal"
                 >
-                  <X size={24} className="text-onboarding-text-secondary" />
+                  <X size={24} className="text-onboarding-text-secondary" aria-hidden="true" />
                 </button>
               </div>
 

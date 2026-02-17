@@ -144,8 +144,9 @@ export function ResponsiveDrawer({
             <button
               onClick={onClose}
               className="p-2 -mr-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
+              aria-label="Close drawer"
             >
-              <X className="h-5 w-5" />
+              <X className="h-5 w-5" aria-hidden="true" />
             </button>
           </div>
         )}

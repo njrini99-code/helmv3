@@ -76,8 +76,8 @@ export default function ConversationPage() {
               autoComplete="off"
               className="flex-1 px-4 py-3 text-base lg:text-sm bg-cream-50 border border-border-light rounded-xl focus:outline-none focus:border-brand-500 focus:bg-white"
             />
-            <Button type="submit" disabled={!input.trim() || sending}>
-              <IconSend size={18} />
+            <Button type="submit" disabled={!input.trim() || sending} aria-label="Send message">
+              <IconSend size={18} aria-hidden="true" />
             </Button>
           </div>
         </form>

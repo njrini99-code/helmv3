@@ -331,8 +331,9 @@ export default function EventsPage() {
                           <button
                             onClick={() => handleDeleteEvent(event.id)}
                             className="min-w-[44px] min-h-[44px] p-3 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors flex items-center justify-center"
+                            aria-label="Delete event"
                           >
-                            <IconTrash size={16} />
+                            <IconTrash size={16} aria-hidden="true" />
                           </button>
                         </div>
                       </div>
