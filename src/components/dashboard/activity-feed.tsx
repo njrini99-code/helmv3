@@ -1,4 +1,7 @@
+'use client';
+
 import { formatDistanceToNow } from 'date-fns';
+import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
 interface ActivityItem {
@@ -15,6 +18,7 @@ interface ActivityFeedProps {
   items: ActivityItem[];
   maxItems?: number;
   title?: string;
+  viewAllHref?: string;
 }
 
 const typeDotColors = {
@@ -28,7 +32,9 @@ export function ActivityFeed({
   items,
   maxItems = 5,
   title = 'Recent Activity',
+  viewAllHref,
 }: ActivityFeedProps) {
+  const router = useRouter();
   const displayItems = items.slice(0, maxItems);
 
   return (
@@ -118,7 +124,7 @@ export function ActivityFeed({
       </div>
 
       {/* View All Link */}
-      {items.length > maxItems && (
+      {items.length > maxItems && viewAllHref && (
         <div className="px-5 py-3 border-t border-white/30 bg-white/20">
           <button
             className="
@@ -126,9 +132,7 @@ export function ActivityFeed({
             hover:text-primary-700
             transition-colors duration-200
           "
-            onClick={() => {
-              // TODO: Implement navigation to full activity view
-            }}
+            onClick={() => router.push(viewAllHref)}
           >
             View all activity →
           </button>
