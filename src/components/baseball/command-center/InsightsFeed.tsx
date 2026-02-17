@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import type { BaseballCoachInsight } from '@/lib/types';
 import {
   IconAlertCircle,
@@ -10,6 +10,7 @@ import {
   IconCheck,
   IconX,
 } from '@/components/icons';
+import { dismissInsight, markInsightAddressed } from '@/app/baseball/actions/insights';
 
 interface InsightsFeedProps {
   insights: BaseballCoachInsight[];
@@ -38,12 +39,36 @@ const priorityColors: Record<string, { bg: string; text: string; border: string 
 
 export function InsightsFeed({ insights }: InsightsFeedProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const [handledIds, setHandledIds] = useState<Set<string>>(new Set());
 
-  // Sort by priority (critical/urgent first)
-  const sortedInsights = [...insights].sort((a, b) => {
-    const priorityOrder: Record<string, number> = { critical: 0, urgent: 0, high: 1, medium: 2, low: 3 };
-    return (priorityOrder[a.priority] ?? 3) - (priorityOrder[b.priority] ?? 3);
-  });
+  const handleAcknowledge = (insightId: string) => {
+    startTransition(async () => {
+      const result = await markInsightAddressed(insightId);
+      if (result.success) {
+        setHandledIds(prev => new Set(prev).add(insightId));
+        setExpandedId(null);
+      }
+    });
+  };
+
+  const handleDismiss = (insightId: string) => {
+    startTransition(async () => {
+      const result = await dismissInsight(insightId);
+      if (result.success) {
+        setHandledIds(prev => new Set(prev).add(insightId));
+        setExpandedId(null);
+      }
+    });
+  };
+
+  // Filter out handled insights and sort by priority (critical/urgent first)
+  const sortedInsights = [...insights]
+    .filter(i => !handledIds.has(i.id))
+    .sort((a, b) => {
+      const priorityOrder: Record<string, number> = { critical: 0, urgent: 0, high: 1, medium: 2, low: 3 };
+      return (priorityOrder[a.priority] ?? 3) - (priorityOrder[b.priority] ?? 3);
+    });
 
   if (sortedInsights.length === 0) {
     return (
@@ -123,28 +148,30 @@ export function InsightsFeed({ insights }: InsightsFeedProps) {
                       {/* Actions */}
                       <div className="flex gap-2 mt-3">
                         <button
+                          disabled={isPending}
                           className="flex items-center gap-1 px-2 py-1 text-xs rounded-md
                                      bg-white border border-slate-200 text-slate-600
-                                     hover:bg-slate-50 transition-colors"
+                                     hover:bg-slate-50 transition-colors disabled:opacity-50"
                           onClick={(e) => {
                             e.stopPropagation();
-                            // TODO: Acknowledge insight
+                            handleAcknowledge(insight.id);
                           }}
                         >
                           <IconCheck size={12} />
-                          Acknowledge
+                          {isPending ? 'Saving...' : 'Acknowledge'}
                         </button>
                         <button
+                          disabled={isPending}
                           className="flex items-center gap-1 px-2 py-1 text-xs rounded-md
                                      bg-white border border-slate-200 text-slate-400
-                                     hover:bg-slate-50 transition-colors"
+                                     hover:bg-slate-50 transition-colors disabled:opacity-50"
                           onClick={(e) => {
                             e.stopPropagation();
-                            // TODO: Dismiss insight
+                            handleDismiss(insight.id);
                           }}
                         >
                           <IconX size={12} />
-                          Dismiss
+                          {isPending ? 'Saving...' : 'Dismiss'}
                         </button>
                       </div>
                     </div>

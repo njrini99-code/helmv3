@@ -8961,7 +8961,16 @@ export type Database = {
       }
       get_current_golf_player_id: { Args: never; Returns: string }
       get_current_player_team_ids: { Args: never; Returns: string[] }
-      get_error_summary: { Args: { days_back?: number }; Returns: Json }
+      get_error_summary: {
+        Args: { days_back?: number }
+        Returns: {
+          by_severity: Json
+          critical_count: number
+          daily_rate: Json
+          top_errors: Json
+          total_count: number
+        }[]
+      }
       get_expected_strokes: {
         Args: { p_distance: number; p_is_putting?: boolean; p_lie: string }
         Returns: number
@@ -9014,7 +9023,24 @@ export type Database = {
           title: string
         }[]
       }
-      get_platform_health_stats: { Args: never; Returns: Json }
+      get_platform_health_stats: {
+        Args: never
+        Returns: {
+          active_connections: number
+          active_sessions: number
+          active_users_1h: number
+          active_users_24h: number
+          active_users_30d: number
+          active_users_7d: number
+          db_size_bytes: number
+          idle_connections: number
+          largest_tables: Json
+          total_auth_users: number
+          total_sessions: number
+          users_never_signed_in: number
+          users_signed_in_today: number
+        }[]
+      }
       get_player_stats_summary: {
         Args: { p_player_id: string }
         Returns: {

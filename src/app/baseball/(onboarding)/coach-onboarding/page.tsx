@@ -115,14 +115,94 @@ export default function CoachOnboarding() {
               return;
             }
 
-            // No coach profile yet, continue with setup using existing user
-            // Skip the auth signup and continue from Step 2
-            // Continue to create coach profile (code continues below)
-            // We need to restructure to handle this case
-            setError(
-              'Account exists but coach profile is incomplete. Please contact support or try a different email.'
-            );
-            setIsSubmitting(false);
+            // No coach profile yet - continue with setup using existing user
+            // This handles the case where auth user exists but profile was never created
+            const existingUserId = signInData.user.id;
+            const existingUserEmail = signInData.user.email || data.email;
+
+            // Create user record with role
+            await supabase
+              .from('users')
+              .upsert(
+                {
+                  id: existingUserId,
+                  email: existingUserEmail,
+                  role: 'coach',
+                },
+                { onConflict: 'id' }
+              );
+
+            // Determine organization type
+            const existingOrgType = coachType === 'college' ? 'college'
+              : coachType === 'juco' ? 'juco'
+              : coachType === 'high_school' ? 'high_school'
+              : 'showcase';
+
+            // Create organization
+            const { data: existingOrg, error: existingOrgError } = await supabase
+              .from('organizations')
+              .insert({
+                name: data.schoolName,
+                type: existingOrgType,
+                division: data.division || null,
+                location_city: data.city || null,
+                location_state: data.state || null,
+              })
+              .select()
+              .single();
+
+            if (existingOrgError) {
+              setError(`Failed to create organization: ${existingOrgError.message}`);
+              setIsSubmitting(false);
+              return;
+            }
+
+            // Create coach record for existing user
+            const { error: existingCoachError } = await supabase
+              .from('baseball_coaches')
+              .insert({
+                user_id: existingUserId,
+                coach_type: coachType,
+                organization_id: existingOrg.id,
+                full_name: data.fullName,
+                coach_title: data.title,
+                school_name: data.schoolName,
+                school_city: data.city || null,
+                school_state: data.state || null,
+                program_division: data.division || null,
+                onboarding_completed: true,
+              });
+
+            if (existingCoachError) {
+              setError(`Failed to create coach profile: ${existingCoachError.message}`);
+              setIsSubmitting(false);
+              return;
+            }
+
+            // Create team for the coach
+            const teamType = coachType === 'college' ? 'college'
+              : coachType === 'juco' ? 'juco'
+              : coachType === 'high_school' ? 'high_school'
+              : 'showcase';
+
+            // Generate a unique 6-character join code
+            const joinCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            await (supabase as any)
+              .from('baseball_teams')
+              .insert({
+                name: `${data.schoolName} Baseball`,
+                team_type: teamType,
+                organization_id: existingOrg.id,
+                join_code: joinCode,
+                created_by: existingUserId,
+              });
+
+            // Success! Clear onboarding and redirect
+            clearOnboarding();
+            router.push('/baseball/dashboard');
+            router.refresh();
             return;
           }
         }
