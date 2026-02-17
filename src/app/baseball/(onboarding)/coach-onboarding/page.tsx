@@ -67,8 +67,6 @@ export default function CoachOnboarding() {
 
       // Step 1: Create auth user account WITH METADATA
       // This ensures the trigger creates the correct record type
-      console.log('🔍 DEBUG: Attempting signup with email:', data.email);
-
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email?.trim(),
         password: data.password,
@@ -84,7 +82,6 @@ export default function CoachOnboarding() {
       });
 
       if (authError) {
-        console.error('❌ Auth signup error:', authError);
 
         // Handle user already exists - try to sign them in instead
         if (authError.status === 422 || authError.message?.includes('already registered') || (authError as { code?: string }).code === 'user_already_exists') {

@@ -17,8 +17,11 @@ export default function NotFound() {
           <Link href="/">
             <Button variant="secondary">Go to Home</Button>
           </Link>
+          <Link href="/baseball/dashboard">
+            <Button>Baseball Dashboard</Button>
+          </Link>
           <Link href="/golf/dashboard">
-            <Button>Golf Dashboard</Button>
+            <Button variant="secondary">Golf Dashboard</Button>
           </Link>
         </div>
 
