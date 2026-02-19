@@ -272,7 +272,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
                 aria-label={isCollapsed ? item.name : undefined}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'flex items-center gap-3 py-3 lg:py-2.5 rounded-[10px] text-[13px] font-medium',
+                  'flex items-center gap-3 py-3 lg:py-2.5 rounded-[10px] text-[13px] font-medium touch-manipulation',
                   'transition-all duration-150 ease-out will-change-transform',
                   'active:scale-[0.98]',
                   active

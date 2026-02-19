@@ -47,13 +47,13 @@ export function MobileBottomNav({ isCoach = true }: MobileBottomNavProps) {
         'fixed bottom-0 left-0 right-0 z-40 lg:hidden',
         'bg-white/95 backdrop-blur-xl',
         'border-t border-warm-200/60',
-        'shadow-[0_-4px_20px_rgba(0,0,0,0.05)]',
+        'shadow-[0_-4px_20px_rgba(0,0,0,0.08)]',
         'transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
         isVisible ? 'translate-y-0' : 'translate-y-full pointer-events-none'
       )}
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
-      <div className="flex items-center justify-around px-1 py-1.5">
+      <div className="flex items-center justify-around px-2 py-1">
         {navItems.map((item) => {
           const isActive = pathname === item.href ||
             (item.href !== '/golf/dashboard' && pathname.startsWith(item.href));
@@ -71,13 +71,14 @@ export function MobileBottomNav({ isCoach = true }: MobileBottomNavProps) {
                 }
               }}
               className={cn(
-                'flex flex-col items-center justify-center gap-0.5 py-1.5 rounded-xl transition-all duration-200',
-                'min-w-[56px] min-h-[52px]',
-                'active:scale-95',
+                'flex flex-col items-center justify-center gap-0.5 py-2 rounded-xl transition-all duration-200',
+                'min-w-[60px] min-h-[48px]',
+                'active:scale-95 touch-manipulation',
                 isActive
                   ? 'text-primary-600'
                   : 'text-warm-400 hover:text-warm-600'
               )}
+              aria-current={isActive ? 'page' : undefined}
             >
               <div className={cn(
                 'p-1.5 rounded-xl transition-all duration-200',
@@ -88,7 +89,7 @@ export function MobileBottomNav({ isCoach = true }: MobileBottomNavProps) {
                 {item.icon}
               </div>
               <span className={cn(
-                'text-xs font-medium transition-colors',
+                'text-[11px] font-medium transition-colors',
                 isActive ? 'text-primary-600' : 'text-warm-500'
               )}>
                 {item.label}

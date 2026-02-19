@@ -40,7 +40,7 @@ export function GolfHeader({ title, subtitle, children, backHref }: GolfHeaderPr
   };
 
   return (
-    <header className="h-16 glass-prominent border-b border-white/20 sticky top-0 z-30">
+    <header className="h-16 glass-prominent border-b border-white/20 sticky top-0 z-10">
       <div className="h-full px-4 lg:px-6 flex items-center justify-between gap-4">
         {/* Left: Menu toggle + Back + Title */}
         <div className="flex items-center gap-3 min-w-0">
@@ -48,7 +48,7 @@ export function GolfHeader({ title, subtitle, children, backHref }: GolfHeaderPr
           <button
             onClick={handleMenuToggle}
             className={cn(
-              'p-2.5 -ml-2 rounded-xl text-warm-500 hover:text-warm-700 hover:bg-warm-100',
+              'p-2.5 -ml-2 rounded-xl text-warm-500 hover:text-warm-700 hover:bg-warm-100 touch-manipulation',
               'transition-colors duration-150 active:scale-95',
               'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
             )}

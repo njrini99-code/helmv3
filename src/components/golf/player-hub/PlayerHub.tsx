@@ -692,23 +692,24 @@ export function PlayerHub({ trips, tasks, events, playerName, onCompleteTask, on
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-        className="border-b border-warm-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10"
+        className="border-b border-warm-200/60 bg-white/80 backdrop-blur-xl sticky top-0 z-10"
       >
-        <div className="max-w-3xl mx-auto px-4 md:px-6 py-5">
+        <div className="max-w-3xl mx-auto px-4 md:px-6 py-4 md:py-5">
           <div className="flex items-center gap-3">
             <button
               onClick={toggleMobile}
               className={cn(
-                'lg:hidden p-2.5 -ml-2 rounded-xl',
+                'lg:hidden p-2.5 -ml-2 rounded-xl touch-manipulation',
                 'text-warm-500 hover:text-warm-700 hover:bg-warm-100/80',
                 'transition-colors duration-150 active:scale-95',
+                'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
               )}
               aria-label="Open navigation menu"
             >
               <IconMenu size={22} />
             </button>
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-warm-900">
+              <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">
                 {greeting}, {firstName}
               </h1>
               {urgentCount > 0 ? (
@@ -724,7 +725,7 @@ export function PlayerHub({ trips, tasks, events, playerName, onCompleteTask, on
       </m.div>
 
       {/* Tab navigation */}
-      <div className="sticky top-[73px] z-10 bg-white/80 backdrop-blur-sm border-b border-warm-100">
+      <div className="sticky top-[65px] md:top-[73px] z-[9] bg-white/80 backdrop-blur-xl border-b border-warm-100">
         <div className="max-w-3xl mx-auto px-4 md:px-6">
           <div className="flex gap-1 -mb-px overflow-x-auto pills-scroll">
             {tabs.map((tab) => (
@@ -732,7 +733,7 @@ export function PlayerHub({ trips, tasks, events, playerName, onCompleteTask, on
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  'relative px-4 py-3 text-sm font-medium whitespace-nowrap transition-all duration-200',
+                  'relative px-4 py-3 text-sm font-medium whitespace-nowrap transition-all duration-200 touch-manipulation',
                   activeTab === tab.id
                     ? 'text-primary-600'
                     : 'text-warm-500 hover:text-warm-700',

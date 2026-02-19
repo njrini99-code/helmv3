@@ -38,7 +38,7 @@ export function KeyboardShortcutHint() {
 
   return (
     <div className={cn(
-      'fixed bottom-24 lg:bottom-6 left-1/2 -translate-x-1/2 z-40',
+      'fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] lg:bottom-6 left-1/2 -translate-x-1/2 z-30',
       'bg-warm-900 text-white px-4 py-3 rounded-xl shadow-2xl',
       'flex items-center gap-3 animate-slide-up'
     )}>

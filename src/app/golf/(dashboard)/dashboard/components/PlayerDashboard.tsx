@@ -156,10 +156,10 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
 
     return (
         <div className="min-h-full bg-transparent">
-            {/* HEADER */}
+            {/* HEADER — z-10 is sufficient inside the isolate main container */}
             <div className={cn(
-                'sticky top-0 z-20',
-                'bg-white/70 backdrop-blur-[20px]',
+                'sticky top-0 z-10',
+                'bg-white/80 backdrop-blur-xl',
                 'border-b border-warm-200/40',
             )}>
                 <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-4">
@@ -167,7 +167,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                         <button
                             onClick={toggleMobile}
                             className={cn(
-                                'lg:hidden p-2 -ml-2 rounded-xl',
+                                'lg:hidden p-2.5 -ml-2 rounded-xl touch-manipulation',
                                 'text-warm-500 hover:text-warm-700 hover:bg-warm-100/80',
                                 'transition-colors duration-150 active:scale-95',
                                 'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'

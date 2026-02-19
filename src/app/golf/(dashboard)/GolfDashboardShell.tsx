@@ -104,16 +104,18 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
         />
       </div>
 
-      {/* Mobile Sidebar Overlay */}
-      <div
-        className={cn(
-          'fixed inset-0 bg-warm-900/50 backdrop-blur-sm z-40 lg:hidden',
-          'transition-opacity duration-300 ease-out',
-          mobileOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        )}
-        onClick={() => setMobileOpen(false)}
-        aria-hidden="true"
-      />
+      {/* Mobile Sidebar Overlay — z-[45] sits between bottom nav (z-40) and sidebar panel (z-50) */}
+      {mobileOpen && (
+        <div
+          className={cn(
+            'fixed inset-0 bg-warm-900/50 backdrop-blur-sm z-[45] lg:hidden',
+            'transition-opacity duration-300 ease-out',
+            'opacity-100'
+          )}
+          onClick={() => setMobileOpen(false)}
+          aria-hidden="true"
+        />
+      )}
 
       {/* Mobile Sidebar */}
       <div
@@ -137,12 +139,14 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
       </div>
 
       {/* Main content — uses padding-left instead of margin-left to avoid
-          layout thrashing during sidebar collapse. */}
+          layout thrashing during sidebar collapse.
+          isolation: isolate prevents child stacking contexts from leaking out
+          and interfering with the fixed bottom nav. */}
       <main
         id="main-content"
         className={cn(
-          'flex-1 overflow-y-auto',
-          'pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0',
+          'flex-1 overflow-y-auto isolate',
+          'pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-0',
           'transition-[padding-left] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
           collapsed ? 'lg:pl-[72px]' : 'lg:pl-64',
         )}
