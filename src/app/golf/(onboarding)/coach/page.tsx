@@ -68,7 +68,7 @@ function StepIndicator({ currentStep }: { currentStep: Step }) {
   const currentIndex = STEPS_CONFIG.findIndex((s) => s.id === currentStep);
 
   return (
-    <div className="flex items-center justify-center gap-0 mb-8 sm:mb-10">
+    <nav aria-label="Onboarding progress" className="flex items-center justify-center gap-0 mb-8 sm:mb-10">
       {STEPS_CONFIG.map((step, index) => {
         const isCompleted = index < currentIndex;
         const isCurrent = index === currentIndex;
@@ -77,13 +77,18 @@ function StepIndicator({ currentStep }: { currentStep: Step }) {
           <Fragment key={step.id}>
             {index > 0 && (
               <div
+                aria-hidden="true"
                 className={cn(
                   'h-[2px] w-8 sm:w-12 transition-colors duration-500',
                   isCompleted ? 'bg-primary-500' : 'bg-warm-200'
                 )}
               />
             )}
-            <div className="flex flex-col items-center gap-1.5">
+            <div
+              className="flex flex-col items-center gap-1.5"
+              role="listitem"
+              aria-current={isCurrent ? 'step' : undefined}
+            >
               <div
                 className={cn(
                   'w-8 h-8 rounded-full flex items-center justify-center transition-all duration-500 text-sm font-semibold',
@@ -91,6 +96,7 @@ function StepIndicator({ currentStep }: { currentStep: Step }) {
                   isCurrent && 'bg-white border-2 border-primary-600 text-primary-600 shadow-sm',
                   !isCompleted && !isCurrent && 'bg-warm-100 text-warm-400'
                 )}
+                aria-hidden="true"
               >
                 {isCompleted ? <IconCheck size={14} /> : index + 1}
               </div>
@@ -102,11 +108,14 @@ function StepIndicator({ currentStep }: { currentStep: Step }) {
               >
                 {step.label}
               </span>
+              <span className="sr-only">
+                {isCompleted ? '(completed)' : isCurrent ? '(current step)' : '(upcoming)'}
+              </span>
             </div>
           </Fragment>
         );
       })}
-    </div>
+    </nav>
   );
 }
 
@@ -253,7 +262,7 @@ export default function GolfCoachOnboarding() {
   // ─── Render ─────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-auth-golf relative">
+    <div className="min-h-dvh bg-auth-golf relative">
       {/* Floating Orbs (CSS-driven, matches login/signup) */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="auth-orb auth-orb-1 w-[400px] h-[400px] sm:w-[500px] sm:h-[500px] -top-24 -right-24 bg-gradient-to-br from-helm-primary-400/40 to-helm-primary-500/25" />
@@ -261,7 +270,7 @@ export default function GolfCoachOnboarding() {
         <div className="auth-orb auth-orb-3 hidden sm:block w-[200px] h-[200px] top-1/3 left-[8%] bg-gradient-to-br from-helm-primary-300/20 to-helm-primary-400/15" />
       </div>
 
-      <div className="relative min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+      <div className="relative min-h-dvh flex flex-col items-center justify-center p-4 sm:p-6 pb-[calc(1rem+env(safe-area-inset-bottom))]">
         {/* Logo */}
         <m.div
           initial={{ opacity: 0, y: -10 }}
@@ -425,9 +434,9 @@ export default function GolfCoachOnboarding() {
                   <m.div variants={staggerItem}>
                     <button
                       onClick={() => goBack('program')}
-                      className="flex items-center gap-1.5 text-sm text-warm-500 hover:text-warm-700 transition-colors"
+                      className="flex items-center gap-1.5 text-sm font-medium text-warm-600 hover:text-warm-800 transition-colors min-h-[44px] px-2 -ml-2 rounded-lg active:bg-warm-100"
                     >
-                      <IconArrowLeft size={14} />
+                      <IconArrowLeft size={16} />
                       Back
                     </button>
                   </m.div>

@@ -53,7 +53,7 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative p-4 bg-auth-golf">
+    <div className="min-h-dvh flex items-center justify-center relative p-4 bg-auth-golf">
       {/* Animated floating orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Large primary orb - top right */}
@@ -300,7 +300,10 @@ export default function ResetPasswordPage() {
           </p>
 
           <p className="text-center mt-3 sm:mt-4 text-warm-500 text-sm">
-            <Link href="/" className="hover:text-warm-700 transition-colors">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1 hover:text-warm-700 transition-colors px-3 py-3 -my-3 min-h-[44px] rounded-lg active:bg-warm-100/50"
+            >
               ← Back to HelmLabs
             </Link>
           </p>

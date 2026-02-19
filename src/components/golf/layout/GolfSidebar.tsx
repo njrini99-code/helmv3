@@ -128,7 +128,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
         'will-change-[width]',
         isCollapsed ? 'w-[72px]' : 'w-64',
         !isMobile && 'fixed left-0 top-0 z-40',
-        isMobile && 'pt-[env(safe-area-inset-top)]'
+        isMobile && 'pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]'
       )}
     >
       {/* Collapse Toggle Button (desktop only) */}
@@ -323,8 +323,8 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
                 aria-label={isCollapsed ? item.name : undefined}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'flex items-center gap-3 py-3 lg:py-2.5 rounded-[10px] text-[13px] font-medium',
-                  'transition-all duration-150 ease-out',
+                  'flex items-center gap-3 py-3 lg:py-2.5 rounded-[10px] text-[13px] font-medium touch-manipulation',
+                  'transition-all duration-150 ease-out active:scale-[0.98]',
                   active
                     ? 'bg-white/10 text-primary-400 border-l-[3px] border-primary-500'
                     : 'text-white/60 hover:bg-white/5 hover:text-white/90',
@@ -360,8 +360,8 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
           aria-label={isCollapsed ? 'Settings' : undefined}
           aria-current={pathname === '/golf/dashboard/settings' ? 'page' : undefined}
           className={cn(
-            'flex items-center gap-3 py-3 lg:py-2.5 rounded-[10px] text-[13px] font-medium',
-            'transition-all duration-150 ease-out',
+            'flex items-center gap-3 py-3 lg:py-2.5 rounded-[10px] text-[13px] font-medium touch-manipulation',
+            'transition-all duration-150 ease-out active:scale-[0.98]',
             pathname === '/golf/dashboard/settings'
               ? 'bg-white/10 text-primary-400 border-l-[3px] border-primary-500'
               : 'text-white/60 hover:bg-white/5 hover:text-white/90',
@@ -384,7 +384,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
           title={isCollapsed ? 'Sign out' : undefined}
           aria-label={isCollapsed ? (isSigningOut ? 'Signing out' : 'Sign out') : undefined}
           className={cn(
-            'w-full flex items-center gap-3 py-3 lg:py-2.5 rounded-[10px] text-[13px] font-medium',
+            'w-full flex items-center gap-3 py-3 lg:py-2.5 rounded-[10px] text-[13px] font-medium touch-manipulation',
             'text-white/60 hover:bg-red-500/10 hover:text-red-400',
             'transition-all duration-150 ease-out disabled:opacity-50 active:scale-[0.98]',
             isCollapsed ? 'justify-center px-2' : 'px-3'

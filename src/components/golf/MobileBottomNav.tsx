@@ -48,10 +48,10 @@ export function MobileBottomNav({ isCoach = true }: MobileBottomNavProps) {
         'bg-white/95 backdrop-blur-xl',
         'border-t border-warm-200/60',
         'shadow-[0_-4px_20px_rgba(0,0,0,0.08)]',
-        'transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
-        isVisible ? 'translate-y-0' : 'translate-y-full pointer-events-none'
+        'will-change-transform',
+        isVisible ? '' : 'translate-y-full pointer-events-none'
       )}
-      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)', transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
     >
       <div className="flex items-center justify-around px-2 py-1">
         {navItems.map((item) => {

@@ -275,7 +275,7 @@ export function InsightsPageContent({
   return (
     <div className="relative">
       {/* Header */}
-      <div className="sticky top-0 z-20 border-b border-warm-200/60 bg-white/80 backdrop-blur-xl">
+      <div className="sticky top-0 z-10 border-b border-warm-200/60 bg-white/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-6 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -313,7 +313,7 @@ export function InsightsPageContent({
                 onClick={handleRefresh}
                 disabled={isRefreshing || isGenerating}
                 className={cn(
-                  'p-2 rounded-lg text-warm-500 hover:text-warm-700 hover:bg-white/50 transition-all',
+                  'p-2.5 min-w-[44px] min-h-[44px] rounded-lg text-warm-500 hover:text-warm-700 hover:bg-white/50 active:bg-warm-100 transition-all flex items-center justify-center',
                   isRefreshing && 'animate-spin'
                 )}
                 title="Refresh insights"
@@ -325,7 +325,7 @@ export function InsightsPageContent({
               {/* Settings Link */}
               <a
                 href="/golf/dashboard/settings/coaching-intelligence"
-                className="p-2 rounded-lg text-warm-500 hover:text-warm-700 hover:bg-white/50 transition-all"
+                className="p-2.5 min-w-[44px] min-h-[44px] rounded-lg text-warm-500 hover:text-warm-700 hover:bg-white/50 active:bg-warm-100 transition-all flex items-center justify-center"
                 title="AI Settings"
               >
                 <IconSettings size={18} />

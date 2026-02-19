@@ -115,16 +115,18 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               onClick={handleClear}
               aria-label="Clear input"
               className={cn(
-                'absolute right-3 top-1/2 -translate-y-1/2',
-                'w-5 h-5 rounded-full flex items-center justify-center',
-                'text-warm-400 hover:text-warm-600 bg-warm-100 hover:bg-warm-200',
+                'absolute right-1 top-1/2 -translate-y-1/2',
+                'min-w-[44px] min-h-[44px] flex items-center justify-center',
+                'text-warm-400 hover:text-warm-600 active:text-warm-600',
                 'transition-all duration-150',
-                'opacity-0 group-hover:opacity-100 focus:opacity-100',
+                'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus:opacity-100',
               )}
             >
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <span className="w-5 h-5 rounded-full bg-warm-100 hover:bg-warm-200 flex items-center justify-center">
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </span>
             </button>
           )}
           {isPassword && (

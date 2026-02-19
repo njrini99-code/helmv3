@@ -243,8 +243,8 @@ export default function AlertsPage() {
     >
       {/* Header */}
       <m.div variants={itemVariants} className={cn(
-        'sticky top-0 z-20',
-        'bg-white/60 backdrop-blur-[24px]',
+        'sticky top-0 z-10',
+        'glass-standard',
         'border-b border-white/30',
         'shadow-[0_1px_3px_rgba(0,0,0,0.02)]'
       )}>
@@ -284,7 +284,7 @@ export default function AlertsPage() {
               onClick={handleRefresh}
               disabled={isPending}
               className={cn(
-                'flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all',
+                'flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-xl font-medium transition-all active:scale-95',
                 isPending
                   ? 'bg-warm-100 text-warm-400 cursor-not-allowed'
                   : 'bg-primary-600 text-white hover:bg-primary-700 shadow-md'
@@ -342,7 +342,7 @@ export default function AlertsPage() {
                   key={level}
                   onClick={() => setFilterLevel(level)}
                   className={cn(
-                    'px-3 py-1.5 text-sm font-medium rounded-lg transition-all flex-shrink-0 snap-center',
+                    'px-3 py-2.5 min-h-[44px] text-sm font-medium rounded-lg transition-all flex-shrink-0 snap-center',
                     filterLevel === level
                       ? 'bg-white text-warm-900 shadow-sm'
                       : 'text-warm-500 hover:text-warm-700'
@@ -382,7 +382,7 @@ export default function AlertsPage() {
                 <button
                   onClick={handleAcknowledgeAll}
                   disabled={isPending}
-                  className="flex items-center gap-1 text-sm font-medium text-warm-500 hover:text-warm-700 px-3 py-1.5 rounded-lg hover:bg-white/50 transition-colors"
+                  className="flex items-center gap-1 text-sm font-medium text-warm-500 hover:text-warm-700 px-3 py-2.5 min-h-[44px] rounded-lg hover:bg-white/50 active:bg-warm-100 transition-colors"
                 >
                   <IconCheck size={14} />
                   Acknowledge All
@@ -390,7 +390,7 @@ export default function AlertsPage() {
                 <button
                   onClick={handleDismissAll}
                   disabled={isPending}
-                  className="flex items-center gap-1 text-sm font-medium text-red-500 hover:text-red-700 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors"
+                  className="flex items-center gap-1 text-sm font-medium text-red-500 hover:text-red-700 px-3 py-2.5 min-h-[44px] rounded-lg hover:bg-red-50 active:bg-red-100 transition-colors"
                 >
                   <IconX size={14} />
                   Dismiss All

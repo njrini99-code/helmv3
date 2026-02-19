@@ -28,11 +28,11 @@ function SignInLink() {
 
 export default function SignupPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center relative p-4 sm:p-6 bg-auth-golf">
+    <div className="min-h-dvh flex items-center justify-center relative p-4 sm:p-6 bg-auth-golf">
       {/* Skip to main content link for keyboard navigation */}
       <a
         href="#signup-form"
-        className="sr-only focus:not-sr-only focus:absolute focus:z-[60] focus:top-4 focus:left-4 bg-primary-600 text-white px-4 py-2 rounded-lg font-medium shadow-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-[60] focus:top-[max(1rem,env(safe-area-inset-top))] focus:left-4 bg-primary-600 text-white px-4 py-2 rounded-lg font-medium shadow-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
       >
         Skip to signup form
       </a>
@@ -191,20 +191,29 @@ export default function SignupPage() {
           </p>
 
           <p className="text-center mt-3 sm:mt-4 text-warm-500 text-sm">
-            <Link href="/" className="hover:text-warm-700 transition-colors">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1 hover:text-warm-700 transition-colors px-3 py-3 -my-3 min-h-[44px] rounded-lg active:bg-warm-100/50"
+            >
               ← Back to HelmLabs
             </Link>
           </p>
 
-          <p className="text-center mt-2 sm:mt-3 text-warm-400 text-xs">
-            <Link href="/privacy" className="hover:text-warm-600 transition-colors">
+          <div className="flex items-center justify-center gap-2 mt-2 sm:mt-3">
+            <Link
+              href="/privacy"
+              className="text-warm-400 hover:text-warm-600 transition-colors text-xs px-3 py-3 -my-3 min-h-[44px] flex items-center rounded-lg active:bg-warm-100/50"
+            >
               Privacy
             </Link>
-            <span className="mx-2">·</span>
-            <Link href="/terms" className="hover:text-warm-600 transition-colors">
+            <span className="text-warm-300" aria-hidden="true">·</span>
+            <Link
+              href="/terms"
+              className="text-warm-400 hover:text-warm-600 transition-colors text-xs px-3 py-3 -my-3 min-h-[44px] flex items-center rounded-lg active:bg-warm-100/50"
+            >
               Terms
             </Link>
-          </p>
+          </div>
         </motion.div>
       </div>
     </div>

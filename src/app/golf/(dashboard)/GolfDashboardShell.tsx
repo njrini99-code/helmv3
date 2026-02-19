@@ -34,6 +34,7 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
   const { displayDensity, showAnimations } = useAppearancePreferences();
   const isCoach = userData.role === 'coach';
   const mobileSidebarRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<Element | null>(null);
 
   // Track user online presence (deferred by 5s so it doesn't compete with page load)
   usePresence();
@@ -48,9 +49,22 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [mobileOpen, setMobileOpen]);
 
-  // Focus trap for mobile sidebar
+  // Prevent body scroll when mobile sidebar is open
+  useEffect(() => {
+    if (!mobileOpen) return;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [mobileOpen]);
+
+  // Focus trap for mobile sidebar + restore focus on close
   useEffect(() => {
     if (!mobileOpen || !mobileSidebarRef.current) return;
+
+    // Store the element that had focus before sidebar opened
+    triggerRef.current = document.activeElement;
+
     const sidebar = mobileSidebarRef.current;
     const focusable = sidebar.querySelectorAll<HTMLElement>(
       'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
@@ -71,7 +85,13 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
       }
     }
     document.addEventListener('keydown', trapFocus);
-    return () => document.removeEventListener('keydown', trapFocus);
+    return () => {
+      document.removeEventListener('keydown', trapFocus);
+      // Restore focus to trigger element when sidebar closes
+      if (triggerRef.current instanceof HTMLElement) {
+        triggerRef.current.focus();
+      }
+    };
   }, [mobileOpen]);
 
   return (
@@ -86,7 +106,7 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
       {/* Skip to main content link for keyboard navigation */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:z-[60] focus:top-4 focus:left-4 bg-primary-600 text-white px-4 py-2 rounded-lg font-medium shadow-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-[60] focus:top-[max(1rem,env(safe-area-inset-top))] focus:left-4 bg-primary-600 text-white px-4 py-2 rounded-lg font-medium shadow-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
       >
         Skip to main content
       </a>
@@ -152,8 +172,6 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
         )}
         style={{
           background: 'transparent',
-          WebkitOverflowScrolling: 'touch',
-          overscrollBehaviorY: 'contain',
         }}
       >
         <NoTeamBanner />

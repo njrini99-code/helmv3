@@ -257,7 +257,7 @@ export default function GolfMessagesPage() {
   // No team error state - CRITICAL: Show helpful message
   if (!teamId) {
     return (
-      <div className="h-[calc(100vh-64px)] flex items-center justify-center p-6">
+      <div className="h-[calc(100dvh-64px)] flex items-center justify-center p-6">
         <div className="max-w-md text-center">
           <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
             <IconAlertCircle size={32} className="text-amber-500" />
@@ -280,7 +280,7 @@ export default function GolfMessagesPage() {
   }
 
   return (
-    <AnimatedPage className="h-[calc(100vh-64px)] flex">
+    <AnimatedPage className="h-[calc(100dvh-64px)] flex">
       {/* Conversation List */}
       <div className={cn(
         'w-full lg:w-80 xl:w-96 flex-shrink-0 border-r border-warm-200/60 glass-standard flex flex-col',
@@ -332,7 +332,7 @@ export default function GolfMessagesPage() {
         </div>
 
         {/* Conversation List */}
-        <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }} data-scroll-container>
+        <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y pt-[env(safe-area-inset-top)]" data-scroll-container>
           {!conversations || conversations.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
               <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mb-3">
@@ -393,7 +393,7 @@ export default function GolfMessagesPage() {
             <div className="p-4 border-b border-warm-200/60 glass-standard flex items-center gap-3">
               <button
                 onClick={handleBack}
-                className="lg:hidden p-2 -ml-2 text-warm-400 hover:text-warm-600"
+                className="lg:hidden p-3 -ml-3 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-warm-400 hover:text-warm-600 active:bg-warm-100 transition-colors"
                 aria-label="Back to conversations"
               >
                 <IconArrowLeft size={20} />
@@ -424,7 +424,7 @@ export default function GolfMessagesPage() {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }} data-scroll-container>
+            <div className="flex-1 overflow-y-auto p-4 overscroll-contain touch-pan-y" data-scroll-container>
               {messagesLoading ? (
                 <div className="space-y-3 py-8 px-4">
                   <div className="h-4 w-3/4 bg-warm-200 rounded skeleton-shimmer" />
@@ -476,49 +476,69 @@ export default function GolfMessagesPage() {
                         )}
 
                         {/* Message bubble with edit/delete controls */}
-                        <div className="group relative flex items-center gap-1 max-w-[70%]">
-                          {/* Edit/Delete buttons for own messages (appear on hover) */}
+                        <div className="group relative flex flex-col items-end gap-1 max-w-[70%]">
+                          {/* Edit/Delete buttons for own messages — desktop: hover, mobile: tap row below bubble */}
                           {isOwn && editingMessageId !== msg.id && deleteConfirmId !== msg.id && (
-                            <div className={cn(
-                              'absolute flex items-center gap-0.5 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity',
-                              'right-full mr-1'
-                            )}>
-                              <button
-                                onClick={() => handleStartEdit(msg.id, msg.content)}
-                                className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
-                                title="Edit message"
-                              >
-                                <IconPencil size={14} />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteClick(msg.id)}
-                                className="p-1.5 rounded-lg text-warm-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                                title="Delete message"
-                              >
-                                <IconTrash size={14} />
-                              </button>
-                            </div>
+                            <>
+                              {/* Desktop: absolute positioned, hover reveal */}
+                              <div className={cn(
+                                'absolute hidden lg:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity',
+                                'right-full mr-1 top-1/2 -translate-y-1/2'
+                              )}>
+                                <button
+                                  onClick={() => handleStartEdit(msg.id, msg.content)}
+                                  className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
+                                  title="Edit message"
+                                >
+                                  <IconPencil size={14} />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteClick(msg.id)}
+                                  className="p-1.5 rounded-lg text-warm-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                                  title="Delete message"
+                                >
+                                  <IconTrash size={14} />
+                                </button>
+                              </div>
+                              {/* Mobile: inline row below the bubble, always visible */}
+                              <div className="flex lg:hidden items-center gap-2 mt-0.5">
+                                <button
+                                  onClick={() => handleStartEdit(msg.id, msg.content)}
+                                  className="p-2.5 -m-1 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-warm-400 active:text-warm-600 active:bg-warm-100 transition-colors"
+                                  aria-label="Edit message"
+                                >
+                                  <IconPencil size={18} />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteClick(msg.id)}
+                                  className="p-2.5 -m-1 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-warm-400 active:text-red-500 active:bg-red-50 transition-colors"
+                                  aria-label="Delete message"
+                                >
+                                  <IconTrash size={18} />
+                                </button>
+                              </div>
+                            </>
                           )}
 
                           {/* Delete confirmation */}
                           {deleteConfirmId === msg.id && (
-                            <div className="flex items-center gap-1 mr-2 bg-red-50 rounded-lg px-2 py-1">
+                            <div className="flex items-center gap-1 mr-2 bg-red-50 rounded-lg px-2.5 py-1.5">
                               <span className="text-xs text-red-600 mr-1">Delete?</span>
                               <button
                                 onClick={handleConfirmDelete}
-                                className="p-1 rounded text-red-600 hover:bg-red-100 transition-colors"
+                                className="p-2 min-w-[40px] min-h-[40px] rounded-lg text-red-600 hover:bg-red-100 active:bg-red-100 transition-colors flex items-center justify-center"
                                 title="Confirm delete"
                                 aria-label="Confirm delete"
                               >
-                                <IconCheck size={14} />
+                                <IconCheck size={18} />
                               </button>
                               <button
                                 onClick={handleCancelDelete}
-                                className="p-1 rounded text-warm-500 hover:bg-warm-200 transition-colors"
+                                className="p-2 min-w-[40px] min-h-[40px] rounded-lg text-warm-500 hover:bg-warm-200 active:bg-warm-200 transition-colors flex items-center justify-center"
                                 title="Cancel"
                                 aria-label="Cancel delete"
                               >
-                                <IconX size={14} />
+                                <IconX size={18} />
                               </button>
                             </div>
                           )}
@@ -796,7 +816,7 @@ function MessageInput({ onSend, onTyping }: MessageInputProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="p-4 bg-white/60 backdrop-blur-sm border-t border-white/30">
+    <form onSubmit={handleSubmit} className="p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] lg:pb-4 bg-white/60 backdrop-blur-sm border-t border-white/30">
       <div className={cn(
         'flex items-end gap-3 p-1.5 rounded-2xl',
         'bg-white/50 border border-white/30',
@@ -811,7 +831,7 @@ function MessageInput({ onSend, onTyping }: MessageInputProps) {
           placeholder="Type a message..."
           rows={1}
           className={cn(
-            'flex-1 resize-none bg-transparent px-3 py-2 text-sm',
+            'flex-1 resize-none bg-transparent px-3 py-2 text-base lg:text-sm',
             'placeholder:text-warm-400',
             'focus:outline-none'
           )}
@@ -823,7 +843,7 @@ function MessageInput({ onSend, onTyping }: MessageInputProps) {
           aria-label="Send message"
           className={cn(
             'h-11 w-11 md:h-10 md:w-10 rounded-xl flex items-center justify-center',
-            'transition-all duration-200',
+            'transition-all duration-200 active:scale-90',
             message.trim() && !sending
               ? 'bg-primary-500 text-white hover:bg-primary-600 shadow-sm'
               : 'bg-warm-200 text-warm-400 cursor-not-allowed'
@@ -953,11 +973,11 @@ function ConversationRow({
     <button
       onClick={onSelect}
       className={cn(
-        'w-full p-3 flex items-start gap-3 text-left rounded-xl',
+        'w-full p-3 min-h-[72px] flex items-start gap-3 text-left rounded-xl',
         'transition-all duration-150',
         isSelected
           ? 'bg-primary-50 shadow-sm'
-          : 'hover:bg-warm-50'
+          : 'hover:bg-warm-50 active:bg-warm-100'
       )}
     >
       {/* Avatar with unread indicator */}

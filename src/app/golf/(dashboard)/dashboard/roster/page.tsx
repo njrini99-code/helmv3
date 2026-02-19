@@ -310,7 +310,7 @@ export default async function GolfRosterPage() {
           </div>
         ) : (
           /* Player Cards Grid - 1 column on mobile, 2 columns on desktop */
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
             {playersWithStats.map((player) => (
               <div
                 key={player.id}
@@ -408,13 +408,13 @@ export default async function GolfRosterPage() {
                 {/* Action Buttons - min 44px touch targets */}
                 <div className="px-5 md:px-6 pb-5 md:pb-6 flex items-center gap-3">
                   <Link href={`/golf/dashboard/stats?player=${player.id}`} className="flex-1">
-                    <button className="w-full px-4 py-3 bg-warm-900 text-white text-sm font-medium rounded-xl hover:bg-warm-800 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                    <button className="w-full px-4 py-3 min-h-[48px] bg-warm-900 text-white text-sm font-medium rounded-xl hover:bg-warm-800 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
                       <IconChartBar size={16} />
                       View Stats
                     </button>
                   </Link>
                   <Link href={`/golf/dashboard/messages?player=${player.id}`} className="flex-1">
-                    <button className="w-full px-4 py-3 bg-white border border-warm-200 text-warm-700 text-sm font-medium rounded-xl hover:bg-warm-50 hover:border-warm-300 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                    <button className="w-full px-4 py-3 min-h-[48px] bg-white border border-warm-200 text-warm-700 text-sm font-medium rounded-xl hover:bg-warm-50 hover:border-warm-300 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
                       <IconMessage size={16} />
                       Message
                     </button>

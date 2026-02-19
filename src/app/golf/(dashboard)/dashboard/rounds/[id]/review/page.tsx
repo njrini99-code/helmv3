@@ -268,7 +268,7 @@ export default function RoundReviewPage() {
           <p className="text-red-500 mb-4">{error}</p>
           <button
             onClick={() => generateReview()}
-            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center gap-2 mx-auto"
+            className="px-5 py-3 min-h-[48px] bg-primary-600 text-white rounded-xl hover:bg-primary-700 active:scale-95 transition-all flex items-center gap-2 mx-auto font-medium"
           >
             <IconRefresh size={16} />
             Try Again
@@ -316,7 +316,7 @@ export default function RoundReviewPage() {
       <m.div variants={itemVariants} className="flex items-center justify-between mb-6">
         <Link
           href="/golf/dashboard/rounds"
-          className="flex items-center gap-2 text-sm text-warm-500 hover:text-warm-700"
+          className="flex items-center gap-2 text-sm text-warm-500 hover:text-warm-700 px-3 py-2.5 -mx-3 -my-2.5 min-h-[44px] rounded-lg active:bg-warm-100 transition-colors"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -337,7 +337,7 @@ export default function RoundReviewPage() {
           <button
             onClick={() => generateReview()}
             disabled={generatingReview}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-warm-600 hover:text-warm-900 hover:bg-warm-100 rounded-lg transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2.5 min-h-[44px] text-xs font-medium text-warm-600 hover:text-warm-900 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
           >
             <IconRefresh size={14} className={generatingReview ? 'animate-spin' : ''} />
             Refresh
@@ -411,7 +411,7 @@ export default function RoundReviewPage() {
       </m.div>
 
       {/* Bottom actions */}
-      <m.div variants={itemVariants} className="fixed bottom-0 left-0 right-0 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-gradient-to-t from-white via-white to-transparent lg:relative lg:bg-none lg:p-0 lg:pb-0 lg:mt-6">
+      <m.div variants={itemVariants} className="fixed bottom-0 left-0 right-0 z-30 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-gradient-to-t from-white via-white to-transparent lg:relative lg:z-auto lg:bg-none lg:p-0 lg:pb-0 lg:mt-6">
         <div className="max-w-2xl mx-auto flex gap-3">
           <Link
             href={`/golf/dashboard/rounds/${roundId}`}

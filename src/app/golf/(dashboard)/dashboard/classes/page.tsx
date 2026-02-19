@@ -548,9 +548,9 @@ export default function GolfClassesPage() {
               <h2 className="text-lg font-semibold text-warm-900 mb-4">Weekly Schedule</h2>
 
               {Object.keys(classesByDay).length > 0 ? (
-                <div className="grid grid-cols-5 gap-4">
+                <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 -mx-2 px-2 md:grid md:grid-cols-5 md:gap-4 md:overflow-x-visible md:snap-none md:pb-0 md:mx-0 md:px-0" style={{ WebkitOverflowScrolling: 'touch' }}>
                   {dayOrder.map(day => (
-                    <div key={day}>
+                    <div key={day} className="min-w-[70vw] snap-center flex-shrink-0 md:min-w-0 md:flex-shrink">
                       <div className="text-center mb-3">
                         <span className="text-sm font-medium text-warm-500">{dayNames[day]}</span>
                       </div>
@@ -563,7 +563,7 @@ export default function GolfClassesPage() {
                               <button
                                 key={`${cls.id}-${day}`}
                                 onClick={() => handleClassClick(cls)}
-                                className="w-full text-left p-3 rounded-xl border border-white/20 hover:border-white/40 hover:shadow-glass-sm transition-all bg-white/60 backdrop-blur-sm"
+                                className="w-full text-left p-3 min-h-[64px] rounded-xl border border-white/20 hover:border-white/40 hover:shadow-glass-sm active:bg-warm-50 transition-all bg-white/60 backdrop-blur-sm"
                                 style={{ borderLeftColor: cls.color || '#16A34A', borderLeftWidth: '3px' }}
                               >
                                 {code && (
@@ -619,7 +619,7 @@ export default function GolfClassesPage() {
                     <button
                       key={cls.id}
                       onClick={() => handleClassClick(cls)}
-                      className="w-full text-left p-4 rounded-xl border border-warm-200 hover:border-warm-300 hover:shadow-sm transition-all bg-white flex items-center gap-4"
+                      className="w-full text-left p-4 min-h-[72px] rounded-xl border border-warm-200 hover:border-warm-300 hover:shadow-sm active:bg-warm-50 transition-all bg-white flex items-center gap-4"
                     >
                       <div
                         className="w-2 h-12 rounded-full flex-shrink-0"

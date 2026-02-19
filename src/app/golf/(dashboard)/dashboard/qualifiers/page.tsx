@@ -132,7 +132,7 @@ export default async function GolfQualifiersPage() {
             {isCoach && <CreateQualifierButton />}
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {qualifiers.map((qualifier, index) => {
               const statusConfig = getStatusConfig(qualifier.status || 'upcoming');
               
@@ -147,7 +147,7 @@ export default async function GolfQualifiersPage() {
                     opacity: 0,
                   }}
                 >
-                  <div className="relative glass-standard rounded-2xl overflow-hidden p-6 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
+                  <div className="relative glass-standard rounded-2xl overflow-hidden p-6 min-h-[80px] hover:shadow-lg hover:-translate-y-0.5 active:bg-warm-50 transition-all duration-300">
                     <ShineEffect />
                     {/* Header */}
                     <div className="flex items-start justify-between mb-4">

@@ -89,7 +89,7 @@ export default function CoachingIntelligenceSettingsPage() {
     return (
         <AnimatedPage className="min-h-full pb-20">
             {/* Header */}
-            <AnimatedItem className="bg-white border-b border-warm-200 sticky top-0 z-20">
+            <AnimatedItem className="bg-white border-b border-warm-200 sticky top-0 z-10">
                 <div className="max-w-3xl mx-auto px-6 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <button
@@ -283,7 +283,7 @@ export default function CoachingIntelligenceSettingsPage() {
                                     <button
                                         key={option}
                                         onClick={() => handleDisplayChange('insightVerbosity', option)}
-                                        className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors capitalize ${
+                                        className={`flex-1 py-2.5 px-4 min-h-[44px] rounded-lg text-sm font-medium transition-colors capitalize active:scale-[0.98] ${
                                             philosophy.insightVerbosity === option
                                                 ? 'bg-primary-500 text-white'
                                                 : 'bg-warm-100 text-warm-600 hover:bg-warm-200'

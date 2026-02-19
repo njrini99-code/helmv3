@@ -173,7 +173,7 @@ export default async function GolfCalendarPage() {
     <AnimatedPage>
       <AnimatedItem>
         <div
-          className="h-[calc(100dvh-64px)] md:h-[calc(100vh-64px)] flex flex-col"
+          className="h-[calc(100dvh-64px-5.5rem-env(safe-area-inset-bottom))] md:h-[calc(100vh-64px)] flex flex-col"
           style={{
             background: 'linear-gradient(180deg, #FFFEFA 0%, #FDF9F0 33%, #FAF5EB 66%, #F5F0E6 100%)',
           }}
