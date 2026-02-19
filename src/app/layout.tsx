@@ -6,6 +6,7 @@ import { ToastContainer } from '@/components/ui/toast';
 import { DatadogProvider } from '@/components/providers/DatadogProvider';
 import { Analytics } from '@vercel/analytics/next';
 import { AdminErrorHandler } from '@/components/providers/AdminErrorHandler';
+import { ChunkLoadErrorHandler } from '@/components/providers/ChunkLoadErrorHandler';
 
 const playfair = Playfair_Display({
   subsets: ['latin'],
@@ -95,6 +96,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ToastContainer />
         <Analytics />
         <AdminErrorHandler />
+        <ChunkLoadErrorHandler />
       </body>
     </html>
   );

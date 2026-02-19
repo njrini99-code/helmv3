@@ -24,6 +24,29 @@ interface RouteErrorBoundaryProps {
 }
 
 /**
+ * Check if an error is a stale deployment chunk load error.
+ * These require a full page reload (not just reset) to fetch new deployment manifest.
+ */
+function isChunkLoadError(error: Error): boolean {
+  const msg = error.message?.toLowerCase() || '';
+  return (
+    msg.includes('loading chunk') ||
+    msg.includes('loading css chunk') ||
+    msg.includes('chunkloaderror') ||
+    (msg.includes("cannot read properties of undefined") && msg.includes("'call'"))
+  );
+}
+
+/**
+ * Check if an error is from a stale server action (deployment mismatch).
+ * Like chunk load errors, these need a full page reload.
+ */
+function isStaleActionError(error: Error): boolean {
+  const msg = error.message || '';
+  return msg.includes('not found on the server') || msg.includes('Server Action');
+}
+
+/**
  * Check if an error appears to be transient (retryable)
  */
 function isTransientError(error: Error): boolean {
@@ -85,7 +108,21 @@ export function RouteErrorBoundary({
   const [retryCount, setRetryCount] = useState(0);
   const [isRetrying, setIsRetrying] = useState(false);
 
+  const isChunk = isChunkLoadError(error);
+  const isStaleAction = isStaleActionError(error);
   const isTransient = isTransientError(error);
+
+  // For chunk load or stale server action errors, a full page reload is the only real fix
+  useEffect(() => {
+    if (isChunk || isStaleAction) {
+      const key = isChunk ? 'chunk-error-reload' : 'stale-action-reload';
+      const hasReloaded = sessionStorage.getItem(key);
+      if (!hasReloaded) {
+        sessionStorage.setItem(key, Date.now().toString());
+        window.location.reload();
+      }
+    }
+  }, [isChunk, isStaleAction]);
 
   const handleRetry = useCallback(async () => {
     setIsRetrying(true);
@@ -121,6 +158,9 @@ export function RouteErrorBoundary({
 
   // Better default messages for different error types
   const getDefaultMessage = () => {
+    if (isChunk) {
+      return 'A new version of the app is available. Please refresh the page to continue.';
+    }
     if (isTransient) {
       return 'Our servers are temporarily busy. This usually resolves quickly.';
     }

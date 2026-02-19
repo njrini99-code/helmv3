@@ -138,10 +138,12 @@ function layoutOverlappingEvents(events: CalendarEvent[]): LayoutEvent[] {
 }
 
 export function DayView({ date, events, onEventClick, isDraggable = false }: DayViewProps) {
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const [currentTime, setCurrentTime] = useState<Date | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Initialize currentTime on client only to avoid hydration mismatch
   useEffect(() => {
+    setCurrentTime(new Date());
     const interval = setInterval(() => {
       setCurrentTime(new Date());
     }, 60000);
@@ -172,6 +174,7 @@ export function DayView({ date, events, onEventClick, isDraggable = false }: Day
   const layoutItems = layoutOverlappingEvents(dayEvents);
 
   const getCurrentTimePosition = () => {
+    if (!currentTime) return null;
     const hour = currentTime.getHours();
     const minutes = currentTime.getMinutes();
 

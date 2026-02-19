@@ -220,21 +220,30 @@ export default function NewRoundClient() {
     if (setupData.roundType === 'qualifier') {
       setLoadingQualifiers(true);
       setQualifierError(null);
-      getPlayerQualifiers().then(result => {
-        setLoadingQualifiers(false);
-        if (!result.success) {
-          setQualifierError(result.error);
-          return;
-        }
-        // Filter to only active/in-progress qualifiers with remaining rounds
-        const activeQualifiers = result.data.filter(
-          q => q.status !== 'completed' && q.roundsCompleted < q.numRounds
-        );
-        setQualifiers(activeQualifiers);
-        if (activeQualifiers.length === 0) {
-          setQualifierError('You have no active qualifiers to enter rounds for.');
-        }
-      });
+      getPlayerQualifiers()
+        .then(result => {
+          setLoadingQualifiers(false);
+          if (!result.success) {
+            setQualifierError(result.error);
+            return;
+          }
+          // Filter to only active/in-progress qualifiers with remaining rounds
+          const activeQualifiers = result.data.filter(
+            q => q.status !== 'completed' && q.roundsCompleted < q.numRounds
+          );
+          setQualifiers(activeQualifiers);
+          if (activeQualifiers.length === 0) {
+            setQualifierError('You have no active qualifiers to enter rounds for.');
+          }
+        })
+        .catch((err: Error) => {
+          if (err.message?.includes('not found on the server') || err.message?.includes('Server Action')) {
+            window.location.reload();
+            return;
+          }
+          setLoadingQualifiers(false);
+          setQualifierError('Failed to load qualifiers. Please try refreshing.');
+        });
     } else {
       // Reset qualifier state when switching away from qualifier
       setSelectedQualifierId(null);
@@ -247,15 +256,22 @@ export default function NewRoundClient() {
   // Fetch available round numbers when qualifier is selected
   useEffect(() => {
     if (selectedQualifierId) {
-      getNextQualifierRoundNumber(selectedQualifierId).then(result => {
-        if (result.success && result.data) {
-          setAvailableRounds(result.data.availableRounds);
-          // Auto-select the next round number
-          if (result.data.nextRoundNumber > 0) {
-            setSelectedRoundNumber(result.data.nextRoundNumber);
+      getNextQualifierRoundNumber(selectedQualifierId)
+        .then(result => {
+          if (result.success && result.data) {
+            setAvailableRounds(result.data.availableRounds);
+            // Auto-select the next round number
+            if (result.data.nextRoundNumber > 0) {
+              setSelectedRoundNumber(result.data.nextRoundNumber);
+            }
           }
-        }
-      });
+        })
+        .catch((err: Error) => {
+          if (err.message?.includes('not found on the server') || err.message?.includes('Server Action')) {
+            window.location.reload();
+            return;
+          }
+        });
     } else {
       setAvailableRounds([]);
       setSelectedRoundNumber(null);
@@ -264,16 +280,24 @@ export default function NewRoundClient() {
 
   // Fetch saved courses on mount
   useEffect(() => {
-    getPlayerSavedCourses().then(result => {
-      setLoadingSavedCourses(false);
-      if (result.success) {
-        setSavedCourses(result.data);
-        // Auto-select "saved" mode if they have saved courses
-        if (result.data.length > 0) {
-          setCourseMode('saved');
+    getPlayerSavedCourses()
+      .then(result => {
+        setLoadingSavedCourses(false);
+        if (result.success) {
+          setSavedCourses(result.data);
+          // Auto-select "saved" mode if they have saved courses
+          if (result.data.length > 0) {
+            setCourseMode('saved');
+          }
         }
-      }
-    });
+      })
+      .catch((err: Error) => {
+        if (err.message?.includes('not found on the server') || err.message?.includes('Server Action')) {
+          window.location.reload();
+          return;
+        }
+        setLoadingSavedCourses(false);
+      });
   }, []);
 
   // Handle saved course selection

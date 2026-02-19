@@ -18,14 +18,24 @@ export default function MyQualifiersPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    getPlayerQualifiers().then(result => {
-      setLoading(false);
-      if (result.success) {
-        setQualifiers(result.data);
-      } else {
-        setError(result.error);
-      }
-    });
+    getPlayerQualifiers()
+      .then(result => {
+        setLoading(false);
+        if (result.success) {
+          setQualifiers(result.data);
+        } else {
+          setError(result.error);
+        }
+      })
+      .catch((err: Error) => {
+        // Server action not found = stale deployment, hard reload to get fresh bundle
+        if (err.message?.includes('not found on the server') || err.message?.includes('Server Action')) {
+          window.location.reload();
+          return;
+        }
+        setLoading(false);
+        setError('Failed to load qualifiers. Please try refreshing the page.');
+      });
   }, []);
 
   const getStatusBadge = (status: string, roundsCompleted: number, numRounds: number) => {
