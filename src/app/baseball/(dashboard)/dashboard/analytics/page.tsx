@@ -181,7 +181,7 @@ export default function AnalyticsPage() {
                 {topSchools.map((school, idx) => (
                   <div
                     key={idx}
-                    className="flex items-center gap-4 p-4 rounded-lg hover:bg-slate-50 transition-colors"
+                    className="flex items-center gap-4 p-4 rounded-lg hover:bg-slate-50 active:bg-slate-100 transition-colors"
                   >
                     <div className="flex items-center gap-3 flex-1">
                       <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 font-semibold">

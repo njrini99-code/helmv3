@@ -348,7 +348,7 @@ export function PlayerComparison({
                   <tr
                     key={stat.label}
                     className={cn(
-                      'border-b border-border-light hover:bg-cream-50 transition-colors',
+                      'border-b border-border-light hover:bg-cream-50 active:bg-cream-100 transition-colors',
                       index % 2 === 0 && 'bg-white'
                     )}
                   >

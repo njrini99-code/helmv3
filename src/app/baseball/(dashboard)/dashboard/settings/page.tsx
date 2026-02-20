@@ -168,7 +168,7 @@ export default function SettingsPage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors group">
+              <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 active:bg-slate-200 transition-colors group">
                 <div>
                   <p className="font-medium text-slate-900">New Player Alerts</p>
                   <p className="text-sm leading-relaxed text-slate-500">Get notified when new players match your criteria</p>
@@ -184,7 +184,7 @@ export default function SettingsPage() {
                 />
               </label>
 
-              <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors group">
+              <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 active:bg-slate-200 transition-colors group">
                 <div>
                   <p className="font-medium text-slate-900">Message Notifications</p>
                   <p className="text-sm leading-relaxed text-slate-500">Email me when I receive new messages</p>
@@ -200,7 +200,7 @@ export default function SettingsPage() {
                 />
               </label>
 
-              <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 transition-colors group">
+              <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 active:bg-slate-200 transition-colors group">
                 <div>
                   <p className="font-medium text-slate-900">Weekly Recruiting Digest</p>
                   <p className="text-sm leading-relaxed text-slate-500">Get a weekly summary of new prospects</p>

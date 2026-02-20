@@ -205,7 +205,7 @@ function CompareContent() {
                         <button
                           key={player.id}
                           onClick={() => addPlayer(player)}
-                          className="w-full flex items-center gap-3 p-3 hover:bg-slate-50 transition-colors text-left"
+                          className="w-full flex items-center gap-3 p-3 hover:bg-slate-50 active:bg-slate-100 transition-colors text-left"
                         >
                           <Avatar name={name} src={player.avatar_url} size="sm" />
                           <div className="flex-1 min-w-0">
@@ -233,7 +233,7 @@ function CompareContent() {
                   return (
                     <div
                       key={player.id}
-                      className="flex items-center gap-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded-full hover:bg-green-100 transition-colors"
+                      className="flex items-center gap-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded-full hover:bg-green-100 active:bg-green-200 transition-colors"
                     >
                       <Avatar name={name} src={player.avatar_url} size="xs" />
                       <span className="text-sm font-medium text-green-800">{name}</span>

@@ -136,7 +136,7 @@ export function MobileSidebarDrawer({
             className="
               min-w-[44px] min-h-[44px] p-3 rounded-lg
               flex items-center justify-center
-              text-warm-400 hover:text-white hover:bg-white/10
+              text-warm-400 hover:text-white hover:bg-white/10 active:bg-white/15
               transition-colors
             "
             aria-label="Close menu"
@@ -178,7 +178,7 @@ export function MobileSidebarDrawer({
                         'transition-all duration-200',
                         active
                           ? 'bg-white/10 text-white'
-                          : 'text-warm-400 hover:bg-white/5 hover:text-white'
+                          : 'text-warm-400 hover:bg-white/5 active:bg-white/10 hover:text-white'
                       )}
                     >
                       {/* Active indicator bar */}

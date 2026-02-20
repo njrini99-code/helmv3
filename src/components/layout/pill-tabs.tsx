@@ -78,7 +78,7 @@ export function PillTabs({
           isCompact ? 'px-3 py-1.5 text-xs' : 'px-4 py-2 text-sm',
           isActive
             ? 'bg-white text-warm-900 shadow-sm'
-            : 'text-warm-600 hover:text-warm-900 hover:bg-warm-100'
+            : 'text-warm-600 hover:text-warm-900 hover:bg-warm-100 active:bg-warm-200'
         );
 
         const content = (

@@ -198,7 +198,7 @@ export function CommandCenterClient({
                             className={`px-3 py-1 text-sm rounded-full transition-colors ${
                               filterType === type
                                 ? 'bg-green-600 text-white'
-                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200 active:bg-slate-300'
                             }`}
                           >
                             {type === 'all'
@@ -276,7 +276,7 @@ export function CommandCenterClient({
               <div className="space-y-2">
                 <Link
                   href="/baseball/dashboard/stats/upload"
-                  className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-50 transition-colors"
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-50 active:bg-slate-100 transition-colors"
                 >
                   <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center">
                     <IconUpload size={16} className="text-green-600" />
@@ -290,7 +290,7 @@ export function CommandCenterClient({
                 </Link>
                 <Link
                   href="/baseball/dashboard/stats"
-                  className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-50 transition-colors"
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-50 active:bg-slate-100 transition-colors"
                 >
                   <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
                     <IconChartBar size={16} className="text-blue-600" />

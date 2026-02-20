@@ -49,7 +49,7 @@ export function CollegeInterestTracker({ interests }: CollegeInterestTrackerProp
             {interests.slice(0, 6).map((interest) => (
               <div
                 key={interest.id}
-                className="flex items-start gap-3 p-3 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                className="flex items-start gap-3 p-3 border border-slate-200 rounded-lg hover:bg-slate-50 active:bg-slate-100 transition-colors"
               >
                 <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
                   <IconEye size={16} className="text-green-600" />

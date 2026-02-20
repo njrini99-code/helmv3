@@ -91,7 +91,7 @@ export default async function JoinTeamPage({ params }: PageProps) {
           </p>
           <a
             href="/baseball/dashboard"
-            className="inline-block px-6 py-2.5 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors"
+            className="inline-block px-6 py-2.5 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 active:bg-green-800 transition-colors"
           >
             Go to Dashboard
           </a>
@@ -119,7 +119,7 @@ export default async function JoinTeamPage({ params }: PageProps) {
           </p>
           <a
             href="/baseball/dashboard"
-            className="inline-block px-6 py-2.5 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors"
+            className="inline-block px-6 py-2.5 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 active:bg-green-800 transition-colors"
           >
             Go to Dashboard
           </a>

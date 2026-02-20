@@ -150,7 +150,7 @@ export default function RosterPage() {
             className={`px-4 py-2.5 rounded-lg font-medium transition-all ${
               activeView === 'roster'
                 ? 'bg-green-50 text-green-700'
-                : 'text-slate-600 hover:bg-slate-100'
+                : 'text-slate-600 hover:bg-slate-100 active:bg-slate-200'
             }`}
           >
             <div className="flex items-center gap-2">
@@ -163,7 +163,7 @@ export default function RosterPage() {
             className={`px-4 py-2.5 rounded-lg font-medium transition-all ${
               activeView === 'lineup'
                 ? 'bg-green-50 text-green-700'
-                : 'text-slate-600 hover:bg-slate-100'
+                : 'text-slate-600 hover:bg-slate-100 active:bg-slate-200'
             }`}
           >
             <div className="flex items-center gap-2">
@@ -377,7 +377,7 @@ export default function RosterPage() {
                     </thead>
                     <tbody className="divide-y divide-slate-200">
                       {filteredRoster.map((member) => (
-                        <tr key={member.id} className="hover:bg-slate-50 transition-colors">
+                        <tr key={member.id} className="hover:bg-slate-50 active:bg-slate-100 transition-colors">
                           <td className="py-4 px-4">
                             <div className="flex items-center gap-3">
                               <Avatar

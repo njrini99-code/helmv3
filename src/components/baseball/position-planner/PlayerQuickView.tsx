@@ -78,7 +78,7 @@ export function PlayerQuickView({ player, watchlistItem, onClose }: PlayerQuickV
               'bg-white/80 backdrop-blur-sm',
               'border border-warm-200/50',
               'text-warm-400 hover:text-warm-600',
-              'hover:bg-white hover:shadow-md',
+              'hover:bg-white active:bg-white/70 hover:shadow-md',
               'transition-all duration-200'
             )}
           >

@@ -126,11 +126,11 @@ export function PlayerInsightsPanel({ insights, expanded = false }: PlayerInsigh
                 )}
 
                 <div className="flex items-center gap-2 mt-3 pt-3 border-t border-white/50">
-                  <button className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-green-600 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
+                  <button className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-green-600 bg-green-50 rounded-lg hover:bg-green-100 active:bg-green-200 transition-colors">
                     <IconCheck size={14} />
                     Mark Addressed
                   </button>
-                  <button className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors">
+                  <button className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 active:bg-slate-300 transition-colors">
                     <IconX size={14} />
                     Dismiss
                   </button>

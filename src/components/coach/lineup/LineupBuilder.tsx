@@ -199,7 +199,7 @@ export function LineupBuilder({ roster, onSave }: LineupBuilderProps) {
                       </div>
                       <button
                         onClick={() => removePlayerFromLineup(index)}
-                        className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                        className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors"
                       >
                         <IconX size={18} />
                       </button>

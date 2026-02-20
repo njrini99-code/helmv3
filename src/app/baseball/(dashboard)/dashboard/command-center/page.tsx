@@ -73,7 +73,7 @@ export default async function CommandCenterPage() {
             </p>
             <a
               href="/baseball/dashboard/program"
-              className="inline-flex items-center px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
+              className="inline-flex items-center px-6 py-3 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white rounded-lg font-medium transition-colors"
             >
               Complete Setup
             </a>
@@ -105,7 +105,7 @@ export default async function CommandCenterPage() {
             </p>
             <a
               href="/baseball/dashboard/team"
-              className="inline-flex items-center px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
+              className="inline-flex items-center px-6 py-3 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white rounded-lg font-medium transition-colors"
             >
               Create Team
             </a>

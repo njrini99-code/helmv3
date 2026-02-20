@@ -104,7 +104,7 @@ export function TemplateList({
         {onCreateTemplate && (
           <button
             onClick={onCreateTemplate}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 shadow-sm transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 active:bg-green-800 shadow-sm transition-colors"
           >
             <IconPlus size={16} />
             New Template
@@ -182,7 +182,7 @@ export function TemplateList({
                         e.stopPropagation();
                         onEditTemplate(template);
                       }}
-                      className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"
+                      className="p-2 text-slate-500 hover:bg-slate-100 active:bg-slate-200 rounded-lg transition-colors"
                       title="Edit template"
                     >
                       <IconEdit size={16} />
@@ -193,7 +193,7 @@ export function TemplateList({
                       e.stopPropagation();
                       handleDelete(template.id);
                     }}
-                    className="p-2 text-slate-500 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors"
+                    className="p-2 text-slate-500 hover:bg-red-50 active:bg-red-100 hover:text-red-600 rounded-lg transition-colors"
                     title="Delete template"
                   >
                     <IconTrash size={16} />

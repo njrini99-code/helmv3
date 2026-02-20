@@ -117,7 +117,7 @@ export function PlayerProfileClient({
         <div className="flex items-center gap-4 mb-6">
           <Link
             href="/baseball/dashboard/command-center"
-            className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+            className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 active:bg-slate-200 transition-colors"
           >
             <IconArrowLeft size={20} />
           </Link>
@@ -128,7 +128,7 @@ export function PlayerProfileClient({
         </div>
 
         {/* Player Card */}
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6 mb-6">
+        <div className="glass-standard rounded-2xl p-6 mb-6">
           <div className="flex flex-col md:flex-row md:items-start gap-6">
             {/* Avatar & Basic Info */}
             <div className="flex items-start gap-4">
@@ -273,7 +273,7 @@ export function PlayerProfileClient({
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
                 activeTab === tab.id
                   ? 'bg-green-600 text-white'
-                  : 'bg-white/70 text-slate-600 hover:bg-white'
+                  : 'bg-white/70 text-slate-600 hover:bg-white active:bg-white/70'
               }`}
             >
               <tab.icon size={16} />
@@ -288,7 +288,7 @@ export function PlayerProfileClient({
             {/* Main Column */}
             <div className="lg:col-span-2 space-y-6">
               {/* Stats Chart */}
-              <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+              <div className="glass-standard rounded-2xl p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-semibold text-slate-900">Performance Trend</h3>
                   <Button
@@ -304,7 +304,7 @@ export function PlayerProfileClient({
               </div>
 
               {/* Recent Videos */}
-              <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+              <div className="glass-standard rounded-2xl p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-semibold text-slate-900">Recent Videos</h3>
                   <Button
@@ -323,7 +323,7 @@ export function PlayerProfileClient({
             {/* Sidebar */}
             <div className="space-y-6">
               {/* AI Insights */}
-              <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+              <div className="glass-standard rounded-2xl p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-semibold text-slate-900 flex items-center gap-2">
                     <IconSparkles size={16} className="text-purple-500" />
@@ -344,7 +344,7 @@ export function PlayerProfileClient({
               </div>
 
               {/* Recent Notes */}
-              <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+              <div className="glass-standard rounded-2xl p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-semibold text-slate-900">Recent Notes</h3>
                   <Button
@@ -370,7 +370,7 @@ export function PlayerProfileClient({
               </div>
 
               {/* Session Breakdown */}
-              <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+              <div className="glass-standard rounded-2xl p-6">
                 <h3 className="font-semibold text-slate-900 mb-4">Session Breakdown</h3>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
@@ -393,13 +393,13 @@ export function PlayerProfileClient({
 
         {activeTab === 'stats' && (
           <div className="space-y-6">
-            <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+            <div className="glass-standard rounded-2xl p-6">
               <h3 className="font-semibold text-slate-900 mb-4">Performance Over Time</h3>
               <PlayerStatsChart stats={stats} fullSize />
             </div>
 
             {/* Stats Table */}
-            <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl overflow-hidden">
+            <div className="glass-standard rounded-2xl overflow-hidden">
               <div className="px-6 py-4 border-b border-slate-100">
                 <h3 className="font-semibold text-slate-900">Session History</h3>
               </div>
@@ -424,7 +424,7 @@ export function PlayerProfileClient({
                         ? (stat.hits || 0) / stat.at_bats
                         : null;
                       return (
-                        <tr key={stat.id} className="border-b border-slate-50 hover:bg-slate-50">
+                        <tr key={stat.id} className="border-b border-slate-50 hover:bg-slate-50 transition-colors active:bg-slate-100">
                           <td className="px-4 py-3 text-sm text-slate-900">
                             {new Date(stat.session_date).toLocaleDateString()}
                           </td>
@@ -461,7 +461,7 @@ export function PlayerProfileClient({
         )}
 
         {activeTab === 'videos' && (
-          <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+          <div className="glass-standard rounded-2xl p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-semibold text-slate-900">All Videos</h3>
               <Button className="gap-1">
@@ -474,7 +474,7 @@ export function PlayerProfileClient({
         )}
 
         {activeTab === 'notes' && (
-          <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+          <div className="glass-standard rounded-2xl p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-semibold text-slate-900">Coach Notes</h3>
               <Button className="gap-1">
@@ -491,7 +491,7 @@ export function PlayerProfileClient({
         )}
 
         {activeTab === 'insights' && (
-          <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+          <div className="glass-standard rounded-2xl p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-semibold text-slate-900 flex items-center gap-2">
                 <IconSparkles size={18} className="text-purple-500" />

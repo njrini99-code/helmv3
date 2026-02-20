@@ -177,7 +177,7 @@ export function ExpenseList({ expenses, onRefresh, isCoach }: ExpenseListProps) 
                             handleDelete(expense.id);
                           }}
                           disabled={deleting === expense.id}
-                          className="flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                          className="flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 active:bg-red-100 rounded-lg transition-colors disabled:opacity-50"
                         >
                           <IconTrash size={14} />
                           {deleting === expense.id ? 'Deleting...' : 'Delete'}

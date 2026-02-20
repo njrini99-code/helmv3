@@ -59,7 +59,7 @@ export function MobileBottomNav({ items, className }: MobileBottomNavProps) {
                 'active:scale-95',
                 active
                   ? 'text-primary-600 bg-primary-50'
-                  : 'text-warm-500 hover:text-warm-700 hover:bg-warm-50'
+                  : 'text-warm-500 hover:text-warm-700 hover:bg-warm-50 active:bg-warm-100'
               )}
             >
               {/* Icon with badge */}

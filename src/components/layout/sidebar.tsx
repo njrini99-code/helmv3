@@ -269,7 +269,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
             'absolute -right-5 top-6 z-50',
             'w-10 h-10 rounded-full bg-[#1C1917] border border-white/20',
             'flex items-center justify-center',
-            'shadow-lg hover:bg-white/10 hover:border-white/30',
+            'shadow-lg hover:bg-white/10 active:bg-white/15 hover:border-white/30',
             'transition-all duration-200',
             'focus:outline-none focus:ring-2 focus:ring-primary-500/40'
           )}
@@ -362,7 +362,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
                     'active:scale-[0.98]',
                     isActive
                       ? 'bg-white/10 text-primary-400 border-l-[3px] border-primary-500'
-                      : 'text-white/60 hover:bg-white/5 hover:text-white/90',
+                      : 'text-white/60 hover:bg-white/5 active:bg-white/10 hover:text-white/90',
                     isCollapsed ? 'justify-center px-2' : 'px-3'
                   )}
                 >
@@ -426,7 +426,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
                         'transition-all duration-150 ease-out',
                         isActive
                           ? 'bg-white/10 text-primary-400 border-l-[3px] border-primary-500'
-                          : 'text-white/60 hover:bg-white/5 hover:text-white/90',
+                          : 'text-white/60 hover:bg-white/5 active:bg-white/10 hover:text-white/90',
                         isCollapsed ? 'justify-center px-2' : 'px-3'
                       )}
                     >
@@ -477,7 +477,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
                     'transition-all duration-150 ease-out',
                     isActive
                       ? 'bg-white/10 text-primary-400'
-                      : 'text-white/60 hover:bg-white/5 hover:text-white/90',
+                      : 'text-white/60 hover:bg-white/5 active:bg-white/10 hover:text-white/90',
                     isCollapsed ? 'justify-center px-2' : 'px-3'
                   )}
                 >

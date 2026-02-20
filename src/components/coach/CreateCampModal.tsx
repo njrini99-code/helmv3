@@ -135,7 +135,7 @@ export function CreateCampModal({ open, onClose, camp }: CreateCampModalProps) {
           </h2>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 active:bg-slate-200 transition-colors"
             aria-label={isEditing ? 'Close edit camp modal' : 'Close create camp modal'}
           >
             <IconX size={20} />

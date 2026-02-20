@@ -89,7 +89,7 @@ export function PeekPanelRoot({
                 <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
                 <button
                   onClick={onClose}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 active:bg-slate-200 transition-colors"
                   aria-label="Close panel"
                 >
                   <IconX size={20} />

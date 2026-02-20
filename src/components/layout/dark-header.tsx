@@ -90,7 +90,7 @@ export function DarkHeader({ onMobileMenuToggle }: DarkHeaderProps) {
             className="
               lg:hidden
               p-2 rounded-lg
-              text-warm-400 hover:text-warm-700 hover:bg-warm-100
+              text-warm-400 hover:text-warm-700 hover:bg-warm-100 active:bg-warm-200
               transition-colors
             "
             aria-label="Toggle menu"
@@ -134,7 +134,7 @@ export function DarkHeader({ onMobileMenuToggle }: DarkHeaderProps) {
             className="
               hidden sm:flex items-center gap-2
               px-3 py-2
-              bg-warm-50 hover:bg-warm-100
+              bg-warm-50 hover:bg-warm-100 active:bg-warm-200
               border border-warm-200
               rounded-lg
               text-sm text-warm-500
@@ -163,7 +163,7 @@ export function DarkHeader({ onMobileMenuToggle }: DarkHeaderProps) {
               className="
                 relative
                 p-2 rounded-lg
-                text-warm-400 hover:text-warm-700 hover:bg-warm-100
+                text-warm-400 hover:text-warm-700 hover:bg-warm-100 active:bg-warm-200
                 transition-colors
               "
               aria-label="Notifications"
@@ -238,7 +238,7 @@ export function DarkHeader({ onMobileMenuToggle }: DarkHeaderProps) {
               className="
                 flex items-center gap-2
                 p-1.5 rounded-lg
-                hover:bg-warm-100
+                hover:bg-warm-100 active:bg-warm-200
                 transition-colors
               "
               aria-label="User menu"
@@ -292,7 +292,7 @@ export function DarkHeader({ onMobileMenuToggle }: DarkHeaderProps) {
                       flex items-center gap-3
                       px-4 py-2.5
                       text-sm text-warm-700
-                      hover:bg-warm-50
+                      hover:bg-warm-50 active:bg-warm-100
                       transition-colors
                     "
                   >
@@ -305,7 +305,7 @@ export function DarkHeader({ onMobileMenuToggle }: DarkHeaderProps) {
                       flex items-center gap-3
                       px-4 py-2.5
                       text-sm text-warm-700
-                      hover:bg-warm-50
+                      hover:bg-warm-50 active:bg-warm-100
                       transition-colors
                     "
                   >
@@ -322,7 +322,7 @@ export function DarkHeader({ onMobileMenuToggle }: DarkHeaderProps) {
                       flex items-center gap-3
                       px-4 py-2.5
                       text-sm text-red-600
-                      hover:bg-red-50
+                      hover:bg-red-50 active:bg-red-100
                       transition-colors
                     "
                   >

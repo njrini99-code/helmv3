@@ -109,8 +109,8 @@ export function CardActionsMenu({
                   action.disabled
                     ? 'text-warm-300 cursor-not-allowed'
                     : action.variant === 'danger'
-                    ? 'text-red-600 hover:bg-red-50'
-                    : 'text-warm-700 hover:bg-warm-50'
+                    ? 'text-red-600 hover:bg-red-50 active:bg-red-100'
+                    : 'text-warm-700 hover:bg-warm-50 active:bg-warm-100'
                 )}
               >
                 {Icon && (

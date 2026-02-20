@@ -101,7 +101,7 @@ export function EventModal({ teamId, coachId, event, onClose, onSuccess }: Event
             </div>
             <button
               onClick={onClose}
-              className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+              className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 active:bg-slate-200 transition-colors"
             >
               <IconX size={20} />
             </button>

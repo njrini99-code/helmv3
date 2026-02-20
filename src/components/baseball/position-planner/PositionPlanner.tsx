@@ -227,7 +227,7 @@ export function PositionPlanner({
                     'bg-gradient-to-br from-white/90 to-warm-50/70',
                     'text-warm-600',
                     'border-white/60',
-                    'hover:bg-white hover:shadow-md'
+                    'hover:bg-white active:bg-white/70 hover:shadow-md'
                   ]
             )}
           >

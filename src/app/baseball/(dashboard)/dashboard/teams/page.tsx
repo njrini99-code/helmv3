@@ -337,7 +337,7 @@ export default function TeamsPage() {
                           </code>
                           <button
                             onClick={() => handleCopyInvite(invite.code)}
-                            className="min-w-[44px] min-h-[44px] p-2.5 rounded-lg hover:bg-slate-200 transition-colors flex items-center justify-center"
+                            className="min-w-[44px] min-h-[44px] p-2.5 rounded-lg hover:bg-slate-200 active:bg-slate-300 transition-colors flex items-center justify-center"
                             title="Copy invite link"
                           >
                             {copiedCode === invite.code ? (

@@ -129,7 +129,7 @@ export function NewConversationModal({ open, onClose, preselectedUserId }: NewCo
           <h2 className="text-lg font-semibold text-slate-900">New Message</h2>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 active:bg-slate-200 transition-colors"
             aria-label="Close new message dialog"
           >
             <IconX size={20} />
@@ -171,7 +171,7 @@ export function NewConversationModal({ open, onClose, preselectedUserId }: NewCo
                     <button
                       key={result.user_id}
                       onClick={() => setSelectedUserId(result.user_id)}
-                      className="w-full flex items-center gap-3 p-3 hover:bg-slate-50 transition-colors text-left"
+                      className="w-full flex items-center gap-3 p-3 hover:bg-slate-50 active:bg-slate-100 transition-colors text-left"
                     >
                       {result.avatar_url ? (
                         <img
@@ -239,7 +239,7 @@ export function NewConversationModal({ open, onClose, preselectedUserId }: NewCo
                     setSearchQuery('');
                     setSearchResults([]);
                   }}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-white transition-colors"
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-white active:bg-white/70 transition-colors"
                 >
                   <IconX size={16} />
                 </button>

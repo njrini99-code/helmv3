@@ -96,7 +96,7 @@ export function NotificationCenter({
       <button
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 hover:bg-slate-100 rounded-lg transition-colors"
+        className="relative p-2 hover:bg-slate-100 active:bg-slate-200 rounded-lg transition-colors"
       >
         <IconBell size={20} className="text-slate-600" />
         {unreadCount > 0 && (
@@ -232,7 +232,7 @@ export function NotificationCenter({
                             {!notification.read && (
                               <button
                                 onClick={() => onMarkAsRead(notification.id)}
-                                className="p-1 hover:bg-white rounded transition-colors"
+                                className="p-1 hover:bg-white active:bg-white/70 rounded transition-colors"
                                 title="Mark as read"
                               >
                                 <IconCheck size={14} className="text-slate-400 hover:text-slate-600" />
@@ -240,7 +240,7 @@ export function NotificationCenter({
                             )}
                             <button
                               onClick={() => onDelete(notification.id)}
-                              className="p-1 hover:bg-white rounded transition-colors"
+                              className="p-1 hover:bg-white active:bg-white/70 rounded transition-colors"
                               title="Delete"
                             >
                               <IconX size={14} className="text-slate-400 hover:text-red-600" />

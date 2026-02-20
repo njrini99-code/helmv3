@@ -459,7 +459,7 @@ function DiscoverContent() {
                 </div>
                 <button
                   onClick={() => setMobileFiltersOpen(false)}
-                  className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors"
+                  className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-slate-100 active:bg-slate-200 transition-colors"
                   aria-label="Close filters"
                 >
                   <IconX size={20} className="text-slate-500" />

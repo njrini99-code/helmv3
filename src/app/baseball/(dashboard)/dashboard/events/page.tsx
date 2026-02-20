@@ -330,7 +330,7 @@ export default function EventsPage() {
                         <div className="flex items-center gap-1">
                           <button
                             onClick={() => handleDeleteEvent(event.id)}
-                            className="min-w-[44px] min-h-[44px] p-3 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors flex items-center justify-center"
+                            className="min-w-[44px] min-h-[44px] p-3 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors flex items-center justify-center"
                             aria-label="Delete event"
                           >
                             <IconTrash size={16} aria-hidden="true" />

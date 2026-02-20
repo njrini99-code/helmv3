@@ -173,7 +173,7 @@ export function VersionHistory({
                         {onPreviewVersion && (
                           <button
                             onClick={() => onPreviewVersion(version)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 active:bg-slate-200 transition-colors"
                             title="Preview this version"
                           >
                             <IconEye size={14} />
@@ -182,7 +182,7 @@ export function VersionHistory({
                         {onDownloadVersion && version.file_url && (
                           <button
                             onClick={() => onDownloadVersion(version)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 active:bg-slate-200 transition-colors"
                             title="Download this version"
                           >
                             <IconDownload size={14} />
@@ -191,7 +191,7 @@ export function VersionHistory({
                         {!isCurrent && (
                           <button
                             onClick={() => handleRevertClick(version.version_number)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 active:bg-slate-200 transition-colors"
                             title="Revert to this version"
                           >
                             <IconRefresh size={14} />
@@ -238,14 +238,14 @@ export function VersionHistory({
               <button
                 onClick={() => setShowRevertDialog(false)}
                 disabled={isReverting}
-                className="flex-1 px-4 py-2.5 border border-slate-200 rounded-lg font-medium text-slate-700 hover:bg-white transition-colors text-sm disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 border border-slate-200 rounded-lg font-medium text-slate-700 hover:bg-white active:bg-white/70 transition-colors text-sm disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirmRevert}
                 disabled={isReverting}
-                className="flex-1 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-2.5 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white rounded-lg font-medium transition-colors text-sm disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {isReverting ? (
                   <>

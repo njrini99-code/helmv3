@@ -132,7 +132,7 @@ export function CompareBar({
           onClick={handleCompare}
           disabled={selectedPlayers.length < 2}
           size="sm"
-          className="bg-green-600 hover:bg-green-700 text-white gap-2 disabled:opacity-50"
+          className="bg-green-600 hover:bg-green-700 transition-colors active:bg-green-800 text-white gap-2 disabled:opacity-50"
         >
           <IconScale size={14} />
           Compare
@@ -142,7 +142,7 @@ export function CompareBar({
           onClick={onAddAllToWatchlist}
           variant="secondary"
           size="sm"
-          className="bg-slate-800 hover:bg-slate-700 text-white border-slate-600 gap-2"
+          className="bg-slate-800 hover:bg-slate-700 transition-colors text-white border-slate-600 gap-2"
         >
           <IconCheck size={14} />
           Add All

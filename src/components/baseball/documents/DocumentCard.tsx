@@ -194,7 +194,7 @@ export function DocumentCard({
                           handlePreview();
                           setActiveDropdown(null);
                         }}
-                        className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                        className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 active:bg-slate-100 transition-colors"
                       >
                         <IconEye size={14} /> Preview
                       </button>
@@ -204,7 +204,7 @@ export function DocumentCard({
                             e.stopPropagation();
                             onViewHistory(document);
                           }}
-                          className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                          className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 active:bg-slate-100 transition-colors"
                         >
                           <IconClock size={14} /> Version History
                         </button>
@@ -215,7 +215,7 @@ export function DocumentCard({
                             e.stopPropagation();
                             onUploadVersion(document);
                           }}
-                          className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                          className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 active:bg-slate-100 transition-colors"
                         >
                           <IconUpload size={14} /> Upload New Version
                         </button>
@@ -226,7 +226,7 @@ export function DocumentCard({
                             e.stopPropagation();
                             onEdit(document);
                           }}
-                          className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                          className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 active:bg-slate-100 transition-colors"
                         >
                           <IconEdit size={14} /> Edit Details
                         </button>
@@ -237,7 +237,7 @@ export function DocumentCard({
                             e.stopPropagation();
                             onMoveToFolder(document);
                           }}
-                          className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                          className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 active:bg-slate-100 transition-colors"
                         >
                           <IconFolder size={14} /> Move to Folder
                         </button>
@@ -251,7 +251,7 @@ export function DocumentCard({
                               onDelete(document);
                               setActiveDropdown(null);
                             }}
-                            className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                            className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors"
                           >
                             <IconTrash size={14} /> Delete
                           </button>
@@ -316,7 +316,7 @@ export function DocumentCard({
                 e.stopPropagation();
                 handlePreview();
               }}
-              className="p-1.5 rounded-lg hover:bg-green-50 text-green-600 transition-colors"
+              className="p-1.5 rounded-lg hover:bg-green-50 active:bg-green-100 text-green-600 transition-colors"
               title="Preview"
             >
               <IconEye size={14} />
@@ -325,7 +325,7 @@ export function DocumentCard({
               href={document.file_url}
               download
               onClick={(e) => e.stopPropagation()}
-              className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 transition-colors"
+              className="p-1.5 rounded-lg hover:bg-slate-100 active:bg-slate-200 text-slate-500 transition-colors"
               title="Download"
             >
               <IconDownload size={14} />

@@ -113,7 +113,7 @@ export function PipelineCard({ item, isDragging = false }: PipelineCardProps) {
                   e.stopPropagation();
                   removeFromWatchlist(item.player_id);
                 }}
-                className="text-xs px-2 h-7 text-red-600 hover:text-red-700 hover:bg-red-50 ml-auto"
+                className="text-xs px-2 h-7 text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors active:bg-red-100 ml-auto"
               >
                 Remove
               </Button>

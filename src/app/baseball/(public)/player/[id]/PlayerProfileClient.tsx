@@ -274,7 +274,7 @@ export function PlayerProfileClient({
                 className={cn(
                   "shadow-lg",
                   isInWatchlist
-                    ? "bg-white text-green-700 hover:bg-green-50"
+                    ? "bg-white text-green-700 hover:bg-green-50 active:bg-green-100"
                     : "bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 border-white/30"
                 )}
               >
@@ -289,7 +289,7 @@ export function PlayerProfileClient({
               </Button>
               <Button
                 variant="secondary"
-                className="bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 border-white/30"
+                className="bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition-colors border-white/30"
               >
                 <IconMail size={16} className="mr-2" />
                 Message
@@ -435,7 +435,7 @@ export function PlayerProfileClient({
                         "flex items-center gap-2 px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 transition-colors",
                         isActive
                           ? "border-green-600 text-green-600 bg-white"
-                          : "border-transparent text-slate-600 hover:text-slate-900 hover:bg-white/50"
+                          : "border-transparent text-slate-600 hover:text-slate-900 hover:bg-white/50 active:bg-slate-50"
                       )}
                     >
                       <Icon size={18} />
@@ -599,7 +599,7 @@ function OverviewTab({
               {showContactEmail && player.email && (
                 <a
                   href={`mailto:${player.email}`}
-                  className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl text-sm text-slate-600 hover:bg-green-50 hover:text-green-700 transition-colors"
+                  className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl text-sm text-slate-600 hover:bg-green-50 active:bg-green-100 hover:text-green-700 transition-colors"
                 >
                   <IconMail size={18} className="text-slate-400" />
                   <span className="truncate">{player.email}</span>
@@ -608,7 +608,7 @@ function OverviewTab({
               {showPhone && player.phone && (
                 <a
                   href={`tel:${player.phone}`}
-                  className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl text-sm text-slate-600 hover:bg-green-50 hover:text-green-700 transition-colors"
+                  className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl text-sm text-slate-600 hover:bg-green-50 active:bg-green-100 hover:text-green-700 transition-colors"
                 >
                   <IconPhone size={18} className="text-slate-400" />
                   <span>{player.phone}</span>
@@ -653,7 +653,7 @@ function OverviewTab({
               {recruitingInterests.map((interest, idx) => (
                 <div
                   key={interest.id}
-                  className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors"
+                  className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl hover:bg-slate-100 active:bg-slate-200 transition-colors"
                 >
                   <div className="w-7 h-7 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center flex-shrink-0 shadow-sm">
                     <span className="text-xs font-bold text-white">{idx + 1}</span>

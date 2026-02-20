@@ -151,7 +151,7 @@ export function InsightsFeed({ insights }: InsightsFeedProps) {
                           disabled={isPending}
                           className="flex items-center gap-1 px-2 py-1 text-xs rounded-md
                                      bg-white border border-slate-200 text-slate-600
-                                     hover:bg-slate-50 transition-colors disabled:opacity-50"
+                                     hover:bg-slate-50 active:bg-slate-100 transition-colors disabled:opacity-50"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleAcknowledge(insight.id);
@@ -164,7 +164,7 @@ export function InsightsFeed({ insights }: InsightsFeedProps) {
                           disabled={isPending}
                           className="flex items-center gap-1 px-2 py-1 text-xs rounded-md
                                      bg-white border border-slate-200 text-slate-400
-                                     hover:bg-slate-50 transition-colors disabled:opacity-50"
+                                     hover:bg-slate-50 active:bg-slate-100 transition-colors disabled:opacity-50"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleDismiss(insight.id);

@@ -167,7 +167,7 @@ export function VideoUpload({ onUploadComplete, onCancel }: VideoUploadProps) {
       <CardHeader className="flex flex-row items-center justify-between">
         <h3 className="font-semibold text-slate-900">Upload Video</h3>
         {onCancel && (
-          <button onClick={onCancel} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-cream-100">
+          <button onClick={onCancel} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-cream-100 transition-colors active:bg-cream-200">
             <IconX size={20} />
           </button>
         )}
@@ -181,7 +181,7 @@ export function VideoUpload({ onUploadComplete, onCancel }: VideoUploadProps) {
             onDragLeave={handleDragLeave}
             className={cn(
               'border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all',
-              dragOver ? 'border-brand-500 bg-brand-50' : 'border-border hover:border-brand-400 hover:bg-cream-50'
+              dragOver ? 'border-brand-500 bg-brand-50' : 'border-border hover:border-brand-400 hover:bg-cream-50 active:bg-cream-100'
             )}
           >
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-cream-100 flex items-center justify-center">
@@ -230,7 +230,7 @@ export function VideoUpload({ onUploadComplete, onCancel }: VideoUploadProps) {
               placeholder="Add context about this video - date, event, what to look for..."
               rows={3}
             />
-            <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg hover:bg-cream-50 transition-colors">
+            <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg hover:bg-cream-50 active:bg-cream-100 transition-colors">
               <input
                 type="checkbox"
                 checked={form.is_primary}

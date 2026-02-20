@@ -7,7 +7,7 @@ import {
   IconFolder, IconFolderPlus, IconDownload, IconTrash, IconUpload, IconX,
   IconSearch, IconEdit, IconClock, IconEye, IconLayers, IconPlus,
   IconFile, IconFileText, IconImage, IconVideo, IconFileSpreadsheet,
-  IconCheck, IconMoreVertical, IconMenu,
+  IconCheck, IconMoreVertical, IconMenu, IconArrowLeft, IconChevronDown,
 } from '@/components/icons';
 import { useSidebar } from '@/contexts/sidebar-context';
 import { cn } from '@/lib/utils';
@@ -144,10 +144,13 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
   const [currentFolder, setCurrentFolder] = useState<string | null>(null);
   const [showNewFolderInput, setShowNewFolderInput] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
+  const [manualFolders, setManualFolders] = useState<string[]>([]);
 
   // Search and filter state
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'name' | 'size'>('newest');
+  const [showSortMenu, setShowSortMenu] = useState(false);
 
   // Edit modal state
   const [showEditModal, setShowEditModal] = useState(false);
@@ -180,11 +183,12 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
     documents.forEach(doc => {
       if (doc.folder) folderSet.add(doc.folder);
     });
+    manualFolders.forEach(f => folderSet.add(f));
     return Array.from(folderSet).sort();
-  }, [documents]);
+  }, [documents, manualFolders]);
 
   const filteredDocuments = useMemo(() => {
-    return documents.filter((doc) => {
+    const filtered = documents.filter((doc) => {
       const matchesSearch = !searchQuery ||
         doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (doc.description && doc.description.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -196,7 +200,21 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
           : doc.folder === currentFolder;
       return matchesSearch && matchesCategory && matchesFolder;
     });
-  }, [documents, searchQuery, categoryFilter, currentFolder]);
+    return filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'newest':
+          return (b.created_at || '').localeCompare(a.created_at || '');
+        case 'oldest':
+          return (a.created_at || '').localeCompare(b.created_at || '');
+        case 'name':
+          return a.title.localeCompare(b.title);
+        case 'size':
+          return (b.file_size || 0) - (a.file_size || 0);
+        default:
+          return 0;
+      }
+    });
+  }, [documents, searchQuery, categoryFilter, currentFolder, sortBy]);
 
   // ─── Drag and Drop ───────────────────────────────────────────────
 
@@ -328,6 +346,9 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
   const handleCreateFolder = () => {
     if (!newFolderName.trim()) return;
     const folderName = newFolderName.trim();
+    if (!folders.includes(folderName)) {
+      setManualFolders(prev => [...prev, folderName]);
+    }
     setCurrentFolder(folderName);
     setUploadFolder(folderName);
     setNewFolderName('');
@@ -487,13 +508,23 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
       )}
 
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
-        {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-2 mb-8">
-          <div className="flex items-center gap-3">
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,image/*,text/plain,video/mp4,video/webm"
+          onChange={handleFilesSelected}
+          className="hidden"
+        />
+
+        {/* Header — contextual: root vs folder view */}
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
+          <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={toggleMobile}
               className={cn(
-                'lg:hidden p-2.5 -ml-2 rounded-xl',
+                'lg:hidden p-2.5 -ml-2 rounded-xl flex-shrink-0',
                 'text-warm-500 hover:text-warm-700 hover:bg-warm-100/80',
                 'transition-colors duration-150 active:scale-95',
                 'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
@@ -502,36 +533,53 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
             >
               <IconMenu size={22} />
             </button>
-            <div>
-              <h1 className="text-2xl font-semibold text-warm-900">Documents</h1>
-              <p className="text-warm-500 mt-1">
-                {documents.length} file{documents.length !== 1 ? 's' : ''} {folders.length > 0 ? `across ${folders.length} folder${folders.length !== 1 ? 's' : ''}` : ''}
-              </p>
-            </div>
+            {currentFolder !== null && currentFolder !== '' ? (
+              <div className="min-w-0">
+                <button
+                  onClick={() => { setCurrentFolder(null); setSearchQuery(''); setCategoryFilter(''); }}
+                  className="flex items-center gap-1.5 text-sm text-warm-500 hover:text-warm-700 transition-colors mb-0.5"
+                >
+                  <IconArrowLeft size={14} />
+                  All Documents
+                </button>
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center flex-shrink-0">
+                    <IconFolder size={16} className="text-primary-600" />
+                  </div>
+                  <div className="min-w-0">
+                    <h1 className="text-xl font-semibold text-warm-900 truncate">{currentFolder}</h1>
+                    <p className="text-xs text-warm-500">
+                      {filteredDocuments.length} file{filteredDocuments.length !== 1 ? 's' : ''}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <h1 className="text-2xl font-semibold text-warm-900">Documents</h1>
+                <p className="text-warm-500 text-sm mt-0.5">
+                  {documents.length} file{documents.length !== 1 ? 's' : ''}{folders.length > 0 ? ` across ${folders.length} folder${folders.length !== 1 ? 's' : ''}` : ''}
+                </p>
+              </div>
+            )}
           </div>
           {isCoach && (
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowNewFolderInput(true)}
-                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-warm-600 bg-white border border-warm-200 rounded-lg hover:bg-warm-50 transition-colors"
-              >
-                <IconFolderPlus size={16} />
-                New Folder
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,image/*,text/plain,video/mp4,video/webm"
-                onChange={handleFilesSelected}
-                className="hidden"
-              />
+              {!currentFolder && (
+                <button
+                  onClick={() => setShowNewFolderInput(true)}
+                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-warm-600 bg-white border border-warm-200 rounded-lg hover:bg-warm-50 active:bg-warm-100 transition-colors"
+                >
+                  <IconFolderPlus size={16} />
+                  <span className="hidden sm:inline">New Folder</span>
+                </button>
+              )}
               <button
                 onClick={() => fileInputRef.current?.click()}
                 className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors text-sm"
               >
                 <IconUpload size={16} />
-                Upload Files
+                <span className="hidden sm:inline">Upload</span>
               </button>
             </div>
           )}
@@ -550,7 +598,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                 </div>
                 <button
                   onClick={() => { setShowNewFolderInput(false); setNewFolderName(''); }}
-                  className="p-2 hover:bg-warm-100 rounded-lg transition-colors"
+                  className="p-2 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
                 >
                   <IconX size={18} />
                 </button>
@@ -591,110 +639,146 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
           </div>
         )}
 
-        {/* Folder Navigation */}
-        {(folders.length > 0 || currentFolder !== null) && (
-          <div className="pills-scroll mb-6 pb-1">
-            <button
-              onClick={() => setCurrentFolder(null)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
-                currentFolder === null
-                  ? 'bg-warm-900 text-white shadow-sm'
-                  : 'bg-white/70 text-warm-600 border border-warm-200 hover:bg-white'
-              }`}
-            >
-              All Files
-            </button>
-            <button
-              onClick={() => setCurrentFolder('')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
-                currentFolder === ''
-                  ? 'bg-warm-900 text-white shadow-sm'
-                  : 'bg-white/70 text-warm-600 border border-warm-200 hover:bg-white'
-              }`}
-            >
-              <IconFolder size={12} />
-              Unfiled
-            </button>
-            {folders.map((folder) => (
+        {/* Folder Grid — only show at root level */}
+        {currentFolder === null && folders.length > 0 && (
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-xs font-semibold text-warm-500 uppercase tracking-wider">Folders</h2>
               <button
-                key={folder}
-                onClick={() => setCurrentFolder(currentFolder === folder ? null : folder)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
-                  currentFolder === folder
-                    ? 'bg-primary-600 text-white shadow-sm'
-                    : 'bg-white/70 text-warm-600 border border-warm-200 hover:bg-white'
-                }`}
+                onClick={() => setCurrentFolder('')}
+                className="text-xs text-warm-500 hover:text-warm-700 transition-colors"
               >
-                <IconFolder size={12} />
-                {folder}
-                <span className="text-xs opacity-60">
-                  ({documents.filter(d => d.folder === folder).length})
-                </span>
+                View unfiled
               </button>
-            ))}
-          </div>
-        )}
-
-        {/* Category Quick Filters & Search */}
-        {documents.length > 0 && (
-          <div className="space-y-4 mb-6">
-            <div className="pills-scroll pb-1">
-              <button
-                onClick={() => setCategoryFilter('')}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
-                  !categoryFilter
-                    ? 'bg-warm-900 text-white shadow-sm'
-                    : 'bg-white text-warm-600 border border-warm-200 hover:bg-warm-50'
-                }`}
-              >
-                All ({documents.length})
-              </button>
-              {CATEGORIES.map((cat) => {
-                const count = documents.filter(d => d.category === cat).length;
-                if (count === 0) return null;
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+              {folders.map((folder) => {
+                const count = documents.filter(d => d.folder === folder).length;
                 return (
                   <button
-                    key={cat}
-                    onClick={() => setCategoryFilter(categoryFilter === cat ? '' : cat)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
-                      categoryFilter === cat
-                        ? 'bg-primary-600 text-white shadow-sm'
-                        : 'bg-white text-warm-600 border border-warm-200 hover:bg-warm-50'
-                    }`}
+                    key={folder}
+                    onClick={() => { setCurrentFolder(folder); setSearchQuery(''); setCategoryFilter(''); }}
+                    className="group/folder flex items-center gap-3 p-3.5 bg-white/70 backdrop-blur-sm border border-warm-200/60 rounded-xl hover:bg-white hover:shadow-sm hover:border-warm-300/60 transition-all text-left"
                   >
-                    {cat} ({count})
+                    <div className="w-9 h-9 rounded-lg bg-primary-50 flex items-center justify-center flex-shrink-0 group-hover/folder:bg-primary-100 transition-colors">
+                      <IconFolder size={18} className="text-primary-600" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-warm-900 truncate">{folder}</p>
+                      <p className="text-xs text-warm-400">{count} file{count !== 1 ? 's' : ''}</p>
+                    </div>
                   </button>
                 );
               })}
             </div>
+          </div>
+        )}
 
-            <div className="relative">
-              <IconSearch size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
+        {/* Search & Filter Toolbar */}
+        {documents.length > 0 && (
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-5">
+            {/* Search */}
+            <div className="relative flex-1">
+              <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
               <input
                 type="search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search documents..."
+                placeholder={currentFolder && currentFolder !== '' ? `Search in ${currentFolder}...` : 'Search documents...'}
                 enterKeyHint="search"
                 autoComplete="off"
-                className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-warm-200/60 focus:ring-2 focus:ring-primary-600/20 focus:border-primary-500 text-warm-900 placeholder:text-warm-400 bg-white/60 backdrop-blur-sm transition-all"
+                className="w-full pl-9 pr-9 py-2 rounded-lg border border-warm-200/60 focus:ring-2 focus:ring-primary-600/20 focus:border-primary-500 text-sm text-warm-900 placeholder:text-warm-400 bg-white/60 backdrop-blur-sm transition-all"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-warm-400 hover:text-warm-600"
                 >
-                  <IconX size={16} />
+                  <IconX size={14} />
                 </button>
+              )}
+            </div>
+
+            {/* Category pills — compact inline */}
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+              {CATEGORIES.map((cat) => {
+                const count = (currentFolder !== null
+                  ? documents.filter(d => d.category === cat && (currentFolder === '' ? !d.folder : d.folder === currentFolder))
+                  : documents.filter(d => d.category === cat)
+                ).length;
+                if (count === 0) return null;
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => setCategoryFilter(categoryFilter === cat ? '' : cat)}
+                    className={cn(
+                      'px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-all',
+                      categoryFilter === cat
+                        ? 'bg-primary-600 text-white shadow-sm'
+                        : 'bg-white/80 text-warm-600 border border-warm-200 hover:bg-white hover:border-warm-300'
+                    )}
+                  >
+                    {cat}
+                  </button>
+                );
+              })}
+              {categoryFilter && (
+                <button
+                  onClick={() => setCategoryFilter('')}
+                  className="p-1 rounded-md text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
+                  title="Clear filter"
+                >
+                  <IconX size={12} />
+                </button>
+              )}
+            </div>
+
+            {/* Sort dropdown */}
+            <div className="relative flex-shrink-0">
+              <button
+                onClick={() => setShowSortMenu(!showSortMenu)}
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-warm-600 bg-white/80 border border-warm-200 rounded-lg hover:bg-white hover:border-warm-300 transition-all whitespace-nowrap"
+              >
+                {sortBy === 'newest' ? 'Newest' : sortBy === 'oldest' ? 'Oldest' : sortBy === 'name' ? 'Name' : 'Size'}
+                <IconChevronDown size={12} />
+              </button>
+              {showSortMenu && (
+                <>
+                  <div className="fixed inset-0 z-30" onClick={() => setShowSortMenu(false)} />
+                  <div className="absolute right-0 top-full mt-1 z-40 w-36 bg-white rounded-xl shadow-xl border border-warm-200 py-1 animate-in fade-in slide-in-from-top-1 duration-150">
+                    {([['newest', 'Newest first'], ['oldest', 'Oldest first'], ['name', 'Name A-Z'], ['size', 'Largest first']] as const).map(([value, label]) => (
+                      <button
+                        key={value}
+                        onClick={() => { setSortBy(value); setShowSortMenu(false); }}
+                        className={cn(
+                          'flex items-center gap-2 w-full px-3 py-2 text-sm transition-colors',
+                          sortBy === value
+                            ? 'text-primary-600 bg-primary-50 font-medium'
+                            : 'text-warm-700 hover:bg-warm-50'
+                        )}
+                      >
+                        {sortBy === value && <IconCheck size={12} />}
+                        <span className={sortBy === value ? '' : 'ml-5'}>{label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
           </div>
         )}
 
+        {/* Section header for files at root level */}
+        {currentFolder === null && folders.length > 0 && documents.length > 0 && (
+          <h2 className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-3">
+            {searchQuery || categoryFilter ? `${filteredDocuments.length} result${filteredDocuments.length !== 1 ? 's' : ''}` : 'All Files'}
+          </h2>
+        )}
+
         {/* Content */}
-        {documents.length === 0 ? (
+        {documents.length === 0 && currentFolder === null ? (
           <div
-            className="relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-hidden p-8 md:p-16 text-center"
+            className="relative glass-standard rounded-2xl overflow-hidden p-8 md:p-16 text-center"
             onDragOver={isCoach ? handleDragOver : undefined}
             onDrop={isCoach ? handleDrop : undefined}
           >
@@ -721,18 +805,45 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
             </div>
           </div>
         ) : filteredDocuments.length === 0 ? (
-          <div className="relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-hidden p-8 md:p-12 text-center">
+          <div
+            className="relative glass-standard rounded-2xl overflow-hidden p-8 md:p-12 text-center"
+            onDragOver={isCoach ? handleDragOver : undefined}
+            onDrop={isCoach ? handleDrop : undefined}
+          >
             <ShineEffect />
             <div className="relative">
-              <IconSearch size={36} className="mx-auto text-warm-300 mb-4" />
-              <h3 className="text-lg font-medium text-warm-900 mb-2">No Matching Documents</h3>
-              <p className="text-sm text-warm-500 mb-4">Try adjusting your search or filters</p>
-              <button
-                onClick={() => { setSearchQuery(''); setCategoryFilter(''); setCurrentFolder(null); }}
-                className="text-sm text-primary-600 hover:text-primary-700 font-medium"
-              >
-                Clear all filters
-              </button>
+              {currentFolder && currentFolder !== '' && !searchQuery && !categoryFilter ? (
+                <>
+                  <div className="w-14 h-14 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto mb-5">
+                    <IconFolder size={24} className="text-primary-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-warm-900 mb-2">This folder is empty</h3>
+                  <p className="text-sm text-warm-500 mb-5 max-w-xs mx-auto">
+                    Upload files to get started or drag & drop them here.
+                  </p>
+                  {isCoach && (
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="inline-flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-5 py-2.5 rounded-lg font-medium transition-colors text-sm"
+                    >
+                      <IconUpload size={16} />
+                      Upload to {currentFolder}
+                    </button>
+                  )}
+                </>
+              ) : (
+                <>
+                  <IconSearch size={36} className="mx-auto text-warm-300 mb-4" />
+                  <h3 className="text-lg font-medium text-warm-900 mb-2">No Matching Documents</h3>
+                  <p className="text-sm text-warm-500 mb-4">Try adjusting your search or filters</p>
+                  <button
+                    onClick={() => { setSearchQuery(''); setCategoryFilter(''); }}
+                    className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                  >
+                    Clear filters
+                  </button>
+                </>
+              )}
             </div>
           </div>
         ) : (
@@ -740,7 +851,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
             {filteredDocuments.map((doc) => (
               <div
                 key={doc.id}
-                className="group relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-hidden hover:shadow-md hover:bg-white/80 transition-all duration-200 cursor-pointer active:scale-[0.98]"
+                className="group relative glass-standard rounded-2xl overflow-hidden hover:shadow-md hover:bg-white/80 transition-all duration-200 cursor-pointer active:scale-[0.98]"
                 onClick={() => openPreview(doc)}
               >
                 {/* Color accent bar */}
@@ -776,7 +887,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                               e.stopPropagation();
                               setActiveDropdown(activeDropdown === doc.id ? null : doc.id);
                             }}
-                            className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100/80 opacity-0 group-hover:opacity-100 transition-all"
+                            className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100/80 active:bg-warm-200 opacity-0 group-hover:opacity-100 transition-all"
                           >
                             <IconMoreVertical size={14} />
                           </button>
@@ -787,31 +898,31 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                               <div className="absolute right-0 top-8 z-40 w-48 bg-white rounded-xl shadow-xl border border-warm-200 py-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
                                 <button
                                   onClick={(e) => { e.stopPropagation(); openPreview(doc); setActiveDropdown(null); }}
-                                  className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 transition-colors"
+                                  className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors"
                                 >
                                   <IconEye size={14} /> Preview
                                 </button>
                                 <button
                                   onClick={(e) => { e.stopPropagation(); openVersionHistory(doc); }}
-                                  className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 transition-colors"
+                                  className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors"
                                 >
                                   <IconClock size={14} /> Version History
                                 </button>
                                 <button
                                   onClick={(e) => { e.stopPropagation(); openUploadVersionModal(doc); }}
-                                  className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 transition-colors"
+                                  className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors"
                                 >
                                   <IconUpload size={14} /> Upload New Version
                                 </button>
                                 <button
                                   onClick={(e) => { e.stopPropagation(); openEditModal(doc); }}
-                                  className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 transition-colors"
+                                  className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors"
                                 >
                                   <IconEdit size={14} /> Edit Details
                                 </button>
                                 <button
                                   onClick={(e) => { e.stopPropagation(); openMoveModal(doc); }}
-                                  className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 transition-colors"
+                                  className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors"
                                 >
                                   <IconFolder size={14} /> Move to Folder
                                 </button>
@@ -850,7 +961,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                         {doc.category}
                       </span>
                     )}
-                    {doc.folder && (
+                    {doc.folder && currentFolder !== doc.folder && (
                       <span className="inline-flex items-center gap-0.5 px-2 py-0.5 text-xs font-medium rounded-md bg-warm-100 text-warm-600">
                         <IconFolder size={9} /> {doc.folder}
                       </span>
@@ -871,7 +982,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
                       <button
                         onClick={(e) => { e.stopPropagation(); openPreview(doc); }}
-                        className="p-1.5 rounded-lg hover:bg-primary-50 text-primary-600 transition-colors"
+                        className="p-1.5 rounded-lg hover:bg-primary-50 active:bg-primary-100 text-primary-600 transition-colors"
                         title="Preview"
                       >
                         <IconEye size={14} />
@@ -880,7 +991,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                         href={doc.file_url}
                         download
                         onClick={(e) => e.stopPropagation()}
-                        className="p-1.5 rounded-lg hover:bg-warm-100 text-warm-500 transition-colors"
+                        className="p-1.5 rounded-lg hover:bg-warm-100 active:bg-warm-200 text-warm-500 transition-colors"
                         title="Download"
                       >
                         <IconDownload size={14} />
@@ -906,7 +1017,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               </div>
               <button
                 onClick={() => { setShowUploadModal(false); setPendingFiles([]); setError(null); }}
-                className="p-2 hover:bg-warm-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
               >
                 <IconX size={18} />
               </button>
@@ -1046,7 +1157,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
           <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100">
               <h2 className="text-lg font-semibold text-warm-900">Edit Document</h2>
-              <button onClick={() => { setShowEditModal(false); setEditingDocument(null); }} className="p-2 hover:bg-warm-100 rounded-lg transition-colors">
+              <button onClick={() => { setShowEditModal(false); setEditingDocument(null); }} className="p-2 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors">
                 <IconX size={18} />
               </button>
             </div>
@@ -1162,7 +1273,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
           <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl max-h-[90vh] overflow-hidden flex flex-col">
             <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100">
               <h2 className="text-lg font-semibold text-warm-900">Version History</h2>
-              <button onClick={closeVersionHistory} aria-label="Close" className="p-2 hover:bg-warm-100 rounded-lg transition-colors">
+              <button onClick={closeVersionHistory} aria-label="Close" className="p-2 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors">
                 <IconX size={18} />
               </button>
             </div>
@@ -1197,7 +1308,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               <h2 className="text-lg font-semibold text-warm-900">Move to Folder</h2>
               <button
                 onClick={() => { setShowMoveModal(false); setMovingDocument(null); }}
-                className="p-2 hover:bg-warm-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
               >
                 <IconX size={18} />
               </button>

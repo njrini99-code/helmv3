@@ -217,7 +217,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
               <button
                 type="button"
                 onClick={resetForm}
-                className="p-1 rounded-full hover:bg-slate-100"
+                className="p-1 rounded-full hover:bg-slate-100 transition-colors active:bg-slate-200"
               >
                 <IconX size={16} className="text-slate-400" />
               </button>
@@ -383,7 +383,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
                             e.stopPropagation();
                             startEditing(template);
                           }}
-                          className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+                          className="p-1.5 rounded-lg hover:bg-slate-100 active:bg-slate-200 transition-colors"
                         >
                           <IconEdit size={14} className="text-slate-400" />
                         </button>
@@ -393,7 +393,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
                             e.stopPropagation();
                             handleDelete(template.id);
                           }}
-                          className="p-1.5 rounded-lg hover:bg-red-50 transition-colors"
+                          className="p-1.5 rounded-lg hover:bg-red-50 active:bg-red-100 transition-colors"
                         >
                           <IconTrash size={14} className="text-slate-400 hover:text-red-500" />
                         </button>

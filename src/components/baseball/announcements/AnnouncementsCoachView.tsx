@@ -90,7 +90,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: BaseballAn
     <>
       <div
         className={cn(
-          'bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-hidden',
+          'glass-standard rounded-2xl overflow-hidden',
           'border-l-[3px]',
           urgencyBorder,
           'transition-all hover:shadow-md'
@@ -196,7 +196,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: BaseballAn
                       variant="ghost"
                       size="sm"
                       onClick={() => setShowDeleteConfirm(true)}
-                      className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                      className="text-red-500 hover:text-red-600 hover:bg-red-50 transition-colors active:bg-red-100"
                     >
                       <IconTrash size={14} className="mr-1.5" />
                       Delete Announcement

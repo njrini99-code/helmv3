@@ -133,7 +133,7 @@ export function SchoolPeekPanel() {
           <h2 className="text-lg font-semibold text-slate-900">School Preview</h2>
           <button
             onClick={closePanel}
-            className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+            className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 active:bg-slate-200 transition-colors"
           >
             <IconX size={20} />
           </button>
@@ -207,7 +207,7 @@ export function SchoolPeekPanel() {
 
                 {/* Quick Actions */}
                 <div className="flex gap-2">
-                  <button className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-medium transition-colors">
+                  <button className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white rounded-xl font-medium transition-colors">
                     <IconHeart size={16} />
                     <span>Add to List</span>
                   </button>
@@ -216,7 +216,7 @@ export function SchoolPeekPanel() {
                       href={school.website_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-medium transition-colors"
+                      className="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 rounded-xl font-medium transition-colors"
                     >
                       <IconGlobe size={16} />
                     </a>
@@ -288,7 +288,7 @@ export function SchoolPeekPanel() {
                           {coach.email && (
                             <a
                               href={`mailto:${coach.email}`}
-                              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 active:bg-slate-200 transition-colors"
                             >
                               <IconMail size={14} />
                             </a>

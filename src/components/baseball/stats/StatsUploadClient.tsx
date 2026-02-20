@@ -151,7 +151,7 @@ export function StatsUploadClient({
         <div className="flex items-center gap-4 mb-8">
           <Link
             href="/baseball/dashboard/command-center"
-            className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+            className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 active:bg-slate-200 transition-colors"
           >
             <IconArrowLeft size={20} />
           </Link>
@@ -211,7 +211,7 @@ export function StatsUploadClient({
               className="hidden"
               id="csv-upload"
             />
-            <label htmlFor="csv-upload" className="inline-flex items-center justify-center cursor-pointer px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors">
+            <label htmlFor="csv-upload" className="inline-flex items-center justify-center cursor-pointer px-4 py-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-medium rounded-lg transition-colors">
               Choose File
             </label>
 
@@ -387,7 +387,7 @@ export function StatsUploadClient({
                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                           statType === type
                             ? 'bg-green-600 text-white'
-                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200 active:bg-slate-300'
                         }`}
                       >
                         {type.charAt(0).toUpperCase() + type.slice(1)}

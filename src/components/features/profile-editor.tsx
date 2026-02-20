@@ -73,7 +73,7 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
                 'px-4 py-2 text-sm font-medium rounded-lg transition-colors',
                 activeTab === tab.id
                   ? 'bg-brand-600 text-white'
-                  : 'text-slate-600 hover:bg-cream-100'
+                  : 'text-slate-600 hover:bg-cream-100 active:bg-cream-200'
               )}
             >
               {tab.label}

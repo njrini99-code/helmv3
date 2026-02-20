@@ -139,7 +139,7 @@ export function ReminderPicker({
                     'disabled:cursor-not-allowed disabled:opacity-50',
                     selectedPreset === preset.value
                       ? 'bg-green-50 text-green-700 border-green-200'
-                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50 active:bg-slate-100'
                   )}
                 >
                   {preset.label}

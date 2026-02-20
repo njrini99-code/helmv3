@@ -100,7 +100,7 @@ export function SavedComparisonsList({ comparisons }: SavedComparisonsListProps)
               <button
                 onClick={(e) => handleDelete(comparison.id, e)}
                 disabled={deletingId === comparison.id}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50
+                className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors active:bg-red-100
                            transition-colors disabled:opacity-50 flex-shrink-0"
                 title="Delete comparison"
               >

@@ -447,7 +447,7 @@ export default function AcademicsPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-200">
                   {students.map((student) => (
-                    <tr key={student.id} className="hover:bg-slate-50">
+                    <tr key={student.id} className="hover:bg-slate-50 transition-colors active:bg-slate-100">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <Avatar

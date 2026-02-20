@@ -492,7 +492,7 @@ const ActionButton = memo(function ActionButton({
       }}
       className={cn(
         "rounded-lg bg-white/90 backdrop-blur-sm text-slate-600",
-        "hover:bg-white hover:text-slate-900",
+        "hover:bg-white active:bg-white/70 hover:text-slate-900",
         "transition-all duration-200",
         "active:scale-95",
         sizeClasses[size],

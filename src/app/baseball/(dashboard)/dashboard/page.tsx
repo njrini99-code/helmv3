@@ -231,7 +231,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-6">
                   {(['watchlist', 'high_priority', 'offer_extended', 'committed'] as const).map((stage) => (
-                    <div key={stage} className="text-center p-3 rounded-xl bg-white/5 backdrop-blur-sm hover:bg-white/10 transition-colors duration-200">
+                    <div key={stage} className="text-center p-3 rounded-xl bg-white/5 backdrop-blur-sm hover:bg-white/10 active:bg-white/15 transition-colors duration-200">
                       <p className="text-lg font-semibold tracking-tight text-white tabular-nums">{pipelineCounts[stage]}</p>
                       <p className="text-xs text-slate-400 mt-0.5">{getPipelineStageLabel(stage).split(' ')[0]}</p>
                     </div>
@@ -438,7 +438,7 @@ export default function DashboardPage() {
                   >
                     <Badge
                       variant="secondary"
-                      className="bg-slate-100 hover:bg-slate-200 cursor-pointer transition-colors"
+                      className="bg-slate-100 hover:bg-slate-200 active:bg-slate-300 cursor-pointer transition-colors"
                     >
                       {search.name}
                     </Badge>
@@ -489,7 +489,7 @@ export default function DashboardPage() {
                 </p>
               </div>
               <Link href="/baseball/dashboard/activate">
-                <Button size="lg" className="bg-white text-slate-900 hover:bg-slate-100 shadow-xl px-6">
+                <Button size="lg" className="bg-white text-slate-900 hover:bg-slate-100 transition-colors active:bg-slate-200 shadow-xl px-6">
                   Activate Now <IconArrowRight size={16} className="ml-2" />
                 </Button>
               </Link>

@@ -298,7 +298,7 @@ export function TeamPeekPanel({ teamId, onClose }: TeamPeekPanelProps) {
                   <button
                     key={player.id}
                     onClick={() => handleViewPlayer(player.id)}
-                    className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 transition-colors text-left"
+                    className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 active:bg-slate-100 transition-colors text-left"
                   >
                     <Avatar
                       name={`${player.first_name} ${player.last_name}`}

@@ -133,7 +133,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass }: AddClas
           </h2>
           <button
             onClick={onClose}
-            className="p-2 text-warm-400 hover:text-warm-600 hover:bg-warm-100 rounded-lg transition-colors"
+            className="p-2 text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
           >
             <IconX size={20} />
           </button>
@@ -167,7 +167,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass }: AddClas
                     'w-10 h-10 rounded-lg text-sm font-medium transition-all',
                     formData.days.includes(day.abbrev)
                       ? 'bg-green-600 text-white'
-                      : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
+                      : 'bg-warm-100 text-warm-600 hover:bg-warm-200 active:bg-warm-300'
                   )}
                 >
                   {day.label}
@@ -184,7 +184,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass }: AddClas
                     'px-3 py-1 text-xs font-medium rounded-full transition-all',
                     JSON.stringify(formData.days) === JSON.stringify(pattern.days)
                       ? 'bg-green-100 text-green-700'
-                      : 'bg-warm-100 text-warm-500 hover:bg-warm-200'
+                      : 'bg-warm-100 text-warm-500 hover:bg-warm-200 active:bg-warm-300'
                   )}
                 >
                   {pattern.label}

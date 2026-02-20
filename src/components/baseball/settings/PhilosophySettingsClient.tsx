@@ -125,7 +125,7 @@ export function PhilosophySettingsClient({
         <div className="flex items-center gap-4 mb-8">
           <Link
             href="/baseball/dashboard/settings"
-            className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+            className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 active:bg-slate-200 transition-colors"
           >
             <IconArrowLeft size={20} />
           </Link>
@@ -308,14 +308,14 @@ export function PhilosophySettingsClient({
                     <button
                       onClick={() => handlePriorityChange(priority.key, 'up')}
                       disabled={index === 0}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-white active:bg-white/70 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     >
                       ↑
                     </button>
                     <button
                       onClick={() => handlePriorityChange(priority.key, 'down')}
                       disabled={index === sortedPriorities.length - 1}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-white active:bg-white/70 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     >
                       ↓
                     </button>

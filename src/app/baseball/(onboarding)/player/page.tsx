@@ -270,7 +270,7 @@ export default function PlayerOnboarding() {
                   <Button
                     size="lg"
                     onClick={() => setStep('basic')}
-                    className="px-8 bg-green-600 hover:bg-green-700 shadow-lg shadow-green-900/20 hover:shadow-xl hover:shadow-green-900/30 transition-all"
+                    className="px-8 bg-green-600 hover:bg-green-700 active:bg-green-800 shadow-lg shadow-green-900/20 hover:shadow-xl hover:shadow-green-900/30 transition-all"
                   >
                     Get Started
                     <IconArrowRight size={16} className="ml-2" />
@@ -393,7 +393,7 @@ export default function PlayerOnboarding() {
                     <Button
                       onClick={() => setStep('baseball')}
                       disabled={!firstName || !lastName}
-                      className="flex-1 bg-green-600 hover:bg-green-700"
+                      className="flex-1 bg-green-600 hover:bg-green-700 transition-colors active:bg-green-800"
                     >
                       Next
                     </Button>
@@ -526,7 +526,7 @@ export default function PlayerOnboarding() {
                     <Button
                       onClick={() => setStep('physical')}
                       disabled={!primaryPosition}
-                      className="flex-1 bg-green-600 hover:bg-green-700"
+                      className="flex-1 bg-green-600 hover:bg-green-700 transition-colors active:bg-green-800"
                     >
                       Next
                     </Button>
@@ -619,7 +619,7 @@ export default function PlayerOnboarding() {
                     </Button>
                     <Button
                       onClick={() => setStep('metrics')}
-                      className="flex-1 bg-green-600 hover:bg-green-700"
+                      className="flex-1 bg-green-600 hover:bg-green-700 transition-colors active:bg-green-800"
                     >
                       Next
                     </Button>
@@ -717,7 +717,7 @@ export default function PlayerOnboarding() {
                     <Button
                       onClick={() => setStep('photo')}
                       disabled={!pitchVelo && !exitVelo && !sixtyTime}
-                      className="flex-1 bg-green-600 hover:bg-green-700"
+                      className="flex-1 bg-green-600 hover:bg-green-700 transition-colors active:bg-green-800"
                     >
                       Next
                     </Button>
@@ -790,7 +790,7 @@ export default function PlayerOnboarding() {
                     </Button>
                     <Button
                       onClick={() => setStep('team')}
-                      className="flex-1 bg-green-600 hover:bg-green-700"
+                      className="flex-1 bg-green-600 hover:bg-green-700 transition-colors active:bg-green-800"
                     >
                       Next
                     </Button>
@@ -901,7 +901,7 @@ export default function PlayerOnboarding() {
                         onClick={handleJoinTeam}
                         disabled={!inviteCode.trim() || joiningTeam}
                         isLoading={joiningTeam}
-                        className="w-full bg-green-600 hover:bg-green-700"
+                        className="w-full bg-green-600 hover:bg-green-700 transition-colors active:bg-green-800"
                       >
                         Join Team
                       </Button>
@@ -924,7 +924,7 @@ export default function PlayerOnboarding() {
                     </Button>
                     <Button
                       onClick={() => setStep('complete')}
-                      className="flex-1 bg-green-600 hover:bg-green-700"
+                      className="flex-1 bg-green-600 hover:bg-green-700 transition-colors active:bg-green-800"
                     >
                       {teamJoined ? 'Continue' : 'Skip for Now'}
                     </Button>
@@ -985,7 +985,7 @@ export default function PlayerOnboarding() {
                     size="lg"
                     onClick={handleComplete}
                     isLoading={loading}
-                    className="px-8 bg-green-600 hover:bg-green-700 shadow-lg shadow-green-900/20 hover:shadow-xl hover:shadow-green-900/30 transition-all"
+                    className="px-8 bg-green-600 hover:bg-green-700 active:bg-green-800 shadow-lg shadow-green-900/20 hover:shadow-xl hover:shadow-green-900/30 transition-all"
                   >
                     Go to Dashboard
                   </Button>

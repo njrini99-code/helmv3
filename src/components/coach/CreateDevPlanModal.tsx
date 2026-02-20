@@ -167,7 +167,7 @@ export function CreateDevPlanModal({ open, onClose, teamId }: CreateDevPlanModal
           <h2 className="text-lg font-semibold text-slate-900">Create Development Plan</h2>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 active:bg-slate-200 transition-colors"
             aria-label="Close development plan modal"
           >
             <IconX size={20} />
@@ -197,7 +197,7 @@ export function CreateDevPlanModal({ open, onClose, teamId }: CreateDevPlanModal
                     className={`flex items-center gap-3 p-2 rounded-lg text-left transition-colors ${
                       selectedPlayerId === player.id
                         ? 'bg-green-50 border-2 border-green-500'
-                        : 'hover:bg-slate-50 border-2 border-transparent'
+                        : 'hover:bg-slate-50 active:bg-slate-100 border-2 border-transparent'
                     }`}
                   >
                     <Avatar

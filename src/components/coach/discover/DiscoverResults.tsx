@@ -410,7 +410,7 @@ export function DiscoverResults({
                     'w-8 h-8 rounded-lg text-sm font-medium transition-colors',
                     pageNum === currentPage
                       ? 'bg-green-600 text-white'
-                      : 'text-slate-600 hover:bg-slate-100'
+                      : 'text-slate-600 hover:bg-slate-100 active:bg-slate-200'
                   )}
                 >
                   {pageNum}

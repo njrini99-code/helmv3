@@ -69,8 +69,8 @@ export function CollegeCard({
                     disabled={loading}
                     className={`flex-shrink-0 p-1.5 rounded-full transition-colors ${
                       interested
-                        ? 'text-red-500 hover:bg-red-50'
-                        : 'text-slate-400 hover:text-red-500 hover:bg-red-50'
+                        ? 'text-red-500 hover:bg-red-50 active:bg-red-100'
+                        : 'text-slate-400 hover:text-red-500 hover:bg-red-50 active:bg-red-100'
                     } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     aria-label={interested ? 'Remove from interests' : 'Add to interests'}
                   >

@@ -94,7 +94,7 @@ export function EligibilityCard({
             </Button>
             <button
               onClick={() => setEditing(false)}
-              className="p-1.5 text-warm-400 hover:text-warm-600 rounded-lg hover:bg-warm-100 transition-colors"
+              className="p-1.5 text-warm-400 hover:text-warm-600 rounded-lg hover:bg-warm-100 active:bg-warm-200 transition-colors"
             >
               <IconX size={16} />
             </button>
@@ -182,7 +182,7 @@ export function EligibilityCard({
       {isCoach && (
         <button
           onClick={() => setEditing(true)}
-          className="p-2 text-warm-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+          className="p-2 text-warm-400 hover:text-green-600 hover:bg-green-50 active:bg-green-100 rounded-lg transition-colors"
         >
           <IconEdit size={16} />
         </button>

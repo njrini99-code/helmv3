@@ -283,7 +283,7 @@ export function HotLeadsSection({ watchlist, loading }: HotLeadsSectionProps) {
                   {/* Quick actions */}
                   <div className="flex items-center gap-2 mt-3">
                     <Link href={`/baseball/dashboard/messages?player=${lead.playerId}`}>
-                      <Button variant="secondary" size="sm" className="h-8 text-xs gap-1.5 bg-slate-100 hover:bg-slate-200 border-0">
+                      <Button variant="secondary" size="sm" className="h-8 text-xs gap-1.5 bg-slate-100 hover:bg-slate-200 transition-colors active:bg-slate-300 border-0">
                         <IconMessage size={14} /> Message
                       </Button>
                     </Link>

@@ -143,7 +143,7 @@ export function AttendanceCheckIn({
               disabled={isLoading}
               className={cn(
                 'w-full flex items-center gap-3 p-2.5 rounded-xl transition-all duration-150',
-                'hover:bg-slate-50 active:scale-[0.99]',
+                'hover:bg-slate-50 active:bg-slate-100 active:scale-[0.99]',
                 isCheckedIn && 'bg-emerald-50/50',
                 isLoading && 'opacity-60',
               )}

@@ -24,7 +24,7 @@ export default function Error({
           <button
             onClick={reset}
             aria-label="Try again"
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 active:bg-green-800 transition-colors"
           >
             Try again
           </button>

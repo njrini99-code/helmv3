@@ -191,7 +191,7 @@ export function TaskCard({ task, isCoach, currentPlayerId, onRefresh }: TaskCard
               <button
                 onClick={handleDelete}
                 disabled={deleting}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 active:bg-red-100 transition-colors"
                 title="Delete task"
               >
                 <IconTrash size={14} />
@@ -290,7 +290,7 @@ export function TaskCard({ task, isCoach, currentPlayerId, onRefresh }: TaskCard
                       hidden: { opacity: 0, x: -8 },
                       visible: { opacity: 1, x: 0 },
                     }}
-                    className="flex items-center justify-between py-2 px-3 rounded-lg bg-slate-50 transition-colors hover:bg-slate-100"
+                    className="flex items-center justify-between py-2 px-3 rounded-lg bg-slate-50 transition-colors hover:bg-slate-100 active:bg-slate-200"
                   >
                     <span className="text-sm text-slate-700">
                       {assignment.player_first_name} {assignment.player_last_name}

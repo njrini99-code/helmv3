@@ -171,7 +171,7 @@ export function DarkSidebar({ sport, role }: DarkSidebarProps) {
             className="
             w-full flex items-center gap-3
             px-3 py-2.5
-            bg-white/5 hover:bg-white/10
+            bg-white/5 hover:bg-white/10 active:bg-white/15
             border border-white/10
             rounded-[10px]
             text-sm text-warm-400
@@ -239,7 +239,7 @@ export function DarkSidebar({ sport, role }: DarkSidebarProps) {
                       collapsed ? 'justify-center p-3' : 'px-3 py-2.5',
                       active
                         ? 'bg-white/10 text-white'
-                        : 'text-warm-400 hover:bg-white/5 hover:text-white'
+                        : 'text-warm-400 hover:bg-white/5 active:bg-white/10 hover:text-white'
                     )}
                   >
                     {/* Active indicator bar */}
@@ -333,7 +333,7 @@ export function DarkSidebar({ sport, role }: DarkSidebarProps) {
           className={cn(
             'flex items-center gap-3',
             'px-3 py-2.5 rounded-[10px]',
-            'text-warm-400 hover:bg-white/5 hover:text-white',
+            'text-warm-400 hover:bg-white/5 active:bg-white/10 hover:text-white',
             'transition-colors duration-200',
             collapsed && 'justify-center'
           )}
@@ -383,7 +383,7 @@ export function DarkSidebar({ sport, role }: DarkSidebarProps) {
             <button
               className="
                 p-1.5 rounded-lg
-                text-warm-500 hover:text-white hover:bg-white/10
+                text-warm-500 hover:text-white hover:bg-white/10 active:bg-white/15
                 transition-colors duration-200
               "
               title="Sign out"

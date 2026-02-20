@@ -139,7 +139,7 @@ export function ActiveFiltersBar({ filters, totalCount, className }: ActiveFilte
             <span className="font-medium text-slate-700">{chip.value}</span>
             <button
               onClick={() => removeFilter(chip.key, chip.removeValue)}
-              className="ml-0.5 p-0.5 rounded hover:bg-slate-100 text-slate-400
+              className="ml-0.5 p-0.5 rounded hover:bg-slate-100 transition-colors active:bg-slate-200 text-slate-400
                          hover:text-slate-600 transition-colors"
             >
               <IconX size={12} />

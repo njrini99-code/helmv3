@@ -131,7 +131,7 @@ export function RSVPStatusSection({ records, className, compact = false }: RSVPS
                   'px-2.5 py-1 text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5',
                   filter === f
                     ? 'bg-slate-800 text-white'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200 active:bg-slate-300',
                 )}
               >
                 {config && <div className={cn('w-1.5 h-1.5 rounded-full', config.color)} />}
@@ -160,7 +160,7 @@ export function RSVPStatusSection({ records, className, compact = false }: RSVPS
             const initials = `${firstName[0] || ''}${lastName[0] || ''}`.toUpperCase();
 
             return (
-              <div key={record.id} className="flex items-center gap-3 p-3 hover:bg-slate-50 transition-colors">
+              <div key={record.id} className="flex items-center gap-3 p-3 hover:bg-slate-50 active:bg-slate-100 transition-colors">
                 {/* Avatar */}
                 {record.player?.avatar_url ? (
                   <Image

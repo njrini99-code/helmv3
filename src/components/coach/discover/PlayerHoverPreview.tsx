@@ -213,7 +213,7 @@ export function PlayerHoverPreview({
         <Button
           size="sm"
           onClick={onView}
-          className="bg-green-600 hover:bg-green-700 text-white gap-1.5"
+          className="bg-green-600 hover:bg-green-700 transition-colors active:bg-green-800 text-white gap-1.5"
         >
           View
           <IconArrowRight size={14} />

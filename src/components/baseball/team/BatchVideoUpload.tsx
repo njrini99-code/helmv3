@@ -264,7 +264,7 @@ export function BatchVideoUpload({ roster }: BatchVideoUploadProps) {
                   <label
                     key={player.id}
                     className={cn(
-                      'flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-slate-50',
+                      'flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-slate-50 active:bg-slate-100',
                       selectedPlayers.includes(player.id) && 'bg-green-50'
                     )}
                   >

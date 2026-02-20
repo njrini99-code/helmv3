@@ -203,7 +203,7 @@ export default function ForgotPasswordPage() {
                       rounded-xl
                       border border-warm-200
                       transition-all duration-200
-                      hover:bg-warm-50 hover:border-warm-300
+                      hover:bg-warm-50 active:bg-warm-100 hover:border-warm-300
                       active:scale-[0.98]
                     "
                   >

@@ -262,7 +262,7 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
                     'w-full px-3 py-2 rounded-md text-left text-sm flex items-center justify-between transition-all',
                     selectedPlayers.includes(player.id)
                       ? 'bg-green-100 text-green-900 shadow-sm'
-                      : 'hover:bg-slate-50 text-slate-700'
+                      : 'hover:bg-slate-50 active:bg-slate-100 text-slate-700'
                   )}
                 >
                   <span>{player.first_name || ''} {player.last_name || ''}</span>

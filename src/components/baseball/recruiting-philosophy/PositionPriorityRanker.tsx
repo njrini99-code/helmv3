@@ -181,7 +181,7 @@ export function PositionPriorityRanker({
                 {/* Remove button */}
                 <button
                   onClick={() => handleRemove(index)}
-                  className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors flex-shrink-0"
+                  className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 active:bg-red-100 rounded transition-colors flex-shrink-0"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -217,7 +217,7 @@ export function PositionPriorityRanker({
                     <button
                       key={position}
                       onClick={() => handleAdd(position)}
-                      className="w-full flex items-center gap-3 p-3 hover:bg-slate-50 transition-colors text-left"
+                      className="w-full flex items-center gap-3 p-3 hover:bg-slate-50 active:bg-slate-100 transition-colors text-left"
                     >
                       <span className="font-semibold text-slate-900 w-10">{position}</span>
                       <span className="text-sm text-slate-600">{info?.label}</span>

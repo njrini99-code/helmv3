@@ -312,7 +312,7 @@ export function PositionPlayerStack({
             'backdrop-blur-sm',
             'text-[10px] font-bold text-warm-600',
             'transition-all duration-200',
-            'hover:bg-warm-100 hover:border-warm-300/80',
+            'hover:bg-warm-100 active:bg-warm-200 hover:border-warm-300/80',
             'hover:shadow-md',
             'pointer-events-auto',
             // Inner highlight
@@ -339,7 +339,7 @@ export function PositionPlayerStack({
             className={cn(
               'mt-2 px-3 py-1 rounded-full',
               'text-[10px] font-medium text-warm-500',
-              'bg-warm-100/50 hover:bg-warm-100',
+              'bg-warm-100/50 hover:bg-warm-100 active:bg-warm-200',
               'border border-warm-200/50',
               'transition-all duration-200',
               'hover:text-warm-700',

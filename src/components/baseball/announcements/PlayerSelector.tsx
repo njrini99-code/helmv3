@@ -152,7 +152,7 @@ export function PlayerSelector({ players, selectedPlayerIds, onChange }: PlayerS
                         'w-full px-3 py-2 rounded-lg text-left text-sm transition-all flex items-center gap-2',
                         isSelected
                           ? 'bg-green-100 text-green-900'
-                          : 'hover:bg-slate-50 text-slate-700'
+                          : 'hover:bg-slate-50 active:bg-slate-100 text-slate-700'
                       )}
                     >
                       <div className={cn(

@@ -406,7 +406,7 @@ export default async function TeamProfilePage({ params }: PageProps) {
                       return (
                         <div
                           key={member.id}
-                          className={`p-4 hover:bg-slate-50 transition-colors ${
+                          className={`p-4 hover:bg-slate-50 active:bg-slate-100 transition-colors ${
                             isRecruiting ? 'cursor-pointer' : ''
                           }`}
                         >

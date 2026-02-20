@@ -66,7 +66,7 @@ export function PlayerDetailModal({ player, coachId, onClose }: PlayerDetailModa
           <h2 className="text-xl font-semibold text-slate-900">Player Profile</h2>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+            className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 active:bg-slate-200 transition-colors"
             aria-label="Close player profile"
           >
             <IconX size={20} />

@@ -51,7 +51,7 @@ export function DashboardHeader({ title, children }: DashboardHeaderProps) {
             }
           }}
           className={cn(
-            'min-w-[44px] min-h-[44px] p-3 -ml-2 rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100',
+            'min-w-[44px] min-h-[44px] p-3 -ml-2 rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100 active:bg-slate-200',
             'flex items-center justify-center',
             'transition-colors duration-150 active:scale-95',
             'focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500/40'

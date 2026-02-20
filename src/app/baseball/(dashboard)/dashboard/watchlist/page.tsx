@@ -402,7 +402,7 @@ export default function WatchlistPage() {
                   variant="ghost"
                   size="sm"
                   onClick={() => setBulkRemoveConfirm(true)}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors active:bg-red-100"
                 >
                   Remove Selected
                 </Button>
@@ -618,7 +618,7 @@ export default function WatchlistPage() {
                     </Button>
                     <button
                       onClick={() => setRemoveConfirm(item.id)}
-                      className="min-h-[44px] min-w-[44px] rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors flex items-center justify-center"
+                      className="min-h-[44px] min-w-[44px] rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors flex items-center justify-center"
                       aria-label="Remove from watchlist"
                     >
                       <IconTrash size={18} />
@@ -670,7 +670,7 @@ export default function WatchlistPage() {
                 <tbody className="divide-y divide-slate-200">
                   {filteredWatchlist.map((item) => (
                     <React.Fragment key={item.id}>
-                      <tr className="hover:bg-slate-50 transition-colors">
+                      <tr className="hover:bg-slate-50 active:bg-slate-100 transition-colors">
                         <td className="px-4 py-4">
                           <input
                             type="checkbox"
@@ -739,7 +739,7 @@ export default function WatchlistPage() {
                             </Button>
                             <button
                               onClick={() => setRemoveConfirm(item.id)}
-                              className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors"
                               aria-label="Remove from watchlist"
                             >
                               <IconTrash size={16} />
