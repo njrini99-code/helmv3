@@ -25,6 +25,7 @@ interface Document {
 }
 
 interface InlineTask {
+  id: string;
   title: string;
   description?: string;
   dueDate?: string;
@@ -89,8 +90,6 @@ export function CreateAnnouncementFlow({ players, documents }: CreateAnnouncemen
 }
 
 // ─── Dialog ──────────────────────────────────────────────────────────────────
-// Proper centered modal: dimmed backdrop, fixed header with close button,
-// scrollable body, pinned footer that never overlaps content.
 
 function AnnouncementDialog({
   players,
@@ -123,9 +122,7 @@ function AnnouncementDialog({
   // Animate in + lock body scroll + scroll modal to top
   useEffect(() => {
     document.body.style.overflow = 'hidden';
-    // Prevent iOS Safari background scroll on touch
     const preventTouchScroll = (e: TouchEvent) => {
-      // Allow scrolling inside the modal body
       if (scrollBodyRef.current?.contains(e.target as Node)) return;
       e.preventDefault();
     };
@@ -133,7 +130,6 @@ function AnnouncementDialog({
 
     requestAnimationFrame(() => requestAnimationFrame(() => {
       setIsAnimating(true);
-      // Ensure modal body starts scrolled to top
       scrollBodyRef.current?.scrollTo(0, 0);
     }));
     setTimeout(() => titleRef.current?.focus(), 150);
@@ -219,12 +215,10 @@ function AnnouncementDialog({
     const name = `${p.first_name || ''} ${p.last_name || ''}`.toLowerCase();
     return name.includes(playerSearch.toLowerCase());
   });
-  const recipientLabel = isAllTeam
-    ? `All ${players.length} players`
-    : `${recipientPlayerIds!.length} of ${players.length} players`;
+  const recipientCount = isAllTeam ? players.length : recipientPlayerIds!.length;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-6">
       {/* Backdrop */}
       <div
         className={cn(
@@ -235,23 +229,26 @@ function AnnouncementDialog({
         aria-hidden="true"
       />
 
-      {/* Dialog panel */}
+      {/* Dialog panel — full screen on mobile, centered card on desktop */}
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="ann-dialog-title"
         className={cn(
-          'relative z-10 w-full max-w-2xl bg-white border border-warm-200/60 rounded-2xl shadow-2xl',
-          'flex flex-col max-h-[calc(100vh-3rem)]',
+          'relative z-10 w-full sm:max-w-lg bg-white sm:border sm:border-warm-200/60 sm:rounded-2xl shadow-2xl',
+          'flex flex-col',
+          // Mobile: full height sheet from bottom. Desktop: max height with margin.
+          'h-full sm:h-auto sm:max-h-[min(640px,calc(100dvh-3rem))]',
+          'rounded-t-2xl sm:rounded-2xl',
           'transition-all duration-200 ease-out',
           isAnimating
             ? 'opacity-100 translate-y-0 scale-100'
-            : 'opacity-0 translate-y-4 scale-[0.97]'
+            : 'opacity-0 translate-y-8 sm:translate-y-4 scale-100 sm:scale-[0.97]'
         )}
       >
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
-          {/* ── Fixed header ──────────────────────────────────── */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100 flex-shrink-0">
+          {/* ── Header ──────────────────────────────────────────── */}
+          <div className="flex items-center justify-between px-5 py-3.5 border-b border-warm-100 flex-shrink-0">
             <h2 id="ann-dialog-title" className="text-base font-semibold text-warm-900">
               New Announcement
             </h2>
@@ -265,34 +262,33 @@ function AnnouncementDialog({
             </button>
           </div>
 
-          {/* ── Scrollable body ───────────────────────────────── */}
-          <div ref={scrollBodyRef} className="flex-1 overflow-y-auto overscroll-contain min-h-0 px-6 py-5">
-            {/* Title */}
+          {/* ── Scrollable body ─────────────────────────────────── */}
+          <div ref={scrollBodyRef} className="flex-1 overflow-y-auto overscroll-contain min-h-0 px-5 py-4 space-y-4">
+            {/* Title input */}
             <input
               ref={titleRef}
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Announcement title"
-              required
-              className="w-full text-xl font-semibold text-warm-900 placeholder:text-warm-300 bg-transparent outline-none border-none mb-4"
+              className="w-full text-lg font-semibold text-warm-900 placeholder:text-warm-300 bg-transparent outline-none border-none"
             />
 
-            {/* Message */}
+            {/* Message textarea */}
             <textarea
               value={body}
               onChange={(e) => setBody(e.target.value)}
-              rows={4}
-              required
-              className="w-full text-sm text-warm-700 placeholder:text-warm-400 bg-warm-50/60 rounded-xl border border-warm-200 px-4 py-3 outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition-all resize-y min-h-[100px] max-h-[300px] mb-5"
+              rows={3}
+              className="w-full text-sm text-warm-700 placeholder:text-warm-400 bg-warm-50/60 rounded-xl border border-warm-200 px-3.5 py-2.5 outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition-all resize-none min-h-[80px]"
               placeholder="Write your message to the team..."
             />
 
-            {/* Priority + Recipients + Options */}
-            <div className="flex flex-wrap items-start gap-x-6 gap-y-4 mb-5">
-              <div>
-                <label className="text-xs font-semibold text-warm-500 uppercase tracking-wider block mb-2">Priority</label>
-                <div className="flex gap-1.5">
+            {/* ── Compact settings row ────────────────────────────── */}
+            <div className="space-y-3">
+              {/* Priority */}
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-medium text-warm-500 w-16 flex-shrink-0">Priority</span>
+                <div className="flex gap-1 flex-wrap">
                   {urgencyOptions.map((opt) => {
                     const isActive = urgency === opt.value;
                     return (
@@ -301,10 +297,10 @@ function AnnouncementDialog({
                         type="button"
                         onClick={() => setUrgency(opt.value)}
                         className={cn(
-                          'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border',
+                          'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all border',
                           isActive
                             ? `${opt.activeBg} ${opt.activeBorder} ${opt.activeText}`
-                            : 'bg-white border-warm-200 text-warm-500 hover:bg-warm-50 hover:border-warm-300'
+                            : 'bg-white border-warm-200 text-warm-500 hover:bg-warm-50'
                         )}
                       >
                         <div className={cn('w-1.5 h-1.5 rounded-full', isActive ? opt.dot : 'bg-warm-300')} />
@@ -315,20 +311,21 @@ function AnnouncementDialog({
                 </div>
               </div>
 
-              <div>
-                <label className="text-xs font-semibold text-warm-500 uppercase tracking-wider block mb-2">Send To</label>
-                <div className="flex gap-1.5">
+              {/* Send to */}
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-medium text-warm-500 w-16 flex-shrink-0">Send to</span>
+                <div className="flex gap-1">
                   <button
                     type="button"
                     onClick={() => { setRecipientPlayerIds(null); setShowPlayerPicker(false); setPlayerSearch(''); }}
                     className={cn(
-                      'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border',
+                      'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all border',
                       isAllTeam
                         ? 'bg-primary-50 border-primary-300 text-primary-700'
-                        : 'bg-white border-warm-200 text-warm-500 hover:bg-warm-50 hover:border-warm-300'
+                        : 'bg-white border-warm-200 text-warm-500 hover:bg-warm-50'
                     )}
                   >
-                    <IconUsers size={12} />
+                    <IconUsers size={11} />
                     All Team
                   </button>
                   <button
@@ -338,39 +335,22 @@ function AnnouncementDialog({
                       setShowPlayerPicker(!showPlayerPicker);
                     }}
                     className={cn(
-                      'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border',
+                      'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all border',
                       !isAllTeam
                         ? 'bg-primary-50 border-primary-300 text-primary-700'
-                        : 'bg-white border-warm-200 text-warm-500 hover:bg-warm-50 hover:border-warm-300'
+                        : 'bg-white border-warm-200 text-warm-500 hover:bg-warm-50'
                     )}
                   >
-                    <IconUser size={12} />
+                    <IconUser size={11} />
                     Select
                     {!isAllTeam && recipientPlayerIds!.length > 0 && (
-                      <span className="bg-primary-200 text-primary-800 text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
+                      <span className="bg-primary-200 text-primary-800 text-[10px] font-bold px-1.5 rounded-full leading-tight">
                         {recipientPlayerIds!.length}
                       </span>
                     )}
                     <IconChevronDown size={10} className={cn('transition-transform', showPlayerPicker && !isAllTeam && '-rotate-180')} />
                   </button>
                 </div>
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-warm-500 uppercase tracking-wider block mb-2">Options</label>
-                <button
-                  type="button"
-                  onClick={() => setRequiresAcknowledgement(!requiresAcknowledgement)}
-                  className={cn(
-                    'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border',
-                    requiresAcknowledgement
-                      ? 'bg-primary-50 border-primary-300 text-primary-700'
-                      : 'bg-white border-warm-200 text-warm-500 hover:bg-warm-50 hover:border-warm-300'
-                  )}
-                >
-                  {requiresAcknowledgement ? <IconCheck size={12} /> : <span className="w-3 h-3 rounded border border-warm-300" />}
-                  Require Ack
-                </button>
               </div>
             </div>
 
@@ -382,7 +362,7 @@ function AnnouncementDialog({
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
                   transition={{ duration: 0.2 }}
-                  className="overflow-hidden mb-5"
+                  className="overflow-hidden"
                 >
                   <div className="border border-warm-200 rounded-xl overflow-hidden bg-white">
                     <div className="px-3 py-2 border-b border-warm-100 flex items-center gap-2">
@@ -398,8 +378,8 @@ function AnnouncementDialog({
                         <span className="text-xs text-warm-400 flex-shrink-0 tabular-nums">{recipientPlayerIds!.length} selected</span>
                       )}
                     </div>
-                    <div className="max-h-44 overflow-y-auto p-1.5">
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-0.5">
+                    <div className="max-h-36 overflow-y-auto p-1.5">
+                      <div className="grid grid-cols-2 gap-0.5">
                         {filteredPlayers.map((player) => {
                           const isSelected = (recipientPlayerIds || []).includes(player.id);
                           return (
@@ -412,7 +392,7 @@ function AnnouncementDialog({
                                 else setRecipientPlayerIds([...current, player.id]);
                               }}
                               className={cn(
-                                'flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-left text-sm transition-all',
+                                'flex items-center gap-2 px-2 py-1.5 rounded-lg text-left text-sm transition-all',
                                 isSelected ? 'bg-primary-50 text-primary-900' : 'hover:bg-warm-50 text-warm-700'
                               )}
                             >
@@ -436,33 +416,48 @@ function AnnouncementDialog({
               )}
             </AnimatePresence>
 
-            {/* Toolbar: Attach + Tasks */}
-            <div className="flex items-center gap-2 mb-4">
+            {/* ── Toolbar divider ──────────────────────────────────── */}
+            <div className="border-t border-warm-100 pt-3 flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setRequiresAcknowledgement(!requiresAcknowledgement)}
+                className={cn(
+                  'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all border',
+                  requiresAcknowledgement
+                    ? 'bg-primary-50 border-primary-300 text-primary-700'
+                    : 'bg-white border-warm-200 text-warm-500 hover:bg-warm-50'
+                )}
+              >
+                {requiresAcknowledgement ? <IconCheck size={11} /> : <span className="w-3 h-3 rounded border border-warm-300" />}
+                Require Ack
+              </button>
+
               {documents.length > 0 && (
                 <button
                   type="button"
                   onClick={() => setShowDocPicker(!showDocPicker)}
                   className={cn(
-                    'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border',
+                    'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all border',
                     showDocPicker || selectedDocumentIds.length > 0
                       ? 'bg-primary-50 border-primary-300 text-primary-700'
-                      : 'bg-white border-warm-200 text-warm-500 hover:bg-warm-50 hover:border-warm-300'
+                      : 'bg-white border-warm-200 text-warm-500 hover:bg-warm-50'
                   )}
                 >
-                  <IconPaperclip size={12} />
-                  {selectedDocumentIds.length > 0 ? `${selectedDocumentIds.length} Attached` : 'Attach Documents'}
+                  <IconPaperclip size={11} />
+                  {selectedDocumentIds.length > 0 ? `${selectedDocumentIds.length} Doc${selectedDocumentIds.length !== 1 ? 's' : ''}` : 'Attach'}
                   <IconChevronDown size={10} className={cn('transition-transform', showDocPicker && '-rotate-180')} />
                 </button>
               )}
+
               <button
                 type="button"
-                onClick={() => setInlineTasks(prev => [...prev, { title: '' }])}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border bg-white border-warm-200 text-warm-500 hover:bg-warm-50 hover:border-warm-300 transition-all"
+                onClick={() => setInlineTasks(prev => [...prev, { id: crypto.randomUUID(), title: '' }])}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border bg-white border-warm-200 text-warm-500 hover:bg-warm-50 transition-all"
               >
-                <IconClipboardList size={12} />
+                <IconClipboardList size={11} />
                 Add Task
                 {inlineTasks.length > 0 && (
-                  <span className="bg-warm-200 text-warm-600 text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
+                  <span className="bg-warm-200 text-warm-600 text-[10px] font-bold px-1.5 rounded-full leading-tight">
                     {inlineTasks.length}
                   </span>
                 )}
@@ -472,7 +467,7 @@ function AnnouncementDialog({
             {/* Attached doc chips */}
             <AnimatePresence mode="popLayout">
               {selectedDocs.length > 0 && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-wrap gap-2 mb-4">
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-wrap gap-1.5">
                   {selectedDocs.map((doc) => {
                     const colors = getFileColor(doc.file_type);
                     return (
@@ -482,19 +477,18 @@ function AnnouncementDialog({
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.9 }}
                         layout
-                        className="flex items-center gap-2 pl-2.5 pr-1.5 py-1.5 rounded-lg border border-warm-200 bg-white shadow-sm"
+                        className="flex items-center gap-1.5 pl-2 pr-1 py-1 rounded-lg border border-warm-200 bg-white text-xs"
                       >
-                        <div className={cn('w-6 h-6 rounded flex items-center justify-center', colors.bg)}>
-                          <span className={cn('text-[9px] font-bold leading-none', colors.text)}>{getFileLabel(doc.file_type)}</span>
+                        <div className={cn('w-5 h-5 rounded flex items-center justify-center', colors.bg)}>
+                          <span className={cn('text-[8px] font-bold leading-none', colors.text)}>{getFileLabel(doc.file_type)}</span>
                         </div>
-                        <span className="text-xs font-medium text-warm-700 max-w-[160px] truncate">{doc.title}</span>
-                        <span className="text-[10px] text-warm-400">{formatFileSize(doc.file_size)}</span>
+                        <span className="font-medium text-warm-700 max-w-[120px] truncate">{doc.title}</span>
                         <button
                           type="button"
                           onClick={() => setSelectedDocumentIds(prev => prev.filter(id => id !== doc.id))}
-                          className="w-5 h-5 rounded flex items-center justify-center hover:bg-red-50 text-warm-400 hover:text-red-500 transition-colors"
+                          className="w-4 h-4 rounded flex items-center justify-center hover:bg-red-50 text-warm-400 hover:text-red-500 transition-colors"
                         >
-                          <IconX size={10} />
+                          <IconX size={9} />
                         </button>
                       </motion.div>
                     );
@@ -511,7 +505,7 @@ function AnnouncementDialog({
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
                   transition={{ duration: 0.2 }}
-                  className="overflow-hidden mb-4"
+                  className="overflow-hidden"
                 >
                   <div className="border border-warm-200 rounded-xl overflow-hidden bg-white">
                     {availableDocs.length > 3 && (
@@ -526,8 +520,8 @@ function AnnouncementDialog({
                         />
                       </div>
                     )}
-                    <div className="max-h-40 overflow-y-auto p-1.5">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-0.5">
+                    <div className="max-h-36 overflow-y-auto p-1.5">
+                      <div className="grid grid-cols-1 gap-0.5">
                         {filteredAvailableDocs.map((doc) => {
                           const colors = getFileColor(doc.file_type);
                           return (
@@ -540,7 +534,7 @@ function AnnouncementDialog({
                               }}
                               className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-warm-50 active:bg-warm-100 text-left transition-colors"
                             >
-                              <div className={cn('w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0', colors.bg)}>
+                              <div className={cn('w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0', colors.bg)}>
                                 <span className={cn('text-[9px] font-bold', colors.text)}>{getFileLabel(doc.file_type)}</span>
                               </div>
                               <div className="flex-1 min-w-0">
@@ -564,7 +558,7 @@ function AnnouncementDialog({
             </AnimatePresence>
 
             {showDocPicker && availableDocs.length === 0 && selectedDocs.length === 0 && (
-              <p className="text-xs text-warm-400 flex items-center gap-1.5 mb-4">
+              <p className="text-xs text-warm-400 flex items-center gap-1.5">
                 <IconFile size={12} />
                 No team documents available yet.
               </p>
@@ -574,19 +568,18 @@ function AnnouncementDialog({
             <AnimatePresence mode="popLayout">
               {inlineTasks.map((task, index) => (
                 <motion.div
-                  key={index}
+                  key={task.id}
                   initial={{ opacity: 0, y: -8 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8, height: 0 }}
                   transition={{ duration: 0.15 }}
                   layout
-                  className="mb-2"
                 >
-                  <div className="flex items-start gap-2.5 p-3 border border-warm-200 rounded-xl bg-warm-50/30">
+                  <div className="flex items-start gap-2 p-2.5 border border-warm-200 rounded-xl bg-warm-50/30">
                     <span className="w-5 h-5 rounded-md bg-warm-200/60 flex items-center justify-center text-[10px] font-bold text-warm-500 flex-shrink-0 mt-0.5">
                       {index + 1}
                     </span>
-                    <div className="flex-1 min-w-0 space-y-1.5">
+                    <div className="flex-1 min-w-0 space-y-1">
                       <input
                         type="text"
                         value={task.title}
@@ -598,7 +591,7 @@ function AnnouncementDialog({
                         className="w-full text-sm font-medium text-warm-900 placeholder:text-warm-400 bg-transparent outline-none"
                         autoFocus={task.title === ''}
                       />
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
                         <input
                           type="text"
                           value={task.description || ''}
@@ -607,7 +600,7 @@ function AnnouncementDialog({
                             setInlineTasks(updated);
                           }}
                           placeholder="Description (optional)"
-                          className="flex-1 text-xs text-warm-600 placeholder:text-warm-400 bg-transparent outline-none"
+                          className="flex-1 text-xs text-warm-600 placeholder:text-warm-400 bg-transparent outline-none min-w-0"
                         />
                         <div className="flex items-center gap-1 flex-shrink-0">
                           <IconCalendar size={10} className="text-warm-400" />
@@ -626,9 +619,9 @@ function AnnouncementDialog({
                     <button
                       type="button"
                       onClick={() => setInlineTasks(prev => prev.filter((_, i) => i !== index))}
-                      className="w-6 h-6 rounded-md flex items-center justify-center hover:bg-red-50 text-warm-400 hover:text-red-500 transition-colors flex-shrink-0"
+                      className="w-5 h-5 rounded-md flex items-center justify-center hover:bg-red-50 text-warm-400 hover:text-red-500 transition-colors flex-shrink-0"
                     >
-                      <IconX size={12} />
+                      <IconX size={11} />
                     </button>
                   </div>
                 </motion.div>
@@ -636,29 +629,23 @@ function AnnouncementDialog({
             </AnimatePresence>
           </div>
 
-          {/* ── Pinned footer ─────────────────────────────────── */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 px-6 py-3 border-t border-warm-200 bg-warm-50/50 rounded-b-2xl flex-shrink-0">
-            <div className="flex items-center gap-1.5 text-xs flex-wrap">
-              <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary-50/80 text-primary-700 font-medium">
-                <IconUsers size={11} className="flex-shrink-0" />
-                <span className="whitespace-nowrap">Sending to {recipientLabel}</span>
-              </div>
-              {selectedDocumentIds.length > 0 && (
-                <span className="text-warm-500 whitespace-nowrap">{'\u00b7'} {selectedDocumentIds.length} doc{selectedDocumentIds.length !== 1 ? 's' : ''}</span>
-              )}
-              {inlineTasks.length > 0 && (
-                <span className="text-warm-500 whitespace-nowrap">{'\u00b7'} {inlineTasks.length} task{inlineTasks.length !== 1 ? 's' : ''}</span>
-              )}
-              {requiresAcknowledgement && (
-                <span className="text-warm-500 whitespace-nowrap">{'\u00b7'} ack required</span>
-              )}
+          {/* ── Footer ─────────────────────────────────────────── */}
+          <div className="flex items-center justify-between gap-3 px-5 py-3 border-t border-warm-200 bg-warm-50/50 rounded-b-2xl flex-shrink-0">
+            <div className="flex items-center gap-1.5 text-xs text-warm-500 min-w-0">
+              <IconUsers size={11} className="flex-shrink-0 text-primary-600" />
+              <span className="truncate">
+                {recipientCount} player{recipientCount !== 1 ? 's' : ''}
+                {selectedDocumentIds.length > 0 && ` \u00b7 ${selectedDocumentIds.length} doc${selectedDocumentIds.length !== 1 ? 's' : ''}`}
+                {inlineTasks.length > 0 && ` \u00b7 ${inlineTasks.length} task${inlineTasks.length !== 1 ? 's' : ''}`}
+                {requiresAcknowledgement && ' \u00b7 ack'}
+              </span>
             </div>
-            <div className="flex items-center gap-2 flex-shrink-0 self-end sm:self-auto">
+            <div className="flex items-center gap-2 flex-shrink-0">
               <Button variant="secondary" type="button" size="sm" onClick={handleClose} disabled={loading}>
                 Cancel
               </Button>
               <Button type="submit" size="sm" isLoading={loading} leftIcon={<IconSend size={13} />}>
-                Post Announcement
+                Post
               </Button>
             </div>
           </div>
