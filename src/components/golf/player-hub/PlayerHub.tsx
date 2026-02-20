@@ -23,6 +23,8 @@ import {
   IconUpload,
   IconCheckCheck,
 } from '@/components/icons';
+import { PlayerHubAnnouncementsSection } from './PlayerHubAnnouncementsSection';
+import type { GolfAnnouncementMeta } from '@/lib/types/golf';
 
 // ============================================================================
 // Types
@@ -78,6 +80,7 @@ interface PlayerHubProps {
   trips: TripData[];
   tasks: PlayerTask[];
   events: EventInvite[];
+  announcements: GolfAnnouncementMeta[];
   playerName: string;
   onCompleteTask: (taskId: string) => Promise<void>;
   onRSVP: (eventId: string, status: 'accepted' | 'declined' | 'tentative') => Promise<void>;
@@ -652,7 +655,7 @@ function OverviewSection({
 // Main Component
 // ============================================================================
 
-export function PlayerHub({ trips, tasks, events, playerName, onCompleteTask, onRSVP }: PlayerHubProps) {
+export function PlayerHub({ trips, tasks, events, announcements, playerName, onCompleteTask, onRSVP }: PlayerHubProps) {
   const { toggleMobile } = useSidebar();
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [selectedTrip, setSelectedTrip] = useState<TripData | null>(null);
@@ -794,6 +797,11 @@ export function PlayerHub({ trips, tasks, events, playerName, onCompleteTask, on
                     View
                   </button>
                 </m.div>
+              )}
+
+              {/* Announcements */}
+              {announcements.length > 0 && (
+                <PlayerHubAnnouncementsSection announcements={announcements} />
               )}
 
               {/* Upcoming Trips */}

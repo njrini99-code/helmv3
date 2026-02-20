@@ -78,7 +78,7 @@ const nextConfig = {
       bodySizeLimit: '2mb',
     },
     // Optimize package imports
-    optimizePackageImports: ['recharts', 'date-fns', 'framer-motion'],
+    optimizePackageImports: ['recharts', 'date-fns', 'framer-motion', '@supabase/supabase-js'],
   },
 
   // Webpack optimizations

@@ -22,84 +22,60 @@ export default async function GolfAnnouncementsPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/golf/login');
 
-  const { data: userData } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', user.id)
-    .single();
+  // Role + profiles in parallel
+  const [userRoleResult, coachResult, playerResult] = await Promise.all([
+    supabase.from('users').select('role').eq('id', user.id).single(),
+    supabase.from('golf_coaches').select('id, organization_id').eq('user_id', user.id).maybeSingle(),
+    supabase.from('golf_players').select('id').eq('user_id', user.id).maybeSingle(),
+  ]);
 
-  const userRole = userData?.role;
-  const isCoach = userRole === 'coach';
+  const isCoach = userRoleResult.data?.role === 'coach';
+  const orgId = coachResult.data?.organization_id;
+  const playerId = playerResult.data?.id || null;
 
-  let teamId: string | null = null;
-  let playerId: string | null = null;
+  // Team lookup in parallel for coach and player paths
+  const [coachTeamResult, playerTeamResult] = await Promise.all([
+    orgId
+      ? supabase.from('golf_teams').select('id').eq('organization_id', orgId).maybeSingle()
+      : Promise.resolve({ data: null }),
+    playerId
+      ? supabase.from('golf_team_members').select('team_id').eq('player_id', playerId).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
 
-  if (isCoach) {
-    const { data: coach } = await supabase
-      .from('golf_coaches')
-      .select('id, organization_id')
-      .eq('user_id', user.id)
-      .single();
+  const teamId = coachTeamResult.data?.id || playerTeamResult.data?.team_id || null;
 
-    if (coach?.organization_id) {
-      const { data: team } = await supabase
-        .from('golf_teams')
-        .select('id')
-        .eq('organization_id', coach.organization_id)
-        .maybeSingle();
-      teamId = team?.id || null;
-    }
-  } else {
-    const { data: player } = await supabase
-      .from('golf_players')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (player) {
-      playerId = player.id;
-      const { data: membership } = await supabase
-        .from('golf_team_members')
-        .select('team_id')
-        .eq('player_id', player.id)
-        .maybeSingle();
-      teamId = membership?.team_id || null;
-    }
-  }
-
-  // Fetch enriched announcements
-  const announcementsResult = teamId
-    ? await getAnnouncementsWithMeta(teamId, user.id, isCoach, playerId)
-    : { success: true as const, data: [] };
+  // Fetch announcements + coach data (roster + documents) in parallel
+  const [announcementsResult, membersResult, docsResult] = await Promise.all([
+    teamId
+      ? getAnnouncementsWithMeta(teamId, user.id, isCoach, playerId)
+      : Promise.resolve({ success: true as const, data: [] }),
+    isCoach && teamId
+      ? supabase
+          .from('golf_team_members')
+          .select('player_id, player:golf_players(id, first_name, last_name)')
+          .eq('team_id', teamId)
+          .eq('status', 'active')
+          .limit(100)
+      : Promise.resolve({ data: null }),
+    isCoach && teamId
+      ? supabase
+          .from('golf_documents')
+          .select('id, title, file_type, file_size')
+          .eq('team_id', teamId)
+          .order('created_at', { ascending: false })
+          .limit(200)
+      : Promise.resolve({ data: null }),
+  ]);
 
   const announcements = announcementsResult.data ?? [];
 
-  // For coaches: fetch roster + team documents for the create flow
-  let players: Array<{ id: string; first_name: string | null; last_name: string | null }> = [];
-  let documents: Array<{ id: string; title: string; file_type: string; file_size: number }> = [];
+  const players = (membersResult.data || [])
+    .map((m: any) => m.player) // eslint-disable-line @typescript-eslint/no-explicit-any
+    .filter(Boolean)
+    .map((p: any) => ({ id: p.id, first_name: p.first_name, last_name: p.last_name })); // eslint-disable-line @typescript-eslint/no-explicit-any
 
-  if (isCoach && teamId) {
-    // Fetch team roster
-    const { data: members } = await supabase
-      .from('golf_team_members')
-      .select('player_id, player:golf_players(id, first_name, last_name)')
-      .eq('team_id', teamId)
-      .eq('status', 'active');
-
-    players = (members || [])
-      .map((m: any) => m.player) // eslint-disable-line @typescript-eslint/no-explicit-any
-      .filter(Boolean)
-      .map((p: any) => ({ id: p.id, first_name: p.first_name, last_name: p.last_name })); // eslint-disable-line @typescript-eslint/no-explicit-any
-
-    // Fetch team documents
-    const { data: docs } = await supabase
-      .from('golf_documents')
-      .select('id, title, file_type, file_size')
-      .eq('team_id', teamId)
-      .order('created_at', { ascending: false });
-
-    documents = (docs || []) as typeof documents;
-  }
+  const documents = ((docsResult.data || []) as Array<{ id: string; title: string; file_type: string; file_size: number }>);
 
   const recentCount = announcements.filter(a => {
     if (!a.published_at) return false;

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
 import { PlayerHubWrapper } from '@/components/golf/player-hub/PlayerHubWrapper';
+import { getPlayerHubAnnouncements } from '@/app/golf/actions/player-notifications';
 
 export const metadata: Metadata = {
   title: 'My Hub | Helm Golf',
@@ -72,7 +73,7 @@ export default async function PlayerHubPage() {
 
   // Fetch all hub data in parallel
   // Use raw SQL for tasks + completions since generated types may be outdated
-  const [tripsResult, tasksRaw, eventsRaw] = await Promise.all([
+  const [tripsResult, tasksRaw, eventsRaw, announcementsResult] = await Promise.all([
     // Travel itineraries for the team
     supabase
       .from('golf_travel_itineraries')
@@ -95,6 +96,9 @@ export default async function PlayerHubPage() {
       .gte('start_time', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
       .order('start_time', { ascending: true })
       .limit(20),
+
+    // Recent announcements for player hub
+    getPlayerHubAnnouncements(teamId, player.id),
   ]);
 
   // Transform trips
@@ -218,11 +222,14 @@ export default async function PlayerHubPage() {
     maybe_count: maybeCountMap.get(e.id) || 0,
   }));
 
+  const announcements = announcementsResult.success ? (announcementsResult.data ?? []) : [];
+
   return (
     <PlayerHubWrapper
       trips={trips}
       tasks={tasks}
       events={events}
+      announcements={announcements}
       playerName={playerName}
     />
   );

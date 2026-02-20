@@ -83,14 +83,15 @@ export function useGolfMessages(conversationId: string) {
     }
 
     setLoading(true);
-    // Fetch messages with columns that exist in the database
+    // Fetch most recent 200 messages (descending for limit), then reverse for display order
     const { data } = await supabase
       .from('golf_messages')
       .select('id, conversation_id, sender_id, content, read, created_at')
       .eq('conversation_id', conversationId)
-      .order('created_at', { ascending: true });
+      .order('created_at', { ascending: false })
+      .limit(200);
 
-    setMessages((data || []) as MessageWithReadStatus[]);
+    setMessages(((data || []) as MessageWithReadStatus[]).reverse());
     setLoading(false);
 
     // Mark messages as read

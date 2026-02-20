@@ -12,6 +12,7 @@ import { MobileBottomNav } from '@/components/golf/MobileBottomNav';
 import { KeyboardShortcutHint } from '@/components/golf/KeyboardShortcutHint';
 import { MobileNavProvider } from '@/contexts/mobile-nav-context';
 import { GolfUserProvider, type GolfUserData } from '@/contexts/golf-user-context';
+import { NotificationBadgeProvider } from '@/contexts/notification-badge-context';
 import { OfflineProvider } from '@/components/golf/OfflineProvider';
 import { NoTeamBanner } from '@/components/golf/NoTeamBanner';
 import { LastSeenUpdater } from '@/components/admin/LastSeenUpdater';
@@ -23,6 +24,12 @@ import { cn } from '@/lib/utils';
 // PERF: Lazy-load CommandPalette — only shown on Cmd+K
 const CommandPalette = dynamic(
   () => import('@/components/golf/CommandPalette').then(mod => ({ default: mod.CommandPalette })),
+  { ssr: false }
+);
+
+// PERF: Lazy-load announcement modal — only shown for players with unseen announcements
+const NewAnnouncementsModalWrapper = dynamic(
+  () => import('@/components/golf/announcements/NewAnnouncementsModalWrapper').then(mod => ({ default: mod.NewAnnouncementsModalWrapper })),
   { ssr: false }
 );
 
@@ -185,6 +192,9 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
 
       {/* Keyboard Shortcut Hint (shows once) */}
       <KeyboardShortcutHint />
+
+      {/* New Announcements Modal (players only) */}
+      <NewAnnouncementsModalWrapper />
     </div>
   );
 }
@@ -221,16 +231,18 @@ export function GolfDashboardShell({
           <ToastProvider>
             <SessionActivityProvider>
               <GolfUserProvider userData={userData}>
-                <LazyMotion features={domAnimation}>
-                  <AppearanceMotionConfig>
-                    <OfflineProvider showSyncStatus={false} showWarningBanner={false}>
-                      <LastSeenUpdater />
-                      <GolfDashboardContent userData={userData}>
-                        {children}
-                      </GolfDashboardContent>
-                    </OfflineProvider>
-                  </AppearanceMotionConfig>
-                </LazyMotion>
+                <NotificationBadgeProvider>
+                  <LazyMotion features={domAnimation}>
+                    <AppearanceMotionConfig>
+                      <OfflineProvider showSyncStatus={false} showWarningBanner={false}>
+                        <LastSeenUpdater />
+                        <GolfDashboardContent userData={userData}>
+                          {children}
+                        </GolfDashboardContent>
+                      </OfflineProvider>
+                    </AppearanceMotionConfig>
+                  </LazyMotion>
+                </NotificationBadgeProvider>
               </GolfUserProvider>
             </SessionActivityProvider>
           </ToastProvider>

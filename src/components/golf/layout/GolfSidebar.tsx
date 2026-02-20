@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { useSidebar } from '@/contexts/sidebar-context';
+import { useNotificationBadges } from '@/contexts/notification-badge-context';
+import { CountBadge } from '@/components/ui/badge';
 import {
   IconHome,
   IconUsers,
@@ -90,8 +92,25 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
   const { collapsed, setCollapsed, setMobileOpen } = useSidebar();
   const [isSigningOut, setIsSigningOut] = useState(false);
 
-  const primaryNav = userRole === 'coach' ? coachNavItems : playerNavItems;
-  const secondaryNav = userRole === 'coach' ? coachSecondaryNav : playerSecondaryNav;
+  const badges = useNotificationBadges();
+
+  // Inject badge counts into nav items
+  const primaryNav = useMemo(() => {
+    const items = userRole === 'coach' ? coachNavItems : playerNavItems;
+    return items.map(item => {
+      if (item.name === 'Messages' && badges.messages > 0) return { ...item, badge: badges.messages };
+      return item;
+    });
+  }, [userRole, badges.messages]);
+
+  const secondaryNav = useMemo(() => {
+    const items = userRole === 'coach' ? coachSecondaryNav : playerSecondaryNav;
+    return items.map(item => {
+      if (item.name === 'Tasks' && badges.tasks > 0) return { ...item, badge: badges.tasks };
+      if (item.name === 'Announcements' && badges.announcements > 0) return { ...item, badge: badges.announcements };
+      return item;
+    });
+  }, [userRole, badges.tasks, badges.announcements]);
 
   // For mobile, always show expanded
   const isCollapsed = isMobile ? false : collapsed;
@@ -272,7 +291,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
                 aria-label={isCollapsed ? item.name : undefined}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'flex items-center gap-3 py-3 lg:py-2.5 rounded-[10px] text-[13px] font-medium touch-manipulation',
+                  'relative flex items-center gap-3 py-3 lg:py-2.5 rounded-[10px] text-[13px] font-medium touch-manipulation',
                   'transition-all duration-150 ease-out will-change-transform',
                   'active:scale-[0.98]',
                   active
@@ -291,9 +310,12 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
                   {item.name}
                 </span>
                 {item.badge && !isCollapsed && (
-                  <span className="ml-auto px-1.5 py-0.5 text-xs font-semibold rounded-full bg-primary-600 text-white">
-                    {item.badge}
+                  <span className="ml-auto">
+                    <CountBadge count={item.badge} variant="primary" />
                   </span>
+                )}
+                {item.badge && isCollapsed && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary-500 ring-2 ring-warm-900" />
                 )}
               </Link>
             );
@@ -323,7 +345,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
                 aria-label={isCollapsed ? item.name : undefined}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'flex items-center gap-3 py-3 lg:py-2.5 rounded-[10px] text-[13px] font-medium touch-manipulation',
+                  'relative flex items-center gap-3 py-3 lg:py-2.5 rounded-[10px] text-[13px] font-medium touch-manipulation',
                   'transition-all duration-150 ease-out active:scale-[0.98]',
                   active
                     ? 'bg-white/10 text-primary-400 border-l-[3px] border-primary-500'
@@ -340,6 +362,14 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
                 >
                   {item.name}
                 </span>
+                {item.badge && !isCollapsed && (
+                  <span className="ml-auto">
+                    <CountBadge count={item.badge} variant="primary" />
+                  </span>
+                )}
+                {item.badge && isCollapsed && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary-500 ring-2 ring-warm-900" />
+                )}
               </Link>
             );
           })}

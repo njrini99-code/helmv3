@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { PlayerHub } from './PlayerHub';
 import { completeTask } from '@/app/golf/actions/tasks';
 import { respondToEvent } from '@/app/golf/actions/golf';
+import type { GolfAnnouncementMeta } from '@/lib/types/golf';
 
 interface TripData {
   id: string;
@@ -56,10 +57,11 @@ interface PlayerHubWrapperProps {
   trips: TripData[];
   tasks: PlayerTask[];
   events: EventInvite[];
+  announcements: GolfAnnouncementMeta[];
   playerName: string;
 }
 
-export function PlayerHubWrapper({ trips, tasks: initialTasks, events: initialEvents, playerName }: PlayerHubWrapperProps) {
+export function PlayerHubWrapper({ trips, tasks: initialTasks, events: initialEvents, announcements, playerName }: PlayerHubWrapperProps) {
   const router = useRouter();
   const [tasks, setTasks] = useState(initialTasks);
   const [events, setEvents] = useState(initialEvents);
@@ -111,6 +113,7 @@ export function PlayerHubWrapper({ trips, tasks: initialTasks, events: initialEv
       trips={trips}
       tasks={tasks}
       events={events}
+      announcements={announcements}
       playerName={playerName}
       onCompleteTask={handleCompleteTask}
       onRSVP={handleRSVP}

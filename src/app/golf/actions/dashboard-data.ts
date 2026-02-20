@@ -214,25 +214,26 @@ export async function getCoachDashboardData(
 ): Promise<CoachDashboardPayload> {
     const supabase = await createClient();
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Not authenticated');
+    // Auth check + timezone in parallel (timezone only needs teamId, not user)
+    const [authResult, timezoneResult] = await Promise.all([
+        supabase.auth.getUser(),
+        supabase
+            .from('golf_team_settings')
+            .select('timezone')
+            .eq('team_id', teamId)
+            .maybeSingle(),
+    ]);
 
-    // Verify the authenticated user matches the requested userId
+    const { data: { user } } = authResult;
+    if (!user) throw new Error('Not authenticated');
     if (user.id !== userId) throw new Error('Unauthorized');
 
-    // Fetch team timezone from settings table (canonical source for timezone)
-    const { data: teamSettingsRow } = await supabase
-        .from('golf_team_settings')
-        .select('timezone')
-        .eq('team_id', teamId)
-        .maybeSingle();
-    const teamTimezone = (teamSettingsRow as { timezone?: string } | null)?.timezone || 'America/New_York';
-
+    const teamTimezone = (timezoneResult.data as { timezone?: string } | null)?.timezone || 'America/New_York';
     const { start: todayStart, end: todayEnd } = getTodayRange(teamTimezone);
     const now = new Date().toISOString();
     const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
 
-    // ── Parallel batch 1: Team info + roster + events + qualifiers + today's events + tasks + announcements ──
+    // ── Parallel batch 1: Team info + roster + events + qualifiers + today's events + tasks + announcements + calendar ──
     const [
         teamResult,
         rosterCountResult,
@@ -242,6 +243,7 @@ export async function getCoachDashboardData(
         playersResult,
         pendingTasksResult,
         recentAnnouncementsResult,
+        calendarEventsResult,
     ] = await Promise.all([
         supabase.from('golf_teams').select('id, name, season, join_code, created_at').eq('id', teamId).single(),
         supabase.from('golf_team_members').select('id', { count: 'exact', head: true }).eq('team_id', teamId).eq('status', 'active'),
@@ -277,6 +279,14 @@ export async function getCoachDashboardData(
             .not('published_at', 'is', null)
             .order('published_at', { ascending: false })
             .limit(5),
+        // Calendar events (moved from sequential fetch at end)
+        supabase
+            .from('golf_events')
+            .select('id, title, event_type, start_time, end_time, location, created_at, updated_at')
+            .eq('team_id', teamId)
+            .gte('start_time', now)
+            .order('start_time', { ascending: true })
+            .limit(20),
     ]);
 
     const team = teamResult.data;
@@ -563,16 +573,8 @@ export async function getCoachDashboardData(
         }
     }
 
-    // Build calendar events
-    const { data: calEventsData } = await supabase
-        .from('golf_events')
-        .select('id, title, event_type, start_time, end_time, location, created_at, updated_at')
-        .eq('team_id', teamId)
-        .gte('start_time', now)
-        .order('start_time', { ascending: true })
-        .limit(20);
-
-    const calendarEvents = (calEventsData || []).map(event => ({
+    // Build calendar events (fetched in batch 1)
+    const calendarEvents = (calendarEventsResult.data || []).map(event => ({
         id: event.id,
         title: event.title,
         event_type: event.event_type,
@@ -618,20 +620,18 @@ export async function getPlayerDashboardData(
 ): Promise<PlayerDashboardPayload> {
     const supabase = await createClient();
 
-    const { data: { user } } = await supabase.auth.getUser();
+    // Auth check + timezone in parallel
+    const [authResult, playerTimezoneResult] = await Promise.all([
+        supabase.auth.getUser(),
+        teamId
+            ? supabase.from('golf_team_settings').select('timezone').eq('team_id', teamId).maybeSingle()
+            : Promise.resolve({ data: null }),
+    ]);
+
+    const { data: { user } } = authResult;
     if (!user) throw new Error('Not authenticated');
 
-    // Fetch team timezone from settings table (canonical source for timezone)
-    let playerTeamTimezone = 'America/New_York';
-    if (teamId) {
-        const { data: playerTeamSettingsRow } = await supabase
-            .from('golf_team_settings')
-            .select('timezone')
-            .eq('team_id', teamId)
-            .maybeSingle();
-        playerTeamTimezone = (playerTeamSettingsRow as { timezone?: string } | null)?.timezone || 'America/New_York';
-    }
-
+    const playerTeamTimezone = (playerTimezoneResult.data as { timezone?: string } | null)?.timezone || 'America/New_York';
     const { start: todayStart, end: todayEnd } = getTodayRange(playerTeamTimezone);
     const today = new Date().toISOString().split('T')[0] ?? '';
 

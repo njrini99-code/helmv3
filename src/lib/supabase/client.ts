@@ -8,6 +8,14 @@ import { Database } from '@/lib/types/database';
 export function createClient() {
   return createBrowserClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!.trim(),
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!.trim()
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!.trim(),
+    {
+      global: {
+        fetch: (url: RequestInfo | URL, options: RequestInit = {}) => {
+          const signal = options.signal ?? AbortSignal.timeout(15_000);
+          return fetch(url, { ...options, signal });
+        },
+      },
+    }
   );
 }

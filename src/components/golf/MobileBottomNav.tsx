@@ -4,8 +4,10 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { IconHome, IconUsers, IconCalendar, IconChartBar, IconMessage, IconSettings, IconGolf } from '@/components/icons';
+import { CountBadge } from '@/components/ui/badge';
 import { useMobileNav } from '@/contexts/mobile-nav-context';
 import { useHapticFeedback } from '@/hooks/use-haptic-feedback';
+import { useNotificationBadges } from '@/contexts/notification-badge-context';
 
 interface NavItem {
   href: string;
@@ -39,6 +41,7 @@ export function MobileBottomNav({ isCoach = true }: MobileBottomNavProps) {
   const navItems = isCoach ? coachNavItems : playerNavItems;
   const { isVisible } = useMobileNav();
   const { triggerHaptic } = useHapticFeedback();
+  const badges = useNotificationBadges();
 
   return (
     <nav
@@ -81,12 +84,17 @@ export function MobileBottomNav({ isCoach = true }: MobileBottomNavProps) {
               aria-current={isActive ? 'page' : undefined}
             >
               <div className={cn(
-                'p-1.5 rounded-xl transition-all duration-200',
+                'relative p-1.5 rounded-xl transition-all duration-200',
                 isActive
                   ? 'bg-primary-100/80 text-primary-600 shadow-sm'
                   : 'text-warm-400'
               )}>
                 {item.icon}
+                {item.label === 'Messages' && badges.messages > 0 && (
+                  <span className="absolute -top-1 -right-1.5">
+                    <CountBadge count={badges.messages} variant="danger" />
+                  </span>
+                )}
               </div>
               <span className={cn(
                 'text-[11px] font-medium transition-colors',

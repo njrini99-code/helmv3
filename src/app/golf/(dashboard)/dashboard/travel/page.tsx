@@ -18,41 +18,27 @@ export default async function GolfTravelPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/golf/login');
 
-  // Determine user role
-  const { data: coach } = await supabase
-    .from('golf_coaches')
-    .select('id, organization_id')
-    .eq('user_id', user.id)
-    .maybeSingle();
+  // Coach + player profiles in parallel
+  const [coachResult, playerResult] = await Promise.all([
+    supabase.from('golf_coaches').select('id, organization_id').eq('user_id', user.id).maybeSingle(),
+    supabase.from('golf_players').select('id').eq('user_id', user.id).maybeSingle(),
+  ]);
 
-  // Get team_id from coach's organization
-  let coachTeamId: string | null = null;
-  if (coach?.organization_id) {
-    const { data: orgTeam } = await supabase
-      .from('golf_teams')
-      .select('id')
-      .eq('organization_id', coach.organization_id)
-      .maybeSingle();
-    coachTeamId = orgTeam?.id || null;
-  }
+  const coach = coachResult.data;
+  const player = playerResult.data;
 
-  // Check if player and get team via golf_team_members
-  const { data: player } = await supabase
-    .from('golf_players')
-    .select('id')
-    .eq('user_id', user.id)
-    .maybeSingle();
+  // Team lookups in parallel (coach via org, player via membership)
+  const [coachTeamResult, playerTeamResult] = await Promise.all([
+    coach?.organization_id
+      ? supabase.from('golf_teams').select('id').eq('organization_id', coach.organization_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    player?.id
+      ? supabase.from('golf_team_members').select('team_id').eq('player_id', player.id).maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
 
-  let playerTeamId: string | null = null;
-  if (player?.id) {
-    const { data: teamMember } = await supabase
-      .from('golf_team_members')
-      .select('team_id')
-      .eq('player_id', player.id)
-      .maybeSingle();
-    playerTeamId = teamMember?.team_id || null;
-  }
-
+  const coachTeamId = coachTeamResult.data?.id || null;
+  const playerTeamId = playerTeamResult.data?.team_id || null;
   const isCoach = !!coach && !!coachTeamId;
   const teamId = coachTeamId || playerTeamId;
 
@@ -72,7 +58,8 @@ export default async function GolfTravelPage() {
     .from('golf_travel_itineraries')
     .select('*')
     .eq('team_id', teamId)
-    .order('departure_date', { ascending: true });
+    .order('departure_date', { ascending: true })
+    .limit(100);
 
   // Transform database data to match TravelItinerary interface expected by client component
   const itineraries = (itinerariesRaw || []).map(item => ({

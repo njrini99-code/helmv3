@@ -19,56 +19,42 @@ export default async function GolfCalendarPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/golf/login');
 
-  // OPTIMIZATION: Query user role, coach, and player in parallel
+  // Role + profiles in parallel (all need user.id)
   const [userRoleResult, coachResult, playerResult] = await Promise.all([
-    supabase
-      .from('users')
-      .select('role')
-      .eq('id', user.id)
-      .single(),
-    supabase
-      .from('golf_coaches')
-      .select('id, organization_id')
-      .eq('user_id', user.id)
-      .maybeSingle(),
-    supabase
-      .from('golf_players')
-      .select('id')
-      .eq('user_id', user.id)
-      .maybeSingle(),
+    supabase.from('users').select('role').eq('id', user.id).single(),
+    supabase.from('golf_coaches').select('id, organization_id').eq('user_id', user.id).maybeSingle(),
+    supabase.from('golf_players').select('id').eq('user_id', user.id).maybeSingle(),
   ]);
 
-  const userRole = userRoleResult.data?.role;
-  const isCoach = userRole === 'coach';
+  const isCoach = userRoleResult.data?.role === 'coach';
 
-  // Get team_id based on role
+  // Get team_id + coaches in parallel (both depend on role result, but not each other)
   let teamId: string | null = null;
-  if (coachResult.data?.organization_id) {
-    // Coach: get team via organization
-    const { data: team } = await supabase
-      .from('golf_teams')
-      .select('id')
-      .eq('organization_id', coachResult.data.organization_id)
-      .maybeSingle();
-    teamId = team?.id || null;
-  } else if (playerResult.data?.id) {
-    // Player: get team via golf_team_members junction table
-    const { data: membership } = await supabase
-      .from('golf_team_members')
-      .select('team_id')
-      .eq('player_id', playerResult.data.id)
-      .maybeSingle();
-    teamId = membership?.team_id || null;
-  }
+  const orgId = coachResult.data?.organization_id;
+  const playerId = playerResult.data?.id;
+
+  const [coachTeamResult, playerTeamResult, coachListResult] = await Promise.all([
+    orgId
+      ? supabase.from('golf_teams').select('id').eq('organization_id', orgId).maybeSingle()
+      : Promise.resolve({ data: null }),
+    playerId
+      ? supabase.from('golf_team_members').select('team_id').eq('player_id', playerId).maybeSingle()
+      : Promise.resolve({ data: null }),
+    orgId
+      ? supabase.from('golf_coaches').select('id, full_name, avatar_url').eq('organization_id', orgId).order('full_name', { ascending: true }).limit(20)
+      : Promise.resolve({ data: null }),
+  ]);
+
+  teamId = coachTeamResult.data?.id || playerTeamResult.data?.team_id || null;
+  const coachList = coachListResult.data || [];
 
   let events: CalendarEvent[] = [];
   let teamMembers: { id: string; first_name: string; last_name: string; avatar_url?: string }[] = [];
 
-  // OPTIMIZATION: Fetch events, players, and coaches in parallel with optimized selects
+  // Fetch events and players in parallel
   const [
     { data: eventsData },
     { data: teamMembersData },
-    { data: coachesData }
   ] = teamId
     ? await Promise.all([
         supabase
@@ -76,31 +62,16 @@ export default async function GolfCalendarPage() {
           .select('id, team_id, title, event_type, start_time, end_time, location, description, status, all_day, created_by, requires_rsvp, rsvp_deadline, max_attendees')
           .eq('team_id', teamId)
           .neq('status', 'cancelled')
-          .order('start_time', { ascending: true }),
+          .order('start_time', { ascending: true })
+          .limit(500),
         // Get players via golf_team_members junction table
         supabase
           .from('golf_team_members')
           .select('player:golf_players(id, first_name, last_name, avatar_url)')
-          .eq('team_id', teamId),
-        // Coaches are linked via organization, not team_id directly
-        supabase
-          .from('golf_teams')
-          .select('organization_id')
-          .eq('id', teamId)
-          .single()
+          .eq('team_id', teamId)
+          .limit(100),
       ])
-    : [{ data: null }, { data: null }, { data: null }];
-
-  // Now fetch coaches if we have the organization_id
-  let coachList: { id: string; full_name: string | null; avatar_url: string | null }[] = [];
-  if (coachesData?.organization_id) {
-    const { data: coaches } = await supabase
-      .from('golf_coaches')
-      .select('id, full_name, avatar_url')
-      .eq('organization_id', coachesData.organization_id)
-      .order('full_name', { ascending: true });
-    coachList = coaches || [];
-  }
+    : [{ data: null }, { data: null }];
 
   // Extract players from team members join result
   const playersData = teamMembersData?.map((tm: { player: { id: string; first_name: string | null; last_name: string | null; avatar_url: string | null } | null }) => tm.player).filter((p): p is NonNullable<typeof p> => p !== null) || [];
