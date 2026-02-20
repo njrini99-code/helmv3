@@ -103,7 +103,7 @@ export function NewAnnouncementsModal({ announcements, onDismiss }: NewAnnouncem
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.2 }}
-        className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center"
+        className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center px-0 sm:px-4"
         role="dialog"
         aria-modal="true"
         aria-label={count === 1 ? 'New announcement' : `${count} new announcements`}
@@ -125,13 +125,15 @@ export function NewAnnouncementsModal({ announcements, onDismiss }: NewAnnouncem
           exit={{ opacity: 0, y: 60, scale: 0.96 }}
           transition={{ type: 'spring', stiffness: 380, damping: 32 }}
           className={cn(
-            'relative z-10 w-full max-w-lg mx-4',
+            'relative z-10 w-full max-w-lg',
             // Glass card with premium feel
             'bg-white/95 backdrop-blur-xl shadow-2xl',
             'border border-white/60',
-            // Mobile: bottom sheet with rounded top. Desktop: centered with full rounded corners
+            // Mobile: full-width bottom sheet. Desktop: centered with margin
             'rounded-t-2xl sm:rounded-2xl',
             'max-h-[85dvh] flex flex-col',
+            // iOS safe area padding at bottom
+            'pb-[env(safe-area-inset-bottom,0px)] sm:pb-0',
           )}
         >
           {/* Mobile drag handle */}
