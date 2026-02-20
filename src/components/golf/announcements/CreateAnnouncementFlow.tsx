@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -78,12 +79,13 @@ export function CreateAnnouncementFlow({ players, documents }: CreateAnnouncemen
       <Button onClick={() => setIsOpen(true)} leftIcon={<IconPlus size={16} />}>
         New Announcement
       </Button>
-      {isOpen && (
+      {isOpen && createPortal(
         <AnnouncementDialog
           players={players}
           documents={documents}
           onClose={() => setIsOpen(false)}
-        />
+        />,
+        document.body
       )}
     </>
   );
