@@ -51,10 +51,11 @@ export default async function GolfCalendarPage() {
   let events: CalendarEvent[] = [];
   let teamMembers: { id: string; first_name: string; last_name: string; avatar_url?: string }[] = [];
 
-  // Fetch events and players in parallel
+  // Fetch events, players, and team settings in parallel
   const [
     { data: eventsData },
     { data: teamMembersData },
+    { data: teamSettingsData },
   ] = teamId
     ? await Promise.all([
         supabase
@@ -70,8 +71,16 @@ export default async function GolfCalendarPage() {
           .select('player:golf_players(id, first_name, last_name, avatar_url)')
           .eq('team_id', teamId)
           .limit(100),
+        // Get team timezone
+        supabase
+          .from('golf_team_settings')
+          .select('timezone')
+          .eq('team_id', teamId)
+          .maybeSingle(),
       ])
-    : [{ data: null }, { data: null }];
+    : [{ data: null }, { data: null }, { data: null }];
+
+  const teamTimezone = teamSettingsData?.timezone || null;
 
   // Extract players from team members join result
   const playersData = teamMembersData?.map((tm: { player: { id: string; first_name: string | null; last_name: string | null; avatar_url: string | null } | null }) => tm.player).filter((p): p is NonNullable<typeof p> => p !== null) || [];
@@ -176,6 +185,7 @@ export default async function GolfCalendarPage() {
               initialEvents={events}
               teamMembers={teamMembers}
               isCoach={isCoach}
+              teamTimezone={teamTimezone}
             />
           </div>
         </div>

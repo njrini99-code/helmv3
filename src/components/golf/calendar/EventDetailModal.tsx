@@ -11,6 +11,8 @@ import { PlayerRSVPCard } from './PlayerRSVPCard';
 import { ConflictWarning } from './ConflictWarning';
 import { checkScheduleConflicts } from '@/app/golf/actions/golf';
 import { useRSVP, usePlayerEventRSVP } from '@/hooks/useRSVP';
+import { m, useReducedMotion } from 'framer-motion';
+import { calendarSpring } from '@/lib/motion';
 
 type GolfEventType = 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other';
 
@@ -206,6 +208,7 @@ export function EventDetailModal({
   currentUserId,
   timezone,
 }: EventDetailModalProps) {
+  const prefersReducedMotion = useReducedMotion();
   // Filter out current user from attendee list - you shouldn't be able to add yourself
   const availablePlayers = teamPlayers.filter(p => p.id !== currentUserId);
   const tzAbbrev = useMemo(() => {
@@ -452,15 +455,21 @@ export function EventDetailModal({
       aria-modal="true"
       aria-labelledby="event-modal-title"
     >
-      {/* Backdrop */}
-      <div
+      {/* Backdrop with fade */}
+      <m.div
+        initial={prefersReducedMotion ? false : { opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.15 }}
         className="absolute inset-0 bg-warm-900/50 backdrop-blur-sm"
         onClick={onClose}
         aria-hidden="true"
       />
 
-      {/* Modal - focus trap ref is on the outer dialog container */}
-      <div
+      {/* Modal panel with spring entry */}
+      <m.div
+        initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.95, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={prefersReducedMotion ? { duration: 0 } : calendarSpring.modalEntry}
         className="relative bg-white rounded-[24px] border border-warm-200/60 shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden"
       >
         {/* Colored Header Band - tinted by event type */}
@@ -907,7 +916,7 @@ export function EventDetailModal({
             </div>
           </div>
         </form>
-      </div>
+      </m.div>
     </div>
   );
 }

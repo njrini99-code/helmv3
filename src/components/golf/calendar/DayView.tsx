@@ -13,6 +13,7 @@ export interface DayViewProps {
   events: CalendarEvent[];
   onEventClick?: (event: CalendarEvent) => void;
   isDraggable?: boolean;
+  secondaryTimezone?: string | null;
 }
 
 // Droppable time slot component for DayView with premium styling
@@ -50,6 +51,25 @@ function DroppableTimeSlot({ date, hour }: { date: Date; hour: number }) {
 }
 
 const HOURS = Array.from({ length: 17 }, (_, i) => i + 6);
+
+/** Format a local hour (0-23) in a target timezone */
+function formatHourInTz(localHour: number, targetTz: string, compact = false): string {
+  const now = new Date();
+  now.setHours(localHour, 0, 0, 0);
+  try {
+    const formatted = new Intl.DateTimeFormat('en-US', {
+      hour: 'numeric',
+      hour12: true,
+      timeZone: targetTz,
+    }).format(now);
+    if (compact) {
+      return formatted.replace(/\s?(AM|PM)/, (_, m) => m[0]!.toLowerCase());
+    }
+    return formatted;
+  } catch {
+    return '';
+  }
+}
 
 interface LayoutEvent {
   event: CalendarEvent;
@@ -137,7 +157,7 @@ function layoutOverlappingEvents(events: CalendarEvent[]): LayoutEvent[] {
   return result;
 }
 
-export function DayView({ date, events, onEventClick, isDraggable = false }: DayViewProps) {
+export function DayView({ date, events, onEventClick, isDraggable = false, secondaryTimezone }: DayViewProps) {
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -189,14 +209,20 @@ export function DayView({ date, events, onEventClick, isDraggable = false }: Day
   const isCurrentDay = isToday(date.toISOString());
 
   return (
-    <div ref={scrollRef} className="flex-1 overflow-auto overscroll-contain touch-pan-y [--day-gutter:48px] md:[--day-gutter:80px] [-webkit-overflow-scrolling:touch]" data-scroll-container>
+    <div ref={scrollRef} className={cn(
+      'flex-1 overflow-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]',
+      secondaryTimezone ? '[--day-gutter:48px] md:[--day-gutter:96px]' : '[--day-gutter:48px] md:[--day-gutter:80px]'
+    )} data-scroll-container>
       <div className="max-w-4xl mx-auto p-3 md:p-6">
         <div className="relative">
-          <div className="grid grid-cols-[48px_1fr] md:grid-cols-[80px_1fr]">
+          <div className={cn(
+            'grid',
+            secondaryTimezone ? 'grid-cols-[48px_1fr] md:grid-cols-[96px_1fr]' : 'grid-cols-[48px_1fr] md:grid-cols-[80px_1fr]'
+          )}>
             {HOURS.map((hour) => (
               <div key={hour} className="contents">
                 {/* Time label column - Compact on mobile */}
-                <div className="h-16 border-r border-warm-100/20 flex items-start justify-end pr-2 md:pr-4 pt-1 bg-gradient-to-r from-warm-50/40 to-transparent">
+                <div className="h-16 border-r border-warm-100/20 flex flex-col items-end justify-start pr-2 md:pr-4 pt-1 bg-gradient-to-r from-warm-50/40 to-transparent">
                   <span className="text-xs md:text-xs font-medium text-warm-400">
                     {/* Mobile: compact format (6a), Desktop: full format (6 AM) */}
                     <span className="md:hidden">
@@ -218,6 +244,12 @@ export function DayView({ date, events, onEventClick, isDraggable = false }: Day
                         : `${hour - 12} PM`}
                     </span>
                   </span>
+                  {secondaryTimezone && (
+                    <span className="text-[10px] font-medium tabular-nums text-warm-400/50 mt-0.5">
+                      <span className="md:hidden">{formatHourInTz(hour, secondaryTimezone, true)}</span>
+                      <span className="hidden md:inline">{formatHourInTz(hour, secondaryTimezone)}</span>
+                    </span>
+                  )}
                 </div>
 
                 {isDraggable ? (
@@ -235,7 +267,7 @@ export function DayView({ date, events, onEventClick, isDraggable = false }: Day
           </div>
 
           {/* Events overlay */}
-          <div className="absolute inset-0 pointer-events-none grid grid-cols-[48px_1fr] md:grid-cols-[80px_1fr]">
+          <div className={cn('absolute inset-0 pointer-events-none grid', secondaryTimezone ? 'grid-cols-[48px_1fr] md:grid-cols-[96px_1fr]' : 'grid-cols-[48px_1fr] md:grid-cols-[80px_1fr]')}>
             <div />
             <div className="relative pointer-events-none">
               {layoutItems.map((item) => {

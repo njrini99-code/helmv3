@@ -46,3 +46,11 @@ export const scaleIn = {
     transition: { duration: 0.2, ease: motion.ease.out }
   },
 };
+
+// Calendar spring configs for framer-motion
+export const calendarSpring = {
+  dragLift: { type: 'spring' as const, stiffness: 300, damping: 25, mass: 0.8 },
+  snapToGrid: { type: 'spring' as const, stiffness: 400, damping: 30, mass: 0.5 },
+  modalEntry: { type: 'spring' as const, stiffness: 260, damping: 20, mass: 0.8 },
+  viewTransition: { type: 'spring' as const, stiffness: 200, damping: 26, mass: 1.0 },
+} as const;

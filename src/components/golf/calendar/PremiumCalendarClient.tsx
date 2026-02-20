@@ -30,6 +30,9 @@ import type { RSVPResponse } from '@/components/golf/calendar/MobileRSVPButtons'
 import { createGolfEvent, updateGolfEvent, deleteGolfEvent, respondToEvent } from '@/app/golf/actions/golf';
 import '@/styles/calendar-tokens.css';
 import { usePlayerEventRSVP, useEventRSVP } from '@/hooks/useRSVP';
+import { useCalendarKeyboard } from '@/hooks/golf/use-calendar-keyboard';
+import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
+import { calendarSpring } from '@/lib/motion';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 
 export interface TeamMember {
@@ -63,6 +66,7 @@ export interface PremiumCalendarClientProps {
   onSyncSettings?: () => void;
   // Optional custom action handlers (defaults to golf actions)
   actionHandlers?: CalendarActionHandlers;
+  teamTimezone?: string | null;
 }
 
 export function PremiumCalendarClient({
@@ -72,6 +76,7 @@ export function PremiumCalendarClient({
   currentUserId,
   onSyncSettings,
   actionHandlers = defaultActionHandlers,
+  teamTimezone,
 }: PremiumCalendarClientProps) {
   const router = useRouter();
   const isMobileQuery = useMediaQuery('(max-width: 768px)');
@@ -80,11 +85,13 @@ export function PremiumCalendarClient({
   // Use either media query or device detection for mobile UI
   const isMobile = isMobileQuery || (isMobileDevice && preferMobileUI);
   const showMobileUI = isMobile || (isTablet && preferMobileUI);
+  const prefersReducedMotion = useReducedMotion();
 
   const [view, setView] = useState<CalendarView>('week');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const [showPlayerFilter, setShowPlayerFilter] = useState(false);
+  const [secondaryTimezone, setSecondaryTimezone] = useState<string | null>(null);
 
   // CRUD Modal State
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
@@ -355,6 +362,19 @@ export function PremiumCalendarClient({
     setCurrentDate(date);
     setView('day');
   };
+
+  // Desktop keyboard shortcuts (J/K/T/N/1/2/3)
+  useCalendarKeyboard({
+    enabled: !showMobileUI,
+    isModalOpen: isEventModalOpen || isMobileSheetOpen,
+    onNavigatePrev: () => handleNavigate('prev'),
+    onNavigateNext: () => handleNavigate('next'),
+    onToday: () => handleNavigate('today'),
+    onNewEvent: isCoach ? handleAddEvent : undefined,
+    onViewDay: () => setView('day'),
+    onViewWeek: () => setView('week'),
+    onViewMonth: () => setView('month'),
+  });
 
   // Handle quick event creation from availability view
   const handleTimeSlotClick = (date: Date, _hour: number) => {
@@ -644,15 +664,22 @@ export function PremiumCalendarClient({
                 currentDate={currentDate}
                 onNavigate={handleNavigate}
                 onAddEvent={handleAddEvent}
+                teamTimezone={teamTimezone ?? undefined}
+                secondaryTimezone={secondaryTimezone}
+                onSecondaryTimezoneChange={setSecondaryTimezone}
               />
               {!isMobile && <NotificationCenter />}
             </div>
 
-            {/* Calendar view content with fade transition */}
-            <div
+            {/* Calendar view content with spring transition */}
+            <AnimatePresence mode="wait" initial={false}>
+            <m.div
               key={`${view}-${selectedPlayer?.id ?? 'none'}`}
+              initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={prefersReducedMotion ? undefined : { opacity: 0, y: -4 }}
+              transition={prefersReducedMotion ? { duration: 0 } : calendarSpring.viewTransition}
               className="flex-1 flex flex-col min-h-0"
-              style={{ animation: 'calendarFadeIn 200ms ease-out' }}
             >
               {/* Availability Day View (when player selected) */}
               {selectedPlayer && view === 'day' ? (
@@ -675,6 +702,7 @@ export function PremiumCalendarClient({
                       isDraggable={true}
                       playerBusyPeriods={selectedPlayer ? (playerBusyPeriods as unknown as import('./WeekView').BusyPeriod[]) : []}
                       selectedPlayerName={selectedPlayer ? `${selectedPlayer.first_name} ${selectedPlayer.last_name}` : undefined}
+                      secondaryTimezone={secondaryTimezone}
                     />
                   )}
 
@@ -711,19 +739,33 @@ export function PremiumCalendarClient({
                         events={filteredEvents}
                         onEventClick={handleEventClick}
                         isDraggable={true}
+                        secondaryTimezone={secondaryTimezone}
                       />
                     )
                   )}
                 </>
               )}
-            </div>
+            </m.div>
+            </AnimatePresence>
           </div>
         </div>
 
-        {/* Drag overlay - shows event being dragged */}
-        <DragOverlay>
+        {/* Drag overlay - shows event being dragged with spring lift */}
+        <DragOverlay dropAnimation={{
+          duration: 200,
+          easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+        }}>
           {draggedEvent && (
-            <div className="w-48 opacity-90">
+            <m.div
+              initial={prefersReducedMotion ? false : { scale: 1, boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}
+              animate={{
+                scale: prefersReducedMotion ? 1 : 1.05,
+                boxShadow: '0 12px 32px rgba(0,0,0,0.15)',
+                rotate: prefersReducedMotion ? 0 : 1.5,
+              }}
+              transition={prefersReducedMotion ? { duration: 0 } : calendarSpring.dragLift}
+              className="w-48"
+            >
               <EventCard
                 id={draggedEvent.id}
                 title={draggedEvent.title}
@@ -733,7 +775,7 @@ export function PremiumCalendarClient({
                 location={draggedEvent.location || undefined}
                 isOverlay
               />
-            </div>
+            </m.div>
           )}
         </DragOverlay>
       </DndContext>

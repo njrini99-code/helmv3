@@ -23,6 +23,7 @@ interface GolfCalendarWrapperProps {
   initialEvents: CalendarEvent[];
   teamMembers: TeamMember[];
   isCoach?: boolean;
+  teamTimezone?: string | null;
 }
 
 /**
@@ -34,6 +35,7 @@ export function GolfCalendarWrapper({
   initialEvents,
   teamMembers,
   isCoach = true,
+  teamTimezone,
 }: GolfCalendarWrapperProps) {
   const [showFeedManager, setShowFeedManager] = useState(false);
   const [feeds, setFeeds] = useState<CalendarFeed[]>([]);
@@ -130,6 +132,7 @@ export function GolfCalendarWrapper({
         isCoach={isCoach}
         currentUserId={currentUserId}
         onSyncSettings={() => setShowFeedManager(true)}
+        teamTimezone={teamTimezone}
       />
 
       <Dialog open={showFeedManager} onOpenChange={setShowFeedManager}>

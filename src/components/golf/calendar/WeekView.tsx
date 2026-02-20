@@ -30,6 +30,7 @@ export interface WeekViewProps {
   isDraggable?: boolean;
   playerBusyPeriods?: BusyPeriod[];
   selectedPlayerName?: string;
+  secondaryTimezone?: string | null;
 }
 
 // Droppable time slot component with premium styling
@@ -162,15 +163,36 @@ function layoutOverlappingEvents(events: CalendarEvent[]): LayoutEvent[] {
 }
 
 const HOURS = Array.from({ length: 17 }, (_, i) => i + 6);
+
+/** Format a local hour (0-23) in a target timezone. Returns e.g. "3 PM" or "3p" */
+function formatHourInTz(localHour: number, targetTz: string, compact = false): string {
+  const now = new Date();
+  now.setHours(localHour, 0, 0, 0);
+  try {
+    const formatted = new Intl.DateTimeFormat('en-US', {
+      hour: 'numeric',
+      hour12: true,
+      timeZone: targetTz,
+    }).format(now);
+    if (compact) {
+      // "3 AM" -> "3a", "12 PM" -> "12p"
+      return formatted.replace(/\s?(AM|PM)/, (_, m) => m[0]!.toLowerCase());
+    }
+    return formatted;
+  } catch {
+    return '';
+  }
+}
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-export function WeekView({ 
-  weekStart, 
-  events, 
-  onEventClick, 
+export function WeekView({
+  weekStart,
+  events,
+  onEventClick,
   isDraggable = false,
   playerBusyPeriods = [],
   selectedPlayerName,
+  secondaryTimezone,
 }: WeekViewProps) {
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -269,7 +291,10 @@ export function WeekView({
       <div className="min-w-[800px] px-3 md:px-5 pt-2">
         {/* Header row - Day names and dates */}
         <div
-          className="grid grid-cols-[56px_repeat(7,1fr)] sticky top-0 z-20 bg-cream/85 backdrop-blur-xl border-b border-warm-200/[0.15] gap-0.5"
+          className={cn(
+            'grid sticky top-0 z-20 bg-cream/85 backdrop-blur-xl border-b border-warm-200/[0.15] gap-0.5',
+            secondaryTimezone ? 'grid-cols-[72px_repeat(7,1fr)]' : 'grid-cols-[56px_repeat(7,1fr)]'
+          )}
         >
           <div className="h-16" />
           {weekDates.map((date, index) => {
@@ -309,7 +334,10 @@ export function WeekView({
         {/* Time grid — container-based with subtle gaps */}
         <div className="relative">
           <div
-            className="grid grid-cols-[56px_repeat(7,1fr)] gap-x-0.5"
+            className={cn(
+              'grid gap-x-0.5',
+              secondaryTimezone ? 'grid-cols-[72px_repeat(7,1fr)]' : 'grid-cols-[56px_repeat(7,1fr)]'
+            )}
           >
             {HOURS.map((hour) => {
               const isEvenHour = hour % 2 === 0;
@@ -317,7 +345,7 @@ export function WeekView({
                 <div key={hour} className="contents">
                   {/* Time label column — clean typography */}
                   <div
-                    className="h-16 flex items-start justify-end pr-3 pt-1 select-none border-b border-warm-200/[0.08]"
+                    className="h-16 flex flex-col items-end justify-start pr-3 pt-1 select-none border-b border-warm-200/[0.08]"
                   >
                     <span className="text-xs font-medium tabular-nums text-warm-500/70">
                       {hour === 0
@@ -328,6 +356,11 @@ export function WeekView({
                         ? '12 PM'
                         : `${hour - 12} PM`}
                     </span>
+                    {secondaryTimezone && (
+                      <span className="text-[10px] font-medium tabular-nums text-warm-400/50 mt-0.5">
+                        {formatHourInTz(hour, secondaryTimezone)}
+                      </span>
+                    )}
                   </div>
 
                   {/* Day columns — soft container cells */}
@@ -363,7 +396,7 @@ export function WeekView({
 
           {/* Player Busy Periods overlay (classes, blocked time) - supports multi-player colors */}
           {playerBusyPeriods.length > 0 && (
-            <div className="absolute inset-0 pointer-events-none grid grid-cols-[56px_repeat(7,1fr)] gap-x-0.5">
+            <div className={cn('absolute inset-0 pointer-events-none grid gap-x-0.5', secondaryTimezone ? 'grid-cols-[72px_repeat(7,1fr)]' : 'grid-cols-[56px_repeat(7,1fr)]')}>
               <div />
               {busyPeriodsByDay.map((dayPeriods, dayIndex) => (
                 <div key={dayIndex} className="relative pointer-events-none">
@@ -414,7 +447,7 @@ export function WeekView({
           )}
 
           {/* Events overlay */}
-          <div className="absolute inset-0 pointer-events-none grid grid-cols-[56px_repeat(7,1fr)] gap-x-0.5">
+          <div className={cn('absolute inset-0 pointer-events-none grid gap-x-0.5', secondaryTimezone ? 'grid-cols-[72px_repeat(7,1fr)]' : 'grid-cols-[56px_repeat(7,1fr)]')}>
             <div />
             {layoutByDay.map((dayLayout, dayIndex) => (
               <div key={dayIndex} className="relative pointer-events-none">
@@ -474,9 +507,9 @@ export function WeekView({
               className="absolute pointer-events-none z-10"
               style={{
                 top: `${currentTimeTop}px`,
-                // Adjust for new 56px gutter + 2px gaps
-                left: `calc(56px + ${todayIndex} * ((100% - 56px - 12px) / 7) + ${todayIndex} * 2px)`,
-                width: `calc((100% - 56px - 12px) / 7)`,
+                // Adjust for gutter + 2px gaps (gutter widens when secondary TZ is shown)
+                left: `calc(${secondaryTimezone ? '72px' : '56px'} + ${todayIndex} * ((100% - ${secondaryTimezone ? '72px' : '56px'} - 12px) / 7) + ${todayIndex} * 2px)`,
+                width: `calc((100% - ${secondaryTimezone ? '72px' : '56px'} - 12px) / 7)`,
               }}
             >
               <div className="flex items-center -ml-1.5">

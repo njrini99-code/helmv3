@@ -1,6 +1,7 @@
 'use client';
 
-import { ChevronLeft, ChevronRight, Plus, Menu } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { ChevronLeft, ChevronRight, Plus, Menu, Globe } from 'lucide-react';
 import { startOfWeek, endOfWeek, format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useMediaQuery } from '@/hooks/use-media-query';
@@ -14,7 +15,19 @@ export interface CalendarHeaderProps {
   currentDate: Date;
   onNavigate: (direction: 'prev' | 'next' | 'today') => void;
   onAddEvent?: () => void;
+  teamTimezone?: string;
+  secondaryTimezone?: string | null;
+  onSecondaryTimezoneChange?: (tz: string | null) => void;
 }
+
+const TZ_OPTIONS = [
+  { value: 'America/New_York', label: 'ET' },
+  { value: 'America/Chicago', label: 'CT' },
+  { value: 'America/Denver', label: 'MT' },
+  { value: 'America/Los_Angeles', label: 'PT' },
+  { value: 'America/Phoenix', label: 'AZ' },
+  { value: 'Pacific/Honolulu', label: 'HI' },
+] as const;
 
 export function CalendarHeader({
   view,
@@ -22,9 +35,26 @@ export function CalendarHeader({
   currentDate,
   onNavigate,
   onAddEvent,
+  teamTimezone,
+  secondaryTimezone,
+  onSecondaryTimezoneChange,
 }: CalendarHeaderProps) {
   const isMobile = useMediaQuery('(max-width: 768px)');
   const { toggleMobile } = useSidebar();
+  const [tzDropdownOpen, setTzDropdownOpen] = useState(false);
+  const tzDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    if (!tzDropdownOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (tzDropdownRef.current && !tzDropdownRef.current.contains(e.target as Node)) {
+        setTzDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [tzDropdownOpen]);
 
   const getTitle = () => {
     if (view === 'day') {
@@ -157,6 +187,60 @@ export function CalendarHeader({
                 {v.charAt(0).toUpperCase() + v.slice(1)}
               </button>
             ))}
+          </div>
+        )}
+
+        {/* Timezone Toggle — desktop only */}
+        {!isMobile && onSecondaryTimezoneChange && (
+          <div ref={tzDropdownRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setTzDropdownOpen(!tzDropdownOpen)}
+              aria-label={secondaryTimezone ? `Secondary timezone: ${secondaryTimezone}` : 'Add secondary timezone'}
+              className={cn(
+                'flex items-center gap-1.5 rounded-lg text-[13px] font-medium transition-all duration-150 active:scale-95',
+                secondaryTimezone
+                  ? 'px-2.5 py-1.5 bg-primary-50 text-primary-700 border border-primary-200/60'
+                  : 'px-2 py-1.5 text-warm-400 hover:text-warm-600 hover:bg-warm-100/60'
+              )}
+            >
+              <Globe className="w-3.5 h-3.5" />
+              {secondaryTimezone && (
+                <span className="text-xs">
+                  {TZ_OPTIONS.find(t => t.value === secondaryTimezone)?.label ?? secondaryTimezone.split('/').pop()}
+                </span>
+              )}
+            </button>
+            {tzDropdownOpen && (
+              <div className="absolute right-0 top-full mt-1 z-50 w-44 rounded-xl bg-white/95 backdrop-blur-xl border border-warm-200/60 shadow-lg py-1">
+                {secondaryTimezone && (
+                  <button
+                    type="button"
+                    onClick={() => { onSecondaryTimezoneChange(null); setTzDropdownOpen(false); }}
+                    className="w-full text-left px-3 py-2 text-sm text-warm-500 hover:bg-warm-50 transition-colors"
+                  >
+                    Remove overlay
+                  </button>
+                )}
+                {TZ_OPTIONS
+                  .filter(tz => tz.value !== teamTimezone)
+                  .map(tz => (
+                  <button
+                    key={tz.value}
+                    type="button"
+                    onClick={() => { onSecondaryTimezoneChange(tz.value); setTzDropdownOpen(false); }}
+                    className={cn(
+                      'w-full text-left px-3 py-2 text-sm transition-colors',
+                      secondaryTimezone === tz.value
+                        ? 'bg-primary-50 text-primary-700 font-medium'
+                        : 'text-warm-700 hover:bg-warm-50'
+                    )}
+                  >
+                    {tz.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

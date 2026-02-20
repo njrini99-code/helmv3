@@ -141,7 +141,7 @@ export function CalendarAvatarSidebar({
         <button
           onClick={handleAllClick}
           className={cn(
-            'w-12 h-12 rounded-[14px] flex items-center justify-center font-bold text-[11px] tracking-wide cursor-pointer transition-all duration-200 border-none flex-shrink-0',
+            'relative z-10 w-12 h-12 rounded-[14px] flex items-center justify-center font-bold text-[11px] tracking-wide cursor-pointer transition-all duration-200 border-none flex-shrink-0',
             isAllSelected
               ? 'bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-[0_4px_14px_rgba(22,163,74,0.4)]'
               : 'bg-warm-100/90 text-warm-500'
@@ -152,10 +152,10 @@ export function CalendarAvatarSidebar({
       </Tooltip>
 
       {/* Divider */}
-      <div className="w-8 h-px bg-gradient-to-r from-transparent via-warm-300 to-transparent flex-shrink-0" aria-hidden="true" />
+      <div className="relative z-10 w-8 h-px bg-gradient-to-r from-transparent via-warm-300 to-transparent flex-shrink-0" aria-hidden="true" />
 
       {/* Scrollable Avatar List with Gradient Masks */}
-      <div className="flex-1 min-h-0 w-full relative">
+      <div className="flex-1 min-h-0 w-full relative overflow-hidden">
         {/* Top scroll fade indicator */}
         {canScrollUp && (
           <div aria-hidden="true" className="absolute top-0 left-0 right-0 h-7 bg-gradient-to-b from-white/95 to-transparent z-[2] pointer-events-none flex items-start justify-center pt-0.5 rounded-t-lg">
