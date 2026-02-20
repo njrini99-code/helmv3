@@ -204,9 +204,14 @@ export async function sendEventInvitations(
     }));
 
   if (notifications.length > 0) {
-    await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: notifError } = await (supabase as any)
       .from('golf_calendar_notifications')
       .upsert(notifications, { onConflict: 'event_id,user_id,notification_type' });
+
+    if (notifError) {
+      console.error('[sendEventInvitations] Failed to insert notifications:', notifError.message);
+    }
   }
 }
 
@@ -253,9 +258,14 @@ export async function notifyEventUpdate(
     action_url: `/golf/dashboard/calendar?event=${eventId}`,
   }));
 
-  await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error: notifError } = await (supabase as any)
     .from('golf_calendar_notifications')
     .upsert(notifications, { onConflict: 'event_id,user_id,notification_type' });
+
+  if (notifError) {
+    console.error('[notifyEventUpdate] Failed to upsert notifications:', notifError.message);
+  }
 }
 
 /**
@@ -298,9 +308,14 @@ export async function cancelEventAndNotify(
         action_url: `/golf/dashboard/calendar`,
       }));
 
-      await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: notifError } = await (supabase as any)
         .from('golf_calendar_notifications')
         .upsert(notifications, { onConflict: 'event_id,user_id,notification_type' });
+
+      if (notifError) {
+        console.error('[cancelEventAndNotify] Failed to upsert notifications:', notifError.message);
+      }
     }
   }
 
@@ -361,7 +376,8 @@ export async function updateRSVP(
                       status === 'declined' ? 'declined' :
                       status === 'tentative' ? 'marked as tentative for' : 'updated';
 
-    await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: notifError } = await (supabase as any)
       .from('golf_calendar_notifications')
       .upsert({
         user_id: event.creator.user_id,
@@ -371,6 +387,10 @@ export async function updateRSVP(
         message: `${player?.first_name} ${player?.last_name} has ${statusText} "${event.title}"`,
         action_url: `/golf/dashboard/calendar?event=${eventId}`,
       }, { onConflict: 'event_id,user_id,notification_type' });
+
+    if (notifError) {
+      console.error('[notifyRSVPResponse] Failed to upsert notification:', notifError.message);
+    }
   }
 }
 
@@ -530,9 +550,14 @@ export async function sendRSVPReminders(
   });
 
   if (notifications.length > 0) {
-    await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: notifError } = await (supabase as any)
       .from('golf_calendar_notifications')
       .upsert(notifications, { onConflict: 'event_id,user_id,notification_type' });
+
+    if (notifError) {
+      console.error('[sendRSVPReminders] Failed to upsert notifications:', notifError.message);
+    }
   }
 
   return notifications.length;

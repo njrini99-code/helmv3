@@ -1354,13 +1354,17 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
           }));
 
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await (supabase as any)
+          const { error: notifError } = await (supabase as any)
             .from('golf_calendar_notifications')
             .insert(notifications);
+
+          if (notifError) {
+            console.error('[createGolfEvent] Failed to insert notifications:', notifError.message);
+          }
         }
       }
-    } catch {
-      // Don't fail event creation if notifications fail
+    } catch (notifErr) {
+      console.error('[createGolfEvent] Notification creation failed:', notifErr);
     }
 
     revalidatePath('/golf/dashboard');
