@@ -100,47 +100,80 @@ export function GolfNewMessageModal({
 
         setResults(playerResults);
       } else {
-        // Player searching for coaches on THEIR team only
-        // First get the team's organization_id
+        // Player searching for coaches AND teammates on THEIR team
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+
+        // First get the team's organization_id for coach lookup
         const { data: team } = await supabase
           .from('golf_teams')
           .select('organization_id')
           .eq('id', teamId)
           .single();
 
-        if (!team?.organization_id) {
-          setResults([]);
-          return;
+        let coachResults: SearchResult[] = [];
+
+        if (team?.organization_id) {
+          let coachQuery = supabase
+            .from('golf_coaches')
+            .select('id, user_id, full_name, title, avatar_url')
+            .eq('organization_id', team.organization_id);
+
+          if (query.trim()) {
+            coachQuery = coachQuery.ilike('full_name', `%${query}%`);
+          }
+
+          const { data: coaches } = await coachQuery.limit(10);
+
+          coachResults = (coaches || [])
+            .filter(c => c.user_id)
+            .map(c => ({
+              id: c.id,
+              userId: c.user_id,
+              name: c.full_name || 'Coach',
+              subtitle: c.title || 'Golf Coach',
+              avatar: c.avatar_url,
+              type: 'coach' as const,
+            }));
         }
 
-        let coachQuery = supabase
-          .from('golf_coaches')
-          .select('id, user_id, full_name, title, avatar_url')
-          .eq('organization_id', team.organization_id);  // ENFORCED team filter via organization
+        // Also search teammates (players on same team, excluding self)
+        const { data: teamMembers } = await supabase
+          .from('golf_team_members')
+          .select('player_id')
+          .eq('team_id', teamId);
 
-        if (query.trim()) {
-          coachQuery = coachQuery.ilike('full_name', `%${query}%`);
+        const playerIds = (teamMembers ?? []).map(m => m.player_id);
+        let teammateResults: SearchResult[] = [];
+
+        if (playerIds.length > 0) {
+          let playerQuery = supabase
+            .from('golf_players')
+            .select('id, user_id, first_name, last_name, graduation_year, avatar_url')
+            .in('id', playerIds);
+
+          if (currentUser) {
+            playerQuery = playerQuery.neq('user_id', currentUser.id);
+          }
+
+          if (query.trim()) {
+            playerQuery = playerQuery.or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%`);
+          }
+
+          const { data: teammates } = await playerQuery.limit(20);
+
+          teammateResults = (teammates || [])
+            .filter(p => p.user_id)
+            .map(p => ({
+              id: p.id,
+              userId: p.user_id!,
+              name: [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Teammate',
+              subtitle: p.graduation_year ? `Class of ${p.graduation_year}` : 'Teammate',
+              avatar: p.avatar_url,
+              type: 'player' as const,
+            }));
         }
 
-        const { data: coaches, error } = await coachQuery.limit(20);
-
-        if (error) {
-          setResults([]);
-          return;
-        }
-
-        const coachResults: SearchResult[] = (coaches || [])
-          .filter(c => c.user_id)
-          .map(c => ({
-            id: c.id,
-            userId: c.user_id,
-            name: c.full_name || 'Coach',
-            subtitle: c.title || 'Golf Coach',
-            avatar: c.avatar_url,
-            type: 'coach' as const,
-          }));
-
-        setResults(coachResults);
+        setResults([...coachResults, ...teammateResults]);
       }
     } catch {
       setResults([]);
@@ -182,7 +215,7 @@ export function GolfNewMessageModal({
       isOpen={isOpen}
       onClose={onClose}
       title="New Message"
-      description={`Select a ${currentUserRole === 'coach' ? 'player' : 'coach'} to start a conversation`}
+      description={currentUserRole === 'coach' ? 'Select a player to start a conversation' : 'Select a team member to start a conversation'}
       size="md"
      
     >
@@ -206,7 +239,7 @@ export function GolfNewMessageModal({
           <SearchBar
             value={searchQuery}
             onChange={setSearchQuery}
-            placeholder={`Search ${currentUserRole === 'coach' ? 'players' : 'coaches'}...`}
+            placeholder={currentUserRole === 'coach' ? 'Search players...' : 'Search team members...'}
             className="w-full"
             autoFocus
           />
@@ -255,9 +288,9 @@ export function GolfNewMessageModal({
                 <IconUsers size={20} className="text-warm-400" />
               </div>
               <p className="text-sm text-warm-500">
-                {searchQuery.trim() 
-                  ? `No ${currentUserRole === 'coach' ? 'players' : 'coaches'} found`
-                  : `No ${currentUserRole === 'coach' ? 'players' : 'coaches'} on your team yet`
+                {searchQuery.trim()
+                  ? `No ${currentUserRole === 'coach' ? 'players' : 'team members'} found`
+                  : `No ${currentUserRole === 'coach' ? 'players' : 'team members'} on your team yet`
                 }
               </p>
             </div>

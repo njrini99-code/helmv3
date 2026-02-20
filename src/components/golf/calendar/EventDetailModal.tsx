@@ -249,7 +249,7 @@ export function EventDetailModal({
     rsvpSummary,
     isLoading: rsvpSummaryLoading,
     error: rsvpSummaryError,
-  } = useRSVP({ eventId: event?.id, enabled: rsvpEnabled && isCoach });
+  } = useRSVP({ eventId: event?.id, enabled: rsvpEnabled });
   const rsvpParticipants = useMemo(() => (
     rsvpSummary?.attendees.map(attendee => ({
       id: attendee.playerId,
@@ -832,8 +832,8 @@ export function EventDetailModal({
             </div>
           )}
 
-          {/* RSVP Status Section (for coaches) */}
-          {!isCreating && event?.id && formData.requiresRsvp && isCoach && (
+          {/* RSVP Status Section */}
+          {!isCreating && event?.id && formData.requiresRsvp && (
             <div className="border-t border-warm-200 -mx-6 px-6 pt-4">
               <h4 className="text-sm font-semibold text-warm-900 mb-3">RSVP Status</h4>
               {rsvpSummaryError && (

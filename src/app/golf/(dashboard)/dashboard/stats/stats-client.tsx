@@ -460,16 +460,17 @@ export default function StatsClient({
     if (golfUser.role === 'player' && golfUser.playerId) {
       setUserRole('player');
       setPlayerName(golfUser.name);
-      await loadPlayerSummary(golfUser.playerId);
 
-      // Eagerly load detailed stats so the stats display renders immediately
-      try {
-        const stats = await getDetailedStats(golfUser.playerId, 'overall');
+      // Load summary and detailed stats in parallel for faster initial render
+      const [, detailedResult] = await Promise.allSettled([
+        loadPlayerSummary(golfUser.playerId),
+        getDetailedStats(golfUser.playerId, 'overall'),
+      ]);
+
+      if (detailedResult.status === 'fulfilled') {
         const cacheKey = `${golfUser.playerId}-overall-none`;
-        detailedStatsCache.current.set(cacheKey, stats);
-        setDetailedStats(stats);
-      } catch (err) {
-        console.error('Failed to load initial detailed stats:', err);
+        detailedStatsCache.current.set(cacheKey, detailedResult.value);
+        setDetailedStats(detailedResult.value);
       }
 
       setLoading(false);
@@ -491,22 +492,23 @@ export default function StatsClient({
 
     if (playerIds.length === 0) return [];
 
-    const { data: teamPlayers } = await supabase
-      .from('golf_players')
-      .select('id, first_name, last_name, avatar_url, graduation_year, handicap')
-      .in('id', playerIds)
-      .order('last_name');
+    // Fetch player details and recent rounds in parallel
+    const [{ data: teamPlayers }, { data: allRounds }] = await Promise.all([
+      supabase
+        .from('golf_players')
+        .select('id, first_name, last_name, avatar_url, graduation_year, handicap')
+        .in('id', playerIds)
+        .order('last_name'),
+      supabase
+        .from('golf_rounds')
+        .select('player_id, total_score, round_date')
+        .in('player_id', playerIds)
+        .eq('status', 'completed')
+        .not('total_score', 'is', null)
+        .order('round_date', { ascending: false }),
+    ]);
 
     if (!teamPlayers || teamPlayers.length === 0) return [];
-
-    // Fetch ALL rounds for ALL players
-    const { data: allRounds } = await supabase
-      .from('golf_rounds')
-      .select('player_id, total_score, round_date')
-      .in('player_id', playerIds)
-      .eq('status', 'completed')
-      .not('total_score', 'is', null)
-      .order('round_date', { ascending: false });
 
     // Group rounds by player
     const roundsByPlayer = (allRounds || []).reduce((acc, round) => {
@@ -692,10 +694,15 @@ export default function StatsClient({
     }
   }, [selectedRoundId, activeFilter, resolvedPlayerId, detailedStats, loadDetailedStats]);
 
+  // Defer analytics loading — only fetch after detailed stats are ready
+  // This prevents 4 heavy queries from firing on initial page load
+  const analyticsLoadedForRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!resolvedPlayerId) return;
+    if (!resolvedPlayerId || !detailedStats) return;
+    if (analyticsLoadedForRef.current === resolvedPlayerId) return;
+    analyticsLoadedForRef.current = resolvedPlayerId;
     loadPlayerAnalytics(resolvedPlayerId);
-  }, [resolvedPlayerId, loadPlayerAnalytics]);
+  }, [resolvedPlayerId, detailedStats, loadPlayerAnalytics]);
 
   // ============================================================================
   // EVENT HANDLERS
@@ -714,6 +721,7 @@ export default function StatsClient({
     setWorstHoleData(null);
     setFilterOptions(null);
     setTrendData(null);
+    analyticsLoadedForRef.current = null;
 
     await loadPlayerSummary(playerId);
   }
@@ -728,6 +736,7 @@ export default function StatsClient({
     setWorstHoleData(null);
     setFilterOptions(null);
     setTrendData(null);
+    analyticsLoadedForRef.current = null;
   }
 
   function handleRefresh() {
@@ -741,6 +750,7 @@ export default function StatsClient({
     }
 
     setDetailedStats(null);
+    analyticsLoadedForRef.current = null;
     loadPlayerSummary(playerId);
     loadDetailedStats(playerId, selectedRoundId, activeFilter);
     loadPlayerAnalytics(playerId);

@@ -1322,6 +1322,47 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
       }
     }
 
+    // Notify all team players about the new event
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: teamMembers } = await (supabase as any)
+        .from('golf_team_members')
+        .select('player_id')
+        .eq('team_id', teamId)
+        .eq('status', 'active');
+
+      if (teamMembers && teamMembers.length > 0) {
+        const playerIds = teamMembers.map((m: { player_id: string }) => m.player_id);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: players } = await (supabase as any)
+          .from('golf_players')
+          .select('user_id')
+          .in('id', playerIds);
+
+        const userIds = (players || [])
+          .map((p: { user_id: string | null }) => p.user_id)
+          .filter((uid: string | null): uid is string => Boolean(uid));
+
+        if (userIds.length > 0) {
+          const notifications = userIds.map((userId: string) => ({
+            user_id: userId,
+            event_id: event.id,
+            notification_type: 'event_invitation',
+            title: `New event: ${validatedData.title}`,
+            message: `${validatedData.startDate}${validatedData.location ? ` at ${validatedData.location}` : ''}`,
+            action_url: `/golf/dashboard/calendar`,
+          }));
+
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any)
+            .from('golf_calendar_notifications')
+            .insert(notifications);
+        }
+      }
+    } catch {
+      // Don't fail event creation if notifications fail
+    }
+
     revalidatePath('/golf/dashboard');
     revalidatePath('/golf/dashboard/calendar');
 
@@ -1482,6 +1523,16 @@ export async function updateGolfEvent(
           .delete()
           .eq('event_id', eventId)
           .in('player_id', toRemove);
+      }
+    }
+
+    // Notify team players about event update (only for meaningful changes, not drag-and-drop reschedules)
+    if (teamId && (validatedData.title || validatedData.location || validatedData.eventType)) {
+      try {
+        const { notifyEventUpdate } = await import('@/lib/calendar/rsvp');
+        await notifyEventUpdate(eventId, supabase);
+      } catch {
+        // Don't fail update if notifications fail
       }
     }
 

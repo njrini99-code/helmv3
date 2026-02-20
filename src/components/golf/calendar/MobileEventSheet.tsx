@@ -260,13 +260,13 @@ export function MobileEventSheet({
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop — no backdrop-blur to avoid Safari stacking context bugs with fixed children */}
       <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+        className="fixed inset-0 bg-black/50 z-50"
         onClick={handleClose}
       />
 
-      {/* Bottom Sheet */}
+      {/* Bottom Sheet — use 90vh (not dvh) for stable height on mobile Safari */}
       <div
         ref={sheetRef}
         role="dialog"
@@ -275,7 +275,7 @@ export function MobileEventSheet({
         className={cn(
           'fixed inset-x-0 bottom-0 z-50',
           'bg-white rounded-t-3xl shadow-2xl',
-          'max-h-[92vh] overflow-hidden',
+          'max-h-[90vh] overflow-hidden',
           'transform transition-transform duration-300 ease-out',
           isOpen ? 'translate-y-0' : 'translate-y-full'
         )}
@@ -302,7 +302,7 @@ export function MobileEventSheet({
         </div>
 
         {/* Scrollable Content */}
-        <div className="overflow-y-auto max-h-[calc(92vh-180px)] overscroll-contain">
+        <div className="overflow-y-auto max-h-[calc(90vh-180px)] overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
           {/* Error message */}
           {error && (
             <div role="alert" id="event-form-error" className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 mx-5 rounded-xl mb-3">

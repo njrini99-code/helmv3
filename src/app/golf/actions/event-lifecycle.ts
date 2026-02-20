@@ -174,23 +174,20 @@ export async function cancelEvent(
           .map(p => p.user_id)
           .filter((uid): uid is string => Boolean(uid));
 
-        // TODO: golf_calendar_notifications table does not exist yet.
-        // A migration is needed to create this table before notifications can be sent.
-        // When the table is created, uncomment the code below.
-        // if (userIds.length > 0) {
-        //   const notifications = userIds.map(userId => ({
-        //     user_id: userId,
-        //     event_id: eventId,
-        //     notification_type: 'event_cancelled',
-        //     title: `Event Cancelled: ${event.title}`,
-        //     message: reason || 'This event has been cancelled.',
-        //     action_url: `/golf/dashboard/calendar`,
-        //   }));
-        //   await supabase
-        //     .from('golf_calendar_notifications')
-        //     .upsert(notifications, { onConflict: 'event_id,user_id,notification_type' });
-        // }
-        void userIds; // Suppress unused variable warning until notifications table exists
+        if (userIds.length > 0) {
+          const notifications = userIds.map(userId => ({
+            user_id: userId,
+            event_id: eventId,
+            notification_type: 'event_cancelled',
+            title: `Event Cancelled: ${event.title}`,
+            message: reason || 'This event has been cancelled.',
+            action_url: `/golf/dashboard/calendar`,
+          }));
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any)
+            .from('golf_calendar_notifications')
+            .insert(notifications);
+        }
       }
     }
 

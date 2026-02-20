@@ -8,6 +8,7 @@ import { IconChevronDown, IconFile, IconCheck, IconDownload, IconClipboardList }
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/toast';
 import { AnnouncementTaskItem } from './AnnouncementTaskItem';
+import { AcknowledgementTracker } from './AcknowledgementTracker';
 import { getAnnouncementDetail } from '@/app/golf/actions/announcements';
 import { acknowledgeAnnouncement } from '@/app/golf/actions/communication';
 import type { GolfAnnouncementMeta, GolfAnnouncementEnriched } from '@/lib/types/golf';
@@ -240,6 +241,18 @@ function PlayerAnnouncementCard({ announcement: ann, playerId }: { announcement:
                   <IconCheck size={11} />
                   Acknowledged
                 </span>
+              </>
+            )}
+
+            {/* Team acknowledgement progress */}
+            {ann.requires_acknowledgement && ann.total_recipients > 0 && (
+              <>
+                <span className="text-warm-300 text-xs">|</span>
+                <AcknowledgementTracker
+                  acknowledgedCount={ann.acknowledged_count}
+                  totalRecipients={ann.total_recipients}
+                  compact
+                />
               </>
             )}
           </div>

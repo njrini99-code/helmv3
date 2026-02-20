@@ -7,7 +7,9 @@ import {
   IconSparkles,
   IconRefresh,
   IconSettings,
+  IconMenu,
 } from '@/components/icons';
+import { useSidebar } from '@/contexts/sidebar-context';
 import type { PlayerCoachHelmDashboardData } from '@/app/golf/actions/insights';
 
 interface CoachHelmHeaderProps {
@@ -100,13 +102,26 @@ export function CoachHelmHeader({
 }: CoachHelmHeaderProps) {
   const alertConfig = getAlertLevelConfig(alertLevel);
   const stateLabel = getStateLabel(playerState);
+  const { toggleMobile } = useSidebar();
 
   return (
     <div className="relative border-b border-warm-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
-      <div className="max-w-7xl mx-auto px-6 py-5">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-5">
         <div className="flex items-center justify-between">
-          {/* Left side: Icon and title */}
-          <div className="flex items-center gap-4">
+          {/* Left side: hamburger, icon, and title */}
+          <div className="flex items-center gap-3 md:gap-4">
+            <button
+              onClick={toggleMobile}
+              className={cn(
+                'lg:hidden p-2.5 -ml-2 rounded-xl touch-manipulation',
+                'text-warm-500 hover:text-warm-700 hover:bg-warm-100/80',
+                'transition-colors duration-150 active:scale-95',
+                'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
+              )}
+              aria-label="Open navigation menu"
+            >
+              <IconMenu size={22} />
+            </button>
             <m.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}

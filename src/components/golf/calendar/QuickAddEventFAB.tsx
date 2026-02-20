@@ -158,10 +158,10 @@ export function QuickAddEventFAB({
 
   return (
     <>
-      {/* Backdrop when expanded */}
+      {/* Backdrop when expanded — no backdrop-blur to avoid Safari stacking bugs */}
       {isExpanded && (
         <div
-          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 animate-in fade-in duration-200"
+          className="fixed inset-0 bg-black/30 z-40 animate-in fade-in duration-200"
           onClick={handleBackdropClick}
         />
       )}

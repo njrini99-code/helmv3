@@ -135,8 +135,12 @@ export async function getPlayerNotificationCounts(
     }
 
     // Get unseen announcements (for login modal)
+    // Skip already-acknowledged announcements — they're clearly not "new" to the player
     const unseenAnnouncements: GolfAnnouncementMeta[] = [];
     for (const ann of visibleAnnouncements) {
+      const isAcked = playerAcks.has(ann.id);
+      if (isAcked) continue; // already acknowledged = not new
+
       const isUnseen = lastSeenAt
         ? ann.published_at && new Date(ann.published_at) > new Date(lastSeenAt)
         : true; // no state row yet = everything is unseen
@@ -151,7 +155,7 @@ export async function getPlayerNotificationCounts(
           task_count: 0,
           completed_task_count: 0,
           document_count: 0,
-          has_player_acknowledged: playerAcks.has(ann.id),
+          has_player_acknowledged: false,
         });
       }
     }

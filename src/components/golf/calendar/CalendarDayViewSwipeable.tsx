@@ -334,6 +334,7 @@ export function CalendarDayViewSwipeable({
         style={{
           transform: `translateX(${touchDelta}px)`,
           transition: isTransitioning ? 'transform 0.2s ease-out' : 'none',
+          WebkitOverflowScrolling: 'touch',
         }}
       >
         <div className="px-4 py-3">

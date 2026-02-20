@@ -9,6 +9,7 @@ import { YearBadge } from '@/components/golf/roster/YearBadge';
 import { PlayerActionsMenu } from '@/components/golf/roster/PlayerActionsMenu';
 import { PendingJoinRequests } from '@/components/golf/roster/PendingJoinRequests';
 import { RosterPageClient } from '@/components/golf/roster/RosterPageClient';
+import { PlayerRosterView } from '@/components/golf/roster/PlayerRosterView';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { IconUsers, IconChartBar, IconMessage, IconAlertCircle } from '@/components/icons';
@@ -82,22 +83,97 @@ export default async function GolfRosterPage() {
   }
 
   if (!coach) {
-    return (
-      <div className="min-h-full flex items-center justify-center">
-        <div className="text-center max-w-md">
-          <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
-            <IconAlertCircle size={32} className="text-amber-500" />
+    // Not a coach — check if user is a player on a team
+    const { data: player } = await supabase
+      .from('golf_players')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (!player) {
+      return (
+        <div className="min-h-full flex items-center justify-center">
+          <div className="text-center max-w-md">
+            <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
+              <IconAlertCircle size={32} className="text-amber-500" />
+            </div>
+            <h2 className="text-xl font-semibold text-warm-900 mb-2">Profile Not Found</h2>
+            <p className="text-warm-500 mb-6">
+              Unable to find your profile. Please complete onboarding or contact support.
+            </p>
+            <Link href="/golf/coach">
+              <Button>Complete Onboarding</Button>
+            </Link>
           </div>
-          <h2 className="text-xl font-semibold text-warm-900 mb-2">Coach Profile Not Found</h2>
-          <p className="text-warm-500 mb-6">
-            Unable to find your coach profile. Please complete onboarding or contact support.
-          </p>
-          <Link href="/golf/coach">
-            <Button>Complete Onboarding</Button>
-          </Link>
         </div>
-      </div>
-    );
+      );
+    }
+
+    const { data: teamMember } = await supabase
+      .from('golf_team_members')
+      .select('team_id')
+      .eq('player_id', player.id)
+      .maybeSingle();
+
+    if (!teamMember?.team_id) {
+      return (
+        <div className="min-h-full flex items-center justify-center">
+          <div className="text-center max-w-md">
+            <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
+              <IconUsers size={32} className="text-amber-500" />
+            </div>
+            <h2 className="text-xl font-semibold text-warm-900 mb-2">No Team Found</h2>
+            <p className="text-warm-500 mb-6">
+              You haven't joined a team yet. Ask your coach for a join code.
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    // Fetch team info and teammates for player view
+    const { data: playerTeam } = await supabase
+      .from('golf_teams')
+      .select('name')
+      .eq('id', teamMember.team_id)
+      .single();
+
+    const { data: tmData } = await supabase
+      .from('golf_team_members')
+      .select(`
+        player:golf_players!inner (
+          id, first_name, last_name, avatar_url, handicap, graduation_year,
+          user:users(last_seen)
+        )
+      `)
+      .eq('team_id', teamMember.team_id)
+      .neq('player_id', player.id);
+
+    const teammates = (tmData || [])
+      .filter(tm => tm.player && !('error' in tm.player))
+      .map(tm => {
+        const p = tm.player as {
+          id: string;
+          first_name: string | null;
+          last_name: string | null;
+          avatar_url: string | null;
+          handicap: number | null;
+          graduation_year: number | null;
+          user?: { last_seen: string | null } | null;
+        };
+        return {
+          id: p.id,
+          first_name: p.first_name,
+          last_name: p.last_name,
+          avatar_url: p.avatar_url,
+          handicap: p.handicap,
+          graduation_year: p.graduation_year,
+          last_seen: p.user?.last_seen || null,
+        };
+      })
+      .sort((a, b) => (a.last_name || '').localeCompare(b.last_name || ''));
+
+    return <PlayerRosterView players={teammates} teamName={playerTeam?.name || 'Team'} />;
   }
 
   // Get team_id from organization

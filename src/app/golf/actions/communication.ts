@@ -87,8 +87,9 @@ export async function acknowledgeAnnouncement(
       return { success: false, error: 'You are not authorized to acknowledge this announcement' };
     }
 
-    // Insert into golf_announcement_acknowledgements with upsert
-    // Use onConflict to handle duplicates gracefully (unique constraint on announcement_id, player_id)
+    // Insert into golf_announcement_acknowledgements
+    // Use upsert with ignoreDuplicates (ON CONFLICT DO NOTHING) so re-acknowledging
+    // is a no-op rather than an error. This avoids needing an UPDATE RLS policy.
     // Note: golf_announcement_acknowledgements may not be in generated types
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: insertError } = await (supabase as any)
@@ -101,7 +102,7 @@ export async function acknowledgeAnnouncement(
         },
         {
           onConflict: 'announcement_id,player_id',
-          ignoreDuplicates: false,
+          ignoreDuplicates: true,
         }
       );
 

@@ -120,7 +120,7 @@ export function MobileCalendarListView({
   }
 
   return (
-    <div className={cn('flex-1 overflow-y-auto overscroll-contain', className)}>
+    <div className={cn('flex-1 overflow-y-auto overscroll-contain', className)} style={{ WebkitOverflowScrolling: 'touch' }}>
       <div className="px-4 py-3">
         {eventGroups.map((group, groupIndex) => (
           <div
@@ -129,11 +129,11 @@ export function MobileCalendarListView({
               groupIndex > 0 && 'mt-8'
             )}
           >
-            {/* Premium sticky date header */}
+            {/* Premium sticky date header — solid bg to avoid Safari sticky+blur bugs */}
             <div
               className={cn(
                 'sticky top-0 z-10 -mx-4 px-4 py-2',
-                'bg-white/80 backdrop-blur-xl'
+                'bg-[#FFFEFA]'
               )}
             >
               <div className="flex items-center gap-2">

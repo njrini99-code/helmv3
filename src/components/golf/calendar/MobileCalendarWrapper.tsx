@@ -165,8 +165,8 @@ export function MobileCalendarWrapper({
 
   return (
     <div className={cn('flex flex-col h-full', className)}>
-      {/* Premium Header with Month/Year */}
-      <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-xl border-b border-warm-200/30">
+      {/* Premium Header with Month/Year — solid bg avoids Safari backdrop-blur stacking bugs */}
+      <div className="sticky top-0 z-20 bg-[#FFFEFA] border-b border-warm-200/30">
         {/* Top bar with title and controls */}
         <div className="flex items-center justify-between px-4 py-3">
           {/* Month/Year Title */}
@@ -240,7 +240,7 @@ export function MobileCalendarWrapper({
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden" style={{ WebkitOverflowScrolling: 'touch' }}>
         {currentView === 'day' && (
           <CalendarDayViewSwipeable
             events={events}

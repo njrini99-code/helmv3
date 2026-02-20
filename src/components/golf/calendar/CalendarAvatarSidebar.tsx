@@ -126,7 +126,7 @@ export function CalendarAvatarSidebar({
     .filter((m): m is TeamMember => m !== undefined);
 
   return (
-    <aside aria-label="Player filter" className="w-[80px] px-3 pt-4 pb-3 flex flex-col items-center gap-2.5 bg-glass backdrop-blur-xl border border-white/40 rounded-2xl shadow-glass flex-shrink-0 relative overflow-visible z-20 min-h-0">
+    <aside aria-label="Player filter" className="w-[80px] px-3 pt-4 pb-3 flex flex-col items-center gap-3 bg-glass backdrop-blur-xl border border-white/40 rounded-2xl shadow-glass flex-shrink-0 relative overflow-visible z-20 min-h-0">
       {/* Collapse Handle */}
       <button
         onClick={() => setIsCollapsed(true)}
@@ -155,7 +155,7 @@ export function CalendarAvatarSidebar({
       <div className="relative z-10 w-8 h-px bg-gradient-to-r from-transparent via-warm-300 to-transparent flex-shrink-0" aria-hidden="true" />
 
       {/* Scrollable Avatar List with Gradient Masks */}
-      <div className="flex-1 min-h-0 w-full relative overflow-hidden">
+      <div className="flex-1 min-h-0 w-full relative overflow-hidden isolate">
         {/* Top scroll fade indicator */}
         {canScrollUp && (
           <div aria-hidden="true" className="absolute top-0 left-0 right-0 h-7 bg-gradient-to-b from-white/95 to-transparent z-[2] pointer-events-none flex items-start justify-center pt-0.5 rounded-t-lg">
