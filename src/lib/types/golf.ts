@@ -183,7 +183,9 @@ export interface GolfAnnouncementEnriched extends GolfAnnouncement {
       player: { first_name: string | null; last_name: string | null } | null;
     }>;
   }>;
-  acknowledgements: GolfAnnouncementAcknowledgement[];
+  acknowledgements: Array<GolfAnnouncementAcknowledgement & {
+    player?: { first_name: string | null; last_name: string | null; avatar_url: string | null } | null;
+  }>;
   total_recipients: number;
   acknowledged_count: number;
   task_count: number;
@@ -199,6 +201,13 @@ export interface GolfAnnouncementMeta extends GolfAnnouncement {
   completed_task_count: number;
   document_count: number;
   has_player_acknowledged?: boolean; // for player view
+  /** First N players who acknowledged (for avatar stack in list view) */
+  acknowledged_players?: Array<{
+    player_id: string;
+    first_name: string | null;
+    last_name: string | null;
+    avatar_url: string | null;
+  }>;
 }
 
 // ============================================================================

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { IconChevronDown, IconFile, IconCheck, IconDownload } from '@/components/icons';
+import { IconChevronDown, IconFile, IconCheck, IconDownload, IconClipboardList } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/toast';
 import { AnnouncementTaskItem } from './AnnouncementTaskItem';
@@ -12,29 +12,44 @@ import { getAnnouncementDetail } from '@/app/golf/actions/announcements';
 import { acknowledgeAnnouncement } from '@/app/golf/actions/communication';
 import type { GolfAnnouncementMeta, GolfAnnouncementEnriched } from '@/lib/types/golf';
 
+// ─── Animation ────────────────────────────────────────────────────────────────
+
 const containerVariants = {
   hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.06, delayChildren: 0.1 } },
+  visible: { opacity: 1, transition: { staggerChildren: 0.05, delayChildren: 0.08 } },
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 16, filter: 'blur(4px)' },
-  visible: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { type: 'spring' as const, stiffness: 300, damping: 30 } },
+  hidden: { opacity: 0, y: 12 },
+  visible: { opacity: 1, y: 0, transition: { type: 'spring' as const, stiffness: 400, damping: 30 } },
 };
 
-const urgencyBorderColors: Record<string, string> = {
-  low: 'border-l-warm-300',
-  normal: 'border-l-blue-400',
-  high: 'border-l-amber-400',
-  urgent: 'border-l-red-400',
-};
+// ─── Urgency config ───────────────────────────────────────────────────────────
 
-const urgencyBadgeColors: Record<string, { bg: string; text: string }> = {
-  low: { bg: 'bg-warm-100', text: 'text-warm-600' },
-  normal: { bg: 'bg-blue-50', text: 'text-blue-600' },
-  high: { bg: 'bg-amber-50', text: 'text-amber-600' },
-  urgent: { bg: 'bg-red-50', text: 'text-red-600' },
+type UrgencyStyle = { dot: string; bg: string; text: string; border: string; label: string };
+const urgencyConfig: Record<string, UrgencyStyle> = {
+  low:    { dot: 'bg-warm-400',  bg: 'bg-warm-50',  text: 'text-warm-600',  border: 'border-warm-200', label: 'Low' },
+  normal: { dot: 'bg-blue-400',  bg: 'bg-blue-50',  text: 'text-blue-700',  border: 'border-blue-200', label: 'Normal' },
+  high:   { dot: 'bg-amber-400', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', label: 'High' },
+  urgent: { dot: 'bg-red-500',   bg: 'bg-red-50',   text: 'text-red-700',   border: 'border-red-200', label: 'Urgent' },
 };
+const defaultUrg: UrgencyStyle = urgencyConfig['normal']!;
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function relativeTime(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+// ─── Main Export ──────────────────────────────────────────────────────────────
 
 interface AnnouncementsPlayerViewProps {
   announcements: GolfAnnouncementMeta[];
@@ -42,6 +57,15 @@ interface AnnouncementsPlayerViewProps {
 }
 
 export function AnnouncementsPlayerView({ announcements, playerId }: AnnouncementsPlayerViewProps) {
+  // Sort: unread (unacknowledged or recent) first, then by date
+  const sorted = [...announcements].sort((a, b) => {
+    const aUnread = isUnread(a);
+    const bUnread = isUnread(b);
+    if (aUnread && !bUnread) return -1;
+    if (!aUnread && bUnread) return 1;
+    return 0; // preserve server order (already sorted by date)
+  });
+
   return (
     <motion.div
       variants={containerVariants}
@@ -49,7 +73,7 @@ export function AnnouncementsPlayerView({ announcements, playerId }: Announcemen
       animate="visible"
       className="space-y-3"
     >
-      {announcements.map((ann) => (
+      {sorted.map((ann) => (
         <motion.div key={ann.id} variants={itemVariants}>
           <PlayerAnnouncementCard announcement={ann} playerId={playerId} />
         </motion.div>
@@ -57,6 +81,18 @@ export function AnnouncementsPlayerView({ announcements, playerId }: Announcemen
     </motion.div>
   );
 }
+
+function isUnread(ann: GolfAnnouncementMeta): boolean {
+  // If requires ack and player hasn't acknowledged → unread
+  if (ann.requires_acknowledgement && !ann.has_player_acknowledged) return true;
+  // If no ack required but posted within 24h → treat as unread/fresh
+  if (!ann.requires_acknowledgement && ann.published_at) {
+    return (Date.now() - new Date(ann.published_at).getTime()) < 24 * 3600000;
+  }
+  return false;
+}
+
+// ─── Card ─────────────────────────────────────────────────────────────────────
 
 function PlayerAnnouncementCard({ announcement: ann, playerId }: { announcement: GolfAnnouncementMeta; playerId: string }) {
   const router = useRouter();
@@ -67,21 +103,25 @@ function PlayerAnnouncementCard({ announcement: ann, playerId }: { announcement:
   const [hasAcknowledged, setHasAcknowledged] = useState(!!ann.has_player_acknowledged);
   const [acknowledging, setAcknowledging] = useState(false);
 
-  const urgencyBorder = urgencyBorderColors[ann.urgency || 'normal'];
-  const urgencyBadge = urgencyBadgeColors[ann.urgency || 'normal'] ?? { bg: 'bg-blue-50', text: 'text-blue-600' };
+  const urg = urgencyConfig[ann.urgency || 'normal'] ?? defaultUrg;
+  const isNew = ann.published_at && (Date.now() - new Date(ann.published_at).getTime()) < 7 * 86400000;
+  const needsAck = ann.requires_acknowledgement && !hasAcknowledged;
+  const unread = needsAck || (!ann.requires_acknowledgement && ann.published_at && (Date.now() - new Date(ann.published_at).getTime()) < 24 * 3600000);
+
+  // Count player's task progress
+  const myCompletedTasks = detail?.tasks?.reduce((count, t) => {
+    const myAssignment = t.assignments?.find(a => a.player_id === playerId);
+    return count + (myAssignment?.status === 'completed' ? 1 : 0);
+  }, 0) || 0;
+  const myTotalTasks = detail?.tasks?.length || 0;
 
   async function handleExpand() {
-    if (isExpanded) {
-      setIsExpanded(false);
-      return;
-    }
+    if (isExpanded) { setIsExpanded(false); return; }
     setIsExpanded(true);
     if (!detail) {
       setLoadingDetail(true);
       const result = await getAnnouncementDetail(ann.id);
-      if (result.success && result.data) {
-        setDetail(result.data);
-      }
+      if (result.success && result.data) setDetail(result.data);
       setLoadingDetail(false);
     }
   }
@@ -99,82 +139,119 @@ function PlayerAnnouncementCard({ announcement: ann, playerId }: { announcement:
     setAcknowledging(false);
   }
 
-  const publishedDate = ann.published_at
-    ? new Date(ann.published_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-    : '';
-
-  const isRecent = ann.published_at && (Date.now() - new Date(ann.published_at).getTime()) < 7 * 86400000;
-  const needsAck = ann.requires_acknowledgement && !hasAcknowledged;
-
-  // Count player's task progress
-  const myCompletedTasks = detail?.tasks?.reduce((count, t) => {
-    const myAssignment = t.assignments?.find(a => a.player_id === playerId);
-    return count + (myAssignment?.status === 'completed' ? 1 : 0);
-  }, 0) || 0;
-  const myTotalTasks = detail?.tasks?.length || 0;
-
   return (
     <div
       className={cn(
-        'bg-white/70 backdrop-blur-xl border border-white/30 rounded-2xl shadow-sm overflow-hidden',
-        'border-l-[3px]',
-        urgencyBorder,
-        needsAck && 'ring-1 ring-amber-200/50',
-        'transition-all hover:shadow-md'
+        'group relative rounded-2xl overflow-hidden transition-all duration-200',
+        'bg-white border shadow-sm',
+        unread
+          ? 'border-primary-200 bg-gradient-to-r from-primary-50/40 via-white to-white shadow-[0_0_0_1px_rgba(22,163,74,0.08),0_1px_3px_rgba(22,163,74,0.08)]'
+          : 'border-warm-200/80 hover:shadow-md hover:border-warm-300/80'
       )}
     >
+      {/* Urgency indicator bar */}
+      <div className={cn('absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl', urg.dot)} />
+
+      {/* Unread indicator dot — top-right */}
+      {unread && (
+        <div className="absolute top-3.5 right-3.5 z-10">
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-50" />
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary-500" />
+          </span>
+        </div>
+      )}
+
       {/* Card header */}
       <button
         type="button"
         onClick={handleExpand}
-        className="w-full text-left px-5 py-4 flex items-start gap-4"
+        className="w-full text-left pl-5 pr-4 py-4 flex items-start gap-3"
       >
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <h3 className="text-sm font-semibold text-warm-900 truncate">{ann.title}</h3>
-            {isRecent && (
-              <span className="px-1.5 py-0.5 text-xs font-medium rounded-full bg-primary-50 text-primary-600 flex-shrink-0">
+          {/* Title row */}
+          <div className="flex items-center gap-2.5 mb-1.5">
+            <h3 className={cn(
+              'font-semibold text-warm-900 truncate',
+              unread ? 'text-[15px]' : 'text-sm'
+            )}>
+              {ann.title}
+            </h3>
+            {needsAck && (
+              <span className="flex-shrink-0 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full bg-amber-100 text-amber-700 border border-amber-200">
+                Action needed
+              </span>
+            )}
+            {!needsAck && isNew && !hasAcknowledged && (
+              <span className="flex-shrink-0 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full bg-primary-50 text-primary-700 border border-primary-200">
                 New
               </span>
             )}
-            {needsAck && (
-              <span className="px-1.5 py-0.5 text-xs font-medium rounded-full bg-amber-50 text-amber-600 flex-shrink-0">
-                Needs Acknowledgement
-              </span>
-            )}
           </div>
-          <p className="text-sm text-warm-500 line-clamp-2">{ann.body}</p>
-          <div className="flex items-center gap-3 mt-2 flex-wrap">
-            <span className="text-xs text-warm-400">{publishedDate}</span>
-            <span className={cn('px-1.5 py-0.5 rounded text-xs font-semibold uppercase tracking-wider', urgencyBadge.bg, urgencyBadge.text)}>
-              {ann.urgency}
+
+          {/* Body preview */}
+          <p className="text-sm text-warm-500 line-clamp-2 mb-3 leading-relaxed">{ann.body}</p>
+
+          {/* Meta row */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Urgency pill */}
+            <span className={cn(
+              'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold uppercase tracking-wider border',
+              urg.bg, urg.text, urg.border
+            )}>
+              <span className={cn('w-1.5 h-1.5 rounded-full', urg.dot)} />
+              {urg.label}
             </span>
+
+            <span className="text-warm-300 text-xs">|</span>
+
+            {/* Time */}
+            <span className="text-xs text-warm-500 tabular-nums">
+              {ann.published_at ? relativeTime(ann.published_at) : ''}
+            </span>
+
+            {/* Docs */}
             {ann.document_count > 0 && (
-              <span className="inline-flex items-center gap-1 text-xs text-warm-500">
-                <IconFile size={10} />
-                {ann.document_count} doc{ann.document_count !== 1 ? 's' : ''}
-              </span>
+              <>
+                <span className="text-warm-300 text-xs">|</span>
+                <span className="inline-flex items-center gap-1 text-xs text-warm-500">
+                  <IconFile size={11} className="text-warm-400" />
+                  {ann.document_count} doc{ann.document_count !== 1 ? 's' : ''}
+                </span>
+              </>
             )}
+
+            {/* Tasks */}
             {ann.task_count > 0 && (
-              <span className="inline-flex items-center gap-1 text-xs text-warm-500">
-                <IconCheck size={10} />
-                Tasks
-              </span>
+              <>
+                <span className="text-warm-300 text-xs">|</span>
+                <span className="inline-flex items-center gap-1 text-xs text-warm-500">
+                  <IconClipboardList size={11} className="text-warm-400" />
+                  Tasks
+                </span>
+              </>
             )}
+
+            {/* Acknowledged status */}
             {hasAcknowledged && (
-              <span className="inline-flex items-center gap-1 text-xs text-primary-600 font-medium">
-                <IconCheck size={10} />
-                Acknowledged
-              </span>
+              <>
+                <span className="text-warm-300 text-xs">|</span>
+                <span className="inline-flex items-center gap-1 text-xs text-primary-600 font-medium">
+                  <IconCheck size={11} />
+                  Acknowledged
+                </span>
+              </>
             )}
           </div>
         </div>
+
+        {/* Expand chevron */}
         <motion.div
           animate={{ rotate: isExpanded ? 180 : 0 }}
           transition={{ duration: 0.2 }}
-          className="flex-shrink-0 mt-1"
+          className="flex-shrink-0 mt-1 w-7 h-7 rounded-lg flex items-center justify-center bg-warm-50 group-hover:bg-warm-100 transition-colors"
         >
-          <IconChevronDown size={16} className="text-warm-400" />
+          <IconChevronDown size={14} className="text-warm-500" />
         </motion.div>
       </button>
 
@@ -188,24 +265,24 @@ function PlayerAnnouncementCard({ announcement: ann, playerId }: { announcement:
             transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
             className="overflow-hidden"
           >
-            <div className="px-5 pb-4 border-t border-warm-100">
+            <div className="pl-5 pr-4 pb-5 border-t border-warm-100">
               {loadingDetail ? (
-                <div className="py-6 flex items-center justify-center">
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
-                    <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
-                  </span>
+                <div className="py-8 flex items-center justify-center">
+                  <div className="flex items-center gap-1.5">
+                    {[0, 150, 300].map((delay) => (
+                      <span key={delay} className="w-1.5 h-1.5 rounded-full bg-primary-500 skeleton-shimmer" style={{ animationDelay: `${delay}ms` }} />
+                    ))}
+                  </div>
                 </div>
               ) : detail ? (
-                <div className="pt-4 space-y-4">
+                <div className="pt-4 space-y-5">
                   {/* Full body */}
-                  <p className="text-sm text-warm-700 whitespace-pre-wrap">{detail.body}</p>
+                  <p className="text-sm text-warm-700 whitespace-pre-wrap leading-relaxed">{detail.body}</p>
 
                   {/* Documents - downloadable */}
                   {detail.documents && detail.documents.length > 0 && (
                     <div>
-                      <p className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-2">Attachments</p>
+                      <p className="text-[11px] font-semibold text-warm-400 uppercase tracking-widest mb-2.5">Attachments</p>
                       <div className="space-y-1.5">
                         {detail.documents.map((d) => (
                           <a
@@ -213,19 +290,19 @@ function PlayerAnnouncementCard({ announcement: ann, playerId }: { announcement:
                             href={d.document?.file_url || '#'}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-3 px-3 py-2.5 bg-warm-50 rounded-xl border border-warm-200 hover:bg-warm-100 hover:border-warm-300 transition-all group"
+                            className="flex items-center gap-3 px-3.5 py-3 bg-warm-50/80 rounded-xl border border-warm-200 hover:bg-warm-100 hover:border-warm-300 active:scale-[0.99] transition-all group/doc"
                           >
-                            <div className="w-9 h-9 rounded-lg bg-white border border-warm-200 flex items-center justify-center flex-shrink-0">
-                              <IconFile size={16} className="text-warm-400" />
+                            <div className="w-9 h-9 rounded-lg bg-white border border-warm-200 flex items-center justify-center flex-shrink-0 group-hover/doc:border-warm-300 transition-colors">
+                              <IconFile size={15} className="text-warm-400" />
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium text-warm-700 truncate">{d.document?.title || 'Document'}</p>
-                              <p className="text-xs text-warm-400">
+                              <p className="text-[11px] text-warm-400">
                                 {d.document?.file_type || 'File'}
-                                {d.document?.file_size ? ` - ${(d.document.file_size / 1024).toFixed(1)} KB` : ''}
+                                {d.document?.file_size ? ` \u00b7 ${(d.document.file_size / 1024).toFixed(1)} KB` : ''}
                               </p>
                             </div>
-                            <IconDownload size={14} className="text-warm-400 group-hover:text-primary-600 transition-colors flex-shrink-0" />
+                            <IconDownload size={14} className="text-warm-300 group-hover/doc:text-primary-600 transition-colors flex-shrink-0" />
                           </a>
                         ))}
                       </div>
@@ -235,17 +312,28 @@ function PlayerAnnouncementCard({ announcement: ann, playerId }: { announcement:
                   {/* Tasks - interactive checkboxes */}
                   {detail.tasks && detail.tasks.length > 0 && (
                     <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-xs font-semibold text-warm-500 uppercase tracking-wider">Tasks</p>
+                      <div className="flex items-center justify-between mb-2.5">
+                        <p className="text-[11px] font-semibold text-warm-400 uppercase tracking-widest">Your Tasks</p>
                         {myTotalTasks > 0 && (
                           <span className={cn(
-                            'text-xs font-medium tabular-nums',
+                            'text-xs font-semibold tabular-nums',
                             myCompletedTasks === myTotalTasks ? 'text-primary-600' : 'text-warm-500'
                           )}>
-                            {myCompletedTasks}/{myTotalTasks} complete
+                            {myCompletedTasks}/{myTotalTasks}
                           </span>
                         )}
                       </div>
+                      {myTotalTasks > 0 && (
+                        <div className="h-1.5 bg-warm-100 rounded-full overflow-hidden mb-3">
+                          <div
+                            className={cn(
+                              'h-full rounded-full transition-all duration-500',
+                              myCompletedTasks === myTotalTasks ? 'bg-primary-500' : 'bg-blue-400'
+                            )}
+                            style={{ width: `${myTotalTasks > 0 ? (myCompletedTasks / myTotalTasks) * 100 : 0}%` }}
+                          />
+                        </div>
+                      )}
                       <div className="space-y-2">
                         {detail.tasks.map((t) => {
                           const myAssignment = t.assignments?.find(a => a.player_id === playerId);
@@ -267,7 +355,7 @@ function PlayerAnnouncementCard({ announcement: ann, playerId }: { announcement:
 
                   {/* Acknowledge button */}
                   {ann.requires_acknowledgement && !hasAcknowledged && (
-                    <div className="pt-2 border-t border-warm-100">
+                    <div className="pt-3 border-t border-warm-100">
                       <Button
                         variant="primary"
                         size="sm"
@@ -277,18 +365,21 @@ function PlayerAnnouncementCard({ announcement: ann, playerId }: { announcement:
                       >
                         Acknowledge
                       </Button>
+                      <p className="text-[11px] text-warm-400 mt-1.5">Your coach requires you to acknowledge this announcement</p>
                     </div>
                   )}
 
                   {ann.requires_acknowledgement && hasAcknowledged && (
-                    <div className="pt-2 border-t border-warm-100 flex items-center gap-2 text-primary-600">
-                      <IconCheck size={16} />
-                      <span className="text-sm font-medium">You acknowledged this announcement</span>
+                    <div className="pt-3 border-t border-warm-100 flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
+                        <IconCheck size={10} className="text-primary-600" />
+                      </div>
+                      <span className="text-sm font-medium text-primary-700">Acknowledged</span>
                     </div>
                   )}
                 </div>
               ) : (
-                <p className="py-4 text-sm text-warm-400 text-center">Failed to load details</p>
+                <p className="py-6 text-sm text-warm-400 text-center">Failed to load details</p>
               )}
             </div>
           </motion.div>

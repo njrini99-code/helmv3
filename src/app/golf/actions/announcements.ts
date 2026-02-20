@@ -290,6 +290,21 @@ export async function getAnnouncementsWithMeta(
     const teamPlayerIds = await getTeamPlayerIds(supabase, teamId);
     const totalTeamCount = teamPlayerIds.length;
 
+    // Fetch player info for acknowledged players (for avatar display)
+    const allAckPlayerIds = [...new Set((allAcks || []).map(a => a.player_id))];
+    let ackPlayerMap: Record<string, { player_id: string; first_name: string | null; last_name: string | null; avatar_url: string | null }> = {};
+    if (isCoach && allAckPlayerIds.length > 0) {
+      const { data: ackPlayers } = await supabase
+        .from('golf_players')
+        .select('id, first_name, last_name, avatar_url')
+        .in('id', allAckPlayerIds);
+      if (ackPlayers) {
+        for (const p of ackPlayers) {
+          ackPlayerMap[p.id] = { player_id: p.id, first_name: p.first_name, last_name: p.last_name, avatar_url: p.avatar_url };
+        }
+      }
+    }
+
     // Build meta for each announcement
     const recipientsByAnn = groupBy(allRecipients || [], 'announcement_id');
     const acksByAnn = groupBy(allAcks || [], 'announcement_id');
@@ -310,6 +325,11 @@ export async function getAnnouncementsWithMeta(
       const annAssignments = totalAssignments.filter(a => annTaskIds.includes(a.task_id));
       const annCompleted = completedAssignments.filter(a => annTaskIds.includes(a.task_id));
 
+      // Get acknowledged player info (first 5 for avatar stack)
+      const acknowledgedPlayers = isCoach
+        ? acks.slice(0, 5).map(a => ackPlayerMap[a.player_id]).filter((p): p is NonNullable<typeof p> => !!p)
+        : undefined;
+
       return {
         ...ann,
         recipient_count: recipients.length,
@@ -321,6 +341,7 @@ export async function getAnnouncementsWithMeta(
         has_player_acknowledged: !isCoach && playerId
           ? acks.some(a => a.player_id === playerId)
           : undefined,
+        acknowledged_players: acknowledgedPlayers,
       };
     });
 
@@ -468,6 +489,21 @@ export async function getAnnouncementDetail(
       .eq('announcement_id', announcementId)
       .order('acknowledged_at', { ascending: false }) as { data: Array<{ id: string; announcement_id: string; player_id: string; acknowledged_at: string }> | null };
 
+    // Fetch player info for acknowledgements (names + avatars)
+    const ackPlayerIds = [...new Set((acks || []).map(a => a.player_id))];
+    let ackPlayerInfoMap: Record<string, { first_name: string | null; last_name: string | null; avatar_url: string | null }> = {};
+    if (ackPlayerIds.length > 0) {
+      const { data: ackPlayers } = await supabase
+        .from('golf_players')
+        .select('id, first_name, last_name, avatar_url')
+        .in('id', ackPlayerIds);
+      if (ackPlayers) {
+        for (const p of ackPlayers) {
+          ackPlayerInfoMap[p.id] = { first_name: p.first_name, last_name: p.last_name, avatar_url: p.avatar_url };
+        }
+      }
+    }
+
     // Get total recipients for progress tracking
     const isAllTeam = (recipients || []).length === 0;
     let totalRecipients = 0;
@@ -492,6 +528,7 @@ export async function getAnnouncementDetail(
         announcement_id: a.announcement_id,
         player_id: a.player_id,
         acknowledged_at: a.acknowledged_at,
+        player: ackPlayerInfoMap[a.player_id] || null,
       })),
       total_recipients: totalRecipients,
       acknowledged_count: (acks || []).length,
