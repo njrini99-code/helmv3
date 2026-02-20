@@ -114,7 +114,7 @@ export function UploadNewVersionModal({
             onClick={handleClose}
             disabled={uploading}
             aria-label="Close"
-            className="p-2 hover:bg-warm-100 rounded-lg transition-colors disabled:opacity-50"
+            className="p-2 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors disabled:opacity-50"
           >
             <IconX size={20} />
           </button>
@@ -216,7 +216,7 @@ export function UploadNewVersionModal({
           <button
             onClick={handleClose}
             disabled={uploading}
-            className="px-4 py-2 text-warm-700 font-medium hover:bg-warm-100 rounded-lg transition-colors disabled:opacity-50"
+            className="px-4 py-2 text-warm-700 font-medium hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors disabled:opacity-50"
           >
             Cancel
           </button>

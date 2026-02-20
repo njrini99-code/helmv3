@@ -33,7 +33,7 @@ export function NeedsAttention({ items }: Props) {
   const allClear = sorted.length > 0 && sorted.every((item) => item.severity === 'info');
 
   return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6">
+    <div className="glass-standard rounded-2xl p-6">
       {/* Header */}
       <div className="flex items-center gap-2 mb-4">
         <div className="p-2 bg-white/50 rounded-lg text-warm-500">

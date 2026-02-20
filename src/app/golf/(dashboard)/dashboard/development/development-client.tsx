@@ -518,7 +518,7 @@ export function DevelopmentPlansClient({
 
             <button
               onClick={() => setExpandedCardId(isExpanded ? null : fa.id)}
-              className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
+              className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 transition-colors"
             >
               <IconChevronDown size={16} className={cn('transition-transform duration-200', isExpanded && 'rotate-180')} />
             </button>
@@ -650,7 +650,7 @@ export function DevelopmentPlansClient({
                   'flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all duration-150',
                   formData.area_type === type.value
                     ? 'border-primary-500 bg-primary-50 shadow-sm'
-                    : 'border-warm-200 hover:border-warm-300 hover:bg-warm-50',
+                    : 'border-warm-200 hover:border-warm-300 hover:bg-warm-50 active:bg-warm-100',
                 )}
               >
                 <Icon size={18} className={formData.area_type === type.value ? 'text-primary-600' : 'text-warm-400'} />
@@ -872,7 +872,7 @@ export function DevelopmentPlansClient({
       {focusAreas.length > 0 && (
         <div className="max-w-7xl mx-auto px-4 md:px-6 pt-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-xl p-4 shadow-sm">
+            <div className="glass-standard rounded-xl p-4">
               <div className="flex items-center gap-2 mb-1">
                 <IconActivity size={14} className="text-primary-600" />
                 <p className="text-xs font-semibold text-warm-400 uppercase tracking-wider">Active</p>
@@ -880,7 +880,7 @@ export function DevelopmentPlansClient({
               <p className="text-2xl font-bold text-warm-900">{summaryStats.activeCount}</p>
               <p className="text-xs text-warm-500 mt-0.5">{summaryStats.playersWithAreas} player{summaryStats.playersWithAreas !== 1 ? 's' : ''}</p>
             </div>
-            <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-xl p-4 shadow-sm">
+            <div className="glass-standard rounded-xl p-4">
               <div className="flex items-center gap-2 mb-1">
                 <IconCheck size={14} className="text-primary-600" />
                 <p className="text-xs font-semibold text-warm-400 uppercase tracking-wider">Completed</p>
@@ -890,7 +890,7 @@ export function DevelopmentPlansClient({
                 {summaryStats.total > 0 ? `${Math.round((summaryStats.completedCount / summaryStats.total) * 100)}% completion` : 'none yet'}
               </p>
             </div>
-            <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-xl p-4 shadow-sm">
+            <div className="glass-standard rounded-xl p-4">
               <div className="flex items-center gap-2 mb-1">
                 <IconTrendingUp size={14} className="text-blue-600" />
                 <p className="text-xs font-semibold text-warm-400 uppercase tracking-wider">Avg Progress</p>
@@ -900,7 +900,7 @@ export function DevelopmentPlansClient({
                 <div className="h-full bg-primary-500 rounded-full transition-all duration-500" style={{ width: `${summaryStats.avgProgress}%` }} />
               </div>
             </div>
-            <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-xl p-4 shadow-sm">
+            <div className="glass-standard rounded-xl p-4">
               <div className="flex items-center gap-2 mb-1">
                 <IconTarget size={14} className="text-violet-600" />
                 <p className="text-xs font-semibold text-warm-400 uppercase tracking-wider">Total</p>
@@ -915,7 +915,7 @@ export function DevelopmentPlansClient({
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
         {players.length === 0 ? (
-          <div className="relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-hidden p-16 text-center">
+          <div className="relative glass-standard rounded-2xl overflow-hidden p-16 text-center">
             <ShineEffect />
             <div className="w-14 h-14 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
               <IconUser size={24} className="text-warm-400" />
@@ -926,7 +926,7 @@ export function DevelopmentPlansClient({
             </p>
           </div>
         ) : filteredFocusAreas.length === 0 ? (
-          <div className="relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-hidden p-16 text-center">
+          <div className="relative glass-standard rounded-2xl overflow-hidden p-16 text-center">
             <ShineEffect />
             <div className="w-14 h-14 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto mb-4">
               <IconTarget size={24} className="text-primary-600" />
@@ -959,7 +959,7 @@ export function DevelopmentPlansClient({
               const stats = playerStats[selectedPlayerId];
               if (!p) return null;
               return (
-                <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-5 mb-4">
+                <div className="glass-standard rounded-2xl p-5 mb-4">
                   <div className="flex items-center gap-4">
                     {p.avatar_url ? (
                       <Image src={p.avatar_url} alt={`${p.first_name} ${p.last_name}`} width={48} height={48} className="w-12 h-12 rounded-full object-cover" unoptimized />
@@ -1007,7 +1007,7 @@ export function DevelopmentPlansClient({
           /* All players grouped view */
           <div className="space-y-6">
             {focusAreasByPlayer.map(({ player, areas, stats }) => (
-              <div key={player.id} className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-hidden">
+              <div key={player.id} className="glass-standard rounded-2xl overflow-hidden">
                 {/* Player header */}
                 <div className="flex items-center justify-between p-5 pb-0">
                   <div className="flex items-center gap-3">
@@ -1073,7 +1073,7 @@ export function DevelopmentPlansClient({
                       {areas.length > 3 && (
                         <button
                           onClick={() => setSelectedPlayerId(player.id)}
-                          className="w-full text-center text-sm text-primary-600 hover:text-primary-700 font-medium py-2 rounded-lg hover:bg-primary-50 transition-colors"
+                          className="w-full text-center text-sm text-primary-600 hover:text-primary-700 font-medium py-2 rounded-lg hover:bg-primary-50 active:bg-primary-100 transition-colors"
                         >
                           +{areas.length - 3} more
                         </button>

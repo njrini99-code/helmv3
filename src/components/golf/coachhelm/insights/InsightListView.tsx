@@ -70,7 +70,7 @@ function SortButton({ label, sortKey, currentSort, currentOrder, onClick }: Sort
         'flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors',
         isActive
           ? 'bg-primary-100 text-primary-700'
-          : 'text-warm-500 hover:text-warm-700 hover:bg-warm-100'
+          : 'text-warm-500 hover:text-warm-700 hover:bg-warm-100 active:bg-warm-200'
       )}
     >
       {label}
@@ -131,7 +131,7 @@ function InsightRow({ insight, isSelected, onToggleSelect, onRefresh }: InsightR
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       className={cn(
-        'bg-white/70 backdrop-blur-sm border rounded-xl overflow-hidden transition-all duration-200',
+        'glass-standard rounded-xl overflow-hidden transition-all duration-200',
         isSelected
           ? 'border-primary-500 ring-2 ring-primary-500/20'
           : 'border-warm-200 hover:border-warm-300'
@@ -208,7 +208,7 @@ function InsightRow({ insight, isSelected, onToggleSelect, onRefresh }: InsightR
           type="button"
           onClick={() => setIsExpanded(!isExpanded)}
           aria-label={isExpanded ? 'Collapse insight' : 'Expand insight'}
-          className="flex-shrink-0 p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
+          className="flex-shrink-0 p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 transition-colors"
         >
           {isExpanded ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
         </button>
@@ -352,7 +352,7 @@ function Pagination({ page, totalPages, totalCount, pageSize, onPageChange }: Pa
             'p-2 rounded-lg transition-colors',
             page <= 1
               ? 'text-warm-300 cursor-not-allowed'
-              : 'text-warm-500 hover:text-warm-700 hover:bg-warm-100'
+              : 'text-warm-500 hover:text-warm-700 hover:bg-warm-100 active:bg-warm-200'
           )}
         >
           <IconChevronLeft size={18} />
@@ -381,7 +381,7 @@ function Pagination({ page, totalPages, totalCount, pageSize, onPageChange }: Pa
                   'w-8 h-8 rounded-lg text-sm font-medium transition-colors',
                   pageNum === page
                     ? 'bg-primary-500 text-white'
-                    : 'text-warm-600 hover:bg-warm-100'
+                    : 'text-warm-600 hover:bg-warm-100 active:bg-warm-200'
                 )}
               >
                 {pageNum}
@@ -398,7 +398,7 @@ function Pagination({ page, totalPages, totalCount, pageSize, onPageChange }: Pa
             'p-2 rounded-lg transition-colors',
             page >= totalPages
               ? 'text-warm-300 cursor-not-allowed'
-              : 'text-warm-500 hover:text-warm-700 hover:bg-warm-100'
+              : 'text-warm-500 hover:text-warm-700 hover:bg-warm-100 active:bg-warm-200'
           )}
         >
           <IconChevronRight size={18} />

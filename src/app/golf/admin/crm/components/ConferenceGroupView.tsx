@@ -117,7 +117,7 @@ export function ConferenceGroupView({
     return (
       <div className="space-y-3">
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-4">
+          <div key={i} className="glass-standard rounded-2xl p-4">
             <div className="flex items-center gap-4">
               <div className="w-6 h-6 rounded bg-warm-200/60 skeleton-shimmer" />
               <div className="flex-1 space-y-1.5">
@@ -134,7 +134,7 @@ export function ConferenceGroupView({
 
   if (coaches.length === 0) {
     return (
-      <div className="py-16 text-center bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass">
+      <div className="py-16 text-center glass-standard rounded-2xl">
         <div className="w-14 h-14 rounded-2xl bg-warm-100/80 flex items-center justify-center mx-auto mb-4">
           <Users size={24} className="text-warm-300" />
         </div>
@@ -155,13 +155,13 @@ export function ConferenceGroupView({
         <div className="flex items-center gap-2">
           <button
             onClick={expandAll}
-            className="px-3 py-1.5 text-xs font-medium text-warm-600 hover:text-warm-800 hover:bg-warm-50 rounded-lg transition-colors"
+            className="px-3 py-1.5 text-xs font-medium text-warm-600 hover:text-warm-800 hover:bg-warm-50 active:bg-warm-100 rounded-lg transition-colors"
           >
             Expand All
           </button>
           <button
             onClick={collapseAll}
-            className="px-3 py-1.5 text-xs font-medium text-warm-600 hover:text-warm-800 hover:bg-warm-50 rounded-lg transition-colors"
+            className="px-3 py-1.5 text-xs font-medium text-warm-600 hover:text-warm-800 hover:bg-warm-50 active:bg-warm-100 rounded-lg transition-colors"
           >
             Collapse All
           </button>
@@ -178,7 +178,7 @@ export function ConferenceGroupView({
         return (
           <div
             key={group.conference}
-            className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-hidden"
+            className="glass-standard rounded-2xl overflow-hidden"
           >
             {/* Conference Header */}
             <button
@@ -330,7 +330,7 @@ export function ConferenceGroupView({
                                     <button key={status}
                                       onClick={() => { onStatusChange(coach.id, status); setOpenStatusDropdown(null); }}
                                       className={cn('w-full text-left px-3 py-1.5 text-sm flex items-center gap-2 transition-colors',
-                                        coach.status === status ? 'bg-primary-50 font-semibold text-primary-700' : 'text-warm-700 hover:bg-warm-50'
+                                        coach.status === status ? 'bg-primary-50 font-semibold text-primary-700' : 'text-warm-700 hover:bg-warm-50 active:bg-warm-100'
                                       )}>
                                       {statusConfig[status]?.icon}
                                       <span>{statusConfig[status]?.label}</span>
@@ -352,28 +352,28 @@ export function ConferenceGroupView({
                             <div className="relative">
                               <button
                                 onClick={e => { e.stopPropagation(); setOpenActionMenu(openActionMenu === coach.id ? null : coach.id); setOpenStatusDropdown(null); }}
-                                className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 opacity-0 group-hover:opacity-100 transition-all"
+                                className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 opacity-0 group-hover:opacity-100 transition-all"
                               >
                                 <MoreHorizontal size={14} />
                               </button>
                               {openActionMenu === coach.id && (
                                 <div className="absolute right-0 top-full mt-1 z-50 w-44 py-1 rounded-xl bg-white border border-warm-200/80 shadow-xl">
                                   <button onClick={() => { onLogContact(coach); setOpenActionMenu(null); }}
-                                    className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 flex items-center gap-2">
+                                    className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 flex items-center gap-2">
                                     <MessageSquare size={14} /> Log Contact
                                   </button>
                                   {coach.email && (
                                     <a href={`mailto:${coach.email}`} onClick={() => setOpenActionMenu(null)}
-                                      className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 flex items-center gap-2">
+                                      className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2">
                                       <Mail size={14} /> Send Email
                                     </a>
                                   )}
                                   <button onClick={() => { onStatusChange(coach.id, 'researching'); setOpenActionMenu(null); }}
-                                    className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 flex items-center gap-2">
+                                    className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2">
                                     <ArrowRight size={14} /> Move to Researching
                                   </button>
                                   <button onClick={() => { onToggleStar(coach.id, coach.is_starred); setOpenActionMenu(null); }}
-                                    className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 flex items-center gap-2">
+                                    className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2">
                                     <Star size={14} /> {coach.is_starred ? 'Unstar' : 'Star'}
                                   </button>
                                 </div>

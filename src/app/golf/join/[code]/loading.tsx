@@ -8,7 +8,7 @@ export default function Loading() {
         </div>
 
         {/* Team info card */}
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-8 space-y-5">
+        <div className="glass-standard rounded-2xl p-8 space-y-5">
           {/* Team name */}
           <div className="text-center space-y-2">
             <div className="skeleton-shimmer h-7 w-48 mx-auto rounded-lg" />

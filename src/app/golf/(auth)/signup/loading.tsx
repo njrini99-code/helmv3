@@ -9,7 +9,7 @@ export default function Loading() {
         {/* Title */}
         <div className="skeleton-shimmer h-8 w-48 mx-auto rounded-lg" />
         {/* Form card */}
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-8 space-y-4">
+        <div className="glass-standard rounded-2xl p-8 space-y-4">
           <div className="skeleton-shimmer h-4 w-20 rounded" />
           <div className="skeleton-shimmer h-10 w-full rounded-lg" />
           <div className="skeleton-shimmer h-4 w-20 rounded" />

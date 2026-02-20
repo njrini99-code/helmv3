@@ -129,7 +129,7 @@ export function ReminderBanner({
             {/* Dismiss button */}
             <button
               onClick={() => handleDismiss(currentReminder.id)}
-              className="p-1 text-primary-400 hover:text-primary-600 rounded-lg hover:bg-primary-100 transition-colors"
+              className="p-1 text-primary-400 hover:text-primary-600 rounded-lg hover:bg-primary-100 active:bg-primary-200 transition-colors"
               aria-label="Dismiss reminder"
             >
               <svg
@@ -179,7 +179,7 @@ export function ReminderBanner({
           <div className="mt-3 flex items-center justify-between">
             <button
               onClick={() => onViewTask?.(currentReminder.task.id)}
-              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition-colors"
+              className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 active:scale-95 transition-colors"
             >
               View Task
               <svg
@@ -200,7 +200,7 @@ export function ReminderBanner({
                 <button
                   onClick={handlePrevious}
                   disabled={currentIndex === 0}
-                  className="p-1.5 text-primary-500 hover:bg-primary-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="p-1.5 text-primary-500 hover:bg-primary-100 active:bg-primary-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   aria-label="Previous reminder"
                 >
                   <svg
@@ -220,7 +220,7 @@ export function ReminderBanner({
                 <button
                   onClick={handleNext}
                   disabled={currentIndex >= visibleReminders.length - 1}
-                  className="p-1.5 text-primary-500 hover:bg-primary-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="p-1.5 text-primary-500 hover:bg-primary-100 active:bg-primary-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   aria-label="Next reminder"
                 >
                   <svg
@@ -276,7 +276,7 @@ export function ReminderIndicator({
     <button
       onClick={onClick}
       className={cn(
-        'relative p-2 text-warm-500 hover:bg-warm-100 rounded-lg transition-colors',
+        'relative p-2 text-warm-500 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors',
         className
       )}
       aria-label={`${count} upcoming reminders`}

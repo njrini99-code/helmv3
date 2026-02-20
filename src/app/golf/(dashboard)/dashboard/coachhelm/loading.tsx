@@ -18,7 +18,7 @@ function GlassCardSkeleton({ children, className }: { children: React.ReactNode;
   return (
     <div
       className={cn(
-        'bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-glass',
+        'glass-standard rounded-2xl p-6',
         className
       )}
     >

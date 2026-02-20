@@ -154,7 +154,7 @@ export function CommandCenterClient({
           {/* Players List (2/3) */}
           <div className="lg:col-span-2 space-y-4">
             {/* Search and Filters */}
-            <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-xl p-4">
+            <div className="glass-standard rounded-xl p-4">
               <div className="flex flex-col sm:flex-row gap-3">
                 {/* Search */}
                 <div className="flex-1 relative">
@@ -232,7 +232,7 @@ export function CommandCenterClient({
 
             {/* Players Grid */}
             {filteredPlayers.length === 0 ? (
-              <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-12 text-center">
+              <div className="glass-standard rounded-2xl p-12 text-center">
                 <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
                   <IconUsers size={24} className="text-slate-400" />
                 </div>
@@ -271,7 +271,7 @@ export function CommandCenterClient({
             />
 
             {/* Quick Actions */}
-            <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+            <div className="glass-standard rounded-2xl p-6">
               <h3 className="font-semibold text-slate-900 mb-4">Quick Actions</h3>
               <div className="space-y-2">
                 <Link

@@ -67,7 +67,7 @@ export default function InfraHealthCard({
       {/* API Performance + Client Errors: side by side on lg */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* API Performance Section */}
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6">
+        <div className="glass-standard rounded-2xl p-6">
           <h3 className="text-xl font-semibold text-warm-900 mb-4">
             API Performance (7d)
           </h3>
@@ -191,7 +191,7 @@ export default function InfraHealthCard({
         </div>
 
         {/* Client Errors Section */}
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6">
+        <div className="glass-standard rounded-2xl p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xl font-semibold text-warm-900">
               Client Errors (7d)
@@ -205,7 +205,7 @@ export default function InfraHealthCard({
             {clientErrors.map((error, idx) => (
               <div
                 key={idx}
-                className="border border-warm-100 rounded-xl p-3 hover:bg-white/80 transition-all duration-200"
+                className="border border-warm-100 rounded-xl p-3 hover:bg-white/80 active:bg-white/90 transition-all duration-200"
               >
                 <div className="flex items-start justify-between gap-3 mb-1.5">
                   <p
@@ -245,7 +245,7 @@ export default function InfraHealthCard({
       </div>
 
       {/* Database Section (compact) */}
-      <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6">
+      <div className="glass-standard rounded-2xl p-6">
         <h3 className="text-xl font-semibold text-warm-900 mb-4">Database</h3>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">

@@ -56,7 +56,7 @@ function SortableItem({ metric, rank }: { metric: PriorityMetric; rank: number }
             <button
                 {...attributes}
                 {...listeners}
-                className="p-1 rounded hover:bg-warm-100 cursor-grab active:cursor-grabbing touch-none"
+                className="p-1 rounded hover:bg-warm-100 transition-colors cursor-grab active:cursor-grabbing touch-none"
                 aria-label="Drag to reorder"
             >
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-warm-400">

@@ -234,7 +234,7 @@ export function StatsUploadClient({
         {step === 'preview' && (
           <div className="space-y-6">
             {/* File Info */}
-            <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+            <div className="glass-standard rounded-2xl p-6">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
                   <IconFile size={24} className="text-green-600" />
@@ -260,7 +260,7 @@ export function StatsUploadClient({
             </div>
 
             {/* Player Matching Preview */}
-            <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+            <div className="glass-standard rounded-2xl p-6">
               <h3 className="font-semibold text-slate-900 mb-4">Player Matching</h3>
 
               {goodMatches.length > 0 && (
@@ -319,7 +319,7 @@ export function StatsUploadClient({
             </div>
 
             {/* Data Preview */}
-            <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6 overflow-hidden">
+            <div className="glass-standard rounded-2xl p-6 overflow-hidden">
               <h3 className="font-semibold text-slate-900 mb-4">Data Preview</h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -370,7 +370,7 @@ export function StatsUploadClient({
         {/* Step: Configure */}
         {step === 'configure' && (
           <div className="space-y-6">
-            <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+            <div className="glass-standard rounded-2xl p-6">
               <h3 className="font-semibold text-slate-900 mb-4">Session Details</h3>
 
               <div className="space-y-4">
@@ -469,7 +469,7 @@ export function StatsUploadClient({
 
         {/* Step: Processing */}
         {step === 'processing' && (
-          <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-12 text-center">
+          <div className="glass-standard rounded-2xl p-12 text-center">
             <div className="animate-spin w-12 h-12 border-4 border-green-600 border-t-transparent rounded-full mx-auto mb-4" />
             <h2 className="text-xl font-semibold text-slate-900 mb-2">
               Processing Upload

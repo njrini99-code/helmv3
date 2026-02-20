@@ -415,7 +415,7 @@ function PatternRow({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
-      className="px-4 py-3 hover:bg-warm-50 transition-colors"
+      className="px-4 py-3 hover:bg-warm-50 active:bg-warm-100 transition-colors"
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">

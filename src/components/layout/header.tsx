@@ -19,22 +19,7 @@ import {
   IconSearch,
   IconChevronLeft,
 } from '@/components/icons';
-
-// Animated hamburger menu icon
-function MenuIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      className={cn('w-5 h-5', className)}
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-    >
-      <path d="M4 6h16M4 12h16M4 18h16" />
-    </svg>
-  );
-}
+import { MobileMenuButton } from './mobile-menu-button';
 
 interface HeaderProps {
   title?: string;
@@ -102,17 +87,12 @@ export function Header({ title, subtitle, children, backHref }: HeaderProps) {
         {/* Left: Menu toggle + Back + Title */}
         <div className="flex items-center gap-3 min-w-0">
           {/* Menu toggle button - always visible */}
-          <button
+          <MobileMenuButton
             onClick={handleMenuToggle}
-            className={cn(
-              'p-2 -ml-2 rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100 active:bg-slate-200',
-              'transition-colors duration-150 active:scale-95',
-              'focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500/40'
-            )}
+            theme="light"
+            className="-ml-2"
             aria-label="Toggle sidebar"
-          >
-            <MenuIcon />
-          </button>
+          />
 
           {/* Back button */}
           {backHref && (

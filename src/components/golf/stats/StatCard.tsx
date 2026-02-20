@@ -103,7 +103,7 @@ export function GolfStatCard({
   return (
     <div
       className={cn(
-        'relative overflow-hidden bg-white/70 backdrop-blur-xl border border-white/30 rounded-2xl shadow-glass-sm',
+        'relative overflow-hidden glass-standard rounded-2xl',
         styles.container,
         className
       )}

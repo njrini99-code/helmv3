@@ -243,7 +243,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
           <button
             onClick={onClose}
             aria-label="Close"
-            className="p-2 text-warm-400 hover:text-warm-600 hover:bg-warm-100 rounded-lg transition-colors"
+            className="p-2 text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
           >
             <IconX size={20} />
           </button>
@@ -287,7 +287,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
                 border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all
                 ${dragActive 
                   ? 'border-primary-500 bg-primary-50' 
-                  : 'border-warm-200 hover:border-warm-300 hover:bg-warm-50'
+                  : 'border-warm-200 hover:border-warm-300 hover:bg-warm-50 active:bg-warm-100'
                 }
               `}
             >

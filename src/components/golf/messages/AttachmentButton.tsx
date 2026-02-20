@@ -119,7 +119,7 @@ export function AttachmentButton({
         onClick={handleButtonClick}
         disabled={disabled}
         className={cn(
-          'p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100',
+          'p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200',
           'transition-colors duration-200',
           'focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:ring-offset-1',
           isOpen && 'bg-warm-100 text-warm-600',
@@ -235,7 +235,7 @@ function AttachmentTypeOption({
       onClick={onClick}
       className={cn(
         'w-full flex items-center gap-3 px-3 py-2',
-        'text-left hover:bg-warm-50 transition-colors duration-150'
+        'text-left hover:bg-warm-50 active:bg-warm-100 transition-colors duration-150'
       )}
     >
       <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-warm-100 flex items-center justify-center text-warm-500">

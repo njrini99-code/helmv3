@@ -55,7 +55,7 @@ export function CoachFilters({
   };
 
   return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-4 space-y-3">
+    <div className="glass-standard rounded-2xl p-4 space-y-3">
       {/* Row 1: Search + Division + Program */}
       <div className="flex flex-wrap items-center gap-2">
         {/* Search */}
@@ -129,7 +129,7 @@ export function CoachFilters({
             'flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors whitespace-nowrap',
             showMore || hasSecondaryFilters
               ? 'bg-primary-50 border-primary-200 text-primary-700'
-              : 'bg-white/60 border-warm-200/50 text-warm-500 hover:bg-warm-50'
+              : 'bg-white/60 border-warm-200/50 text-warm-500 hover:bg-warm-50 active:bg-warm-100'
           )}
         >
           {showMore ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
@@ -192,7 +192,7 @@ export function CoachFilters({
               'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors whitespace-nowrap',
               filters.followUpDue
                 ? 'bg-amber-50 border-amber-200 text-amber-700'
-                : 'bg-white/60 border-warm-200/50 text-warm-500 hover:bg-warm-50'
+                : 'bg-white/60 border-warm-200/50 text-warm-500 hover:bg-warm-50 active:bg-warm-100'
             )}
           >
             <Clock size={12} /> Follow-ups Due
@@ -204,7 +204,7 @@ export function CoachFilters({
               'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors whitespace-nowrap',
               filters.starred
                 ? 'bg-amber-50 border-amber-200 text-amber-700'
-                : 'bg-white/60 border-warm-200/50 text-warm-500 hover:bg-warm-50'
+                : 'bg-white/60 border-warm-200/50 text-warm-500 hover:bg-warm-50 active:bg-warm-100'
             )}
           >
             <Star size={12} /> Starred

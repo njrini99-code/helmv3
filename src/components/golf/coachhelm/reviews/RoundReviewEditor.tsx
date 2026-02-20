@@ -148,7 +148,7 @@ function ReviewSummaryCard({ review, onUpdateSummary }: ReviewSummaryCardProps) 
         <h3 className="text-sm font-semibold text-warm-900">AI Summary</h3>
         <button
           onClick={() => setIsEditing(true)}
-          className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
+          className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 transition-colors"
         >
           <IconEdit size={14} />
         </button>

@@ -171,7 +171,7 @@ export function CoachHelmHeader({
                 onClick={onRefresh}
                 disabled={isRefreshing}
                 className={cn(
-                  'p-2 rounded-lg text-warm-500 hover:text-warm-700 hover:bg-white/50 transition-all',
+                  'p-2 rounded-lg text-warm-500 hover:text-warm-700 hover:bg-white/50 active:bg-white/70 transition-all',
                   isRefreshing && 'animate-spin pointer-events-none'
                 )}
                 title="Refresh insights"
@@ -184,7 +184,7 @@ export function CoachHelmHeader({
             {/* Settings link */}
             <Link
               href="/golf/dashboard/settings"
-              className="p-2 rounded-lg text-warm-500 hover:text-warm-700 hover:bg-white/50 transition-all"
+              className="p-2 rounded-lg text-warm-500 hover:text-warm-700 hover:bg-white/50 active:bg-white/70 transition-all"
               title="AI Settings"
             >
               <IconSettings size={18} />

@@ -41,7 +41,7 @@ export function ErrorFeed({ errorLogs }: Props) {
   const { totalErrors7d, criticalErrors7d, recentErrors, topErrors } = errorLogs;
 
   return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6 transition-all duration-200 hover:bg-white/80 hover:shadow-card-hover">
+    <div className="glass-standard rounded-2xl p-6 transition-all duration-200 hover:bg-white/80 active:bg-white/90 hover:shadow-card-hover">
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2.5">
@@ -142,7 +142,7 @@ export function ErrorFeed({ errorLogs }: Props) {
                       {err.stack && (
                         <button
                           onClick={() => setExpandedId(isExpanded ? null : err.id)}
-                          className="shrink-0 text-xs text-warm-400 hover:text-warm-600 transition-colors px-1.5 py-0.5 rounded hover:bg-warm-50"
+                          className="shrink-0 text-xs text-warm-400 hover:text-warm-600 transition-colors px-1.5 py-0.5 rounded hover:bg-warm-50 active:bg-warm-100"
                         >
                           {isExpanded ? 'Hide' : 'Stack'}
                         </button>

@@ -164,7 +164,7 @@ export function TextPreview({
           </thead>
           <tbody>
             {rows.slice(1).map((row, rowIndex) => (
-              <tr key={rowIndex} className="hover:bg-muted/30">
+              <tr key={rowIndex} className="hover:bg-muted/30 transition-colors">
                 {row.map((cell, cellIndex) => (
                   <td key={cellIndex} className="px-3 py-1.5 border-b">
                     {cell}

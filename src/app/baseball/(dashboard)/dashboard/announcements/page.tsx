@@ -117,7 +117,7 @@ export default function BaseballAnnouncementsPage() {
         {loading ? (
           <div className="space-y-3">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6 animate-pulse">
+              <div key={i} className="glass-standard rounded-2xl p-6 animate-pulse">
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 rounded-full bg-slate-200" />
                   <div className="flex-1">

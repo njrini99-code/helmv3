@@ -205,7 +205,7 @@ export function OfflineWarningBanner({
                 <button
                   onClick={handleDismiss}
                   aria-label="Dismiss"
-                  className={cn('flex-shrink-0 p-1 rounded-lg hover:bg-white/50 transition-colors', iconColor)}
+                  className={cn('flex-shrink-0 p-1 rounded-lg hover:bg-white/50 active:bg-white/70 transition-colors', iconColor)}
                 >
                   <XIcon className="w-4 h-4" />
                 </button>
@@ -262,7 +262,7 @@ export function OfflineWarningBanner({
                 <button
                   onClick={handleDismiss}
                   aria-label="Dismiss"
-                  className={cn('flex-shrink-0 p-1 rounded-lg hover:bg-white/50 transition-colors', iconColor)}
+                  className={cn('flex-shrink-0 p-1 rounded-lg hover:bg-white/50 active:bg-white/70 transition-colors', iconColor)}
                 >
                   <XIcon className="w-4 h-4" />
                 </button>

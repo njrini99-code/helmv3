@@ -286,7 +286,7 @@ export function ScheduleEventModal({
                           setCoachSearchQuery('');
                           setCoachSearchResults([]);
                         }}
-                        className="w-full p-3 text-left hover:bg-warm-50 flex items-center gap-3"
+                        className="w-full p-3 text-left hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-3"
                       >
                         <span className={cn(
                           'px-2 py-1 rounded text-xs font-bold',

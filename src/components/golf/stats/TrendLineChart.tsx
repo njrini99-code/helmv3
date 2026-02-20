@@ -556,7 +556,7 @@ function MultiChartLegend({
               'flex items-center gap-1.5 px-2 py-1 rounded-md text-xs transition-all duration-200',
               isHidden
                 ? 'opacity-40 hover:opacity-60'
-                : 'opacity-100 hover:bg-warm-50'
+                : 'opacity-100 hover:bg-warm-50 active:bg-warm-100'
             )}
           >
             <span

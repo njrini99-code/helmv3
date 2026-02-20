@@ -492,7 +492,7 @@ export function InsightFiltersPanel({
             'flex items-center gap-2 px-4 py-2.5',
             'bg-white/80 backdrop-blur-sm border border-warm-200 rounded-xl',
             'text-sm font-medium text-warm-700',
-            'hover:bg-warm-50 transition-colors'
+            'hover:bg-warm-50 active:bg-warm-100 transition-colors'
           )}
         >
           <IconFilter size={16} />
@@ -547,7 +547,7 @@ export function InsightFiltersPanel({
                     <button
                       type="button"
                       onClick={() => setIsMobileOpen(false)}
-                      className="p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100"
+                      className="p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors active:bg-warm-200"
                     >
                       <IconX size={20} />
                     </button>

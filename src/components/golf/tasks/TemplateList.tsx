@@ -277,7 +277,7 @@ export function TemplateList({
                   <button
                     onClick={() => handleQuickCreate(template)}
                     disabled={isPending && actionInProgress === template.id}
-                    className="p-2 text-primary-600 hover:bg-primary-50 rounded-lg transition-colors disabled:opacity-50"
+                    className="p-2 text-primary-600 hover:bg-primary-50 active:bg-primary-100 rounded-lg transition-colors disabled:opacity-50"
                     title="Create task from template"
                     aria-label="Create task from template"
                   >
@@ -308,7 +308,7 @@ export function TemplateList({
                     <button
                       onClick={() => onEditTemplate(template)}
                       disabled={isPending}
-                      className="p-2 text-warm-500 hover:bg-warm-100 rounded-lg transition-colors disabled:opacity-50"
+                      className="p-2 text-warm-500 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors disabled:opacity-50"
                       title="Edit template"
                       aria-label="Edit template"
                     >
@@ -332,7 +332,7 @@ export function TemplateList({
                   <button
                     onClick={() => handleDuplicate(template.id)}
                     disabled={isPending}
-                    className="p-2 text-warm-500 hover:bg-warm-100 rounded-lg transition-colors disabled:opacity-50"
+                    className="p-2 text-warm-500 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors disabled:opacity-50"
                     title="Duplicate template"
                     aria-label="Duplicate template"
                   >

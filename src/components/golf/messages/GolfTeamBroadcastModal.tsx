@@ -225,8 +225,8 @@ export function GolfTeamBroadcastModal({
                       onClick={() => togglePlayer(player.id)}
                       className={cn(
                         'w-full px-4 py-3 flex items-center gap-3 text-left transition-colors',
-                        'hover:bg-warm-50 rounded-lg -mx-4',
-                        isSelected && 'bg-primary-50 hover:bg-primary-50'
+                        'hover:bg-warm-50 active:bg-warm-100 rounded-lg -mx-4',
+                        isSelected && 'bg-primary-50 hover:bg-primary-50 active:bg-primary-100'
                       )}
                     >
                       <div className={cn(

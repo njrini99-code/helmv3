@@ -485,7 +485,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => handleEdit(selectedItinerary)}
-                            className="p-2 hover:bg-warm-100 rounded-lg transition-colors"
+                            className="p-2 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
                           >
                             <IconEdit size={18} className="text-warm-600" />
                           </button>
@@ -634,7 +634,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                                 <button
                                   onClick={handleExportCSV}
                                   disabled={exporting}
-                                  className="flex items-center gap-2 px-3 py-1.5 text-sm text-warm-600 hover:text-warm-900 hover:bg-warm-100 rounded-lg transition-colors disabled:opacity-50"
+                                  className="flex items-center gap-2 px-3 py-1.5 text-sm text-warm-600 hover:text-warm-900 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors disabled:opacity-50"
                                 >
                                   <IconDownload size={16} />
                                   {exporting ? 'Exporting...' : 'Export CSV'}
@@ -723,7 +723,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                   setShowModal(false);
                   resetForm();
                 }}
-                className="p-2 hover:bg-warm-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
               >
                 <IconX size={20} />
               </button>
@@ -924,7 +924,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                   setShowModal(false);
                   resetForm();
                 }}
-                className="flex-1 px-4 py-2 border border-warm-200 rounded-lg font-medium text-warm-700 hover:bg-warm-50 transition-colors"
+                className="flex-1 px-4 py-2 border border-warm-200 rounded-lg font-medium text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors"
               >
                 Cancel
               </button>

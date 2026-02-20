@@ -191,7 +191,7 @@ export function GolfChatWindow({
         {onBack && (
           <button
             onClick={onBack}
-            className="lg:hidden p-2 -ml-2 text-warm-500 hover:text-warm-700 hover:bg-warm-100 rounded-lg"
+            className="lg:hidden p-2 -ml-2 text-warm-500 hover:text-warm-700 hover:bg-warm-100 transition-colors active:bg-warm-200 rounded-lg"
             aria-label="Go back"
           >
             <IconArrowLeft size={20} />

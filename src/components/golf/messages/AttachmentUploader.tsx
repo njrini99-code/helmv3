@@ -173,7 +173,7 @@ export function AttachmentUploader({
           onClick={() => handleClick('image')}
           disabled={disabled}
           className={cn(
-            'p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100',
+            'p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200',
             'transition-colors duration-200',
             disabled && 'opacity-50 cursor-not-allowed'
           )}
@@ -187,7 +187,7 @@ export function AttachmentUploader({
           onClick={() => handleClick('video')}
           disabled={disabled}
           className={cn(
-            'p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100',
+            'p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200',
             'transition-colors duration-200',
             disabled && 'opacity-50 cursor-not-allowed'
           )}
@@ -201,7 +201,7 @@ export function AttachmentUploader({
           onClick={() => handleClick('document')}
           disabled={disabled}
           className={cn(
-            'p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100',
+            'p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200',
             'transition-colors duration-200',
             disabled && 'opacity-50 cursor-not-allowed'
           )}
@@ -216,7 +216,7 @@ export function AttachmentUploader({
           onClick={() => handleClick('camera')}
           disabled={disabled}
           className={cn(
-            'p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100',
+            'p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200',
             'transition-colors duration-200 lg:hidden',
             disabled && 'opacity-50 cursor-not-allowed'
           )}
@@ -279,7 +279,7 @@ export function AttachmentUploader({
             e.stopPropagation();
             onClose();
           }}
-          className="absolute top-4 right-4 p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
+          className="absolute top-4 right-4 p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 transition-colors"
           aria-label="Close"
         >
           <IconX size={20} />

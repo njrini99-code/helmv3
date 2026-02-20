@@ -108,9 +108,7 @@ export function TodayTimeline({ events, role, timezone }: TodayTimelineProps) {
         return (
             <div className={cn(
                 'relative overflow-hidden rounded-2xl h-full min-h-[180px]',
-                'bg-white/60 backdrop-blur-xl',
-                'border border-white/40',
-                'shadow-[0_2px_12px_rgba(0,0,0,0.04)]',
+                'glass-standard',
             )}>
                 <div className="relative z-10 flex flex-col items-center justify-center text-center p-6 md:p-10 h-full">
                     <div className="w-11 h-11 rounded-xl bg-warm-50 border border-warm-100 flex items-center justify-center mb-4">
@@ -141,9 +139,7 @@ export function TodayTimeline({ events, role, timezone }: TodayTimelineProps) {
             aria-roledescription="timeline"
             className={cn(
                 'relative overflow-hidden rounded-2xl',
-                'bg-white/60 backdrop-blur-xl',
-                'border border-white/40',
-                'shadow-[0_2px_12px_rgba(0,0,0,0.04)]',
+                'glass-standard',
             )}
         >
             {/* Header */}

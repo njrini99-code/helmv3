@@ -96,7 +96,7 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
             <button
               onClick={onClose}
               aria-label="Close"
-              className="p-2 text-warm-400 hover:text-warm-600 hover:bg-warm-100 rounded-lg transition-colors"
+              className="p-2 text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
             >
               <IconX size={20} />
             </button>
@@ -174,7 +174,7 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
             variant="secondary"
             onClick={handleDeleteClick}
             disabled={deleting}
-            className="text-red-600 hover:bg-red-50"
+            className="text-red-600 hover:bg-red-50 transition-colors"
           >
             Delete
           </Button>

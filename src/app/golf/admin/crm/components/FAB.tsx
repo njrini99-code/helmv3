@@ -161,7 +161,7 @@ export function FAB({ onSchedule, onLogContact, onAddCoach }: FABProps) {
                   <button
                     key={coach.id}
                     onClick={() => handleCoachSelect(coach)}
-                    className="w-full p-3 rounded-xl hover:bg-primary-50 transition-colors text-left flex items-center gap-3 group"
+                    className="w-full p-3 rounded-xl hover:bg-primary-50 active:bg-primary-100 transition-colors text-left flex items-center gap-3 group"
                   >
                     <div className={cn(
                       'w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm',

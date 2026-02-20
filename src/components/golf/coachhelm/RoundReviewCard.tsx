@@ -133,7 +133,7 @@ export function RoundReviewCard({
         href={`/golf/dashboard/rounds/${roundId}/review`}
         className={cn(
           'flex items-center gap-4 p-4 rounded-xl transition-all duration-200',
-          'bg-white/70 backdrop-blur-sm border border-white/30',
+          'glass-standard',
           'hover:bg-white/90 hover:shadow-md hover:-translate-y-0.5',
           'group'
         )}
@@ -286,7 +286,7 @@ export function RoundReviewCardSkeleton({ count = 3 }: { count?: number }) {
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
-          className="flex items-center gap-4 p-4 rounded-xl bg-white/70 backdrop-blur-sm border border-white/30 animate-pulse"
+          className="flex items-center gap-4 p-4 rounded-xl glass-standard animate-pulse"
         >
           {/* Score skeleton */}
           <div className="w-14 h-14 rounded-xl bg-warm-200" />
@@ -335,7 +335,7 @@ export function CompactRoundReviewCard({
       href={`/golf/dashboard/rounds/${roundId}/review`}
       className={cn(
         'flex items-center gap-3 p-3 rounded-lg transition-all duration-200',
-        'bg-white/60 hover:bg-white/80 border border-white/20',
+        'bg-white/60 hover:bg-white/80 active:bg-white/90 border border-white/20',
         'hover:shadow-sm group',
         className
       )}

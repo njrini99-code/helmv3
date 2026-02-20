@@ -144,7 +144,7 @@ function KPICard({
   trend?: 'up' | 'down';
 }) {
   return (
-    <div className="relative overflow-hidden bg-white/70 backdrop-blur-xl border border-white/30 rounded-2xl p-5 shadow-glass-sm hover:shadow-glass-md hover:-translate-y-0.5 transition-all duration-200">
+    <div className="relative overflow-hidden glass-standard rounded-2xl p-5 hover:shadow-glass-md hover:-translate-y-0.5 transition-all duration-200">
       <ShineEffect />
       <div className="flex items-start justify-between">
         <div>
@@ -186,7 +186,7 @@ function PlayerCard({
   return (
     <button
       onClick={onClick}
-      className="w-full group bg-white/70 backdrop-blur-xl border border-white/30 rounded-2xl p-4 shadow-glass-sm hover:shadow-glass-md hover:-translate-y-0.5 hover:bg-white/80 transition-all duration-200 text-left"
+      className="w-full group glass-standard rounded-2xl p-4 hover:shadow-glass-md hover:-translate-y-0.5 hover:bg-white/80 active:bg-white/90 transition-all duration-200 text-left"
     >
       <div className="flex items-center gap-4">
         {/* Rank badge */}
@@ -1056,7 +1056,7 @@ export default function StatsClient({
       ) : (
         /* Empty state when no stats available */
         <div className="max-w-6xl mx-auto px-4 md:px-6 pt-16 pb-8">
-          <div className="relative bg-white/70 backdrop-blur-xl border border-white/30 rounded-2xl p-8 md:p-12 shadow-glass-sm text-center">
+          <div className="relative glass-standard rounded-2xl p-8 md:p-12 text-center">
             <ShineEffect />
             <div className="w-20 h-20 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-5">
               <IconChart size={36} className="text-warm-300" />
@@ -1092,7 +1092,7 @@ export default function StatsClient({
                 <a
                   key={round.id}
                   href={`/golf/dashboard/rounds/${round.id}`}
-                  className="flex items-center gap-4 px-4 py-3 rounded-xl bg-white/60 border border-white/30 hover:bg-white/80 hover:shadow-sm transition-all duration-200 group"
+                  className="flex items-center gap-4 px-4 py-3 rounded-xl bg-white/60 border border-white/30 hover:bg-white/80 active:bg-white/90 hover:shadow-sm transition-all duration-200 group"
                 >
                   <div className={cn('w-11 h-11 rounded-xl flex items-center justify-center font-bold text-lg ring-1', scoreBg, scoreColor)}>
                     {round.total_score ?? '--'}

@@ -58,7 +58,7 @@ function RoundReviewCard({
         href={`/golf/dashboard/rounds/${round.id}`}
         className={cn(
           'flex items-center gap-4 p-4 rounded-xl transition-all duration-200',
-          'bg-white/60 backdrop-blur-sm border border-white/30',
+          'glass-standard',
           'hover:bg-white/90 hover:shadow-md hover:-translate-y-0.5',
           'group'
         )}
@@ -199,7 +199,7 @@ export function RecentRoundReviews({ rounds }: RecentRoundReviewsProps) {
           </p>
           <Link
             href="/golf/dashboard/rounds/new"
-            className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors"
+            className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 active:bg-primary-100 rounded-lg transition-colors"
           >
             <IconGolf size={14} />
             Log a Round

@@ -122,7 +122,7 @@ export function CachedStatsSummary({
             <button
               onClick={refresh}
               disabled={loading}
-              className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors disabled:opacity-50"
+              className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 transition-colors disabled:opacity-50"
               title="Refresh stats"
               aria-label="Refresh stats"
             >

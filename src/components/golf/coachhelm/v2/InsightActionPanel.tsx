@@ -294,7 +294,7 @@ function ActionButton({
       icon: 'bg-blue-500/20',
     },
     secondary: {
-      base: 'bg-white hover:bg-warm-50 text-warm-700 border-warm-200',
+      base: 'bg-white hover:bg-warm-50 active:bg-warm-100 text-warm-700 border-warm-200',
       icon: 'bg-warm-100',
     },
     ghost: {

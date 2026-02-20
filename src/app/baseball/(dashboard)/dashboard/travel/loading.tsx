@@ -13,7 +13,7 @@ export default function TravelLoading() {
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {[1, 2].map((i) => (
-            <div key={i} className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-xl p-6">
+            <div key={i} className="glass-standard rounded-xl p-6">
               <Skeleton className="h-6 w-40 mb-4" />
               <div className="space-y-3">
                 {[1, 2, 3].map((j) => (

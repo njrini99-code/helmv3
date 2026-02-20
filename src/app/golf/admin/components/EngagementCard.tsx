@@ -21,7 +21,7 @@ export function EngagementCard({ engagement, totalPlayers, totalCoaches, playerE
   }));
 
   return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6 transition-all duration-200 hover:bg-white/80 hover:shadow-card-hover">
+    <div className="glass-standard rounded-2xl p-6 transition-all duration-200 hover:bg-white/80 active:bg-white/90 hover:shadow-card-hover">
       <div className="flex items-center gap-2 mb-5">
         <div className="p-2 bg-white/50 rounded-lg text-warm-500">
           <TrendingUp size={18} />

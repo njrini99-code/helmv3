@@ -245,7 +245,7 @@ export function PendingJoinRequests() {
                             variant="secondary"
                             onClick={() => handleReject(request.id)}
                             disabled={processingId === request.id}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors border-red-200"
                           >
                             {processingId === request.id ? (
                               <span className="flex items-center gap-1">
@@ -261,7 +261,7 @@ export function PendingJoinRequests() {
                             size="sm"
                             onClick={() => handleAccept(request.id)}
                             disabled={processingId === request.id}
-                            className="bg-primary-600 hover:bg-primary-700"
+                            className="bg-primary-600 hover:bg-primary-700 transition-colors"
                           >
                             {processingId === request.id ? (
                               <span className="flex items-center gap-1">

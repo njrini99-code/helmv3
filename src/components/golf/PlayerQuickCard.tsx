@@ -112,21 +112,21 @@ export function PlayerQuickCard({ player, children, className }: PlayerQuickCard
           {/* Quick Actions */}
           <div className="p-2">
             <Link href={`/golf/dashboard/stats?player=${player.id}`}>
-              <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 rounded-lg transition-colors">
+              <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 rounded-lg transition-colors">
                 <IconChart size={16} className="text-warm-400" />
                 <span>View Stats</span>
                 <IconChevronRight size={14} className="ml-auto text-warm-400" />
               </button>
             </Link>
             <Link href={`/golf/dashboard/messages?player=${player.id}`}>
-              <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 rounded-lg transition-colors">
+              <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 rounded-lg transition-colors">
                 <IconMessage size={16} className="text-warm-400" />
                 <span>Send Message</span>
                 <IconChevronRight size={14} className="ml-auto text-warm-400" />
               </button>
             </Link>
             <Link href={`/golf/dashboard/roster/${player.id}`}>
-              <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 rounded-lg transition-colors">
+              <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 rounded-lg transition-colors">
                 <IconUser size={16} className="text-warm-400" />
                 <span>View Profile</span>
                 <IconChevronRight size={14} className="ml-auto text-warm-400" />

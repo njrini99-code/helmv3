@@ -137,7 +137,7 @@ export function PipelineView({
       {allNewLeads && (
         <div className={cn(
           'p-6 rounded-2xl text-center',
-          'bg-white/70 backdrop-blur-xl border border-white/20 shadow-glass'
+          'glass-standard'
         )}>
           <div className="w-16 h-16 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto mb-4">
             <Rocket size={28} className="text-primary-600" />
@@ -157,7 +157,7 @@ export function PipelineView({
             <button
               onClick={() => handleResearchNext(25)}
               disabled={processing}
-              className="px-4 py-2.5 bg-white border border-warm-200/50 text-warm-700 rounded-xl font-medium hover:bg-warm-50 transition-colors text-sm disabled:opacity-50"
+              className="px-4 py-2.5 bg-white border border-warm-200/50 text-warm-700 rounded-xl font-medium hover:bg-warm-50 active:bg-warm-100 transition-colors text-sm disabled:opacity-50"
             >
               Research Top 25
             </button>
@@ -210,7 +210,7 @@ export function PipelineView({
               {/* Column Header — clean, minimal */}
               <div className={cn(
                 'rounded-xl px-3 py-2.5 mb-2 border-t-[3px]',
-                'bg-white/70 backdrop-blur-xl border border-white/30 shadow-glass-sm',
+                'glass-standard',
                 stage.borderColor
               )}>
                 <div className="flex items-center justify-between">
@@ -351,7 +351,7 @@ function KanbanCard({
         {nextStatus && (
           <button
             onClick={(e) => { e.stopPropagation(); onStatusChange(coach.id, nextStatus); }}
-            className="opacity-0 group-hover:opacity-100 w-6 h-6 rounded-md flex items-center justify-center hover:bg-primary-50 text-primary-600 transition-all"
+            className="opacity-0 group-hover:opacity-100 w-6 h-6 rounded-md flex items-center justify-center hover:bg-primary-50 active:bg-primary-100 text-primary-600 transition-all"
             title="Advance to next stage"
           >
             <ArrowRight size={12} />

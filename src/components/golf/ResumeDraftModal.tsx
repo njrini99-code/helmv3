@@ -112,7 +112,7 @@ export function ResumeDraftModal({
           </h2>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg hover:bg-warm-100 transition-colors"
+            className="p-1 rounded-lg hover:bg-warm-100 active:bg-warm-200 transition-colors"
             disabled={isLoading || isResuming || isDeleting}
             aria-label="Close dialog"
           >
@@ -196,7 +196,7 @@ export function ResumeDraftModal({
               className={cn(
                 'w-full p-4 rounded-xl border-2 transition-all duration-200',
                 'flex items-center gap-4',
-                'border-warm-200 bg-white hover:bg-warm-50',
+                'border-warm-200 bg-white hover:bg-warm-50 active:bg-warm-100',
                 'disabled:opacity-50 disabled:cursor-not-allowed'
               )}
             >

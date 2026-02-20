@@ -259,7 +259,7 @@ export function ExpenseSummary({
                           <button
                             onClick={() => handleSaveBudget(category)}
                             disabled={savingBudget}
-                            className="px-2 py-1 text-xs bg-primary-600 text-white rounded hover:bg-primary-700"
+                            className="px-2 py-1 text-xs bg-primary-600 text-white rounded hover:bg-primary-700 transition-colors"
                           >
                             Save
                           </button>
@@ -281,7 +281,7 @@ export function ExpenseSummary({
                           {isCoach && (
                             <button
                               onClick={() => startEditBudget(category)}
-                              className="p-1 hover:bg-warm-100 rounded transition-colors"
+                              className="p-1 hover:bg-warm-100 active:bg-warm-200 rounded transition-colors"
                             >
                               <IconEdit size={12} className="text-warm-400" />
                             </button>

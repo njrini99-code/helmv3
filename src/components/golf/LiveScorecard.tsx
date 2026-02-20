@@ -235,7 +235,7 @@ export function LiveScorecard({
                 className={`aspect-square rounded-lg flex flex-col items-center justify-center
                   text-xs transition-all
                   ${isCurrentHole ? 'ring-2 ring-primary-500' : ''}
-                  ${score?.score ? getScoreColor(hole.holeNumber) : 'bg-warm-50 hover:bg-warm-100'}
+                  ${score?.score ? getScoreColor(hole.holeNumber) : 'bg-warm-50 hover:bg-warm-100 active:bg-warm-200'}
                 `}
               >
                 <span className="font-bold">{score?.score || '-'}</span>
@@ -266,7 +266,7 @@ export function LiveScorecard({
                   className={`aspect-square rounded-lg flex flex-col items-center justify-center
                     text-xs transition-all
                     ${isCurrentHole ? 'ring-2 ring-primary-500' : ''}
-                    ${score?.score ? getScoreColor(hole.holeNumber) : 'bg-warm-50 hover:bg-warm-100'}
+                    ${score?.score ? getScoreColor(hole.holeNumber) : 'bg-warm-50 hover:bg-warm-100 active:bg-warm-200'}
                   `}
                 >
                   <span className="font-bold">{score?.score || '-'}</span>

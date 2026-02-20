@@ -142,7 +142,7 @@ export function UserActivityTable({ users }: Props) {
   }, [filtered]);
 
   return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6 transition-all duration-200 hover:bg-white/80 hover:shadow-card-hover">
+    <div className="glass-standard rounded-2xl p-6 transition-all duration-200 hover:bg-white/80 active:bg-white/90 hover:shadow-card-hover">
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2">
           <div className="p-2 bg-white/50 rounded-lg text-warm-500">
@@ -312,14 +312,14 @@ export function UserActivityTable({ users }: Props) {
             <button
               onClick={() => setPage(Math.max(0, page - 1))}
               disabled={page === 0}
-              className="px-3 py-1.5 text-xs rounded-lg bg-white/50 text-warm-600 hover:bg-white/70 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-3 py-1.5 text-xs rounded-lg bg-white/50 text-warm-600 hover:bg-white/70 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Prev
             </button>
             <button
               onClick={() => setPage(Math.min(pageCount - 1, page + 1))}
               disabled={page >= pageCount - 1}
-              className="px-3 py-1.5 text-xs rounded-lg bg-white/50 text-warm-600 hover:bg-white/70 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-3 py-1.5 text-xs rounded-lg bg-white/50 text-warm-600 hover:bg-white/70 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Next
             </button>

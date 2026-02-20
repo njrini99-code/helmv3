@@ -75,7 +75,7 @@ export const RosterToolbar = memo(function RosterToolbar({
                     'w-full text-left px-3 py-2 text-sm transition-colors flex items-center justify-between',
                     option.value === sortField
                       ? 'text-primary-700 bg-primary-50 font-medium'
-                      : 'text-warm-600 hover:bg-warm-50'
+                      : 'text-warm-600 hover:bg-warm-50 active:bg-warm-100'
                   )}
                 >
                   <span>{option.label}</span>

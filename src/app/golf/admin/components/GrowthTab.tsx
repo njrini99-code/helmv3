@@ -119,7 +119,7 @@ function EngagementFunnel({ funnel }: { funnel: AdminDashboardData['playerFunnel
 
   return (
     <div className={cn(
-      'bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-5 md:p-6'
+      'glass-standard rounded-2xl p-5 md:p-6'
     )}>
       <div className="space-y-3">
         {funnel.map((step, i) => {
@@ -166,7 +166,7 @@ function EngagementFunnel({ funnel }: { funnel: AdminDashboardData['playerFunnel
 function AIROICard({ roi, coachhelm }: { roi: AdminDashboardData['coachhelmRoi']; coachhelm: AdminDashboardData['coachhelm'] }) {
   return (
     <div className={cn(
-      'bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-5 md:p-6'
+      'glass-standard rounded-2xl p-5 md:p-6'
     )}>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
         <div className="bg-white/50 rounded-xl p-4 text-center border border-white/30">

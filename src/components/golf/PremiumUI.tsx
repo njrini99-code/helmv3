@@ -111,9 +111,9 @@ export function MetricCard({
   const content = (
     <div 
       className={cn(
-        'group relative bg-white/70 backdrop-blur-glass rounded-2xl p-4 transition-all duration-200',
-        'border border-white/40 hover:border-warm-300/80',
-        'shadow-glass hover:shadow-glass-hover',
+        'group relative glass-standard rounded-2xl p-4 transition-all duration-200',
+        'hover:border-warm-300/80',
+        'hover:shadow-glass-hover',
         href && 'cursor-pointer',
         className
       )}
@@ -202,7 +202,7 @@ export function DataTable<T extends { id: string }>({
 }: DataTableProps<T>) {
   if (loading) {
     return (
-      <div className={cn('bg-white/70 backdrop-blur-glass rounded-2xl border border-white/40 shadow-glass overflow-hidden', className)}>
+      <div className={cn('glass-standard rounded-2xl overflow-hidden', className)}>
         <div className="animate-pulse">
           <div className="h-12 bg-warm-50 border-b border-warm-100" />
           {[...Array(5)].map((_, i) => (
@@ -219,14 +219,14 @@ export function DataTable<T extends { id: string }>({
 
   if (data.length === 0 && emptyState) {
     return (
-      <div className={cn('bg-white/70 backdrop-blur-glass rounded-2xl border border-white/40 shadow-glass overflow-hidden', className)}>
+      <div className={cn('glass-standard rounded-2xl overflow-hidden', className)}>
         {emptyState}
       </div>
     );
   }
 
   return (
-    <div className={cn('bg-white/70 backdrop-blur-glass rounded-2xl border border-white/40 shadow-glass overflow-hidden', className)}>
+    <div className={cn('glass-standard rounded-2xl overflow-hidden', className)}>
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
@@ -253,7 +253,7 @@ export function DataTable<T extends { id: string }>({
                 onClick={() => onRowClick?.(item)}
                 className={cn(
                   'transition-colors duration-150',
-                  onRowClick && 'cursor-pointer hover:bg-warm-50/80'
+                  onRowClick && 'cursor-pointer hover:bg-warm-50/80 active:bg-warm-100'
                 )}
                 style={{
                   animation: 'fadeInUp 0.3s ease-out forwards',
@@ -411,7 +411,7 @@ export function ListCard({ avatar, title, subtitle, value, valueLabel, badge, on
       onClick={onClick}
       className={cn(
         'group flex items-center gap-3 p-3 rounded-xl transition-all duration-150',
-        onClick && 'cursor-pointer hover:bg-warm-50'
+        onClick && 'cursor-pointer hover:bg-warm-50 active:bg-warm-100'
       )}
       style={{ 
         animationDelay: `${delay}ms`,
@@ -620,8 +620,8 @@ export const PremiumButton = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'primary', size = 'md', loading, leftIcon, rightIcon, children, disabled, ...props }, ref) => {
     const variants = {
       primary: 'bg-warm-900 text-white hover:bg-warm-800 shadow-sm',
-      secondary: 'bg-white text-warm-700 border border-warm-200 hover:bg-warm-50 hover:border-warm-300',
-      ghost: 'bg-transparent text-warm-600 hover:bg-warm-100 hover:text-warm-900',
+      secondary: 'bg-white text-warm-700 border border-warm-200 hover:bg-warm-50 active:bg-warm-100 hover:border-warm-300',
+      ghost: 'bg-transparent text-warm-600 hover:bg-warm-100 active:bg-warm-200 hover:text-warm-900',
       danger: 'bg-red-600 text-white hover:bg-red-700 shadow-sm',
     };
 

@@ -204,7 +204,7 @@ function ToggleRow({
       role="switch"
       aria-checked={checked}
       aria-label={`${label}: ${checked ? 'enabled' : 'disabled'}`}
-      className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-warm-50 transition-colors"
+      className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-warm-50 active:bg-warm-100 transition-colors"
     >
       <div className="text-left flex-1">
         <p className="text-sm font-medium text-warm-900">{label}</p>

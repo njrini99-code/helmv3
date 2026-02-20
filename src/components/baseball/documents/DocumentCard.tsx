@@ -124,7 +124,7 @@ export function DocumentCard({
 
   return (
     <div
-      className="group relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-hidden hover:shadow-md hover:bg-white/80 transition-all duration-200 cursor-pointer active:scale-[0.98]"
+      className="group relative glass-standard rounded-2xl overflow-hidden hover:shadow-md hover:bg-white/80 transition-all duration-200 cursor-pointer active:scale-[0.98]"
       onClick={handlePreview}
     >
       {/* Color accent bar */}

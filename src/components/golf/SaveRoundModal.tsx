@@ -103,7 +103,7 @@ export function SaveRoundModal({
             </h2>
             <button
               onClick={onClose}
-              className="p-1 rounded-lg hover:bg-warm-100 transition-colors"
+              className="p-1 rounded-lg hover:bg-warm-100 active:bg-warm-200 transition-colors"
               disabled={saving}
               aria-label="Close dialog"
             >
@@ -169,7 +169,7 @@ export function SaveRoundModal({
                   'flex items-center gap-4',
                   confirmingDelete
                     ? 'border-rose-300 bg-rose-50 hover:bg-rose-100'
-                    : 'border-warm-200 bg-white hover:bg-warm-50',
+                    : 'border-warm-200 bg-white hover:bg-warm-50 active:bg-warm-100',
                   'disabled:opacity-50 disabled:cursor-not-allowed'
                 )}
               >

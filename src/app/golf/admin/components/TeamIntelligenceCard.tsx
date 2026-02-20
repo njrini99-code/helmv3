@@ -54,7 +54,7 @@ function TeamComparisonChart({ teams }: { teams: AdminDashboardData['teams'] }) 
 export function TeamIntelligenceCard({ teams }: Props) {
   if (teams.length === 0) {
     return (
-      <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6">
+      <div className="glass-standard rounded-2xl p-6">
         <div className="flex items-center gap-2 mb-4">
           <div className="p-2 bg-white/50 rounded-lg text-warm-500">
             <Users size={18} />
@@ -70,7 +70,7 @@ export function TeamIntelligenceCard({ teams }: Props) {
   const totalRoundsWeek = teams.reduce((s, t) => s + t.roundsThisWeek, 0);
 
   return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6 transition-all duration-200 hover:bg-white/80 hover:shadow-card-hover">
+    <div className="glass-standard rounded-2xl p-6 transition-all duration-200 hover:bg-white/80 active:bg-white/90 hover:shadow-card-hover">
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2">
           <div className="p-2 bg-white/50 rounded-lg text-warm-500">

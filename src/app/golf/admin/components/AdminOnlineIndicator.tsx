@@ -191,7 +191,7 @@ function AdminListItem({ admin, isCurrentUser }: AdminListItemProps) {
   return (
     <div
       className={cn(
-        'flex items-center gap-3 px-4 py-2 hover:bg-warm-50 transition-colors',
+        'flex items-center gap-3 px-4 py-2 hover:bg-warm-50 active:bg-warm-100 transition-colors',
         isCurrentUser && 'bg-primary-50/50'
       )}
     >

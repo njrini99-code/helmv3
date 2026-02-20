@@ -214,7 +214,7 @@ export function InsightBulkActions({
                   size="sm"
                   onClick={() => setConfirmModal({ open: true, action: 'dismiss' })}
                   disabled={isProcessing}
-                  className="text-red-400 hover:text-red-300 hover:bg-red-900/30"
+                  className="text-red-400 hover:text-red-300 hover:bg-red-900/30 transition-colors"
                 >
                   <IconX size={16} className="mr-1.5 hidden sm:block" />
                   <IconX size={16} className="sm:hidden" />
@@ -230,7 +230,7 @@ export function InsightBulkActions({
                   size="sm"
                   onClick={onExport}
                   disabled={isProcessing}
-                  className="text-warm-300 hover:text-white hover:bg-warm-700"
+                  className="text-warm-300 hover:text-white hover:bg-warm-700 transition-colors"
                 >
                   <IconDownload size={16} />
                   <span className="hidden sm:inline ml-1.5">Export</span>

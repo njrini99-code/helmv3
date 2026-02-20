@@ -71,7 +71,7 @@ export function PlayerCommandCard({ player }: PlayerCommandCardProps) {
   return (
     <Link href={`/baseball/dashboard/players/${player.id}`}>
       <div
-        className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-xl p-4
+        className="glass-standard rounded-xl p-4
                    hover:bg-white/80 hover:-translate-y-0.5 hover:shadow-lg
                    transition-all duration-200 cursor-pointer group"
       >

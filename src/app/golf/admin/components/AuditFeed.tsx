@@ -156,7 +156,7 @@ export function AuditFeed({ auditLog, loginSecurity }: Props) {
   return (
     <div className="space-y-6">
       {/* Section 1: Audit Log */}
-      <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6">
+      <div className="glass-standard rounded-2xl p-6">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">
@@ -244,7 +244,7 @@ export function AuditFeed({ auditLog, loginSecurity }: Props) {
       </div>
 
       {/* Section 2: Login Security */}
-      <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6">
+      <div className="glass-standard rounded-2xl p-6">
         <div className="flex items-center gap-2 mb-5">
           <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
             <LockIcon />

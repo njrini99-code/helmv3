@@ -288,7 +288,7 @@ function StatCardLarge({
 
 function TableRow({ metrics }: { metrics: InsightTypeMetrics }) {
   return (
-    <tr className="hover:bg-warm-50 transition-colors">
+    <tr className="hover:bg-warm-50 active:bg-warm-100 transition-colors">
       <td className="px-4 py-3 text-sm font-medium text-warm-900">{metrics.insightType}</td>
       <td className="px-4 py-3 text-sm text-warm-600 text-right tabular-nums">
         {metrics.insightsGenerated}

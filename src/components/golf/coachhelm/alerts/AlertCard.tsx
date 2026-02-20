@@ -235,7 +235,7 @@ export function AlertCard({
                   href={`/golf/dashboard/roster/${alert.playerId}`}
                   className={cn(
                     'flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg',
-                    'text-warm-600 hover:text-warm-800 hover:bg-white/50',
+                    'text-warm-600 hover:text-warm-800 hover:bg-white/50 active:bg-white/70',
                     'transition-colors'
                   )}
                   onClick={(e) => e.stopPropagation()}
@@ -247,7 +247,7 @@ export function AlertCard({
                   href={`/golf/dashboard/messages?player=${alert.playerId}`}
                   className={cn(
                     'flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg',
-                    'text-warm-600 hover:text-warm-800 hover:bg-white/50',
+                    'text-warm-600 hover:text-warm-800 hover:bg-white/50 active:bg-white/70',
                     'transition-colors'
                   )}
                   onClick={(e) => e.stopPropagation()}
@@ -281,7 +281,7 @@ export function AlertCard({
                     }}
                     aria-label="Dismiss alert"
                     className={cn(
-                      'p-1 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-white/50',
+                      'p-1 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-white/50 active:bg-white/70',
                       'transition-colors',
                       !onAcknowledge || alert.acknowledgedAt ? 'ml-auto' : ''
                     )}
@@ -299,7 +299,7 @@ export function AlertCard({
               onClick={() => setIsExpanded(!isExpanded)}
               aria-label={isExpanded ? 'Collapse alert details' : 'Expand alert details'}
               aria-expanded={isExpanded}
-              className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-white/50 transition-colors"
+              className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-white/50 active:bg-white/70 transition-colors"
             >
               <motion.div
                 animate={{ rotate: isExpanded ? 90 : 0 }}

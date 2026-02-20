@@ -8,7 +8,7 @@ export default function TeamLoading() {
         <Skeleton className="h-4 w-56 mb-8" />
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-xl p-6">
+            <div className="glass-standard rounded-xl p-6">
               <Skeleton className="h-6 w-32 mb-4" />
               <div className="space-y-4">
                 {[1, 2, 3, 4, 5].map((i) => (
@@ -25,11 +25,11 @@ export default function TeamLoading() {
             </div>
           </div>
           <div className="space-y-4">
-            <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-xl p-4">
+            <div className="glass-standard rounded-xl p-4">
               <Skeleton className="h-5 w-24 mb-3" />
               <Skeleton className="h-8 w-full rounded-lg" />
             </div>
-            <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-xl p-4">
+            <div className="glass-standard rounded-xl p-4">
               <Skeleton className="h-5 w-32 mb-3" />
               <div className="space-y-2">
                 {[1, 2, 3].map((i) => (

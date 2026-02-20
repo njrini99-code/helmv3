@@ -19,7 +19,7 @@ export default function CommandCenterLoading() {
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-xl p-4"
+              className="glass-standard rounded-xl p-4"
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="w-8 h-8 bg-slate-200 rounded-lg animate-pulse" />
@@ -34,7 +34,7 @@ export default function CommandCenterLoading() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-4">
             {/* Search Skeleton */}
-            <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-xl p-4">
+            <div className="glass-standard rounded-xl p-4">
               <div className="h-10 bg-slate-200 rounded-lg animate-pulse" />
             </div>
 
@@ -43,7 +43,7 @@ export default function CommandCenterLoading() {
               {[1, 2, 3, 4, 5, 6].map((i) => (
                 <div
                   key={i}
-                  className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-xl p-4"
+                  className="glass-standard rounded-xl p-4"
                 >
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-12 h-12 bg-slate-200 rounded-full animate-pulse" />
@@ -67,7 +67,7 @@ export default function CommandCenterLoading() {
 
           {/* Sidebar Skeleton */}
           <div className="space-y-4">
-            <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+            <div className="glass-standard rounded-2xl p-6">
               <div className="h-5 w-24 bg-slate-200 rounded animate-pulse mb-4" />
               <div className="space-y-3">
                 {[1, 2, 3].map((i) => (

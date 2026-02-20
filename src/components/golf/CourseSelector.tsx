@@ -62,7 +62,7 @@ export function CourseSelector({
       <button
         onClick={onCreateNew}
         className="w-full p-4 border-2 border-dashed border-primary-300 rounded-lg
-                   text-primary-600 font-medium hover:bg-primary-50 transition-colors
+                   text-primary-600 font-medium hover:bg-primary-50 active:bg-primary-100 transition-colors
                    flex items-center justify-center gap-2"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

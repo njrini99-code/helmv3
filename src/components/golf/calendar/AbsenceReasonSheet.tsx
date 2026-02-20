@@ -218,7 +218,7 @@ export function AbsenceReasonSheet({
           <Button
             onClick={handleSubmit}
             disabled={loading || !selectedReason}
-            className="bg-rose-600 hover:bg-rose-700"
+            className="bg-rose-600 hover:bg-rose-700 transition-colors"
           >
             {loading ? 'Recording...' : 'Record Absence'}
           </Button>

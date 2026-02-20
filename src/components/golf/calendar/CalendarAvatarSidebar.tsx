@@ -289,7 +289,7 @@ export function CalendarAvatarSidebar({
         <Tooltip content="Manage feeds" side="right">
           <button
             onClick={() => onSyncSettings?.()}
-            className="w-12 h-12 rounded-[14px] flex items-center justify-center bg-warm-100/60 text-warm-400 cursor-pointer transition-all duration-200 border-none flex-shrink-0 hover:text-warm-600 hover:bg-warm-100"
+            className="w-12 h-12 rounded-[14px] flex items-center justify-center bg-warm-100/60 text-warm-400 cursor-pointer transition-all duration-200 border-none flex-shrink-0 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200"
             aria-label="Manage feeds"
           >
             <Settings2 className="w-5 h-5" />

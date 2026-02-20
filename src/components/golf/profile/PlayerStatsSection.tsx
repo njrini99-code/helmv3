@@ -343,7 +343,7 @@ const DetailedStatsTabs = memo(function DetailedStatsTabs({ stats }: { stats: Go
               'flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all',
               activeTab === tab.id
                 ? 'bg-primary-600 text-white shadow-sm'
-                : 'text-warm-600 hover:bg-warm-100'
+                : 'text-warm-600 hover:bg-warm-100 active:bg-warm-200'
             )}
           >
             {tab.icon}
@@ -468,7 +468,7 @@ export const PlayerStatsSection = memo(function PlayerStatsSection({
               onKeyDown={(e) => { if (e.key === 'Escape') setDropdownOpen(false); }}
               aria-haspopup="listbox"
               aria-expanded={dropdownOpen}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-warm-200 rounded-lg text-sm font-medium text-warm-700 hover:bg-warm-50 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-white border border-warm-200 rounded-lg text-sm font-medium text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors"
             >
               {selectedRoundId === 'overall' ? 'Overall' : 'Single Round'}
               <IconChevronDown size={16} className={cn('transition-transform', dropdownOpen && 'rotate-180')} />
@@ -488,7 +488,7 @@ export const PlayerStatsSection = memo(function PlayerStatsSection({
                     aria-selected={selectedRoundId === 'overall'}
                     onClick={() => { setSelectedRoundId('overall'); setDropdownOpen(false); }}
                     className={cn(
-                      'w-full px-4 py-2.5 text-left text-sm hover:bg-warm-50 transition-colors',
+                      'w-full px-4 py-2.5 text-left text-sm hover:bg-warm-50 active:bg-warm-100 transition-colors',
                       selectedRoundId === 'overall' && 'bg-primary-50 text-primary-700 font-medium'
                     )}
                   >
@@ -502,7 +502,7 @@ export const PlayerStatsSection = memo(function PlayerStatsSection({
                       aria-selected={selectedRoundId === round.id}
                       onClick={() => { setSelectedRoundId(round.id); setDropdownOpen(false); }}
                       className={cn(
-                        'w-full px-4 py-2.5 text-left text-sm hover:bg-warm-50 transition-colors',
+                        'w-full px-4 py-2.5 text-left text-sm hover:bg-warm-50 active:bg-warm-100 transition-colors',
                         selectedRoundId === round.id && 'bg-primary-50 text-primary-700 font-medium'
                       )}
                     >

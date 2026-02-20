@@ -372,7 +372,7 @@ export function TeamStatsTable({ players }: TeamStatsTableProps) {
                 <td className="px-3 py-3">
                   <Link
                     href={`/golf/dashboard/stats?player=${player.id}`}
-                    className="p-2 rounded-lg text-warm-400 hover:text-primary-600 hover:bg-warm-100 transition-colors inline-flex sm:opacity-0 sm:group-hover:opacity-100"
+                    className="p-2 rounded-lg text-warm-400 hover:text-primary-600 hover:bg-warm-100 active:bg-warm-200 transition-colors inline-flex sm:opacity-0 sm:group-hover:opacity-100"
                   >
                     <IconChevronRight size={16} />
                   </Link>

@@ -168,7 +168,7 @@ export function DraftEventListItem({
     <div
       onClick={onClick}
       className="flex items-center gap-3 p-2 rounded-lg border-l-3 border-l-warm-300
-                 border-dashed bg-warm-50/50 hover:bg-warm-100/50 cursor-pointer
+                 border-dashed bg-warm-50/50 hover:bg-warm-100/50 active:bg-warm-200 cursor-pointer
                  transition-colors"
     >
       <Edit3 className="w-4 h-4 text-warm-400 shrink-0" />

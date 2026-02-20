@@ -106,7 +106,7 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
   // Loading state — shimmer skeleton
   if (loading) {
     return (
-      <div className={cn('rounded-2xl border border-warm-200 bg-white/70 backdrop-blur-xl p-6', className)}>
+      <div className={cn('rounded-2xl glass-standard p-6', className)}>
         <div className="space-y-5">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 bg-gradient-to-br from-warm-200 to-warm-100 rounded-xl animate-pulse" />
@@ -222,7 +222,7 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
   // Generating overlay
   if (generating) {
     return (
-      <div className={cn('rounded-2xl border border-warm-200 bg-white/70 backdrop-blur-xl p-6', className)}>
+      <div className={cn('rounded-2xl glass-standard p-6', className)}>
         <div className="flex flex-col items-center justify-center py-10">
           <div className="relative">
             <motion.div
@@ -289,7 +289,7 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
             </p>
           </div>
         </div>
-        <Button variant="secondary" size="sm" onClick={generate} disabled={generating} title="Regenerate review" aria-label="Regenerate review" className="hover:bg-warm-100 transition-colors">
+        <Button variant="secondary" size="sm" onClick={generate} disabled={generating} title="Regenerate review" aria-label="Regenerate review" className="hover:bg-warm-100 active:bg-warm-200 transition-colors">
           <IconRefresh size={14} className={cn(generating && 'animate-spin')} />
         </Button>
       </motion.div>
@@ -1075,7 +1075,7 @@ function StrokesToGainCard({ items }: { items: StrokesToGainItem[] }) {
             initial={{ opacity: 0, x: -12 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1 * i, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            className="flex items-center gap-3 p-3.5 rounded-xl bg-warm-50/50 border border-warm-100 hover:bg-warm-50 transition-colors"
+            className="flex items-center gap-3 p-3.5 rounded-xl bg-warm-50/50 border border-warm-100 hover:bg-warm-50 active:bg-warm-100 transition-colors"
           >
             <div className="flex-shrink-0 w-11 h-11 rounded-xl bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center border border-blue-200/50 shadow-sm">
               <span className="text-base font-bold text-blue-700 tabular-nums">

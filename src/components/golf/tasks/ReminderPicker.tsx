@@ -186,7 +186,7 @@ export function ReminderPicker({
                     'disabled:cursor-not-allowed disabled:opacity-50',
                     selectedPreset === preset.value
                       ? 'bg-primary-50 text-primary-700 border-primary-200'
-                      : 'bg-white text-warm-600 border-warm-200 hover:border-warm-300 hover:bg-warm-50'
+                      : 'bg-white text-warm-600 border-warm-200 hover:border-warm-300 hover:bg-warm-50 active:bg-warm-100'
                   )}
                 >
                   {preset.label}
@@ -248,7 +248,7 @@ export function ReminderPicker({
                     'disabled:cursor-not-allowed disabled:opacity-50',
                     selectedType === type.value
                       ? 'bg-primary-50 text-primary-700 border-primary-200'
-                      : 'bg-white text-warm-600 border-warm-200 hover:border-warm-300 hover:bg-warm-50'
+                      : 'bg-white text-warm-600 border-warm-200 hover:border-warm-300 hover:bg-warm-50 active:bg-warm-100'
                   )}
                 >
                   {type.label}

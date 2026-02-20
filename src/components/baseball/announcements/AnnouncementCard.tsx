@@ -44,7 +44,7 @@ export function AnnouncementCard({ announcement }: AnnouncementCardProps) {
   return (
     <div
       className={cn(
-        'relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-hidden p-6',
+        'relative glass-standard rounded-2xl overflow-hidden p-6',
         isUrgent && 'border-red-200'
       )}
     >

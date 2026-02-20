@@ -261,7 +261,7 @@ export function TemplateForm({
             type="button"
             onClick={onCancel}
             disabled={isPending}
-            className="px-4 py-2 text-sm font-medium text-warm-700 bg-white border border-warm-200 rounded-lg hover:bg-warm-50 transition-colors disabled:opacity-50"
+            className="px-4 py-2 text-sm font-medium text-warm-700 bg-white border border-warm-200 rounded-lg hover:bg-warm-50 active:bg-warm-100 transition-colors disabled:opacity-50"
           >
             Cancel
           </button>

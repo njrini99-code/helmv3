@@ -122,7 +122,7 @@ export function RecruitingPreferencesClient({
       {/* Metric Weights */}
       <div
         className={cn(
-          'bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-sm',
+          'glass-standard rounded-2xl p-6',
           activeSection !== 'weights' && 'hidden lg:block'
         )}
       >
@@ -132,7 +132,7 @@ export function RecruitingPreferencesClient({
       {/* Position Priorities */}
       <div
         className={cn(
-          'bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-sm',
+          'glass-standard rounded-2xl p-6',
           activeSection !== 'positions' && 'hidden lg:block'
         )}
       >
@@ -142,7 +142,7 @@ export function RecruitingPreferencesClient({
       {/* Minimum Standards */}
       <div
         className={cn(
-          'bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-sm',
+          'glass-standard rounded-2xl p-6',
           activeSection !== 'standards' && 'hidden lg:block'
         )}
       >
@@ -152,7 +152,7 @@ export function RecruitingPreferencesClient({
       {/* Geographic Preferences */}
       <div
         className={cn(
-          'bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-sm',
+          'glass-standard rounded-2xl p-6',
           activeSection !== 'geography' && 'hidden lg:block'
         )}
       >
@@ -205,7 +205,7 @@ export function RecruitingPreferencesClient({
       {/* Target Grad Years */}
       <div
         className={cn(
-          'bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-sm',
+          'glass-standard rounded-2xl p-6',
           activeSection !== 'gradyears' && 'hidden lg:block'
         )}
       >

@@ -309,7 +309,7 @@ export function PatternCard({
             <button
               onClick={() => setExpanded(!expanded)}
               aria-label={expanded ? 'Collapse pattern details' : 'Expand pattern details'}
-              className="p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
+              className="p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 transition-colors"
             >
               <motion.div
                 animate={{ rotate: expanded ? 180 : 0 }}
@@ -430,7 +430,7 @@ export function PatternCard({
                         {onValidate && (
                           <button
                             onClick={() => onValidate(pattern)}
-                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-primary-600 hover:bg-primary-50 transition-colors"
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-primary-600 hover:bg-primary-50 active:bg-primary-100 transition-colors"
                           >
                             <IconCheck size={14} />
                             Validate
@@ -439,7 +439,7 @@ export function PatternCard({
                         {onDismiss && (
                           <button
                             onClick={() => onDismiss(pattern)}
-                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-warm-500 hover:bg-warm-100 transition-colors"
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-warm-500 hover:bg-warm-100 active:bg-warm-200 transition-colors"
                           >
                             <IconX size={14} />
                             Dismiss
@@ -461,7 +461,7 @@ export function PatternCard({
                     {pattern.lifecycleState === 'addressed' && onResolve && (
                       <button
                         onClick={() => onResolve(pattern)}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-primary-600 hover:bg-primary-50 transition-colors"
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-primary-600 hover:bg-primary-50 active:bg-primary-100 transition-colors"
                       >
                         <IconCheck size={14} />
                         Mark Resolved
@@ -471,7 +471,7 @@ export function PatternCard({
                     {onViewEvidence && (
                       <button
                         onClick={() => onViewEvidence(pattern)}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-warm-500 hover:bg-warm-100 transition-colors ml-auto"
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-warm-500 hover:bg-warm-100 active:bg-warm-200 transition-colors ml-auto"
                       >
                         <IconEye size={14} />
                         View Evidence

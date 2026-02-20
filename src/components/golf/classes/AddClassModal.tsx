@@ -276,7 +276,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
           <button
             onClick={onClose}
             aria-label="Close"
-            className="p-2 text-warm-400 hover:text-warm-600 hover:bg-warm-100 rounded-lg transition-colors"
+            className="p-2 text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
           >
             <IconX size={20} />
           </button>
@@ -521,7 +521,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
                       type="button"
                       size="sm"
                       onClick={handleConfirmWithConflicts}
-                      className="bg-amber-600 hover:bg-amber-700"
+                      className="bg-amber-600 hover:bg-amber-700 transition-colors"
                     >
                       Add Anyway
                     </Button>

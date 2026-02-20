@@ -59,7 +59,7 @@ export default function PlayerDropoffFunnel({
   }
 
   return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6">
+    <div className="glass-standard rounded-2xl p-6">
       <h2 className="text-lg font-semibold text-warm-900 mb-6">
         Player Journey Funnel
       </h2>

@@ -86,7 +86,7 @@ function FocusAreaCard({
       onClick={onClick}
       className={cn(
         'relative w-full p-4 rounded-xl border text-left transition-all duration-200',
-        'bg-white/70 backdrop-blur-sm border-white/30',
+        'glass-standard',
         'hover:bg-white/90 hover:shadow-lg hover:-translate-y-0.5',
         'group cursor-pointer'
       )}

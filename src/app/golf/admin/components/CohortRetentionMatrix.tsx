@@ -32,7 +32,7 @@ function getCellClasses(value: number | undefined): string {
 
 export default function CohortRetentionMatrix({ cohorts }: CohortRetentionMatrixProps) {
   return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6">
+    <div className="glass-standard rounded-2xl p-6">
       <div className="mb-4">
         <h3 className="text-lg font-semibold text-warm-900">Cohort Retention</h3>
         <p className="text-xs text-warm-400">% of users active N weeks after signup</p>

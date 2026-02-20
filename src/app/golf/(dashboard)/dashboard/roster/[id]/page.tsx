@@ -243,7 +243,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
                     {player.email && (
                       <a
                         href={`mailto:${player.email}`}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-warm-600 hover:text-warm-900 hover:bg-warm-100 rounded-lg transition-colors"
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-warm-600 hover:text-warm-900 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
                         title={player.email}
                       >
                         <IconMail size={14} />
@@ -253,7 +253,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
                     {player.phone && (
                       <a
                         href={`tel:${player.phone}`}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-warm-600 hover:text-warm-900 hover:bg-warm-100 rounded-lg transition-colors"
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-warm-600 hover:text-warm-900 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
                         title={player.phone}
                       >
                         <IconPhone size={14} />

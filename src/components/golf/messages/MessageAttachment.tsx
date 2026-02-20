@@ -236,7 +236,7 @@ function VideoAttachment({
         <div
           className={cn(
             'w-12 h-12 rounded-full bg-white/90 flex items-center justify-center',
-            'group-hover:scale-110 transition-transform shadow-lg'
+            'group-hover:scale-110 active:scale-95 transition-transform shadow-lg'
           )}
         >
           <IconPlay size={20} className="text-warm-900 ml-1" />
@@ -354,8 +354,8 @@ function AudioAttachment({
           'w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0',
           'transition-colors duration-200',
           isOwnMessage
-            ? 'bg-white/20 hover:bg-white/30 text-white'
-            : 'bg-purple-100 hover:bg-purple-200 text-purple-600'
+            ? 'bg-white/20 hover:bg-white/30 active:bg-white/40 text-white'
+            : 'bg-purple-100 hover:bg-purple-200 active:bg-purple-300 text-purple-600'
         )}
         aria-label={isPlaying ? 'Pause' : 'Play'}
       >
@@ -418,8 +418,8 @@ function AudioAttachment({
         className={cn(
           'p-1.5 rounded-full transition-colors flex-shrink-0',
           isOwnMessage
-            ? 'text-white/70 hover:text-white hover:bg-white/10'
-            : 'text-warm-400 hover:text-warm-600 hover:bg-warm-100'
+            ? 'text-white/70 hover:text-white hover:bg-white/10 active:bg-white/20'
+            : 'text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200'
         )}
         aria-label={isMuted ? 'Unmute' : 'Mute'}
       >
@@ -456,8 +456,8 @@ function DocumentAttachment({
         'flex items-center gap-3 p-3 rounded-lg cursor-pointer',
         'transition-colors duration-200',
         isOwnMessage
-          ? 'bg-primary-700/50 hover:bg-primary-700/60'
-          : 'bg-warm-200/70 hover:bg-warm-200',
+          ? 'bg-primary-700/50 hover:bg-primary-700/60 active:bg-primary-700/70'
+          : 'bg-warm-200/70 hover:bg-warm-200 active:bg-warm-300',
         className
       )}
       onClick={handleDownload}
@@ -643,7 +643,7 @@ function ImageLightbox({ url, fileName, onClose }: ImageLightboxProps) {
         onClick={onClose}
         className={cn(
           'absolute top-4 right-4 z-10',
-          'p-2 rounded-full bg-black/50 hover:bg-black/70',
+          'p-2 rounded-full bg-black/50 hover:bg-black/70 active:bg-black/90 active:scale-95',
           'text-white transition-colors'
         )}
         aria-label="Close"
@@ -656,7 +656,7 @@ function ImageLightbox({ url, fileName, onClose }: ImageLightboxProps) {
         <button
           type="button"
           onClick={() => setScale((s) => Math.max(s - 0.25, 0.5))}
-          className="p-2 rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors"
+          className="p-2 rounded-full bg-black/50 hover:bg-black/70 active:bg-black/90 text-white transition-colors"
           aria-label="Zoom out"
         >
           <IconZoomIn size={20} className="rotate-180" />
@@ -667,7 +667,7 @@ function ImageLightbox({ url, fileName, onClose }: ImageLightboxProps) {
         <button
           type="button"
           onClick={() => setScale((s) => Math.min(s + 0.25, 4))}
-          className="p-2 rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors"
+          className="p-2 rounded-full bg-black/50 hover:bg-black/70 active:bg-black/90 text-white transition-colors"
           aria-label="Zoom in"
         >
           <IconZoomIn size={20} />

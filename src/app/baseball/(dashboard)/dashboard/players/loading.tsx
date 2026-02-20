@@ -6,7 +6,7 @@ export default function PlayersLoading() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         <Skeleton className="h-8 w-40 mb-2" />
         <Skeleton className="h-4 w-48 mb-8" />
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-xl p-6">
+        <div className="glass-standard rounded-xl p-6">
           <div className="flex items-center gap-4 mb-6">
             <Skeleton className="h-20 w-20 rounded-full" />
             <div>

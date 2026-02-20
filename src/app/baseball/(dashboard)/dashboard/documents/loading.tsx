@@ -14,7 +14,7 @@ export default function DocumentsLoading() {
         <Skeleton className="h-10 w-full max-w-md mb-6" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-xl p-4">
+            <div key={i} className="glass-standard rounded-xl p-4">
               <Skeleton className="h-10 w-10 rounded mb-3" />
               <Skeleton className="h-5 w-32 mb-2" />
               <Skeleton className="h-3 w-24" />

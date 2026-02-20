@@ -85,7 +85,7 @@ export function NotificationCenter() {
       {/* Bell Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 rounded-lg text-warm-600 hover:text-warm-900 hover:bg-warm-100 transition-colors"
+        className="relative p-2 rounded-lg text-warm-600 hover:text-warm-900 hover:bg-warm-100 active:bg-warm-200 transition-colors"
         aria-label="Notifications"
         aria-expanded={isOpen}
       >
@@ -152,7 +152,7 @@ export function NotificationCenter() {
                     <li key={notification.id}>
                       <button
                         onClick={() => handleNotificationClick(notification)}
-                        className={`w-full px-4 py-3 flex gap-3 hover:bg-warm-50 transition-colors text-left ${
+                        className={`w-full px-4 py-3 flex gap-3 hover:bg-warm-50 active:bg-warm-100 transition-colors text-left ${
                           !notification.read ? 'bg-primary-50/30' : ''
                         }`}
                       >

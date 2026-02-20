@@ -117,7 +117,7 @@ export function ReasoningChainView({ reasoning }: ReasoningChainViewProps) {
         <div className="border border-warm-200 rounded-xl overflow-hidden">
           <button
             onClick={() => setShowAlternatives(!showAlternatives)}
-            className="w-full flex items-center justify-between px-4 py-3 bg-warm-50 hover:bg-warm-100 transition-colors"
+            className="w-full flex items-center justify-between px-4 py-3 bg-warm-50 hover:bg-warm-100 active:bg-warm-200 transition-colors"
           >
             <div className="flex items-center gap-2">
               <IconWarning size={16} className="text-amber-500" />
@@ -173,7 +173,7 @@ export function ReasoningChainView({ reasoning }: ReasoningChainViewProps) {
         <div className="border border-warm-200 rounded-xl overflow-hidden">
           <button
             onClick={() => setShowSensitivities(!showSensitivities)}
-            className="w-full flex items-center justify-between px-4 py-3 bg-warm-50 hover:bg-warm-100 transition-colors"
+            className="w-full flex items-center justify-between px-4 py-3 bg-warm-50 hover:bg-warm-100 active:bg-warm-200 transition-colors"
           >
             <div className="flex items-center gap-2">
               <IconInfo size={16} className="text-blue-500" />

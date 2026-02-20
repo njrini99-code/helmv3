@@ -142,7 +142,7 @@ function SectionCard({
   className?: string;
 }) {
   return (
-    <div className={cn('relative overflow-hidden bg-white/70 backdrop-blur-xl border border-white/30 rounded-2xl shadow-glass-sm', className)}>
+    <div className={cn('relative overflow-hidden glass-standard rounded-2xl', className)}>
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent" />
       <div className="px-6 py-4 border-b border-white/20">
         <h3 className="text-base font-semibold text-warm-900">{title}</h3>
@@ -214,7 +214,7 @@ function EditableList({
           <button
             type="button"
             onClick={addItem}
-            className="px-3 py-2 text-sm font-medium text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+            className="px-3 py-2 text-sm font-medium text-primary-600 hover:bg-primary-50 active:bg-primary-100 rounded-lg transition-colors"
           >
             Add
           </button>
@@ -350,7 +350,7 @@ export function RoundReviewPanel({
   // Render generating state
   if (review.status === 'generating') {
     return (
-      <div className="relative overflow-hidden bg-white/70 backdrop-blur-xl border border-white/30 rounded-2xl p-8 shadow-glass-sm">
+      <div className="relative overflow-hidden glass-standard rounded-2xl p-8">
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent" />
         <div className="flex flex-col items-center text-center">
           <LoadingSpinner size="lg" />
@@ -372,7 +372,7 @@ export function RoundReviewPanel({
   // Render failed state
   if (review.status === 'failed') {
     return (
-      <div className="relative overflow-hidden bg-white/70 backdrop-blur-xl border border-red-200/50 rounded-2xl p-8 shadow-glass-sm">
+      <div className="relative overflow-hidden glass-standard border-red-200/50 rounded-2xl p-8">
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-red-200/60 to-transparent" />
         <div className="flex flex-col items-center text-center">
           <div className="w-12 h-12 rounded-full bg-red-50/80 flex items-center justify-center">
@@ -410,7 +410,7 @@ export function RoundReviewPanel({
   // Render pending state
   if (review.status === 'pending') {
     return (
-      <div className="relative overflow-hidden bg-white/70 backdrop-blur-xl border border-white/30 rounded-2xl p-8 shadow-glass-sm">
+      <div className="relative overflow-hidden glass-standard rounded-2xl p-8">
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent" />
         <div className="flex flex-col items-center text-center">
           <div className="w-12 h-12 rounded-full bg-warm-100/70 flex items-center justify-center">
@@ -452,14 +452,14 @@ export function RoundReviewPanel({
                 <>
                   <button
                     onClick={() => setIsEditing(false)}
-                    className="px-3 py-1.5 text-sm font-medium text-warm-600 hover:bg-warm-100/70 rounded-lg transition-colors"
+                    className="px-3 py-1.5 text-sm font-medium text-warm-600 hover:bg-warm-100/70 active:bg-warm-200 rounded-lg transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={() => handleSave(false)}
                     disabled={isSaving}
-                    className="px-3 py-1.5 text-sm font-medium text-warm-900 bg-white border border-border hover:bg-warm-100 rounded-lg transition-colors disabled:opacity-50"
+                    className="px-3 py-1.5 text-sm font-medium text-warm-900 bg-white border border-border hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors disabled:opacity-50"
                   >
                     {isSaving ? 'Saving...' : 'Save Draft'}
                   </button>
@@ -474,7 +474,7 @@ export function RoundReviewPanel({
               ) : (
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="px-3 py-1.5 text-sm font-medium text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                  className="px-3 py-1.5 text-sm font-medium text-primary-600 hover:bg-primary-50 active:bg-primary-100 rounded-lg transition-colors"
                 >
                   Edit Feedback
                 </button>

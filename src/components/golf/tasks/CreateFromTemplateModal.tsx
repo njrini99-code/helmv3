@@ -198,7 +198,7 @@ export function CreateFromTemplateModal({
                       'w-full px-3 py-2 rounded-md text-left text-sm flex items-center justify-between transition-all',
                       selectedPlayers.includes(player.id)
                         ? 'bg-primary-100 text-primary-900 shadow-sm'
-                        : 'hover:bg-warm-50 text-warm-700'
+                        : 'hover:bg-warm-50 active:bg-warm-100 text-warm-700'
                     )}
                   >
                     <span>

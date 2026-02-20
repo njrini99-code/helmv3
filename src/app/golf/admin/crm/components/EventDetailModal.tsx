@@ -282,7 +282,7 @@ export function EventDetailModal({
                 <button
                   onClick={handleComplete}
                   disabled={submitting}
-                  className="px-4 py-1.5 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700 disabled:opacity-50"
+                  className="px-4 py-1.5 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700 transition-colors disabled:opacity-50"
                 >
                   {submitting ? 'Saving...' : 'Complete'}
                 </button>

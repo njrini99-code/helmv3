@@ -141,7 +141,7 @@ export function PlayerStatusBadge({
                     'w-full px-3 py-2 text-left text-sm',
                     'flex items-center gap-2',
                     'transition-colors duration-150',
-                    'hover:bg-warm-50',
+                    'hover:bg-warm-50 active:bg-warm-100',
                     status.value === currentStatus && 'bg-warm-50'
                   )}
                 >

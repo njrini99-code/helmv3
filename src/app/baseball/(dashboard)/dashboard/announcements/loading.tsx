@@ -13,7 +13,7 @@ export default function AnnouncementsLoading() {
         </div>
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-xl p-6">
+            <div key={i} className="glass-standard rounded-xl p-6">
               <Skeleton className="h-6 w-48 mb-3" />
               <Skeleton className="h-4 w-full mb-2" />
               <Skeleton className="h-4 w-3/4" />

@@ -260,7 +260,7 @@ function SingleCoachQuickAction({
                   'px-3 py-1.5 rounded-xl text-sm font-medium transition-all',
                   logForm.type === type.value
                     ? 'bg-primary-600 text-white shadow-sm'
-                    : 'bg-warm-100/50 text-warm-600 hover:bg-warm-100'
+                    : 'bg-warm-100/50 text-warm-600 hover:bg-warm-100 active:bg-warm-200'
                 )}
               >
                 {type.icon} {type.label}
@@ -279,7 +279,7 @@ function SingleCoachQuickAction({
           <div className="flex gap-3">
             <button
               onClick={onClose}
-              className="flex-1 py-2.5 rounded-xl text-sm font-medium text-warm-600 hover:bg-warm-50 transition-colors"
+              className="flex-1 py-2.5 rounded-xl text-sm font-medium text-warm-600 hover:bg-warm-50 active:bg-warm-100 transition-colors"
             >
               Cancel
             </button>

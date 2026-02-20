@@ -202,7 +202,7 @@ export function CancellationDialog({
                     onClick={() => handleQuickReason(quickReason.value)}
                     className={cn(
                       'flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-all',
-                      'hover:border-warm-300 hover:bg-warm-50',
+                      'hover:border-warm-300 hover:bg-warm-50 active:bg-warm-100',
                       isSelected
                         ? 'border-primary-600 bg-primary-50'
                         : 'border-warm-200 bg-white'
@@ -271,7 +271,7 @@ export function CancellationDialog({
             variant="danger"
             onClick={handleConfirm}
             disabled={loading}
-            className="px-4 bg-rose-600 hover:bg-rose-700"
+            className="px-4 bg-rose-600 hover:bg-rose-700 transition-colors"
           >
             {loading ? 'Cancelling...' : 'Cancel Event'}
           </Button>

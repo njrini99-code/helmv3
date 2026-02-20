@@ -257,7 +257,7 @@ export function PatternDashboard({
             'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ml-auto',
             showFilters
               ? 'bg-primary-100 text-primary-700'
-              : 'text-warm-600 hover:bg-warm-100'
+              : 'text-warm-600 hover:bg-warm-100 active:bg-warm-200'
           )}
         >
           <IconFilter size={16} />
@@ -294,7 +294,7 @@ export function PatternDashboard({
                           'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
                           lifecycleFilter === state
                             ? 'bg-primary-100 text-primary-700'
-                            : 'text-warm-600 hover:bg-warm-100'
+                            : 'text-warm-600 hover:bg-warm-100 active:bg-warm-200'
                         )}
                       >
                         {state.charAt(0).toUpperCase() + state.slice(1)}
@@ -321,7 +321,7 @@ export function PatternDashboard({
                               sev === 'medium' ? 'bg-amber-100 text-amber-700' :
                               sev === 'low' ? 'bg-warm-100 text-warm-700' :
                               'bg-primary-100 text-primary-700'
-                            : 'text-warm-600 hover:bg-warm-100'
+                            : 'text-warm-600 hover:bg-warm-100 active:bg-warm-200'
                         )}
                       >
                         {sev.charAt(0).toUpperCase() + sev.slice(1)}
@@ -337,7 +337,7 @@ export function PatternDashboard({
                       setLifecycleFilter('all');
                       setSeverityFilter('all');
                     }}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium text-warm-500 hover:text-warm-700 hover:bg-warm-100 transition-colors self-end"
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium text-warm-500 hover:text-warm-700 hover:bg-warm-100 active:bg-warm-200 transition-colors self-end"
                   >
                     <IconX size={14} />
                     Clear Filters

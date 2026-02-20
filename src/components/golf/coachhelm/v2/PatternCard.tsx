@@ -175,7 +175,7 @@ export function PatternCard({ pattern, onDismiss }: PatternCardProps) {
                       e.stopPropagation();
                       onDismiss();
                     }}
-                    className="text-xs text-warm-500 hover:text-warm-700 px-3 py-1.5 rounded-lg hover:bg-warm-100 transition-colors"
+                    className="text-xs text-warm-500 hover:text-warm-700 px-3 py-1.5 rounded-lg hover:bg-warm-100 active:bg-warm-200 transition-colors"
                   >
                     Dismiss
                   </button>

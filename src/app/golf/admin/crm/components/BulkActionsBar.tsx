@@ -54,7 +54,7 @@ export function BulkActionsBar({
             {ALL_STATUSES.map(status => (
               <button key={status}
                 onClick={() => { onAction('status', status); setShowStatusMenu(false); }}
-                className="w-full text-left px-4 py-2 text-sm text-warm-700 hover:bg-warm-50 transition-colors flex items-center gap-2">
+                className="w-full text-left px-4 py-2 text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors flex items-center gap-2">
                 <span className="flex items-center">{statusConfig[status]?.icon}</span>
                 <span>{statusConfig[status]?.label}</span>
               </button>

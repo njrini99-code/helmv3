@@ -246,7 +246,7 @@ export function RecentActivityFeed({
         <div
           key={activity.id}
           className={cn(
-            'flex items-center gap-3 p-2 rounded-lg hover:bg-warm-50 transition-colors cursor-pointer',
+            'flex items-center gap-3 p-2 rounded-lg hover:bg-warm-50 active:bg-warm-100 transition-colors cursor-pointer',
             'animate-slide-in-up'
           )}
           style={{ animationDelay: `${index * 50}ms` }}

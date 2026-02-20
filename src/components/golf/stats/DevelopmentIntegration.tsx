@@ -180,7 +180,7 @@ export function DevelopmentIntegration({
               {/* Header */}
               <button
                 onClick={() => setExpandedArea(expandedArea === area.area ? null : area.area)}
-                className="w-full flex items-center justify-between p-4 hover:bg-warm-50 transition-colors"
+                className="w-full flex items-center justify-between p-4 hover:bg-warm-50 active:bg-warm-100 transition-colors"
               >
                 <div className="flex items-center gap-3">
                   <Badge

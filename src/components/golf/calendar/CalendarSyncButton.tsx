@@ -168,7 +168,7 @@ export function CalendarSyncButton({
             onClick={() => setIsOpen(true)}
             className={cn(
               'w-12 h-12 rounded-xl flex items-center justify-center',
-              'bg-white/60 hover:bg-white/80 backdrop-blur-sm',
+              'bg-white/60 hover:bg-white/80 active:bg-white/90 backdrop-blur-sm',
               'border border-white/40 hover:border-primary-200',
               'text-warm-500 hover:text-primary-600',
               'shadow-sm hover:shadow-md',
@@ -186,7 +186,7 @@ export function CalendarSyncButton({
           className={cn(
             'inline-flex items-center gap-2 px-4 py-2.5',
             'rounded-lg font-medium text-sm',
-            'bg-primary-600 hover:bg-primary-700 text-white',
+            'bg-primary-600 hover:bg-primary-700 active:scale-95 text-white',
             'shadow-sm hover:shadow-md',
             'transition-all duration-200',
             className
@@ -224,7 +224,7 @@ export function CalendarSyncButton({
               </div>
               <button
                 onClick={() => setIsOpen(false)}
-                className="p-2 rounded-lg hover:bg-warm-100 text-warm-400 hover:text-warm-600 transition-colors"
+                className="p-2 rounded-lg hover:bg-warm-100 active:bg-warm-200 text-warm-400 hover:text-warm-600 transition-colors"
                 aria-label="Close"
               >
                 <X className="w-5 h-5" />
@@ -301,7 +301,7 @@ export function CalendarSyncButton({
                       className={cn(
                         'flex flex-col items-center gap-2 p-4 rounded-xl',
                         'border-2 border-warm-200 hover:border-blue-300',
-                        'bg-white hover:bg-blue-50',
+                        'bg-white hover:bg-blue-50 active:bg-blue-100',
                         'transition-all duration-200 group'
                       )}
                     >
@@ -317,7 +317,7 @@ export function CalendarSyncButton({
                       className={cn(
                         'flex flex-col items-center gap-2 p-4 rounded-xl',
                         'border-2 border-warm-200 hover:border-warm-400',
-                        'bg-white hover:bg-warm-50',
+                        'bg-white hover:bg-warm-50 active:bg-warm-100',
                         'transition-all duration-200 group'
                       )}
                     >
@@ -335,7 +335,7 @@ export function CalendarSyncButton({
                       className={cn(
                         'flex flex-col items-center gap-2 p-4 rounded-xl',
                         'border-2 border-warm-200 hover:border-blue-300',
-                        'bg-white hover:bg-blue-50',
+                        'bg-white hover:bg-blue-50 active:bg-blue-100',
                         'transition-all duration-200 group'
                       )}
                     >

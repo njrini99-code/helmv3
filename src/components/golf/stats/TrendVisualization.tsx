@@ -303,7 +303,7 @@ export function TrendVisualization({
                 'flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all',
                 selectedMetric === metric
                   ? 'bg-white shadow-md border-2'
-                  : 'bg-warm-50 hover:bg-warm-100 border border-transparent'
+                  : 'bg-warm-50 hover:bg-warm-100 active:bg-warm-200 border border-transparent'
               )}
               style={{
                 borderColor: selectedMetric === metric ? metricConfig.color : undefined,

@@ -224,7 +224,7 @@ export function AddCoachModal({ onClose, onSuccess, statusConfig }: AddCoachModa
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 rounded-xl border border-warm-200 text-warm-600 hover:bg-warm-50 font-medium transition-colors"
+              className="px-5 py-2.5 rounded-xl border border-warm-200 text-warm-600 hover:bg-warm-50 active:bg-warm-100 font-medium transition-colors"
             >
               Cancel
             </button>

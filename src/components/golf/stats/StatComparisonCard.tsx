@@ -137,7 +137,7 @@ const StatComparisonCard = memo(function StatComparisonCard({
   ].filter(Boolean) as Array<{ name: string; value: number; color: string }>;
 
   return (
-    <div className={`relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-hidden ${className}`}>
+    <div className={`relative glass-standard rounded-2xl overflow-hidden ${className}`}>
       {/* Shine effect */}
       <div
         className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
@@ -384,7 +384,7 @@ export const PeriodComparisonCard = memo(function PeriodComparisonCard({
   ];
 
   return (
-    <div className={`relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-hidden ${className}`}>
+    <div className={`relative glass-standard rounded-2xl overflow-hidden ${className}`}>
       <div
         className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
         style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}

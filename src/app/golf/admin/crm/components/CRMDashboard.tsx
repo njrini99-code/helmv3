@@ -182,7 +182,7 @@ export function CRMDashboard({
 
       {/* ── Getting Started (only when all new leads) ── */}
       {allNewLeads && (
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-8 text-center">
+        <div className="glass-standard rounded-2xl p-8 text-center">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center mx-auto mb-5">
             <Rocket size={28} className="text-primary-600" />
           </div>
@@ -205,7 +205,7 @@ export function CRMDashboard({
             <button
               onClick={() => handleResearchNext(25)}
               disabled={processing === 'research'}
-              className="px-5 py-2.5 bg-white border border-warm-200/50 text-warm-700 rounded-xl font-medium hover:bg-warm-50 transition-all text-sm disabled:opacity-50"
+              className="px-5 py-2.5 bg-white border border-warm-200/50 text-warm-700 rounded-xl font-medium hover:bg-warm-50 active:bg-warm-100 transition-all text-sm disabled:opacity-50"
             >
               Research Top 25
             </button>
@@ -222,7 +222,7 @@ export function CRMDashboard({
       {/* ── Pipeline Funnel + Conference Breakdown ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Pipeline Funnel — 2 cols */}
-        <div className="lg:col-span-2 bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-5">
+        <div className="lg:col-span-2 glass-standard rounded-2xl p-5">
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2">
               <BarChart3 size={16} className="text-warm-400" />
@@ -277,7 +277,7 @@ export function CRMDashboard({
         </div>
 
         {/* Conference Breakdown — 1 col */}
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-5">
+        <div className="glass-standard rounded-2xl p-5">
           <div className="flex items-center justify-between mb-5">
             <h3 className="text-sm font-semibold text-warm-500 uppercase tracking-wider">Top Conferences</h3>
             <span className="text-xs text-warm-400">{conferenceStats.length} shown</span>
@@ -311,7 +311,7 @@ export function CRMDashboard({
       {/* ── Three-column: Follow-ups + Stale Leads + Activity ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Today's Follow-ups */}
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-5">
+        <div className="glass-standard rounded-2xl p-5">
           <div className="flex items-center gap-2.5 mb-4">
             <div className="w-8 h-8 rounded-xl bg-amber-50 flex items-center justify-center">
               <Clock size={16} className="text-amber-600" />
@@ -347,7 +347,7 @@ export function CRMDashboard({
         </div>
 
         {/* Stale Leads */}
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-5">
+        <div className="glass-standard rounded-2xl p-5">
           <div className="flex items-center gap-2.5 mb-4">
             <div className="w-8 h-8 rounded-xl bg-red-50 flex items-center justify-center">
               <AlertTriangle size={16} className="text-red-600" />
@@ -383,7 +383,7 @@ export function CRMDashboard({
         </div>
 
         {/* Recent Activity */}
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-5">
+        <div className="glass-standard rounded-2xl p-5">
           <div className="flex items-center gap-2.5 mb-4">
             <div className="w-8 h-8 rounded-xl bg-primary-50 flex items-center justify-center">
               <Zap size={16} className="text-primary-600" />
@@ -438,7 +438,7 @@ export function CRMDashboard({
                 </button>
                 <button
                   onClick={() => onNavigate('pipeline')}
-                  className="px-4 py-2.5 bg-white border border-warm-200/50 text-warm-700 rounded-xl font-medium hover:bg-warm-50 transition-all text-sm hover:-translate-y-0.5"
+                  className="px-4 py-2.5 bg-white border border-warm-200/50 text-warm-700 rounded-xl font-medium hover:bg-warm-50 active:bg-warm-100 transition-all text-sm hover:-translate-y-0.5"
                 >
                   Open Pipeline
                 </button>
@@ -449,7 +449,7 @@ export function CRMDashboard({
 
         {/* Division Breakdown */}
         <div className={cn(
-          'bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-5',
+          'glass-standard rounded-2xl p-5',
           allNewLeads && 'lg:col-span-2'
         )}>
           <h3 className="text-sm font-semibold text-warm-500 uppercase tracking-wider mb-4">Division Breakdown</h3>

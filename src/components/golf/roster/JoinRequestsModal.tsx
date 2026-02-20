@@ -261,7 +261,7 @@ export function JoinRequestsModal({ onClose }: JoinRequestsModalProps) {
                             size="sm"
                             onClick={() => handleAccept(request.id)}
                             disabled={processingId === request.id}
-                            className="flex-1 bg-primary-600 hover:bg-primary-700"
+                            className="flex-1 bg-primary-600 hover:bg-primary-700 transition-colors"
                           >
                             {processingId === request.id ? (
                               <span className="flex items-center gap-1">
@@ -281,7 +281,7 @@ export function JoinRequestsModal({ onClose }: JoinRequestsModalProps) {
                             variant="secondary"
                             onClick={() => handleReject(request.id)}
                             disabled={processingId === request.id}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors border-red-200"
                           >
                             {processingId === request.id ? (
                               <span className="flex items-center gap-1">

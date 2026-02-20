@@ -520,7 +520,7 @@ export default function CRMPage() {
                 conferences={conferences}
                 statusConfig={STATUS_CONFIG}
               />
-              <div className="rounded-2xl overflow-hidden bg-white/70 backdrop-blur-xl border border-white/20 shadow-glass">
+              <div className="rounded-2xl overflow-hidden glass-standard">
                 <CoachTable
                   coaches={coaches}
                   loading={loading}

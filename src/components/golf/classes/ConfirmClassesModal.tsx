@@ -137,7 +137,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
             <button
               onClick={onClose}
               aria-label="Close"
-              className="p-2 text-warm-400 hover:text-warm-600 hover:bg-warm-100 rounded-lg transition-colors -mt-1 -mr-1"
+              className="p-2 text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors -mt-1 -mr-1"
             >
               <IconX size={18} />
             </button>
@@ -232,7 +232,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                                 'flex-1 h-10 rounded-lg text-xs font-semibold transition-all duration-150',
                                 cls.days.includes(day.abbrev)
                                   ? 'text-white shadow-sm'
-                                  : 'bg-warm-50 text-warm-400 hover:bg-warm-100 hover:text-warm-600'
+                                  : 'bg-warm-50 text-warm-400 hover:bg-warm-100 active:bg-warm-200 hover:text-warm-600'
                               )}
                               style={cls.days.includes(day.abbrev) ? { backgroundColor: cls.color || '#16A34A' } : undefined}
                             >
@@ -369,7 +369,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                       <div className="flex items-center gap-0.5 flex-shrink-0">
                         <button
                           onClick={() => handleEdit(index)}
-                          className="p-2 text-warm-300 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-all duration-150"
+                          className="p-2 text-warm-300 hover:text-primary-600 hover:bg-primary-50 active:bg-primary-100 rounded-lg transition-all duration-150"
                           title="Edit class"
                         >
                           <IconPencil size={16} />

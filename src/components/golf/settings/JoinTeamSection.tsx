@@ -193,7 +193,7 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowLeaveConfirm(true)}
-                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 active:bg-red-100 active:scale-95 transition-colors"
               >
                 <IconLogout size={16} className="mr-1" />
                 Leave
@@ -212,7 +212,7 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
                   size="sm"
                   onClick={handleLeaveTeam}
                   isLoading={loading}
-                  className="bg-red-600 hover:bg-red-700"
+                  className="bg-red-600 hover:bg-red-700 active:scale-95 transition-colors"
                 >
                   Confirm Leave
                 </Button>
@@ -250,7 +250,7 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
                     size="sm"
                     onClick={() => handleCancelRequest(request.id)}
                     disabled={cancellingId === request.id}
-                    className="text-amber-700 hover:text-amber-800 hover:bg-amber-100"
+                    className="text-amber-700 hover:text-amber-800 hover:bg-amber-100 active:bg-amber-200 active:scale-95 transition-colors"
                   >
                     {cancellingId === request.id ? (
                       <span className="flex items-center gap-1">
@@ -314,7 +314,7 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
                 type="submit"
                 disabled={!inviteCode.trim() || loading}
                 isLoading={loading}
-                className="w-full bg-primary-600 hover:bg-primary-700"
+                className="w-full bg-primary-600 hover:bg-primary-700 active:scale-95 transition-colors"
               >
                 Request to Join
               </Button>

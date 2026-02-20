@@ -106,11 +106,11 @@ export function StatCardV2({
       whileHover={{ y: -2, scale: 1.01 }}
       whileTap={onClick ? { scale: 0.99 } : undefined}
       className={cn(
-        'relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-8',
+        'relative glass-standard rounded-2xl p-8',
         'border-l-[4px]',
         config.border,
         'transition-all duration-300',
-        'hover:bg-white/80 hover:shadow-card-hover',
+        'hover:bg-white/80 active:bg-white/90 hover:shadow-card-hover',
         onClick && 'cursor-pointer'
       )}
     >

@@ -111,7 +111,7 @@ export function InsightSearchBar({
             'absolute right-2 top-1/2 -translate-y-1/2',
             'p-1.5 rounded-lg',
             'text-warm-400 hover:text-warm-600',
-            'hover:bg-warm-100',
+            'hover:bg-warm-100 active:bg-warm-200',
             'transition-all duration-150'
           )}
           aria-label="Clear search"

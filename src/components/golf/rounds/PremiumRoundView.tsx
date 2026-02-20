@@ -333,7 +333,7 @@ function HoleCard({
           'group relative rounded-2xl border transition-all duration-200',
           isBogeyPlus
             ? 'bg-white border-warm-200 shadow-sm hover:shadow-md cursor-pointer'
-            : 'bg-white/60 border-warm-100 hover:bg-white/80',
+            : 'bg-white/60 border-warm-100 hover:bg-white/80 active:bg-white/90',
           expanded && isBogeyPlus && 'shadow-md ring-1 ring-warm-200/50'
         )}
         onClick={() => isBogeyPlus && setExpanded(!expanded)}

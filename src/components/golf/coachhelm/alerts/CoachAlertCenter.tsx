@@ -245,7 +245,7 @@ export function CoachAlertCenter({
                   className={cn(
                     'flex items-center justify-center gap-2 py-3 rounded-xl',
                     'text-sm font-medium text-warm-500 hover:text-warm-700',
-                    'bg-warm-50 hover:bg-warm-100 transition-colors'
+                    'bg-warm-50 hover:bg-warm-100 active:bg-warm-200 transition-colors'
                   )}
                 >
                   <span>+{hiddenCount} more alert{hiddenCount > 1 ? 's' : ''}</span>

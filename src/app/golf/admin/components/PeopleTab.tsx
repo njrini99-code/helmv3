@@ -121,7 +121,7 @@ export function PeopleTab({ data }: Props) {
 function SummaryCard({ label, value, color, icon }: { label: string; value: number; color?: string; icon?: React.ReactNode }) {
   return (
     <div className={cn(
-      'p-3 rounded-xl bg-white/70 backdrop-blur-xl border border-white/20 shadow-glass',
+      'p-3 rounded-xl glass-standard',
       'text-center'
     )}>
       <div className="flex items-center justify-center gap-1.5 mb-1">

@@ -286,7 +286,7 @@ export function RoundReviewDisplay({
                 onClick={onShare}
                 className={cn(
                   'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium',
-                  'bg-white/60 hover:bg-white/80 text-warm-700',
+                  'bg-white/60 hover:bg-white/80 active:bg-white/90 text-warm-700',
                   'transition-colors border border-white/30'
                 )}
               >
@@ -304,7 +304,7 @@ export function RoundReviewDisplay({
                 onClick={onExport}
                 className={cn(
                   'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium',
-                  'bg-white/60 hover:bg-white/80 text-warm-700',
+                  'bg-white/60 hover:bg-white/80 active:bg-white/90 text-warm-700',
                   'transition-colors border border-white/30'
                 )}
               >

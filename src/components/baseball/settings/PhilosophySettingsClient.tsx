@@ -155,7 +155,7 @@ export function PhilosophySettingsClient({
 
         <div className="space-y-6">
           {/* Alert Sensitivity */}
-          <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+          <div className="glass-standard rounded-2xl p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
                 <IconActivity size={20} className="text-amber-600" />
@@ -193,7 +193,7 @@ export function PhilosophySettingsClient({
           </div>
 
           {/* Threshold Settings */}
-          <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+          <div className="glass-standard rounded-2xl p-6">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
                 <IconTarget size={20} className="text-blue-600" />
@@ -280,7 +280,7 @@ export function PhilosophySettingsClient({
           </div>
 
           {/* Priority Rankings */}
-          <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+          <div className="glass-standard rounded-2xl p-6">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
                 <IconSparkles size={20} className="text-green-600" />

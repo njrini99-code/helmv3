@@ -38,7 +38,7 @@ export function TeamHealthCards({ teams, onSelectTeam }: Props) {
             className={cn(
               'relative text-left p-4 rounded-2xl border transition-all duration-200',
               'bg-white/70 backdrop-blur-xl shadow-glass',
-              'hover:shadow-card-hover hover:bg-white/80',
+              'hover:shadow-card-hover hover:bg-white/80 active:bg-white/90',
               'group cursor-pointer'
             )}
           >

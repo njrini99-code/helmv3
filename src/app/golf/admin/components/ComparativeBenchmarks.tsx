@@ -139,7 +139,7 @@ export default function ComparativeBenchmarks({
   return (
     <div className="space-y-6">
       {/* Section 1: Team Comparison Table */}
-      <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6">
+      <div className="glass-standard rounded-2xl p-6">
         <h2 className="text-xl font-semibold text-warm-900 mb-4">Team Benchmarks</h2>
         {sortedTeams.length === 0 ? (
           <p className="text-sm text-warm-500">No team data available yet.</p>
@@ -273,7 +273,7 @@ export default function ComparativeBenchmarks({
       </div>
 
       {/* Section 2: Most Improved Players */}
-      <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6">
+      <div className="glass-standard rounded-2xl p-6">
         <h2 className="text-xl font-semibold text-warm-900 mb-4">
           Most Improved Players (3mo)
         </h2>
@@ -324,7 +324,7 @@ export default function ComparativeBenchmarks({
       </div>
 
       {/* Section 3: AI Insight Correlation */}
-      <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6">
+      <div className="glass-standard rounded-2xl p-6">
         <h2 className="text-xl font-semibold text-warm-900 mb-4">CoachHelm AI Impact</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* With AI */}

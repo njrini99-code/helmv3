@@ -62,7 +62,7 @@ export function TeamStatsOverview({
       {stats.map((stat) => (
         <div
           key={stat.label}
-          className={`bg-white/70 backdrop-blur-xl border border-white/20 rounded-xl p-4
+          className={`glass-standard rounded-xl p-4
                      ${stat.highlight ? 'ring-2 ring-amber-300 ring-offset-2' : ''}`}
         >
           <div className="flex items-center justify-between mb-2">

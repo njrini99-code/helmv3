@@ -59,7 +59,7 @@ export function TaskCard({ task }: TaskCardProps) {
       initial="hidden"
       animate="visible"
       layout
-      className="relative glass-standard rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
+      className="relative glass-standard rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98]"
     >
       <ShineEffect />
 
@@ -123,7 +123,7 @@ export function TaskCard({ task }: TaskCardProps) {
 
           <button
             onClick={() => setExpanded(!expanded)}
-            className="flex items-center gap-1 text-sm font-medium text-warm-600 hover:text-warm-900 transition-colors"
+            className="flex items-center gap-1 text-sm font-medium text-warm-600 hover:text-warm-900 active:scale-95 transition-colors"
           >
             {expanded ? 'Hide' : 'View'} details
             {expanded ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
@@ -163,7 +163,7 @@ export function TaskCard({ task }: TaskCardProps) {
                       hidden: { opacity: 0, x: -8 },
                       visible: { opacity: 1, x: 0 }
                     }}
-                    className="flex items-center justify-between py-2 px-3 rounded-lg bg-warm-50 transition-colors hover:bg-warm-100"
+                    className="flex items-center justify-between py-2 px-3 rounded-lg bg-warm-50 transition-colors hover:bg-warm-100 active:bg-warm-200"
                   >
                     <span className="text-sm text-warm-700">
                       {assignment.player.first_name} {assignment.player.last_name}

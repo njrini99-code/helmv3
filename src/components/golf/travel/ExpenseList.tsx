@@ -202,7 +202,7 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
                             e.stopPropagation();
                             onEdit(expense);
                           }}
-                          className="flex items-center gap-2 px-3 py-1.5 text-sm text-warm-600 hover:text-warm-900 hover:bg-warm-100 rounded-lg transition-colors"
+                          className="flex items-center gap-2 px-3 py-1.5 text-sm text-warm-600 hover:text-warm-900 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
                         >
                           <IconEdit size={14} />
                           Edit
@@ -244,7 +244,7 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
               <h3 className="font-semibold text-warm-900">Receipt</h3>
               <button
                 onClick={() => setViewingReceipt(null)}
-                className="p-2 hover:bg-warm-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
               >
                 <IconTrash size={18} />
               </button>

@@ -18,7 +18,7 @@ export default function TasksLoading() {
         </div>
         <div className="space-y-3">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-xl p-4 flex items-center gap-4">
+            <div key={i} className="glass-standard rounded-xl p-4 flex items-center gap-4">
               <Skeleton className="h-5 w-5 rounded" />
               <div className="flex-1">
                 <Skeleton className="h-5 w-48 mb-2" />

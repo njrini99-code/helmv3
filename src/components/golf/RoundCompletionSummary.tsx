@@ -268,13 +268,13 @@ export function RoundCompletionSummary({ summary, onClose }: RoundCompletionSumm
           <div className="flex flex-col sm:flex-row gap-3 mt-3">
             <button
               onClick={handleBackToDashboard}
-              className="flex-1 bg-white hover:bg-warm-50 text-warm-700 font-semibold py-3 px-6 rounded-xl border-2 border-warm-200 hover:border-warm-300 transition-colors"
+              className="flex-1 bg-white hover:bg-warm-50 active:bg-warm-100 text-warm-700 font-semibold py-3 px-6 rounded-xl border-2 border-warm-200 hover:border-warm-300 transition-colors"
             >
               Back to Dashboard
             </button>
             <button
               onClick={handleViewStats}
-              className="flex-1 bg-white hover:bg-warm-50 text-warm-700 font-semibold py-3 px-6 rounded-xl border-2 border-warm-200 hover:border-warm-300 transition-colors"
+              className="flex-1 bg-white hover:bg-warm-50 active:bg-warm-100 text-warm-700 font-semibold py-3 px-6 rounded-xl border-2 border-warm-200 hover:border-warm-300 transition-colors"
             >
               View Full Stats
             </button>

@@ -64,7 +64,7 @@ export function RecurrenceEditDialog({
         <div className="space-y-4 py-4">
           <div className="space-y-2">
             {/* This event only */}
-            <label className="flex items-start space-x-3 p-3 rounded-lg hover:bg-warm-50 cursor-pointer border border-transparent hover:border-warm-200 transition-colors">
+            <label className="flex items-start space-x-3 p-3 rounded-lg hover:bg-warm-50 active:bg-warm-100 cursor-pointer border border-transparent hover:border-warm-200 transition-colors">
               <input
                 type="radio"
                 name="scope"
@@ -86,7 +86,7 @@ export function RecurrenceEditDialog({
             </label>
 
             {/* This and future events */}
-            <label className="flex items-start space-x-3 p-3 rounded-lg hover:bg-warm-50 cursor-pointer border border-transparent hover:border-warm-200 transition-colors">
+            <label className="flex items-start space-x-3 p-3 rounded-lg hover:bg-warm-50 active:bg-warm-100 cursor-pointer border border-transparent hover:border-warm-200 transition-colors">
               <input
                 type="radio"
                 name="scope"
@@ -107,7 +107,7 @@ export function RecurrenceEditDialog({
             </label>
 
             {/* All events */}
-            <label className="flex items-start space-x-3 p-3 rounded-lg hover:bg-warm-50 cursor-pointer border border-transparent hover:border-warm-200 transition-colors">
+            <label className="flex items-start space-x-3 p-3 rounded-lg hover:bg-warm-50 active:bg-warm-100 cursor-pointer border border-transparent hover:border-warm-200 transition-colors">
               <input
                 type="radio"
                 name="scope"

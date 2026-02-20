@@ -961,7 +961,7 @@ function ApproachStats({ stats }: { stats: GolfStats }) {
               ].map((item, idx) => (
                 <motion.div
                   key={item.label}
-                  className="text-center p-2 bg-warm-50 rounded-lg hover:bg-warm-100 transition-colors cursor-default"
+                  className="text-center p-2 bg-warm-50 rounded-lg hover:bg-warm-100 active:bg-warm-200 transition-colors cursor-default"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.6 + idx * 0.04 }}
@@ -2174,7 +2174,7 @@ function AnalysisStats({
             {courseBreakdown.courses.slice(0, 10).map((course, idx) => (
               <motion.div
                 key={course.courseName}
-                className="flex items-center justify-between py-3 px-3 rounded-lg hover:bg-warm-50 transition-colors"
+                className="flex items-center justify-between py-3 px-3 rounded-lg hover:bg-warm-50 active:bg-warm-100 transition-colors"
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: idx * 0.03 }}
@@ -2725,7 +2725,7 @@ export default function GolfStatsDisplay({
                       className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${
                         isFilterActive(preset.filter)
                           ? 'bg-primary-600 text-white border border-primary-600'
-                          : 'bg-white border border-warm-200 text-warm-600 hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700'
+                          : 'bg-white border border-warm-200 text-warm-600 hover:border-primary-300 hover:bg-primary-50 active:bg-primary-100 hover:text-primary-700'
                       }`}
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
@@ -2766,7 +2766,7 @@ export default function GolfStatsDisplay({
                         >
                           <button
                             onClick={() => { onFilterChange?.(null); setShowCourseDropdown(false); }}
-                            className="w-full px-3 py-2 text-sm text-left hover:bg-warm-50 text-warm-600"
+                            className="w-full px-3 py-2 text-sm text-left hover:bg-warm-50 transition-colors active:bg-warm-100 text-warm-600"
                           >
                             All Courses
                           </button>
@@ -2777,7 +2777,7 @@ export default function GolfStatsDisplay({
                               className={`w-full px-3 py-2 text-sm text-left transition-colors ${
                                 activeFilter?.courseName === course
                                   ? 'bg-primary-50 text-primary-700'
-                                  : 'hover:bg-warm-50 text-warm-600'
+                                  : 'hover:bg-warm-50 active:bg-warm-100 text-warm-600'
                               }`}
                             >
                               {course}

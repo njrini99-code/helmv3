@@ -287,7 +287,7 @@ export function CoachTable({
                           <button key={status}
                             onClick={() => { onStatusChange(coach.id, status); setOpenStatusDropdown(null); }}
                             className={cn('w-full text-left px-3 py-1.5 text-sm flex items-center gap-2 transition-colors',
-                              coach.status === status ? 'bg-primary-50 font-semibold text-primary-700' : 'text-warm-700 hover:bg-warm-50'
+                              coach.status === status ? 'bg-primary-50 font-semibold text-primary-700' : 'text-warm-700 hover:bg-warm-50 active:bg-warm-100'
                             )}>
                             <span className="flex items-center">{statusConfig[status]?.icon}</span>
                             <span>{statusConfig[status]?.label}</span>
@@ -325,7 +325,7 @@ export function CoachTable({
                     <button
                       onClick={e => { e.stopPropagation(); setOpenActionMenu(openActionMenu === coach.id ? null : coach.id); setOpenStatusDropdown(null); }}
                       className={cn(
-                        'p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100',
+                        'p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200',
                         'opacity-0 group-hover:opacity-100 transition-all duration-200'
                       )}
                     >
@@ -334,21 +334,21 @@ export function CoachTable({
                     {openActionMenu === coach.id && (
                       <div className="absolute right-0 top-full mt-1 z-50 w-48 py-1 rounded-xl bg-white border border-warm-200/80 shadow-xl" onClick={e => e.stopPropagation()}>
                         <button onClick={() => { onLogContact(coach); setOpenActionMenu(null); }}
-                          className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 flex items-center gap-2">
+                          className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 flex items-center gap-2">
                           <MessageSquare size={14} /> Log Contact
                         </button>
                         {coach.email && (
                           <a href={`mailto:${coach.email}`} onClick={() => setOpenActionMenu(null)}
-                            className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 flex items-center gap-2">
+                            className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2">
                             <Mail size={14} /> Send Email
                           </a>
                         )}
                         <button onClick={() => { onStatusChange(coach.id, 'researching'); setOpenActionMenu(null); }}
-                          className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 flex items-center gap-2">
+                          className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2">
                           <ArrowRight size={14} /> Move to Researching
                         </button>
                         <button onClick={() => { onToggleStar(coach.id, coach.is_starred); setOpenActionMenu(null); }}
-                          className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 flex items-center gap-2">
+                          className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2">
                           <Star size={14} /> {coach.is_starred ? 'Unstar' : 'Star'}
                         </button>
                       </div>

@@ -159,7 +159,7 @@ export function RSVPStatusSection({
           {onExport && (
             <button
               onClick={onExport}
-              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-warm-700 bg-warm-50 hover:bg-warm-100 rounded-lg border border-warm-200 transition-colors"
+              className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-warm-700 bg-warm-50 hover:bg-warm-100 active:bg-warm-200 rounded-lg border border-warm-200 transition-colors"
             >
               <Download className="w-4 h-4" />
               Export
@@ -357,7 +357,7 @@ function ParticipantRow({
   return (
     <div
       className={cn(
-        'flex items-center gap-3 p-3 hover:bg-warm-50 transition-colors',
+        'flex items-center gap-3 p-3 hover:bg-warm-50 active:bg-warm-100 transition-colors',
         selected && 'bg-primary-50',
         compact && 'p-2'
       )}

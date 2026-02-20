@@ -252,7 +252,7 @@ export function TeamUserDirectory({ teams, unassigned, onSelectUser, expandedTea
                 'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors duration-200',
                 roleFilter === r.value
                   ? 'bg-warm-900 text-white'
-                  : 'bg-white/60 text-warm-600 hover:bg-warm-100 border border-warm-200/50'
+                  : 'bg-white/60 text-warm-600 hover:bg-warm-100 active:bg-warm-200 border border-warm-200/50'
               )}
             >
               {r.label}

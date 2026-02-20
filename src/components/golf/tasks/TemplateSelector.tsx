@@ -284,7 +284,7 @@ export function TemplateSelector({
                     className={cn(
                       'w-full px-3 py-2.5 text-left flex items-start gap-3 transition-colors',
                       'disabled:opacity-50',
-                      selectedIndex === index ? 'bg-primary-50' : 'hover:bg-warm-50'
+                      selectedIndex === index ? 'bg-primary-50' : 'hover:bg-warm-50 active:bg-warm-100'
                     )}
                   >
                     {/* Icon */}

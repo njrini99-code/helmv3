@@ -13,13 +13,13 @@ export default function EventsLoading() {
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
-            <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-xl p-4">
+            <div className="glass-standard rounded-xl p-4">
               <Skeleton className="h-64 w-full rounded-lg" />
             </div>
           </div>
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-xl p-4">
+              <div key={i} className="glass-standard rounded-xl p-4">
                 <Skeleton className="h-5 w-32 mb-2" />
                 <Skeleton className="h-4 w-full" />
               </div>

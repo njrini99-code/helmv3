@@ -133,7 +133,7 @@ export default function CoachIntelligenceCard({ coaches }: CoachIntelligenceCard
     'px-3 py-2 text-left text-xs font-medium text-warm-500 uppercase tracking-wider cursor-pointer select-none hover:text-warm-700 transition-colors';
 
   return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6">
+    <div className="glass-standard rounded-2xl p-6">
       <h2 className="text-lg font-semibold text-warm-900 mb-4">
         Coach Intelligence{' '}
         <span className="text-sm font-normal text-warm-500">

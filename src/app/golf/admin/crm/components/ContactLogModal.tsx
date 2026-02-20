@@ -165,7 +165,7 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
           <button
             onClick={onClose}
             aria-label="Close"
-            className="p-2 rounded-lg hover:bg-warm-100 text-warm-500 transition-colors"
+            className="p-2 rounded-lg hover:bg-warm-100 active:bg-warm-200 text-warm-500 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -223,7 +223,7 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
                       'px-3 py-1.5 rounded-lg text-sm transition-colors',
                       newLog.contact_type === type.value
                         ? 'bg-primary-600 text-white'
-                        : 'bg-white border border-warm-200 hover:bg-warm-100'
+                        : 'bg-white border border-warm-200 hover:bg-warm-100 active:bg-warm-200'
                     )}
                   >
                     {type.icon} {type.label}
@@ -279,7 +279,7 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
                 <button
                   type="button"
                   onClick={() => setShowAddForm(false)}
-                  className="px-4 py-2 rounded-lg border border-warm-200 text-warm-600 hover:bg-warm-100 text-sm transition-colors"
+                  className="px-4 py-2 rounded-lg border border-warm-200 text-warm-600 hover:bg-warm-100 active:bg-warm-200 text-sm transition-colors"
                 >
                   Cancel
                 </button>

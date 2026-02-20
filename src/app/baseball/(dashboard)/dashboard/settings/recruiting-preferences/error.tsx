@@ -11,7 +11,7 @@ export default function Error({
 }) {
   return (
     <div className="min-h-[400px] flex items-center justify-center p-8">
-      <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-lg p-8 max-w-md text-center">
+      <div className="glass-standard rounded-2xl shadow-lg p-8 max-w-md text-center">
         <h2 className="text-lg font-semibold text-slate-900 mb-2">
           Something went wrong
         </h2>

@@ -167,7 +167,7 @@ export function DocumentAttacher({ existingDocuments, selectedDocumentIds, onCha
                             addDocument(doc.id);
                             if (availableDocs.length <= 1) setIsExpanded(false);
                           }}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-warm-50 text-left transition-colors"
+                          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-warm-50 active:bg-warm-100 text-left transition-colors"
                         >
                           <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0', colors.bg)}>
                             <span className={cn('text-xs font-bold', colors.text)}>

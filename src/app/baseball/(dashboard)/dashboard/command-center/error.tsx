@@ -18,7 +18,7 @@ export default function CommandCenterError({
   return (
     <div className="min-h-screen bg-[#FFFEFA] flex items-center justify-center">
       <div className="max-w-md mx-auto px-4 text-center">
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-8">
+        <div className="glass-standard rounded-2xl p-8">
           <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
             <IconAlertCircle size={24} className="text-red-600" />
           </div>

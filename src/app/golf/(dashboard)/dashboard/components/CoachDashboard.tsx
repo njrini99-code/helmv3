@@ -256,7 +256,7 @@ const DateRangeSelector = memo(function DateRangeSelector({
                                         'w-full text-left px-3 py-2 text-sm transition-colors',
                                         option.value === value
                                             ? 'text-primary-700 bg-primary-50 font-medium'
-                                            : 'text-warm-600 hover:bg-warm-50'
+                                            : 'text-warm-600 hover:bg-warm-50 active:bg-warm-100'
                                     )}
                                 >
                                     {option.label}

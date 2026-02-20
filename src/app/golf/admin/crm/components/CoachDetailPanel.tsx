@@ -181,7 +181,7 @@ export function CoachDetailPanel({
                 </span>
               </div>
             </div>
-            <button onClick={handleClose} className="p-2 rounded-xl hover:bg-warm-50 transition-colors text-warm-400 hover:text-warm-600">
+            <button onClick={handleClose} className="p-2 rounded-xl hover:bg-warm-50 active:bg-warm-100 transition-colors text-warm-400 hover:text-warm-600">
               <X size={18} />
             </button>
           </div>
@@ -265,7 +265,7 @@ export function CoachDetailPanel({
                     return (
                       <button key={type.value} onClick={() => setNewContact({ ...newContact, type: type.value })}
                         className={cn('px-3 py-1.5 rounded-xl text-xs font-medium transition-all inline-flex items-center gap-1.5',
-                          newContact.type === type.value ? 'bg-primary-600 text-white shadow-sm' : 'bg-white/60 border border-warm-200/30 text-warm-600 hover:bg-warm-50')}>
+                          newContact.type === type.value ? 'bg-primary-600 text-white shadow-sm' : 'bg-white/60 border border-warm-200/30 text-warm-600 hover:bg-warm-50 active:bg-warm-100')}>
                         <TypeIcon size={12} /> {type.label}
                       </button>
                     );
@@ -281,7 +281,7 @@ export function CoachDetailPanel({
                 </div>
                 <div className="flex justify-end gap-2">
                   <button onClick={() => setShowContactForm(false)} className="px-3 py-1.5 text-sm text-warm-600 hover:text-warm-800">Cancel</button>
-                  <button onClick={submitContact} disabled={submitting} className="px-4 py-1.5 bg-primary-600 text-white rounded-xl text-sm font-semibold hover:bg-primary-700 disabled:opacity-50 shadow-sm">
+                  <button onClick={submitContact} disabled={submitting} className="px-4 py-1.5 bg-primary-600 text-white rounded-xl text-sm font-semibold hover:bg-primary-700 transition-colors disabled:opacity-50 shadow-sm">
                     {submitting ? 'Saving...' : 'Save'}
                   </button>
                 </div>

@@ -59,7 +59,7 @@ export function PatternsDashboardClient({
               {/* Back button */}
               <button
                 onClick={() => router.push('/golf/dashboard')}
-                className="p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
+                className="p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 transition-colors"
               >
                 <IconArrowLeft size={20} />
               </button>
@@ -88,7 +88,7 @@ export function PatternsDashboardClient({
                 className={cn(
                   'flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors',
                   'bg-white border border-warm-200 text-warm-700',
-                  'hover:bg-warm-50 hover:border-warm-300',
+                  'hover:bg-warm-50 active:bg-warm-100 hover:border-warm-300',
                   isPending && 'opacity-50 cursor-not-allowed'
                 )}
               >

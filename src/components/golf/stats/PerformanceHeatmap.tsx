@@ -172,7 +172,7 @@ const PerformanceHeatmap = memo(function PerformanceHeatmap({
   }, [rounds, currentYear]);
 
   return (
-    <div className={`relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-hidden ${className}`}>
+    <div className={`relative glass-standard rounded-2xl overflow-hidden ${className}`}>
       {/* Shine effect */}
       <div
         className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
@@ -197,7 +197,7 @@ const PerformanceHeatmap = memo(function PerformanceHeatmap({
             <button
               onClick={() => setYear((y) => y - 1)}
               disabled={!availableYears.includes(year - 1)}
-              className="p-1.5 rounded-lg hover:bg-warm-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="p-1.5 rounded-lg hover:bg-warm-100 active:bg-warm-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               <IconChevronLeft size={18} className="text-warm-600" />
             </button>
@@ -207,7 +207,7 @@ const PerformanceHeatmap = memo(function PerformanceHeatmap({
             <button
               onClick={() => setYear((y) => y + 1)}
               disabled={year >= currentYear}
-              className="p-1.5 rounded-lg hover:bg-warm-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="p-1.5 rounded-lg hover:bg-warm-100 active:bg-warm-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               <IconChevronRight size={18} className="text-warm-600" />
             </button>

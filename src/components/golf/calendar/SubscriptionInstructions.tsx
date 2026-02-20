@@ -396,7 +396,7 @@ export function CompactSubscriptionHelp({ feedUrl }: { feedUrl: string }) {
           'shrink-0 px-2 py-1 rounded text-xs font-medium transition-colors',
           copied
             ? 'bg-primary-100 text-primary-700'
-            : 'bg-white text-warm-600 hover:bg-warm-100'
+            : 'bg-white text-warm-600 hover:bg-warm-100 active:bg-warm-200'
         )}
       >
         {copied ? 'Copied!' : 'Copy URL'}

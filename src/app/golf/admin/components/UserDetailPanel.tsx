@@ -100,7 +100,7 @@ export function UserDetailPanel({ userId, teams, unassigned, userDirectory, onCl
             <h2 className="text-lg font-bold text-warm-900">User Profile</h2>
             <button
               onClick={onClose}
-              className="p-2 rounded-xl text-warm-400 hover:text-warm-700 hover:bg-warm-100/80 transition-colors"
+              className="p-2 rounded-xl text-warm-400 hover:text-warm-700 hover:bg-warm-100/80 active:bg-warm-200 transition-colors"
             >
               <X size={20} />
             </button>

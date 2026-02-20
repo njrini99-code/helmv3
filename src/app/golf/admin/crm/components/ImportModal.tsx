@@ -184,7 +184,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
           <button
             onClick={onClose}
             aria-label="Close"
-            className="p-2 rounded-lg hover:bg-warm-100 text-warm-500 transition-colors"
+            className="p-2 rounded-lg hover:bg-warm-100 active:bg-warm-200 text-warm-500 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -246,7 +246,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
               <div className="flex justify-end gap-3">
                 <button
                   onClick={onClose}
-                  className="px-4 py-2 rounded-lg border border-warm-200 text-warm-600 hover:bg-warm-50 transition-colors"
+                  className="px-4 py-2 rounded-lg border border-warm-200 text-warm-600 hover:bg-warm-50 active:bg-warm-100 transition-colors"
                 >
                   Cancel
                 </button>
@@ -315,7 +315,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
               <div className="flex justify-end gap-3">
                 <button
                   onClick={() => setStep('upload')}
-                  className="px-4 py-2 rounded-lg border border-warm-200 text-warm-600 hover:bg-warm-50 transition-colors"
+                  className="px-4 py-2 rounded-lg border border-warm-200 text-warm-600 hover:bg-warm-50 active:bg-warm-100 transition-colors"
                 >
                   Back
                 </button>

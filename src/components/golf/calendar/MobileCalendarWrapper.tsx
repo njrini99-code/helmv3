@@ -220,7 +220,7 @@ export function MobileCalendarWrapper({
                 className={cn(
                   'flex items-center justify-center',
                   'w-9 h-9 rounded-xl',
-                  'text-warm-400 hover:text-warm-600 hover:bg-warm-100/80',
+                  'text-warm-400 hover:text-warm-600 hover:bg-warm-100/80 active:bg-warm-200',
                   'transition-all duration-200'
                 )}
                 aria-label="Calendar settings"

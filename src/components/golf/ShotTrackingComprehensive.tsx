@@ -1552,7 +1552,7 @@ export default function ShotTrackingComprehensive({
                         className={`py-3 rounded-lg font-semibold text-sm transition-all ${
                           resultOfShot === r
                             ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10 ring-1 ring-primary-700'
-                            : 'bg-warm-50 text-warm-700 ring-1 ring-warm-200 hover:ring-primary-300 hover:bg-warm-100'}`}>
+                            : 'bg-warm-50 text-warm-700 ring-1 ring-warm-200 hover:ring-primary-300 hover:bg-warm-100 active:bg-warm-200'}`}>
                         {formatLieLabel(r)}
                         {r === 'green' && (
                           <span className={`block text-xs font-normal leading-tight ${
@@ -1643,7 +1643,7 @@ export default function ShotTrackingComprehensive({
                             className={`py-2 rounded-lg text-xs font-bold transition-all ${
                               distanceAfterShot === String(ft) && distanceAfterUnit === 'feet'
                                 ? 'bg-primary-600 text-white shadow-sm'
-                                : 'bg-white text-primary-700 border border-primary-200 hover:bg-primary-50'
+                                : 'bg-white text-primary-700 border border-primary-200 hover:bg-primary-50 active:bg-primary-100'
                             }`}
                           >
                             {ft}ft
@@ -1657,7 +1657,7 @@ export default function ShotTrackingComprehensive({
                         className={`flex-1 py-2.5 rounded-md font-bold text-sm uppercase tracking-wide transition-all ${
                           distanceAfterUnit === 'yards'
                             ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10'
-                            : 'text-warm-600 hover:text-warm-900 hover:bg-warm-50'
+                            : 'text-warm-600 hover:text-warm-900 hover:bg-warm-50 active:bg-warm-100'
                         }`}
                       >
                         Yards
@@ -1667,7 +1667,7 @@ export default function ShotTrackingComprehensive({
                         className={`flex-1 py-2.5 rounded-md font-bold text-sm uppercase tracking-wide transition-all ${
                           distanceAfterUnit === 'feet'
                             ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10'
-                            : 'text-warm-600 hover:text-warm-900 hover:bg-warm-50'
+                            : 'text-warm-600 hover:text-warm-900 hover:bg-warm-50 active:bg-warm-100'
                         }`}
                       >
                         Feet
@@ -1901,7 +1901,7 @@ export default function ShotTrackingComprehensive({
                             ? 'bg-primary-100 ring-1 ring-primary-400'
                             : shot.isPenalty
                               ? 'bg-red-50 hover:bg-red-100'
-                              : 'bg-warm-50 hover:bg-warm-100'
+                              : 'bg-warm-50 hover:bg-warm-100 active:bg-warm-200'
                         }`}
                       >
                         <span className={`font-bold ${shot.isPenalty ? 'text-red-600' : 'text-warm-600'}`}>
@@ -1966,7 +1966,7 @@ export default function ShotTrackingComprehensive({
                 <button
                   onClick={handleCloseEditModal}
                   aria-label="Close"
-                  className="p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-all"
+                  className="p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 transition-all"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

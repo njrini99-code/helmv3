@@ -210,7 +210,7 @@ export function ConflictResolutionModal({
               <button
                 onClick={onClose}
                 aria-label="Close dialog"
-                className="p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
+                className="p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 transition-colors"
               >
                 <IconX size={20} />
               </button>
@@ -358,7 +358,7 @@ export function ConflictResolutionModal({
                   onClick={() => handleResolution('merge')}
                   disabled={resolving}
                   isLoading={resolving}
-                  className="bg-primary-600 hover:bg-primary-700"
+                  className="bg-primary-600 hover:bg-primary-700 transition-colors"
                 >
                   Merge Selected
                 </Button>

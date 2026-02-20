@@ -5,13 +5,13 @@ import { usePathname } from 'next/navigation';
 import {
   SearchIcon,
   BellIcon,
-  MenuIcon,
   ChevronRightIcon,
   LogOutIcon,
   SettingsIcon,
   UserIcon,
 } from 'lucide-react';
 import { useUser } from '@/hooks/use-user';
+import { MobileMenuButton } from './mobile-menu-button';
 
 // ============================================
 // TYPES
@@ -85,18 +85,13 @@ export function DarkHeader({ onMobileMenuToggle }: DarkHeaderProps) {
         {/* Left: Mobile Menu + Breadcrumbs */}
         <div className="flex items-center gap-3 flex-1 min-w-0">
           {/* Mobile Menu Button */}
-          <button
-            onClick={onMobileMenuToggle}
-            className="
-              lg:hidden
-              p-2 rounded-lg
-              text-warm-400 hover:text-warm-700 hover:bg-warm-100 active:bg-warm-200
-              transition-colors
-            "
-            aria-label="Toggle menu"
-          >
-            <MenuIcon className="h-5 w-5" />
-          </button>
+          {onMobileMenuToggle && (
+            <MobileMenuButton
+              onClick={onMobileMenuToggle}
+              theme="warm"
+              mobileOnly
+            />
+          )}
 
           {/* Breadcrumbs */}
           <nav className="flex items-center gap-2 min-w-0" aria-label="Breadcrumb">

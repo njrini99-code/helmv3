@@ -1,33 +1,7 @@
 'use client';
 
 import { useSidebar } from '@/contexts/sidebar-context';
-import { cn } from '@/lib/utils';
-
-// Animated hamburger icon that transforms to X
-function MenuIcon({ open }: { open: boolean }) {
-  return (
-    <div className="w-5 h-5 flex flex-col justify-center items-center gap-[5px]">
-      <span
-        className={cn(
-          'block h-[2px] w-5 bg-current rounded-full transition-all duration-300 ease-out origin-center',
-          open && 'rotate-45 translate-y-[7px]'
-        )}
-      />
-      <span
-        className={cn(
-          'block h-[2px] w-5 bg-current rounded-full transition-all duration-300 ease-out',
-          open && 'opacity-0 scale-0'
-        )}
-      />
-      <span
-        className={cn(
-          'block h-[2px] w-5 bg-current rounded-full transition-all duration-300 ease-out origin-center',
-          open && '-rotate-45 -translate-y-[7px]'
-        )}
-      />
-    </div>
-  );
-}
+import { MobileMenuButton } from './mobile-menu-button';
 
 interface DashboardHeaderProps {
   title?: string;
@@ -41,25 +15,19 @@ export function DashboardHeader({ title, children }: DashboardHeaderProps) {
     <header className="sticky top-0 z-30 glass-prominent border-b border-white/20">
       <div className="h-16 px-4 lg:px-6 flex items-center gap-4">
         {/* Menu Toggle Button - Always visible */}
-        <button
+        <MobileMenuButton
           onClick={() => {
-            // On mobile, toggle mobile menu; on desktop, toggle collapse
             if (window.innerWidth < 1024) {
               toggleMobile();
             } else {
               toggle();
             }
           }}
-          className={cn(
-            'min-w-[44px] min-h-[44px] p-3 -ml-2 rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100 active:bg-slate-200',
-            'flex items-center justify-center',
-            'transition-colors duration-150 active:scale-95',
-            'focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500/40'
-          )}
-          aria-label="Toggle menu"
-        >
-          <MenuIcon open={mobileOpen} />
-        </button>
+          open={mobileOpen}
+          animated
+          theme="light"
+          className="-ml-2"
+        />
 
         {/* Title */}
         {title && (

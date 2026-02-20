@@ -291,7 +291,7 @@ function AdminToastItem({ toast, onClose }: AdminToastItemProps) {
           e.stopPropagation();
           handleClose();
         }}
-        className="flex-shrink-0 p-1.5 rounded-md text-warm-400 hover:text-warm-600 hover:bg-warm-100/50 transition-all duration-200"
+        className="flex-shrink-0 p-1.5 rounded-md text-warm-400 hover:text-warm-600 hover:bg-warm-100/50 active:bg-warm-200 transition-all duration-200"
       >
         <X size={14} />
       </button>

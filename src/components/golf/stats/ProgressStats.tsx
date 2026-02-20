@@ -308,7 +308,7 @@ const RecentRounds = memo(function RecentRounds({ rounds }: { rounds: RoundData[
         {displayRounds.map((round, index) => (
           <div
             key={round.id}
-            className="flex items-center justify-between p-3 bg-warm-50/80 rounded-xl hover:bg-warm-100/80 transition-colors"
+            className="flex items-center justify-between p-3 bg-warm-50/80 rounded-xl hover:bg-warm-100/80 active:bg-warm-200 transition-colors"
             style={{ animation: `fadeIn 0.3s ease-out forwards`, animationDelay: `${index * 50}ms` }}
           >
             <div className="flex-1 min-w-0">

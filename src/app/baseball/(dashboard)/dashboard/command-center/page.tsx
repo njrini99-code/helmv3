@@ -64,7 +64,7 @@ export default async function CommandCenterPage() {
     return (
       <div className="min-h-screen bg-[#FFFEFA]">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12">
-          <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-8 text-center">
+          <div className="glass-standard rounded-2xl p-8 text-center">
             <h1 className="text-2xl font-semibold text-slate-900 mb-4">
               Set Up Your Program
             </h1>
@@ -96,7 +96,7 @@ export default async function CommandCenterPage() {
     return (
       <div className="min-h-screen bg-[#FFFEFA]">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12">
-          <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-8 text-center">
+          <div className="glass-standard rounded-2xl p-8 text-center">
             <h1 className="text-2xl font-semibold text-slate-900 mb-4">
               Create Your Team
             </h1>

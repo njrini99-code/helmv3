@@ -163,7 +163,7 @@ export function HoleAccordion({
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-2xl border border-warm-200 bg-white/70 backdrop-blur-sm overflow-hidden shadow-sm"
+      className="rounded-2xl glass-standard overflow-hidden"
     >
       {/* Accordion header - always visible */}
       <button

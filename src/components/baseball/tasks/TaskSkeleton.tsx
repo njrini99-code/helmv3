@@ -2,7 +2,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export function TaskSkeleton() {
   return (
-    <div className="relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-hidden p-5">
+    <div className="relative glass-standard rounded-2xl overflow-hidden p-5">
       <div className="space-y-3">
         {/* Title */}
         <div className="flex items-start justify-between">

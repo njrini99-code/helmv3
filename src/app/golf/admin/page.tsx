@@ -560,7 +560,7 @@ function AdminDashboardContent() {
           })}
           <Link
             href="/golf/admin/crm"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-primary-400 hover:bg-white/5 mt-4 pt-4 border-t border-white/10"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-primary-400 hover:bg-white/5 transition-colors mt-4 pt-4 border-t border-white/10"
           >
             <Target size={20} />
             <span className="text-sm font-medium">Coach CRM</span>
@@ -587,7 +587,7 @@ function AdminDashboardContent() {
           <div className="flex items-center justify-between">
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="lg:hidden p-2 -ml-2 rounded-xl text-warm-500 hover:text-warm-700 hover:bg-warm-100/80 transition-colors"
+              className="lg:hidden p-2 -ml-2 rounded-xl text-warm-500 hover:text-warm-700 hover:bg-warm-100/80 active:bg-warm-200 transition-colors"
             >
               <Menu size={22} />
             </button>
@@ -606,7 +606,7 @@ function AdminDashboardContent() {
                 onClick={() => loadData(true)}
                 disabled={isRefreshing}
                 className={cn(
-                  'p-2 rounded-xl text-warm-500 hover:text-warm-700 hover:bg-warm-100/80 transition-colors',
+                  'p-2 rounded-xl text-warm-500 hover:text-warm-700 hover:bg-warm-100/80 active:bg-warm-200 transition-colors',
                   isRefreshing && 'animate-spin'
                 )}
                 title="Refresh (R)"
@@ -624,7 +624,7 @@ function AdminDashboardContent() {
 
               <button
                 onClick={handleSignOut}
-                className="p-2 rounded-xl text-warm-500 hover:text-warm-700 hover:bg-warm-100/80 transition-colors"
+                className="p-2 rounded-xl text-warm-500 hover:text-warm-700 hover:bg-warm-100/80 active:bg-warm-200 transition-colors"
                 title="Sign Out"
                 aria-label="Sign out"
               >

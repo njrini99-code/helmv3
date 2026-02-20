@@ -231,7 +231,7 @@ export default function GolfDashboardPage() {
                                 dispatch({ type: 'RETRY' });
                                 setRetryCount(c => c + 1);
                             }}
-                            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+                            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
                         >
                             Retry
                         </button>
@@ -253,7 +253,7 @@ export default function GolfDashboardPage() {
                         <p className="text-warm-600 mb-4">Unable to load your dashboard. Please check your account setup.</p>
                         <a
                             href="/golf"
-                            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 inline-block"
+                            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors inline-block"
                         >
                             Go to Golf Home
                         </a>

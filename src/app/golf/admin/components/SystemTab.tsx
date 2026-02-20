@@ -101,7 +101,7 @@ function ErrorTimeline({ errors }: { errors: AdminDashboardData['errorLogs']['re
   if (errors.length === 0) {
     return (
       <div className={cn(
-        'bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6',
+        'glass-standard rounded-2xl p-6',
         'flex flex-col items-center justify-center py-10 text-center'
       )}>
         <div className="w-12 h-12 rounded-2xl bg-primary-50 flex items-center justify-center mb-3">
@@ -115,7 +115,7 @@ function ErrorTimeline({ errors }: { errors: AdminDashboardData['errorLogs']['re
 
   return (
     <div className={cn(
-      'bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-5 md:p-6',
+      'glass-standard rounded-2xl p-5 md:p-6',
       'max-h-[500px] overflow-y-auto'
     )}>
       <div className="space-y-0">
@@ -173,7 +173,7 @@ function DataQualityRing({ quality }: { quality: AdminDashboardData['dataQuality
 
   return (
     <div className={cn(
-      'bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-5 md:p-6'
+      'glass-standard rounded-2xl p-5 md:p-6'
     )}>
       <div className="flex items-center gap-5 mb-5">
         {/* Ring */}
@@ -234,7 +234,7 @@ function FeatureAdoptionGrid({ features }: { features: AdminDashboardData['usage
 
   return (
     <div className={cn(
-      'bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-5 md:p-6'
+      'glass-standard rounded-2xl p-5 md:p-6'
     )}>
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
         {features.map((feature) => {

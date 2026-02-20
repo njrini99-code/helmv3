@@ -96,7 +96,7 @@ export function QualifierViewTabs({ leaderboard, numRounds = 1, showLiveLeaderbo
                 return (
                   <tr
                     key={entry.playerId}
-                    className={`hover:bg-warm-50 transition-colors ${
+                    className={`hover:bg-warm-50 active:bg-warm-100 transition-colors ${
                       isLeader ? 'bg-primary-50' : ''
                     }`}
                   >

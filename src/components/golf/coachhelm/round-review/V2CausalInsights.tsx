@@ -46,7 +46,7 @@ export function V2CausalInsights({ insights }: V2CausalInsightsProps) {
               initial={{ opacity: 0, x: -12 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.1 * index, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="p-4 rounded-xl bg-warm-50/50 border border-warm-100 hover:bg-warm-50 transition-colors"
+              className="p-4 rounded-xl bg-warm-50/50 border border-warm-100 hover:bg-warm-50 active:bg-warm-100 transition-colors"
             >
               {/* Cause -> Effect flow */}
               <div className="flex items-center gap-3 mb-2.5">

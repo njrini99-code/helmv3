@@ -259,7 +259,7 @@ export function PollResultSelector({
               <div className="p-4">
                 <button
                   onClick={() => setShowAll(true)}
-                  className="w-full py-2 text-sm font-medium text-warm-600 hover:text-warm-900 flex items-center justify-center gap-2 hover:bg-warm-50 rounded-lg transition-colors"
+                  className="w-full py-2 text-sm font-medium text-warm-600 hover:text-warm-900 flex items-center justify-center gap-2 hover:bg-warm-50 active:bg-warm-100 rounded-lg transition-colors"
                 >
                   <span>Show {results.length - maxResults} more options</span>
                   <ChevronDown className="w-4 h-4" />
@@ -280,7 +280,7 @@ export function PollResultSelector({
                 {selectedSlot.availableCount} players available for this time
               </p>
             </div>
-            <Button onClick={handleCreateEvent} className="bg-primary-600 hover:bg-primary-700">
+            <Button onClick={handleCreateEvent} className="bg-primary-600 hover:bg-primary-700 transition-colors">
               <Plus className="w-4 h-4 mr-2" />
               Create Event
             </Button>

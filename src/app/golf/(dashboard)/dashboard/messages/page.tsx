@@ -487,7 +487,7 @@ export default function GolfMessagesPage() {
                               )}>
                                 <button
                                   onClick={() => handleStartEdit(msg.id, msg.content)}
-                                  className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
+                                  className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 transition-colors"
                                   title="Edit message"
                                 >
                                   <IconPencil size={14} />

@@ -295,7 +295,7 @@ export function MobileEventSheet({
             type="button"
             onClick={handleClose}
             aria-label="Close"
-            className="p-2 -mr-2 rounded-full hover:bg-warm-100 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+            className="p-2 -mr-2 rounded-full hover:bg-warm-100 active:bg-warm-200 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
           >
             <X className="w-5 h-5 text-warm-500" aria-hidden="true" />
           </button>

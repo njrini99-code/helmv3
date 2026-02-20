@@ -72,7 +72,7 @@ export function InsightsFeed({ insights }: InsightsFeedProps) {
 
   if (sortedInsights.length === 0) {
     return (
-      <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+      <div className="glass-standard rounded-2xl p-6">
         <h3 className="font-semibold text-slate-900 mb-4">Insights</h3>
         <div className="text-center py-8">
           <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3">
@@ -88,7 +88,7 @@ export function InsightsFeed({ insights }: InsightsFeedProps) {
   }
 
   return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+    <div className="glass-standard rounded-2xl p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold text-slate-900">Insights</h3>
         <span className="text-xs text-slate-500">

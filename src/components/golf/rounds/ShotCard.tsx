@@ -216,7 +216,7 @@ export function ShotCard({ shot, isFirst, isLast, showSyncStatus = false, onRetr
         </div>
 
         {/* Shot content */}
-        <div className="bg-white/70 backdrop-blur-sm rounded-xl border border-warm-200/80 p-4 shadow-sm hover:shadow-md transition-shadow">
+        <div className="glass-standard rounded-xl p-4 hover:shadow-md transition-shadow">
           {/* Header row */}
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">

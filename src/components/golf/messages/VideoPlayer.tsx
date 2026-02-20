@@ -249,7 +249,7 @@ export function VideoPlayer({
             onClick={onClose}
             className={cn(
               'absolute top-4 right-4 z-20',
-              'p-2 rounded-full bg-black/50 hover:bg-black/70',
+              'p-2 rounded-full bg-black/50 hover:bg-black/70 active:bg-black/90 active:scale-95',
               'text-white transition-all',
               showControls ? 'opacity-100' : 'opacity-0'
             )}
@@ -287,7 +287,7 @@ export function VideoPlayer({
             <a
               href={url}
               download={fileName}
-              className="px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30"
+              className="px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 active:bg-white/40 transition-colors"
             >
               Download instead
             </a>
@@ -322,7 +322,7 @@ export function VideoPlayer({
             <button
               type="button"
               onClick={togglePlay}
-              className="p-2 rounded-full hover:bg-white/20 text-white transition-colors"
+              className="p-2 rounded-full hover:bg-white/20 active:bg-white/40 text-white transition-colors"
               aria-label={isPlaying ? 'Pause' : 'Play'}
             >
               {isPlaying ? <IconPause size={24} /> : <IconPlay size={24} />}
@@ -341,7 +341,7 @@ export function VideoPlayer({
               <button
                 type="button"
                 onClick={toggleMute}
-                className="p-2 rounded-full hover:bg-white/20 text-white transition-colors"
+                className="p-2 rounded-full hover:bg-white/20 active:bg-white/40 text-white transition-colors"
                 aria-label={isMuted ? 'Unmute' : 'Mute'}
               >
                 {isMuted || volume === 0 ? <IconVolumeX size={20} /> : <IconVolume2 size={20} />}
@@ -361,7 +361,7 @@ export function VideoPlayer({
             <a
               href={url}
               download={fileName}
-              className="p-2 rounded-full hover:bg-white/20 text-white transition-colors"
+              className="p-2 rounded-full hover:bg-white/20 active:bg-white/40 text-white transition-colors"
               aria-label="Download"
             >
               <IconDownload size={20} />
@@ -371,7 +371,7 @@ export function VideoPlayer({
             <button
               type="button"
               onClick={toggleFullscreen}
-              className="p-2 rounded-full hover:bg-white/20 text-white transition-colors"
+              className="p-2 rounded-full hover:bg-white/20 active:bg-white/40 text-white transition-colors"
               aria-label={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
             >
               {isFullscreen ? <IconMinimize size={20} /> : <IconMaximize size={20} />}
@@ -416,7 +416,7 @@ export function VideoPlayer({
           className="absolute inset-0 flex items-center justify-center bg-black/30 cursor-pointer"
           onClick={togglePlay}
         >
-          <div className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
+          <div className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center shadow-lg hover:scale-110 active:scale-95 transition-transform">
             <IconPlay size={24} className="text-warm-900 ml-1" />
           </div>
         </div>
@@ -449,7 +449,7 @@ export function VideoPlayer({
               e.stopPropagation();
               togglePlay();
             }}
-            className="p-1 rounded hover:bg-white/20 text-white"
+            className="p-1 rounded hover:bg-white/20 active:bg-white/40 transition-colors text-white"
             aria-label={isPlaying ? 'Pause' : 'Play'}
           >
             {isPlaying ? <IconPause size={16} /> : <IconPlay size={16} />}
@@ -467,7 +467,7 @@ export function VideoPlayer({
               e.stopPropagation();
               toggleMute();
             }}
-            className="p-1 rounded hover:bg-white/20 text-white"
+            className="p-1 rounded hover:bg-white/20 active:bg-white/40 transition-colors text-white"
             aria-label={isMuted ? 'Unmute' : 'Mute'}
           >
             {isMuted ? <IconVolumeX size={16} /> : <IconVolume2 size={16} />}
@@ -479,7 +479,7 @@ export function VideoPlayer({
               e.stopPropagation();
               toggleFullscreen();
             }}
-            className="p-1 rounded hover:bg-white/20 text-white"
+            className="p-1 rounded hover:bg-white/20 active:bg-white/40 transition-colors text-white"
             aria-label="Fullscreen"
           >
             <IconMaximize size={16} />

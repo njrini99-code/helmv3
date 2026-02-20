@@ -86,7 +86,7 @@ export default function SessionHeatmap({
       {/* Session Stats */}
       <div
         className={cn(
-          'bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6'
+          'glass-standard rounded-2xl p-6'
         )}
       >
         <h2 className="text-xl font-semibold text-warm-900 mb-4">
@@ -116,7 +116,7 @@ export default function SessionHeatmap({
       {/* Page Heatmap */}
       <div
         className={cn(
-          'bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6'
+          'glass-standard rounded-2xl p-6'
         )}
       >
         <h2 className="text-xl font-semibold text-warm-900 mb-4">Page Views</h2>
@@ -142,7 +142,7 @@ export default function SessionHeatmap({
       {/* Feature Usage */}
       <div
         className={cn(
-          'bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6'
+          'glass-standard rounded-2xl p-6'
         )}
       >
         <h2 className="text-xl font-semibold text-warm-900 mb-4">Feature Usage</h2>
@@ -169,7 +169,7 @@ export default function SessionHeatmap({
       {deadFeatures.length > 0 && (
         <div
           className={cn(
-            'bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6',
+            'glass-standard rounded-2xl p-6',
             'border-l-4 border-l-amber-400'
           )}
         >

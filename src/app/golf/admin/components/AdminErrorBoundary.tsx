@@ -147,7 +147,7 @@ function ErrorFallback({
         onClick={onReset}
         className={cn(
           'flex items-center gap-2 px-4 py-2 rounded-lg',
-          'bg-white hover:bg-warm-50 border border-warm-200',
+          'bg-white hover:bg-warm-50 active:bg-warm-100 border border-warm-200',
           'text-warm-700 font-medium transition-colors',
           textSizes[size]
         )}
@@ -236,7 +236,7 @@ export function Skeleton({ className, animate = true, style }: SkeletonProps) {
 
 export function StatSkeleton() {
   return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6 animate-pulse">
+    <div className="glass-standard rounded-2xl p-6 animate-pulse">
       <div className="flex items-center justify-between mb-3">
         <Skeleton className="h-4 w-24" />
         <Skeleton className="h-8 w-8 rounded-lg" />
@@ -253,7 +253,7 @@ export function StatSkeleton() {
 
 export function CardSkeleton({ rows = 4 }: { rows?: number }) {
   return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6 animate-pulse">
+    <div className="glass-standard rounded-2xl p-6 animate-pulse">
       <div className="flex items-center justify-between mb-4">
         <Skeleton className="h-5 w-36" />
         <Skeleton className="h-6 w-20 rounded-full" />
@@ -280,7 +280,7 @@ export function CardSkeleton({ rows = 4 }: { rows?: number }) {
 
 export function TableSkeleton({ rows = 5, cols = 4 }: { rows?: number; cols?: number }) {
   return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-hidden animate-pulse">
+    <div className="glass-standard rounded-2xl overflow-hidden animate-pulse">
       {/* Header */}
       <div className="px-6 py-4 border-b border-warm-100 flex gap-4">
         {Array.from({ length: cols }).map((_, i) => (
@@ -307,7 +307,7 @@ export function TableSkeleton({ rows = 5, cols = 4 }: { rows?: number; cols?: nu
 
 export function ChartSkeleton({ height = 200 }: { height?: number }) {
   return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6 animate-pulse">
+    <div className="glass-standard rounded-2xl p-6 animate-pulse">
       <div className="flex items-center justify-between mb-4">
         <Skeleton className="h-5 w-36" />
         <div className="flex gap-2">

@@ -230,8 +230,8 @@ export function GolfNewMessageModal({
                   onClick={() => handleSelect(result)}
                   className={cn(
                     'w-full px-4 py-3 flex items-center gap-3 text-left transition-colors',
-                    'hover:bg-warm-50 rounded-lg -mx-4',
-                    selectedId === result.userId && 'bg-primary-50 hover:bg-primary-50'
+                    'hover:bg-warm-50 active:bg-warm-100 rounded-lg -mx-4',
+                    selectedId === result.userId && 'bg-primary-50 hover:bg-primary-50 active:bg-primary-100'
                   )}
                 >
                   <Avatar name={result.name} src={result.avatar} size="md" />

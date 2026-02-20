@@ -81,7 +81,7 @@ export default function NewQualifierClient({ players }: NewQualifierClientProps)
           <div className="flex items-center gap-4">
             <Link
               href="/golf/dashboard/qualifiers"
-              className="p-2 -ml-2 rounded-lg text-warm-500 hover:text-warm-700 hover:bg-warm-100 transition-colors"
+              className="p-2 -ml-2 rounded-lg text-warm-500 hover:text-warm-700 hover:bg-warm-100 active:bg-warm-200 transition-colors"
             >
               <IconArrowLeft size={20} />
             </Link>
@@ -104,7 +104,7 @@ export default function NewQualifierClient({ players }: NewQualifierClientProps)
           )}
 
           {/* Basic Information */}
-          <section className="relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-glass overflow-hidden">
+          <section className="relative glass-standard rounded-2xl p-6 overflow-hidden">
             <ShineEffect />
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
@@ -135,7 +135,7 @@ export default function NewQualifierClient({ players }: NewQualifierClientProps)
           </section>
 
           {/* Schedule */}
-          <section className="relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-glass overflow-hidden">
+          <section className="relative glass-standard rounded-2xl p-6 overflow-hidden">
             <ShineEffect />
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
@@ -177,7 +177,7 @@ export default function NewQualifierClient({ players }: NewQualifierClientProps)
           </section>
 
           {/* Location & Spots */}
-          <section className="relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-glass overflow-hidden">
+          <section className="relative glass-standard rounded-2xl p-6 overflow-hidden">
             <ShineEffect />
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
@@ -209,7 +209,7 @@ export default function NewQualifierClient({ players }: NewQualifierClientProps)
           </section>
 
           {/* Player Selection */}
-          <section className="relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-glass overflow-hidden">
+          <section className="relative glass-standard rounded-2xl p-6 overflow-hidden">
             <ShineEffect />
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
@@ -228,14 +228,14 @@ export default function NewQualifierClient({ players }: NewQualifierClientProps)
                 <button
                   type="button"
                   onClick={selectAll}
-                  className="text-sm text-primary-600 hover:text-primary-700 font-medium px-3 py-1.5 rounded-lg hover:bg-primary-50 transition-colors"
+                  className="text-sm text-primary-600 hover:text-primary-700 font-medium px-3 py-1.5 rounded-lg hover:bg-primary-50 active:bg-primary-100 transition-colors"
                 >
                   Select All
                 </button>
                 <button
                   type="button"
                   onClick={deselectAll}
-                  className="text-sm text-warm-500 hover:text-warm-700 font-medium px-3 py-1.5 rounded-lg hover:bg-warm-100 transition-colors"
+                  className="text-sm text-warm-500 hover:text-warm-700 font-medium px-3 py-1.5 rounded-lg hover:bg-warm-100 active:bg-warm-200 transition-colors"
                 >
                   Clear
                 </button>
@@ -263,7 +263,7 @@ export default function NewQualifierClient({ players }: NewQualifierClientProps)
                         flex items-center gap-3 p-3 rounded-xl border transition-all text-left
                         ${isSelected
                           ? 'bg-primary-50 border-primary-200 ring-1 ring-primary-200'
-                          : 'bg-white/50 border-warm-200 hover:border-warm-300 hover:bg-white/80'
+                          : 'bg-white/50 border-warm-200 hover:border-warm-300 hover:bg-white/80 active:bg-white/90'
                         }
                       `}
                     >

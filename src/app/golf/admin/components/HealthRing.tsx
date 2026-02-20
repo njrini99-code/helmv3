@@ -106,8 +106,8 @@ export function HealthRing({
       whileHover={onClick ? { scale: 1.02 } : undefined}
       whileTap={onClick ? { scale: 0.98 } : undefined}
       className={cn(
-        'relative bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6',
-        'transition-all duration-300 hover:bg-white/80 hover:shadow-card-hover',
+        'relative glass-standard rounded-2xl p-6',
+        'transition-all duration-300 hover:bg-white/80 active:bg-white/90 hover:shadow-card-hover',
         onClick && 'cursor-pointer'
       )}
     >

@@ -207,7 +207,7 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
           type="button"
           onClick={() => setShowInstructions(!showInstructions)}
           className="mt-3 w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg
-                   bg-warm-50 hover:bg-warm-100 text-warm-700 text-sm font-medium
+                   bg-warm-50 hover:bg-warm-100 active:bg-warm-200 text-warm-700 text-sm font-medium
                    transition-colors"
         >
           <ExternalLink className="w-4 h-4" />
@@ -239,7 +239,7 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
                 onClick={() => setShowDeleteConfirm(false)}
                 className="px-3 py-1.5 rounded-lg text-xs font-medium
                          bg-white text-warm-700 border border-warm-200
-                         hover:bg-warm-50 transition-colors"
+                         hover:bg-warm-50 active:bg-warm-100 transition-colors"
               >
                 Cancel
               </button>
@@ -270,7 +270,7 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
                 disabled={loading}
                 className={cn(
                   'p-2 rounded-lg transition-all',
-                  'text-warm-600 hover:text-warm-900 hover:bg-warm-100',
+                  'text-warm-600 hover:text-warm-900 hover:bg-warm-100 active:bg-warm-200',
                   'disabled:opacity-50 disabled:cursor-not-allowed',
                   loading && 'animate-spin'
                 )}
@@ -331,7 +331,7 @@ export function CompactFeedCard({
       onClick={onClick}
       className={cn(
         'flex items-center gap-3 p-3 rounded-lg border border-warm-200',
-        'hover:border-warm-300 hover:bg-warm-50 transition-all',
+        'hover:border-warm-300 hover:bg-warm-50 active:bg-warm-100 transition-all',
         onClick && 'cursor-pointer'
       )}
     >

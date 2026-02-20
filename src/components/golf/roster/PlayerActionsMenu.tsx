@@ -135,7 +135,7 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
       {/* Three-dot menu button */}
       <button
         onClick={() => setShowMenu(!showMenu)}
-        className="p-2 hover:bg-warm-100 rounded-lg transition-colors"
+        className="p-2 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
         aria-label="Player actions"
       >
         <IconMoreVertical size={18} className="text-warm-500" />
@@ -157,7 +157,7 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
                 router.push(`/golf/dashboard/roster/${playerId}`);
                 setShowMenu(false);
               }}
-              className="w-full px-4 py-2 text-left text-sm hover:bg-warm-50 flex items-center gap-2 text-warm-700"
+              className="w-full px-4 py-2 text-left text-sm hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2 text-warm-700"
             >
               <IconChevronRight size={16} />
               View Profile
@@ -165,7 +165,7 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
 
             <button
               onClick={openStatusModal}
-              className="w-full px-4 py-2 text-left text-sm hover:bg-warm-50 flex items-center gap-2 text-warm-700"
+              className="w-full px-4 py-2 text-left text-sm hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2 text-warm-700"
             >
               <IconUser size={16} />
               Change Status
@@ -178,7 +178,7 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
                 setShowRemoveConfirm(true);
                 setShowMenu(false);
               }}
-              className="w-full px-4 py-2 text-left text-sm hover:bg-red-50 flex items-center gap-2 text-red-600"
+              className="w-full px-4 py-2 text-left text-sm hover:bg-red-50 transition-colors flex items-center gap-2 text-red-600"
             >
               <IconUsers size={16} />
               Remove from Team
@@ -207,7 +207,7 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
               <button
                 onClick={() => setShowRemoveConfirm(false)}
                 disabled={removing}
-                className="px-4 py-2 rounded-lg border border-warm-200 text-warm-700 hover:bg-warm-50 font-medium transition-colors disabled:opacity-50"
+                className="px-4 py-2 rounded-lg border border-warm-200 text-warm-700 hover:bg-warm-50 active:bg-warm-100 font-medium transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -254,7 +254,7 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
                   disabled={updatingStatus}
                   className={cn(
                     'w-full px-4 py-3 rounded-xl border-2 text-left transition-all',
-                    'hover:border-warm-300 hover:bg-warm-50',
+                    'hover:border-warm-300 hover:bg-warm-50 active:bg-warm-100',
                     'disabled:opacity-50 disabled:cursor-not-allowed',
                     selectedStatus === status.value
                       ? 'border-primary-500 bg-primary-50/50'
@@ -298,7 +298,7 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
                   setSelectedStatus(null);
                 }}
                 disabled={updatingStatus}
-                className="px-4 py-2 rounded-lg border border-warm-200 text-warm-700 hover:bg-warm-50 font-medium transition-colors disabled:opacity-50"
+                className="px-4 py-2 rounded-lg border border-warm-200 text-warm-700 hover:bg-warm-50 active:bg-warm-100 font-medium transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
