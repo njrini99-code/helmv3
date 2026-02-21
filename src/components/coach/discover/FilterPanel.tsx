@@ -4,8 +4,10 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SearchAutocomplete } from '@/components/ui/search-autocomplete';
+import { Button } from '@/components/ui/button';
+import { useSavedSearches } from '@/hooks/use-dashboard';
 import type { Player } from '@/lib/types';
-import { IconUsers, IconBuilding } from '@/components/icons';
+import { IconUsers, IconBuilding, IconBookmark, IconTrash, IconChevronDown, IconChevronUp } from '@/components/icons';
 
 const POSITIONS = ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'DH', 'UTIL'];
 const GRAD_YEARS = [2025, 2026, 2027, 2028, 2029];
@@ -45,6 +47,10 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
   const [search, setSearch] = useState(currentFilters.search || '');
+  const [showSavedSearches, setShowSavedSearches] = useState(false);
+  const [saveSearchName, setSaveSearchName] = useState('');
+  const [showSaveInput, setShowSaveInput] = useState(false);
+  const { searches: savedSearches, saveSearch, deleteSearch } = useSavedSearches();
 
   const updateFilter = (key: string, value: string | undefined) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -78,6 +84,62 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
   const hasActiveFilters = Object.entries(currentFilters).some(
     ([key, value]) => key !== 'mode' && value !== undefined && value !== ''
   );
+
+  // Build filters object for saving
+  const getCurrentFiltersForSave = (): Record<string, string> => {
+    const filters: Record<string, string> = {};
+    if (currentFilters.gradYear) filters.gradYear = currentFilters.gradYear.toString();
+    if (currentFilters.position) filters.position = currentFilters.position;
+    if (currentFilters.states?.length) filters.state = currentFilters.states.join(',');
+    if (currentFilters.minVelo) filters.minVelo = currentFilters.minVelo.toString();
+    if (currentFilters.maxVelo) filters.maxVelo = currentFilters.maxVelo.toString();
+    if (currentFilters.minExit) filters.minExit = currentFilters.minExit.toString();
+    if (currentFilters.maxExit) filters.maxExit = currentFilters.maxExit.toString();
+    if (currentFilters.hasVideo) filters.hasVideo = 'true';
+    if (currentFilters.search) filters.search = currentFilters.search;
+    if (currentFilters.teamType) filters.teamType = currentFilters.teamType;
+    if (mode) filters.mode = mode;
+    return filters;
+  };
+
+  const handleSaveSearch = () => {
+    if (!saveSearchName.trim()) return;
+    const filters = getCurrentFiltersForSave();
+    saveSearch(saveSearchName.trim(), filters);
+    setSaveSearchName('');
+    setShowSaveInput(false);
+    setShowSavedSearches(true);
+  };
+
+  const handleLoadSearch = (filters: Record<string, string>) => {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) params.set(key, value);
+    });
+    startTransition(() => {
+      router.push(`/baseball/dashboard/discover?${params.toString()}`);
+    });
+    // Update local search state
+    if (filters.search) setSearch(filters.search);
+  };
+
+  const getSearchDescription = (filters: Record<string, string>): string => {
+    const parts: string[] = [];
+    if (filters.gradYear) parts.push(`Class of ${filters.gradYear}`);
+    if (filters.position) parts.push(filters.position);
+    if (filters.state) parts.push(filters.state.split(',').join(', '));
+    if (filters.minVelo || filters.maxVelo) {
+      if (filters.minVelo && filters.maxVelo) {
+        parts.push(`${filters.minVelo}-${filters.maxVelo} mph`);
+      } else if (filters.minVelo) {
+        parts.push(`${filters.minVelo}+ mph`);
+      } else {
+        parts.push(`Up to ${filters.maxVelo} mph`);
+      }
+    }
+    if (filters.hasVideo === 'true') parts.push('Has video');
+    return parts.length > 0 ? parts.join(' • ') : 'All players';
+  };
 
   return (
     <div className="glass-subtle rounded-2xl p-6 sticky top-6 overflow-hidden relative">
@@ -150,6 +212,122 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
                        text-sm text-slate-900 bg-white"
           />
         )}
+      </div>
+
+      {/* Saved Searches */}
+      <div className="mb-6">
+        <button
+          onClick={() => setShowSavedSearches(!showSavedSearches)}
+          className="flex items-center justify-between w-full text-sm font-medium text-slate-700 mb-2 group"
+        >
+          <span className="flex items-center gap-2">
+            <IconBookmark size={14} className="text-primary-500" />
+            Saved Searches
+            {savedSearches.length > 0 && (
+              <span className="px-1.5 py-0.5 text-xs bg-primary-100 text-primary-700 rounded-full">
+                {savedSearches.length}
+              </span>
+            )}
+          </span>
+          {showSavedSearches ? (
+            <IconChevronUp size={14} className="text-slate-400" />
+          ) : (
+            <IconChevronDown size={14} className="text-slate-400" />
+          )}
+        </button>
+
+        <AnimatePresence>
+          {showSavedSearches && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden"
+            >
+              {/* Save Current Search */}
+              {hasActiveFilters && (
+                <div className="mb-3">
+                  {showSaveInput ? (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={saveSearchName}
+                        onChange={(e) => setSaveSearchName(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSaveSearch()}
+                        placeholder="Search name..."
+                        className="flex-1 px-3 py-2 rounded-lg border border-slate-200
+                                   focus:border-primary-500 focus:ring-2 focus:ring-primary-100
+                                   text-sm text-slate-900 bg-white"
+                        autoFocus
+                      />
+                      <Button size="sm" onClick={handleSaveSearch} className="min-h-[36px]">
+                        Save
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => { setShowSaveInput(false); setSaveSearchName(''); }}
+                        className="min-h-[36px] px-2"
+                      >
+                        ×
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setShowSaveInput(true)}
+                      className="w-full justify-center gap-2 min-h-[36px]"
+                    >
+                      <IconBookmark size={14} />
+                      Save Current Search
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              {/* Saved Searches List */}
+              {savedSearches.length > 0 ? (
+                <div className="space-y-2">
+                  {savedSearches.map((savedSearch) => (
+                    <div
+                      key={savedSearch.id}
+                      className="group flex items-start justify-between p-3 rounded-xl bg-white/50 
+                                 border border-slate-200/50 hover:border-primary-200 hover:bg-primary-50/30
+                                 transition-all duration-200 cursor-pointer"
+                      onClick={() => handleLoadSearch(savedSearch.filters)}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-slate-900 truncate group-hover:text-primary-700 transition-colors">
+                          {savedSearch.name}
+                        </p>
+                        <p className="text-xs text-slate-500 truncate mt-0.5">
+                          {getSearchDescription(savedSearch.filters)}
+                        </p>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteSearch(savedSearch.id);
+                        }}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50
+                                   opacity-0 group-hover:opacity-100 transition-all flex-shrink-0 ml-2"
+                        aria-label="Delete saved search"
+                      >
+                        <IconTrash size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-slate-400 text-center py-3">
+                  No saved searches yet. Apply filters and save them for quick access.
+                </p>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <AnimatePresence mode="wait">

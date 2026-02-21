@@ -53,6 +53,20 @@ function formatOBP(obp: number | null | undefined): string {
   return obp.toFixed(3).replace('0.', '.');
 }
 
+// Format SLG (e.g., .520)
+function formatSLG(slg: number | null | undefined): string {
+  if (slg == null) return '---';
+  return slg.toFixed(3).replace('0.', '.');
+}
+
+// Format OPS (e.g., .920)
+function formatOPS(ops: number | null | undefined): string {
+  if (ops == null) return '---';
+  // OPS can be >= 1.000
+  if (ops >= 1) return ops.toFixed(3);
+  return ops.toFixed(3).replace('0.', '.');
+}
+
 // Format exit velocity
 function formatExitVelo(velo: number | null | undefined): string {
   if (velo == null) return '---';
@@ -187,6 +201,26 @@ export function PlayerRow({
         {formatOBP(aggregates?.career_obp)}
       </td>
 
+      {/* SLG */}
+      <td className="py-4 px-4 text-sm text-slate-600 tabular-nums">
+        {formatSLG(aggregates?.career_slg)}
+      </td>
+
+      {/* OPS */}
+      <td className="py-4 px-4">
+        <span
+          className={`text-sm font-semibold tabular-nums ${
+            aggregates?.career_ops != null && aggregates.career_ops >= 0.8
+              ? 'text-primary-600'
+              : aggregates?.career_ops != null && aggregates.career_ops >= 0.7
+                ? 'text-slate-900'
+                : 'text-slate-600'
+          }`}
+        >
+          {formatOPS(aggregates?.career_ops)}
+        </span>
+      </td>
+
       {/* Last 5 AVG - Hidden in compact mode */}
       {!compact && (
         <td className="py-4 px-4 text-sm text-slate-600 tabular-nums">
@@ -263,17 +297,25 @@ export function PlayerRow({
               </div>
             </div>
 
-            <div className="grid grid-cols-4 gap-2 mb-3">
+            {/* Slash Line Stats */}
+            <div className="bg-slate-50 rounded-lg p-2 mb-2">
+              <p className="text-xs text-slate-500 mb-1 text-center">Slash Line</p>
+              <p className="text-sm font-semibold text-slate-900 tabular-nums text-center tracking-wide">
+                {formatAvg(aggregates.career_avg)} / {formatOBP(aggregates.career_obp)} / {formatSLG(aggregates.career_slg)} / {formatOPS(aggregates.career_ops)}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 mb-3">
               <div className="bg-slate-50 rounded-lg p-2 text-center">
-                <p className="text-xs text-slate-500 mb-0.5">AVG</p>
-                <p className="text-base font-semibold text-slate-900 tabular-nums">
-                  {formatAvg(aggregates.career_avg)}
-                </p>
-              </div>
-              <div className="bg-slate-50 rounded-lg p-2 text-center">
-                <p className="text-xs text-slate-500 mb-0.5">OBP</p>
-                <p className="text-base font-semibold text-slate-900 tabular-nums">
-                  {formatOBP(aggregates.career_obp)}
+                <p className="text-xs text-slate-500 mb-0.5">OPS</p>
+                <p
+                  className={`text-base font-semibold tabular-nums ${
+                    aggregates.career_ops != null && aggregates.career_ops >= 0.8
+                      ? 'text-primary-600'
+                      : 'text-slate-900'
+                  }`}
+                >
+                  {formatOPS(aggregates.career_ops)}
                 </p>
               </div>
               <div className="bg-slate-50 rounded-lg p-2 text-center">

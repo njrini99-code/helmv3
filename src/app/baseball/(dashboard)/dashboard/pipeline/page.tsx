@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCorners, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
@@ -18,7 +18,7 @@ import { PlayerDetailModal } from '@/components/coach/PlayerDetailModal';
 import { PlayerPeekPanel } from '@/components/panels/PlayerPeekPanel';
 import { PositionPlanner } from '@/components/baseball/position-planner';
 import { Badge } from '@/components/ui/badge';
-import { IconUsers, IconTrash, IconUser, IconLayoutGrid, IconList, IconTarget } from '@/components/icons';
+import { IconUsers, IconTrash, IconUser, IconLayoutGrid, IconList, IconTarget, IconEye, IconStar, IconCheck, IconX as IconXCircle } from '@/components/icons';
 import { useWatchlist } from '@/hooks/use-watchlist';
 import { useRecruitingRouteProtection } from '@/hooks/use-route-protection';
 import { useAuth } from '@/hooks/use-auth';
@@ -62,6 +62,108 @@ const filterTabs = [
 
 type ViewMode = 'pipeline' | 'list' | 'position';
 
+// Pipeline Stats Summary Bar Component
+function PipelineStatsSummary({ watchlist }: { watchlist: Array<{ pipeline_stage: PipelineStage | null }> }) {
+  const stats = useMemo(() => {
+    const counts = {
+      total: watchlist.length,
+      watching: 0,
+      highPriority: 0,
+      offers: 0,
+      committed: 0,
+      uninterested: 0,
+    };
+    
+    watchlist.forEach(item => {
+      switch (item.pipeline_stage) {
+        case 'watchlist':
+          counts.watching++;
+          break;
+        case 'high_priority':
+          counts.highPriority++;
+          break;
+        case 'offer_extended':
+          counts.offers++;
+          break;
+        case 'committed':
+          counts.committed++;
+          break;
+        case 'uninterested':
+          counts.uninterested++;
+          break;
+      }
+    });
+    
+    return counts;
+  }, [watchlist]);
+
+  if (watchlist.length === 0) return null;
+
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+      <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-50 border border-slate-200">
+        <div className="w-9 h-9 rounded-lg bg-slate-200 flex items-center justify-center">
+          <IconUsers size={18} className="text-slate-600" />
+        </div>
+        <div>
+          <p className="text-lg font-semibold text-slate-900">{stats.total}</p>
+          <p className="text-xs text-slate-500">Total</p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-blue-50 border border-blue-200">
+        <div className="w-9 h-9 rounded-lg bg-blue-100 flex items-center justify-center">
+          <IconEye size={18} className="text-blue-600" />
+        </div>
+        <div>
+          <p className="text-lg font-semibold text-blue-900">{stats.watching}</p>
+          <p className="text-xs text-blue-600">Watching</p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200">
+        <div className="w-9 h-9 rounded-lg bg-amber-100 flex items-center justify-center">
+          <IconStar size={18} className="text-amber-600" />
+        </div>
+        <div>
+          <p className="text-lg font-semibold text-amber-900">{stats.highPriority}</p>
+          <p className="text-xs text-amber-600">High Priority</p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-purple-50 border border-purple-200">
+        <div className="w-9 h-9 rounded-lg bg-purple-100 flex items-center justify-center">
+          <IconTarget size={18} className="text-purple-600" />
+        </div>
+        <div>
+          <p className="text-lg font-semibold text-purple-900">{stats.offers}</p>
+          <p className="text-xs text-purple-600">Offers</p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-green-50 border border-green-200">
+        <div className="w-9 h-9 rounded-lg bg-green-100 flex items-center justify-center">
+          <IconCheck size={18} className="text-green-600" />
+        </div>
+        <div>
+          <p className="text-lg font-semibold text-green-900">{stats.committed}</p>
+          <p className="text-xs text-green-600">Committed</p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-50 border border-slate-200">
+        <div className="w-9 h-9 rounded-lg bg-slate-200 flex items-center justify-center">
+          <IconXCircle size={18} className="text-slate-500" />
+        </div>
+        <div>
+          <p className="text-lg font-semibold text-slate-700">{stats.uninterested}</p>
+          <p className="text-xs text-slate-500">Not Interested</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function PipelinePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -94,6 +196,10 @@ export default function PipelinePage() {
   const [removing, setRemoving] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [peekPlayerId, setPeekPlayerId] = useState<string | null>(null);
+  
+  // Keyboard navigation state
+  const [focusedIndex, setFocusedIndex] = useState<number>(-1);
+  const listContainerRef = useRef<HTMLDivElement>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -280,6 +386,62 @@ export default function PipelinePage() {
     }
   }
 
+  // Keyboard navigation handler
+  const handleKeyboardNavigation = useCallback((e: KeyboardEvent) => {
+    // Only handle in list view when not editing
+    if (viewMode !== 'list' || editingNote || filteredWatchlist.length === 0) return;
+    
+    // Don't intercept if user is typing in an input
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') return;
+
+    switch (e.key) {
+      case 'j':
+      case 'ArrowDown':
+        e.preventDefault();
+        setFocusedIndex(prev => Math.min(prev + 1, filteredWatchlist.length - 1));
+        break;
+      case 'k':
+      case 'ArrowUp':
+        e.preventDefault();
+        setFocusedIndex(prev => Math.max(prev - 1, 0));
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (focusedIndex >= 0 && focusedIndex < filteredWatchlist.length) {
+          const item = filteredWatchlist[focusedIndex];
+          if (item?.player?.id) {
+            setPeekPlayerId(item.player.id);
+          }
+        }
+        break;
+      case 'x':
+      case ' ':
+        e.preventDefault();
+        if (focusedIndex >= 0 && focusedIndex < filteredWatchlist.length) {
+          const item = filteredWatchlist[focusedIndex];
+          if (item) {
+            togglePlayerSelection(item.id);
+          }
+        }
+        break;
+      case 'Escape':
+        setFocusedIndex(-1);
+        break;
+    }
+  }, [viewMode, editingNote, filteredWatchlist, focusedIndex]);
+
+  // Attach keyboard listener
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyboardNavigation);
+    return () => document.removeEventListener('keydown', handleKeyboardNavigation);
+  }, [handleKeyboardNavigation]);
+
+  // Reset focus when list changes
+  useEffect(() => {
+    setFocusedIndex(-1);
+  }, [filterTab, positionFilter, gradYearFilter]);
+
   // Route protection
   if (routeLoading || !isAllowed) {
     return <PageLoading />;
@@ -313,6 +475,9 @@ export default function PipelinePage() {
             </button>
           </div>
         )}
+
+        {/* Pipeline Stats Summary */}
+        <PipelineStatsSummary watchlist={watchlist} />
 
         {/* View Toggle Tabs */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
@@ -656,8 +821,17 @@ export default function PipelinePage() {
                   ))}
                 </div>
 
+                {/* Keyboard shortcuts hint */}
+                {viewMode === 'list' && (
+                  <p className="text-xs text-slate-400 mb-3">
+                    <span className="hidden lg:inline">
+                      <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-mono">j</kbd>/<kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-mono">k</kbd> navigate • <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-mono">Enter</kbd> view • <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-mono">x</kbd> select
+                    </span>
+                  </p>
+                )}
+
                 {/* Desktop table view */}
-                <div className="hidden lg:block bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                <div ref={listContainerRef} className="hidden lg:block bg-white rounded-2xl border border-slate-200 overflow-hidden">
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-slate-200 bg-slate-50">
@@ -680,9 +854,15 @@ export default function PipelinePage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200">
-                      {filteredWatchlist.map((item) => (
+                      {filteredWatchlist.map((item, index) => (
                         <React.Fragment key={item.id}>
-                          <tr className="hover:bg-slate-50 active:bg-slate-100 transition-colors">
+                          <tr 
+                            className={cn(
+                              'hover:bg-slate-50 active:bg-slate-100 transition-colors',
+                              focusedIndex === index && 'bg-primary-50 ring-2 ring-inset ring-primary-500'
+                            )}
+                            onClick={() => setFocusedIndex(index)}
+                          >
                             <td className="px-4 py-4">
                               <input
                                 type="checkbox"

@@ -49,6 +49,20 @@ function formatOBP(obp: number | null | undefined): string {
   return obp.toFixed(3).replace('0.', '.');
 }
 
+// Format SLG
+function formatSLG(slg: number | null | undefined): string {
+  if (slg == null) return '---';
+  return slg.toFixed(3).replace('0.', '.');
+}
+
+// Format OPS
+function formatOPS(ops: number | null | undefined): string {
+  if (ops == null) return '---';
+  // OPS can be >= 1.000
+  if (ops >= 1) return ops.toFixed(3);
+  return ops.toFixed(3).replace('0.', '.');
+}
+
 // Format exit velocity
 function formatExitVelo(velo: number | null | undefined): string {
   if (velo == null) return '---';
