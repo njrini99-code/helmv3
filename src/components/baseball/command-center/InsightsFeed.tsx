@@ -37,14 +37,9 @@ const insightIcons: Record<string, typeof IconAlertCircle> = {
   streak_cold: IconTrendingDown,
   plateau: IconAlertCircle,
   breakout_candidate: IconBolt,
-  position_opportunity: IconAlertCircle,
+  position_opportunity: IconTarget,
   development_milestone: IconCheck,
   comparison_alert: IconAlertCircle,
-  decline: IconTrendingDown,
-  trend: IconTrendingUp,
-  alert: IconAlertCircle,
-  opportunity: IconBolt,
-  milestone: IconCheck,
 };
 
 const priorityColors: Record<string, { bg: string; text: string; border: string }> = {

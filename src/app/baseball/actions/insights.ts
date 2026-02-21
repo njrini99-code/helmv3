@@ -187,7 +187,7 @@ function analyzePlayer(
       aggregates.trend_magnitude >= config.decline_threshold / 100) {
     insights.push({
       player_id: playerId,
-      insight_type: 'decline',
+      insight_type: 'performance_decline',
       priority: aggregates.trend_magnitude >= 0.05 ? 'high' : 'medium',
       title: `${playerName} showing declining trend`,
       description: `Performance has dropped ${(aggregates.trend_magnitude * 100).toFixed(1)}% over recent sessions. Current average is ${aggregates.career_avg?.toFixed(3) || 'N/A'}.`,
@@ -208,7 +208,7 @@ function analyzePlayer(
       aggregates.trend_magnitude >= 0.02) {
     insights.push({
       player_id: playerId,
-      insight_type: 'trend',
+      insight_type: 'performance_surge',
       priority: 'low',
       title: `${playerName} on an upward trend`,
       description: `Performance improving by ${(aggregates.trend_magnitude * 100).toFixed(1)}% over recent sessions. Keep momentum going!`,
@@ -230,7 +230,7 @@ function analyzePlayer(
     if (isStrugglingUnderPressure) {
       insights.push({
         player_id: playerId,
-        insight_type: 'alert',
+        insight_type: 'pressure_gap',
         priority: Math.abs(aggregates.pressure_gap) >= 0.05 ? 'high' : 'medium',
         title: `${playerName} struggles in game situations`,
         description: `Game average (${aggregates.game_avg?.toFixed(3) || 'N/A'}) is ${Math.abs(aggregates.pressure_gap * 1000).toFixed(0)} points below practice average (${aggregates.practice_avg?.toFixed(3) || 'N/A'}).`,
@@ -246,7 +246,7 @@ function analyzePlayer(
     } else {
       insights.push({
         player_id: playerId,
-        insight_type: 'opportunity',
+        insight_type: 'breakout_candidate',
         priority: 'low',
         title: `${playerName} is clutch under pressure`,
         description: `Game average exceeds practice by ${(aggregates.pressure_gap * 1000).toFixed(0)} points. Consider for high-leverage situations.`,
@@ -270,7 +270,7 @@ function analyzePlayer(
   if (totalHits >= 50 && totalHits % 25 === 0) {
     insights.push({
       player_id: playerId,
-      insight_type: 'milestone',
+      insight_type: 'development_milestone',
       priority: 'low',
       title: `${playerName} reached ${totalHits} hits!`,
       description: `Career milestone: ${totalHits} hits in ${aggregates?.total_sessions || 0} sessions.`,
@@ -286,7 +286,7 @@ function analyzePlayer(
   if (totalHR >= 10 && totalHR % 5 === 0) {
     insights.push({
       player_id: playerId,
-      insight_type: 'milestone',
+      insight_type: 'development_milestone',
       priority: 'low',
       title: `${playerName} hit ${totalHR} home runs!`,
       description: `Power milestone achieved.`,
@@ -305,7 +305,7 @@ function analyzePlayer(
     if (evGap >= 8) {
       insights.push({
         player_id: playerId,
-        insight_type: 'opportunity',
+        insight_type: 'position_opportunity',
         priority: 'medium',
         title: `${playerName} has untapped power potential`,
         description: `Max exit velocity (${aggregates.max_exit_velocity.toFixed(1)} mph) is ${evGap.toFixed(1)} mph above average (${aggregates.avg_exit_velocity.toFixed(1)} mph). Room to improve consistency.`,
@@ -343,7 +343,7 @@ function analyzeTeam(
 
   if (declining >= Math.ceil(playerCount * 0.4)) {
     insights.push({
-      insight_type: 'alert',
+      insight_type: 'comparison_alert',
       priority: 'critical',
       title: 'Team-wide performance decline detected',
       description: `${declining} of ${playerCount} players showing declining trends. May indicate systemic issue.`,
@@ -360,7 +360,7 @@ function analyzeTeam(
 
   if (improving >= Math.ceil(playerCount * 0.5)) {
     insights.push({
-      insight_type: 'trend',
+      insight_type: 'performance_surge',
       priority: 'low',
       title: 'Team momentum building',
       description: `${improving} of ${playerCount} players showing improvement. Positive trajectory!`,
@@ -379,7 +379,7 @@ function analyzeTeam(
   const pressureStrugglers = aggregates.filter(a => a.pressure_gap != null && a.pressure_gap < -0.03);
   if (pressureStrugglers.length >= 3) {
     insights.push({
-      insight_type: 'alert',
+      insight_type: 'pressure_gap',
       priority: 'high',
       title: 'Multiple players struggling under pressure',
       description: `${pressureStrugglers.length} players have significantly lower game performance vs practice. Consider team-wide mental game focus.`,
