@@ -7,12 +7,18 @@ import {
   IconTrendingUp,
   IconTrendingDown,
   IconMinus,
-  IconTarget,
   IconActivity,
-  IconChartBar,
-  IconFilter,
+  IconTarget,
+  IconMaximize,
 } from '@/components/icons';
 import { Avatar } from '@/components/ui/avatar';
+import { TimeRangeFilter, type TimeRange } from './TimeRangeFilter';
+import { StatTypeFilter, type StatCategory } from './StatTypeFilter';
+import {
+  PressureGapIndicator,
+  getGapColor,
+  getGapBgColor,
+} from './PressureGapIndicator';
 
 // ============================================================================
 // TYPES
@@ -20,6 +26,8 @@ import { Avatar } from '@/components/ui/avatar';
 
 interface GameVsPracticePanelProps {
   players: BaseballRosterPlayer[];
+  onExpandClick?: () => void;
+  className?: string;
 }
 
 interface PlayerPressure {
@@ -30,17 +38,9 @@ interface PlayerPressure {
   practiceAvg: number;
   gameAvg: number;
   gap: number; // Positive = better in games, Negative = struggles in games
-  // Extended stats for breakdown
   practiceSessions: number;
   gameSessions: number;
-}
-
-type StatCategory = 'all' | 'batting' | 'pitching' | 'fielding';
-
-interface StatCategoryOption {
-  value: StatCategory;
-  label: string;
-  icon: React.ReactNode;
+  trend: 'up' | 'down' | 'stable' | null;
 }
 
 // ============================================================================
@@ -57,149 +57,8 @@ function formatGap(gap: number): string {
   return `${gap >= 0 ? '+' : '-'}${points} pts`;
 }
 
-function getGapColor(gap: number): string {
-  if (gap > 0.02) return 'text-primary-600';
-  if (gap < -0.02) return 'text-red-500';
-  return 'text-warm-500';
-}
-
-function getGapBgColor(gap: number): string {
-  if (gap > 0.02) return 'bg-primary-50';
-  if (gap < -0.02) return 'bg-red-50';
-  return 'bg-warm-50';
-}
-
 // ============================================================================
-// STAT TYPE FILTER COMPONENT
-// ============================================================================
-
-interface StatTypeFilterProps {
-  value: StatCategory;
-  onChange: (value: StatCategory) => void;
-}
-
-const STAT_CATEGORIES: StatCategoryOption[] = [
-  { value: 'all', label: 'All Stats', icon: <IconChartBar size={14} /> },
-  { value: 'batting', label: 'Batting', icon: <IconTarget size={14} /> },
-  { value: 'pitching', label: 'Pitching', icon: <IconActivity size={14} /> },
-  { value: 'fielding', label: 'Fielding', icon: <IconFilter size={14} /> },
-];
-
-function StatTypeFilter({ value, onChange }: StatTypeFilterProps) {
-  return (
-    <div className="flex flex-wrap gap-1">
-      {STAT_CATEGORIES.map((cat) => (
-        <button
-          key={cat.value}
-          onClick={() => onChange(cat.value)}
-          className={cn(
-            'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors',
-            value === cat.value
-              ? 'bg-primary-100 text-primary-700 ring-1 ring-primary-200'
-              : 'bg-warm-50 text-warm-600 hover:bg-warm-100'
-          )}
-        >
-          {cat.icon}
-          <span className="hidden sm:inline">{cat.label}</span>
-          <span className="sm:hidden">{cat.label.split(' ')[0]}</span>
-        </button>
-      ))}
-    </div>
-  );
-}
-
-// ============================================================================
-// PRESSURE GAP INDICATOR COMPONENT
-// ============================================================================
-
-interface PressureGapIndicatorProps {
-  gap: number;
-  practiceAvg: number;
-  gameAvg: number;
-  compact?: boolean;
-}
-
-function PressureGapIndicator({
-  gap,
-  practiceAvg,
-  gameAvg,
-  compact = false,
-}: PressureGapIndicatorProps) {
-  // Calculate percentage for visual bar (capped at -100 to +100 points)
-  const maxPoints = 100;
-  const gapPoints = gap * 1000;
-  const barPercentage = Math.min(Math.abs(gapPoints) / maxPoints, 1) * 50;
-  const isPositive = gap >= 0;
-
-  if (compact) {
-    return (
-      <div className="flex items-center gap-1">
-        {gap > 0.01 ? (
-          <IconTrendingUp size={14} className="text-primary-500" />
-        ) : gap < -0.01 ? (
-          <IconTrendingDown size={14} className="text-red-500" />
-        ) : (
-          <IconMinus size={14} className="text-warm-400" />
-        )}
-        <span className={cn('text-sm font-semibold tabular-nums', getGapColor(gap))}>
-          {formatGap(gap)}
-        </span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-2">
-      {/* Labels */}
-      <div className="flex items-center justify-between text-xs text-warm-500">
-        <span>Practice: {formatAvg(practiceAvg)}</span>
-        <span>Game: {formatAvg(gameAvg)}</span>
-      </div>
-
-      {/* Visual bar */}
-      <div className="relative h-2 bg-warm-100 rounded-full overflow-hidden">
-        {/* Center marker */}
-        <div className="absolute left-1/2 top-0 bottom-0 w-px bg-warm-300 z-10" />
-
-        {/* Gap fill */}
-        <div
-          className={cn(
-            'absolute top-0 bottom-0 rounded-full transition-all duration-300',
-            isPositive ? 'bg-primary-400' : 'bg-red-400',
-            isPositive ? 'left-1/2' : 'right-1/2'
-          )}
-          style={{
-            width: `${barPercentage}%`,
-          }}
-        />
-      </div>
-
-      {/* Gap value */}
-      <div className="flex items-center justify-center gap-1">
-        {gap > 0.01 ? (
-          <IconTrendingUp size={14} className="text-primary-500" />
-        ) : gap < -0.01 ? (
-          <IconTrendingDown size={14} className="text-red-500" />
-        ) : (
-          <IconMinus size={14} className="text-warm-400" />
-        )}
-        <span className={cn('text-sm font-bold tabular-nums', getGapColor(gap))}>
-          {formatGap(gap)}
-        </span>
-        <span className="text-xs text-warm-500">
-          {gap > 0.02
-            ? 'clutch performer'
-            : gap < -0.02
-            ? 'pressure struggles'
-            : 'consistent'}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-// ============================================================================
-// STAT BREAKDOWN BY CATEGORY
+// STAT BREAKDOWN BY TIER
 // ============================================================================
 
 interface StatBreakdownProps {
@@ -208,7 +67,6 @@ interface StatBreakdownProps {
 }
 
 function StatBreakdown({ players, category }: StatBreakdownProps) {
-  // Group players by performance tier
   const tiers = useMemo(() => {
     const clutch = players.filter((p) => p.gap > 0.02);
     const consistent = players.filter((p) => p.gap >= -0.02 && p.gap <= 0.02);
@@ -318,17 +176,73 @@ function PlayerRow({ player, showDetails, onToggleDetails }: PlayerRowProps) {
           practiceAvg={player.practiceAvg}
           gameAvg={player.gameAvg}
           compact
+          size="sm"
         />
       </button>
 
       {/* Expanded details */}
       {showDetails && (
         <div className="ml-11 mr-2 p-3 bg-warm-50 rounded-lg animate-in slide-in-from-top-2 duration-200">
+          {/* Side-by-side comparison */}
+          <div className="grid grid-cols-2 gap-4 mb-3">
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-1 text-warm-500 mb-1">
+                <IconTarget size={12} />
+                <span className="text-xs font-medium">Practice</span>
+              </div>
+              <span className="text-lg font-bold tabular-nums text-warm-900">
+                {formatAvg(player.practiceAvg)}
+              </span>
+              <p className="text-xs text-warm-500 mt-0.5">
+                {player.practiceSessions} sessions
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-1 text-warm-500 mb-1">
+                <IconActivity size={12} />
+                <span className="text-xs font-medium">Game</span>
+              </div>
+              <span className="text-lg font-bold tabular-nums text-warm-900">
+                {formatAvg(player.gameAvg)}
+              </span>
+              <p className="text-xs text-warm-500 mt-0.5">
+                {player.gameSessions} sessions
+              </p>
+            </div>
+          </div>
+
+          {/* Pressure gap indicator */}
           <PressureGapIndicator
             gap={player.gap}
             practiceAvg={player.practiceAvg}
             gameAvg={player.gameAvg}
+            showLabels={false}
+            size="sm"
           />
+
+          {/* Trend indicator */}
+          {player.trend && (
+            <div className="mt-3 pt-2 border-t border-warm-200 flex items-center justify-center gap-2 text-xs">
+              {player.trend === 'up' && (
+                <>
+                  <IconTrendingUp size={12} className="text-primary-500" />
+                  <span className="text-primary-600">Game performance trending up</span>
+                </>
+              )}
+              {player.trend === 'down' && (
+                <>
+                  <IconTrendingDown size={12} className="text-red-500" />
+                  <span className="text-red-600">Game performance trending down</span>
+                </>
+              )}
+              {player.trend === 'stable' && (
+                <>
+                  <IconMinus size={12} className="text-warm-400" />
+                  <span className="text-warm-600">Stable game performance</span>
+                </>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -339,7 +253,12 @@ function PlayerRow({ player, showDetails, onToggleDetails }: PlayerRowProps) {
 // MAIN COMPONENT
 // ============================================================================
 
-export function GameVsPracticePanel({ players }: GameVsPracticePanelProps) {
+export function GameVsPracticePanel({
+  players,
+  onExpandClick,
+  className,
+}: GameVsPracticePanelProps) {
+  const [timeRange, setTimeRange] = useState<TimeRange>('30d');
   const [statCategory, setStatCategory] = useState<StatCategory>('all');
   const [expandedPlayerId, setExpandedPlayerId] = useState<string | null>(null);
   const [showAllPlayers, setShowAllPlayers] = useState(false);
@@ -365,6 +284,7 @@ export function GameVsPracticePanel({ players }: GameVsPracticePanelProps) {
       gap: p.aggregates!.pressure_gap!,
       practiceSessions: p.aggregates!.practice_sessions || 0,
       gameSessions: p.aggregates!.game_sessions || 0,
+      trend: p.aggregates!.recent_trend as 'up' | 'down' | 'stable' | null,
     }));
 
     // Sort by gap magnitude (biggest gaps first)
@@ -399,7 +319,7 @@ export function GameVsPracticePanel({ players }: GameVsPracticePanelProps) {
   // Empty state
   if (!pressureData || pressureData.length === 0) {
     return (
-      <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+      <div className={cn('bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6', className)}>
         <h3 className="font-semibold text-warm-900 mb-2">
           Practice vs Game Performance
         </h3>
@@ -420,11 +340,22 @@ export function GameVsPracticePanel({ players }: GameVsPracticePanelProps) {
   }
 
   return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-4 sm:p-6">
+    <div className={cn('bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-4 sm:p-6', className)}>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
         <div>
-          <h3 className="font-semibold text-warm-900">Practice vs Game</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="font-semibold text-warm-900">Practice vs Game</h3>
+            {onExpandClick && (
+              <button
+                onClick={onExpandClick}
+                className="p-1 rounded hover:bg-warm-100 transition-colors"
+                title="Expand comparison view"
+              >
+                <IconMaximize size={14} className="text-warm-400" />
+              </button>
+            )}
+          </div>
           <p className="text-xs text-warm-500 mt-0.5">
             {teamSummary?.totalTracked} players with comparison data
           </p>
@@ -445,9 +376,10 @@ export function GameVsPracticePanel({ players }: GameVsPracticePanelProps) {
         </div>
       </div>
 
-      {/* Stat Type Filter */}
-      <div className="mb-4">
-        <StatTypeFilter value={statCategory} onChange={setStatCategory} />
+      {/* Filters Row */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-4">
+        <TimeRangeFilter value={timeRange} onChange={setTimeRange} size="sm" />
+        <StatTypeFilter value={statCategory} onChange={setStatCategory} size="sm" />
       </div>
 
       {/* Team Average Gap Card */}
@@ -556,13 +488,23 @@ export function GameVsPracticePanelSkeleton() {
       </div>
 
       {/* Filter skeleton */}
-      <div className="flex gap-1 mb-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div
-            key={i}
-            className="h-7 w-20 bg-warm-100 rounded-full animate-pulse"
-          />
-        ))}
+      <div className="flex flex-col sm:flex-row gap-3 mb-4">
+        <div className="flex gap-1">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              className="h-7 w-16 bg-warm-100 rounded-full animate-pulse"
+            />
+          ))}
+        </div>
+        <div className="flex gap-1">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              className="h-7 w-14 bg-warm-100 rounded-full animate-pulse"
+            />
+          ))}
+        </div>
       </div>
 
       {/* Summary card skeleton */}
@@ -577,10 +519,13 @@ export function GameVsPracticePanelSkeleton() {
       </div>
 
       {/* Breakdown skeleton */}
-      <div className="grid grid-cols-3 gap-2 mb-4">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="h-16 bg-warm-50 rounded-lg animate-pulse" />
-        ))}
+      <div className="space-y-4 mb-4">
+        <div className="h-4 w-40 bg-warm-200 rounded animate-pulse" />
+        <div className="grid grid-cols-3 gap-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="h-16 bg-warm-50 rounded-lg animate-pulse" />
+          ))}
+        </div>
       </div>
 
       {/* Player list skeleton */}
