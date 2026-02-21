@@ -184,6 +184,8 @@ export function exportRosterCSV(
     jersey_number: number | null;
     career_avg: number | null;
     career_obp: number | null;
+    career_slg: number | null;
+    career_ops: number | null;
     avg_exit_velocity: number | null;
     total_sessions: number | null;
     status: string | null;
@@ -197,6 +199,8 @@ export function exportRosterCSV(
     'Jersey #',
     'AVG',
     'OBP',
+    'SLG',
+    'OPS',
     'Exit Velo',
     'Sessions',
     'Status',
@@ -209,6 +213,8 @@ export function exportRosterCSV(
     p.jersey_number?.toString() || '',
     p.career_avg !== null ? p.career_avg.toFixed(3) : '',
     p.career_obp !== null ? p.career_obp.toFixed(3) : '',
+    p.career_slg !== null ? p.career_slg.toFixed(3) : '',
+    p.career_ops !== null ? p.career_ops.toFixed(3) : '',
     p.avg_exit_velocity !== null ? p.avg_exit_velocity.toFixed(1) : '',
     p.total_sessions?.toString() || '0',
     p.status || '',

@@ -293,6 +293,8 @@ export default function RosterPage() {
       jersey_number: member.jersey_number,
       career_avg: aggregates[member.player.id]?.career_avg ?? null,
       career_obp: aggregates[member.player.id]?.career_obp ?? null,
+      career_slg: aggregates[member.player.id]?.career_slg ?? null,
+      career_ops: aggregates[member.player.id]?.career_ops ?? null,
       avg_exit_velocity: aggregates[member.player.id]?.avg_exit_velocity ?? null,
       total_sessions: aggregates[member.player.id]?.total_sessions ?? null,
       status: member.status,
@@ -645,6 +647,12 @@ export default function RosterPage() {
                             </th>
                             <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">
                               OBP
+                            </th>
+                            <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">
+                              SLG
+                            </th>
+                            <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">
+                              OPS
                             </th>
                             {viewMode === 'expanded' && (
                               <>
