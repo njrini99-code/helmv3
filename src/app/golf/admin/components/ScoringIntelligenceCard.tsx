@@ -39,25 +39,25 @@ export function ScoringIntelligenceCard({ scoring }: Props) {
           <p className="text-xl font-semibold text-warm-900 tabular-nums">
             {scoring.platformScoringAvg?.toFixed(1) ?? '\u2014'}
           </p>
-          <p className="text-[10px] text-warm-500 mt-0.5">Scoring Avg</p>
+          <p className="text-micro text-warm-500 mt-0.5">Scoring Avg</p>
         </div>
         <div className="bg-white/50 rounded-xl p-3 text-center">
           <p className="text-xl font-semibold text-warm-900 tabular-nums">
             {scoring.platformFairwayPct != null ? `${scoring.platformFairwayPct.toFixed(0)}%` : '\u2014'}
           </p>
-          <p className="text-[10px] text-warm-500 mt-0.5">FWY%</p>
+          <p className="text-micro text-warm-500 mt-0.5">FWY%</p>
         </div>
         <div className="bg-white/50 rounded-xl p-3 text-center">
           <p className="text-xl font-semibold text-warm-900 tabular-nums">
             {scoring.platformGirPct != null ? `${scoring.platformGirPct.toFixed(0)}%` : '\u2014'}
           </p>
-          <p className="text-[10px] text-warm-500 mt-0.5">GIR%</p>
+          <p className="text-micro text-warm-500 mt-0.5">GIR%</p>
         </div>
         <div className="bg-white/50 rounded-xl p-3 text-center">
           <p className="text-xl font-semibold text-warm-900 tabular-nums">
             {scoring.platformPuttsPerRound?.toFixed(1) ?? '\u2014'}
           </p>
-          <p className="text-[10px] text-warm-500 mt-0.5">Putts/Rd</p>
+          <p className="text-micro text-warm-500 mt-0.5">Putts/Rd</p>
         </div>
       </div>
 
@@ -81,13 +81,13 @@ export function ScoringIntelligenceCard({ scoring }: Props) {
                       }}
                     >
                       {d.count > 0 && (
-                        <span className="text-[10px] font-medium text-white drop-shadow-sm tabular-nums">
+                        <span className="text-micro font-medium text-white drop-shadow-sm tabular-nums">
                           {d.count}
                         </span>
                       )}
                     </div>
                   </div>
-                  <span className="text-[10px] text-warm-400 w-10 text-right tabular-nums">
+                  <span className="text-micro text-warm-400 w-10 text-right tabular-nums">
                     {pct.toFixed(0)}%
                   </span>
                 </div>
@@ -114,7 +114,7 @@ export function ScoringIntelligenceCard({ scoring }: Props) {
                     </span>
                   ) : (
                     <span className="w-5 h-5 rounded-full bg-warm-100 flex items-center justify-center shrink-0">
-                      <span className="text-[10px] font-bold text-warm-500">{i + 1}</span>
+                      <span className="text-micro font-bold text-warm-500">{i + 1}</span>
                     </span>
                   )}
                   <div className="min-w-0">

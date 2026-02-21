@@ -36,19 +36,19 @@ export function CoachHelmHealthCard({ coachhelm, coachhelmRoi }: Props) {
           <p className="text-xl font-semibold text-warm-900 tabular-nums">
             {coachhelm.totalReviewsAllTime.toLocaleString()}
           </p>
-          <p className="text-[10px] text-warm-500 mt-0.5">Reviews Total</p>
+          <p className="text-micro text-warm-500 mt-0.5">Reviews Total</p>
         </div>
         <div className="bg-white/50 rounded-xl p-3 text-center">
           <p className="text-xl font-semibold text-warm-900 tabular-nums">
             {coachhelm.totalPatternsDetected.toLocaleString()}
           </p>
-          <p className="text-[10px] text-warm-500 mt-0.5">Patterns Found</p>
+          <p className="text-micro text-warm-500 mt-0.5">Patterns Found</p>
         </div>
         <div className="bg-white/50 rounded-xl p-3 text-center">
           <p className="text-xl font-semibold text-warm-900 tabular-nums">
             {coachhelm.totalPredictionsMade.toLocaleString()}
           </p>
-          <p className="text-[10px] text-warm-500 mt-0.5">Predictions</p>
+          <p className="text-micro text-warm-500 mt-0.5">Predictions</p>
         </div>
       </div>
 
@@ -56,11 +56,11 @@ export function CoachHelmHealthCard({ coachhelm, coachhelmRoi }: Props) {
       <div className="grid grid-cols-2 gap-2.5 mb-5">
         <div className="bg-white/50 rounded-xl p-3">
           <p className="text-lg font-semibold text-warm-900 tabular-nums">{coachhelm.coachPhilosophyAdoption}%</p>
-          <p className="text-[10px] text-warm-500 mt-0.5">Philosophy Adoption</p>
+          <p className="text-micro text-warm-500 mt-0.5">Philosophy Adoption</p>
         </div>
         <div className="bg-white/50 rounded-xl p-3">
           <p className="text-lg font-semibold text-warm-900 tabular-nums">{coachhelm.avgInsightsPerGeneration}</p>
-          <p className="text-[10px] text-warm-500 mt-0.5">Avg Insights/Gen</p>
+          <p className="text-micro text-warm-500 mt-0.5">Avg Insights/Gen</p>
         </div>
       </div>
 
@@ -73,7 +73,7 @@ export function CoachHelmHealthCard({ coachhelm, coachhelmRoi }: Props) {
               <p className="text-xs text-primary-600 mb-0.5">AI Coaches</p>
               <p className="text-xl font-semibold text-primary-700 tabular-nums">{coachhelmRoi.coachesUsingAI}</p>
               {coachhelmRoi.avgScoreAICoachPlayers != null && (
-                <p className="text-[10px] text-primary-500 mt-0.5">
+                <p className="text-micro text-primary-500 mt-0.5">
                   Avg team score: {coachhelmRoi.avgScoreAICoachPlayers.toFixed(1)}
                 </p>
               )}
@@ -82,7 +82,7 @@ export function CoachHelmHealthCard({ coachhelm, coachhelmRoi }: Props) {
               <p className="text-xs text-warm-500 mb-0.5">Non-AI Coaches</p>
               <p className="text-xl font-semibold text-warm-700 tabular-nums">{coachhelmRoi.coachesNotUsingAI}</p>
               {coachhelmRoi.avgScoreNonAICoachPlayers != null && (
-                <p className="text-[10px] text-warm-400 mt-0.5">
+                <p className="text-micro text-warm-400 mt-0.5">
                   Avg team score: {coachhelmRoi.avgScoreNonAICoachPlayers.toFixed(1)}
                 </p>
               )}

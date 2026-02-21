@@ -134,7 +134,7 @@ function SummaryCard({ label, value, color, icon }: { label: string; value: numb
           'text-warm-900'
         )}>{value}</p>
       </div>
-      <p className="text-[10px] text-warm-400 uppercase tracking-wider font-medium">{label}</p>
+      <p className="text-micro text-warm-400 uppercase tracking-wider font-medium">{label}</p>
     </div>
   );
 }

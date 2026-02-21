@@ -23,7 +23,7 @@ export const ValidatedInput = forwardRef<HTMLInputElement, ValidatedInputProps>(
             htmlFor={inputId}
             className={cn(
               'block text-sm font-medium transition-colors duration-fast',
-              error ? 'text-red-600' : isFocused ? 'text-green-600' : 'text-warm-700'
+              error ? 'text-red-600' : isFocused ? 'text-primary-600' : 'text-warm-700'
             )}
           >
             {label}
@@ -41,11 +41,11 @@ export const ValidatedInput = forwardRef<HTMLInputElement, ValidatedInputProps>(
               'placeholder:text-warm-400',
               'focus:outline-none focus:ring-2 focus:ring-offset-0',
               // Default state
-              !error && !success && 'border-warm-300 focus:border-green-500 focus:ring-green-500/20',
+              !error && !success && 'border-warm-300 focus:border-primary-500 focus:ring-primary-500/20',
               // Error state
               error && 'border-red-500 focus:border-red-500 focus:ring-red-500/20 pr-10 animate-shake',
               // Success state
-              success && 'border-green-500 focus:border-green-500 focus:ring-green-500/20 pr-10',
+              success && 'border-primary-500 focus:border-primary-500 focus:ring-primary-500/20 pr-10',
               className
             )}
             {...props}
@@ -61,7 +61,7 @@ export const ValidatedInput = forwardRef<HTMLInputElement, ValidatedInputProps>(
                 className="absolute right-3 top-1/2 -translate-y-1/2"
               >
                 {error && <XCircle className="h-5 w-5 text-red-500" />}
-                {success && <CheckCircle className="h-5 w-5 text-green-500" />}
+                {success && <CheckCircle className="h-5 w-5 text-primary-500" />}
               </motion.div>
             )}
           </AnimatePresence>

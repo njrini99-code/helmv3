@@ -100,7 +100,7 @@ export function MobileMenuButton({
         'min-w-[44px] min-h-[44px] p-3 rounded-xl',
         'flex items-center justify-center',
         'transition-colors duration-150 active:scale-95',
-        'focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500/40',
+        'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
         themeStyles[theme],
         mobileOnly && 'lg:hidden',
         className

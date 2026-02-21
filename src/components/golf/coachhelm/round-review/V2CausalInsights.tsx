@@ -72,7 +72,7 @@ export function V2CausalInsights({ insights }: V2CausalInsightsProps) {
               </p>
 
               {/* Metrics row */}
-              <div className="flex items-center gap-3 text-[11px]">
+              <div className="flex items-center gap-3 text-label">
                 {/* Strength bar */}
                 <div className="flex items-center gap-1.5">
                   <span className="text-warm-500">Strength</span>
@@ -103,7 +103,7 @@ export function V2CausalInsights({ insights }: V2CausalInsightsProps) {
                 {insight.doseResponse && (
                   <>
                     <span className="text-warm-200">|</span>
-                    <span className="px-2 py-0.5 bg-primary-100 text-primary-700 rounded-md text-[10px] font-bold border border-primary-200/50">
+                    <span className="px-2 py-0.5 bg-primary-100 text-primary-700 rounded-md text-micro font-bold border border-primary-200/50">
                       Actionable
                     </span>
                   </>

@@ -245,7 +245,7 @@ export function DayView({ date, events, onEventClick, isDraggable = false, secon
                     </span>
                   </span>
                   {secondaryTimezone && (
-                    <span className="text-[10px] font-medium tabular-nums text-warm-400/50 mt-0.5">
+                    <span className="text-micro font-medium tabular-nums text-warm-400/50 mt-0.5">
                       <span className="md:hidden">{formatHourInTz(hour, secondaryTimezone, true)}</span>
                       <span className="hidden md:inline">{formatHourInTz(hour, secondaryTimezone)}</span>
                     </span>

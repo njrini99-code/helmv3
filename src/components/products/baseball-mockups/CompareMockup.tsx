@@ -67,13 +67,13 @@ function CompareStatRow({
         <span className="text-[9px] text-slate-500">{label}</span>
         <div className="flex gap-3">
           <span className={cn(
-            "text-[10px] font-semibold",
+            "text-micro font-semibold",
             winner === 0 ? "text-primary-600" : "text-slate-400"
           )}>
             {values[0]}
           </span>
           <span className={cn(
-            "text-[10px] font-semibold",
+            "text-micro font-semibold",
             winner === 1 ? "text-amber-600" : "text-slate-400"
           )}>
             {values[1]}

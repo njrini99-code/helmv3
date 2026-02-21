@@ -94,7 +94,7 @@ export const ActionItemsCard = memo(function ActionItemsCard({ items, role }: Ac
                             <span>{tab.label}</span>
                             {tab.count > 0 && (
                                 <span className={cn(
-                                    'min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-[10px] font-bold tabular-nums',
+                                    'min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-micro font-bold tabular-nums',
                                     isActive ? 'bg-primary-600 text-white' : 'bg-warm-200 text-warm-600',
                                     tab.key === 'deadlines' && tab.count > 0 && 'bg-red-600 text-white'
                                 )}>
@@ -161,12 +161,12 @@ export const ActionItemsCard = memo(function ActionItemsCard({ items, role }: Ac
                                                         {formatRelativeDate(item.date)}
                                                     </span>
                                                     {item.overdue && (
-                                                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700">
+                                                        <span className="text-micro font-semibold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700">
                                                             Overdue
                                                         </span>
                                                     )}
                                                     {(item.priority === 'high' || item.priority === 'urgent') && !item.overdue && (
-                                                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                                                        <span className="text-micro font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
                                                             {item.priority === 'urgent' ? 'Urgent' : 'High'}
                                                         </span>
                                                     )}

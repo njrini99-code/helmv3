@@ -143,7 +143,7 @@ export function DarkHeader({ onMobileMenuToggle }: DarkHeaderProps) {
                 ml-2
                 px-1.5 py-0.5
                 bg-white rounded
-                text-[10px] text-warm-400
+                text-micro text-warm-400
                 border border-warm-200
               "
             >

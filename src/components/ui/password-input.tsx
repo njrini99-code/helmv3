@@ -71,7 +71,7 @@ export function PasswordInput({
             'focus:outline-none focus:ring-2',
             showValidation && !validation?.valid
               ? 'border-red-300 focus:border-red-500 focus:ring-red-100'
-              : 'border-warm-200 focus:border-green-500 focus:ring-green-100'
+              : 'border-warm-200 focus:border-primary-500 focus:ring-primary-100'
           )}
         />
 
@@ -123,11 +123,11 @@ export function PasswordInput({
             }).map(([requirement, met]) => (
               <div key={requirement} className="flex items-center gap-2 text-xs">
                 {met ? (
-                  <CheckCircle className="h-3.5 w-3.5 text-green-600 flex-shrink-0" />
+                  <CheckCircle className="h-3.5 w-3.5 text-primary-600 flex-shrink-0" />
                 ) : (
                   <XCircle className="h-3.5 w-3.5 text-warm-300 flex-shrink-0" />
                 )}
-                <span className={met ? 'text-green-700' : 'text-warm-500'}>
+                <span className={met ? 'text-primary-700' : 'text-warm-500'}>
                   {requirement}
                 </span>
               </div>

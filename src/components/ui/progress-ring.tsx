@@ -86,7 +86,7 @@ export function ProgressRing({
             {Math.round(percentage)}%
           </span>
           {label && size !== 'sm' && (
-            <span className="text-[10px] text-warm-500 font-medium">{label}</span>
+            <span className="text-micro text-warm-500 font-medium">{label}</span>
           )}
         </div>
       )}

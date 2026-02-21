@@ -127,7 +127,7 @@ export function ExpenseForm({
                 whileTap={{ scale: 0.98 }}
                 className={`p-3 rounded-xl border-2 text-center transition-all ${
                   category === cat.value
-                    ? 'border-green-600 bg-green-50 shadow-sm'
+                    ? 'border-primary-600 bg-primary-50 shadow-sm'
                     : 'border-warm-200 hover:border-warm-300 hover:shadow-sm'
                 }`}
               >
@@ -187,7 +187,7 @@ export function ExpenseForm({
                 whileTap={{ scale: 0.98 }}
                 className={`px-3 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
                   paidBy === option.value
-                    ? 'border-green-600 bg-green-50 text-green-700'
+                    ? 'border-primary-600 bg-primary-50 text-primary-700'
                     : 'border-warm-200 text-warm-600 hover:border-warm-300'
                 }`}
               >
@@ -206,7 +206,7 @@ export function ExpenseForm({
             placeholder="Additional details..."
             rows={2}
             className="w-full px-4 py-2.5 rounded-lg border border-warm-200
-                     focus:border-green-500 focus:ring-2 focus:ring-green-100
+                     focus:border-primary-500 focus:ring-2 focus:ring-primary-100
                      text-warm-900 placeholder:text-warm-400 transition-colors resize-none"
           />
         </div>

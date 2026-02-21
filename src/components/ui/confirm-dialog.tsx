@@ -39,7 +39,7 @@ export function ConfirmDialog({
     },
     default: {
       icon: 'bg-warm-100 text-warm-600',
-      button: 'bg-green-600 hover:bg-green-700 text-white',
+      button: 'bg-primary-600 hover:bg-primary-700 text-white',
     },
   };
 

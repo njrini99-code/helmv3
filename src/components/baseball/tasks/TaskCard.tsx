@@ -14,13 +14,13 @@ const categoryColors: Record<string, string> = {
   conditioning: 'bg-red-100 text-red-700',
   academic: 'bg-amber-100 text-amber-700',
   administrative: 'bg-blue-100 text-blue-700',
-  practice: 'bg-green-100 text-green-700',
+  practice: 'bg-primary-100 text-primary-700',
   game_prep: 'bg-purple-100 text-purple-700',
 };
 
 const priorityColors: Record<string, string> = {
   high: 'bg-red-500',
-  normal: 'bg-green-500',
+  normal: 'bg-primary-500',
   low: 'bg-slate-400',
 };
 
@@ -153,8 +153,8 @@ export function TaskCard({ task, isCoach, currentPlayerId, onRefresh }: TaskCard
                 className={cn(
                   'mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all',
                   isCompletedByPlayer
-                    ? 'bg-green-600 border-green-600 text-white'
-                    : 'border-slate-300 hover:border-green-500'
+                    ? 'bg-primary-600 border-primary-600 text-white'
+                    : 'border-slate-300 hover:border-primary-500'
                 )}
               >
                 {isCompletedByPlayer && <IconCheck size={12} />}
@@ -183,7 +183,7 @@ export function TaskCard({ task, isCoach, currentPlayerId, onRefresh }: TaskCard
           </div>
           <div className="flex items-center gap-2 ml-3">
             {completionRate === 100 && (
-              <span className="px-2.5 py-1 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+              <span className="px-2.5 py-1 rounded-full bg-primary-100 text-primary-700 text-xs font-medium">
                 Completed
               </span>
             )}
@@ -214,7 +214,7 @@ export function TaskCard({ task, isCoach, currentPlayerId, onRefresh }: TaskCard
               <div
                 className={cn(
                   'h-full transition-all duration-300',
-                  completionRate === 100 ? 'bg-green-600' : 'bg-green-500'
+                  completionRate === 100 ? 'bg-primary-600' : 'bg-primary-500'
                 )}
                 style={{ width: `${completionRate}%` }}
               />
@@ -300,7 +300,7 @@ export function TaskCard({ task, isCoach, currentPlayerId, onRefresh }: TaskCard
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ delay: index * 0.05, type: 'spring', stiffness: 500, damping: 25 }}
-                        className="flex items-center gap-2 text-green-600"
+                        className="flex items-center gap-2 text-primary-600"
                       >
                         <IconCheck size={16} />
                         <span className="text-xs font-medium">Completed</span>

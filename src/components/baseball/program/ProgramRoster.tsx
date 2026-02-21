@@ -203,9 +203,9 @@ export function ProgramRoster({ organizationId, organizationType, coachType }: P
     <div className="space-y-6">
       {/* Summary */}
       <div className="flex items-center gap-2 text-sm text-slate-600">
-        <IconSparkles size={16} className="text-green-500" />
+        <IconSparkles size={16} className="text-primary-500" />
         <span>
-          <span className="font-semibold text-green-600">{players.length}</span> recruiting-active players
+          <span className="font-semibold text-primary-600">{players.length}</span> recruiting-active players
         </span>
       </div>
 
@@ -220,7 +220,7 @@ export function ProgramRoster({ organizationId, organizationType, coachType }: P
               <button
                 key={player.id}
                 onClick={() => handleViewPlayer(player.id)}
-                className="w-full bg-white rounded-xl border border-slate-200 p-4 hover:border-green-200 hover:shadow-md transition-all text-left group"
+                className="w-full bg-white rounded-xl border border-slate-200 p-4 hover:border-primary-200 hover:shadow-md transition-all text-left group"
               >
                 <div className="flex items-center gap-4">
                   <Avatar
@@ -233,7 +233,7 @@ export function ProgramRoster({ organizationId, organizationType, coachType }: P
                       <p className="font-semibold text-slate-900 truncate">
                         {player.first_name} {player.last_name}
                       </p>
-                      <Badge variant="success" className="text-[10px]">
+                      <Badge variant="success" className="text-micro">
                         Active
                       </Badge>
                     </div>
@@ -256,7 +256,7 @@ export function ProgramRoster({ organizationId, organizationType, coachType }: P
                     )}
                     <IconChevronRight
                       size={18}
-                      className="text-slate-300 group-hover:text-green-500 transition-colors"
+                      className="text-slate-300 group-hover:text-primary-500 transition-colors"
                     />
                   </div>
                 </div>

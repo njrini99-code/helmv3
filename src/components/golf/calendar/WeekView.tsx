@@ -357,7 +357,7 @@ export function WeekView({
                         : `${hour - 12} PM`}
                     </span>
                     {secondaryTimezone && (
-                      <span className="text-[10px] font-medium tabular-nums text-warm-400/50 mt-0.5">
+                      <span className="text-micro font-medium tabular-nums text-warm-400/50 mt-0.5">
                         {formatHourInTz(hour, secondaryTimezone)}
                       </span>
                     )}

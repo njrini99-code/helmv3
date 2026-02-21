@@ -22,7 +22,7 @@ const CATEGORIES = [
 
 const PRIORITIES = [
   { value: 'low', label: 'Low', color: 'bg-slate-100 text-slate-700' },
-  { value: 'normal', label: 'Normal', color: 'bg-green-100 text-green-700' },
+  { value: 'normal', label: 'Normal', color: 'bg-primary-100 text-primary-700' },
   { value: 'high', label: 'High', color: 'bg-red-100 text-red-700' },
 ];
 
@@ -130,7 +130,7 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
             placeholder="Add more details about this task..."
             rows={3}
             className="w-full px-4 py-2.5 rounded-lg border border-slate-200
-                     focus:border-green-500 focus:ring-2 focus:ring-green-100
+                     focus:border-primary-500 focus:ring-2 focus:ring-primary-100
                      text-slate-900 placeholder:text-slate-400 transition-colors resize-none"
           />
         </div>
@@ -145,7 +145,7 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               className="w-full px-4 py-2.5 rounded-lg border border-slate-200
-                       focus:border-green-500 focus:ring-2 focus:ring-green-100
+                       focus:border-primary-500 focus:ring-2 focus:ring-primary-100
                        text-slate-900 bg-white transition-colors"
             >
               {CATEGORIES.map(cat => (
@@ -213,7 +213,7 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
               className={cn(
                 'w-full p-3 rounded-lg border-2 text-left transition-all',
                 assignToAll
-                  ? 'border-green-600 bg-green-50 shadow-sm'
+                  ? 'border-primary-600 bg-primary-50 shadow-sm'
                   : 'border-slate-200 hover:border-slate-300 hover:shadow-sm'
               )}
             >
@@ -229,7 +229,7 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
               className={cn(
                 'w-full p-3 rounded-lg border-2 text-left transition-all',
                 !assignToAll
-                  ? 'border-green-600 bg-green-50 shadow-sm'
+                  ? 'border-primary-600 bg-primary-50 shadow-sm'
                   : 'border-slate-200 hover:border-slate-300 hover:shadow-sm'
               )}
             >
@@ -261,13 +261,13 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
                   className={cn(
                     'w-full px-3 py-2 rounded-md text-left text-sm flex items-center justify-between transition-all',
                     selectedPlayers.includes(player.id)
-                      ? 'bg-green-100 text-green-900 shadow-sm'
+                      ? 'bg-primary-100 text-primary-900 shadow-sm'
                       : 'hover:bg-slate-50 active:bg-slate-100 text-slate-700'
                   )}
                 >
                   <span>{player.first_name || ''} {player.last_name || ''}</span>
                   {selectedPlayers.includes(player.id) && (
-                    <IconCheck size={14} className="text-green-600" />
+                    <IconCheck size={14} className="text-primary-600" />
                   )}
                 </motion.button>
               ))}

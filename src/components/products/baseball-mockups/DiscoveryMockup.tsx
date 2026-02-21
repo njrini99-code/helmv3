@@ -59,7 +59,7 @@ function DiscoveryPlayerCard({ featured }: { featured?: boolean }) {
         </div>
       </div>
       <div className="w-6 h-6 rounded bg-primary-50 flex items-center justify-center">
-        <span className="text-[10px] text-primary-600">+</span>
+        <span className="text-micro text-primary-600">+</span>
       </div>
     </div>
   );

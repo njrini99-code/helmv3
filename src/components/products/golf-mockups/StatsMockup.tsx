@@ -46,7 +46,7 @@ function StatBadge({ label, value, trend }: { label: string; value: string; tren
       <div className="flex items-center justify-center gap-1 mt-0.5">
         <p className="text-sm font-semibold text-slate-900">{value}</p>
         <span className={cn(
-          "text-[10px]",
+          "text-micro",
           trend === 'up' ? "text-emerald-600" : "text-amber-600"
         )}>
           {trend === 'up' ? '↑' : '↓'}

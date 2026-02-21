@@ -100,6 +100,12 @@ export function CoachTable({
     return sortedCoaches.slice(start, start + pageSize);
   }, [sortedCoaches, page, pageSize]);
 
+  const toggleSelection = useCallback((id: string) => {
+    const next = new Set(selectedIds);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    onSelectionChange(next);
+  }, [selectedIds, onSelectionChange]);
+
   // Keyboard nav
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (!paginatedCoaches.length) return;
@@ -122,7 +128,7 @@ export function CoachTable({
         break;
       case 'Escape': setFocusedIndex(null); setOpenStatusDropdown(null); setOpenActionMenu(null); break;
     }
-  }, [paginatedCoaches, focusedIndex, onToggleStar, onCoachClick]);
+  }, [paginatedCoaches, focusedIndex, onToggleStar, onCoachClick, toggleSelection]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -132,12 +138,6 @@ export function CoachTable({
   const handleSort = (field: SortField) => {
     if (sortField === field) setSortDir(prev => prev === 'asc' ? 'desc' : 'asc');
     else { setSortField(field); setSortDir('asc'); }
-  };
-
-  const toggleSelection = (id: string) => {
-    const next = new Set(selectedIds);
-    if (next.has(id)) next.delete(id); else next.add(id);
-    onSelectionChange(next);
   };
 
   const toggleAll = () => {
@@ -153,7 +153,7 @@ export function CoachTable({
   };
 
   const SortArrow = ({ field }: { field: SortField }) => (
-    <span className="ml-0.5 text-[10px]">{sortField === field ? (sortDir === 'asc' ? '↑' : '↓') : ''}</span>
+    <span className="ml-0.5 text-micro">{sortField === field ? (sortDir === 'asc' ? '↑' : '↓') : ''}</span>
   );
 
   // Loading skeleton
@@ -243,7 +243,7 @@ export function CoachTable({
                 {/* Coach name + title */}
                 <td className="px-4 py-3">
                   <p className="text-sm font-medium text-warm-900 leading-tight truncate">{coach.name}</p>
-                  {coach.title && <p className="text-[11px] text-warm-400 truncate">{coach.title}</p>}
+                  {coach.title && <p className="text-label text-warm-400 truncate">{coach.title}</p>}
                 </td>
 
                 {/* School */}
@@ -254,7 +254,7 @@ export function CoachTable({
                 {/* Division */}
                 <td className="px-4 py-3">
                   <span className={cn(
-                    'text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded',
+                    'text-micro font-bold uppercase tracking-wider px-1.5 py-0.5 rounded',
                     coach.division === 'D2' ? 'bg-blue-100 text-blue-700' : 'bg-primary-100 text-primary-700'
                   )}>
                     {coach.division}
@@ -272,7 +272,7 @@ export function CoachTable({
                     <button
                       onClick={e => { e.stopPropagation(); setOpenStatusDropdown(openStatusDropdown === coach.id ? null : coach.id); setOpenActionMenu(null); }}
                       className={cn(
-                        'inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-medium transition-all',
+                        'inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-micro font-medium transition-all',
                         statusConfig[coach.status]?.bgColor, statusConfig[coach.status]?.color,
                         'hover:ring-1 hover:ring-warm-200'
                       )}
@@ -301,11 +301,11 @@ export function CoachTable({
                 {/* Priority — hidden below lg */}
                 <td className="hidden lg:table-cell px-4 py-3">
                   {coach.priority > 0 ? (
-                    <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded', priorityConfig[coach.priority]?.bgColor, priorityConfig[coach.priority]?.color)}>
+                    <span className={cn('text-micro font-bold px-1.5 py-0.5 rounded', priorityConfig[coach.priority]?.bgColor, priorityConfig[coach.priority]?.color)}>
                       {priorityConfig[coach.priority]?.iconLabel} {priorityConfig[coach.priority]?.label}
                     </span>
                   ) : (
-                    <span className="text-[10px] text-warm-300">&mdash;</span>
+                    <span className="text-micro text-warm-300">&mdash;</span>
                   )}
                 </td>
 
@@ -401,7 +401,7 @@ function TH({ field, label, onSort, children, className }: {
 }) {
   return (
     <th
-      className={cn('text-left px-4 py-3 text-[11px] font-semibold text-warm-500 uppercase tracking-wider cursor-pointer hover:text-warm-700 transition-colors', className)}
+      className={cn('text-left px-4 py-3 text-label font-semibold text-warm-500 uppercase tracking-wider cursor-pointer hover:text-warm-700 transition-colors', className)}
       onClick={() => onSort(field)}
     >
       {label}{children}

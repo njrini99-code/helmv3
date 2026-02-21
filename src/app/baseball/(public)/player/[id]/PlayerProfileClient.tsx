@@ -224,7 +224,7 @@ export function PlayerProfileClient({
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-green-50/30">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-primary-50/30">
       {/* Hero Header */}
       <div className="relative">
         {/* Background banner - custom image or premium gradient */}
@@ -244,10 +244,10 @@ export function PlayerProfileClient({
           ) : (
             <>
               {/* Premium gradient fallback */}
-              <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-green-900 to-emerald-800" />
+              <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-primary-900 to-emerald-800" />
               <div className="absolute inset-0 bg-[url('/patterns/topography.svg')] opacity-[0.07]" />
               {/* Accent glow effects */}
-              <div className="absolute top-0 right-0 w-96 h-96 bg-green-500/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+              <div className="absolute top-0 right-0 w-96 h-96 bg-primary-500/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
               <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-400/15 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
             </>
@@ -274,14 +274,14 @@ export function PlayerProfileClient({
                 className={cn(
                   "shadow-lg",
                   isInWatchlist
-                    ? "bg-white text-green-700 hover:bg-green-50 active:bg-green-100"
+                    ? "bg-white text-primary-700 hover:bg-primary-50 active:bg-primary-100"
                     : "bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 border-white/30"
                 )}
               >
                 {isPending ? (
                   <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-2" />
                 ) : isInWatchlist ? (
-                  <IconStarFilled size={16} className="mr-2 text-green-600" />
+                  <IconStarFilled size={16} className="mr-2 text-primary-600" />
                 ) : (
                   <IconStar size={16} className="mr-2" />
                 )}
@@ -313,7 +313,7 @@ export function PlayerProfileClient({
                       className="ring-4 ring-white shadow-xl w-32 h-32 md:w-40 md:h-40"
                     />
                     {player.recruiting_activated && (
-                      <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-green-500 rounded-full border-4 border-white flex items-center justify-center shadow-lg">
+                      <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-primary-500 rounded-full border-4 border-white flex items-center justify-center shadow-lg">
                         <IconCheck size={16} className="text-white" />
                       </div>
                     )}
@@ -329,7 +329,7 @@ export function PlayerProfileClient({
                       </h1>
                       <div className="flex flex-wrap items-center gap-2 mt-2">
                         {player.primary_position && (
-                          <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-semibold">
+                          <span className="px-3 py-1 bg-primary-100 text-primary-800 rounded-full text-sm font-semibold">
                             {player.primary_position}
                           </span>
                         )}
@@ -371,7 +371,7 @@ export function PlayerProfileClient({
                     {player.high_school_org ? (
                       <Link
                         href={`/baseball/program/${player.high_school_org.id}`}
-                        className="flex items-center gap-2 hover:text-green-600 transition-colors"
+                        className="flex items-center gap-2 hover:text-primary-600 transition-colors"
                       >
                         <IconSchool size={16} className="text-slate-400" />
                         <span className="hover:underline">{player.high_school_org.name}</span>
@@ -390,7 +390,7 @@ export function PlayerProfileClient({
                         <Link
                           key={tm.id}
                           href={`/baseball/program/${tm.team!.organization!.id}`}
-                          className="flex items-center gap-2 hover:text-green-600 transition-colors"
+                          className="flex items-center gap-2 hover:text-primary-600 transition-colors"
                         >
                           <IconUsers size={16} className="text-slate-400" />
                           <span className="hover:underline">{tm.team!.organization!.name}</span>
@@ -407,7 +407,7 @@ export function PlayerProfileClient({
                   {/* Badges */}
                   <div className="flex flex-wrap gap-2 mt-4">
                     {player.recruiting_activated && (
-                      <Badge className="bg-green-500 text-white border-0">
+                      <Badge className="bg-primary-500 text-white border-0">
                         Actively Recruiting
                       </Badge>
                     )}
@@ -434,7 +434,7 @@ export function PlayerProfileClient({
                       className={cn(
                         "flex items-center gap-2 px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 transition-colors",
                         isActive
-                          ? "border-green-600 text-green-600 bg-white"
+                          ? "border-primary-600 text-primary-600 bg-white"
                           : "border-transparent text-slate-600 hover:text-slate-900 hover:bg-white/50 active:bg-slate-50"
                       )}
                     >
@@ -443,7 +443,7 @@ export function PlayerProfileClient({
                       {tab.count !== undefined && tab.count > 0 && (
                         <span className={cn(
                           "px-2 py-0.5 rounded-full text-xs",
-                          isActive ? "bg-green-100 text-green-700" : "bg-slate-200 text-slate-600"
+                          isActive ? "bg-primary-100 text-primary-700" : "bg-slate-200 text-slate-600"
                         )}>
                           {tab.count}
                         </span>
@@ -529,7 +529,7 @@ function OverviewTab({
         {/* Physical & Metrics */}
         <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
-            <IconActivity size={20} className="text-green-600" />
+            <IconActivity size={20} className="text-primary-600" />
             Physical & Metrics
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -571,10 +571,10 @@ function OverviewTab({
           <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
-                <IconVideo size={20} className="text-green-600" />
+                <IconVideo size={20} className="text-primary-600" />
                 Featured Videos
               </h2>
-              <button className="text-sm text-green-600 hover:text-green-700 font-medium">
+              <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">
                 View All ({player.videos.length})
               </button>
             </div>
@@ -599,7 +599,7 @@ function OverviewTab({
               {showContactEmail && player.email && (
                 <a
                   href={`mailto:${player.email}`}
-                  className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl text-sm text-slate-600 hover:bg-green-50 active:bg-green-100 hover:text-green-700 transition-colors"
+                  className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl text-sm text-slate-600 hover:bg-primary-50 active:bg-primary-100 hover:text-primary-700 transition-colors"
                 >
                   <IconMail size={18} className="text-slate-400" />
                   <span className="truncate">{player.email}</span>
@@ -608,7 +608,7 @@ function OverviewTab({
               {showPhone && player.phone && (
                 <a
                   href={`tel:${player.phone}`}
-                  className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl text-sm text-slate-600 hover:bg-green-50 active:bg-green-100 hover:text-green-700 transition-colors"
+                  className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl text-sm text-slate-600 hover:bg-primary-50 active:bg-primary-100 hover:text-primary-700 transition-colors"
                 >
                   <IconPhone size={18} className="text-slate-400" />
                   <span>{player.phone}</span>
@@ -646,7 +646,7 @@ function OverviewTab({
         {showDreamSchools && recruitingInterests.length > 0 && (
           <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
             <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wide mb-4 flex items-center gap-2">
-              <IconTarget size={16} className="text-green-600" />
+              <IconTarget size={16} className="text-primary-600" />
               Schools of Interest
             </h3>
             <div className="space-y-2">
@@ -655,7 +655,7 @@ function OverviewTab({
                   key={interest.id}
                   className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl hover:bg-slate-100 active:bg-slate-200 transition-colors"
                 >
-                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center flex-shrink-0 shadow-sm">
+                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center flex-shrink-0 shadow-sm">
                     <span className="text-xs font-bold text-white">{idx + 1}</span>
                   </div>
                   {interest.organization?.logo_url ? (
@@ -687,7 +687,7 @@ function OverviewTab({
         )}
 
         {/* Profile Activity */}
-        <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl p-6 shadow-lg text-white">
+        <div className="bg-gradient-to-br from-primary-500 to-emerald-600 rounded-2xl p-6 shadow-lg text-white">
           <h3 className="text-sm font-semibold uppercase tracking-wide mb-4 opacity-90">
             Profile Activity
           </h3>
@@ -753,7 +753,7 @@ function StatsTab({ player }: { player: PlayerData }) {
       {/* Physical Stats */}
       <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-slate-900 mb-6 flex items-center gap-2">
-          <IconTrendingUp size={20} className="text-green-600" />
+          <IconTrendingUp size={20} className="text-primary-600" />
           Physical Profile
         </h2>
         <div className="space-y-4">
@@ -837,7 +837,7 @@ function TeamsTab({ teamHistory }: { teamHistory: TeamMembership[] }) {
     <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
       <div className="p-6 border-b border-slate-200 bg-slate-50/50">
         <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
-          <IconUsers size={20} className="text-green-600" />
+          <IconUsers size={20} className="text-primary-600" />
           Team History
         </h2>
       </div>
@@ -862,21 +862,21 @@ function TeamsTab({ teamHistory }: { teamHistory: TeamMembership[] }) {
               <div className="flex items-center gap-4">
                 <div className={cn(
                   "w-14 h-14 rounded-xl flex items-center justify-center",
-                  membership.status === 'active' ? "bg-green-100" : "bg-slate-100"
+                  membership.status === 'active' ? "bg-primary-100" : "bg-slate-100"
                 )}>
                   {org.logo_url ? (
                     <Image src={org.logo_url} alt={org.name} width={40} height={40} className="w-10 h-10 rounded-lg object-cover" unoptimized />
                   ) : (
-                    <IconUsers size={24} className={membership.status === 'active' ? "text-green-600" : "text-slate-400"} />
+                    <IconUsers size={24} className={membership.status === 'active' ? "text-primary-600" : "text-slate-400"} />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="font-semibold text-slate-900 group-hover:text-green-600 transition-colors">
+                    <p className="font-semibold text-slate-900 group-hover:text-primary-600 transition-colors">
                       {membership.team?.name || org.name}
                     </p>
                     {membership.status === 'active' && (
-                      <Badge className="bg-green-100 text-green-700 border-0 text-xs">Current</Badge>
+                      <Badge className="bg-primary-100 text-primary-700 border-0 text-xs">Current</Badge>
                     )}
                   </div>
                   <p className="text-sm text-slate-500">
@@ -959,13 +959,13 @@ function AchievementsTab({ achievements }: { achievements: PlayerAchievement[] }
 // Helper Components
 function MetricCard({ label, value, highlight }: { label: string; value: string; highlight?: 'green' | 'blue' | 'purple' }) {
   const highlightClasses = {
-    green: 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200',
+    green: 'bg-gradient-to-br from-primary-50 to-emerald-50 border-primary-200',
     blue: 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200',
     purple: 'bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200',
   };
 
   const valueClasses = {
-    green: 'text-green-700',
+    green: 'text-primary-700',
     blue: 'text-blue-700',
     purple: 'text-purple-700',
   };
@@ -975,7 +975,7 @@ function MetricCard({ label, value, highlight }: { label: string; value: string;
       "p-4 rounded-xl border",
       highlight ? highlightClasses[highlight] : "bg-slate-50 border-slate-200"
     )}>
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">
+      <p className="text-label font-semibold uppercase tracking-wider text-slate-500 mb-1">
         {label}
       </p>
       <p className={cn(
@@ -990,7 +990,7 @@ function MetricCard({ label, value, highlight }: { label: string; value: string;
 
 function StatRow({ label, value, highlight }: { label: string; value: string; highlight?: 'green' | 'blue' | 'purple' }) {
   const highlightClasses = {
-    green: 'text-green-600 font-bold',
+    green: 'text-primary-600 font-bold',
     blue: 'text-blue-600 font-bold',
     purple: 'text-purple-600 font-bold',
   };
@@ -1011,7 +1011,7 @@ function VideoCard({ video, large }: { video: PlayerVideo; large?: boolean }) {
       href={video.url || '#'}
       target="_blank"
       rel="noopener noreferrer"
-      className="group relative bg-white rounded-xl border border-slate-200 overflow-hidden hover:border-green-300 hover:shadow-lg transition-all duration-300"
+      className="group relative bg-white rounded-xl border border-slate-200 overflow-hidden hover:border-primary-300 hover:shadow-lg transition-all duration-300"
     >
       {video.thumbnail_url ? (
         <div className={cn("relative", large ? "aspect-video" : "aspect-[16/10]")}>
@@ -1025,12 +1025,12 @@ function VideoCard({ video, large }: { video: PlayerVideo; large?: boolean }) {
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
             <div className="w-14 h-14 rounded-full bg-white/95 flex items-center justify-center shadow-xl">
-              <div className="w-0 h-0 border-l-[18px] border-l-green-600 border-y-[11px] border-y-transparent ml-1" />
+              <div className="w-0 h-0 border-l-[18px] border-l-primary-600 border-y-[11px] border-y-transparent ml-1" />
             </div>
           </div>
           {video.is_primary && (
             <div className="absolute top-2 right-2">
-              <Badge className="bg-green-500 text-white border-0 text-xs shadow-lg">Featured</Badge>
+              <Badge className="bg-primary-500 text-white border-0 text-xs shadow-lg">Featured</Badge>
             </div>
           )}
         </div>

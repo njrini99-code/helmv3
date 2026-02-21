@@ -182,7 +182,7 @@ export function BaseballInviteButton({
           {/* Loading State */}
           {loading && (
             <div className="flex items-center justify-center py-8">
-              <div className="animate-spin h-6 w-6 border-2 border-green-600 border-t-transparent rounded-full" />
+              <div className="animate-spin h-6 w-6 border-2 border-primary-600 border-t-transparent rounded-full" />
               <span className="ml-3 text-sm text-slate-500">
                 Generating invite link...
               </span>
@@ -262,21 +262,21 @@ export function BaseballInviteButton({
                 </Button>
               </div>
 
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <p className="text-xs font-semibold text-green-800 mb-2">
+              <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
+                <p className="text-xs font-semibold text-primary-800 mb-2">
                   How it works
                 </p>
-                <ul className="text-xs text-green-700 space-y-1.5">
+                <ul className="text-xs text-primary-700 space-y-1.5">
                   <li className="flex items-start gap-2">
-                    <span className="text-green-500">1.</span>
+                    <span className="text-primary-500">1.</span>
                     Player clicks the link or enters the code at signup
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-green-500">2.</span>
+                    <span className="text-primary-500">2.</span>
                     They create an account or log in
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-green-500">3.</span>
+                    <span className="text-primary-500">3.</span>
                     They&apos;re automatically added to your team roster
                   </li>
                 </ul>

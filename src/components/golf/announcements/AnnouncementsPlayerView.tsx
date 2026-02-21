@@ -179,12 +179,12 @@ function PlayerAnnouncementCard({ announcement: ann, playerId }: { announcement:
               {ann.title}
             </h3>
             {needsAck && (
-              <span className="flex-shrink-0 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full bg-amber-100 text-amber-700 border border-amber-200">
+              <span className="flex-shrink-0 px-2 py-0.5 text-micro font-bold uppercase tracking-wider rounded-full bg-amber-100 text-amber-700 border border-amber-200">
                 Action needed
               </span>
             )}
             {!needsAck && isNew && !hasAcknowledged && (
-              <span className="flex-shrink-0 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full bg-primary-50 text-primary-700 border border-primary-200">
+              <span className="flex-shrink-0 px-2 py-0.5 text-micro font-bold uppercase tracking-wider rounded-full bg-primary-50 text-primary-700 border border-primary-200">
                 New
               </span>
             )}
@@ -197,7 +197,7 @@ function PlayerAnnouncementCard({ announcement: ann, playerId }: { announcement:
           <div className="flex items-center gap-2 flex-wrap">
             {/* Urgency pill */}
             <span className={cn(
-              'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold uppercase tracking-wider border',
+              'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-label font-semibold uppercase tracking-wider border',
               urg.bg, urg.text, urg.border
             )}>
               <span className={cn('w-1.5 h-1.5 rounded-full', urg.dot)} />
@@ -295,7 +295,7 @@ function PlayerAnnouncementCard({ announcement: ann, playerId }: { announcement:
                   {/* Documents - downloadable */}
                   {detail.documents && detail.documents.length > 0 && (
                     <div>
-                      <p className="text-[11px] font-semibold text-warm-400 uppercase tracking-widest mb-2.5">Attachments</p>
+                      <p className="text-label font-semibold text-warm-400 uppercase tracking-widest mb-2.5">Attachments</p>
                       <div className="space-y-1.5">
                         {detail.documents.map((d) => (
                           <a
@@ -310,7 +310,7 @@ function PlayerAnnouncementCard({ announcement: ann, playerId }: { announcement:
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium text-warm-700 truncate">{d.document?.title || 'Document'}</p>
-                              <p className="text-[11px] text-warm-400">
+                              <p className="text-label text-warm-400">
                                 {d.document?.file_type || 'File'}
                                 {d.document?.file_size ? ` \u00b7 ${(d.document.file_size / 1024).toFixed(1)} KB` : ''}
                               </p>
@@ -326,7 +326,7 @@ function PlayerAnnouncementCard({ announcement: ann, playerId }: { announcement:
                   {detail.tasks && detail.tasks.length > 0 && (
                     <div>
                       <div className="flex items-center justify-between mb-2.5">
-                        <p className="text-[11px] font-semibold text-warm-400 uppercase tracking-widest">Your Tasks</p>
+                        <p className="text-label font-semibold text-warm-400 uppercase tracking-widest">Your Tasks</p>
                         {myTotalTasks > 0 && (
                           <span className={cn(
                             'text-xs font-semibold tabular-nums',
@@ -378,7 +378,7 @@ function PlayerAnnouncementCard({ announcement: ann, playerId }: { announcement:
                       >
                         Acknowledge
                       </Button>
-                      <p className="text-[11px] text-warm-400 mt-1.5">Your coach requires you to acknowledge this announcement</p>
+                      <p className="text-label text-warm-400 mt-1.5">Your coach requires you to acknowledge this announcement</p>
                     </div>
                   )}
 

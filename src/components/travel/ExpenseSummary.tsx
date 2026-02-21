@@ -19,7 +19,7 @@ const CATEGORY_CONFIG: Record<ExpenseCategory, { label: string; color: string; b
   transportation: { label: 'Transportation', color: 'text-blue-600', bgColor: 'bg-blue-100' },
   lodging: { label: 'Lodging', color: 'text-purple-600', bgColor: 'bg-purple-100' },
   meals: { label: 'Meals', color: 'text-amber-600', bgColor: 'bg-amber-100' },
-  entry_fees: { label: 'Entry Fees', color: 'text-green-600', bgColor: 'bg-green-100' },
+  entry_fees: { label: 'Entry Fees', color: 'text-primary-600', bgColor: 'bg-primary-100' },
   equipment: { label: 'Equipment', color: 'text-rose-600', bgColor: 'bg-rose-100' },
   other: { label: 'Other', color: 'text-gray-600', bgColor: 'bg-gray-100' },
 };

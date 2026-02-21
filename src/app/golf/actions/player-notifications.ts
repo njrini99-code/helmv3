@@ -160,20 +160,24 @@ export async function getPlayerNotificationCounts(
       }
     }
 
-    // Count unread messages
+    // Count unread messages - batch query instead of N+1
     let unreadMessages = 0;
     const participants = conversationsResult.data || [];
     if (participants.length > 0) {
-      // Count messages newer than last_read_at for each conversation
-      for (const p of participants) {
-        const { count } = await supabase
-          .from('golf_messages')
-          .select('*', { count: 'exact', head: true })
-          .eq('conversation_id', p.conversation_id)
-          .neq('sender_id', userId)
-          .gt('created_at', p.last_read_at || '1970-01-01');
-        unreadMessages += count || 0;
-      }
+      // Parallel queries instead of sequential N+1 loop
+      // Each conversation has different last_read_at, so we parallelize the individual queries
+      const counts = await Promise.all(
+        participants.map(async (p) => {
+          const { count } = await supabase
+            .from('golf_messages')
+            .select('*', { count: 'exact', head: true })
+            .eq('conversation_id', p.conversation_id)
+            .neq('sender_id', userId)
+            .gt('created_at', p.last_read_at || '1970-01-01');
+          return count || 0;
+        })
+      );
+      unreadMessages = counts.reduce((sum, c) => sum + c, 0);
     }
 
     return {

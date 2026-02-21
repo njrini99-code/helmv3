@@ -73,7 +73,7 @@ export function PlayerStatsChart({ stats, fullSize = false }: PlayerStatsChartPr
           <div className="absolute inset-0 bottom-6 flex items-end gap-1 px-1">
             {chartData.map((d, i) => {
               const barHeight = (d.avg / maxAvg) * 100;
-              const bgColor = d.type === 'game' ? 'bg-green-500' : d.type === 'practice' ? 'bg-blue-400' : 'bg-slate-300';
+              const bgColor = d.type === 'game' ? 'bg-primary-500' : d.type === 'practice' ? 'bg-blue-400' : 'bg-slate-300';
 
               return (
                 <div
@@ -123,7 +123,7 @@ export function PlayerStatsChart({ stats, fullSize = false }: PlayerStatsChartPr
               return (
                 <div key={i} className="flex-1 text-center">
                   {showLabel && (
-                    <span className="text-[10px] text-slate-400">{d.date}</span>
+                    <span className="text-micro text-slate-400">{d.date}</span>
                   )}
                 </div>
               );
@@ -135,7 +135,7 @@ export function PlayerStatsChart({ stats, fullSize = false }: PlayerStatsChartPr
       {/* Legend */}
       <div className="flex items-center justify-center gap-6 text-xs">
         <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded bg-green-500" />
+          <div className="w-3 h-3 rounded bg-primary-500" />
           <span className="text-slate-600">Game</span>
         </div>
         <div className="flex items-center gap-1.5">

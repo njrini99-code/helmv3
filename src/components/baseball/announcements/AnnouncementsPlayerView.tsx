@@ -22,14 +22,14 @@ const itemVariants = {
 
 const urgencyBorderColors: Record<string, string> = {
   low: 'border-l-slate-300',
-  normal: 'border-l-green-400',
+  normal: 'border-l-primary-400',
   high: 'border-l-amber-400',
   urgent: 'border-l-red-400',
 };
 
 const urgencyBadgeColors: Record<string, { bg: string; text: string }> = {
   low: { bg: 'bg-slate-100', text: 'text-slate-600' },
-  normal: { bg: 'bg-green-50', text: 'text-green-600' },
+  normal: { bg: 'bg-primary-50', text: 'text-primary-600' },
   high: { bg: 'bg-amber-50', text: 'text-amber-600' },
   urgent: { bg: 'bg-red-50', text: 'text-red-600' },
 };
@@ -65,7 +65,7 @@ function PlayerAnnouncementCard({ announcement: ann }: { announcement: BaseballA
   const [acknowledging, setAcknowledging] = useState(false);
 
   const urgencyBorder = urgencyBorderColors[ann.urgency || 'normal'];
-  const urgencyBadge = urgencyBadgeColors[ann.urgency || 'normal'] ?? { bg: 'bg-green-50', text: 'text-green-600' };
+  const urgencyBadge = urgencyBadgeColors[ann.urgency || 'normal'] ?? { bg: 'bg-primary-50', text: 'text-primary-600' };
 
   async function handleAcknowledge() {
     setAcknowledging(true);
@@ -107,7 +107,7 @@ function PlayerAnnouncementCard({ announcement: ann }: { announcement: BaseballA
           <div className="flex items-center gap-2 mb-1">
             <h3 className="text-sm font-semibold text-slate-900 truncate">{ann.title}</h3>
             {isRecent && (
-              <span className="px-1.5 py-0.5 text-xs font-medium rounded-full bg-green-50 text-green-600 flex-shrink-0">
+              <span className="px-1.5 py-0.5 text-xs font-medium rounded-full bg-primary-50 text-primary-600 flex-shrink-0">
                 New
               </span>
             )}
@@ -124,7 +124,7 @@ function PlayerAnnouncementCard({ announcement: ann }: { announcement: BaseballA
               {ann.urgency || 'normal'}
             </span>
             {hasAcknowledged && (
-              <span className="inline-flex items-center gap-1 text-xs text-green-600 font-medium">
+              <span className="inline-flex items-center gap-1 text-xs text-primary-600 font-medium">
                 <IconCheck size={10} />
                 Acknowledged
               </span>
@@ -171,7 +171,7 @@ function PlayerAnnouncementCard({ announcement: ann }: { announcement: BaseballA
                 )}
 
                 {ann.requires_acknowledgement && hasAcknowledged && (
-                  <div className="pt-2 border-t border-slate-100 flex items-center gap-2 text-green-600">
+                  <div className="pt-2 border-t border-slate-100 flex items-center gap-2 text-primary-600">
                     <IconCheck size={16} />
                     <span className="text-sm font-medium">You acknowledged this announcement</span>
                   </div>

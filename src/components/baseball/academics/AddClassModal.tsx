@@ -166,7 +166,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass }: AddClas
                   className={cn(
                     'w-10 h-10 rounded-lg text-sm font-medium transition-all',
                     formData.days.includes(day.abbrev)
-                      ? 'bg-green-600 text-white'
+                      ? 'bg-primary-600 text-white'
                       : 'bg-warm-100 text-warm-600 hover:bg-warm-200 active:bg-warm-300'
                   )}
                 >
@@ -183,7 +183,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass }: AddClas
                   className={cn(
                     'px-3 py-1 text-xs font-medium rounded-full transition-all',
                     JSON.stringify(formData.days) === JSON.stringify(pattern.days)
-                      ? 'bg-green-100 text-green-700'
+                      ? 'bg-primary-100 text-primary-700'
                       : 'bg-warm-100 text-warm-500 hover:bg-warm-200 active:bg-warm-300'
                   )}
                 >
@@ -267,7 +267,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass }: AddClas
               <select
                 value={formData.semester}
                 onChange={(e) => setFormData(prev => ({ ...prev, semester: e.target.value }))}
-                className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/40"
+                className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/40"
               >
                 <option value="Spring 2025">Spring 2025</option>
                 <option value="Summer 2025">Summer 2025</option>
@@ -304,7 +304,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass }: AddClas
               onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
               placeholder="Any additional notes... (optional)"
               rows={2}
-              className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500/40 resize-none"
+              className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/40 resize-none"
             />
           </div>
         </form>

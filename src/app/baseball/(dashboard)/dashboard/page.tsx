@@ -216,11 +216,11 @@ export default function DashboardPage() {
             {/* Main Stat - Spans 2 cols */}
             <div className="md:col-span-2 relative group rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-slate-700/50 p-6 overflow-hidden hover:shadow-2xl transition-shadow duration-300">
               {/* Glow effect */}
-              <div className="absolute top-0 right-0 w-64 h-64 bg-green-500/10 rounded-full blur-3xl group-hover:bg-green-500/15 transition-colors duration-500" />
+              <div className="absolute top-0 right-0 w-64 h-64 bg-primary-500/10 rounded-full blur-3xl group-hover:bg-primary-500/15 transition-colors duration-500" />
               <div className="relative z-10">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-green-500/20 flex items-center justify-center">
-                    <IconTarget size={24} className="text-green-400" />
+                  <div className="w-12 h-12 rounded-xl bg-primary-500/20 flex items-center justify-center">
+                    <IconTarget size={24} className="text-primary-400" />
                   </div>
                   <div>
                     <p className="text-sm leading-relaxed text-slate-400">Total Pipeline</p>
@@ -239,7 +239,7 @@ export default function DashboardPage() {
                 </div>
                 <Link
                   href="/baseball/dashboard/pipeline"
-                  className="inline-flex items-center gap-1.5 text-sm text-green-400 hover:text-green-300 mt-4 transition-colors"
+                  className="inline-flex items-center gap-1.5 text-sm text-primary-400 hover:text-primary-300 mt-4 transition-colors"
                 >
                   Manage Pipeline <IconArrowRight size={14} />
                 </Link>
@@ -287,8 +287,8 @@ export default function DashboardPage() {
               <ShineEffect />
               <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100/50">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-green-50 flex items-center justify-center">
-                    <IconChart size={18} className="text-green-600" />
+                  <div className="w-9 h-9 rounded-lg bg-primary-50 flex items-center justify-center">
+                    <IconChart size={18} className="text-primary-600" />
                   </div>
                   <h2 className="font-semibold text-slate-900 tracking-tight">Engagement (7 Days)</h2>
                 </div>
@@ -306,7 +306,7 @@ export default function DashboardPage() {
               <ShineEffect />
               <div className="px-5 py-4 border-b border-slate-100/50">
                 <div className="flex items-center gap-2">
-                  <IconActivity size={16} className="text-green-500" />
+                  <IconActivity size={16} className="text-primary-500" />
                   <h3 className="font-semibold text-slate-900 tracking-tight">Recent Activity</h3>
                 </div>
               </div>
@@ -371,8 +371,8 @@ export default function DashboardPage() {
             <ShineEffect />
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100/50">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-green-50 flex items-center justify-center">
-                  <IconMapPin size={18} className="text-green-600" />
+                <div className="w-9 h-9 rounded-lg bg-primary-50 flex items-center justify-center">
+                  <IconMapPin size={18} className="text-primary-600" />
                 </div>
                 <div>
                   <h2 className="font-semibold text-slate-900 tracking-tight">Player Distribution</h2>
@@ -569,8 +569,8 @@ export default function DashboardPage() {
                 value={playerStats.videoViews || 0}
                 change="Total views"
                 icon={IconVideo}
-                iconBg="bg-green-50"
-                iconColor="text-green-500"
+                iconBg="bg-primary-50"
+                iconColor="text-primary-500"
                 href="/baseball/dashboard/videos"
               />
             </>
@@ -620,7 +620,7 @@ export default function DashboardPage() {
                       <action.icon size={18} className="text-slate-600" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-slate-900 group-hover:text-green-600 transition-colors">{action.label}</p>
+                      <p className="text-sm font-medium text-slate-900 group-hover:text-primary-600 transition-colors">{action.label}</p>
                       <p className="text-xs text-slate-500">{action.description}</p>
                     </div>
                     <IconChevronRight size={16} className="text-slate-300 group-hover:text-slate-500 group-hover:translate-x-0.5 transition-all" />

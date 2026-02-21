@@ -149,7 +149,7 @@ export default function RosterPage() {
             onClick={() => setActiveView('roster')}
             className={`px-4 py-2.5 rounded-lg font-medium transition-all ${
               activeView === 'roster'
-                ? 'bg-green-50 text-green-700'
+                ? 'bg-primary-50 text-primary-700'
                 : 'text-slate-600 hover:bg-slate-100 active:bg-slate-200'
             }`}
           >
@@ -162,7 +162,7 @@ export default function RosterPage() {
             onClick={() => setActiveView('lineup')}
             className={`px-4 py-2.5 rounded-lg font-medium transition-all ${
               activeView === 'lineup'
-                ? 'bg-green-50 text-green-700'
+                ? 'bg-primary-50 text-primary-700'
                 : 'text-slate-600 hover:bg-slate-100 active:bg-slate-200'
             }`}
           >
@@ -185,7 +185,7 @@ export default function RosterPage() {
                 </div>
                 <div className="glass-standard rounded-xl p-4">
                   <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">Active</p>
-                  <p className="text-2xl font-semibold text-green-600 mt-1 tabular-nums">
+                  <p className="text-2xl font-semibold text-primary-600 mt-1 tabular-nums">
                     {roster.filter(m => m.status === 'active').length}
                   </p>
                 </div>
@@ -366,13 +366,13 @@ export default function RosterPage() {
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-slate-200">
-                        <th className="text-left py-3 px-4 text-[11px] font-medium uppercase tracking-wider text-slate-400">Player</th>
-                        <th className="text-left py-3 px-4 text-[11px] font-medium uppercase tracking-wider text-slate-400">Position</th>
-                        <th className="text-left py-3 px-4 text-[11px] font-medium uppercase tracking-wider text-slate-400">Grad Year</th>
-                        <th className="text-left py-3 px-4 text-[11px] font-medium uppercase tracking-wider text-slate-400">Location</th>
-                        <th className="text-left py-3 px-4 text-[11px] font-medium uppercase tracking-wider text-slate-400">Jersey</th>
-                        <th className="text-left py-3 px-4 text-[11px] font-medium uppercase tracking-wider text-slate-400">Status</th>
-                        <th className="text-left py-3 px-4 text-[11px] font-medium uppercase tracking-wider text-slate-400">Actions</th>
+                        <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">Player</th>
+                        <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">Position</th>
+                        <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">Grad Year</th>
+                        <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">Location</th>
+                        <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">Jersey</th>
+                        <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">Status</th>
+                        <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200">
@@ -451,7 +451,7 @@ export default function RosterPage() {
                 <CardContent>
                   <ol className="space-y-3 text-sm text-slate-600">
                     <li className="flex gap-3">
-                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-700 font-medium flex items-center justify-center text-xs">
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary-100 text-primary-700 font-medium flex items-center justify-center text-xs">
                         1
                       </span>
                       <div>
@@ -460,7 +460,7 @@ export default function RosterPage() {
                       </div>
                     </li>
                     <li className="flex gap-3">
-                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-700 font-medium flex items-center justify-center text-xs">
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary-100 text-primary-700 font-medium flex items-center justify-center text-xs">
                         2
                       </span>
                       <div>
@@ -469,7 +469,7 @@ export default function RosterPage() {
                       </div>
                     </li>
                     <li className="flex gap-3">
-                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-700 font-medium flex items-center justify-center text-xs">
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary-100 text-primary-700 font-medium flex items-center justify-center text-xs">
                         3
                       </span>
                       <div>

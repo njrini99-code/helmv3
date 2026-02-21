@@ -83,7 +83,7 @@ export default function TermsPage() {
             <h2 className="text-2xl font-semibold text-slate-900">Contact us</h2>
             <p>
               Questions about these Terms? Email{' '}
-              <a href="mailto:admin@helmsportslabs.com" className="text-green-700 hover:text-green-800">
+              <a href="mailto:admin@helmsportslabs.com" className="text-primary-700 hover:text-primary-800">
                 admin@helmsportslabs.com
               </a>.
             </p>

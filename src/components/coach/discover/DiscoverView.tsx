@@ -456,7 +456,7 @@ export function DiscoverView({
                 value={sortBy}
                 onChange={(e) => handleSortChange(e.target.value)}
                 className="text-sm border border-slate-200 rounded-lg px-3 py-1.5
-                           focus:border-green-500 focus:ring-2 focus:ring-green-100
+                           focus:border-primary-500 focus:ring-2 focus:ring-primary-100
                            focus:outline-none bg-white cursor-pointer"
               >
                 {SORT_OPTIONS.map((opt) => (
@@ -539,9 +539,9 @@ export function DiscoverView({
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mt-4 p-4 rounded-xl bg-green-50 border border-green-200"
+                  className="mt-4 p-4 rounded-xl bg-primary-50 border border-primary-200"
                 >
-                  <p className="text-sm text-green-800">
+                  <p className="text-sm text-primary-800">
                     <span className="font-semibold">
                       {filters.states.length === 1 && filters.states[0]
                         ? stateData[filters.states[0]]?.name
@@ -592,8 +592,8 @@ export function DiscoverView({
                 {/* Fetching indicator */}
                 {playersFetching && (
                   <div className="flex items-center justify-center py-2 mb-4">
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-700 rounded-full text-sm font-medium">
-                      <div className="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-primary-50 text-primary-700 rounded-full text-sm font-medium">
+                      <div className="w-4 h-4 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />
                       Updating results...
                     </div>
                   </div>
@@ -634,8 +634,8 @@ export function DiscoverView({
               {/* Fetching indicator */}
               {teamsFetching && (
                 <div className="flex items-center justify-center py-2 mb-4">
-                  <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-700 rounded-full text-sm font-medium">
-                    <div className="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-primary-50 text-primary-700 rounded-full text-sm font-medium">
+                    <div className="w-4 h-4 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />
                     Updating results...
                   </div>
                 </div>
@@ -686,7 +686,7 @@ export function DiscoverView({
                   className={cn(
                     'w-8 h-8 rounded-lg text-sm font-medium transition-colors',
                     pageNum === currentPage
-                      ? 'bg-green-600 text-white'
+                      ? 'bg-primary-600 text-white'
                       : 'text-slate-600 hover:bg-slate-100 active:bg-slate-200'
                   )}
                 >

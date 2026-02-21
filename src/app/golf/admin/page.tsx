@@ -326,7 +326,7 @@ function AdminDashboardContent() {
                   {!sidebarCollapsed && (
                     <span
                       className={cn(
-                        'text-[10px] px-1.5 py-0.5 rounded font-mono',
+                        'text-micro px-1.5 py-0.5 rounded font-mono',
                         isActive ? 'bg-white/10 text-warm-300' : 'bg-white/5 text-warm-500'
                       )}
                     >
@@ -336,7 +336,7 @@ function AdminDashboardContent() {
                   {showBadge && (
                     <span
                       className={cn(
-                        'flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full',
+                        'flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-micro font-bold rounded-full',
                         sidebarCollapsed && 'absolute -top-1 -right-1'
                       )}
                     >
@@ -368,7 +368,7 @@ function AdminDashboardContent() {
                 <>
                   <div className="flex-1 text-left">
                     <div className="text-sm font-medium">Coach CRM</div>
-                    <div className="text-[11px] text-warm-500">
+                    <div className="text-label text-warm-500">
                       {crmStats ? `${crmStats.total} coaches` : 'Sales pipeline'}
                     </div>
                   </div>
@@ -387,7 +387,7 @@ function AdminDashboardContent() {
         {/* Quick Stats in Sidebar */}
         {!sidebarCollapsed && quickStats && (
           <div className="p-3 border-t border-white/10 space-y-3">
-            <div className="text-[11px] font-semibold text-warm-500 uppercase tracking-wider px-1">
+            <div className="text-label font-semibold text-warm-500 uppercase tracking-wider px-1">
               Quick Stats
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -395,7 +395,7 @@ function AdminDashboardContent() {
                 <div className="text-xl font-bold text-white tabular-nums">
                   {quickStats.totalUsers}
                 </div>
-                <div className="text-[10px] text-warm-500 font-medium uppercase tracking-wider mt-0.5">
+                <div className="text-micro text-warm-500 font-medium uppercase tracking-wider mt-0.5">
                   Total Users
                 </div>
               </div>
@@ -407,7 +407,7 @@ function AdminDashboardContent() {
                     <span className="text-warm-500">—</span>
                   )}
                 </div>
-                <div className="text-[10px] text-warm-500 font-medium uppercase tracking-wider mt-0.5">
+                <div className="text-micro text-warm-500 font-medium uppercase tracking-wider mt-0.5">
                   Active Now
                 </div>
               </div>
@@ -431,7 +431,7 @@ function AdminDashboardContent() {
                     <span className="text-warm-500">—</span>
                   )}
                 </div>
-                <div className="text-[10px] text-warm-500 font-medium uppercase tracking-wider mt-0.5">
+                <div className="text-micro text-warm-500 font-medium uppercase tracking-wider mt-0.5">
                   {quickStats.errors7d === 0 ? 'No Errors' : 'Errors (7d)'}
                 </div>
               </div>
@@ -471,7 +471,7 @@ function AdminDashboardContent() {
                         : 'Critical'}
                   </span>
                 </div>
-                <div className="text-[10px] text-warm-500 font-medium uppercase tracking-wider mt-1">
+                <div className="text-micro text-warm-500 font-medium uppercase tracking-wider mt-1">
                   System Health
                 </div>
               </div>

@@ -87,7 +87,7 @@ function ProductToggle({
         {activeProduct === 'golf' && (
           <motion.div
             layoutId="productToggle"
-            className="absolute inset-0 rounded-lg bg-gradient-to-r from-helm-green-500/30 to-emerald-500/30 border border-helm-green-500/30"
+            className="absolute inset-0 rounded-lg bg-gradient-to-r from-helm-primary-500/30 to-emerald-500/30 border border-helm-primary-500/30"
             transition={{ type: 'spring', stiffness: 400, damping: 30 }}
           />
         )}
@@ -157,7 +157,7 @@ function ProductHeroCard({
           backdrop-blur-xl border transition-all duration-500
           bg-white/[0.04] border-white/[0.08]
           ${isGolf 
-            ? 'hover:bg-helm-green-500/10 hover:border-helm-green-500/30 hover:shadow-[0_0_80px_rgba(16,185,129,0.2)]' 
+            ? 'hover:bg-helm-primary-500/10 hover:border-helm-primary-500/30 hover:shadow-[0_0_80px_rgba(16,185,129,0.2)]' 
             : 'hover:bg-helm-amber-500/10 hover:border-helm-amber-500/30 hover:shadow-[0_0_80px_rgba(245,158,11,0.2)]'
           }
         `}
@@ -176,7 +176,7 @@ function ProductHeroCard({
             <div className="font-semibold text-white text-xl mb-1">{title}</div>
             <div className="text-sm text-white/40">{description}</div>
           </div>
-          <ArrowRight className={`w-5 h-5 ml-4 transition-all duration-300 group-hover:translate-x-2 ${isGolf ? 'text-helm-green-400' : 'text-helm-amber-400'}`} />
+          <ArrowRight className={`w-5 h-5 ml-4 transition-all duration-300 group-hover:translate-x-2 ${isGolf ? 'text-helm-primary-400' : 'text-helm-amber-400'}`} />
         </div>
       </motion.div>
     </Link>
@@ -270,7 +270,7 @@ export function EnhancedHeroSection() {
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 rounded-full bg-white/[0.06] border border-white/[0.1] backdrop-blur-xl mb-8 sm:mb-10"
         >
-          <Sparkles className="w-4 h-4 text-helm-green-400" />
+          <Sparkles className="w-4 h-4 text-helm-primary-400" />
           <span className="text-xs sm:text-sm font-medium text-white/80 tracking-wide">The Command Center for Championship Programs</span>
         </motion.div>
 
@@ -288,7 +288,7 @@ export function EnhancedHeroSection() {
           {/* Line 2 with character stagger */}
           <span className={`inline-block text-transparent bg-clip-text bg-gradient-to-r ${
             activeProduct === 'golf' 
-              ? 'from-helm-green-400 via-emerald-400 to-helm-green-500'
+              ? 'from-helm-primary-400 via-emerald-400 to-helm-primary-500'
               : 'from-helm-amber-400 via-orange-400 to-helm-amber-500'
           } transition-all duration-500`}>
             <StaggeredText text="for Championship Programs" delay={0.5} />
@@ -302,7 +302,7 @@ export function EnhancedHeroSection() {
           transition={{ delay: 1.2 }}
           className="text-base sm:text-lg md:text-2xl text-center max-w-2xl mb-8 leading-relaxed h-[4.5rem] sm:h-16"
         >
-          <span className="text-helm-green-400/80">{typewriterText}</span>
+          <span className="text-helm-primary-400/80">{typewriterText}</span>
           <span className="animate-pulse">|</span>
           <AnimatePresence>
             {isComplete && (

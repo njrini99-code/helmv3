@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight, Plus, Menu, Globe } from 'lucide-react';
 import { startOfWeek, endOfWeek, format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useMediaQuery } from '@/hooks/use-media-query';
-import { useSidebar } from '@/contexts/sidebar-context';
+import { useSidebarSafe } from '@/contexts/sidebar-context';
 
 export type CalendarView = 'day' | 'week' | 'month';
 
@@ -40,7 +40,8 @@ export function CalendarHeader({
   onSecondaryTimezoneChange,
 }: CalendarHeaderProps) {
   const isMobile = useMediaQuery('(max-width: 768px)');
-  const { toggleMobile } = useSidebar();
+  const sidebar = useSidebarSafe();
+  const toggleMobile = sidebar?.toggleMobile ?? (() => {});
   const [tzDropdownOpen, setTzDropdownOpen] = useState(false);
   const tzDropdownRef = useRef<HTMLDivElement>(null);
 

@@ -215,8 +215,8 @@ export default function VideosPage() {
         {videos.length === 0 && !showUpload ? (
           <Card variant="glass">
             <CardContent className="p-12 text-center">
-              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-green-50 to-emerald-50 flex items-center justify-center mx-auto mb-6">
-                <IconVideo size={40} className="text-green-600" />
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary-50 to-emerald-50 flex items-center justify-center mx-auto mb-6">
+                <IconVideo size={40} className="text-primary-600" />
               </div>
               <h3 className="text-lg font-semibold tracking-tight text-slate-900 mb-2">
                 {isCoach ? "No videos from your team yet" : "No videos yet"}

@@ -298,7 +298,7 @@ export function VideoClipper({ video, onClipCreated, onCancel }: VideoClipperPro
         >
           {/* Selected Range */}
           <div
-            className="absolute top-0 bottom-0 bg-green-500/30 border-y-2 border-green-500"
+            className="absolute top-0 bottom-0 bg-primary-500/30 border-y-2 border-primary-500"
             style={{
               left: `${startPercent}%`,
               width: `${endPercent - startPercent}%`,
@@ -309,7 +309,7 @@ export function VideoClipper({ video, onClipCreated, onCancel }: VideoClipperPro
           <div
             className={cn(
               'absolute top-0 bottom-0 w-3 cursor-ew-resize transition-colors',
-              isDragging === 'start' ? 'bg-green-700' : 'bg-green-600 hover:bg-green-700'
+              isDragging === 'start' ? 'bg-primary-700' : 'bg-primary-600 hover:bg-primary-700'
             )}
             style={{ left: `calc(${startPercent}% - 6px)` }}
             onMouseDown={(e) => {
@@ -324,7 +324,7 @@ export function VideoClipper({ video, onClipCreated, onCancel }: VideoClipperPro
           <div
             className={cn(
               'absolute top-0 bottom-0 w-3 cursor-ew-resize transition-colors',
-              isDragging === 'end' ? 'bg-green-700' : 'bg-green-600 hover:bg-green-700'
+              isDragging === 'end' ? 'bg-primary-700' : 'bg-primary-600 hover:bg-primary-700'
             )}
             style={{ left: `calc(${endPercent}% - 6px)` }}
             onMouseDown={(e) => {
@@ -355,7 +355,7 @@ export function VideoClipper({ video, onClipCreated, onCancel }: VideoClipperPro
             </button>
             <button
               onClick={handleSetStartFromCurrent}
-              className="px-2 py-1 text-xs font-medium text-green-600 hover:text-green-700 hover:bg-green-50 rounded"
+              className="px-2 py-1 text-xs font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded"
             >
               Set Start Here
             </button>
@@ -363,7 +363,7 @@ export function VideoClipper({ video, onClipCreated, onCancel }: VideoClipperPro
 
           <button
             onClick={handlePreviewClip}
-            className="px-4 py-1.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+            className="px-4 py-1.5 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors"
           >
             Preview Clip
           </button>
@@ -371,7 +371,7 @@ export function VideoClipper({ video, onClipCreated, onCancel }: VideoClipperPro
           <div className="flex items-center gap-2">
             <button
               onClick={handleSetEndFromCurrent}
-              className="px-2 py-1 text-xs font-medium text-green-600 hover:text-green-700 hover:bg-green-50 rounded"
+              className="px-2 py-1 text-xs font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded"
             >
               Set End Here
             </button>

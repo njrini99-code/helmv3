@@ -390,7 +390,7 @@ function StatBox({ label, value, unit }: { label: string; value: string; unit?: 
       'before:bg-gradient-to-b before:from-white/60 before:to-transparent',
       'before:pointer-events-none'
     )}>
-      <p className="text-[10px] font-semibold uppercase tracking-wider text-warm-400 mb-1">
+      <p className="text-micro font-semibold uppercase tracking-wider text-warm-400 mb-1">
         {label}
       </p>
       <p className="text-lg font-bold text-warm-900 tabular-nums">
@@ -426,7 +426,7 @@ function MetricCard({
       colorClasses[color],
       'border'
     )}>
-      <p className="text-[10px] font-semibold uppercase tracking-wider opacity-70 mb-1">
+      <p className="text-micro font-semibold uppercase tracking-wider opacity-70 mb-1">
         {label}
       </p>
       <p className="text-lg font-bold tabular-nums">

@@ -45,11 +45,11 @@ export function ExpenseSummary({ summary }: ExpenseSummaryProps) {
   return (
     <div className="space-y-6">
       {/* Total Summary */}
-      <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-100">
+      <div className="bg-gradient-to-br from-primary-50 to-emerald-50 rounded-2xl p-6 border border-primary-100">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-sm font-medium text-green-700 mb-1">Total Expenses</p>
-            <p className="text-3xl font-bold text-green-900">{formatCurrency(summary.total)}</p>
+            <p className="text-sm font-medium text-primary-700 mb-1">Total Expenses</p>
+            <p className="text-3xl font-bold text-primary-900">{formatCurrency(summary.total)}</p>
           </div>
           <div className="text-right">
             <p className="text-sm text-warm-500">{summary.count} expenses</p>
@@ -99,9 +99,9 @@ export function ExpenseSummary({ summary }: ExpenseSummaryProps) {
       <div className="bg-white rounded-2xl border border-warm-200 p-6">
         <h3 className="font-semibold text-warm-900 mb-4">Payment Status</h3>
         <div className="grid grid-cols-2 gap-4">
-          <div className="p-4 bg-green-50 rounded-xl">
-            <p className="text-sm text-green-700 mb-1">Team Paid</p>
-            <p className="text-xl font-bold text-green-900">
+          <div className="p-4 bg-primary-50 rounded-xl">
+            <p className="text-sm text-primary-700 mb-1">Team Paid</p>
+            <p className="text-xl font-bold text-primary-900">
               {formatCurrency(summary.byPaidBy.team)}
             </p>
           </div>

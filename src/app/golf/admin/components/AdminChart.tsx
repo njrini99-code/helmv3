@@ -42,7 +42,7 @@ export function AdminBarChart({
     return (
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h4 className="text-[11px] md:text-xs font-medium text-warm-400 uppercase tracking-wider">{title}</h4>
+          <h4 className="text-label md:text-xs font-medium text-warm-400 uppercase tracking-wider">{title}</h4>
         </div>
         <div className="flex flex-col items-center justify-center py-10 text-center" style={{ minHeight: height }}>
           <div className="w-10 h-10 rounded-xl bg-warm-100/80 flex items-center justify-center mb-3">
@@ -60,7 +60,7 @@ export function AdminBarChart({
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <h4 className="text-[11px] md:text-xs font-medium text-warm-400 uppercase tracking-wider">{title}</h4>
+        <h4 className="text-label md:text-xs font-medium text-warm-400 uppercase tracking-wider">{title}</h4>
         <span className="text-xs text-warm-500 tabular-nums">{total.toLocaleString()} total</span>
       </div>
 
@@ -160,7 +160,7 @@ export function AdminDonutChart({ data, title, size = 160 }: AdminDonutChartProp
   if (total === 0) {
     return (
       <div>
-        <h4 className="text-[11px] md:text-xs font-medium text-warm-400 uppercase tracking-wider mb-3">{title}</h4>
+        <h4 className="text-label md:text-xs font-medium text-warm-400 uppercase tracking-wider mb-3">{title}</h4>
         <div className="flex flex-col items-center justify-center py-8 text-center">
           <div className="w-10 h-10 rounded-xl bg-warm-100/80 flex items-center justify-center mb-3">
             <svg className="w-5 h-5 text-warm-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -182,7 +182,7 @@ export function AdminDonutChart({ data, title, size = 160 }: AdminDonutChartProp
 
   return (
     <div>
-      <h4 className="text-[11px] md:text-xs font-medium text-warm-400 uppercase tracking-wider mb-3">{title}</h4>
+      <h4 className="text-label md:text-xs font-medium text-warm-400 uppercase tracking-wider mb-3">{title}</h4>
       <div className="flex items-center gap-4">
         <svg width={size} height={size} className="shrink-0">
           {data.map((d, i) => {
@@ -346,7 +346,7 @@ export function AdminAreaChart({
     return (
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h4 className="text-[11px] md:text-xs font-medium text-warm-400 uppercase tracking-wider">{title}</h4>
+          <h4 className="text-label md:text-xs font-medium text-warm-400 uppercase tracking-wider">{title}</h4>
         </div>
         <div className="flex flex-col items-center justify-center py-10 text-center" style={{ minHeight: height }}>
           <div className="w-10 h-10 rounded-xl bg-warm-100/80 flex items-center justify-center mb-3">
@@ -648,7 +648,7 @@ export function AdminFunnelChart({ stages, height = 200 }: AdminFunnelChartProps
                     strokeLinejoin="round"
                   />
                 </svg>
-                <span className="text-[10px] text-warm-400 tabular-nums font-medium">
+                <span className="text-micro text-warm-400 tabular-nums font-medium">
                   {conversionPct}% conversion
                 </span>
               </div>

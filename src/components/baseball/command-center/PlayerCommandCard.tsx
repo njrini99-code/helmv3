@@ -33,7 +33,7 @@ export function PlayerCommandCard({ player }: PlayerCommandCardProps) {
     switch (trend) {
       case 'improving':
         return (
-          <div className="flex items-center gap-1 text-green-600">
+          <div className="flex items-center gap-1 text-primary-600">
             <IconTrendingUp size={14} />
             <span className="text-xs font-medium">Improving</span>
           </div>
@@ -150,7 +150,7 @@ export function PlayerCommandCard({ player }: PlayerCommandCardProps) {
             <span className="text-slate-500">Practice vs Game</span>
             <span
               className={`font-medium ${
-                aggregates.pressure_gap >= 0 ? 'text-green-600' : 'text-red-500'
+                aggregates.pressure_gap >= 0 ? 'text-primary-600' : 'text-red-500'
               }`}
             >
               {formatPressureGap(aggregates.pressure_gap)}
@@ -162,7 +162,7 @@ export function PlayerCommandCard({ player }: PlayerCommandCardProps) {
         )}
 
         {/* View Arrow */}
-        <div className="flex items-center justify-end mt-2 text-slate-400 group-hover:text-green-600 transition-colors">
+        <div className="flex items-center justify-end mt-2 text-slate-400 group-hover:text-primary-600 transition-colors">
           <span className="text-xs mr-1">View Profile</span>
           <IconChevronRight size={16} />
         </div>

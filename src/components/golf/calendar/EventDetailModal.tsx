@@ -604,7 +604,7 @@ export function EventDetailModal({
 
             {/* Timezone indicator */}
             {tzAbbrev && !formData.allDay && (
-              <p className="text-[11px] text-warm-400 pl-[52px]">Times shown in {tzAbbrev}</p>
+              <p className="text-label text-warm-400 pl-[52px]">Times shown in {tzAbbrev}</p>
             )}
 
             {/* All Day Toggle - inline */}

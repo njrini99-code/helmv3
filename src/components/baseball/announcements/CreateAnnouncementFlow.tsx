@@ -126,7 +126,7 @@ export function CreateAnnouncementFlow({ players, teamId }: CreateAnnouncementFl
                 onChange={(e) => setBody(e.target.value)}
                 rows={3}
                 required
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 text-slate-900 placeholder:text-slate-400 transition-colors resize-y min-h-[72px] max-h-[200px] text-sm"
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-slate-900 placeholder:text-slate-400 transition-colors resize-y min-h-[72px] max-h-[200px] text-sm"
                 placeholder="Write your announcement..."
               />
             </div>
@@ -148,7 +148,7 @@ export function CreateAnnouncementFlow({ players, teamId }: CreateAnnouncementFl
               onClick={() => setRequiresAcknowledgement(!requiresAcknowledgement)}
             >
               <div className="pt-0.5">
-                <div className={`w-9 h-5 rounded-full transition-colors relative ${requiresAcknowledgement ? 'bg-green-500' : 'bg-slate-300'}`}>
+                <div className={`w-9 h-5 rounded-full transition-colors relative ${requiresAcknowledgement ? 'bg-primary-500' : 'bg-slate-300'}`}>
                   <motion.div
                     className="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm"
                     animate={{ left: requiresAcknowledgement ? 18 : 2 }}

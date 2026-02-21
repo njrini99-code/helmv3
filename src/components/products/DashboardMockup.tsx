@@ -36,7 +36,7 @@ export function DashboardMockup() {
 
               {/* Status Bar */}
               <div className="absolute top-0 left-0 right-0 h-12 z-10 flex items-end justify-between px-6 pb-1">
-                <span className="text-[10px] font-semibold text-slate-900">9:41</span>
+                <span className="text-micro font-semibold text-slate-900">9:41</span>
                 <div className="flex items-center gap-1">
                   {/* Signal */}
                   <div className="flex items-end gap-[2px]">
@@ -71,7 +71,7 @@ export function DashboardMockup() {
                     </div>
                     <div>
                       <div className="text-sm font-semibold text-slate-900">Dashboard</div>
-                      <div className="text-[10px] text-slate-500">Team Overview</div>
+                      <div className="text-micro text-slate-500">Team Overview</div>
                     </div>
                   </div>
                 </div>
@@ -89,7 +89,7 @@ export function DashboardMockup() {
 
                   {/* Quick Actions */}
                   <div className="mt-4">
-                    <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wider mb-2">Quick Actions</div>
+                    <div className="text-micro font-medium text-slate-500 uppercase tracking-wider mb-2">Quick Actions</div>
                     <div className="space-y-2">
                       <ActionRow icon="plus" label="Log New Round" primary />
                       <ActionRow icon="users" label="View Roster" />
@@ -99,7 +99,7 @@ export function DashboardMockup() {
 
                   {/* Recent Activity */}
                   <div className="mt-4">
-                    <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wider mb-2">Recent Activity</div>
+                    <div className="text-micro font-medium text-slate-500 uppercase tracking-wider mb-2">Recent Activity</div>
                     <div className="bg-white rounded-xl border border-slate-100 p-3 space-y-2.5">
                       <ActivityRow name="J. Smith" action="scored 71" time="2h ago" />
                       <ActivityRow name="M. Davis" action="completed practice" time="4h ago" />
@@ -128,7 +128,7 @@ function StatCard({ label, value, accent }: { label: string; value: string; acce
       "bg-white rounded-xl p-3 border",
       accent ? "border-emerald-200 bg-emerald-50/50" : "border-slate-100"
     )}>
-      <div className="text-[10px] text-slate-500 mb-1">{label}</div>
+      <div className="text-micro text-slate-500 mb-1">{label}</div>
       <div className={cn(
         "text-lg font-bold",
         accent ? "text-emerald-600" : "text-slate-900"
@@ -169,8 +169,8 @@ function ActivityRow({ name, action, time }: { name: string; action: string; tim
         <span className="text-[9px] font-semibold text-emerald-600">{name.split(' ').map(n => n[0]).join('')}</span>
       </div>
       <div className="flex-1 min-w-0">
-        <span className="text-[11px] text-slate-900 font-medium">{name}</span>
-        <span className="text-[11px] text-slate-500"> {action}</span>
+        <span className="text-label text-slate-900 font-medium">{name}</span>
+        <span className="text-label text-slate-500"> {action}</span>
       </div>
       <span className="text-[9px] text-slate-400 flex-shrink-0">{time}</span>
     </div>

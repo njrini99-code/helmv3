@@ -199,7 +199,7 @@ export function GolfPlayerCard({
               <div className="text-sm font-bold text-warm-900">
                 {player.stats?.avg_score?.toFixed(1) || '—'}
               </div>
-              <div className="text-[10px] text-warm-500">Avg Score</div>
+              <div className="text-micro text-warm-500">Avg Score</div>
             </div>
             <div className="text-center">
               <div className="text-sm font-bold text-warm-900">
@@ -207,13 +207,13 @@ export function GolfPlayerCard({
                   ? `${(player.stats.fairways_hit_pct * 100).toFixed(0)}%`
                   : '—'}
               </div>
-              <div className="text-[10px] text-warm-500">FIR</div>
+              <div className="text-micro text-warm-500">FIR</div>
             </div>
             <div className="text-center">
               <div className="text-sm font-bold text-warm-900">
                 {player.stats?.avg_putts?.toFixed(1) || '—'}
               </div>
-              <div className="text-[10px] text-warm-500">Putts</div>
+              <div className="text-micro text-warm-500">Putts</div>
             </div>
             <div className="text-center">
               <div className="text-sm font-bold text-warm-900">
@@ -221,7 +221,7 @@ export function GolfPlayerCard({
                   ? `${(player.stats.gir_pct * 100).toFixed(0)}%`
                   : '—'}
               </div>
-              <div className="text-[10px] text-warm-500">GIR</div>
+              <div className="text-micro text-warm-500">GIR</div>
             </div>
           </div>
         </div>
@@ -236,7 +236,7 @@ export function GolfPlayerCard({
           <div className="px-4 pb-3">
             <div className="bg-warm-50 rounded-[10px] p-3">
               <MiniRoundsChart rounds={player.recent_rounds} height={40} />
-              <div className="text-[10px] text-warm-400 mt-1 text-center">
+              <div className="text-micro text-warm-400 mt-1 text-center">
                 Last {player.recent_rounds.length} rounds
               </div>
             </div>

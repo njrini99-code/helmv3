@@ -40,7 +40,7 @@ function RosterRow({ jersey, recruiting }: { jersey: number; recruiting?: boolea
     )}>
       {/* Jersey number */}
       <div className="w-6 h-6 rounded bg-slate-100 flex items-center justify-center">
-        <span className="text-[10px] font-bold text-slate-600">#{jersey}</span>
+        <span className="text-micro font-bold text-slate-600">#{jersey}</span>
       </div>
 
       {/* Avatar */}

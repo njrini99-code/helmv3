@@ -90,7 +90,7 @@ export function TaskFormWithReminder({
 
   const priorityOptions: { value: TaskPriority; label: string; color: string }[] = [
     { value: 'low', label: 'Low', color: 'bg-slate-100 text-slate-700' },
-    { value: 'normal', label: 'Normal', color: 'bg-green-100 text-green-700' },
+    { value: 'normal', label: 'Normal', color: 'bg-primary-100 text-primary-700' },
     { value: 'high', label: 'High', color: 'bg-red-100 text-red-700' },
   ];
 
@@ -108,7 +108,7 @@ export function TaskFormWithReminder({
           placeholder="Enter task title..."
           autoComplete="off"
           disabled={isPending}
-          className="w-full px-3 py-2.5 text-base md:text-sm bg-white border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-50 disabled:opacity-50"
+          className="w-full px-3 py-2.5 text-base md:text-sm bg-white border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50 disabled:opacity-50"
         />
       </div>
 
@@ -124,7 +124,7 @@ export function TaskFormWithReminder({
           autoComplete="off"
           rows={3}
           disabled={isPending}
-          className="w-full px-3 py-2.5 text-base md:text-sm bg-white border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-50 resize-none disabled:opacity-50"
+          className="w-full px-3 py-2.5 text-base md:text-sm bg-white border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50 resize-none disabled:opacity-50"
         />
       </div>
 
@@ -136,7 +136,7 @@ export function TaskFormWithReminder({
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             disabled={isPending}
-            className="w-full px-3 py-2.5 text-base md:text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-50 disabled:opacity-50"
+            className="w-full px-3 py-2.5 text-base md:text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50 disabled:opacity-50"
           >
             {CATEGORIES.map(cat => (
               <option key={cat.value} value={cat.value}>{cat.label}</option>
@@ -176,7 +176,7 @@ export function TaskFormWithReminder({
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
             disabled={isPending}
-            className="w-full px-3 py-2.5 text-base md:text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-50 disabled:opacity-50"
+            className="w-full px-3 py-2.5 text-base md:text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50 disabled:opacity-50"
           />
         </div>
         <div>
@@ -186,7 +186,7 @@ export function TaskFormWithReminder({
             value={dueTime}
             onChange={(e) => setDueTime(e.target.value)}
             disabled={isPending || !dueDate}
-            className="w-full px-3 py-2.5 text-base md:text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-50 disabled:opacity-50"
+            className="w-full px-3 py-2.5 text-base md:text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50 disabled:opacity-50"
           />
         </div>
       </div>
@@ -223,7 +223,7 @@ export function TaskFormWithReminder({
         <button
           type="submit"
           disabled={isPending || !title.trim()}
-          className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 active:bg-green-800 shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 active:bg-primary-800 shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
         >
           {isPending && (
             <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">

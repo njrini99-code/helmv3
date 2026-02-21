@@ -74,7 +74,7 @@ export function Pagination({
           disabled={currentPage === 1}
           className={cn(
             'h-11 px-2 rounded-lg text-sm font-medium transition-colors',
-            'focus:outline-none focus:ring-2 focus:ring-green-500/20',
+            'focus:outline-none focus:ring-2 focus:ring-primary-500/20',
             currentPage === 1
               ? 'text-warm-300 cursor-not-allowed'
               : 'text-warm-600 hover:bg-warm-100'
@@ -94,7 +94,7 @@ export function Pagination({
         disabled={currentPage === 1}
         className={cn(
           'h-11 px-2 rounded-lg text-sm font-medium transition-colors',
-          'focus:outline-none focus:ring-2 focus:ring-green-500/20',
+          'focus:outline-none focus:ring-2 focus:ring-primary-500/20',
           currentPage === 1
             ? 'text-warm-300 cursor-not-allowed'
             : 'text-warm-600 hover:bg-warm-100'
@@ -122,9 +122,9 @@ export function Pagination({
             onClick={() => onPageChange(page)}
             className={cn(
               'h-11 min-w-[44px] px-3 rounded-lg text-sm font-medium transition-colors',
-              'focus:outline-none focus:ring-2 focus:ring-green-500/20',
+              'focus:outline-none focus:ring-2 focus:ring-primary-500/20',
               isActive
-                ? 'bg-green-600 text-white shadow-sm'
+                ? 'bg-primary-600 text-white shadow-sm'
                 : 'text-warm-600 hover:bg-warm-100'
             )}
           >
@@ -140,7 +140,7 @@ export function Pagination({
         disabled={currentPage === totalPages}
         className={cn(
           'h-11 px-2 rounded-lg text-sm font-medium transition-colors',
-          'focus:outline-none focus:ring-2 focus:ring-green-500/20',
+          'focus:outline-none focus:ring-2 focus:ring-primary-500/20',
           currentPage === totalPages
             ? 'text-warm-300 cursor-not-allowed'
             : 'text-warm-600 hover:bg-warm-100'
@@ -157,7 +157,7 @@ export function Pagination({
           disabled={currentPage === totalPages}
           className={cn(
             'h-11 px-2 rounded-lg text-sm font-medium transition-colors',
-            'focus:outline-none focus:ring-2 focus:ring-green-500/20',
+            'focus:outline-none focus:ring-2 focus:ring-primary-500/20',
             currentPage === totalPages
               ? 'text-warm-300 cursor-not-allowed'
               : 'text-warm-600 hover:bg-warm-100'
@@ -209,7 +209,7 @@ export function CompactPagination({
           disabled={currentPage === 1}
           className={cn(
             'h-11 lg:h-8 px-3 rounded-lg border text-sm font-medium transition-colors',
-            'focus:outline-none focus:ring-2 focus:ring-green-500/20',
+            'focus:outline-none focus:ring-2 focus:ring-primary-500/20',
             currentPage === 1
               ? 'border-warm-200 text-warm-300 cursor-not-allowed'
               : 'border-warm-200 text-warm-600 hover:bg-warm-50 hover:border-warm-300'
@@ -223,7 +223,7 @@ export function CompactPagination({
           disabled={currentPage === totalPages}
           className={cn(
             'h-11 lg:h-8 px-3 rounded-lg border text-sm font-medium transition-colors',
-            'focus:outline-none focus:ring-2 focus:ring-green-500/20',
+            'focus:outline-none focus:ring-2 focus:ring-primary-500/20',
             currentPage === totalPages
               ? 'border-warm-200 text-warm-300 cursor-not-allowed'
               : 'border-warm-200 text-warm-600 hover:bg-warm-50 hover:border-warm-300'
@@ -258,7 +258,7 @@ export function PageSizeSelector({
         onChange={(e) => onChange(Number(e.target.value))}
         className={cn(
           'h-8 px-2 pr-7 rounded-lg border border-warm-200 bg-white text-sm',
-          'focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500',
+          'focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500',
           'appearance-none cursor-pointer'
         )}
         style={{

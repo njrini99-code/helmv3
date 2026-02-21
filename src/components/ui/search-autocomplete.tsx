@@ -195,13 +195,13 @@ export function SearchAutocomplete({
           autoCapitalize="off"
           spellCheck={false}
           className="w-full pl-9 pr-10 py-2 rounded-lg border border-warm-200
-                     focus:border-green-500 focus:ring-2 focus:ring-green-100
+                     focus:border-primary-500 focus:ring-2 focus:ring-primary-100
                      text-sm text-warm-900 placeholder:text-warm-400
                      transition-colors"
         />
         {loading && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2">
-            <div className="animate-spin h-4 w-4 border-2 border-green-600 border-t-transparent rounded-full" />
+            <div className="animate-spin h-4 w-4 border-2 border-primary-600 border-t-transparent rounded-full" />
           </div>
         )}
         {value && !loading && (
@@ -231,7 +231,7 @@ export function SearchAutocomplete({
                   onClick={() => handleSelectSuggestion(player)}
                   className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors
                     ${index === selectedIndex
-                      ? 'bg-green-50'
+                      ? 'bg-primary-50'
                       : 'hover:bg-warm-50'
                     }
                     ${index !== suggestions.length - 1 ? 'border-b border-warm-100' : ''}
@@ -269,7 +269,7 @@ export function SearchAutocomplete({
           </div>
           <div className="px-4 py-2 bg-warm-50 border-t border-warm-100">
             <p className="text-xs text-warm-500">
-              Press <kbd className="px-1.5 py-0.5 bg-white border border-warm-200 rounded text-[10px] font-medium">Enter</kbd> to search all results
+              Press <kbd className="px-1.5 py-0.5 bg-white border border-warm-200 rounded text-micro font-medium">Enter</kbd> to search all results
             </p>
           </div>
         </div>

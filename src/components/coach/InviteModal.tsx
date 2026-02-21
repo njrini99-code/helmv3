@@ -80,8 +80,8 @@ export function InviteModal({ teamId, teamName, coachId, onClose }: InviteModalP
         <CardHeader className="border-b border-slate-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center">
-                <IconLink size={20} className="text-green-600" />
+              <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center">
+                <IconLink size={20} className="text-primary-600" />
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-slate-900">Invite Players</h2>
@@ -134,9 +134,9 @@ export function InviteModal({ teamId, teamName, coachId, onClose }: InviteModalP
             </>
           ) : (
             <>
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+              <div className="bg-primary-50 border border-primary-200 rounded-lg p-4 mb-6">
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center flex-shrink-0">
                     <IconCheck size={18} className="text-white" />
                   </div>
                   <div>

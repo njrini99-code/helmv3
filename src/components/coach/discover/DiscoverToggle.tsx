@@ -105,7 +105,7 @@ export const DiscoverToggle = memo(function DiscoverToggle({
               className={cn(
                 'relative z-10 flex items-center gap-2 px-4 py-2 rounded-lg',
                 'text-sm font-medium transition-colors duration-200',
-                'focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2',
+                'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2',
                 isActive
                   ? 'text-slate-900'
                   : 'text-slate-500 hover:text-slate-700'
@@ -115,7 +115,7 @@ export const DiscoverToggle = memo(function DiscoverToggle({
                 size={18}
                 className={cn(
                   'transition-colors duration-200',
-                  isActive ? 'text-green-600' : 'text-slate-400'
+                  isActive ? 'text-primary-600' : 'text-slate-400'
                 )}
               />
               <span>{option.label}</span>
@@ -133,7 +133,7 @@ export const DiscoverToggle = memo(function DiscoverToggle({
                       'ml-1 px-2 py-0.5 text-xs font-semibold rounded-full',
                       'transition-colors duration-200',
                       isActive
-                        ? 'bg-green-100 text-green-700'
+                        ? 'bg-primary-100 text-primary-700'
                         : 'bg-slate-200/80 text-slate-500'
                     )}
                   >

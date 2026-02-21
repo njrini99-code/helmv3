@@ -27,7 +27,7 @@ export function BracketMockup() {
           "w-6 h-6 rounded bg-primary-100 border-2 border-primary-500",
           "flex items-center justify-center"
         )}>
-          <span className="text-[10px] font-bold text-primary-700">1</span>
+          <span className="text-micro font-bold text-primary-700">1</span>
         </div>
         <div className="w-3 h-4">
           <div className="w-0.5 h-3 bg-primary-500 mx-auto" />
@@ -46,7 +46,7 @@ function BracketSlot({ position, active }: { position: number; active?: boolean 
       active ? "border-primary-300 bg-primary-50/50" : "border-white/30"
     )}>
       <span className={cn(
-        "text-[10px] font-semibold",
+        "text-micro font-semibold",
         active ? "text-primary-700" : "text-slate-400"
       )}>
         {position}

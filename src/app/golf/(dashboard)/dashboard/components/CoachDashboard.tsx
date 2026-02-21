@@ -360,8 +360,8 @@ export function CoachDashboard({ data, enhancedData }: CoachDashboardProps) {
                                 'bg-warm-50/80 border border-warm-200/40',
                                 'text-xs text-warm-400'
                             )}>
-                                <kbd className="px-1 py-0.5 bg-white rounded text-[10px] font-medium shadow-sm border border-warm-200/60">&#8984;</kbd>
-                                <kbd className="px-1 py-0.5 bg-white rounded text-[10px] font-medium shadow-sm border border-warm-200/60">K</kbd>
+                                <kbd className="px-1 py-0.5 bg-white rounded text-micro font-medium shadow-sm border border-warm-200/60">&#8984;</kbd>
+                                <kbd className="px-1 py-0.5 bg-white rounded text-micro font-medium shadow-sm border border-warm-200/60">K</kbd>
                             </div>
                         </div>
                     </div>

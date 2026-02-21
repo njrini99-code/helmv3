@@ -352,12 +352,12 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                         {(!cls.start_time || cls.days.length === 0) && (
                           <div className="flex items-center gap-2 mt-1.5">
                             {!cls.start_time && (
-                              <span className="text-[10px] font-medium text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">
+                              <span className="text-micro font-medium text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">
                                 Missing time
                               </span>
                             )}
                             {cls.days.length === 0 && (
-                              <span className="text-[10px] font-medium text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">
+                              <span className="text-micro font-medium text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">
                                 Missing days
                               </span>
                             )}

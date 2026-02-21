@@ -89,7 +89,7 @@ export default function CohortRetentionMatrix({ cohorts }: CohortRetentionMatrix
         </table>
       </div>
 
-      <p className="text-[11px] text-warm-400 mt-4">
+      <p className="text-label text-warm-400 mt-4">
         Based on round submission activity
       </p>
     </div>

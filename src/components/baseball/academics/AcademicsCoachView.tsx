@@ -70,8 +70,8 @@ export function AcademicsCoachView({ teamData, teamId, onRefresh }: AcademicsCoa
         <Card variant="glass">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
-                <IconGraduationCap size={20} className="text-green-600" />
+              <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
+                <IconGraduationCap size={20} className="text-primary-600" />
               </div>
               <div>
                 <p className="text-sm text-slate-500">Team GPA</p>
@@ -86,8 +86,8 @@ export function AcademicsCoachView({ teamData, teamId, onRefresh }: AcademicsCoa
         <Card variant="glass">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
-                <IconCheck size={20} className="text-green-600" />
+              <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
+                <IconCheck size={20} className="text-primary-600" />
               </div>
               <div>
                 <p className="text-sm text-slate-500">Eligible</p>

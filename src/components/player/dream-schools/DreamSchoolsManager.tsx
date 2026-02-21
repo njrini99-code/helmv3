@@ -129,12 +129,12 @@ export function DreamSchoolsManager({ playerId, initialSchools = [] }: DreamScho
           {schools.map((school, index) => (
             <Card
               key={school.id}
-              className="p-4 hover:border-green-200 transition-colors"
+              className="p-4 hover:border-primary-200 transition-colors"
             >
               <div className="flex items-center gap-4">
                 {/* Rank Badge */}
-                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                  <span className="text-lg font-bold text-green-700">
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
+                  <span className="text-lg font-bold text-primary-700">
                     {index + 1}
                   </span>
                 </div>

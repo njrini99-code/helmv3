@@ -89,8 +89,8 @@ export function EventModal({ teamId, coachId, event, onClose, onSuccess }: Event
         <CardHeader className="border-b border-slate-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center">
-                <IconCalendar size={20} className="text-green-600" />
+              <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center">
+                <IconCalendar size={20} className="text-primary-600" />
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-slate-900">
@@ -140,7 +140,7 @@ export function EventModal({ teamId, coachId, event, onClose, onSuccess }: Event
                 required
                 defaultValue={event?.event_type || 'practice'}
                 className="w-full px-4 py-2.5 rounded-lg border border-slate-200
-                           focus:border-green-500 focus:ring-2 focus:ring-green-100
+                           focus:border-primary-500 focus:ring-2 focus:ring-primary-100
                            text-slate-900 bg-white transition-colors"
               >
                 <option value="practice">Practice</option>
@@ -238,7 +238,7 @@ export function EventModal({ teamId, coachId, event, onClose, onSuccess }: Event
                 name="home_away"
                 defaultValue={(event?.metadata as Record<string, unknown>)?.home_away as string || ''}
                 className="w-full px-4 py-2.5 rounded-lg border border-slate-200
-                           focus:border-green-500 focus:ring-2 focus:ring-green-100
+                           focus:border-primary-500 focus:ring-2 focus:ring-primary-100
                            text-slate-900 bg-white transition-colors"
               >
                 <option value="">Select...</option>
@@ -259,7 +259,7 @@ export function EventModal({ teamId, coachId, event, onClose, onSuccess }: Event
                 defaultValue={event?.description || ''}
                 placeholder="Add any additional details..."
                 className="w-full px-4 py-2.5 rounded-lg border border-slate-200
-                           focus:border-green-500 focus:ring-2 focus:ring-green-100
+                           focus:border-primary-500 focus:ring-2 focus:ring-primary-100
                            text-slate-900 placeholder:text-slate-400 transition-colors"
               />
             </div>
@@ -275,7 +275,7 @@ export function EventModal({ teamId, coachId, event, onClose, onSuccess }: Event
                 defaultValue={(event?.metadata as Record<string, unknown>)?.notes as string || ''}
                 placeholder="Private notes for coaches only..."
                 className="w-full px-4 py-2.5 rounded-lg border border-slate-200
-                           focus:border-green-500 focus:ring-2 focus:ring-green-100
+                           focus:border-primary-500 focus:ring-2 focus:ring-primary-100
                            text-slate-900 placeholder:text-slate-400 transition-colors"
               />
             </div>

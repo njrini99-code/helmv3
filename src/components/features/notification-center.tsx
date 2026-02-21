@@ -30,12 +30,12 @@ interface NotificationCenterProps {
 const typeIcons: Record<string, { icon: string; color: string }> = {
   profile_view: { icon: '👁️', color: 'bg-blue-100 text-blue-600' },
   watchlist_add: { icon: '⭐', color: 'bg-amber-100 text-amber-600' },
-  message: { icon: '💬', color: 'bg-green-100 text-green-600' },
+  message: { icon: '💬', color: 'bg-primary-100 text-primary-600' },
   evaluation: { icon: '📊', color: 'bg-purple-100 text-purple-600' },
   camp_interest: { icon: '🏕️', color: 'bg-cyan-100 text-cyan-600' },
   team_join: { icon: '👋', color: 'bg-emerald-100 text-emerald-600' },
   team_join_request: { icon: '🙋', color: 'bg-amber-100 text-amber-600' },
-  team_join_approved: { icon: '✅', color: 'bg-green-100 text-green-600' },
+  team_join_approved: { icon: '✅', color: 'bg-primary-100 text-primary-600' },
   team_join_rejected: { icon: '❌', color: 'bg-red-100 text-red-600' },
   other: { icon: '🔔', color: 'bg-slate-100 text-slate-600' },
 };

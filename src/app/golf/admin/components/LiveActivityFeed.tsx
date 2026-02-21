@@ -144,7 +144,7 @@ function ActivityEventItem({
           <p className={cn('text-sm font-medium truncate', config.color)}>
             {event.title}
           </p>
-          <span className="text-[10px] text-warm-400 tabular-nums whitespace-nowrap mt-0.5">
+          <span className="text-micro text-warm-400 tabular-nums whitespace-nowrap mt-0.5">
             {getRelativeTime(event.timestamp)}
           </span>
         </div>

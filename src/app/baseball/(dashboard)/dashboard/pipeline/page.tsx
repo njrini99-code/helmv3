@@ -382,7 +382,7 @@ export default function PipelinePage() {
         {watchlist.length === 0 && (
           <div className="relative glass-standard rounded-2xl p-8 mb-6 text-center overflow-hidden">
             <ShineEffect />
-            <IconUsers size={32} className="mx-auto mb-3 text-green-600" />
+            <IconUsers size={32} className="mx-auto mb-3 text-primary-600" />
             <h3 className="text-lg font-semibold tracking-tight text-slate-900 mb-2">Your pipeline is empty</h3>
             <p className="text-sm leading-relaxed text-slate-600 mb-4">
               Start by adding players to your watchlist from the Discover page.
@@ -447,7 +447,7 @@ export default function PipelinePage() {
                     onClick={() => setFilterTab(tab.value)}
                     className={`px-4 py-2 font-medium transition-colors border-b-2 -mb-px whitespace-nowrap flex-shrink-0 min-h-[44px] flex items-center gap-1.5 ${
                       filterTab === tab.value
-                        ? 'border-green-600 text-green-700'
+                        ? 'border-primary-600 text-primary-700'
                         : 'border-transparent text-slate-600 hover:text-slate-900'
                     }`}
                   >
@@ -455,7 +455,7 @@ export default function PipelinePage() {
                     {count > 0 && (
                       <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-semibold rounded-full ${
                         filterTab === tab.value
-                          ? 'bg-green-100 text-green-700'
+                          ? 'bg-primary-100 text-primary-700'
                           : 'bg-slate-100 text-slate-500'
                       }`}>
                         {count}
@@ -495,7 +495,7 @@ export default function PipelinePage() {
               <div className="relative glass-standard rounded-2xl p-5 mb-6 overflow-hidden">
                 <ShineEffect />
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-green-700">
+                  <p className="text-sm font-medium text-primary-700">
                     {selectedPlayers.size} player{selectedPlayers.size !== 1 ? 's' : ''} selected
                   </p>
                   <div className="flex items-center gap-3">
@@ -546,7 +546,7 @@ export default function PipelinePage() {
                           type="checkbox"
                           checked={selectedPlayers.has(item.id)}
                           onChange={() => togglePlayerSelection(item.id)}
-                          className="mt-1 rounded border-slate-300 text-green-600 focus:ring-green-500 w-5 h-5"
+                          className="mt-1 rounded border-slate-300 text-primary-600 focus:ring-primary-500 w-5 h-5"
                         />
                         <div
                           className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
@@ -607,7 +607,7 @@ export default function PipelinePage() {
                             value={noteValue}
                             onChange={(e) => setNoteValue(e.target.value)}
                             placeholder="Add notes about this player..."
-                            className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 text-slate-900 placeholder:text-slate-400 transition-colors resize-none text-base"
+                            className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-slate-900 placeholder:text-slate-400 transition-colors resize-none text-base"
                             rows={3}
                           />
                           <div className="flex gap-2">
@@ -666,17 +666,17 @@ export default function PipelinePage() {
                             type="checkbox"
                             checked={selectedPlayers.size === filteredWatchlist.length && filteredWatchlist.length > 0}
                             onChange={toggleSelectAll}
-                            className="rounded border-slate-300 text-green-600 focus:ring-green-500"
+                            className="rounded border-slate-300 text-primary-600 focus:ring-primary-500"
                           />
                         </th>
-                        <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400">Player</th>
-                        <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400">Position</th>
-                        <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400">Grad Year</th>
-                        <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400">Location</th>
-                        <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400">Status</th>
-                        <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400">Updated</th>
-                        <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400">Notes</th>
-                        <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400">Actions</th>
+                        <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-slate-400">Player</th>
+                        <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-slate-400">Position</th>
+                        <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-slate-400">Grad Year</th>
+                        <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-slate-400">Location</th>
+                        <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-slate-400">Status</th>
+                        <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-slate-400">Updated</th>
+                        <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-slate-400">Notes</th>
+                        <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-slate-400">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200">
@@ -688,7 +688,7 @@ export default function PipelinePage() {
                                 type="checkbox"
                                 checked={selectedPlayers.has(item.id)}
                                 onChange={() => togglePlayerSelection(item.id)}
-                                className="rounded border-slate-300 text-green-600 focus:ring-green-500"
+                                className="rounded border-slate-300 text-primary-600 focus:ring-primary-500"
                               />
                             </td>
                             <td className="px-6 py-4">
@@ -702,7 +702,7 @@ export default function PipelinePage() {
                                   size="md"
                                 />
                                 <div>
-                                  <p className="text-sm font-medium text-slate-900 group-hover:text-green-600 transition-colors">
+                                  <p className="text-sm font-medium text-slate-900 group-hover:text-primary-600 transition-colors">
                                     {getFullName(item.player?.first_name, item.player?.last_name)}
                                   </p>
                                   <p className="text-xs text-slate-500">
@@ -767,7 +767,7 @@ export default function PipelinePage() {
                                     value={noteValue}
                                     onChange={(e) => setNoteValue(e.target.value)}
                                     placeholder="Add notes about this player..."
-                                    className="flex-1 px-4 py-2.5 rounded-lg border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 text-slate-900 placeholder:text-slate-400 transition-colors resize-none"
+                                    className="flex-1 px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-slate-900 placeholder:text-slate-400 transition-colors resize-none"
                                     rows={3}
                                   />
                                   <div className="flex gap-2">

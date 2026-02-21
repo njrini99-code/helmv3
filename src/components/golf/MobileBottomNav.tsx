@@ -97,7 +97,7 @@ export function MobileBottomNav({ isCoach = true }: MobileBottomNavProps) {
                 )}
               </div>
               <span className={cn(
-                'text-[11px] font-medium transition-colors',
+                'text-label font-medium transition-colors',
                 isActive ? 'text-primary-600' : 'text-warm-500'
               )}>
                 {item.label}

@@ -67,7 +67,7 @@ export function V2ReviewSummary({ review }: V2ReviewSummaryProps) {
                 )}
               />
             </div>
-            <span className="text-[11px] font-semibold text-warm-500 tabular-nums">
+            <span className="text-label font-semibold text-warm-500 tabular-nums">
               {Math.round(calibratedConfidence * 100)}%
             </span>
           </div>
@@ -107,7 +107,7 @@ export function V2ReviewSummary({ review }: V2ReviewSummaryProps) {
             <div className="p-1 bg-primary-100 rounded-md">
               <IconTarget size={12} className="text-primary-600" />
             </div>
-            <span className="text-[11px] font-semibold text-primary-700 uppercase tracking-wider">Key Takeaway</span>
+            <span className="text-label font-semibold text-primary-700 uppercase tracking-wider">Key Takeaway</span>
           </div>
           <p className="text-sm font-medium text-primary-900 leading-relaxed">
             {takeaway}
@@ -126,7 +126,7 @@ export function V2ReviewSummary({ review }: V2ReviewSummaryProps) {
               <div className="p-1 bg-amber-100 rounded-md">
                 <IconTarget size={12} className="text-amber-600" />
               </div>
-              <span className="text-[11px] font-semibold text-amber-700 uppercase tracking-wider">Practice Priority</span>
+              <span className="text-label font-semibold text-amber-700 uppercase tracking-wider">Practice Priority</span>
             </div>
             <p className="text-sm font-medium text-amber-900 leading-relaxed">
               {practicePriority}
@@ -143,7 +143,7 @@ export function V2ReviewSummary({ review }: V2ReviewSummaryProps) {
           transition={{ delay: 0.6, duration: 0.35 }}
           className="flex items-center gap-2 flex-wrap"
         >
-          <div className="flex items-center gap-1.5 text-[11px] font-medium text-warm-500">
+          <div className="flex items-center gap-1.5 text-label font-medium text-warm-500">
             <IconChartBar size={12} />
             Focus:
           </div>
@@ -164,12 +164,12 @@ export function V2ReviewSummary({ review }: V2ReviewSummaryProps) {
       {/* Reasoning (collapsed by default) */}
       {reasoning.evidence && reasoning.evidence.length > 0 && (
         <details className="group">
-          <summary className="text-[11px] text-warm-400 cursor-pointer hover:text-warm-600 transition-colors select-none">
+          <summary className="text-label text-warm-400 cursor-pointer hover:text-warm-600 transition-colors select-none">
             Supporting evidence ({reasoning.evidence.length})
           </summary>
           <div className="mt-2 pl-3 border-l-2 border-warm-100 space-y-1.5">
             {reasoning.evidence.slice(0, 5).map((item: string, i: number) => (
-              <div key={i} className="text-[11px] text-warm-500 leading-relaxed">
+              <div key={i} className="text-label text-warm-500 leading-relaxed">
                 {item}
               </div>
             ))}

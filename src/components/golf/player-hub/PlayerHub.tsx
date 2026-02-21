@@ -276,7 +276,7 @@ function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => voi
           {/* Schedule */}
           <div className="grid grid-cols-2 gap-3">
             <div className="p-4 bg-warm-50 rounded-xl">
-              <p className="text-[10px] font-bold text-warm-400 uppercase tracking-widest mb-1.5">Depart</p>
+              <p className="text-micro font-bold text-warm-400 uppercase tracking-widest mb-1.5">Depart</p>
               <p className="font-semibold text-warm-900">{fmtDate(trip.departure_date)}</p>
               {trip.departure_time && (
                 <p className="text-sm text-warm-500 mt-0.5">{formatTime(trip.departure_time)}</p>
@@ -287,7 +287,7 @@ function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => voi
             </div>
             {trip.return_date && (
               <div className="p-4 bg-warm-50 rounded-xl">
-                <p className="text-[10px] font-bold text-warm-400 uppercase tracking-widest mb-1.5">Return</p>
+                <p className="text-micro font-bold text-warm-400 uppercase tracking-widest mb-1.5">Return</p>
                 <p className="font-semibold text-warm-900">{fmtDate(trip.return_date)}</p>
                 {trip.return_time && (
                   <p className="text-sm text-warm-500 mt-0.5">{formatTime(trip.return_time)}</p>
@@ -299,7 +299,7 @@ function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => voi
           {/* Hotel */}
           {trip.hotel_name && (
             <div className="p-4 bg-blue-50/70 rounded-xl">
-              <p className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-1.5">Lodging</p>
+              <p className="text-micro font-bold text-blue-500 uppercase tracking-widest mb-1.5">Lodging</p>
               <p className="font-semibold text-warm-900">{trip.hotel_name}</p>
               {trip.hotel_address && <p className="text-sm text-warm-600 mt-1">{trip.hotel_address}</p>}
               <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-warm-500">
@@ -312,7 +312,7 @@ function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => voi
           {/* Room Assignments */}
           {trip.room_assignments && (
             <div>
-              <p className="text-[10px] font-bold text-warm-400 uppercase tracking-widest mb-1.5">Room Assignment</p>
+              <p className="text-micro font-bold text-warm-400 uppercase tracking-widest mb-1.5">Room Assignment</p>
               <p className="text-sm text-warm-700">{trip.room_assignments}</p>
             </div>
           )}
@@ -320,13 +320,13 @@ function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => voi
           {/* Uniform & Gear */}
           {trip.uniform_requirements && (
             <div>
-              <p className="text-[10px] font-bold text-warm-400 uppercase tracking-widest mb-1.5">Uniform</p>
+              <p className="text-micro font-bold text-warm-400 uppercase tracking-widest mb-1.5">Uniform</p>
               <p className="text-sm text-warm-700">{trip.uniform_requirements}</p>
             </div>
           )}
           {trip.gear_list && (
             <div>
-              <p className="text-[10px] font-bold text-warm-400 uppercase tracking-widest mb-1.5">Gear List</p>
+              <p className="text-micro font-bold text-warm-400 uppercase tracking-widest mb-1.5">Gear List</p>
               <p className="text-sm text-warm-700">{trip.gear_list}</p>
             </div>
           )}
@@ -334,7 +334,7 @@ function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => voi
           {/* Flight */}
           {trip.flight_info && (
             <div>
-              <p className="text-[10px] font-bold text-warm-400 uppercase tracking-widest mb-1.5">Flight Info</p>
+              <p className="text-micro font-bold text-warm-400 uppercase tracking-widest mb-1.5">Flight Info</p>
               <p className="text-sm text-warm-700">{trip.flight_info}</p>
             </div>
           )}
@@ -342,7 +342,7 @@ function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => voi
           {/* Notes */}
           {trip.notes && (
             <div>
-              <p className="text-[10px] font-bold text-warm-400 uppercase tracking-widest mb-1.5">Notes</p>
+              <p className="text-micro font-bold text-warm-400 uppercase tracking-widest mb-1.5">Notes</p>
               <p className="text-sm text-warm-700">{trip.notes}</p>
             </div>
           )}
@@ -430,7 +430,7 @@ function PlayerTaskCard({
                 {task.title}
               </h3>
               {task.requires_upload && !isCompleted && (
-                <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 text-[10px] font-medium flex-shrink-0">
+                <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 text-micro font-medium flex-shrink-0">
                   <IconUpload size={10} />
                   Upload
                 </span>
@@ -540,11 +540,11 @@ function EventRSVPCard({
               )}
               <span className="flex items-center gap-1.5">
                 <IconUsers size={12} />
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-primary-50 text-primary-700 text-[10px] font-semibold">
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-primary-50 text-primary-700 text-micro font-semibold">
                   {event.going_count} going
                 </span>
                 {event.maybe_count > 0 && (
-                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[10px] font-semibold">
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 text-micro font-semibold">
                     {event.maybe_count} maybe
                   </span>
                 )}
@@ -553,7 +553,7 @@ function EventRSVPCard({
 
             {/* Mandatory event warning - shown proactively */}
             {!isPast && event.is_mandatory && event.rsvp_status !== 'accepted' && (
-              <p className="text-[10px] text-red-500 font-medium mb-2">Attendance required for this event</p>
+              <p className="text-micro text-red-500 font-medium mb-2">Attendance required for this event</p>
             )}
 
             {/* RSVP buttons */}
@@ -634,7 +634,7 @@ function OverviewSection({
           <h2 className="text-sm font-semibold text-warm-900 uppercase tracking-wider">{title}</h2>
           <span className="text-xs text-warm-400 font-medium">{count}</span>
           {urgentCount !== undefined && urgentCount > 0 && (
-            <span className="px-1.5 py-0.5 text-[10px] font-bold bg-red-500 text-white rounded-full min-w-[18px] text-center">
+            <span className="px-1.5 py-0.5 text-micro font-bold bg-red-500 text-white rounded-full min-w-[18px] text-center">
               {urgentCount}
             </span>
           )}

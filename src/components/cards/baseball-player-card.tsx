@@ -262,7 +262,7 @@ export function BaseballPlayerCard({
                 <div className="text-sm font-bold text-warm-900">
                   {formatStat(stat.key, player.stats?.[stat.key as keyof typeof player.stats])}
                 </div>
-                <div className="text-[10px] text-warm-500 uppercase tracking-wide">
+                <div className="text-micro text-warm-500 uppercase tracking-wide">
                   {stat.label}
                 </div>
               </div>

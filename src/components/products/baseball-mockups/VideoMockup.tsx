@@ -15,9 +15,9 @@ export function VideoMockup() {
         <div className="px-5 py-4 flex items-center justify-between border-b border-white/5">
           <div>
             <h3 className="font-semibold text-white text-sm tracking-tight">Video Library</h3>
-            <p className="text-[10px] text-white/40 mt-0.5">234 clips • 12.4 GB</p>
+            <p className="text-micro text-white/40 mt-0.5">234 clips • 12.4 GB</p>
           </div>
-          <button className="px-3 py-1.5 bg-blue-500 text-white text-[10px] font-semibold rounded-md hover:bg-blue-400 transition-colors tracking-wide uppercase">
+          <button className="px-3 py-1.5 bg-blue-500 text-white text-micro font-semibold rounded-md hover:bg-blue-400 transition-colors tracking-wide uppercase">
             Upload
           </button>
         </div>
@@ -69,9 +69,9 @@ export function VideoMockup() {
                   Highlight
                 </span>
                 <h4 className="text-white font-semibold text-sm">State Championship At-Bat</h4>
-                <p className="text-white/50 text-[11px]">Jake Martinez • Walk-off Double</p>
+                <p className="text-white/50 text-label">Jake Martinez • Walk-off Double</p>
               </div>
-              <span className="text-white/80 text-[11px] font-medium bg-black/60 px-2 py-1 rounded">0:45</span>
+              <span className="text-white/80 text-label font-medium bg-black/60 px-2 py-1 rounded">0:45</span>
             </div>
           </div>
 
@@ -84,8 +84,8 @@ export function VideoMockup() {
         {/* Video grid - clean visual thumbnails */}
         <div className="p-4">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-[10px] text-white/40 uppercase tracking-widest font-medium">Recent</span>
-            <span className="text-[10px] text-blue-400 hover:text-blue-300 cursor-pointer">View All</span>
+            <span className="text-micro text-white/40 uppercase tracking-widest font-medium">Recent</span>
+            <span className="text-micro text-blue-400 hover:text-blue-300 cursor-pointer">View All</span>
           </div>
 
           <div className="grid grid-cols-3 gap-2">
@@ -110,10 +110,10 @@ export function VideoMockup() {
 
         {/* Bottom actions - text only, no icons */}
         <div className="px-4 pb-4 flex gap-2">
-          <button className="flex-1 py-2.5 bg-white/5 hover:bg-white/10 text-white/60 text-[11px] font-medium rounded-lg transition-colors ring-1 ring-white/10">
+          <button className="flex-1 py-2.5 bg-white/5 hover:bg-white/10 text-white/60 text-label font-medium rounded-lg transition-colors ring-1 ring-white/10">
             Create Clip
           </button>
-          <button className="flex-1 py-2.5 bg-white/5 hover:bg-white/10 text-white/60 text-[11px] font-medium rounded-lg transition-colors ring-1 ring-white/10">
+          <button className="flex-1 py-2.5 bg-white/5 hover:bg-white/10 text-white/60 text-label font-medium rounded-lg transition-colors ring-1 ring-white/10">
             Share
           </button>
         </div>
@@ -166,7 +166,7 @@ function VideoThumb({ color, label, duration, isNew }: {
       </div>
 
       {/* Label */}
-      <p className="text-[10px] text-white/50 mt-1.5 truncate">{label}</p>
+      <p className="text-micro text-white/50 mt-1.5 truncate">{label}</p>
     </div>
   );
 }

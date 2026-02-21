@@ -367,12 +367,12 @@ export function PlayerComparison({
                           key={player.id}
                           className={cn(
                             'px-4 py-3 text-center text-sm transition-colors',
-                            isBest && 'bg-green-50 font-semibold text-green-900'
+                            isBest && 'bg-primary-50 font-semibold text-primary-900'
                           )}
                         >
                           <div className="flex items-center justify-center gap-1">
                             {isBest && (
-                              <IconCheck size={14} className="text-green-600" />
+                              <IconCheck size={14} className="text-primary-600" />
                             )}
                             {formattedValue}
                           </div>
@@ -390,7 +390,7 @@ export function PlayerComparison({
           <div className="p-6 border-t border-border-light bg-white">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <IconChartRadar size={20} className="text-green-600" />
+                <IconChartRadar size={20} className="text-primary-600" />
                 <h3 className="text-base font-semibold text-slate-900">Performance Radar</h3>
               </div>
               <Button

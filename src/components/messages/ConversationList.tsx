@@ -117,7 +117,7 @@ export function ConversationList({
                   className={cn(
                     'w-full px-4 py-3 flex items-start gap-3 text-left transition-colors',
                     'hover:bg-slate-50',
-                    selectedId === conversation.id && 'bg-green-50 hover:bg-green-50'
+                    selectedId === conversation.id && 'bg-primary-50 hover:bg-primary-50'
                   )}
                 >
                   <div className="relative">
@@ -127,7 +127,7 @@ export function ConversationList({
                       size="md"
                     />
                     {(conversation.unread_count ?? 0) > 0 && (
-                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-green-600 text-white text-xs font-medium rounded-full flex items-center justify-center">
+                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary-600 text-white text-xs font-medium rounded-full flex items-center justify-center">
                         {(conversation.unread_count ?? 0) > 9 ? '9+' : conversation.unread_count}
                       </span>
                     )}
@@ -148,7 +148,7 @@ export function ConversationList({
                     </div>
                     <div className="flex items-center gap-1">
                       {isCoachUser && (
-                        <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-[10px] font-medium rounded flex-shrink-0">
+                        <span className="px-1.5 py-0.5 bg-primary-100 text-primary-700 text-micro font-medium rounded flex-shrink-0">
                           Coach
                         </span>
                       )}

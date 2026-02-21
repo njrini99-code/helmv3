@@ -288,7 +288,7 @@ export function EmptyState({
   if (variant === 'card') {
     const cardContent = (
       <div className="p-8 text-center animate-fade-in">
-        <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-green-50 to-emerald-50 flex items-center justify-center text-green-600">
+        <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-primary-50 to-emerald-50 flex items-center justify-center text-primary-600">
           {finalIcon}
         </div>
         <h3 className="text-lg font-semibold text-warm-900 tracking-tight mb-2">{finalTitle}</h3>
@@ -332,7 +332,7 @@ export function EmptyState({
   return (
     <div className={cn('text-center py-16 px-4 animate-fade-in', className)}>
       <div className="relative w-20 h-20 mx-auto mb-6">
-        <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-green-100/50 to-emerald-100/50 animate-pulse" />
+        <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary-100/50 to-emerald-100/50 animate-pulse" />
         <div className="relative w-full h-full rounded-2xl bg-warm-100 flex items-center justify-center text-warm-400">
           {finalIcon}
         </div>

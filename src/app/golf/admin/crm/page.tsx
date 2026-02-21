@@ -405,7 +405,7 @@ export default function CRMPage() {
                   <TabIcon size={20} className={cn('flex-shrink-0', isActive ? 'text-primary-400' : 'text-warm-400 group-hover:text-white')} />
                   {!sidebarCollapsed && <span className="text-sm font-medium flex-1 text-left">{tab.label}</span>}
                   {!sidebarCollapsed && (
-                    <span className={cn('text-[10px] px-1.5 py-0.5 rounded font-mono', isActive ? 'bg-white/10 text-warm-300' : 'bg-white/5 text-warm-500')}>
+                    <span className={cn('text-micro px-1.5 py-0.5 rounded font-mono', isActive ? 'bg-white/10 text-warm-300' : 'bg-white/5 text-warm-500')}>
                       {tab.shortcut}
                     </span>
                   )}

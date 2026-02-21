@@ -182,8 +182,8 @@ export function CheckboxField({
         onChange={(e) => onChange?.(e.target.checked)}
         disabled={disabled}
         className={cn(
-          'mt-0.5 w-4 h-4 rounded border-warm-300 text-green-600',
-          'focus:ring-green-500 focus:ring-offset-0',
+          'mt-0.5 w-4 h-4 rounded border-warm-300 text-primary-600',
+          'focus:ring-primary-500 focus:ring-offset-0',
           'disabled:bg-warm-100'
         )}
       />
@@ -229,7 +229,7 @@ export function RadioGroup({
           className={cn(
             'flex items-start gap-3 cursor-pointer p-3 rounded-xl border transition-colors',
             value === option.value
-              ? 'border-green-200 bg-green-50'
+              ? 'border-primary-200 bg-primary-50'
               : 'border-warm-200 hover:border-warm-300',
             disabled && 'cursor-not-allowed opacity-50'
           )}
@@ -242,8 +242,8 @@ export function RadioGroup({
             onChange={(e) => onChange?.(e.target.value)}
             disabled={disabled}
             className={cn(
-              'mt-0.5 w-4 h-4 border-warm-300 text-green-600',
-              'focus:ring-green-500 focus:ring-offset-0'
+              'mt-0.5 w-4 h-4 border-warm-300 text-primary-600',
+              'focus:ring-primary-500 focus:ring-offset-0'
             )}
           />
           <div>
@@ -297,8 +297,8 @@ export function SwitchField({
         onClick={() => onChange?.(!checked)}
         className={cn(
           'relative inline-flex h-6 w-11 flex-shrink-0 rounded-full transition-colors duration-200',
-          'focus:outline-none focus:ring-2 focus:ring-green-500/20',
-          checked ? 'bg-green-600' : 'bg-warm-200',
+          'focus:outline-none focus:ring-2 focus:ring-primary-500/20',
+          checked ? 'bg-primary-600' : 'bg-warm-200',
           disabled && 'cursor-not-allowed opacity-50'
         )}
       >

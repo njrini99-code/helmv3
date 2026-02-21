@@ -75,8 +75,8 @@ export function InsightsFeed({ insights }: InsightsFeedProps) {
       <div className="glass-standard rounded-2xl p-6">
         <h3 className="font-semibold text-slate-900 mb-4">Insights</h3>
         <div className="text-center py-8">
-          <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3">
-            <IconCheck size={20} className="text-green-600" />
+          <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center mx-auto mb-3">
+            <IconCheck size={20} className="text-primary-600" />
           </div>
           <p className="text-sm text-slate-600">All clear!</p>
           <p className="text-xs text-slate-400 mt-1">
@@ -120,7 +120,7 @@ export function InsightsFeed({ insights }: InsightsFeedProps) {
                       {insight.title}
                     </p>
                     <span
-                      className={`text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded ${
+                      className={`text-micro uppercase font-semibold px-1.5 py-0.5 rounded ${
                         insight.priority === 'urgent'
                           ? 'bg-red-200 text-red-800'
                           : insight.priority === 'high'
@@ -183,7 +183,7 @@ export function InsightsFeed({ insights }: InsightsFeedProps) {
         })}
 
         {sortedInsights.length > 5 && (
-          <button className="w-full text-center text-sm text-green-600 hover:text-green-700 py-2">
+          <button className="w-full text-center text-sm text-primary-600 hover:text-primary-700 py-2">
             View all {sortedInsights.length} insights
           </button>
         )}

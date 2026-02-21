@@ -101,9 +101,9 @@ export function ReminderPicker({
           disabled={disabled || !dueDate}
           className={cn(
             'relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2',
             'disabled:cursor-not-allowed disabled:opacity-50',
-            isEnabled ? 'bg-green-600' : 'bg-slate-200'
+            isEnabled ? 'bg-primary-600' : 'bg-slate-200'
           )}
         >
           <span
@@ -121,7 +121,7 @@ export function ReminderPicker({
 
       {/* Reminder options */}
       {isEnabled && dueDate && (
-        <div className="space-y-3 pl-6 border-l-2 border-green-100">
+        <div className="space-y-3 pl-6 border-l-2 border-primary-100">
           <div className="space-y-2">
             <label className="block text-xs font-medium text-slate-600">
               When to remind
@@ -135,10 +135,10 @@ export function ReminderPicker({
                   disabled={disabled}
                   className={cn(
                     'px-3 py-1.5 text-xs font-medium rounded-full border transition-colors',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
                     'disabled:cursor-not-allowed disabled:opacity-50',
                     selectedPreset === preset.value
-                      ? 'bg-green-50 text-green-700 border-green-200'
+                      ? 'bg-primary-50 text-primary-700 border-primary-200'
                       : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50 active:bg-slate-100'
                   )}
                 >
@@ -158,7 +158,7 @@ export function ReminderPicker({
                   value={customDate}
                   onChange={(e) => handleCustomChange(e.target.value, customTime)}
                   disabled={disabled}
-                  className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-50 disabled:opacity-50"
+                  className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50 disabled:opacity-50"
                 />
               </div>
               <div>
@@ -168,7 +168,7 @@ export function ReminderPicker({
                   value={customTime}
                   onChange={(e) => handleCustomChange(customDate, e.target.value)}
                   disabled={disabled}
-                  className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-50 disabled:opacity-50"
+                  className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50 disabled:opacity-50"
                 />
               </div>
             </div>
@@ -176,9 +176,9 @@ export function ReminderPicker({
 
           {/* Preview */}
           {value && (
-            <div className="flex items-center gap-2 p-2 bg-green-50 rounded-lg">
-              <IconBell size={14} className="text-green-600" />
-              <span className="text-xs text-green-700">
+            <div className="flex items-center gap-2 p-2 bg-primary-50 rounded-lg">
+              <IconBell size={14} className="text-primary-600" />
+              <span className="text-xs text-primary-700">
                 Reminder set for {new Date(value).toLocaleString()}
               </span>
             </div>

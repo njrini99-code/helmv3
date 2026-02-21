@@ -173,12 +173,12 @@ export function PhilosophySettingsClient({
                   onClick={() => setAlertSensitivity(level)}
                   className={`p-4 rounded-xl border-2 transition-all ${
                     alertSensitivity === level
-                      ? 'border-green-500 bg-green-50'
+                      ? 'border-primary-500 bg-primary-50'
                       : 'border-slate-200 hover:border-slate-300'
                   }`}
                 >
                   <p className={`font-medium capitalize ${
-                    alertSensitivity === level ? 'text-green-700' : 'text-slate-700'
+                    alertSensitivity === level ? 'text-primary-700' : 'text-slate-700'
                   }`}>
                     {level}
                   </p>
@@ -222,7 +222,7 @@ export function PhilosophySettingsClient({
                   step="0.5"
                   value={declineThreshold}
                   onChange={(e) => setDeclineThreshold(parseFloat(e.target.value))}
-                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-green-600"
+                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-primary-600"
                 />
                 <p className="text-xs text-slate-500 mt-1">
                   Alert when a player&apos;s performance drops by this percentage
@@ -246,7 +246,7 @@ export function PhilosophySettingsClient({
                   step="0.5"
                   value={pressureGapThreshold}
                   onChange={(e) => setPressureGapThreshold(parseFloat(e.target.value))}
-                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-green-600"
+                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-primary-600"
                 />
                 <p className="text-xs text-slate-500 mt-1">
                   Alert when game vs practice performance differs by this amount
@@ -270,7 +270,7 @@ export function PhilosophySettingsClient({
                   step="0.5"
                   value={bubbleZoneRange}
                   onChange={(e) => setBubbleZoneRange(parseFloat(e.target.value))}
-                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-green-600"
+                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-primary-600"
                 />
                 <p className="text-xs text-slate-500 mt-1">
                   Range around team average to consider a player &quot;on the bubble&quot;
@@ -282,8 +282,8 @@ export function PhilosophySettingsClient({
           {/* Priority Rankings */}
           <div className="glass-standard rounded-2xl p-6">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                <IconSparkles size={20} className="text-green-600" />
+              <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
+                <IconSparkles size={20} className="text-primary-600" />
               </div>
               <div>
                 <h3 className="font-semibold text-slate-900">Development Priorities</h3>
@@ -297,7 +297,7 @@ export function PhilosophySettingsClient({
                   key={priority.key}
                   className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl"
                 >
-                  <span className="w-8 h-8 rounded-full bg-green-100 text-green-700 font-semibold text-sm flex items-center justify-center">
+                  <span className="w-8 h-8 rounded-full bg-primary-100 text-primary-700 font-semibold text-sm flex items-center justify-center">
                     {index + 1}
                   </span>
                   <div className="flex-1">

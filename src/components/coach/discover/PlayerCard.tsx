@@ -94,7 +94,7 @@ const PlayerCardComponent = function PlayerCard({
           "bg-white/70 backdrop-blur-md border border-white/40",
           "transition-all duration-200",
           "hover:-translate-y-0.5 hover:shadow-md hover:border-white/60",
-          isSelected && "ring-2 ring-green-500 ring-offset-2 border-green-200",
+          isSelected && "ring-2 ring-primary-500 ring-offset-2 border-primary-200",
           className
         )}
       >
@@ -107,8 +107,8 @@ const PlayerCardComponent = function PlayerCard({
             className={cn(
               'w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-200 flex-shrink-0',
               isSelected
-                ? 'bg-green-600 border-green-600 text-white scale-110'
-                : 'border-slate-300 hover:border-green-500 bg-white'
+                ? 'bg-primary-600 border-primary-600 text-white scale-110'
+                : 'border-slate-300 hover:border-primary-500 bg-white'
             )}
           >
             {isSelected && <IconCheck size={12} />}
@@ -143,7 +143,7 @@ const PlayerCardComponent = function PlayerCard({
         "bg-white/70 backdrop-blur-md border border-white/40",
         "transition-all duration-200",
         "hover:-translate-y-1 hover:shadow-xl hover:border-white/60",
-        isSelected && "ring-2 ring-green-500 ring-offset-2 border-green-200",
+        isSelected && "ring-2 ring-primary-500 ring-offset-2 border-primary-200",
         isFeatured && "ring-2 ring-amber-400/50 ring-offset-2 ring-offset-white shadow-amber-100",
         className
       )}>
@@ -157,8 +157,8 @@ const PlayerCardComponent = function PlayerCard({
               className={cn(
                 'w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-200',
                 isSelected
-                  ? 'bg-green-600 border-green-600 text-white scale-110'
-                  : 'border-slate-300 hover:border-green-500 bg-white/90 backdrop-blur-sm'
+                  ? 'bg-primary-600 border-primary-600 text-white scale-110'
+                  : 'border-slate-300 hover:border-primary-500 bg-white/90 backdrop-blur-sm'
               )}
             >
               {isSelected && <IconCheck size={14} />}
@@ -265,7 +265,7 @@ const PlayerCardComponent = function PlayerCard({
       "transition-all duration-200",
       "hover:-translate-y-1 hover:shadow-lg hover:border-white/60",
       "group",
-      isSelected && "ring-2 ring-green-500 ring-offset-2 border-green-200",
+      isSelected && "ring-2 ring-primary-500 ring-offset-2 border-primary-200",
       isFeatured && "ring-2 ring-amber-400/50 ring-offset-2 ring-offset-white shadow-amber-100",
       className
     )}>
@@ -279,8 +279,8 @@ const PlayerCardComponent = function PlayerCard({
             className={cn(
               'w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-200',
               isSelected
-                ? 'bg-green-600 border-green-600 text-white scale-110'
-                : 'border-slate-300 hover:border-green-500 bg-white/90 backdrop-blur-sm'
+                ? 'bg-primary-600 border-primary-600 text-white scale-110'
+                : 'border-slate-300 hover:border-primary-500 bg-white/90 backdrop-blur-sm'
             )}
           >
             {isSelected && <IconCheck size={14} />}

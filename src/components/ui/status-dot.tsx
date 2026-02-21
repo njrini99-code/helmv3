@@ -11,12 +11,12 @@ interface StatusDotProps {
 }
 
 const variantColors: Record<StatusDotVariant, string> = {
-  success: 'bg-green-500',
+  success: 'bg-primary-500',
   warning: 'bg-amber-500',
   error: 'bg-red-500',
   info: 'bg-blue-500',
   neutral: 'bg-warm-400',
-  active: 'bg-green-500',
+  active: 'bg-primary-500',
 };
 
 export function StatusDot({
@@ -60,7 +60,7 @@ export function PipelineStatusDot({
     watchlist: { color: 'bg-warm-400', label: 'Prospects' },
     high_priority: { color: 'bg-amber-500', label: 'High Priority' },
     offer_extended: { color: 'bg-blue-500', label: 'Offer Extended' },
-    committed: { color: 'bg-green-500', label: 'Committed' },
+    committed: { color: 'bg-primary-500', label: 'Committed' },
     uninterested: { color: 'bg-warm-300', label: 'Not Interested' },
   };
 

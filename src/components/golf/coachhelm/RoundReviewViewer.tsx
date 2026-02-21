@@ -399,7 +399,7 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
             <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary-300/60 to-transparent" />
             <div className="flex items-center gap-2 px-3 py-1.5 bg-primary-50/80 rounded-full border border-primary-200/40">
               <IconSparkles size={12} className="text-primary-600" />
-              <span className="text-[11px] font-semibold text-primary-700 uppercase tracking-wider">AI Intelligence</span>
+              <span className="text-label font-semibold text-primary-700 uppercase tracking-wider">AI Intelligence</span>
             </div>
             <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary-300/60 to-transparent" />
           </div>
@@ -489,27 +489,27 @@ function ScorecardStrip({
         <table className="w-full border-collapse text-center">
           <thead>
             <tr>
-              <th className="text-[10px] font-semibold text-warm-400 uppercase w-12 text-left py-2">{label}</th>
+              <th className="text-micro font-semibold text-warm-400 uppercase w-12 text-left py-2">{label}</th>
               {nineHoles.map(h => (
-                <th key={h.hole} className="text-[11px] font-semibold text-warm-500 py-2 w-[calc((100%-96px)/9)]">
+                <th key={h.hole} className="text-label font-semibold text-warm-500 py-2 w-[calc((100%-96px)/9)]">
                   {h.hole}
                 </th>
               ))}
-              <th className="text-[10px] font-semibold text-warm-500 uppercase w-12 py-2">Tot</th>
+              <th className="text-micro font-semibold text-warm-500 uppercase w-12 py-2">Tot</th>
             </tr>
           </thead>
           <tbody>
             {/* Par row */}
             <tr className="border-t border-warm-100">
-              <td className="text-[10px] text-warm-400 text-left py-1.5">Par</td>
+              <td className="text-micro text-warm-400 text-left py-1.5">Par</td>
               {nineHoles.map(h => (
-                <td key={h.hole} className="text-[11px] text-warm-400 py-1.5">{h.par}</td>
+                <td key={h.hole} className="text-label text-warm-400 py-1.5">{h.par}</td>
               ))}
-              <td className="text-[11px] text-warm-500 font-medium py-1.5">{totalPar}</td>
+              <td className="text-label text-warm-500 font-medium py-1.5">{totalPar}</td>
             </tr>
             {/* Score row */}
             <tr>
-              <td className="text-[10px] text-warm-500 font-medium text-left py-2">Score</td>
+              <td className="text-micro text-warm-500 font-medium text-left py-2">Score</td>
               {nineHoles.map((h, i) => (
                 <td key={h.hole} className="py-2">
                   <motion.span
@@ -536,16 +536,16 @@ function ScorecardStrip({
             </tr>
             {/* Putts row */}
             <tr className="border-t border-warm-50">
-              <td className="text-[10px] text-warm-400 text-left py-1.5">Putts</td>
+              <td className="text-micro text-warm-400 text-left py-1.5">Putts</td>
               {nineHoles.map(h => (
                 <td key={h.hole} className={cn(
-                  'text-[11px] py-1.5 font-medium',
+                  'text-label py-1.5 font-medium',
                   h.threePutt ? 'text-red-500 font-bold' : h.onePutt ? 'text-primary-600' : 'text-warm-400',
                 )}>
                   {h.putts}
                 </td>
               ))}
-              <td className="text-[11px] text-warm-500 font-medium py-1.5">{halfStats.putts}</td>
+              <td className="text-label text-warm-500 font-medium py-1.5">{halfStats.putts}</td>
             </tr>
           </tbody>
         </table>
@@ -595,7 +595,7 @@ function ScorecardStrip({
       </div>
 
       {/* Scorecard legend */}
-      <div className="mt-3 flex items-center gap-3 text-[10px]">
+      <div className="mt-3 flex items-center gap-3 text-micro">
         <div className="flex items-center gap-1"><span className="w-4 h-4 rounded bg-amber-400" /> <span className="text-warm-400">Eagle+</span></div>
         <div className="flex items-center gap-1"><span className="w-4 h-4 rounded bg-primary-500" /> <span className="text-warm-400">Birdie</span></div>
         <div className="flex items-center gap-1"><span className="w-4 h-4 rounded bg-warm-100" /> <span className="text-warm-400">Par</span></div>
@@ -678,9 +678,9 @@ function KeyStatsGrid({ stats }: { stats: RoundReviewContent['keyStats'] }) {
                 stat.comparison === 'average' && 'bg-warm-50/60 border-warm-100',
               )}
             >
-              <p className="text-[11px] font-medium text-warm-500 mb-0.5">{formatLabel(stat.label)}</p>
+              <p className="text-label font-medium text-warm-500 mb-0.5">{formatLabel(stat.label)}</p>
               <p className="text-2xl font-bold text-warm-900 tabular-nums">{stat.value}</p>
-              <p className={cn('text-[11px] font-semibold mt-0.5', cmp.color)}>
+              <p className={cn('text-label font-semibold mt-0.5', cmp.color)}>
                 {cmp.icon} {cmp.label}
               </p>
             </motion.div>
@@ -764,7 +764,7 @@ function MomentumChart({ data }: { data: RoundReviewContent['momentumData'] }) {
           })}
         </div>
       </div>
-      <div className="flex justify-between mt-2 text-[10px] text-warm-400">
+      <div className="flex justify-between mt-2 text-micro text-warm-400">
         <span>Hole 1</span>
         <span className={cn(
           'font-bold text-xs',
@@ -817,7 +817,7 @@ function GameBreakdownSection({
                 className={cn('text-center p-3 rounded-xl', item.bg)}
               >
                 <div className={cn('text-2xl font-bold tabular-nums', item.textColor)}>{item.value}</div>
-                <div className="text-[10px] text-warm-500 font-medium mt-0.5">{item.label}</div>
+                <div className="text-micro text-warm-500 font-medium mt-0.5">{item.label}</div>
               </motion.div>
             ))}
           </div>
@@ -861,7 +861,7 @@ function GameBreakdownSection({
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {putting.threePuttHoles.map(tp => (
-                  <span key={tp.hole} className="text-[11px] px-2.5 py-0.5 bg-red-100 text-red-700 rounded-full font-medium">
+                  <span key={tp.hole} className="text-label px-2.5 py-0.5 bg-red-100 text-red-700 rounded-full font-medium">
                     #{tp.hole}{tp.firstPuttFeet ? ` (${Math.round(tp.firstPuttFeet)}ft)` : ''}
                   </span>
                 ))}
@@ -882,13 +882,13 @@ function GameBreakdownSection({
             {driving.avgDistance !== null && (
               <div className="text-center p-3 rounded-xl bg-warm-50">
                 <div className="text-2xl font-bold text-warm-900 tabular-nums">{driving.avgDistance}y</div>
-                <div className="text-[10px] text-warm-500 font-medium mt-0.5">Avg Distance</div>
+                <div className="text-micro text-warm-500 font-medium mt-0.5">Avg Distance</div>
               </div>
             )}
             {driving.longestDrive && (
               <div className="text-center p-3 rounded-xl bg-warm-50">
                 <div className="text-2xl font-bold text-warm-900 tabular-nums">{driving.longestDrive.distance}y</div>
-                <div className="text-[10px] text-warm-500 font-medium mt-0.5">Longest (#{driving.longestDrive.hole})</div>
+                <div className="text-micro text-warm-500 font-medium mt-0.5">Longest (#{driving.longestDrive.hole})</div>
               </div>
             )}
             {driving.fairwayPct !== null && (
@@ -899,7 +899,7 @@ function GameBreakdownSection({
                 )}>
                   {driving.fairwayPct}%
                 </div>
-                <div className="text-[10px] text-warm-500 font-medium mt-0.5">Fairway Hit</div>
+                <div className="text-micro text-warm-500 font-medium mt-0.5">Fairway Hit</div>
               </div>
             )}
           </div>
@@ -907,9 +907,9 @@ function GameBreakdownSection({
           {/* Miss pattern */}
           {driving.missPattern.total > 0 && (
             <div className="p-3.5 bg-warm-50 rounded-xl">
-              <div className="text-[11px] font-medium text-warm-600 mb-2">Miss Direction ({driving.missPattern.total} misses)</div>
+              <div className="text-label font-medium text-warm-600 mb-2">Miss Direction ({driving.missPattern.total} misses)</div>
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-semibold text-warm-700 w-8">Left</span>
+                <span className="text-label font-semibold text-warm-700 w-8">Left</span>
                 <div className="flex-1 h-3.5 bg-warm-200 rounded-full overflow-hidden flex">
                   <motion.div
                     initial={{ width: 0 }}
@@ -925,9 +925,9 @@ function GameBreakdownSection({
                     className="bg-orange-400 h-full rounded-r-full"
                   />
                 </div>
-                <span className="text-[11px] font-semibold text-warm-700 w-8 text-right">Right</span>
+                <span className="text-label font-semibold text-warm-700 w-8 text-right">Right</span>
               </div>
-              <div className="flex justify-between mt-1.5 text-[10px] text-warm-500">
+              <div className="flex justify-between mt-1.5 text-micro text-warm-500">
                 <span>{driving.missPattern.left} ({driving.missPattern.total > 0 ? Math.round((driving.missPattern.left / driving.missPattern.total) * 100) : 0}%)</span>
                 <span>{driving.missPattern.right} ({driving.missPattern.total > 0 ? Math.round((driving.missPattern.right / driving.missPattern.total) * 100) : 0}%)</span>
               </div>
@@ -952,7 +952,7 @@ function GameBreakdownSection({
                 )}>
                   {shortGame.scramblePct}%
                 </div>
-                <div className="text-[10px] text-warm-500 font-medium mt-0.5">
+                <div className="text-micro text-warm-500 font-medium mt-0.5">
                   Scramble ({shortGame.scrambleSuccesses}/{shortGame.scrambleAttempts})
                 </div>
               </div>
@@ -965,7 +965,7 @@ function GameBreakdownSection({
                 )}>
                   {shortGame.sandSavePct !== null ? `${shortGame.sandSavePct}%` : '--'}
                 </div>
-                <div className="text-[10px] text-warm-500 font-medium mt-0.5">
+                <div className="text-micro text-warm-500 font-medium mt-0.5">
                   Sand Save ({shortGame.sandSuccesses}/{shortGame.sandAttempts})
                 </div>
               </div>
@@ -983,7 +983,7 @@ function GameBreakdownSection({
                   className="flex items-center gap-2.5 text-xs px-3 py-2 rounded-lg bg-warm-50/50 border border-warm-100/50"
                 >
                   <span className={cn(
-                    'w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold',
+                    'w-5 h-5 rounded-full flex items-center justify-center text-micro font-bold',
                     ud.success ? 'bg-primary-100 text-primary-700' : 'bg-red-100 text-red-600',
                   )}>
                     {ud.success ? '\u2713' : '\u2717'}
@@ -1028,7 +1028,7 @@ function HighlightsAndImprovements({
                 className="p-3.5 rounded-xl bg-white/80 border border-primary-100 shadow-sm"
               >
                 <div className="text-xs font-semibold text-warm-900">{formatLabel(h.title)}</div>
-                <p className="text-[11px] text-warm-600 mt-1 leading-relaxed">{h.description}</p>
+                <p className="text-label text-warm-600 mt-1 leading-relaxed">{h.description}</p>
               </motion.div>
             ))}
           </div>
@@ -1050,7 +1050,7 @@ function HighlightsAndImprovements({
                 className="p-3.5 rounded-xl bg-white/80 border border-amber-100 shadow-sm"
               >
                 <div className="text-xs font-semibold text-warm-900">{formatLabel(area.area)}</div>
-                <p className="text-[11px] text-warm-600 mt-1 leading-relaxed">{area.recommendation}</p>
+                <p className="text-label text-warm-600 mt-1 leading-relaxed">{area.recommendation}</p>
               </motion.div>
             ))}
           </div>
@@ -1084,7 +1084,7 @@ function StrokesToGainCard({ items }: { items: StrokesToGainItem[] }) {
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-xs font-semibold text-warm-900">{formatLabel(item.category)}</div>
-              <p className="text-[11px] text-warm-600 mt-0.5 leading-relaxed">{item.description}</p>
+              <p className="text-label text-warm-600 mt-0.5 leading-relaxed">{item.description}</p>
             </div>
           </motion.div>
         ))}
@@ -1110,7 +1110,7 @@ function RecommendationsCard({ recs }: { recs: string[] }) {
             transition={{ delay: 0.1 * i, duration: 0.35 }}
             className="flex items-start gap-3 p-3.5 rounded-xl bg-warm-50/50 border border-warm-100/50"
           >
-            <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-white flex items-center justify-center text-[10px] font-bold mt-0.5 shadow-sm">
+            <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-white flex items-center justify-center text-micro font-bold mt-0.5 shadow-sm">
               {i + 1}
             </span>
             <p className="text-xs text-warm-700 leading-relaxed">{rec}</p>

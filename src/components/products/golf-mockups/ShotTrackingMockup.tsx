@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
  */
 export function ShotTrackingMockup() {
   return (
-    <div className="relative w-full h-full min-h-[200px] rounded-xl overflow-hidden bg-gradient-to-br from-emerald-50 to-green-100">
+    <div className="relative w-full h-full min-h-[200px] rounded-xl overflow-hidden bg-gradient-to-br from-emerald-50 to-primary-100">
       {/* Course illustration */}
       <div className="absolute inset-0">
         {/* Fairway */}
@@ -87,7 +87,7 @@ function ShotDataBadge({ label, value }: { label: string; value: string }) {
       "border border-white/40",
       "shadow-[0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_0_rgba(255,255,255,0.5)]"
     )}>
-      <p className="text-[10px] text-slate-500">{label}</p>
+      <p className="text-micro text-slate-500">{label}</p>
       <p className="text-xs font-semibold text-slate-900">{value}</p>
     </div>
   );

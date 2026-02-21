@@ -11,7 +11,7 @@ interface AnnouncementCardProps {
 const urgencyBadgeStyles: Record<string, string> = {
   urgent: 'bg-red-100 text-red-700 border-red-200',
   high: 'bg-amber-100 text-amber-700 border-amber-200',
-  normal: 'bg-green-100 text-green-700 border-green-200',
+  normal: 'bg-primary-100 text-primary-700 border-primary-200',
   low: 'bg-slate-100 text-slate-600 border-slate-200',
 };
 
@@ -60,13 +60,13 @@ export function AnnouncementCard({ announcement }: AnnouncementCardProps) {
         <div
           className={cn(
             'w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0',
-            isUrgent ? 'bg-red-100' : 'bg-green-100'
+            isUrgent ? 'bg-red-100' : 'bg-primary-100'
           )}
         >
           {isUrgent ? (
             <IconAlertCircle size={20} className="text-red-600" />
           ) : (
-            <IconBell size={20} className="text-green-600" />
+            <IconBell size={20} className="text-primary-600" />
           )}
         </div>
 

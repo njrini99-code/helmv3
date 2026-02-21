@@ -189,7 +189,7 @@ export default function BaseballTasksPage() {
                 onClick={() => setFilter(f.value)}
                 className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
                   filter === f.value
-                    ? 'bg-green-100 text-green-700 border-green-200'
+                    ? 'bg-primary-100 text-primary-700 border-primary-200'
                     : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
                 }`}
               >

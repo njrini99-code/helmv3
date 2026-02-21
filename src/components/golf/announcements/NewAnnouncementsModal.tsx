@@ -192,7 +192,7 @@ export function NewAnnouncementsModal({ announcements, onDismiss }: NewAnnouncem
                         {ann.title}
                       </h3>
                       <span className={cn(
-                        'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider border flex-shrink-0',
+                        'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-micro font-semibold uppercase tracking-wider border flex-shrink-0',
                         urg.bg, urg.text, urg.border
                       )}>
                         <span className={cn('w-1.5 h-1.5 rounded-full', urg.dot)} />

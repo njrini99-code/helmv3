@@ -130,13 +130,13 @@ export const PerformanceRadar = memo(function PerformanceRadar({ data }: Perform
                                     <div className="flex items-center gap-1.5">
                                         <span className="text-xs font-medium text-warm-700">{cat.label}</span>
                                         {isBest && (
-                                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-primary-50 text-primary-700 flex items-center gap-0.5">
+                                            <span className="text-micro font-semibold px-1.5 py-0.5 rounded-full bg-primary-50 text-primary-700 flex items-center gap-0.5">
                                                 <IconTrendingUp size={9} />
                                                 Best
                                             </span>
                                         )}
                                         {isWorst && (
-                                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-red-50 text-red-600 flex items-center gap-0.5">
+                                            <span className="text-micro font-semibold px-1.5 py-0.5 rounded-full bg-red-50 text-red-600 flex items-center gap-0.5">
                                                 <IconTrendingDown size={9} />
                                                 Focus
                                             </span>

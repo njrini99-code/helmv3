@@ -42,7 +42,7 @@ function getStatusColor(status: string): string {
     case 'offered':
       return 'bg-amber-100 text-amber-700';
     case 'committed':
-      return 'bg-green-100 text-green-700';
+      return 'bg-primary-100 text-primary-700';
     default:
       return 'bg-slate-100 text-slate-700';
   }
@@ -57,9 +57,9 @@ function getEventIcon(type: JourneyEvent['type']) {
     case 'video_view':
       return <IconVideo size={16} className="text-purple-600" />;
     case 'message':
-      return <IconMessage size={16} className="text-green-600" />;
+      return <IconMessage size={16} className="text-primary-600" />;
     case 'added_interest':
-      return <IconPlus size={16} className="text-green-600" />;
+      return <IconPlus size={16} className="text-primary-600" />;
     case 'status_change':
       return <IconTarget size={16} className="text-slate-600" />;
     default:
@@ -160,7 +160,7 @@ function SchoolCard({ school, onStatusChange }: { school: JourneySchool; onStatu
           {school.organization_id && (
             <Link
               href={`/baseball/program/${school.organization_id}`}
-              className="text-sm leading-relaxed text-green-600 hover:text-green-700 font-medium flex items-center gap-1"
+              className="text-sm leading-relaxed text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
             >
               View Program <IconChevronRight size={14} />
             </Link>

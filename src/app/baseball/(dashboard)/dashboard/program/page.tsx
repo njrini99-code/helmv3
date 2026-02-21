@@ -266,7 +266,7 @@ export default function ProgramPage() {
                     unoptimized
                   />
                 ) : (
-                  <div className="w-24 h-24 rounded-xl bg-green-600 flex items-center justify-center">
+                  <div className="w-24 h-24 rounded-xl bg-primary-600 flex items-center justify-center">
                     <IconBuilding size={40} className="text-white" />
                   </div>
                 )}
@@ -315,7 +315,7 @@ export default function ProgramPage() {
                   <select
                     value={formData.division || ''}
                     onChange={(e) => handleInputChange('division', e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 text-base lg:text-sm text-slate-900 bg-white"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-base lg:text-sm text-slate-900 bg-white"
                   >
                     <option value="">Select Division</option>
                     {DIVISIONS.map(div => (
@@ -354,7 +354,7 @@ export default function ProgramPage() {
                   value={formData.description || ''}
                   onChange={(e) => handleInputChange('description', e.target.value)}
                   rows={5}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 text-base lg:text-sm text-slate-900 placeholder:text-slate-400"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-base lg:text-sm text-slate-900 placeholder:text-slate-400"
                   placeholder="Tell recruits about your program, culture, and what makes it special..."
                 />
               </div>
@@ -374,7 +374,7 @@ export default function ProgramPage() {
                       type="text"
                       value={formData.primary_color || '#16A34A'}
                       onChange={(e) => handleInputChange('primary_color', e.target.value)}
-                      className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 text-slate-900"
+                      className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-slate-900"
                       placeholder="#16A34A"
                     />
                   </div>
@@ -393,7 +393,7 @@ export default function ProgramPage() {
                       type="text"
                       value={formData.secondary_color || '#FFFFFF'}
                       onChange={(e) => handleInputChange('secondary_color', e.target.value)}
-                      className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 text-slate-900"
+                      className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-slate-900"
                       placeholder="#FFFFFF"
                     />
                   </div>
@@ -405,7 +405,7 @@ export default function ProgramPage() {
                 {saveMessage && (
                   <p className={cn(
                     'text-sm font-medium flex items-center gap-2',
-                    saveMessage.type === 'success' ? 'text-green-600' : 'text-red-600'
+                    saveMessage.type === 'success' ? 'text-primary-600' : 'text-red-600'
                   )}>
                     {saveMessage.type === 'success' && <IconCheck size={16} />}
                     {saveMessage.text}

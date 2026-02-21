@@ -141,7 +141,7 @@ export function BentoFeaturedCard({
   children,
   className,
   size = 'default',
-  glowColor = 'bg-green-500/10',
+  glowColor = 'bg-primary-500/10',
 }: BentoFeaturedCardProps) {
   const sizeClasses = {
     default: '',

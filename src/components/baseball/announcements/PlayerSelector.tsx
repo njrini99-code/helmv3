@@ -61,22 +61,22 @@ export function PlayerSelector({ players, selectedPlayerIds, onChange }: PlayerS
           className={cn(
             'w-full p-3 rounded-xl border-2 text-left transition-all flex items-center gap-3',
             isAllTeam
-              ? 'border-green-600 bg-green-50 shadow-sm'
+              ? 'border-primary-600 bg-primary-50 shadow-sm'
               : 'border-slate-200 hover:border-slate-300 hover:shadow-sm'
           )}
         >
           <div className={cn(
             'w-9 h-9 rounded-lg flex items-center justify-center',
-            isAllTeam ? 'bg-green-100' : 'bg-slate-100'
+            isAllTeam ? 'bg-primary-100' : 'bg-slate-100'
           )}>
-            <IconUsers size={18} className={isAllTeam ? 'text-green-600' : 'text-slate-400'} />
+            <IconUsers size={18} className={isAllTeam ? 'text-primary-600' : 'text-slate-400'} />
           </div>
           <div className="flex-1">
             <p className="font-medium text-slate-900 text-sm">All Team Members</p>
             <p className="text-xs text-slate-500">{players.length} players</p>
           </div>
           {isAllTeam && (
-            <div className="w-5 h-5 rounded-full bg-green-600 flex items-center justify-center">
+            <div className="w-5 h-5 rounded-full bg-primary-600 flex items-center justify-center">
               <IconCheck size={12} className="text-white" />
             </div>
           )}
@@ -90,15 +90,15 @@ export function PlayerSelector({ players, selectedPlayerIds, onChange }: PlayerS
           className={cn(
             'w-full p-3 rounded-xl border-2 text-left transition-all flex items-center gap-3',
             !isAllTeam
-              ? 'border-green-600 bg-green-50 shadow-sm'
+              ? 'border-primary-600 bg-primary-50 shadow-sm'
               : 'border-slate-200 hover:border-slate-300 hover:shadow-sm'
           )}
         >
           <div className={cn(
             'w-9 h-9 rounded-lg flex items-center justify-center',
-            !isAllTeam ? 'bg-green-100' : 'bg-slate-100'
+            !isAllTeam ? 'bg-primary-100' : 'bg-slate-100'
           )}>
-            <IconUser size={18} className={!isAllTeam ? 'text-green-600' : 'text-slate-400'} />
+            <IconUser size={18} className={!isAllTeam ? 'text-primary-600' : 'text-slate-400'} />
           </div>
           <div className="flex-1">
             <p className="font-medium text-slate-900 text-sm">Specific Players</p>
@@ -109,7 +109,7 @@ export function PlayerSelector({ players, selectedPlayerIds, onChange }: PlayerS
             </p>
           </div>
           {!isAllTeam && (
-            <div className="w-5 h-5 rounded-full bg-green-600 flex items-center justify-center">
+            <div className="w-5 h-5 rounded-full bg-primary-600 flex items-center justify-center">
               <IconCheck size={12} className="text-white" />
             </div>
           )}
@@ -151,14 +151,14 @@ export function PlayerSelector({ players, selectedPlayerIds, onChange }: PlayerS
                       className={cn(
                         'w-full px-3 py-2 rounded-lg text-left text-sm transition-all flex items-center gap-2',
                         isSelected
-                          ? 'bg-green-100 text-green-900'
+                          ? 'bg-primary-100 text-primary-900'
                           : 'hover:bg-slate-50 active:bg-slate-100 text-slate-700'
                       )}
                     >
                       <div className={cn(
                         'w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors',
                         isSelected
-                          ? 'bg-green-600 border-green-600'
+                          ? 'bg-primary-600 border-primary-600'
                           : 'border-slate-300'
                       )}>
                         {isSelected && <IconCheck size={10} className="text-white" />}

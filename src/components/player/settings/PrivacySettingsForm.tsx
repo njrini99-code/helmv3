@@ -292,8 +292,8 @@ export function PrivacySettingsForm({
                   onClick={() => handleToggle(setting.key)}
                   className={`
                     relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent
-                    transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-2
-                    ${settings[setting.key] ? 'bg-green-600' : 'bg-slate-300'}
+                    transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2
+                    ${settings[setting.key] ? 'bg-primary-600' : 'bg-slate-300'}
                   `}
                 >
                   <span

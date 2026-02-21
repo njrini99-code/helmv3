@@ -217,7 +217,7 @@ export function PlayerDetailModal({ player, coachId, onClose }: PlayerDetailModa
                     href={`https://twitter.com/${player.twitter}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm leading-relaxed text-green-600 hover:text-green-700"
+                    className="text-sm leading-relaxed text-primary-600 hover:text-primary-700"
                   >
                     @{player.twitter}
                   </a>
@@ -227,7 +227,7 @@ export function PlayerDetailModal({ player, coachId, onClose }: PlayerDetailModa
                     href={`https://instagram.com/${player.instagram}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm leading-relaxed text-green-600 hover:text-green-700"
+                    className="text-sm leading-relaxed text-primary-600 hover:text-primary-700"
                   >
                     @{player.instagram}
                   </a>

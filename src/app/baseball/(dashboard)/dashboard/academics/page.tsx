@@ -33,13 +33,13 @@ interface StudentAthlete {
 }
 
 const academicStandingColors = {
-  good: 'bg-green-100 text-green-700',
+  good: 'bg-primary-100 text-primary-700',
   warning: 'bg-amber-100 text-amber-700',
   probation: 'bg-red-100 text-red-700',
 };
 
 const eligibilityColors = {
-  eligible: 'bg-green-100 text-green-700',
+  eligible: 'bg-primary-100 text-primary-700',
   ineligible: 'bg-red-100 text-red-700',
   pending: 'bg-slate-100 text-slate-700',
 };
@@ -265,8 +265,8 @@ export default function AcademicsPage() {
           <Card variant="glass">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
-                  <IconGraduationCap size={20} className="text-green-600" />
+                <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
+                  <IconGraduationCap size={20} className="text-primary-600" />
                 </div>
                 <div>
                   <p className="text-sm leading-relaxed text-slate-500">Team GPA</p>
@@ -279,8 +279,8 @@ export default function AcademicsPage() {
           <Card variant="glass">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
-                  <IconCheck size={20} className="text-green-600" />
+                <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
+                  <IconCheck size={20} className="text-primary-600" />
                 </div>
                 <div>
                   <p className="text-sm leading-relaxed text-slate-500">Eligible</p>
@@ -350,7 +350,7 @@ export default function AcademicsPage() {
                           student.gpa?.toFixed(2) || 'N/A'
                         )}
                       </p>
-                      <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500 mt-1">GPA</p>
+                      <p className="text-label font-medium uppercase tracking-wide text-slate-500 mt-1">GPA</p>
                     </div>
                     <div className="bg-slate-50 rounded-lg p-3 text-center">
                       <p className="text-lg font-semibold text-slate-900">
@@ -366,7 +366,7 @@ export default function AcademicsPage() {
                           `${student.credits_completed || 0}/${student.credits_required || 60}`
                         )}
                       </p>
-                      <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500 mt-1">Credits</p>
+                      <p className="text-label font-medium uppercase tracking-wide text-slate-500 mt-1">Credits</p>
                     </div>
                   </div>
 
@@ -436,13 +436,13 @@ export default function AcademicsPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-50">
-                    <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400">Player</th>
-                    <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400">Position</th>
-                    <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400">GPA</th>
-                    <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400">Credits</th>
-                    <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400">Standing</th>
-                    <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400">Eligibility</th>
-                    <th className="px-6 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-slate-400">Actions</th>
+                    <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-slate-400">Player</th>
+                    <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-slate-400">Position</th>
+                    <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-slate-400">GPA</th>
+                    <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-slate-400">Credits</th>
+                    <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-slate-400">Standing</th>
+                    <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-slate-400">Eligibility</th>
+                    <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-slate-400">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">

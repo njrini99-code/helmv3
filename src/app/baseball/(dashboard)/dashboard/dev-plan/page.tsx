@@ -53,8 +53,8 @@ export default function PlayerDevPlanPage() {
                   <p className="text-sm font-medium text-slate-500">Completed</p>
                   <p className="text-2xl font-semibold tracking-tight text-slate-900 mt-1">0</p>
                 </div>
-                <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center">
-                  <IconCheck size={24} className="text-green-600" />
+                <div className="w-12 h-12 rounded-full bg-primary-50 flex items-center justify-center">
+                  <IconCheck size={24} className="text-primary-600" />
                 </div>
               </div>
             </CardContent>
@@ -116,7 +116,7 @@ export default function PlayerDevPlanPage() {
           <CardContent>
             <ul className="space-y-3 text-sm text-slate-600">
               <li className="flex gap-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-700 font-medium flex items-center justify-center text-xs">
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary-100 text-primary-700 font-medium flex items-center justify-center text-xs">
                   1
                 </span>
                 <div>
@@ -125,7 +125,7 @@ export default function PlayerDevPlanPage() {
                 </div>
               </li>
               <li className="flex gap-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-700 font-medium flex items-center justify-center text-xs">
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary-100 text-primary-700 font-medium flex items-center justify-center text-xs">
                   2
                 </span>
                 <div>
@@ -134,7 +134,7 @@ export default function PlayerDevPlanPage() {
                 </div>
               </li>
               <li className="flex gap-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-700 font-medium flex items-center justify-center text-xs">
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary-100 text-primary-700 font-medium flex items-center justify-center text-xs">
                   3
                 </span>
                 <div>
@@ -143,7 +143,7 @@ export default function PlayerDevPlanPage() {
                 </div>
               </li>
               <li className="flex gap-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-700 font-medium flex items-center justify-center text-xs">
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary-100 text-primary-700 font-medium flex items-center justify-center text-xs">
                   4
                 </span>
                 <div>

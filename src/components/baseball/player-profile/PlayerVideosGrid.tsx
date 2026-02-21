@@ -42,7 +42,7 @@ export function PlayerVideosGrid({ videos, compact = false }: PlayerVideosGridPr
           <button
             key={video.id}
             onClick={() => setSelectedVideo(video)}
-            className="group relative aspect-video rounded-xl overflow-hidden bg-slate-100 hover:ring-2 hover:ring-green-500 transition-all"
+            className="group relative aspect-video rounded-xl overflow-hidden bg-slate-100 hover:ring-2 hover:ring-primary-500 transition-all"
           >
             {video.thumbnail_url ? (
               <Image
@@ -67,7 +67,7 @@ export function PlayerVideosGrid({ videos, compact = false }: PlayerVideosGridPr
             {/* Video type badge */}
             {video.video_type && (
               <div className="absolute top-2 left-2">
-                <span className="px-2 py-0.5 text-[10px] font-medium bg-black/50 text-white rounded capitalize">
+                <span className="px-2 py-0.5 text-micro font-medium bg-black/50 text-white rounded capitalize">
                   {video.video_type}
                 </span>
               </div>

@@ -55,21 +55,21 @@ export function LiveEventCounter({
         {connectionState === 'connected' ? (
           <>
             <div className="w-2 h-2 rounded-full bg-primary-500" />
-            <span className="text-[10px] font-medium text-primary-600 uppercase tracking-wider">
+            <span className="text-micro font-medium text-primary-600 uppercase tracking-wider">
               Live
             </span>
           </>
         ) : connectionState === 'connecting' ? (
           <>
             <div className="w-2 h-2 rounded-full bg-amber-500" />
-            <span className="text-[10px] font-medium text-amber-600 uppercase tracking-wider">
+            <span className="text-micro font-medium text-amber-600 uppercase tracking-wider">
               Connecting
             </span>
           </>
         ) : (
           <>
             <div className="w-2 h-2 rounded-full bg-warm-300" />
-            <span className="text-[10px] font-medium text-warm-500 uppercase tracking-wider">
+            <span className="text-micro font-medium text-warm-500 uppercase tracking-wider">
               Offline
             </span>
           </>
@@ -103,7 +103,7 @@ export function LiveEventCounter({
               {errors}
             </span>
             {critical > 0 && (
-              <span className="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded-full font-medium">
+              <span className="text-micro bg-red-100 text-red-700 px-1.5 py-0.5 rounded-full font-medium">
                 {critical} critical
               </span>
             )}
@@ -137,7 +137,7 @@ export function LiveEventCounterMini({
     return (
       <div className={cn('flex items-center gap-1', className)}>
         <div className="w-1.5 h-1.5 rounded-full bg-primary-500" />
-        <span className="text-[10px] text-primary-600">All clear</span>
+        <span className="text-micro text-primary-600">All clear</span>
       </div>
     );
   }
@@ -146,7 +146,7 @@ export function LiveEventCounterMini({
     return (
       <div className={cn('flex items-center gap-1', className)}>
         <div className="w-1.5 h-1.5 rounded-full bg-warm-300" />
-        <span className="text-[10px] text-warm-400">Offline</span>
+        <span className="text-micro text-warm-400">Offline</span>
       </div>
     );
   }
@@ -161,7 +161,7 @@ export function LiveEventCounterMini({
       />
       <span
         className={cn(
-          'text-[10px] font-medium tabular-nums',
+          'text-micro font-medium tabular-nums',
           critical > 0 ? 'text-red-600' : 'text-amber-600'
         )}
       >
@@ -199,7 +199,7 @@ export function LiveEventBadge({
   return (
     <span
       className={cn(
-        'inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 text-[10px] font-bold rounded-full tabular-nums',
+        'inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 text-micro font-bold rounded-full tabular-nums',
         variantStyles[variant],
         className
       )}

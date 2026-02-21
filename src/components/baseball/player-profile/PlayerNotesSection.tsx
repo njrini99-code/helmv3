@@ -56,7 +56,7 @@ export function PlayerNotesSection({ notes, compact = false }: PlayerNotesSectio
                 {isLong && (
                   <button
                     onClick={() => setExpandedNote(isExpanded ? null : note.id)}
-                    className="text-xs text-green-600 hover:text-green-700 mt-1"
+                    className="text-xs text-primary-600 hover:text-primary-700 mt-1"
                   >
                     {isExpanded ? 'Show less' : 'Show more'}
                   </button>

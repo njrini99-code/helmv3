@@ -270,7 +270,7 @@ export function PositionPlayerStack({
             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
             className={cn(
               'flex items-center gap-2 mb-1 px-2',
-              'text-[10px] font-bold uppercase tracking-widest',
+              'text-micro font-bold uppercase tracking-widest',
               'text-warm-500'
             )}
           >
@@ -310,7 +310,7 @@ export function PositionPlayerStack({
             'bg-gradient-to-br from-warm-100/90 to-warm-50/70',
             'border border-warm-200/60',
             'backdrop-blur-sm',
-            'text-[10px] font-bold text-warm-600',
+            'text-micro font-bold text-warm-600',
             'transition-all duration-200',
             'hover:bg-warm-100 active:bg-warm-200 hover:border-warm-300/80',
             'hover:shadow-md',
@@ -338,7 +338,7 @@ export function PositionPlayerStack({
             onClick={onExpandClick}
             className={cn(
               'mt-2 px-3 py-1 rounded-full',
-              'text-[10px] font-medium text-warm-500',
+              'text-micro font-medium text-warm-500',
               'bg-warm-100/50 hover:bg-warm-100 active:bg-warm-200',
               'border border-warm-200/50',
               'transition-all duration-200',

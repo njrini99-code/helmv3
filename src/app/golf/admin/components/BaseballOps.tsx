@@ -47,29 +47,29 @@ export function BaseballOps({ baseball }: Props) {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-5">
         <div className="bg-white/50 rounded-xl p-3 text-center">
           <p className="text-xl font-semibold text-warm-900 tabular-nums">{baseball.totalPlayers}</p>
-          <p className="text-[10px] text-warm-400 mt-0.5">Players</p>
+          <p className="text-micro text-warm-400 mt-0.5">Players</p>
         </div>
         <div className="bg-white/50 rounded-xl p-3 text-center">
           <p className="text-xl font-semibold text-warm-900 tabular-nums">{baseball.totalCoaches}</p>
-          <p className="text-[10px] text-warm-400 mt-0.5">Coaches</p>
+          <p className="text-micro text-warm-400 mt-0.5">Coaches</p>
         </div>
         <div className="bg-white/50 rounded-xl p-3 text-center">
           <p className="text-xl font-semibold text-warm-900 tabular-nums">{baseball.commitments}</p>
-          <p className="text-[10px] text-warm-400 mt-0.5">Commitments</p>
+          <p className="text-micro text-warm-400 mt-0.5">Commitments</p>
         </div>
         <div className="bg-white/50 rounded-xl p-3 text-center">
           <p className={cn(
             'text-xl font-semibold tabular-nums',
             bbOnboardingRate > 60 ? 'text-primary-700' : 'text-amber-600'
           )}>{bbOnboardingRate}%</p>
-          <p className="text-[10px] text-warm-400 mt-0.5">Onboarded</p>
+          <p className="text-micro text-warm-400 mt-0.5">Onboarded</p>
         </div>
       </div>
 
       {/* Recruiting Pipeline */}
       {totalPipeline > 0 && (
         <div className="mb-5">
-          <span className="text-[10px] text-warm-400 uppercase tracking-wider font-medium">Recruiting Pipeline</span>
+          <span className="text-micro text-warm-400 uppercase tracking-wider font-medium">Recruiting Pipeline</span>
           <div className="mt-2 space-y-2">
             {Object.entries(baseball.watchlistStages)
               .sort(([, a], [, b]) => b - a)
@@ -96,7 +96,7 @@ export function BaseballOps({ baseball }: Props) {
 
       {/* Platform stats */}
       <div className="pt-4 border-t border-warm-100">
-        <span className="text-[10px] text-warm-400 uppercase tracking-wider font-medium">Platform</span>
+        <span className="text-micro text-warm-400 uppercase tracking-wider font-medium">Platform</span>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2.5">
           <div className="bg-white/40 rounded-lg px-3 py-2 flex items-center justify-between">
             <span className="text-xs text-warm-500">Teams</span>
@@ -119,7 +119,7 @@ export function BaseballOps({ baseball }: Props) {
 
       {/* Activity stats */}
       <div className="pt-4 border-t border-warm-100">
-        <span className="text-[10px] text-warm-400 uppercase tracking-wider font-medium">Activity (30d)</span>
+        <span className="text-micro text-warm-400 uppercase tracking-wider font-medium">Activity (30d)</span>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2.5">
           <div className="bg-white/40 rounded-lg px-3 py-2 flex items-center justify-between">
             <span className="text-xs text-warm-500">Videos</span>

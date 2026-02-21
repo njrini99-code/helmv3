@@ -260,7 +260,7 @@ export default function DevPlansPage() {
           <CardContent>
             {loading ? (
               <div className="text-center py-12">
-                <div className="animate-spin h-8 w-8 border-2 border-green-600 border-t-transparent rounded-full mx-auto"></div>
+                <div className="animate-spin h-8 w-8 border-2 border-primary-600 border-t-transparent rounded-full mx-auto"></div>
               </div>
             ) : plans.length === 0 ? (
               /* Empty State */
@@ -347,19 +347,19 @@ export default function DevPlansPage() {
               </p>
               <ul className="space-y-2 text-sm text-slate-600">
                 <li className="flex items-start gap-2">
-                  <IconCheck size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
+                  <IconCheck size={16} className="text-primary-600 mt-0.5 flex-shrink-0" />
                   <span>Specific, measurable goals with target dates</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <IconCheck size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
+                  <IconCheck size={16} className="text-primary-600 mt-0.5 flex-shrink-0" />
                   <span>Customized drills and practice routines</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <IconCheck size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
+                  <IconCheck size={16} className="text-primary-600 mt-0.5 flex-shrink-0" />
                   <span>Progress tracking and completion status</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <IconCheck size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
+                  <IconCheck size={16} className="text-primary-600 mt-0.5 flex-shrink-0" />
                   <span>Video references and instructional content</span>
                 </li>
               </ul>

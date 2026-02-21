@@ -184,7 +184,7 @@ export function DarkSidebar({ sport, role }: DarkSidebarProps) {
               className="
               ml-auto px-1.5 py-0.5
               bg-white/10 rounded
-              text-[10px] text-warm-500
+              text-micro text-warm-500
             "
             >
               ⌘K
@@ -204,7 +204,7 @@ export function DarkSidebar({ sport, role }: DarkSidebarProps) {
               <div
                 className="
                 px-3 mb-2
-                text-[11px] font-semibold text-warm-500
+                text-label font-semibold text-warm-500
                 uppercase tracking-wider
               "
               >
@@ -279,10 +279,10 @@ export function DarkSidebar({ sport, role }: DarkSidebarProps) {
                           'flex items-center justify-center',
                           'min-w-[20px] h-5 px-1.5',
                           'bg-primary-600 text-white',
-                          'text-[11px] font-bold',
+                          'text-label font-bold',
                           'rounded-full',
                           collapsed &&
-                            'absolute -top-1 -right-1 min-w-[18px] h-[18px] text-[10px]'
+                            'absolute -top-1 -right-1 min-w-[18px] h-[18px] text-micro'
                         )}
                       >
                         {item.badge > 99 ? '99+' : item.badge}

@@ -123,7 +123,7 @@ export function ActivityFeed({ activity }: Props) {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-sm text-warm-700 font-medium truncate">{item.title}</p>
-                  <span className="text-[11px] text-warm-400 shrink-0 tabular-nums">{timeAgo(item.timestamp)}</span>
+                  <span className="text-label text-warm-400 shrink-0 tabular-nums">{timeAgo(item.timestamp)}</span>
                 </div>
                 {item.detail && (
                   <p className="text-xs text-warm-400 truncate mt-0.5">{item.detail}</p>

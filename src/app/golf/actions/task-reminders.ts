@@ -33,6 +33,12 @@ export async function setTaskReminder(
   try {
     const supabase = await createClient();
 
+    // Auth check
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
     // Verify the user has access to this task
     const { data: task, error: taskError } = await supabase
       .from('golf_tasks')
@@ -76,6 +82,12 @@ export async function cancelTaskReminder(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const supabase = await createClient();
+
+    // Auth check
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Unauthorized' };
+    }
 
     // Update the task to remove reminder
     const { error: updateError } = await supabase

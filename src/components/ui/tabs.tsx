@@ -113,7 +113,7 @@ export function TabsTrigger({ value, children, icon, badge, className }: {
       {children}
       {badge !== undefined && (
         <span className={cn(
-          'inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold rounded-full',
+          'inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-micro font-bold rounded-full',
           'transition-colors duration-200',
           isActive
             ? 'bg-primary-100 text-primary-700'

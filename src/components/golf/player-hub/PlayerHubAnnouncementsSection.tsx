@@ -95,7 +95,7 @@ export function PlayerHubAnnouncementsSection({ announcements }: PlayerHubAnnoun
           </div>
           <h2 className="text-sm font-semibold text-warm-900 uppercase tracking-wider">Announcements</h2>
           {unreadCount > 0 && (
-            <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-primary-100 text-primary-700 border border-primary-200 tabular-nums">
+            <span className="px-1.5 py-0.5 text-micro font-bold rounded-full bg-primary-100 text-primary-700 border border-primary-200 tabular-nums">
               {unreadCount} new
             </span>
           )}
@@ -164,7 +164,7 @@ export function PlayerHubAnnouncementsSection({ announcements }: PlayerHubAnnoun
 
                   {/* Time + action */}
                   <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-                    <span className="text-[11px] text-warm-400 tabular-nums">
+                    <span className="text-label text-warm-400 tabular-nums">
                       {ann.published_at ? relativeTime(ann.published_at) : ''}
                     </span>
                     {needsAck && (
@@ -179,7 +179,7 @@ export function PlayerHubAnnouncementsSection({ announcements }: PlayerHubAnnoun
                       </Button>
                     )}
                     {isAcked && (
-                      <span className="inline-flex items-center gap-0.5 text-[11px] text-primary-600 font-medium">
+                      <span className="inline-flex items-center gap-0.5 text-label text-primary-600 font-medium">
                         <IconCheck size={11} />
                       </span>
                     )}

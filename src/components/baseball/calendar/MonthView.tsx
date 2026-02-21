@@ -98,7 +98,7 @@ export function MonthView({ month, events, onDateClick, onEventClick }: MonthVie
                 'min-h-[110px] p-2.5 cursor-pointer transition-all duration-200 rounded-xl',
                 isCurrentMonth ? 'bg-white/60' : 'bg-slate-50/30',
                 'hover:bg-white/80 hover:shadow-sm',
-                isCurrentDay && 'bg-green-50/40 ring-1 ring-green-200/40',
+                isCurrentDay && 'bg-primary-50/40 ring-1 ring-primary-200/40',
               )}
             >
               {/* Date Number */}
@@ -107,7 +107,7 @@ export function MonthView({ month, events, onDateClick, onEventClick }: MonthVie
                   className={cn(
                     'w-7 h-7 flex items-center justify-center rounded-full text-[13px] font-bold transition-all',
                     isCurrentDay
-                      ? 'bg-gradient-to-br from-green-500 to-green-600 text-white shadow-[0_2px_10px_rgba(22,163,74,0.4)]'
+                      ? 'bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-[0_2px_10px_rgba(22,163,74,0.4)]'
                       : isCurrentMonth
                       ? 'text-slate-800'
                       : 'text-slate-300',
@@ -116,7 +116,7 @@ export function MonthView({ month, events, onDateClick, onEventClick }: MonthVie
                   {date.getDate()}
                 </div>
                 {dayEvents.length > 3 && (
-                  <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-green-50 text-green-600">
+                  <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-primary-50 text-primary-600">
                     {dayEvents.length}
                   </span>
                 )}
@@ -143,7 +143,7 @@ export function MonthView({ month, events, onDateClick, onEventClick }: MonthVie
                         config.borderColor,
                       )}
                     >
-                      <p className={cn('font-semibold text-[10px] truncate leading-tight', config.textColor)}>
+                      <p className={cn('font-semibold text-micro truncate leading-tight', config.textColor)}>
                         {event.title}
                       </p>
                     </button>

@@ -88,3 +88,11 @@ export function useSidebar() {
   }
   return context;
 }
+
+/**
+ * Like useSidebar but returns null instead of throwing when outside a SidebarProvider.
+ * Useful for components that may render outside the dashboard shell (e.g. SSR edge cases).
+ */
+export function useSidebarSafe() {
+  return useContext(SidebarContext);
+}

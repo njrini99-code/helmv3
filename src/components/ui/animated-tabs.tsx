@@ -65,7 +65,7 @@ export function AnimatedTabs({
               onKeyDown={(e) => handleKeyDown(e, index)}
               className={cn(
                 'relative px-4 py-2.5 text-sm font-medium transition-colors z-10 flex-shrink-0 snap-center',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2',
                 variant === 'segment' && 'rounded-lg flex-1',
                 variant === 'underline' && 'pb-3',
                 variant === 'pill' && 'rounded-full',
@@ -86,7 +86,7 @@ export function AnimatedTabs({
                   className={cn(
                     'absolute inset-0',
                     variant === 'segment' && 'bg-white rounded-lg shadow-sm',
-                    variant === 'underline' && 'bottom-0 left-0 right-0 h-0.5 top-auto bg-green-600 rounded-full',
+                    variant === 'underline' && 'bottom-0 left-0 right-0 h-0.5 top-auto bg-primary-600 rounded-full',
                     variant === 'pill' && 'bg-warm-900 rounded-full'
                   )}
                   transition={{

@@ -55,7 +55,7 @@ export function JoinTeamClient({
     <div className="min-h-screen bg-[#FAF6F1] flex items-center justify-center p-6">
       <div className="max-w-lg w-full bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
         {/* Header */}
-        <div className="bg-gradient-to-br from-green-50 to-white border-b border-slate-200 p-8 text-center">
+        <div className="bg-gradient-to-br from-primary-50 to-white border-b border-slate-200 p-8 text-center">
           {team.organization?.logoUrl ? (
             <Image
               src={team.organization.logoUrl}
@@ -66,8 +66,8 @@ export function JoinTeamClient({
               unoptimized
             />
           ) : (
-            <div className="w-20 h-20 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-              <svg className="w-10 h-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="w-20 h-20 bg-primary-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+              <svg className="w-10 h-10 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
             </div>
@@ -92,8 +92,8 @@ export function JoinTeamClient({
         <div className="p-8">
           <div className="mb-6">
             <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-lg border border-slate-200">
-              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
               </div>
@@ -115,7 +115,7 @@ export function JoinTeamClient({
             <button
               onClick={handleJoinTeam}
               disabled={loading}
-              className="w-full px-6 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 active:bg-green-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full px-6 py-3 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 active:bg-primary-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>

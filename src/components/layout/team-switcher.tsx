@@ -79,7 +79,7 @@ export function TeamSwitcher({ collapsed = false }: TeamSwitcherProps) {
                   onClick={() => handleTeamSelect(team)}
                   className={cn(
                     'w-full px-3 py-2 flex items-center gap-3 hover:bg-slate-50 active:bg-slate-100 transition-colors',
-                    team.id === selectedTeamId && 'bg-green-50'
+                    team.id === selectedTeamId && 'bg-primary-50'
                   )}
                 >
                   {team.logo_url ? (
@@ -101,7 +101,7 @@ export function TeamSwitcher({ collapsed = false }: TeamSwitcherProps) {
                     <p className="text-xs text-slate-500">{team.team_type}</p>
                   </div>
                   {team.id === selectedTeamId && (
-                    <IconCheck size={16} className="text-green-600" />
+                    <IconCheck size={16} className="text-primary-600" />
                   )}
                 </button>
               ))}
@@ -121,7 +121,7 @@ export function TeamSwitcher({ collapsed = false }: TeamSwitcherProps) {
           'w-full px-3 py-2.5 rounded-xl border transition-all duration-200',
           'flex items-center gap-3 text-left',
           isOpen
-            ? 'border-green-500 ring-2 ring-green-100 bg-white'
+            ? 'border-primary-500 ring-2 ring-primary-100 bg-white'
             : 'border-slate-200 bg-white hover:border-slate-300'
         )}
       >
@@ -170,7 +170,7 @@ export function TeamSwitcher({ collapsed = false }: TeamSwitcherProps) {
                 onClick={() => handleTeamSelect(team)}
                 className={cn(
                   'w-full px-3 py-2.5 flex items-center gap-3 hover:bg-slate-50 active:bg-slate-100 transition-colors',
-                  team.id === selectedTeamId && 'bg-green-50'
+                  team.id === selectedTeamId && 'bg-primary-50'
                 )}
               >
                 {team.logo_url ? (
@@ -203,7 +203,7 @@ export function TeamSwitcher({ collapsed = false }: TeamSwitcherProps) {
                   </div>
                 </div>
                 {team.id === selectedTeamId && (
-                  <IconCheck size={16} className="text-green-600 flex-shrink-0" />
+                  <IconCheck size={16} className="text-primary-600 flex-shrink-0" />
                 )}
               </button>
             ))}
@@ -214,7 +214,7 @@ export function TeamSwitcher({ collapsed = false }: TeamSwitcherProps) {
                 setIsOpen(false);
                 router.push('/baseball/dashboard/teams');
               }}
-              className="w-full text-sm text-green-600 hover:text-green-700 font-medium py-1.5"
+              className="w-full text-sm text-primary-600 hover:text-primary-700 font-medium py-1.5"
             >
               Manage All Teams →
             </button>

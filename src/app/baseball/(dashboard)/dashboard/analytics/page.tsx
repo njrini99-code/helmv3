@@ -60,8 +60,8 @@ export default function AnalyticsPage() {
           <Card variant="glass">
             <CardContent className="p-6">
               <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 rounded-lg bg-green-50">
-                  <IconEye size={20} className="text-green-600" />
+                <div className="p-2 rounded-lg bg-primary-50">
+                  <IconEye size={20} className="text-primary-600" />
                 </div>
                 <p className="text-sm font-medium text-slate-500">Profile Views</p>
               </div>
@@ -114,7 +114,7 @@ export default function AnalyticsPage() {
         <Card variant="glass">
           <CardHeader className="border-b border-slate-200">
             <div className="flex items-center gap-2">
-              <IconTrendingUp size={20} className="text-green-600" />
+              <IconTrendingUp size={20} className="text-primary-600" />
               <h3 className="text-lg font-semibold tracking-tight text-slate-900">Profile Views Over Time</h3>
             </div>
             <p className="text-sm leading-relaxed text-slate-500 mt-1">Daily profile views for the last 30 days</p>

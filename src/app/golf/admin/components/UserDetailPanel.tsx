@@ -175,14 +175,14 @@ export function UserDetailPanel({ userId, teams, unassigned, userDirectory, onCl
             <div className="p-3 rounded-xl bg-white/50 border border-white/30">
               <div className="flex items-center gap-1.5 mb-1">
                 <Clock size={12} className="text-warm-400" />
-                <span className="text-[10px] text-warm-400 uppercase tracking-wider font-medium">Last Active</span>
+                <span className="text-micro text-warm-400 uppercase tracking-wider font-medium">Last Active</span>
               </div>
               <p className="text-sm font-semibold text-warm-900">{timeAgo(lastSeen)}</p>
             </div>
             <div className="p-3 rounded-xl bg-white/50 border border-white/30">
               <div className="flex items-center gap-1.5 mb-1">
                 <Calendar size={12} className="text-warm-400" />
-                <span className="text-[10px] text-warm-400 uppercase tracking-wider font-medium">Signed Up</span>
+                <span className="text-micro text-warm-400 uppercase tracking-wider font-medium">Signed Up</span>
               </div>
               <p className="text-sm font-semibold text-warm-900">{formatDate(createdAt)}</p>
             </div>
@@ -191,21 +191,21 @@ export function UserDetailPanel({ userId, teams, unassigned, userDirectory, onCl
                 <div className="p-3 rounded-xl bg-white/50 border border-white/30">
                   <div className="flex items-center gap-1.5 mb-1">
                     <Target size={12} className="text-warm-400" />
-                    <span className="text-[10px] text-warm-400 uppercase tracking-wider font-medium">Rounds</span>
+                    <span className="text-micro text-warm-400 uppercase tracking-wider font-medium">Rounds</span>
                   </div>
                   <p className="text-sm font-semibold text-warm-900 tabular-nums">{member.roundsEntered}</p>
                   {member.lastRoundDate && (
-                    <p className="text-[10px] text-warm-400 mt-0.5">Last: {timeAgo(member.lastRoundDate)}</p>
+                    <p className="text-micro text-warm-400 mt-0.5">Last: {timeAgo(member.lastRoundDate)}</p>
                   )}
                 </div>
                 <div className="p-3 rounded-xl bg-white/50 border border-white/30">
                   <div className="flex items-center gap-1.5 mb-1">
                     <Sparkles size={12} className="text-warm-400" />
-                    <span className="text-[10px] text-warm-400 uppercase tracking-wider font-medium">AI Insights</span>
+                    <span className="text-micro text-warm-400 uppercase tracking-wider font-medium">AI Insights</span>
                   </div>
                   <p className="text-sm font-semibold text-warm-900 tabular-nums">{member.insightsReceived}</p>
                   {member.roundReviews > 0 && (
-                    <p className="text-[10px] text-warm-400 mt-0.5">{member.roundReviews} reviews</p>
+                    <p className="text-micro text-warm-400 mt-0.5">{member.roundReviews} reviews</p>
                   )}
                 </div>
               </>

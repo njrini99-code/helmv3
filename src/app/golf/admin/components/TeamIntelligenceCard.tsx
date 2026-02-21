@@ -38,7 +38,7 @@ function TeamComparisonChart({ teams }: { teams: AdminDashboardData['teams'] }) 
                     backgroundImage: `linear-gradient(to right, ${color}99, ${color})`,
                   }}
                 >
-                  <span className="text-[10px] font-semibold text-white drop-shadow-sm tabular-nums">
+                  <span className="text-micro font-semibold text-white drop-shadow-sm tabular-nums">
                     {score.toFixed(1)}
                   </span>
                 </div>
@@ -105,7 +105,7 @@ export function TeamIntelligenceCard({ teams }: Props) {
                   <p className="text-lg font-semibold text-warm-900 tabular-nums">
                     {team.avgScore.toFixed(1)}
                   </p>
-                  <p className="text-[10px] text-warm-400">Team Avg</p>
+                  <p className="text-micro text-warm-400">Team Avg</p>
                 </div>
               )}
             </div>
@@ -113,15 +113,15 @@ export function TeamIntelligenceCard({ teams }: Props) {
             <div className="grid grid-cols-4 gap-2 text-center">
               <div>
                 <p className="text-sm font-medium text-warm-800 tabular-nums">{team.playerCount}</p>
-                <p className="text-[10px] text-warm-400">Players</p>
+                <p className="text-micro text-warm-400">Players</p>
               </div>
               <div>
                 <p className="text-sm font-medium text-warm-800 tabular-nums">{team.coachCount}</p>
-                <p className="text-[10px] text-warm-400">Coaches</p>
+                <p className="text-micro text-warm-400">Coaches</p>
               </div>
               <div>
                 <p className="text-sm font-medium text-warm-800 tabular-nums">{team.roundsThisWeek}</p>
-                <p className="text-[10px] text-warm-400">Rounds/Wk</p>
+                <p className="text-micro text-warm-400">Rounds/Wk</p>
               </div>
               <div>
                 {team.topPlayer ? (
@@ -129,14 +129,14 @@ export function TeamIntelligenceCard({ teams }: Props) {
                     <p className="text-sm font-medium text-primary-700 tabular-nums">
                       {team.topPlayer.avg.toFixed(1)}
                     </p>
-                    <p className="text-[10px] text-warm-400 truncate" title={team.topPlayer.name}>
+                    <p className="text-micro text-warm-400 truncate" title={team.topPlayer.name}>
                       {team.topPlayer.name.split(' ')[1] || team.topPlayer.name}
                     </p>
                   </>
                 ) : (
                   <>
                     <p className="text-sm text-warm-300">&mdash;</p>
-                    <p className="text-[10px] text-warm-400">Top Player</p>
+                    <p className="text-micro text-warm-400">Top Player</p>
                   </>
                 )}
               </div>

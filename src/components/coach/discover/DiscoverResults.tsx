@@ -314,7 +314,7 @@ export function DiscoverResults({
               value={sortBy}
               onChange={(e) => handleSortChange(e.target.value)}
               className="text-sm border border-slate-200 rounded-lg px-3 py-1.5
-                         focus:border-green-500 focus:ring-2 focus:ring-green-100
+                         focus:border-primary-500 focus:ring-2 focus:ring-primary-100
                          focus:outline-none bg-white cursor-pointer"
             >
               {SORT_OPTIONS.map(opt => (
@@ -409,7 +409,7 @@ export function DiscoverResults({
                   className={cn(
                     'w-8 h-8 rounded-lg text-sm font-medium transition-colors',
                     pageNum === currentPage
-                      ? 'bg-green-600 text-white'
+                      ? 'bg-primary-600 text-white'
                       : 'text-slate-600 hover:bg-slate-100 active:bg-slate-200'
                   )}
                 >

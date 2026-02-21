@@ -112,7 +112,7 @@ function CampCard({
               </p>
             )}
             {camp.is_free && (
-              <p className="text-lg font-semibold tracking-tight text-green-600">
+              <p className="text-lg font-semibold tracking-tight text-primary-600">
                 Free
               </p>
             )}

@@ -129,7 +129,7 @@ export function PositionPriorityRanker({
                   'flex items-center gap-3 p-3 rounded-xl border transition-all',
                   'bg-white cursor-grab active:cursor-grabbing',
                   isBeingDragged && 'opacity-50 scale-95',
-                  isDragTarget && 'border-green-500 bg-green-50',
+                  isDragTarget && 'border-primary-500 bg-primary-50',
                   !isBeingDragged && !isDragTarget && 'border-slate-200 hover:border-slate-300'
                 )}
               >
@@ -141,9 +141,9 @@ export function PositionPriorityRanker({
                   className={cn(
                     'w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0',
                     index === 0
-                      ? 'bg-green-100 text-green-700'
+                      ? 'bg-primary-100 text-primary-700'
                       : index === 1
-                        ? 'bg-green-50 text-green-600'
+                        ? 'bg-primary-50 text-primary-600'
                         : index === 2
                           ? 'bg-slate-100 text-slate-600'
                           : 'bg-slate-50 text-slate-400'
@@ -168,7 +168,7 @@ export function PositionPriorityRanker({
                     className={cn(
                       'text-xs font-medium px-2 py-0.5 rounded-full',
                       index === 0
-                        ? 'bg-green-100 text-green-700'
+                        ? 'bg-primary-100 text-primary-700'
                         : index < 3
                           ? 'bg-slate-100 text-slate-600'
                           : 'bg-slate-50 text-slate-400'
@@ -199,7 +199,7 @@ export function PositionPriorityRanker({
             className={cn(
               'w-full flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-dashed transition-colors',
               showAddMenu
-                ? 'border-green-300 bg-green-50 text-green-700'
+                ? 'border-primary-300 bg-primary-50 text-primary-700'
                 : 'border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700'
             )}
           >

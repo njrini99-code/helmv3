@@ -131,7 +131,7 @@ export function StatCardV2({
               )}
             />
           </span>
-          <span className="text-[10px] font-medium text-warm-400 uppercase tracking-wider">
+          <span className="text-micro font-medium text-warm-400 uppercase tracking-wider">
             Live
           </span>
         </div>
@@ -205,7 +205,7 @@ export function StatCardV2({
       {/* Click hint */}
       {onClick && (
         <div className="absolute bottom-3 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-          <span className="text-[10px] text-warm-400">Click for details →</span>
+          <span className="text-micro text-warm-400">Click for details →</span>
         </div>
       )}
     </motion.div>

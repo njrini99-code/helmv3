@@ -147,10 +147,10 @@ export function MobileNav({ isProductsPage = false }: MobileNavProps) {
             style={{ willChange: 'opacity' }}
           >
             {/* Static gradient background - no animation */}
-            <div className="absolute inset-0 bg-gradient-to-b from-white via-[#FAFAF8] to-green-50/30 pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-b from-white via-[#FAFAF8] to-primary-50/30 pointer-events-none" />
 
             {/* Static decorative orbs - no blur animation, reduced blur */}
-            <div className="absolute top-24 right-0 w-72 h-72 rounded-full bg-gradient-to-br from-green-100/60 to-transparent blur-2xl pointer-events-none" />
+            <div className="absolute top-24 right-0 w-72 h-72 rounded-full bg-gradient-to-br from-primary-100/60 to-transparent blur-2xl pointer-events-none" />
             <div className="absolute bottom-32 -left-12 w-56 h-56 rounded-full bg-gradient-to-tr from-amber-100/50 to-transparent blur-2xl pointer-events-none" />
 
             <motion.nav
@@ -198,7 +198,7 @@ export function MobileNav({ isProductsPage = false }: MobileNavProps) {
                     >
                       <div className="flex-1">
                         <span className="block text-[1.75rem] font-semibold text-warm-900 tracking-tight
-                                       group-hover:text-green-600 transition-colors duration-150">
+                                       group-hover:text-primary-600 transition-colors duration-150">
                           {link.name}
                         </span>
                         <span className="block text-base text-warm-500 mt-1 font-normal">
@@ -206,7 +206,7 @@ export function MobileNav({ isProductsPage = false }: MobileNavProps) {
                         </span>
                       </div>
                       <svg
-                        className="w-6 h-6 text-warm-300 group-hover:text-green-500 group-hover:tranwarm-x-1 transition-all duration-150"
+                        className="w-6 h-6 text-warm-300 group-hover:text-primary-500 group-hover:tranwarm-x-1 transition-all duration-150"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -268,7 +268,7 @@ export function MobileNav({ isProductsPage = false }: MobileNavProps) {
                           autoFocus
                           className="w-full px-5 py-4 rounded-xl border border-warm-200
                                    bg-white text-warm-900 placeholder:text-warm-400 text-base
-                                   focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-500
+                                   focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500
                                    transition-colors duration-150"
                         />
                       </div>
@@ -288,7 +288,7 @@ export function MobileNav({ isProductsPage = false }: MobileNavProps) {
                         <button
                           type="submit"
                           disabled={isSubmitting || !email.trim()}
-                          className="flex-1 py-4 rounded-xl bg-green-600 text-white
+                          className="flex-1 py-4 rounded-xl bg-primary-600 text-white
                                    font-semibold text-base shadow-md
                                    disabled:opacity-50 disabled:cursor-not-allowed
                                    active:scale-[0.98] transition-transform duration-150"
@@ -307,9 +307,9 @@ export function MobileNav({ isProductsPage = false }: MobileNavProps) {
                       transition={{ duration: 0.2 }}
                       className="text-center space-y-6"
                     >
-                      <div className="w-16 h-16 mx-auto rounded-full bg-green-100 flex items-center justify-center">
+                      <div className="w-16 h-16 mx-auto rounded-full bg-primary-100 flex items-center justify-center">
                         <svg
-                          className="w-8 h-8 text-green-600"
+                          className="w-8 h-8 text-primary-600"
                           fill="none"
                           viewBox="0 0 24 24"
                           stroke="currentColor"

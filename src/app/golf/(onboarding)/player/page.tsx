@@ -100,7 +100,7 @@ function StepIndicator({ currentStep }: { currentStep: Step }) {
               </div>
               <span
                 className={cn(
-                  'text-[11px] font-medium transition-colors duration-500',
+                  'text-label font-medium transition-colors duration-500',
                   isCurrent ? 'text-warm-900' : isCompleted ? 'text-primary-600' : 'text-warm-400'
                 )}
               >
@@ -374,7 +374,7 @@ export default function GolfPlayerOnboarding() {
 
                       {/* Hometown */}
                       <div>
-                        <p className="text-[11px] font-semibold text-warm-400 uppercase tracking-wider mb-3">
+                        <p className="text-label font-semibold text-warm-400 uppercase tracking-wider mb-3">
                           Hometown
                         </p>
                         <div className="grid grid-cols-3 gap-3">

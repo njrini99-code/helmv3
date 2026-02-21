@@ -475,7 +475,7 @@ export function RoundReviewDisplay({
                     'bg-red-500/80 text-white';
                   return (
                     <div key={h.hole} className={cn('rounded-lg text-center py-1.5 px-0.5', bg)}>
-                      <div className="text-[10px] opacity-70">H{h.hole}</div>
+                      <div className="text-micro opacity-70">H{h.hole}</div>
                       <div className="text-sm font-bold">{h.score}</div>
                       <div className="flex justify-center gap-0.5 mt-0.5 min-h-[12px]">
                         {h.threePutt && <span className="text-[8px]">3P</span>}
@@ -487,7 +487,7 @@ export function RoundReviewDisplay({
                 })}
                 {/* Front 9 total */}
                 <div className="rounded-lg text-center py-1.5 px-0.5 bg-warm-200/60 text-warm-800 border border-warm-300/50">
-                  <div className="text-[10px] opacity-70">OUT</div>
+                  <div className="text-micro opacity-70">OUT</div>
                   <div className="text-sm font-bold">
                     {review.holeByHole.filter(h => h.hole <= 9).reduce((s, h) => s + h.score, 0)}
                   </div>
@@ -509,7 +509,7 @@ export function RoundReviewDisplay({
                       'bg-red-500/80 text-white';
                     return (
                       <div key={h.hole} className={cn('rounded-lg text-center py-1.5 px-0.5', bg)}>
-                        <div className="text-[10px] opacity-70">H{h.hole}</div>
+                        <div className="text-micro opacity-70">H{h.hole}</div>
                         <div className="text-sm font-bold">{h.score}</div>
                         <div className="flex justify-center gap-0.5 mt-0.5 min-h-[12px]">
                           {h.threePutt && <span className="text-[8px]">3P</span>}
@@ -521,7 +521,7 @@ export function RoundReviewDisplay({
                   })}
                   {/* Back 9 total */}
                   <div className="rounded-lg text-center py-1.5 px-0.5 bg-warm-200/60 text-warm-800 border border-warm-300/50">
-                    <div className="text-[10px] opacity-70">IN</div>
+                    <div className="text-micro opacity-70">IN</div>
                     <div className="text-sm font-bold">
                       {review.holeByHole.filter(h => h.hole >= 10).reduce((s, h) => s + h.score, 0)}
                     </div>
@@ -531,7 +531,7 @@ export function RoundReviewDisplay({
               </div>
             )}
             {/* Legend */}
-            <div className="flex flex-wrap gap-3 pt-1 text-[10px] text-warm-500">
+            <div className="flex flex-wrap gap-3 pt-1 text-micro text-warm-500">
               <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-amber-400/80" /> Eagle+</span>
               <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-primary-500/80" /> Birdie</span>
               <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-warm-100" /> Par</span>
@@ -757,7 +757,7 @@ export function RoundReviewDisplay({
                     className="absolute left-0 right-0 border-t border-warm-300 border-dashed"
                     style={{ top: midY }}
                   />
-                  <div className="absolute left-0 text-[10px] text-warm-400" style={{ top: midY - 14 }}>E</div>
+                  <div className="absolute left-0 text-micro text-warm-400" style={{ top: midY - 14 }}>E</div>
                   {/* Bars */}
                   <div className="flex items-end justify-between h-full pl-4">
                     {data.map((d) => {
@@ -841,7 +841,7 @@ export function RoundReviewDisplay({
                     <div className="p-2.5 rounded-lg bg-white/60 border border-white/30">
                       <div className="text-xs text-warm-500">Longest Drive</div>
                       <div className="text-lg font-bold text-warm-900">{review.drivingAnalysis.longestDrive.distance}y</div>
-                      <div className="text-[10px] text-warm-400">Hole #{review.drivingAnalysis.longestDrive.hole}</div>
+                      <div className="text-micro text-warm-400">Hole #{review.drivingAnalysis.longestDrive.hole}</div>
                     </div>
                   )}
                 </div>

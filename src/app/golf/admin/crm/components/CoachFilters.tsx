@@ -135,7 +135,7 @@ export function CoachFilters({
           {showMore ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
           Filters
           {activeFilterCount > 0 && (
-            <span className="ml-0.5 px-1.5 py-0.5 bg-primary-600 text-white text-[10px] font-bold rounded-full leading-none">
+            <span className="ml-0.5 px-1.5 py-0.5 bg-primary-600 text-white text-micro font-bold rounded-full leading-none">
               {activeFilterCount}
             </span>
           )}

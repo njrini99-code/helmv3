@@ -75,7 +75,7 @@ export function ClassScheduleGrid({ classes, onClassClick }: ClassScheduleGridPr
                     style={{ borderLeftColor: cls.color || '#16A34A', borderLeftWidth: '3px' }}
                   >
                     {code && (
-                      <p className="font-mono text-xs font-semibold text-green-600 mb-0.5">{code}</p>
+                      <p className="font-mono text-xs font-semibold text-primary-600 mb-0.5">{code}</p>
                     )}
                     <p className="text-sm font-medium text-slate-900 truncate">{name}</p>
                     {cls.start_time && (

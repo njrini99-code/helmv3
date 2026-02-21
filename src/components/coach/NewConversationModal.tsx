@@ -153,7 +153,7 @@ export function NewConversationModal({ open, onClose, preselectedUserId }: NewCo
                     onChange={(e) => handleSearch(e.target.value)}
                     placeholder="Search for a player or coach..."
                     className="w-full pl-9 pr-4 py-2.5 rounded-lg border border-slate-200
-                               focus:border-green-500 focus:ring-2 focus:ring-green-100
+                               focus:border-primary-500 focus:ring-2 focus:ring-primary-100
                                text-slate-900 placeholder:text-slate-400"
                     autoFocus
                     autoComplete="off"
@@ -211,7 +211,7 @@ export function NewConversationModal({ open, onClose, preselectedUserId }: NewCo
           ) : (
             <>
               {/* Selected Recipient */}
-              <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200">
+              <div className="flex items-center gap-3 p-3 bg-primary-50 rounded-lg border border-primary-200">
                 {selectedResult?.avatar_url ? (
                   <img
                     src={selectedResult.avatar_url}
@@ -219,8 +219,8 @@ export function NewConversationModal({ open, onClose, preselectedUserId }: NewCo
                     className="w-10 h-10 rounded-full object-cover"
                   />
                 ) : (
-                  <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                    <span className="text-sm font-medium text-green-700">
+                  <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
+                    <span className="text-sm font-medium text-primary-700">
                       {selectedResult?.name.split(' ').map(n => n[0]).join('')}
                     </span>
                   </div>
@@ -256,7 +256,7 @@ export function NewConversationModal({ open, onClose, preselectedUserId }: NewCo
                   placeholder="Type your message..."
                   rows={6}
                   className="w-full px-4 py-2.5 rounded-lg border border-slate-200
-                             focus:border-green-500 focus:ring-2 focus:ring-green-100
+                             focus:border-primary-500 focus:ring-2 focus:ring-primary-100
                              text-slate-900 placeholder:text-slate-400 resize-none"
                   autoFocus
                 />

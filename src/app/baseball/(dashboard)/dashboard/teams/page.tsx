@@ -341,7 +341,7 @@ export default function TeamsPage() {
                             title="Copy invite link"
                           >
                             {copiedCode === invite.code ? (
-                              <IconCheck size={16} className="text-green-600" />
+                              <IconCheck size={16} className="text-primary-600" />
                             ) : (
                               <IconCopy size={16} className="text-slate-500" />
                             )}
@@ -415,7 +415,7 @@ export default function TeamsPage() {
                   placeholder="Brief description of your team..."
                   value={newTeam.description}
                   onChange={(e) => setNewTeam({ ...newTeam, description: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-base lg:text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-base lg:text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
                   rows={3}
                 />
               </div>

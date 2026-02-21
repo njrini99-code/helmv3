@@ -13,8 +13,8 @@ export default async function SavedComparisonsPage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 rounded-lg bg-green-50">
-                <IconBookmark size={24} className="text-green-600" />
+              <div className="p-2 rounded-lg bg-primary-50">
+                <IconBookmark size={24} className="text-primary-600" />
               </div>
               <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Saved Comparisons</h1>
             </div>

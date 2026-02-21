@@ -141,7 +141,7 @@ export function GlassStatCard({ label, value, icon, suffix, trend }: GlassStatCa
             <p
               className={cn(
                 'text-sm mt-1',
-                trend.direction === 'up' && 'text-green-600',
+                trend.direction === 'up' && 'text-primary-600',
                 trend.direction === 'down' && 'text-red-500',
                 trend.direction === 'neutral' && 'text-warm-400'
               )}

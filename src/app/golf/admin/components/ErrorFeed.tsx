@@ -122,15 +122,15 @@ export function ErrorFeed({ errorLogs }: Props) {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-warm-900 line-clamp-2 leading-snug">{err.message}</p>
                         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                          <span className={cn('text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded', style.badge)}>
+                          <span className={cn('text-micro font-semibold uppercase px-1.5 py-0.5 rounded', style.badge)}>
                             {err.severity}
                           </span>
                           {err.occurrences > 1 && (
-                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-warm-100 text-warm-500 tabular-nums">
+                            <span className="text-micro font-medium px-1.5 py-0.5 rounded bg-warm-100 text-warm-500 tabular-nums">
                               {err.occurrences}x
                             </span>
                           )}
-                          <span className="text-[11px] text-warm-400 tabular-nums">{timeAgo(err.createdAt)}</span>
+                          <span className="text-label text-warm-400 tabular-nums">{timeAgo(err.createdAt)}</span>
                         </div>
                         {err.url && (
                           <p className="text-xs text-warm-400 truncate mt-1">{err.url}</p>
@@ -194,21 +194,21 @@ export function ErrorFeed({ errorLogs }: Props) {
                     >
                       <p className="text-sm text-warm-900 line-clamp-2 leading-snug">{err.message}</p>
                       <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                        <span className={cn('text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded', style.badge)}>
+                        <span className={cn('text-micro font-semibold uppercase px-1.5 py-0.5 rounded', style.badge)}>
                           {err.severity}
                         </span>
-                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-warm-100 text-warm-600 tabular-nums">
+                        <span className="text-micro font-medium px-1.5 py-0.5 rounded bg-warm-100 text-warm-600 tabular-nums">
                           {err.occurrences} occurrences
                         </span>
-                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 tabular-nums">
+                        <span className="text-micro font-medium px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 tabular-nums">
                           {err.affectedUsers} user{err.affectedUsers !== 1 ? 's' : ''}
                         </span>
                       </div>
                       <div className="flex items-center gap-3 mt-1.5">
-                        <span className="text-[11px] text-warm-400">
+                        <span className="text-label text-warm-400">
                           First: {timeAgo(err.firstSeen)}
                         </span>
-                        <span className="text-[11px] text-warm-400">
+                        <span className="text-label text-warm-400">
                           Last: {timeAgo(err.lastSeen)}
                         </span>
                       </div>

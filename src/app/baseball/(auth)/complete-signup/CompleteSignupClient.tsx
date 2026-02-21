@@ -164,7 +164,7 @@ export default function CompleteSignupClient() {
   if (checking) {
     return (
       <div className="min-h-screen bg-[#FAF6F1] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
       </div>
     );
   }
@@ -173,8 +173,8 @@ export default function CompleteSignupClient() {
     <div className="min-h-screen bg-[#FAF6F1] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="w-16 h-16 rounded-full bg-primary-50 flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
@@ -192,11 +192,11 @@ export default function CompleteSignupClient() {
                 className={cn(
                   'p-4 border-2 rounded-xl text-left transition-all flex items-center gap-3',
                   role === 'coach'
-                    ? 'border-green-500 bg-green-50'
+                    ? 'border-primary-500 bg-primary-50'
                     : 'border-slate-200 hover:border-slate-300'
                 )}
               >
-                <IconUsers size={20} className="text-green-600" />
+                <IconUsers size={20} className="text-primary-600" />
                 <span className="font-medium">Coach</span>
               </button>
               <button
@@ -204,11 +204,11 @@ export default function CompleteSignupClient() {
                 className={cn(
                   'p-4 border-2 rounded-xl text-left transition-all flex items-center gap-3',
                   role === 'player'
-                    ? 'border-green-500 bg-green-50'
+                    ? 'border-primary-500 bg-primary-50'
                     : 'border-slate-200 hover:border-slate-300'
                 )}
               >
-                <IconUser size={20} className="text-green-600" />
+                <IconUser size={20} className="text-primary-600" />
                 <span className="font-medium">Player</span>
               </button>
             </div>
@@ -235,7 +235,7 @@ export default function CompleteSignupClient() {
                         className={cn(
                           'p-3 border-2 rounded-xl text-sm font-medium transition-all',
                           coachType === type.value
-                            ? 'border-green-500 bg-green-50 text-green-700'
+                            ? 'border-primary-500 bg-primary-50 text-primary-700'
                             : 'border-slate-200 hover:border-slate-300'
                         )}
                       >
@@ -257,7 +257,7 @@ export default function CompleteSignupClient() {
                         className={cn(
                           'p-3 border-2 rounded-xl text-sm font-medium transition-all',
                           playerType === type.value
-                            ? 'border-green-500 bg-green-50 text-green-700'
+                            ? 'border-primary-500 bg-primary-50 text-primary-700'
                             : 'border-slate-200 hover:border-slate-300'
                         )}
                       >

@@ -17,7 +17,7 @@ const colorClasses = {
   amber: 'bg-amber-500',
   red: 'bg-red-500',
   blue: 'bg-blue-500',
-  green: 'bg-green-500',
+  green: 'bg-primary-500',
 };
 
 export function StatBar({

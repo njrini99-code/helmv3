@@ -123,7 +123,7 @@ export function Header({ title, subtitle, children, backHref }: HeaderProps) {
         >
           <IconSearch size={16} className="text-slate-400" />
           <span className="flex-1 text-left truncate">Search...</span>
-          <kbd className="hidden sm:inline-flex px-1.5 py-0.5 text-[10px] font-medium text-slate-400 bg-white rounded border border-slate-200">
+          <kbd className="hidden sm:inline-flex px-1.5 py-0.5 text-micro font-medium text-slate-400 bg-white rounded border border-slate-200">
             ⌘K
           </kbd>
         </button>

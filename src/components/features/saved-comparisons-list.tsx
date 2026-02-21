@@ -88,13 +88,13 @@ export function SavedComparisonsList({ comparisons }: SavedComparisonsListProps)
       {comparisons.map((comparison) => (
         <Card
           key={comparison.id}
-          className="group hover:border-green-200 hover:shadow-lg transition-all cursor-pointer"
+          className="group hover:border-primary-200 hover:shadow-lg transition-all cursor-pointer"
           onClick={() => handleViewComparison(comparison)}
         >
           <div className="p-6">
             {/* Header */}
             <div className="flex items-start justify-between mb-3">
-              <h3 className="text-base font-semibold text-slate-900 group-hover:text-green-600 transition-colors line-clamp-2">
+              <h3 className="text-base font-semibold text-slate-900 group-hover:text-primary-600 transition-colors line-clamp-2">
                 {comparison.name || 'Untitled Comparison'}
               </h3>
               <button
@@ -135,7 +135,7 @@ export function SavedComparisonsList({ comparisons }: SavedComparisonsListProps)
 
             {/* Footer - View button appears on hover */}
             <div className="mt-4 pt-4 border-t border-slate-100">
-              <span className="text-sm leading-relaxed text-green-600 group-hover:underline">
+              <span className="text-sm leading-relaxed text-primary-600 group-hover:underline">
                 View Comparison →
               </span>
             </div>

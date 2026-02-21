@@ -127,7 +127,7 @@ export default function AboutPage() {
         >
           <motion.p
             variants={fadeInUp}
-            className="text-sm font-medium text-green-600 tracking-wide uppercase mb-4"
+            className="text-sm font-medium text-primary-600 tracking-wide uppercase mb-4"
           >
             Our Mission
           </motion.p>
@@ -235,7 +235,7 @@ export default function AboutPage() {
               >
                 <div className="h-full bg-[#FAFAF8] rounded-xl p-6 border border-warm-100
                               hover:border-warm-200 hover:shadow-sm transition-all duration-200">
-                  <div className="w-8 h-8 rounded-full bg-green-50 text-green-600
+                  <div className="w-8 h-8 rounded-full bg-primary-50 text-primary-600
                                 flex items-center justify-center text-sm font-semibold mb-4">
                     {index + 1}
                   </div>
@@ -281,8 +281,8 @@ export default function AboutPage() {
                 className="group"
               >
                 <div className="h-full bg-white rounded-xl p-6 border border-warm-200
-                              hover:border-green-200 hover:shadow-sm transition-all duration-200">
-                  <div className="w-1 h-8 bg-green-500 rounded-full mb-4" />
+                              hover:border-primary-200 hover:shadow-sm transition-all duration-200">
+                  <div className="w-1 h-8 bg-primary-500 rounded-full mb-4" />
                   <h3 className="font-semibold text-warm-900 text-lg mb-2">
                     {item.title}
                   </h3>

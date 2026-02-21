@@ -107,7 +107,7 @@ export function TechArchitectureSection() {
         >
           <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6">
             Built to{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-helm-green-400 to-blue-400">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-helm-primary-400 to-blue-400">
               Scale
             </span>
           </h2>
@@ -130,7 +130,7 @@ export function TechArchitectureSection() {
                   transition={{ delay: 0.1 + i * 0.1 }}
                   className={`relative p-5 rounded-xl border backdrop-blur-sm
                     ${layer.color === 'blue' ? 'bg-blue-500/5 border-blue-500/20' :
-                      layer.color === 'green' ? 'bg-helm-green-500/5 border-helm-green-500/20' :
+                      layer.color === 'green' ? 'bg-helm-primary-500/5 border-helm-primary-500/20' :
                       layer.color === 'purple' ? 'bg-purple-500/5 border-purple-500/20' :
                       layer.color === 'amber' ? 'bg-helm-amber-500/5 border-helm-amber-500/20' :
                       'bg-red-500/5 border-red-500/20'
@@ -140,7 +140,7 @@ export function TechArchitectureSection() {
                     <div className="flex items-center gap-3">
                       <div className={`w-10 h-10 rounded-lg flex items-center justify-center
                         ${layer.color === 'blue' ? 'bg-blue-500/20 text-blue-400' :
-                          layer.color === 'green' ? 'bg-helm-green-500/20 text-helm-green-400' :
+                          layer.color === 'green' ? 'bg-helm-primary-500/20 text-helm-primary-400' :
                           layer.color === 'purple' ? 'bg-purple-500/20 text-purple-400' :
                           layer.color === 'amber' ? 'bg-helm-amber-500/20 text-helm-amber-400' :
                           'bg-red-500/20 text-red-400'
@@ -195,7 +195,7 @@ export function TechArchitectureSection() {
                       delay: i * 0.6,
                       ease: 'linear'
                     }}
-                    className="absolute w-2 h-2 -left-0.5 rounded-full bg-helm-green-500"
+                    className="absolute w-2 h-2 -left-0.5 rounded-full bg-helm-primary-500"
                   />
                 ))}
               </div>
@@ -213,8 +213,8 @@ export function TechArchitectureSection() {
                 className="p-5 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.05] transition-colors"
               >
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-helm-green-500/10 flex items-center justify-center flex-shrink-0">
-                    <feature.icon className="w-6 h-6 text-helm-green-400" />
+                  <div className="w-12 h-12 rounded-xl bg-helm-primary-500/10 flex items-center justify-center flex-shrink-0">
+                    <feature.icon className="w-6 h-6 text-helm-primary-400" />
                   </div>
                   <div>
                     <h3 className="text-white font-semibold mb-1">{feature.title}</h3>

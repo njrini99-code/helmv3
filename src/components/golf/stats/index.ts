@@ -25,7 +25,7 @@ export { default as StatComparisonCard, StatComparisonGrid, PeriodComparisonCard
 export { PuttingDispersionPremium } from './PuttingDispersionPremium';
 export { ApproachDispersionPremium } from './ApproachDispersionPremium';
 export { DrivingDispersionPremium } from './DrivingDispersionPremium';
-export { ShotDispersionChart, DrivingDispersionVisualLegacy, ApproachDispersionVisualLegacy, PuttingDispersionVisualLegacy } from './ShotDispersionChart';
+export { ShotDispersionChart } from './ShotDispersionChart';
 
 // Display & Analysis
 export { default as GolfStatsDisplay, Sparkline } from './GolfStatsDisplay';

@@ -177,7 +177,7 @@ export function PipelineView({
               )}>
                 <span className="text-sm flex-shrink-0">{stage.emoji}</span>
                 <div className="min-w-0">
-                  <div className="text-[11px] font-medium truncate">{stage.label}</div>
+                  <div className="text-label font-medium truncate">{stage.label}</div>
                   <div className="text-base font-bold tabular-nums leading-tight">{count}</div>
                 </div>
               </div>
@@ -220,7 +220,7 @@ export function PipelineView({
                   </div>
                   <span className={cn(
                     'min-w-[22px] h-[22px] px-1.5 rounded-full flex items-center justify-center flex-shrink-0',
-                    'text-[11px] font-bold tabular-nums',
+                    'text-label font-bold tabular-nums',
                     columnCoaches.length > 0
                       ? `bg-gradient-to-r ${stage.gradient} text-white`
                       : 'bg-warm-100 text-warm-400'
@@ -320,26 +320,26 @@ function KanbanCard({
       <p className="text-xs text-warm-500 line-clamp-1 mb-0.5">{coach.school}</p>
 
       {/* Conference */}
-      <p className="text-[11px] text-warm-400 line-clamp-1 mb-2">{coach.conference}</p>
+      <p className="text-label text-warm-400 line-clamp-1 mb-2">{coach.conference}</p>
 
       {/* Bottom: Division + Days + Priority + Quick advance */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
           <span className={cn(
-            'text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded',
+            'text-micro font-bold uppercase tracking-wider px-1.5 py-0.5 rounded',
             coach.division === 'D2' ? 'bg-blue-50 text-blue-700' : 'bg-primary-100 text-primary-700'
           )}>
             {coach.division}
           </span>
           <span className={cn(
-            'text-[10px] font-medium tabular-nums',
+            'text-micro font-medium tabular-nums',
             daysInStage > 14 ? 'text-amber-600' : 'text-warm-400'
           )}>
             {daysInStage}d
           </span>
           {coach.priority > 0 && (
             <span className={cn(
-              'text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded',
+              'text-micro font-bold uppercase tracking-wider px-1.5 py-0.5 rounded',
               coach.priority >= 2 ? 'bg-orange-50 text-orange-600' : 'bg-amber-50 text-amber-600'
             )}>
               {coach.priority >= 2 ? '🔥 Hot' : '⚡ High'}
@@ -372,7 +372,7 @@ function EmptyColumn({ stage }: { stage: PipelineStage }) {
         <span className="text-lg">{stage.emoji}</span>
       </div>
       <p className="text-xs text-warm-400 font-medium">No coaches here yet</p>
-      <p className="text-[11px] text-warm-300 mt-0.5">Drag coaches here or update their status</p>
+      <p className="text-label text-warm-300 mt-0.5">Drag coaches here or update their status</p>
     </div>
   );
 }

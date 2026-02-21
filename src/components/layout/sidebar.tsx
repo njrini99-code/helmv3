@@ -338,7 +338,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
 
         {/* Section Label */}
         {!isCollapsed && (
-          <p className="px-3 py-2 text-[11px] font-semibold text-white/40 uppercase tracking-wider whitespace-nowrap">
+          <p className="px-3 py-2 text-label font-semibold text-white/40 uppercase tracking-wider whitespace-nowrap">
             {user?.role === 'coach'
               ? (coach?.coach_type === 'showcase' ? 'Organization'
                  : currentMode === 'recruiting' ? 'Recruiting'
@@ -387,7 +387,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
                   {item.badge && unreadCount > 0 && (
                     <span
                       className={cn(
-                        'flex items-center justify-center text-[10px] font-semibold bg-primary-600 text-white rounded-full transition-all duration-300',
+                        'flex items-center justify-center text-micro font-semibold bg-primary-600 text-white rounded-full transition-all duration-300',
                         isCollapsed
                           ? 'absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1'
                           : 'ml-auto px-1.5 py-0.5'
@@ -408,7 +408,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
             {/* Divider */}
             <div className="my-4 mx-3 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
             {!isCollapsed && (
-              <p className="px-3 py-2 text-[11px] font-semibold text-white/40 uppercase tracking-wider whitespace-nowrap overflow-hidden">
+              <p className="px-3 py-2 text-label font-semibold text-white/40 uppercase tracking-wider whitespace-nowrap overflow-hidden">
                 {selectedTeam.name}
               </p>
             )}
@@ -459,7 +459,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
 
         {/* Secondary Navigation */}
         {!isCollapsed && (
-          <p className="px-3 py-2 text-[11px] font-semibold text-white/40 uppercase tracking-wider whitespace-nowrap">
+          <p className="px-3 py-2 text-label font-semibold text-white/40 uppercase tracking-wider whitespace-nowrap">
             More
           </p>
         )}
@@ -513,7 +513,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
         >
           <div className="flex items-center gap-2 mb-1">
             <span className="text-sm font-medium text-white">Free Plan</span>
-            <span className="px-1.5 py-0.5 text-[10px] font-medium bg-primary-600 text-white rounded">BETA</span>
+            <span className="px-1.5 py-0.5 text-micro font-medium bg-primary-600 text-white rounded">BETA</span>
           </div>
           <div className="text-xs text-white/50">Pro plans coming soon</div>
         </div>

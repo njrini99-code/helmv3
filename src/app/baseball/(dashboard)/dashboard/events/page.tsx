@@ -45,7 +45,7 @@ interface Event {
 
 const eventTypeColors: Record<string, string> = {
   game: 'bg-blue-50 text-blue-700',
-  practice: 'bg-green-50 text-green-700',
+  practice: 'bg-primary-50 text-primary-700',
   showcase: 'bg-purple-50 text-purple-700',
   tryout: 'bg-amber-50 text-amber-700',
   tournament: 'bg-red-50 text-red-700',
@@ -387,7 +387,7 @@ export default function EventsPage() {
                     type="datetime-local"
                     value={newEvent.start_time}
                     onChange={(e) => setNewEvent({ ...newEvent, start_time: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-base lg:text-sm focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-base lg:text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
                     required
                   />
                 </div>
@@ -399,7 +399,7 @@ export default function EventsPage() {
                     type="datetime-local"
                     value={newEvent.end_time}
                     onChange={(e) => setNewEvent({ ...newEvent, end_time: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-base lg:text-sm focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-base lg:text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
                   />
                 </div>
               </div>
@@ -418,7 +418,7 @@ export default function EventsPage() {
                   onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
                   placeholder="Add notes or details about this event..."
                   rows={3}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-base lg:text-sm focus:border-green-500 focus:ring-2 focus:ring-green-100 resize-none"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-base lg:text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-100 resize-none"
                 />
               </div>
               <div className="flex items-center gap-3 pt-4">

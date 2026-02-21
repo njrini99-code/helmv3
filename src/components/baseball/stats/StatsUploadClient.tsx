@@ -168,9 +168,9 @@ export function StatsUploadClient({
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                   step === s || (step === 'processing' && s === 'configure')
-                    ? 'bg-green-600 text-white'
+                    ? 'bg-primary-600 text-white'
                     : ['upload', 'preview', 'configure'].indexOf(s) < ['upload', 'preview', 'configure', 'complete'].indexOf(step)
-                    ? 'bg-green-100 text-green-700'
+                    ? 'bg-primary-100 text-primary-700'
                     : 'bg-slate-100 text-slate-400'
                 }`}
               >
@@ -187,14 +187,14 @@ export function StatsUploadClient({
         {step === 'upload' && (
           <div
             className={`bg-white/70 backdrop-blur-xl border-2 border-dashed rounded-2xl p-12 text-center transition-colors ${
-              isDragging ? 'border-green-500 bg-green-50/50' : 'border-slate-200'
+              isDragging ? 'border-primary-500 bg-primary-50/50' : 'border-slate-200'
             }`}
             onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
             onDragLeave={() => setIsDragging(false)}
             onDrop={handleDrop}
           >
-            <div className="w-16 h-16 rounded-2xl bg-green-100 flex items-center justify-center mx-auto mb-4">
-              <IconUpload size={32} className="text-green-600" />
+            <div className="w-16 h-16 rounded-2xl bg-primary-100 flex items-center justify-center mx-auto mb-4">
+              <IconUpload size={32} className="text-primary-600" />
             </div>
             <h2 className="text-xl font-semibold text-slate-900 mb-2">
               Upload CSV File
@@ -211,7 +211,7 @@ export function StatsUploadClient({
               className="hidden"
               id="csv-upload"
             />
-            <label htmlFor="csv-upload" className="inline-flex items-center justify-center cursor-pointer px-4 py-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-medium rounded-lg transition-colors">
+            <label htmlFor="csv-upload" className="inline-flex items-center justify-center cursor-pointer px-4 py-2 bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white font-medium rounded-lg transition-colors">
               Choose File
             </label>
 
@@ -236,8 +236,8 @@ export function StatsUploadClient({
             {/* File Info */}
             <div className="glass-standard rounded-2xl p-6">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
-                  <IconFile size={24} className="text-green-600" />
+                <div className="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center">
+                  <IconFile size={24} className="text-primary-600" />
                 </div>
                 <div className="flex-1">
                   <p className="font-medium text-slate-900">{fileName}</p>
@@ -265,11 +265,11 @@ export function StatsUploadClient({
 
               {goodMatches.length > 0 && (
                 <div className="mb-4">
-                  <p className="text-sm text-green-600 font-medium mb-2 flex items-center gap-1">
+                  <p className="text-sm text-primary-600 font-medium mb-2 flex items-center gap-1">
                     <IconCheck size={16} />
                     {goodMatches.length} players matched
                   </p>
-                  <div className="bg-green-50 rounded-lg p-3">
+                  <div className="bg-primary-50 rounded-lg p-3">
                     <div className="flex flex-wrap gap-2">
                       {goodMatches.slice(0, 8).map(match => (
                         <span
@@ -280,7 +280,7 @@ export function StatsUploadClient({
                         </span>
                       ))}
                       {goodMatches.length > 8 && (
-                        <span className="px-2 py-1 text-xs text-green-600">
+                        <span className="px-2 py-1 text-xs text-primary-600">
                           +{goodMatches.length - 8} more
                         </span>
                       )}
@@ -386,7 +386,7 @@ export function StatsUploadClient({
                         onClick={() => setStatType(type)}
                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                           statType === type
-                            ? 'bg-green-600 text-white'
+                            ? 'bg-primary-600 text-white'
                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200 active:bg-slate-300'
                         }`}
                       >
@@ -409,7 +409,7 @@ export function StatsUploadClient({
                     value={sessionDate}
                     onChange={(e) => setSessionDate(e.target.value)}
                     className="w-full px-4 py-2 rounded-lg border border-slate-200
-                               focus:border-green-500 focus:ring-2 focus:ring-green-100
+                               focus:border-primary-500 focus:ring-2 focus:ring-primary-100
                                text-slate-900 transition-colors"
                   />
                 </div>
@@ -425,7 +425,7 @@ export function StatsUploadClient({
                     onChange={(e) => setSessionName(e.target.value)}
                     placeholder="e.g., Fall Scrimmage vs State"
                     className="w-full px-4 py-2 rounded-lg border border-slate-200
-                               focus:border-green-500 focus:ring-2 focus:ring-green-100
+                               focus:border-primary-500 focus:ring-2 focus:ring-primary-100
                                text-slate-900 placeholder:text-slate-400 transition-colors"
                   />
                 </div>
@@ -433,9 +433,9 @@ export function StatsUploadClient({
             </div>
 
             {/* Summary */}
-            <div className="bg-green-50 border border-green-200 rounded-2xl p-6">
-              <h4 className="font-semibold text-green-800 mb-3">Ready to Upload</h4>
-              <ul className="space-y-2 text-sm text-green-700">
+            <div className="bg-primary-50 border border-primary-200 rounded-2xl p-6">
+              <h4 className="font-semibold text-primary-800 mb-3">Ready to Upload</h4>
+              <ul className="space-y-2 text-sm text-primary-700">
                 <li className="flex items-center gap-2">
                   <IconCheck size={16} />
                   {parsedRows.length} rows from {fileName}
@@ -470,7 +470,7 @@ export function StatsUploadClient({
         {/* Step: Processing */}
         {step === 'processing' && (
           <div className="glass-standard rounded-2xl p-12 text-center">
-            <div className="animate-spin w-12 h-12 border-4 border-green-600 border-t-transparent rounded-full mx-auto mb-4" />
+            <div className="animate-spin w-12 h-12 border-4 border-primary-600 border-t-transparent rounded-full mx-auto mb-4" />
             <h2 className="text-xl font-semibold text-slate-900 mb-2">
               Processing Upload
             </h2>
@@ -485,26 +485,26 @@ export function StatsUploadClient({
           <div className="space-y-6">
             <div className={`rounded-2xl p-8 text-center ${
               uploadResult.success
-                ? 'bg-green-50 border border-green-200'
+                ? 'bg-primary-50 border border-primary-200'
                 : 'bg-red-50 border border-red-200'
             }`}>
               <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
-                uploadResult.success ? 'bg-green-100' : 'bg-red-100'
+                uploadResult.success ? 'bg-primary-100' : 'bg-red-100'
               }`}>
                 {uploadResult.success ? (
-                  <IconCheck size={32} className="text-green-600" />
+                  <IconCheck size={32} className="text-primary-600" />
                 ) : (
                   <IconX size={32} className="text-red-600" />
                 )}
               </div>
               <h2 className={`text-xl font-semibold mb-2 ${
-                uploadResult.success ? 'text-green-800' : 'text-red-800'
+                uploadResult.success ? 'text-primary-800' : 'text-red-800'
               }`}>
                 {uploadResult.success ? 'Upload Complete!' : 'Upload Failed'}
               </h2>
 
               {uploadResult.success && (
-                <div className="mt-4 space-y-2 text-sm text-green-700">
+                <div className="mt-4 space-y-2 text-sm text-primary-700">
                   <p>
                     <strong>{uploadResult.matchedRows}</strong> players matched and stats recorded
                   </p>

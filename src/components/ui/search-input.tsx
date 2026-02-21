@@ -197,7 +197,7 @@ export function SearchInput({
           {showRecent ? (
             <div className="py-2">
               <div className="flex items-center justify-between px-4 py-2">
-                <span className="text-[11px] font-medium uppercase tracking-wider text-warm-400">Recent Searches</span>
+                <span className="text-label font-medium uppercase tracking-wider text-warm-400">Recent Searches</span>
                 <button
                   onClick={clearRecent}
                   className="text-xs text-warm-400 hover:text-warm-600 transition-colors"
@@ -224,7 +224,7 @@ export function SearchInput({
           ) : (
             <div className="py-2">
               <div className="px-4 py-2">
-                <span className="text-[11px] font-medium uppercase tracking-wider text-warm-400">Suggestions</span>
+                <span className="text-label font-medium uppercase tracking-wider text-warm-400">Suggestions</span>
               </div>
               {allSuggestions.map((item, index) => (
                 <button

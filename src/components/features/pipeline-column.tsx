@@ -28,7 +28,7 @@ export function PipelineColumn({ stage, items }: PipelineColumnProps) {
         'relative rounded-[20px] p-5 min-h-[500px] transition-all duration-200 overflow-hidden',
         'bg-white/60 backdrop-blur-md border border-white/40',
         'flex-shrink-0 w-[280px] snap-start lg:w-auto lg:snap-align-none',
-        isOver && 'ring-2 ring-green-600 ring-offset-2 bg-green-50/30'
+        isOver && 'ring-2 ring-primary-600 ring-offset-2 bg-primary-50/30'
       )}
     >
       {/* Shine effect */}
@@ -42,7 +42,7 @@ export function PipelineColumn({ stage, items }: PipelineColumnProps) {
         <h3 className="font-semibold text-slate-900 tracking-tight text-sm">{getPipelineStageLabel(stage)}</h3>
         <Badge variant="secondary" className={cn(
           'tabular-nums',
-          isOver && 'bg-green-600 text-white'
+          isOver && 'bg-primary-600 text-white'
         )}>{items.length}</Badge>
       </div>
       <div className="space-y-3">
@@ -58,7 +58,7 @@ export function PipelineColumn({ stage, items }: PipelineColumnProps) {
         {items.length === 0 && (
           <p className={cn(
             'text-sm text-center py-8 transition-colors',
-            isOver ? 'text-green-700 font-semibold' : 'text-slate-400'
+            isOver ? 'text-primary-700 font-semibold' : 'text-slate-400'
           )}>
             {isOver ? 'Drop here' : 'No players'}
           </p>

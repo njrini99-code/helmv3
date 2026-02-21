@@ -40,7 +40,7 @@ export const QuickStatRow = memo(function QuickStatRow({ stats }: QuickStatRowPr
                         <div className="w-px h-8 bg-warm-200/50 flex-shrink-0" />
                     )}
                     <div className="text-center min-w-[60px]">
-                        <p className="text-[11px] font-medium text-warm-400 uppercase tracking-wider mb-0.5">
+                        <p className="text-label font-medium text-warm-400 uppercase tracking-wider mb-0.5">
                             {stat.label}
                         </p>
                         <p className="text-base font-bold text-warm-900 tabular-nums">

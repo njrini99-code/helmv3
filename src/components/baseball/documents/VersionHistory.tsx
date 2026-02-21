@@ -109,7 +109,7 @@ export function VersionHistory({
                     key={version.id}
                     className={cn(
                       'relative pl-10 group',
-                      isCurrent && 'bg-green-50/50 -mx-4 px-4 py-3 rounded-lg ml-6'
+                      isCurrent && 'bg-primary-50/50 -mx-4 px-4 py-3 rounded-lg ml-6'
                     )}
                   >
                     {/* Timeline dot */}
@@ -117,7 +117,7 @@ export function VersionHistory({
                       className={cn(
                         'absolute left-2.5 top-1 w-3 h-3 rounded-full border-2 bg-white',
                         isCurrent
-                          ? 'border-green-600 bg-green-600'
+                          ? 'border-primary-600 bg-primary-600'
                           : 'border-slate-300'
                       )}
                     />
@@ -128,7 +128,7 @@ export function VersionHistory({
                         <div className="flex items-center gap-2 mb-1">
                           <span className="font-semibold text-sm">v{version.version_number}</span>
                           {isCurrent && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 text-green-700">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-primary-100 text-primary-700">
                               <IconCheck size={10} />
                               Current
                             </span>
@@ -245,7 +245,7 @@ export function VersionHistory({
               <button
                 onClick={handleConfirmRevert}
                 disabled={isReverting}
-                className="flex-1 px-4 py-2.5 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white rounded-lg font-medium transition-colors text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white rounded-lg font-medium transition-colors text-sm disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {isReverting ? (
                   <>

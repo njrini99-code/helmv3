@@ -139,7 +139,7 @@ function ErrorTimeline({ errors }: { errors: AdminDashboardData['errorLogs']['re
               <p className="text-sm font-medium text-warm-900 leading-tight line-clamp-2">{error.message}</p>
               <div className="flex items-center gap-2 mt-1">
                 <span className={cn(
-                  'text-[10px] font-semibold px-1.5 py-0.5 rounded',
+                  'text-micro font-semibold px-1.5 py-0.5 rounded',
                   error.severity === 'critical' ? 'bg-red-50 text-red-600' :
                   error.severity === 'warning' ? 'bg-amber-50 text-amber-600' :
                   'bg-warm-100 text-warm-500'
@@ -193,7 +193,7 @@ function DataQualityRing({ quality }: { quality: AdminDashboardData['dataQuality
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span className="text-2xl font-bold text-warm-900 tabular-nums">{overallScore}</span>
-            <span className="text-[10px] text-warm-400 font-medium uppercase tracking-wider">/100</span>
+            <span className="text-micro text-warm-400 font-medium uppercase tracking-wider">/100</span>
           </div>
         </div>
 
@@ -220,7 +220,7 @@ function DataQualityRing({ quality }: { quality: AdminDashboardData['dataQuality
                 style={{ width: `${m.pct}%`, backgroundColor: m.color }}
               />
             </div>
-            <p className="text-[10px] text-warm-400 mt-0.5">{m.count.toLocaleString()} of {quality.totalShots.toLocaleString()}</p>
+            <p className="text-micro text-warm-400 mt-0.5">{m.count.toLocaleString()} of {quality.totalShots.toLocaleString()}</p>
           </div>
         ))}
       </div>
@@ -252,7 +252,7 @@ function FeatureAdoptionGrid({ features }: { features: AdminDashboardData['usage
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-warm-900">{feature.feature}</span>
                 <span className={cn(
-                  'text-[10px] font-bold uppercase px-1.5 py-0.5 rounded',
+                  'text-micro font-bold uppercase px-1.5 py-0.5 rounded',
                   status === 'active' ? 'bg-primary-50 text-primary-700' :
                   status === 'low' ? 'bg-amber-50 text-amber-700' :
                   'bg-red-50 text-red-600'
@@ -272,7 +272,7 @@ function FeatureAdoptionGrid({ features }: { features: AdminDashboardData['usage
                   style={{ width: `${Math.max((feature.count / maxCount) * 100, 3)}%` }}
                 />
               </div>
-              <p className="text-[11px] text-warm-400 mt-1.5 tabular-nums">{feature.count} total</p>
+              <p className="text-label text-warm-400 mt-1.5 tabular-nums">{feature.count} total</p>
             </div>
           );
         })}

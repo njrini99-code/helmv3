@@ -72,7 +72,7 @@ export const StatCardSparkline = memo(function StatCardSparkline({
         >
             <div className="relative flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
-                    <p className="text-[11px] md:text-xs font-medium text-warm-400 uppercase tracking-wider mb-1.5">{label}</p>
+                    <p className="text-label md:text-xs font-medium text-warm-400 uppercase tracking-wider mb-1.5">{label}</p>
                     <div className="flex items-baseline gap-1.5" aria-live="polite">
                         <p className="text-2xl md:text-3xl font-bold tracking-tight text-warm-900 tabular-nums">
                             {isNumeric ? (
@@ -83,7 +83,7 @@ export const StatCardSparkline = memo(function StatCardSparkline({
                         </p>
                         {trend && trend !== 'stable' && (
                             <span className={cn(
-                                'flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full',
+                                'flex items-center gap-0.5 text-micro font-semibold px-1.5 py-0.5 rounded-full',
                                 trendColor
                             )}>
                                 {trendIsPositive ? <IconTrendingUp size={10} /> : <IconTrendingDown size={10} />}

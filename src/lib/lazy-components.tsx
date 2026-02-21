@@ -18,7 +18,7 @@ type DynamicComponent<P = Record<string, unknown>> = ComponentType<P> & {
  */
 const DefaultLoading = () => (
   <div className="flex items-center justify-center p-8">
-    <div className="animate-spin h-8 w-8 border-2 border-green-600 border-t-transparent rounded-full" />
+    <div className="animate-spin h-8 w-8 border-2 border-primary-600 border-t-transparent rounded-full" />
   </div>
 );
 

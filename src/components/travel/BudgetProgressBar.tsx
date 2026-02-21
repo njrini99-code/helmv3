@@ -16,7 +16,7 @@ const CATEGORY_COLORS: Record<ExpenseCategory, string> = {
   transportation: 'bg-blue-500',
   lodging: 'bg-purple-500',
   meals: 'bg-amber-500',
-  entry_fees: 'bg-green-500',
+  entry_fees: 'bg-primary-500',
   equipment: 'bg-rose-500',
   other: 'bg-gray-500',
 };

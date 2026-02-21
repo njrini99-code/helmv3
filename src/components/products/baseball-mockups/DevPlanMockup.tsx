@@ -15,7 +15,7 @@ export function DevPlanMockup() {
       {/* Progress header */}
       <div className="flex items-center justify-between">
         <span className="text-[9px] font-semibold text-slate-600">Hitting Program</span>
-        <span className="text-[10px] text-primary-600 font-semibold">67%</span>
+        <span className="text-micro text-primary-600 font-semibold">67%</span>
       </div>
 
       {/* Progress bar */}
@@ -49,7 +49,7 @@ function GoalItem({ label, completed }: { label: string; completed?: boolean }) 
         )}
       </div>
       <span className={cn(
-        "text-[10px]",
+        "text-micro",
         completed ? "text-slate-500 line-through" : "text-slate-700"
       )}>
         {label}

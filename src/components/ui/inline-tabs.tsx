@@ -41,7 +41,7 @@ export function InlineTabs({ tabs, activeTab, onTabChange, size = 'md' }: Inline
             {tab.count !== undefined && (
               <span className={cn(
                 'px-1.5 py-0.5 rounded-full text-xs',
-                activeTab === tab.id ? 'bg-green-100 text-green-700' : 'bg-warm-200 text-warm-600'
+                activeTab === tab.id ? 'bg-primary-100 text-primary-700' : 'bg-warm-200 text-warm-600'
               )}>
                 {tab.count}
               </span>

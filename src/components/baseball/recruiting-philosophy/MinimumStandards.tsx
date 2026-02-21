@@ -168,7 +168,7 @@ export function MinimumStandards({ values, onChange }: MinimumStandardsProps) {
               className={cn(
                 'p-4 rounded-xl border transition-all',
                 isEnabled
-                  ? 'bg-white border-green-200'
+                  ? 'bg-white border-primary-200'
                   : 'bg-slate-50 border-slate-200'
               )}
             >
@@ -179,7 +179,7 @@ export function MinimumStandards({ values, onChange }: MinimumStandardsProps) {
                   className={cn(
                     'w-6 h-6 rounded-md border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors',
                     isEnabled
-                      ? 'bg-green-500 border-green-500 text-white'
+                      ? 'bg-primary-500 border-primary-500 text-white'
                       : 'border-slate-300 hover:border-slate-400'
                   )}
                 >
@@ -208,7 +208,7 @@ export function MinimumStandards({ values, onChange }: MinimumStandardsProps) {
                           step={config.step}
                           value={currentValue ?? ''}
                           onChange={(e) => handleValueChange(config.key, e.target.value)}
-                          className="w-24 px-3 py-1.5 text-right text-sm font-medium border border-slate-200 rounded-lg focus:border-green-500 focus:ring-2 focus:ring-green-100 transition-colors"
+                          className="w-24 px-3 py-1.5 text-right text-sm font-medium border border-slate-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-100 transition-colors"
                           placeholder={config.placeholder}
                         />
                       </div>
@@ -229,7 +229,7 @@ export function MinimumStandards({ values, onChange }: MinimumStandardsProps) {
                     <div className="mt-3">
                       <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
                         <span>{config.format(config.min)}</span>
-                        <span className="font-medium text-green-600">
+                        <span className="font-medium text-primary-600">
                           {config.isMaximum ? '≤' : '≥'} {config.format(currentValue)}
                         </span>
                         <span>{config.format(config.max)}</span>
@@ -238,7 +238,7 @@ export function MinimumStandards({ values, onChange }: MinimumStandardsProps) {
                         <div
                           className={cn(
                             'h-full rounded-full transition-all',
-                            config.isMaximum ? 'bg-green-500' : 'bg-green-500'
+                            config.isMaximum ? 'bg-primary-500' : 'bg-primary-500'
                           )}
                           style={{
                             width: config.isMaximum

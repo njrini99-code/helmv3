@@ -67,7 +67,7 @@ export function TeamHealthCards({ teams, onSelectTeam }: Props) {
             <h4 className="text-sm font-semibold text-warm-900 line-clamp-1 mb-1">{team.teamName}</h4>
 
             {/* Stats */}
-            <div className="flex items-center gap-3 text-[11px] text-warm-400">
+            <div className="flex items-center gap-3 text-label text-warm-400">
               <span className="tabular-nums">{team.memberCount} members</span>
               <span className="text-warm-200">·</span>
               <span className={cn(

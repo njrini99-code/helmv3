@@ -408,7 +408,7 @@ function DiscoverContent() {
               <IconFilter size={16} className="mr-2" />
               Filters
               {activeFilterCount > 0 && (
-                <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-green-600 rounded-full">
+                <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-primary-600 rounded-full">
                   {activeFilterCount}
                 </span>
               )}
@@ -452,7 +452,7 @@ function DiscoverContent() {
                 <div className="flex items-center gap-2">
                   <h2 className="text-lg font-semibold text-slate-900">Filters</h2>
                   {activeFilterCount > 0 && (
-                    <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold text-green-700 bg-green-100 rounded-full">
+                    <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold text-primary-700 bg-primary-100 rounded-full">
                       {activeFilterCount} active
                     </span>
                   )}

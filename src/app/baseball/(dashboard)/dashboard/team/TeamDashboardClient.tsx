@@ -201,7 +201,7 @@ export default function TeamDashboardClient() {
   const getEventColor = (type: string) => {
     switch (type) {
       case 'practice': return 'bg-blue-500';
-      case 'game': return 'bg-green-500';
+      case 'game': return 'bg-primary-500';
       case 'tournament': return 'bg-purple-500';
       case 'meeting': return 'bg-amber-500';
       default: return 'bg-slate-400';
@@ -259,7 +259,7 @@ export default function TeamDashboardClient() {
               <Card variant="glass">
                 <CardHeader className="flex flex-row items-center justify-between">
                   <h2 className="font-semibold text-slate-900">Recent Roster Activity</h2>
-                  <Link href="/baseball/dashboard/roster" className="text-sm leading-relaxed text-green-600 hover:underline flex items-center gap-1">
+                  <Link href="/baseball/dashboard/roster" className="text-sm leading-relaxed text-primary-600 hover:underline flex items-center gap-1">
                     View roster <IconChevronRight size={14} />
                   </Link>
                 </CardHeader>
@@ -448,8 +448,8 @@ export default function TeamDashboardClient() {
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-4">
-                    <IconNote size={24} className="text-green-600" />
+                  <div className="w-12 h-12 rounded-full bg-primary-50 flex items-center justify-center mx-auto mb-4">
+                    <IconNote size={24} className="text-primary-600" />
                   </div>
                   <h3 className="text-lg font-medium text-slate-900 mb-2">Active Plan</h3>
                   <p className="text-sm leading-relaxed text-slate-500 mb-4 max-w-sm mx-auto">

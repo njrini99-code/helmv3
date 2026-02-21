@@ -80,7 +80,7 @@ export function AdminOnlineIndicator({
               <div
                 key={admin.id}
                 className={cn(
-                  'w-6 h-6 rounded-full flex items-center justify-center text-white text-[10px] font-semibold ring-2 ring-white',
+                  'w-6 h-6 rounded-full flex items-center justify-center text-white text-micro font-semibold ring-2 ring-white',
                   getAdminColor(admin.id)
                 )}
                 title={admin.name || admin.email || 'Unknown'}
@@ -89,7 +89,7 @@ export function AdminOnlineIndicator({
               </div>
             ))}
             {otherAdmins.length > 3 && (
-              <div className="w-6 h-6 rounded-full bg-warm-100 flex items-center justify-center text-warm-600 text-[10px] font-semibold ring-2 ring-white">
+              <div className="w-6 h-6 rounded-full bg-warm-100 flex items-center justify-center text-warm-600 text-micro font-semibold ring-2 ring-white">
                 +{otherAdmins.length - 3}
               </div>
             )}
@@ -150,7 +150,7 @@ export function AdminOnlineIndicator({
 
               {/* Connection status */}
               <div className="px-4 py-2 border-t border-warm-100 flex items-center justify-between">
-                <span className="text-[10px] text-warm-400 uppercase tracking-wider">
+                <span className="text-micro text-warm-400 uppercase tracking-wider">
                   Connection
                 </span>
                 <span
@@ -223,7 +223,7 @@ function AdminListItem({ admin, isCurrentUser }: AdminListItemProps) {
             {admin.name || admin.email?.split('@')[0] || 'Unknown'}
           </span>
           {isCurrentUser && (
-            <span className="text-[10px] bg-primary-100 text-primary-700 px-1.5 py-0.5 rounded-full font-medium">
+            <span className="text-micro bg-primary-100 text-primary-700 px-1.5 py-0.5 rounded-full font-medium">
               You
             </span>
           )}

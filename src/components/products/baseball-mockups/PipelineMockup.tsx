@@ -23,7 +23,7 @@ export function PipelineMockup() {
             stage.color
           )}>
             <p className="text-[9px] font-semibold text-slate-700 truncate">{stage.label}</p>
-            <p className="text-[10px] text-slate-500">{stage.count}</p>
+            <p className="text-micro text-slate-500">{stage.count}</p>
           </div>
 
           {/* Cards */}

@@ -171,17 +171,17 @@ function AIROICard({ roi, coachhelm }: { roi: AdminDashboardData['coachhelmRoi']
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
         <div className="bg-white/50 rounded-xl p-4 text-center border border-white/30">
           <p className="text-2xl font-bold text-warm-900 tabular-nums">{roi.coachesUsingAI}</p>
-          <p className="text-[11px] text-warm-400 uppercase tracking-wider mt-1">AI Coaches</p>
+          <p className="text-label text-warm-400 uppercase tracking-wider mt-1">AI Coaches</p>
         </div>
         <div className="bg-white/50 rounded-xl p-4 text-center border border-white/30">
           <p className="text-2xl font-bold text-warm-900 tabular-nums">{roi.coachesNotUsingAI}</p>
-          <p className="text-[11px] text-warm-400 uppercase tracking-wider mt-1">Non-AI Coaches</p>
+          <p className="text-label text-warm-400 uppercase tracking-wider mt-1">Non-AI Coaches</p>
         </div>
         <div className="bg-white/50 rounded-xl p-4 text-center border border-white/30">
           <p className="text-2xl font-bold text-warm-900 tabular-nums">
             {roi.avgScoreAICoachPlayers !== null ? roi.avgScoreAICoachPlayers.toFixed(1) : <span className="text-warm-400">—</span>}
           </p>
-          <p className="text-[11px] text-warm-400 uppercase tracking-wider mt-1">AI Avg Score</p>
+          <p className="text-label text-warm-400 uppercase tracking-wider mt-1">AI Avg Score</p>
         </div>
         <div className="bg-white/50 rounded-xl p-4 text-center border border-white/30">
           <p className={cn(
@@ -190,7 +190,7 @@ function AIROICard({ roi, coachhelm }: { roi: AdminDashboardData['coachhelmRoi']
           )}>
             {roi.scoreDifference !== null ? (roi.scoreDifference > 0 ? `+${roi.scoreDifference.toFixed(1)}` : roi.scoreDifference.toFixed(1)) : <span className="text-warm-400">—</span>}
           </p>
-          <p className="text-[11px] text-warm-400 uppercase tracking-wider mt-1">AI Advantage</p>
+          <p className="text-label text-warm-400 uppercase tracking-wider mt-1">AI Advantage</p>
         </div>
       </div>
 

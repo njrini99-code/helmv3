@@ -202,11 +202,11 @@ export function ConferenceGroupView({
               <div className="flex-1 text-left">
                 <div className="flex items-center gap-2">
                   <h3 className="text-sm font-semibold text-warm-900">{group.conference}</h3>
-                  <span className="px-2 py-0.5 rounded-full bg-warm-100 text-[11px] font-bold text-warm-600 tabular-nums">
+                  <span className="px-2 py-0.5 rounded-full bg-warm-100 text-label font-bold text-warm-600 tabular-nums">
                     {group.coaches.length}
                   </span>
                   {activeCount > 0 && (
-                    <span className="px-2 py-0.5 rounded-full bg-primary-50 text-[11px] font-bold text-primary-700 tabular-nums">
+                    <span className="px-2 py-0.5 rounded-full bg-primary-50 text-label font-bold text-primary-700 tabular-nums">
                       {activeCount} active
                     </span>
                   )}
@@ -215,12 +215,12 @@ export function ConferenceGroupView({
 
               <div className="flex items-center gap-1.5">
                 {group.divisions.d2 > 0 && (
-                  <span className="px-2 py-0.5 rounded-md bg-blue-50 text-[10px] font-bold text-blue-700 tabular-nums">
+                  <span className="px-2 py-0.5 rounded-md bg-blue-50 text-micro font-bold text-blue-700 tabular-nums">
                     D2: {group.divisions.d2}
                   </span>
                 )}
                 {group.divisions.d3 > 0 && (
-                  <span className="px-2 py-0.5 rounded-md bg-primary-50 text-[10px] font-bold text-primary-700 tabular-nums">
+                  <span className="px-2 py-0.5 rounded-md bg-primary-50 text-micro font-bold text-primary-700 tabular-nums">
                     D3: {group.divisions.d3}
                   </span>
                 )}
@@ -253,11 +253,11 @@ export function ConferenceGroupView({
                     <tr className="border-b border-warm-100/30">
                       <th className="w-10 px-4 py-2" />
                       <th className="w-8 px-2 py-2" />
-                      <th className="text-left px-4 py-2 text-[10px] font-semibold text-warm-500 uppercase tracking-wider">Coach</th>
-                      <th className="text-left px-4 py-2 text-[10px] font-semibold text-warm-500 uppercase tracking-wider">School</th>
-                      <th className="text-left px-4 py-2 text-[10px] font-semibold text-warm-500 uppercase tracking-wider w-14 hidden sm:table-cell">Div</th>
-                      <th className="text-left px-4 py-2 text-[10px] font-semibold text-warm-500 uppercase tracking-wider">Status</th>
-                      <th className="text-left px-4 py-2 text-[10px] font-semibold text-warm-500 uppercase tracking-wider hidden lg:table-cell">Last Contact</th>
+                      <th className="text-left px-4 py-2 text-micro font-semibold text-warm-500 uppercase tracking-wider">Coach</th>
+                      <th className="text-left px-4 py-2 text-micro font-semibold text-warm-500 uppercase tracking-wider">School</th>
+                      <th className="text-left px-4 py-2 text-micro font-semibold text-warm-500 uppercase tracking-wider w-14 hidden sm:table-cell">Div</th>
+                      <th className="text-left px-4 py-2 text-micro font-semibold text-warm-500 uppercase tracking-wider">Status</th>
+                      <th className="text-left px-4 py-2 text-micro font-semibold text-warm-500 uppercase tracking-wider hidden lg:table-cell">Last Contact</th>
                       <th className="w-10 px-4 py-2" />
                     </tr>
                   </thead>
@@ -297,14 +297,14 @@ export function ConferenceGroupView({
                           </td>
                           <td className="px-4 py-2.5">
                             <p className="text-sm font-medium text-warm-900 truncate">{coach.name}</p>
-                            {coach.title && <p className="text-[11px] text-warm-400 truncate">{coach.title}</p>}
+                            {coach.title && <p className="text-label text-warm-400 truncate">{coach.title}</p>}
                           </td>
                           <td className="px-4 py-2.5">
                             <p className="text-sm text-warm-700 truncate">{coach.school}</p>
                           </td>
                           <td className="hidden sm:table-cell px-4 py-2.5">
                             <span className={cn(
-                              'text-[10px] font-bold uppercase px-1.5 py-0.5 rounded',
+                              'text-micro font-bold uppercase px-1.5 py-0.5 rounded',
                               coach.division === 'D2' ? 'bg-blue-100 text-blue-700' : 'bg-primary-100 text-primary-700'
                             )}>
                               {coach.division}
@@ -315,7 +315,7 @@ export function ConferenceGroupView({
                               <button
                                 onClick={e => { e.stopPropagation(); setOpenStatusDropdown(openStatusDropdown === coach.id ? null : coach.id); setOpenActionMenu(null); }}
                                 className={cn(
-                                  'inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-medium transition-all',
+                                  'inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-micro font-medium transition-all',
                                   statusConfig[coach.status]?.bgColor,
                                   statusConfig[coach.status]?.color,
                                   'hover:ring-1 hover:ring-warm-200'

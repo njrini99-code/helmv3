@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import {
@@ -84,19 +84,19 @@ export function CoachDetailPanel({
 
   const supabase = createClient();
 
-  useEffect(() => { const t = setTimeout(() => setIsVisible(true), 10); return () => clearTimeout(t); }, []);
-  useEffect(() => { fetchLogs(); setNotesValue(coach.notes || ''); setFollowUpDate(coach.next_follow_up_at?.split('T')[0] || ''); }, [coach.id]);
-
-  const handleClose = () => { setIsVisible(false); setTimeout(onClose, 200); };
-
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     setLoadingLogs(true);
     try {
       const { data } = await supabase.from('crm_contact_log').select('*').eq('coach_id', coach.id).order('contact_date', { ascending: false });
       setLogs((data || []) as ContactLog[]);
     } catch (err) { console.error('Failed to fetch logs:', err); }
     finally { setLoadingLogs(false); }
-  };
+  }, [supabase, coach.id]);
+
+  useEffect(() => { const t = setTimeout(() => setIsVisible(true), 10); return () => clearTimeout(t); }, []);
+  useEffect(() => { fetchLogs(); setNotesValue(coach.notes || ''); setFollowUpDate(coach.next_follow_up_at?.split('T')[0] || ''); }, [coach.id, coach.notes, coach.next_follow_up_at, fetchLogs]);
+
+  const handleClose = () => { setIsVisible(false); setTimeout(onClose, 200); };
 
   const saveNotes = () => { onUpdate({ notes: notesValue || null }); setEditingNotes(false); };
 
@@ -165,7 +165,7 @@ export function CoachDetailPanel({
                 </button>
                 <h2 className="text-xl font-bold text-warm-900 truncate">{coach.name}</h2>
                 {coach.priority > 0 && (
-                  <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded', priorityConfig[coach.priority]?.bgColor, priorityConfig[coach.priority]?.color)}>
+                  <span className={cn('text-micro font-bold px-1.5 py-0.5 rounded', priorityConfig[coach.priority]?.bgColor, priorityConfig[coach.priority]?.color)}>
                     {priorityConfig[coach.priority]?.iconLabel} {priorityConfig[coach.priority]?.label}
                   </span>
                 )}
@@ -175,7 +175,7 @@ export function CoachDetailPanel({
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="text-warm-500 text-sm">{coach.conference}</span>
                 <span className="text-warm-300">&middot;</span>
-                <span className={cn('px-1.5 py-0.5 rounded text-[10px] font-bold',
+                <span className={cn('px-1.5 py-0.5 rounded text-micro font-bold',
                   coach.division === 'D2' ? 'bg-blue-100 text-blue-700' : 'bg-primary-100 text-primary-700')}>
                   {coach.division}
                 </span>

@@ -292,7 +292,7 @@ export async function getAnnouncementsWithMeta(
 
     // Fetch player info for acknowledged players (for avatar display)
     const allAckPlayerIds = [...new Set((allAcks || []).map(a => a.player_id))];
-    let ackPlayerMap: Record<string, { player_id: string; first_name: string | null; last_name: string | null; avatar_url: string | null }> = {};
+    const ackPlayerMap: Record<string, { player_id: string; first_name: string | null; last_name: string | null; avatar_url: string | null }> = {};
     if (isCoach && allAckPlayerIds.length > 0) {
       const { data: ackPlayers } = await supabase
         .from('golf_players')
@@ -491,7 +491,7 @@ export async function getAnnouncementDetail(
 
     // Fetch player info for acknowledgements (names + avatars)
     const ackPlayerIds = [...new Set((acks || []).map(a => a.player_id))];
-    let ackPlayerInfoMap: Record<string, { first_name: string | null; last_name: string | null; avatar_url: string | null }> = {};
+    const ackPlayerInfoMap: Record<string, { first_name: string | null; last_name: string | null; avatar_url: string | null }> = {};
     if (ackPlayerIds.length > 0) {
       const { data: ackPlayers } = await supabase
         .from('golf_players')

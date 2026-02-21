@@ -49,7 +49,7 @@ export function V2PatternsSection({ patterns }: V2PatternsSectionProps) {
           <IconSparkles size={14} className="text-white" />
         </div>
         <h3 className="text-sm font-semibold text-warm-900">Detected Patterns</h3>
-        <span className="text-[11px] font-semibold text-warm-500 ml-auto tabular-nums">
+        <span className="text-label font-semibold text-warm-500 ml-auto tabular-nums">
           {patterns.length} pattern{patterns.length !== 1 ? 's' : ''}
         </span>
       </div>
@@ -111,7 +111,7 @@ export function V2PatternsSection({ patterns }: V2PatternsSectionProps) {
               )}
 
               {/* Metrics row */}
-              <div className="flex items-center gap-3 text-[11px] ml-[30px]">
+              <div className="flex items-center gap-3 text-label ml-[30px]">
                 <span className="text-warm-500 tabular-nums">
                   {Math.round(confidence * 100)}% confidence
                 </span>
@@ -121,7 +121,7 @@ export function V2PatternsSection({ patterns }: V2PatternsSectionProps) {
                 </span>
                 <span className="text-warm-200">|</span>
                 <span className={cn(
-                  'px-2 py-0.5 rounded-md text-[10px] font-bold border',
+                  'px-2 py-0.5 rounded-md text-micro font-bold border',
                   pattern.trend === 'strengthening' && 'bg-amber-100 text-amber-700 border-amber-200/50',
                   pattern.trend === 'stable' && 'bg-warm-100 text-warm-600 border-warm-200/50',
                   pattern.trend === 'weakening' && 'bg-primary-100 text-primary-700 border-primary-200/50',

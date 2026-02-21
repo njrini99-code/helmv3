@@ -72,7 +72,7 @@ export function MobileBottomNav({ items, className }: MobileBottomNavProps) {
                       min-w-[18px] h-[18px]
                       px-1
                       bg-primary-600 text-white
-                      text-[11px] font-bold
+                      text-label font-bold
                       rounded-full
                       flex items-center justify-center
                       ring-2 ring-white

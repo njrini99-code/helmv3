@@ -38,7 +38,7 @@ export default function CalendarLoading() {
                 >
                   <div className="h-4 w-6 rounded bg-slate-100 mb-1" />
                   {(rowIndex === 1 && colIndex === 2) || (rowIndex === 2 && colIndex === 4) || (rowIndex === 3 && colIndex === 1) ? (
-                    <div className="h-3 w-full rounded bg-green-100 mt-1" />
+                    <div className="h-3 w-full rounded bg-primary-100 mt-1" />
                   ) : null}
                 </div>
               ))}

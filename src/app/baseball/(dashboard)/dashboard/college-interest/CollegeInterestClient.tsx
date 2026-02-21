@@ -341,9 +341,9 @@ export default function CollegeInterestClient() {
                   <p className="text-xs lg:text-sm font-medium text-slate-500 truncate">Avg Coaches</p>
                   <p className="text-xl lg:text-2xl font-semibold tracking-tight text-slate-900 mt-1">{stats.avgCoachesPerPlayer}</p>
                 </div>
-                <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-green-50 flex items-center justify-center flex-shrink-0 ml-2">
-                  <IconTrendingUp size={20} className="text-green-600 lg:hidden" />
-                  <IconTrendingUp size={24} className="text-green-600 hidden lg:block" />
+                <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-primary-50 flex items-center justify-center flex-shrink-0 ml-2">
+                  <IconTrendingUp size={20} className="text-primary-600 lg:hidden" />
+                  <IconTrendingUp size={24} className="text-primary-600 hidden lg:block" />
                 </div>
               </div>
             </CardContent>
@@ -391,7 +391,7 @@ export default function CollegeInterestClient() {
           <CardContent>
             {loading ? (
               <div className="text-center py-12">
-                <div className="animate-spin h-8 w-8 border-2 border-green-600 border-t-transparent rounded-full mx-auto"></div>
+                <div className="animate-spin h-8 w-8 border-2 border-primary-600 border-t-transparent rounded-full mx-auto"></div>
               </div>
             ) : interests.length === 0 ? (
               /* Empty State */
@@ -441,7 +441,7 @@ export default function CollegeInterestClient() {
                     {/* Recent Activity */}
                     {interest.recent_activity.length > 0 && (
                       <div className="border-t border-slate-200 pt-3 space-y-2">
-                        <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400 mb-2">Recent Activity</p>
+                        <p className="text-label font-medium uppercase tracking-wider text-slate-400 mb-2">Recent Activity</p>
                         {interest.recent_activity.slice(0, 5).map((activity) => (
                           <div
                             key={activity.id}
@@ -470,7 +470,7 @@ export default function CollegeInterestClient() {
                                   )}
                                 </p>
                               )}
-                              <span className="text-[10px] lg:hidden text-slate-400 block mt-0.5">
+                              <span className="text-micro lg:hidden text-slate-400 block mt-0.5">
                                 {activity.created_at ? formatRelativeTime(activity.created_at) : ''}
                               </span>
                             </div>

@@ -24,14 +24,14 @@ const itemVariants = {
 
 const urgencyBorderColors: Record<string, string> = {
   low: 'border-l-slate-300',
-  normal: 'border-l-green-400',
+  normal: 'border-l-primary-400',
   high: 'border-l-amber-400',
   urgent: 'border-l-red-400',
 };
 
 const urgencyBadgeColors: Record<string, { bg: string; text: string }> = {
   low: { bg: 'bg-slate-100', text: 'text-slate-600' },
-  normal: { bg: 'bg-green-50', text: 'text-green-600' },
+  normal: { bg: 'bg-primary-50', text: 'text-primary-600' },
   high: { bg: 'bg-amber-50', text: 'text-amber-600' },
   urgent: { bg: 'bg-red-50', text: 'text-red-600' },
 };
@@ -65,7 +65,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: BaseballAn
   const [deleting, setDeleting] = useState(false);
 
   const urgencyBorder = urgencyBorderColors[ann.urgency || 'normal'];
-  const urgencyBadge = urgencyBadgeColors[ann.urgency || 'normal'] ?? { bg: 'bg-green-50', text: 'text-green-600' };
+  const urgencyBadge = urgencyBadgeColors[ann.urgency || 'normal'] ?? { bg: 'bg-primary-50', text: 'text-primary-600' };
 
   async function handleDelete() {
     setDeleting(true);
@@ -106,7 +106,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: BaseballAn
             <div className="flex items-center gap-2 mb-1">
               <h3 className="text-sm font-semibold text-slate-900 truncate">{ann.title}</h3>
               {isRecent && (
-                <span className="px-1.5 py-0.5 text-xs font-medium rounded-full bg-green-50 text-green-600 flex-shrink-0">
+                <span className="px-1.5 py-0.5 text-xs font-medium rounded-full bg-primary-50 text-primary-600 flex-shrink-0">
                   New
                 </span>
               )}
@@ -167,7 +167,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: BaseballAn
                         <div
                           className={cn(
                             'h-full rounded-full transition-all',
-                            ann.acknowledged_count >= ann.total_recipients ? 'bg-green-500' : 'bg-blue-400'
+                            ann.acknowledged_count >= ann.total_recipients ? 'bg-primary-500' : 'bg-blue-400'
                           )}
                           style={{ width: `${ann.total_recipients > 0 ? (ann.acknowledged_count / ann.total_recipients) * 100 : 0}%` }}
                         />

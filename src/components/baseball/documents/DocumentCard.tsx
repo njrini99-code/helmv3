@@ -288,7 +288,7 @@ export function DocumentCard({
             {getFileTypeLabel(document.file_type)}
           </span>
           {document.category && (
-            <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-md bg-green-50 text-green-700">
+            <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-md bg-primary-50 text-primary-700">
               {categoryLabel}
             </span>
           )}
@@ -316,7 +316,7 @@ export function DocumentCard({
                 e.stopPropagation();
                 handlePreview();
               }}
-              className="p-1.5 rounded-lg hover:bg-green-50 active:bg-green-100 text-green-600 transition-colors"
+              className="p-1.5 rounded-lg hover:bg-primary-50 active:bg-primary-100 text-primary-600 transition-colors"
               title="Preview"
             >
               <IconEye size={14} />

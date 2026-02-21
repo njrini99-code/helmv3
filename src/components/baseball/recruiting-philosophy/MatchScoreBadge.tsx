@@ -34,7 +34,7 @@ export function MatchScoreBadge({
   };
 
   const tierColors = {
-    excellent: 'bg-green-100 text-green-700 border-green-200',
+    excellent: 'bg-primary-100 text-primary-700 border-primary-200',
     good: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     average: 'bg-amber-50 text-amber-700 border-amber-200',
     below_average: 'bg-orange-50 text-orange-700 border-orange-200',
@@ -42,7 +42,7 @@ export function MatchScoreBadge({
   };
 
   const tierBgGradient = {
-    excellent: 'from-green-500 to-green-600',
+    excellent: 'from-primary-500 to-primary-600',
     good: 'from-emerald-400 to-emerald-500',
     average: 'from-amber-400 to-amber-500',
     below_average: 'from-orange-400 to-orange-500',
@@ -120,7 +120,7 @@ export function MatchScoreBadge({
                   <div className="flex items-center gap-2">
                     <div className="w-16 h-1.5 bg-slate-200 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-green-500 rounded-full"
+                        className="h-full bg-primary-500 rounded-full"
                         style={{ width: `${detail.percentile}%` }}
                       />
                     </div>
@@ -165,7 +165,7 @@ export function MatchScoreInline({
       <div
         className={cn(
           'w-2 h-2 rounded-full',
-          tier.tier === 'excellent' && 'bg-green-500',
+          tier.tier === 'excellent' && 'bg-primary-500',
           tier.tier === 'good' && 'bg-emerald-500',
           tier.tier === 'average' && 'bg-amber-500',
           tier.tier === 'below_average' && 'bg-orange-500',

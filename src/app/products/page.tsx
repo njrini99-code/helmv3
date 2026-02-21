@@ -67,13 +67,13 @@ export default function ProductsPage() {
         <div className="relative grid md:grid-cols-2 gap-10 md:gap-12 items-center">
           {/* Text Content */}
           <motion.div variants={fadeInUp}>
-            <p className="text-sm font-medium text-green-600 tracking-wide uppercase mb-4">
+            <p className="text-sm font-medium text-primary-600 tracking-wide uppercase mb-4">
               Products
             </p>
 
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold leading-[1.1] text-foreground tracking-tight mb-6">
               Take the{' '}
-              <span className="text-green-600">Helm</span>
+              <span className="text-primary-600">Helm</span>
               <br />
               of your program
             </h1>
@@ -88,7 +88,7 @@ export default function ProductsPage() {
                 <button
                   className="w-full sm:w-auto flex items-center gap-4 px-5 py-3.5 rounded-xl
                            bg-white border border-warm-200 shadow-sm
-                           hover:border-helm-green-300 hover:shadow-md active:scale-[0.98] transition-all
+                           hover:border-helm-primary-300 hover:shadow-md active:scale-[0.98] transition-all
                            focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:ring-offset-2"
                 >
                   <div className="w-11 h-11 relative flex-shrink-0">
@@ -156,7 +156,7 @@ export default function ProductsPage() {
                 variants={fadeInUp}
               >
                 <div className="flex items-start gap-4">
-                  <div className="w-8 h-8 rounded-full bg-green-50 text-green-600
+                  <div className="w-8 h-8 rounded-full bg-primary-50 text-primary-600
                                 flex items-center justify-center text-sm font-semibold flex-shrink-0 mt-0.5">
                     {index + 1}
                   </div>

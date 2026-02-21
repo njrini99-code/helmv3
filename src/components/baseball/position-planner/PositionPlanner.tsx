@@ -239,7 +239,7 @@ export function PositionPlanner({
                 animate={{ scale: 1 }}
                 className={cn(
                   'ml-1 px-1.5 py-0.5 rounded-md',
-                  'text-[10px] font-bold',
+                  'text-micro font-bold',
                   'bg-primary-500 text-white'
                 )}
               >
@@ -436,7 +436,7 @@ function PositionEmptyMarker({
       className={cn(
         'relative w-12 h-12 rounded-xl',
         'flex items-center justify-center',
-        'text-[10px] font-bold uppercase tracking-wider',
+        'text-micro font-bold uppercase tracking-wider',
         'transition-all duration-300',
         'border-2 border-dashed',
         'pointer-events-auto',

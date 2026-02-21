@@ -202,7 +202,7 @@ export function TeamPeekPanel({ teamId, onClose }: TeamPeekPanelProps) {
     <PeekPanelRoot isOpen={!!teamId} onClose={onClose} width="lg">
       {loading ? (
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin h-8 w-8 border-2 border-green-600 border-t-transparent rounded-full" />
+          <div className="animate-spin h-8 w-8 border-2 border-primary-600 border-t-transparent rounded-full" />
         </div>
       ) : team ? (
         <div className="p-6 space-y-6">
@@ -262,7 +262,7 @@ export function TeamPeekPanel({ teamId, onClose }: TeamPeekPanelProps) {
               value={team.player_count?.toString() || '0'}
             />
             <StatCard
-              icon={<IconSparkles size={18} className="text-green-500" />}
+              icon={<IconSparkles size={18} className="text-primary-500" />}
               label="Recruiting Active"
               value={team.recruiting_active_count?.toString() || '0'}
               highlight
@@ -288,7 +288,7 @@ export function TeamPeekPanel({ teamId, onClose }: TeamPeekPanelProps) {
                 </h3>
                 <button
                   onClick={handleViewRoster}
-                  className="text-xs font-medium text-green-600 hover:text-green-700 transition-colors"
+                  className="text-xs font-medium text-primary-600 hover:text-primary-700 transition-colors"
                 >
                   View all →
                 </button>
@@ -387,11 +387,11 @@ function StatCard({
   highlight?: boolean;
 }) {
   return (
-    <div className={`flex items-center gap-3 px-4 py-3 rounded-xl ${highlight ? 'bg-green-50' : 'bg-slate-50'}`}>
+    <div className={`flex items-center gap-3 px-4 py-3 rounded-xl ${highlight ? 'bg-primary-50' : 'bg-slate-50'}`}>
       <div className="flex-shrink-0">{icon}</div>
       <div className="flex-1">
         <p className="text-xs text-slate-500">{label}</p>
-        <p className={`text-lg font-semibold ${highlight ? 'text-green-600' : 'text-slate-900'}`}>
+        <p className={`text-lg font-semibold ${highlight ? 'text-primary-600' : 'text-slate-900'}`}>
           {value}
         </p>
       </div>

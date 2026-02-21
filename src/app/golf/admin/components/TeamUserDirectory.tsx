@@ -88,11 +88,11 @@ function TeamSection({
           )}
         />
         <span className="text-sm font-semibold text-warm-900">{team.teamName}</span>
-        {team.season && <span className="text-[10px] text-warm-400">{team.season}</span>}
+        {team.season && <span className="text-micro text-warm-400">{team.season}</span>}
         <span className="text-xs text-warm-400 font-medium">{team.memberCount} members</span>
         <div className="ml-auto flex items-center gap-2">
           <span className={cn(
-            'px-2 py-0.5 rounded-full text-[10px] font-semibold',
+            'px-2 py-0.5 rounded-full text-micro font-semibold',
             team.healthStatus === 'healthy' ? 'bg-primary-50 text-primary-700' :
             team.healthStatus === 'warning' ? 'bg-amber-50 text-amber-700' :
             'bg-red-50 text-red-700'
@@ -108,11 +108,11 @@ function TeamSection({
           <table className="w-full">
             <thead>
               <tr className="border-b border-warm-100">
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-warm-400 uppercase tracking-wider">User</th>
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-warm-400 uppercase tracking-wider">Role</th>
-                <th className="px-3 py-2 text-left text-[10px] font-semibold text-warm-400 uppercase tracking-wider hidden md:table-cell">Last Active</th>
-                <th className="px-3 py-2 text-right text-[10px] font-semibold text-warm-400 uppercase tracking-wider hidden lg:table-cell">Rounds</th>
-                <th className="px-3 py-2 text-right text-[10px] font-semibold text-warm-400 uppercase tracking-wider hidden lg:table-cell">AI Insights</th>
+                <th className="px-3 py-2 text-left text-micro font-semibold text-warm-400 uppercase tracking-wider">User</th>
+                <th className="px-3 py-2 text-left text-micro font-semibold text-warm-400 uppercase tracking-wider">Role</th>
+                <th className="px-3 py-2 text-left text-micro font-semibold text-warm-400 uppercase tracking-wider hidden md:table-cell">Last Active</th>
+                <th className="px-3 py-2 text-right text-micro font-semibold text-warm-400 uppercase tracking-wider hidden lg:table-cell">Rounds</th>
+                <th className="px-3 py-2 text-right text-micro font-semibold text-warm-400 uppercase tracking-wider hidden lg:table-cell">AI Insights</th>
               </tr>
             </thead>
             <tbody>
@@ -150,12 +150,12 @@ function MemberRow({ member, onSelect }: { member: TeamMember; onSelect?: (id: s
           </div>
           <div className="min-w-0">
             <p className="text-sm font-medium text-warm-900 truncate">{member.name || member.email.split('@')[0]}</p>
-            <p className="text-[11px] text-warm-400 truncate">{member.email}</p>
+            <p className="text-label text-warm-400 truncate">{member.email}</p>
           </div>
         </div>
       </td>
       <td className="px-3 py-2.5">
-        <span className={cn('text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase', roleColors[member.role] ?? 'bg-warm-100 text-warm-500')}>
+        <span className={cn('text-micro font-semibold px-2 py-0.5 rounded-full uppercase', roleColors[member.role] ?? 'bg-warm-100 text-warm-500')}>
           {member.role}
         </span>
       </td>
@@ -340,7 +340,7 @@ export function TeamUserDirectory({ teams, unassigned, onSelectUser, expandedTea
                               </div>
                               <div className="min-w-0">
                                 <p className="text-sm font-medium text-warm-900 truncate">{u.email}</p>
-                                <p className="text-[11px] text-warm-400">{u.role}</p>
+                                <p className="text-label text-warm-400">{u.role}</p>
                               </div>
                             </div>
                           </td>

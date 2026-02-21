@@ -124,8 +124,8 @@ export function VideoShowcase({
         {/* Header */}
         <div className="relative px-6 py-4 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
-              <IconVideo size={20} className="text-green-600" />
+            <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
+              <IconVideo size={20} className="text-primary-600" />
             </div>
             <div>
               <h3 className="font-semibold text-slate-900">Video Highlights</h3>
@@ -135,7 +135,7 @@ export function VideoShowcase({
           {showViewAll && videos.length > 0 && (
             <button
               onClick={onViewAll}
-              className="text-sm font-medium text-green-600 hover:text-green-700 transition-colors"
+              className="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors"
             >
               View All →
             </button>

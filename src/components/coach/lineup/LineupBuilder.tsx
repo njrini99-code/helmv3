@@ -163,7 +163,7 @@ export function LineupBuilder({ roster, onSave }: LineupBuilderProps) {
             {lineup.map((slot, index) => (
               <div
                 key={slot.order}
-                className="bg-white rounded-2xl border border-slate-200 p-4 transition-all hover:border-green-200"
+                className="bg-white rounded-2xl border border-slate-200 p-4 transition-all hover:border-primary-200"
                 onDragOver={handleDragOver}
                 onDrop={() => handleDrop(index)}
               >
@@ -228,7 +228,7 @@ export function LineupBuilder({ roster, onSave }: LineupBuilderProps) {
                 availablePlayers.map((player) => (
                   <div
                     key={player.id}
-                    className="p-3 bg-white rounded-lg border border-slate-200 cursor-move hover:border-green-200 hover:shadow-sm transition-all"
+                    className="p-3 bg-white rounded-lg border border-slate-200 cursor-move hover:border-primary-200 hover:shadow-sm transition-all"
                     draggable
                     onDragStart={() => handleDragStart(player)}
                   >

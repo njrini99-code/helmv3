@@ -44,7 +44,7 @@ export function DataVisualizationSection() {
         >
           <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6">
             Intelligence Made{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-helm-green-400 to-helm-amber-400">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-helm-primary-400 to-helm-amber-400">
               Visual
             </span>
           </h2>
@@ -62,8 +62,8 @@ export function DataVisualizationSection() {
             className="bg-white/[0.03] backdrop-blur-xl rounded-2xl border border-white/[0.08] p-5 sm:p-6"
           >
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-lg bg-helm-green-500/20 flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-helm-green-400" />
+              <div className="w-10 h-10 rounded-lg bg-helm-primary-500/20 flex items-center justify-center">
+                <TrendingUp className="w-5 h-5 text-helm-primary-400" />
               </div>
               <div>
                 <div className="text-white font-semibold">Performance Trend</div>
@@ -141,7 +141,7 @@ export function DataVisualizationSection() {
 
             <div className="mt-4 pt-4 border-t border-white/[0.06] flex justify-between items-center">
               <span className="text-white/50 text-sm">Improvement</span>
-              <span className="text-helm-green-400 font-semibold">-3.6 strokes</span>
+              <span className="text-helm-primary-400 font-semibold">-3.6 strokes</span>
             </div>
           </motion.div>
 
@@ -172,7 +172,7 @@ export function DataVisualizationSection() {
                 >
                   <div className="flex justify-between text-sm mb-2">
                     <span className="text-white/60">{category.name}</span>
-                    <span className={category.value >= 0 ? 'text-helm-green-400' : 'text-red-400'}>
+                    <span className={category.value >= 0 ? 'text-helm-primary-400' : 'text-red-400'}>
                       {category.value >= 0 ? '+' : ''}{category.value.toFixed(1)}
                     </span>
                   </div>
@@ -182,7 +182,7 @@ export function DataVisualizationSection() {
                       animate={isInView ? { width: `${Math.abs(category.value) / 2 * 100}%` } : {}}
                       transition={{ duration: 0.8, delay: 0.4 + i * 0.1 }}
                       className={`absolute h-full rounded-full ${
-                        category.value >= 0 ? 'bg-helm-green-500 right-1/2' : 'bg-red-500 left-1/2'
+                        category.value >= 0 ? 'bg-helm-primary-500 right-1/2' : 'bg-red-500 left-1/2'
                       }`}
                       style={{ 
                         transformOrigin: category.value >= 0 ? 'right' : 'left',
@@ -197,7 +197,7 @@ export function DataVisualizationSection() {
 
             <div className="mt-6 pt-4 border-t border-white/[0.06] flex justify-between items-center">
               <span className="text-white/50 text-sm">Total SG</span>
-              <span className="text-helm-green-400 font-semibold">+0.8</span>
+              <span className="text-helm-primary-400 font-semibold">+0.8</span>
             </div>
           </motion.div>
 

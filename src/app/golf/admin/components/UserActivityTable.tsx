@@ -115,7 +115,7 @@ export function UserActivityTable({ users }: Props) {
 
   const sortIcon = (key: SortKey) => {
     if (sortKey !== key) return null;
-    return <span className="ml-1 text-[10px]">{sortDir === 'asc' ? '\u25b2' : '\u25bc'}</span>;
+    return <span className="ml-1 text-micro">{sortDir === 'asc' ? '\u25b2' : '\u25bc'}</span>;
   };
 
   const roleCounts = useMemo(() => {
@@ -237,7 +237,7 @@ export function UserActivityTable({ users }: Props) {
                       </div>
                       <div className="min-w-0">
                         <p className="text-warm-800 font-medium truncate">{name}</p>
-                        <p className="text-[11px] text-warm-400 truncate">{u.email}</p>
+                        <p className="text-label text-warm-400 truncate">{u.email}</p>
                       </div>
                     </div>
                   </td>

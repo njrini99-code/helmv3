@@ -123,7 +123,7 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
     <div className="border-b border-slate-100 last:border-0">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between py-4 text-left hover:text-green-600 transition-colors"
+        className="w-full flex items-center justify-between py-4 text-left hover:text-primary-600 transition-colors"
       >
         <span className="font-medium text-slate-900 pr-4">{question}</span>
         {isOpen ? (
@@ -184,7 +184,7 @@ export default function HelpPage() {
             placeholder="Search for help..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           />
         </div>
 
@@ -196,7 +196,7 @@ export default function HelpPage() {
               className="bg-white rounded-2xl border border-slate-200 overflow-hidden"
             >
               <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center gap-3">
-                <category.icon size={20} className="text-green-600" />
+                <category.icon size={20} className="text-primary-600" />
                 <h2 className="font-semibold text-slate-900">{category.category}</h2>
               </div>
               <div className="px-6">
@@ -234,7 +234,7 @@ export default function HelpPage() {
             </a>
             <a
               href="#"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-500 transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-500 transition-colors"
             >
               <MessageCircle size={20} />
               Live Chat

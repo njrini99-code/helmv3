@@ -16,7 +16,7 @@ export interface TeamMember {
 // Color palette for multi-player selection — intentional hardcoded hex values.
 // These are applied via inline `style` objects for dynamic avatar backgrounds,
 // so they cannot use Tailwind classes. Each color maps to a standard Tailwind
-// palette value (green-500, blue-500, amber-500, pink-500, purple-500, teal-500,
+// palette value (primary-500, blue-500, amber-500, pink-500, purple-500, teal-500,
 // orange-500, cyan-500) for visual consistency.
 export const PLAYER_COLORS = [
   { bg: '#22c55e', light: 'rgba(34, 197, 94, 0.15)', border: 'rgba(34, 197, 94, 0.4)', name: 'Green' },
@@ -126,7 +126,7 @@ export function CalendarAvatarSidebar({
     .filter((m): m is TeamMember => m !== undefined);
 
   return (
-    <aside aria-label="Player filter" className="w-[80px] px-3 pt-4 pb-3 flex flex-col items-center gap-3 bg-glass backdrop-blur-xl border border-white/40 rounded-2xl shadow-glass flex-shrink-0 relative overflow-visible z-20 min-h-0">
+    <aside aria-label="Player filter" className="w-[80px] px-3 pt-4 pb-3 flex flex-col items-center gap-3 bg-white/90 backdrop-blur-xl border border-white/40 rounded-2xl shadow-glass flex-shrink-0 relative overflow-visible z-20 min-h-0">
       {/* Collapse Handle */}
       <button
         onClick={() => setIsCollapsed(true)}
@@ -141,9 +141,9 @@ export function CalendarAvatarSidebar({
         <button
           onClick={handleAllClick}
           className={cn(
-            'relative z-10 w-12 h-12 rounded-[14px] flex items-center justify-center font-bold text-[11px] tracking-wide cursor-pointer transition-all duration-200 border-none flex-shrink-0',
+            'relative z-10 w-12 h-12 rounded-[14px] flex items-center justify-center font-bold text-label tracking-wide cursor-pointer transition-all duration-200 border-none flex-shrink-0',
             isAllSelected
-              ? 'bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-[0_4px_14px_rgba(22,163,74,0.4)]'
+              ? 'bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-[0_2px_8px_rgba(22,163,74,0.3)]'
               : 'bg-warm-100/90 text-warm-500'
           )}
         >

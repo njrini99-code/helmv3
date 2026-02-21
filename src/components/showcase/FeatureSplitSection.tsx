@@ -40,16 +40,16 @@ export function FeatureSplitSection() {
           initial={{ opacity: 0, x: -30 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
-          className="flex-1 relative p-6 sm:p-8 rounded-2xl bg-gradient-to-br from-helm-green-950/30 to-stone-900/50 border border-helm-green-500/10"
+          className="flex-1 relative p-6 sm:p-8 rounded-2xl bg-gradient-to-br from-helm-green-950/30 to-stone-900/50 border border-helm-primary-500/10"
         >
           <div className="max-w-md mx-auto">
               <div className="flex items-center gap-3 mb-8">
-                <div className="w-12 h-12 rounded-xl bg-helm-green-500/20 flex items-center justify-center">
-                  <Flag className="w-6 h-6 text-helm-green-400" />
+                <div className="w-12 h-12 rounded-xl bg-helm-primary-500/20 flex items-center justify-center">
+                  <Flag className="w-6 h-6 text-helm-primary-400" />
                 </div>
                 <div>
                   <div className="text-xl font-semibold text-white">GolfHelm</div>
-                  <div className="text-sm text-helm-green-400">Team Management</div>
+                  <div className="text-sm text-helm-primary-400">Team Management</div>
                 </div>
               </div>
 
@@ -61,10 +61,10 @@ export function FeatureSplitSection() {
                   whileInView={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.1 }}
                   viewport={{ once: true }}
-                  className="group flex items-start gap-4 p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-helm-green-500/10 hover:border-helm-green-500/20 transition-all"
+                  className="group flex items-start gap-4 p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-helm-primary-500/10 hover:border-helm-primary-500/20 transition-all"
                 >
-                  <div className="w-10 h-10 rounded-lg bg-helm-green-500/10 flex items-center justify-center group-hover:bg-helm-green-500/20 transition-colors">
-                    <feature.icon className="w-5 h-5 text-helm-green-400" />
+                  <div className="w-10 h-10 rounded-lg bg-helm-primary-500/10 flex items-center justify-center group-hover:bg-helm-primary-500/20 transition-colors">
+                    <feature.icon className="w-5 h-5 text-helm-primary-400" />
                   </div>
                   <div>
                     <div className="text-white font-medium">{feature.label}</div>

@@ -275,7 +275,7 @@ function AdminToastItem({ toast, onClose }: AdminToastItemProps) {
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <h4 className="font-semibold text-sm text-warm-900 leading-tight">{toast.title}</h4>
-          <span className="text-[10px] text-warm-400 whitespace-nowrap tabular-nums">{timeAgo}</span>
+          <span className="text-micro text-warm-400 whitespace-nowrap tabular-nums">{timeAgo}</span>
         </div>
         {toast.message && (
           <p className="text-sm leading-relaxed text-warm-600 mt-1 line-clamp-2">{toast.message}</p>

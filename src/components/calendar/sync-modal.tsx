@@ -87,7 +87,7 @@ export function SyncModal({
               </div>
 
               {googleConnected ? (
-                <CheckCircle2 className="w-5 h-5 text-green-600" />
+                <CheckCircle2 className="w-5 h-5 text-primary-600" />
               ) : (
                 <AlertCircle className="w-5 h-5 text-warm-400" />
               )}
@@ -144,7 +144,7 @@ export function SyncModal({
               </div>
 
               {appleConnected ? (
-                <CheckCircle2 className="w-5 h-5 text-green-600" />
+                <CheckCircle2 className="w-5 h-5 text-primary-600" />
               ) : (
                 <AlertCircle className="w-5 h-5 text-warm-400" />
               )}

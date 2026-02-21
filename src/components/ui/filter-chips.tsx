@@ -82,9 +82,9 @@ export function ChipToggle({
       className={cn(
         'inline-flex items-center gap-1.5 h-11 px-3 rounded-full text-sm font-medium',
         'transition-all duration-200',
-        'focus:outline-none focus:ring-2 focus:ring-green-500/20',
+        'focus:outline-none focus:ring-2 focus:ring-primary-500/20',
         selected
-          ? 'bg-green-100 text-green-700 border border-green-200'
+          ? 'bg-primary-100 text-primary-700 border border-primary-200'
           : 'bg-white text-warm-600 border border-warm-200 hover:border-warm-300 hover:bg-warm-50',
         className
       )}
@@ -94,7 +94,7 @@ export function ChipToggle({
         <span className={cn(
           'min-w-[18px] h-[18px] px-1 rounded-full text-xs flex items-center justify-center',
           selected
-            ? 'bg-green-600 text-white'
+            ? 'bg-primary-600 text-white'
             : 'bg-warm-100 text-warm-500'
         )}>
           {count}
@@ -166,7 +166,7 @@ export function BadgeChip({
 }: BadgeChipProps) {
   const variants = {
     default: 'bg-warm-100 text-warm-700',
-    success: 'bg-green-100 text-green-700',
+    success: 'bg-primary-100 text-primary-700',
     warning: 'bg-amber-100 text-amber-700',
     error: 'bg-red-100 text-red-700',
     info: 'bg-blue-100 text-blue-700',

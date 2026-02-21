@@ -23,7 +23,7 @@ interface EligibilityCardProps {
 }
 
 const standingColors = {
-  good: 'bg-green-100 text-green-700',
+  good: 'bg-primary-100 text-primary-700',
   warning: 'bg-amber-100 text-amber-700',
   probation: 'bg-red-100 text-red-700',
 };
@@ -84,7 +84,7 @@ export function EligibilityCard({
 
   if (editing) {
     return (
-      <div className="bg-white rounded-xl border border-green-200 p-4 space-y-3">
+      <div className="bg-white rounded-xl border border-primary-200 p-4 space-y-3">
         <div className="flex items-center justify-between">
           <h4 className="font-medium text-warm-900">{playerName}</h4>
           <div className="flex gap-2">
@@ -164,7 +164,7 @@ export function EligibilityCard({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
           <h4 className="font-medium text-warm-900 truncate">{playerName}</h4>
-          <Badge className={isEligible ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>
+          <Badge className={isEligible ? 'bg-primary-100 text-primary-700' : 'bg-red-100 text-red-700'}>
             {isEligible ? 'Eligible' : 'Ineligible'}
           </Badge>
           {academicStanding && academicStanding !== 'good' && (
@@ -182,7 +182,7 @@ export function EligibilityCard({
       {isCoach && (
         <button
           onClick={() => setEditing(true)}
-          className="p-2 text-warm-400 hover:text-green-600 hover:bg-green-50 active:bg-green-100 rounded-lg transition-colors"
+          className="p-2 text-warm-400 hover:text-primary-600 hover:bg-primary-50 active:bg-primary-100 rounded-lg transition-colors"
         >
           <IconEdit size={16} />
         </button>

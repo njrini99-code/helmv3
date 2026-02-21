@@ -142,9 +142,9 @@ export function UploadNewVersionModal({
               relative border-2 border-dashed rounded-xl p-8 text-center transition-all
               ${
                 dragOver
-                  ? 'border-green-400 bg-green-50'
+                  ? 'border-primary-400 bg-primary-50'
                   : selectedFile
-                  ? 'border-green-500 bg-green-50/50'
+                  ? 'border-primary-500 bg-primary-50/50'
                   : 'border-slate-200 hover:border-slate-300'
               }
             `}
@@ -158,8 +158,8 @@ export function UploadNewVersionModal({
 
             {selectedFile ? (
               <div>
-                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <IconFile size={24} className="text-green-600" />
+                <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <IconFile size={24} className="text-primary-600" />
                 </div>
                 <p className="font-medium text-slate-900">{selectedFile.name}</p>
                 <p className="text-sm text-slate-500 mt-1">
@@ -198,7 +198,7 @@ export function UploadNewVersionModal({
               onChange={(e) => setChangeNotes(e.target.value)}
               placeholder="Describe what changed in this version..."
               rows={3}
-              className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-green-600/20 focus:border-green-500 text-slate-900 placeholder:text-slate-400 resize-none"
+              className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-500 text-slate-900 placeholder:text-slate-400 resize-none"
             />
           </div>
         </div>
@@ -215,7 +215,7 @@ export function UploadNewVersionModal({
           <button
             onClick={handleSubmit}
             disabled={!selectedFile || uploading}
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-4 py-2 bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {uploading ? (
               <>

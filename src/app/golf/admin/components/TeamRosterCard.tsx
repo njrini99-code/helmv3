@@ -115,7 +115,7 @@ export function TeamRosterCard({ teamRosters }: Props) {
                           <div key={c.id} className="flex items-center justify-between bg-blue-50/50 rounded-lg px-3 py-2">
                             <div className="flex items-center gap-2">
                               <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
-                                <span className="text-[10px] font-medium text-blue-700">
+                                <span className="text-micro font-medium text-blue-700">
                                   {c.firstName.charAt(0) || c.email.charAt(0).toUpperCase()}
                                 </span>
                               </div>
@@ -152,13 +152,13 @@ export function TeamRosterCard({ teamRosters }: Props) {
                                 <td className="py-2 px-2">
                                   <div className="flex items-center gap-2">
                                     <div className="w-6 h-6 rounded-full bg-primary-100 flex items-center justify-center shrink-0">
-                                      <span className="text-[10px] font-medium text-primary-700">
+                                      <span className="text-micro font-medium text-primary-700">
                                         {p.firstName.charAt(0) || '?'}
                                       </span>
                                     </div>
                                     <div className="min-w-0">
                                       <p className="text-warm-800 font-medium truncate">{p.firstName} {p.lastName}</p>
-                                      {p.email && <p className="text-[10px] text-warm-400 truncate">{p.email}</p>}
+                                      {p.email && <p className="text-micro text-warm-400 truncate">{p.email}</p>}
                                     </div>
                                   </div>
                                 </td>

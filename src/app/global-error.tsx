@@ -54,7 +54,7 @@ export default function GlobalError({
               </button>
               <a
                 href="/"
-                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors"
+                className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors"
               >
                 Go to Home
               </a>
@@ -62,7 +62,7 @@ export default function GlobalError({
 
             <p className="text-sm text-slate-400 mt-8">
               If this problem persists,{' '}
-              <a href="mailto:support@helmlab.com" className="text-green-600 hover:underline">
+              <a href="mailto:support@helmlab.com" className="text-primary-600 hover:underline">
                 contact support
               </a>
             </p>

@@ -72,7 +72,7 @@ export function ComparisonMatrixSection() {
 
         {/* Comparison Table */}
         <div className="relative">
-          <div className="absolute -inset-4 bg-gradient-to-r from-red-500/5 via-transparent to-helm-green-500/5 rounded-3xl" />
+          <div className="absolute -inset-4 bg-gradient-to-r from-red-500/5 via-transparent to-helm-primary-500/5 rounded-3xl" />
           
           <div className="relative bg-white/[0.02] backdrop-blur-xl rounded-2xl border border-white/[0.08] overflow-hidden">
             {/* Header */}
@@ -85,9 +85,9 @@ export function ComparisonMatrixSection() {
                 </div>
               </div>
               <div className="text-center">
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-helm-green-500/10 border border-helm-green-500/20">
-                  <Trophy className="w-4 h-4 text-helm-green-300" />
-                  <span className="text-helm-green-400 font-medium">Helm</span>
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-helm-primary-500/10 border border-helm-primary-500/20">
+                  <Trophy className="w-4 h-4 text-helm-primary-300" />
+                  <span className="text-helm-primary-400 font-medium">Helm</span>
                 </div>
               </div>
             </div>
@@ -119,7 +119,7 @@ export function ComparisonMatrixSection() {
                   {/* Helm */}
                   <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-center md:gap-2 rounded-lg md:rounded-none bg-white/[0.02] md:bg-transparent border border-white/[0.04] md:border-0 px-4 py-3 md:p-0">
                     <span className="text-xs uppercase tracking-wide text-white/40 md:hidden">Helm</span>
-                    <div className="flex items-center gap-2 text-helm-green-400">
+                    <div className="flex items-center gap-2 text-helm-primary-400">
                       <Check className="w-4 h-4" />
                       <span className="text-sm text-white/70">{row.helm}</span>
                     </div>
@@ -131,20 +131,20 @@ export function ComparisonMatrixSection() {
                     whileHover={{ opacity: 1, x: 0 }}
                     className="absolute right-4 opacity-0 group-hover:opacity-100 transition-opacity hidden md:block"
                   >
-                    <ArrowRight className="w-4 h-4 text-helm-green-400" />
+                    <ArrowRight className="w-4 h-4 text-helm-primary-400" />
                   </motion.div>
                 </motion.div>
               ))}
             </div>
 
             {/* Footer */}
-            <div className="p-6 bg-gradient-to-r from-transparent via-helm-green-500/5 to-transparent border-t border-white/[0.06]">
+            <div className="p-6 bg-gradient-to-r from-transparent via-helm-primary-500/5 to-transparent border-t border-white/[0.06]">
               <div className="flex items-center justify-center gap-8 text-sm">
                 <div className="flex items-center gap-2 text-red-400/60">
                   <X className="w-4 h-4" />
                   <span>Limited or manual</span>
                 </div>
-                <div className="flex items-center gap-2 text-helm-green-400">
+                <div className="flex items-center gap-2 text-helm-primary-400">
                   <Check className="w-4 h-4" />
                   <span>Built-in & automatic</span>
                 </div>
@@ -166,7 +166,7 @@ export function ComparisonMatrixSection() {
           <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
             <a 
               href="#" 
-              className="px-6 py-3 rounded-xl bg-helm-green-500/10 border border-helm-green-500/20 text-helm-green-400 font-medium hover:bg-helm-green-500/20 transition-colors"
+              className="px-6 py-3 rounded-xl bg-helm-primary-500/10 border border-helm-primary-500/20 text-helm-primary-400 font-medium hover:bg-helm-primary-500/20 transition-colors"
             >
               Try GolfHelm Free
             </a>

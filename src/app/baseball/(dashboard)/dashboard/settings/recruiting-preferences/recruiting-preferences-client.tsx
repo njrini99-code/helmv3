@@ -109,7 +109,7 @@ export function RecruitingPreferencesClient({
             className={cn(
               'flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors',
               activeSection === section.id
-                ? 'bg-green-500 text-white'
+                ? 'bg-primary-500 text-white'
                 : 'bg-white/70 text-slate-600 hover:bg-white active:bg-white/70'
             )}
           >
@@ -160,7 +160,7 @@ export function RecruitingPreferencesClient({
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-green-600" />
+                <MapPin className="w-5 h-5 text-primary-600" />
                 Geographic Preferences
               </h3>
               <p className="text-sm text-slate-500 mt-1">
@@ -185,7 +185,7 @@ export function RecruitingPreferencesClient({
                 className={cn(
                   'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
                   preferredStates.includes(state)
-                    ? 'bg-green-500 text-white'
+                    ? 'bg-primary-500 text-white'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200 active:bg-slate-300'
                 )}
               >
@@ -195,7 +195,7 @@ export function RecruitingPreferencesClient({
           </div>
 
           {preferredStates.length > 0 && (
-            <p className="text-sm text-green-600">
+            <p className="text-sm text-primary-600">
               {preferredStates.length} state{preferredStates.length !== 1 ? 's' : ''} selected
             </p>
           )}
@@ -213,7 +213,7 @@ export function RecruitingPreferencesClient({
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
-                <GraduationCap className="w-5 h-5 text-green-600" />
+                <GraduationCap className="w-5 h-5 text-primary-600" />
                 Target Graduation Years
               </h3>
               <p className="text-sm text-slate-500 mt-1">
@@ -238,7 +238,7 @@ export function RecruitingPreferencesClient({
                 className={cn(
                   'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
                   targetGradYears.includes(year)
-                    ? 'bg-green-500 text-white'
+                    ? 'bg-primary-500 text-white'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200 active:bg-slate-300'
                 )}
               >
@@ -261,7 +261,7 @@ export function RecruitingPreferencesClient({
           <div className="flex items-center justify-between gap-4">
             <div className="text-sm text-slate-600">
               {saved ? (
-                <span className="text-green-600 flex items-center gap-1">
+                <span className="text-primary-600 flex items-center gap-1">
                   <Check className="w-4 h-4" />
                   Preferences saved!
                 </span>
@@ -279,7 +279,7 @@ export function RecruitingPreferencesClient({
                 'flex items-center gap-2 px-6 py-2.5 rounded-xl font-medium transition-all',
                 isPending
                   ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                  : 'bg-green-500 hover:bg-green-600 text-white shadow-sm'
+                  : 'bg-primary-500 hover:bg-primary-600 text-white shadow-sm'
               )}
             >
               {isPending ? (

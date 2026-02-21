@@ -204,7 +204,7 @@ export function BatchVideoUpload({ roster }: BatchVideoUploadProps) {
               <select
                 value={form.video_type}
                 onChange={(event) => setForm((prev) => ({ ...prev, video_type: event.target.value }))}
-                className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 text-slate-900 bg-white transition-colors"
+                className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-slate-900 bg-white transition-colors"
               >
                 <option value="">Select type</option>
                 {videoTypes.map((type) => (
@@ -242,7 +242,7 @@ export function BatchVideoUpload({ roster }: BatchVideoUploadProps) {
                 <button
                   type="button"
                   onClick={selectAll}
-                  className="text-green-600 hover:text-green-700 font-medium"
+                  className="text-primary-600 hover:text-primary-700 font-medium"
                 >
                   Select All
                 </button>
@@ -265,14 +265,14 @@ export function BatchVideoUpload({ roster }: BatchVideoUploadProps) {
                     key={player.id}
                     className={cn(
                       'flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-slate-50 active:bg-slate-100',
-                      selectedPlayers.includes(player.id) && 'bg-green-50'
+                      selectedPlayers.includes(player.id) && 'bg-primary-50'
                     )}
                   >
                     <input
                       type="checkbox"
                       checked={selectedPlayers.includes(player.id)}
                       onChange={() => togglePlayer(player.id)}
-                      className="w-4 h-4 rounded border-slate-300 text-green-600 focus:ring-green-500"
+                      className="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
                     />
                     <span className="text-sm text-slate-900">{player.name}</span>
                   </label>

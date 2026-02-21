@@ -51,8 +51,8 @@ export function CollegeInterestTracker({ interests }: CollegeInterestTrackerProp
                 key={interest.id}
                 className="flex items-start gap-3 p-3 border border-slate-200 rounded-lg hover:bg-slate-50 active:bg-slate-100 transition-colors"
               >
-                <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-                  <IconEye size={16} className="text-green-600" />
+                <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
+                  <IconEye size={16} className="text-primary-600" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-slate-900">

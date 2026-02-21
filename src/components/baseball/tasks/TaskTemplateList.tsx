@@ -29,7 +29,7 @@ const categoryColors: Record<string, string> = {
   conditioning: 'bg-red-100 text-red-700',
   academic: 'bg-amber-100 text-amber-700',
   administrative: 'bg-blue-100 text-blue-700',
-  practice: 'bg-green-100 text-green-700',
+  practice: 'bg-primary-100 text-primary-700',
   game_prep: 'bg-purple-100 text-purple-700',
   default: 'bg-slate-100 text-slate-700',
 };
@@ -229,7 +229,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
               onChange={(e) => setFormTitle(e.target.value)}
               placeholder="Template title"
               className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm
-                       focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                       focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
             />
 
             <textarea
@@ -238,7 +238,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
               placeholder="Description (optional)"
               rows={2}
               className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm resize-none
-                       focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                       focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
             />
 
             <div className="grid grid-cols-2 gap-3">
@@ -248,7 +248,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
                   value={formCategory}
                   onChange={(e) => setFormCategory(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white
-                           focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                           focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
                 >
                   {CATEGORIES.map(cat => (
                     <option key={cat.value} value={cat.value}>{cat.label}</option>
@@ -264,7 +264,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
                   min={1}
                   placeholder="e.g., 7"
                   className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm
-                           focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                           focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
                 />
               </div>
             </div>
@@ -276,7 +276,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
                   value={formPriority}
                   onChange={(e) => setFormPriority(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white
-                           focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                           focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
                 >
                   <option value="low">Low</option>
                   <option value="normal">Normal</option>
@@ -289,7 +289,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
                   value={formAssigneeType}
                   onChange={(e) => setFormAssigneeType(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white
-                           focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                           focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
                 >
                   <option value="all_players">All Players</option>
                   <option value="individual">Individual</option>
@@ -333,7 +333,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
                     className="group relative bg-white rounded-lg border border-slate-200 p-3
-                             hover:border-green-200 hover:shadow-sm transition-all cursor-pointer"
+                             hover:border-primary-200 hover:shadow-sm transition-all cursor-pointer"
                     onClick={() => onSelectTemplate(template)}
                   >
                     <div className="flex items-start justify-between">

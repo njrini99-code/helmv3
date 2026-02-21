@@ -459,7 +459,7 @@ export function SkeletonMessages({ className }: { className?: string }) {
                   variant="rectangular"
                   width={200 + (i * 30)}
                   height={60}
-                  className={cn('rounded-2xl', i % 2 === 0 ? 'bg-green-100' : 'bg-warm-100')}
+                  className={cn('rounded-2xl', i % 2 === 0 ? 'bg-primary-100' : 'bg-warm-100')}
                 />
               </div>
             </div>

@@ -59,7 +59,7 @@ function FileTypeIcon({ mimeType, className }: { mimeType: string; className?: s
   if (mimeType === 'application/pdf') return <IconFileText className={cn('text-red-500', className)} />;
   if (mimeType.startsWith('image/')) return <IconImage className={cn('text-blue-500', className)} />;
   if (mimeType.startsWith('video/')) return <IconVideo className={cn('text-purple-500', className)} />;
-  if (mimeType.includes('spreadsheet') || mimeType.includes('excel') || mimeType === 'text/csv') return <IconFileSpreadsheet className={cn('text-green-500', className)} />;
+  if (mimeType.includes('spreadsheet') || mimeType.includes('excel') || mimeType === 'text/csv') return <IconFileSpreadsheet className={cn('text-primary-500', className)} />;
   if (mimeType.startsWith('text/') || mimeType === 'application/json') return <IconFileText className={cn('text-slate-500', className)} />;
   return <IconFile className={cn('text-slate-400', className)} />;
 }
@@ -163,7 +163,7 @@ export function DocumentPreview({
       return (
         <div className="flex items-center justify-center h-[60vh]">
           <div className="text-center">
-            <div className="animate-spin h-12 w-12 border-2 border-green-600 border-t-transparent rounded-full mx-auto mb-4" />
+            <div className="animate-spin h-12 w-12 border-2 border-primary-600 border-t-transparent rounded-full mx-auto mb-4" />
             <p className="text-slate-500">Loading preview...</p>
           </div>
         </div>

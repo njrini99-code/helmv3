@@ -157,7 +157,7 @@ export function NewMessageModal({
         <div className="min-h-[300px] max-h-[400px] overflow-y-auto -mx-6 px-6">
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin h-6 w-6 border-2 border-green-600 border-t-transparent rounded-full" />
+              <div className="animate-spin h-6 w-6 border-2 border-primary-600 border-t-transparent rounded-full" />
             </div>
           ) : results.length > 0 ? (
             <div className="divide-y divide-slate-100">
@@ -168,7 +168,7 @@ export function NewMessageModal({
                   className={cn(
                     'w-full px-4 py-3 flex items-center gap-3 text-left transition-colors',
                     'hover:bg-slate-50 rounded-lg -mx-4',
-                    selectedId === result.userId && 'bg-green-50 hover:bg-green-50'
+                    selectedId === result.userId && 'bg-primary-50 hover:bg-primary-50'
                   )}
                 >
                   <Avatar name={result.name} src={result.avatar} size="md" />
@@ -179,7 +179,7 @@ export function NewMessageModal({
                     )}
                   </div>
                   {selectedId === result.userId && (
-                    <div className="w-6 h-6 rounded-full bg-green-600 flex items-center justify-center">
+                    <div className="w-6 h-6 rounded-full bg-primary-600 flex items-center justify-center">
                       <IconCheck size={14} className="text-white" />
                     </div>
                   )}

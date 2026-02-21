@@ -56,7 +56,7 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
           >
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
               <span className="text-neutral-900">Built for the sports </span>
-              <span className="text-helm-green-500">you coach</span>
+              <span className="text-helm-primary-500">you coach</span>
             </h1>
           </motion.div>
         )}
@@ -71,7 +71,7 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
           >
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
               <span className="text-neutral-900 opacity-0">Built for the sports </span>
-              <span className="text-helm-green-500">you coach</span>
+              <span className="text-helm-primary-500">you coach</span>
             </h1>
           </motion.div>
         )}
@@ -90,7 +90,7 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5 }}
             >
-              <span className="text-helm-green-500 text-5xl md:text-7xl font-bold tracking-tight">
+              <span className="text-helm-primary-500 text-5xl md:text-7xl font-bold tracking-tight">
                 Helm
               </span>
             </motion.div>
@@ -129,7 +129,7 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
                 <div className="text-neutral-900 text-3xl md:text-4xl font-bold tracking-tight">
                   Golf
                 </div>
-                <div className="text-helm-green-500 text-xs md:text-sm font-semibold mt-1 tracking-wide">
+                <div className="text-helm-primary-500 text-xs md:text-sm font-semibold mt-1 tracking-wide">
                   Team Management
                 </div>
               </motion.div>

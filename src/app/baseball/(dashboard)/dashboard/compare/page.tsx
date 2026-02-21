@@ -214,7 +214,7 @@ function CompareContent() {
                               {player.primary_position} • {player.grad_year} • {player.high_school_name}
                             </p>
                           </div>
-                          <IconPlus size={16} className="text-green-600" />
+                          <IconPlus size={16} className="text-primary-600" />
                         </button>
                       );
                     })}
@@ -233,16 +233,16 @@ function CompareContent() {
                   return (
                     <div
                       key={player.id}
-                      className="flex items-center gap-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded-full hover:bg-green-100 active:bg-green-200 transition-colors"
+                      className="flex items-center gap-2 px-3 py-1.5 bg-primary-50 border border-primary-200 rounded-full hover:bg-primary-100 active:bg-primary-200 transition-colors"
                     >
                       <Avatar name={name} src={player.avatar_url} size="xs" />
-                      <span className="text-sm font-medium text-green-800">{name}</span>
+                      <span className="text-sm font-medium text-primary-800">{name}</span>
                       <button
                         onClick={() => removePlayer(player.id)}
-                        className="min-w-[44px] min-h-[44px] p-2 flex items-center justify-center rounded-full hover:bg-green-200 transition-colors"
+                        className="min-w-[44px] min-h-[44px] p-2 flex items-center justify-center rounded-full hover:bg-primary-200 transition-colors"
                         aria-label={`Remove ${name} from comparison`}
                       >
-                        <IconX size={14} className="text-green-600" />
+                        <IconX size={14} className="text-primary-600" />
                       </button>
                     </div>
                   );

@@ -117,12 +117,12 @@ export default function SettingsPage() {
         {/* Program Profile Link (Coaches Only) */}
         {user?.role === 'coach' && (
           <Link href="/baseball/dashboard/program">
-            <Card variant="interactive" className="cursor-pointer transition-all hover:border-green-200">
+            <Card variant="interactive" className="cursor-pointer transition-all hover:border-primary-200">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                      <IconBuilding size={24} className="text-green-600" />
+                    <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center">
+                      <IconBuilding size={24} className="text-primary-600" />
                     </div>
                     <div>
                       <h3 className="font-semibold text-slate-900 mb-1">Program Profile</h3>
@@ -139,12 +139,12 @@ export default function SettingsPage() {
         {/* Privacy Settings Link (Players Only) */}
         {user?.role === 'player' && (
           <Link href="/baseball/dashboard/settings/privacy">
-            <Card variant="interactive" className="cursor-pointer transition-all hover:border-green-200">
+            <Card variant="interactive" className="cursor-pointer transition-all hover:border-primary-200">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                      <IconShield size={24} className="text-green-600" />
+                    <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center">
+                      <IconShield size={24} className="text-primary-600" />
                     </div>
                     <div>
                       <h3 className="font-semibold text-slate-900 mb-1">Privacy Settings</h3>
@@ -180,7 +180,7 @@ export default function SettingsPage() {
                     setNotificationSettings(prev => ({ ...prev, emailNewPlayer: e.target.checked }));
                     showToast(e.target.checked ? 'Player alerts enabled' : 'Player alerts disabled', 'success');
                   }}
-                  className="w-5 h-5 rounded border-slate-300 text-green-600 focus:ring-green-500"
+                  className="w-5 h-5 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
                 />
               </label>
 
@@ -196,7 +196,7 @@ export default function SettingsPage() {
                     setNotificationSettings(prev => ({ ...prev, emailMessages: e.target.checked }));
                     showToast(e.target.checked ? 'Message notifications enabled' : 'Message notifications disabled', 'success');
                   }}
-                  className="w-5 h-5 rounded border-slate-300 text-green-600 focus:ring-green-500"
+                  className="w-5 h-5 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
                 />
               </label>
 
@@ -212,7 +212,7 @@ export default function SettingsPage() {
                     setNotificationSettings(prev => ({ ...prev, emailWeeklyDigest: e.target.checked }));
                     showToast(e.target.checked ? 'Weekly digest enabled' : 'Weekly digest disabled', 'success');
                   }}
-                  className="w-5 h-5 rounded border-slate-300 text-green-600 focus:ring-green-500"
+                  className="w-5 h-5 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
                 />
               </label>
             </CardContent>
@@ -259,17 +259,17 @@ export default function SettingsPage() {
                   <div className="mt-2 flex items-center gap-2">
                     <div className="flex-1 flex gap-1">
                       <div className={`h-1.5 rounded-full flex-1 transition-colors ${
-                        passwordStrength === 'weak' ? 'bg-red-400' : passwordStrength === 'medium' ? 'bg-amber-400' : 'bg-green-500'
+                        passwordStrength === 'weak' ? 'bg-red-400' : passwordStrength === 'medium' ? 'bg-amber-400' : 'bg-primary-500'
                       }`} />
                       <div className={`h-1.5 rounded-full flex-1 transition-colors ${
-                        passwordStrength === 'medium' ? 'bg-amber-400' : passwordStrength === 'strong' ? 'bg-green-500' : 'bg-slate-200'
+                        passwordStrength === 'medium' ? 'bg-amber-400' : passwordStrength === 'strong' ? 'bg-primary-500' : 'bg-slate-200'
                       }`} />
                       <div className={`h-1.5 rounded-full flex-1 transition-colors ${
-                        passwordStrength === 'strong' ? 'bg-green-500' : 'bg-slate-200'
+                        passwordStrength === 'strong' ? 'bg-primary-500' : 'bg-slate-200'
                       }`} />
                     </div>
                     <span className={`text-xs font-medium ${
-                      passwordStrength === 'weak' ? 'text-red-600' : passwordStrength === 'medium' ? 'text-amber-600' : 'text-green-600'
+                      passwordStrength === 'weak' ? 'text-red-600' : passwordStrength === 'medium' ? 'text-amber-600' : 'text-primary-600'
                     }`}>
                       {passwordStrength === 'weak' ? 'Weak' : passwordStrength === 'medium' ? 'Medium' : 'Strong'}
                     </span>

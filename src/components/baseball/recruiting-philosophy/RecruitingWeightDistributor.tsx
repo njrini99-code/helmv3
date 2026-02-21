@@ -158,7 +158,7 @@ export function RecruitingWeightDistributor({
                 className={cn(
                   'font-semibold tabular-nums w-14 text-right transition-colors',
                   values[metric.key] >= 20
-                    ? 'text-green-600'
+                    ? 'text-primary-600'
                     : values[metric.key] >= 10
                       ? 'text-slate-700'
                       : 'text-slate-400'
@@ -178,9 +178,9 @@ export function RecruitingWeightDistributor({
                 className={cn(
                   'absolute inset-y-0 left-0 transition-all duration-150',
                   values[metric.key] >= 20
-                    ? 'bg-gradient-to-r from-green-400 to-green-500'
+                    ? 'bg-gradient-to-r from-primary-400 to-primary-500'
                     : values[metric.key] >= 10
-                      ? 'bg-gradient-to-r from-green-300 to-green-400'
+                      ? 'bg-gradient-to-r from-primary-300 to-primary-400'
                       : 'bg-slate-300'
                 )}
                 style={{ width: `${values[metric.key]}%` }}
@@ -199,7 +199,7 @@ export function RecruitingWeightDistributor({
 
               {/* Thumb indicator */}
               <div
-                className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-md border-2 border-green-500 pointer-events-none transition-all duration-150"
+                className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-md border-2 border-primary-500 pointer-events-none transition-all duration-150"
                 style={{ left: `calc(${values[metric.key]}% - 8px)` }}
               />
             </div>
@@ -218,7 +218,7 @@ export function RecruitingWeightDistributor({
       <div
         className={cn(
           'flex items-center justify-between pt-4 border-t border-slate-200 text-sm font-semibold',
-          isValid ? 'text-green-600' : 'text-amber-600'
+          isValid ? 'text-primary-600' : 'text-amber-600'
         )}
       >
         <span>Total Weight</span>
@@ -246,7 +246,7 @@ export function RecruitingWeightDistributor({
                 className={cn(
                   'px-3 py-1.5 rounded-full text-sm font-medium',
                   values[metric.key] >= 25
-                    ? 'bg-green-100 text-green-700'
+                    ? 'bg-primary-100 text-primary-700'
                     : 'bg-slate-100 text-slate-600'
                 )}
               >

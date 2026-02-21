@@ -92,9 +92,9 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           {mode === 'players' ? (
-            <IconUsers size={18} className="text-green-600" />
+            <IconUsers size={18} className="text-primary-600" />
           ) : (
-            <IconBuilding size={18} className="text-green-600" />
+            <IconBuilding size={18} className="text-primary-600" />
           )}
           <h2 className="font-semibold text-slate-900 tracking-tight">
             {mode === 'players' ? 'Player Filters' : 'Team Filters'}
@@ -146,7 +146,7 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
             }}
             placeholder="Team name or city..."
             className="w-full px-4 py-2 rounded-lg border border-slate-200
-                       focus:border-green-500 focus:ring-2 focus:ring-green-100
+                       focus:border-primary-500 focus:ring-2 focus:ring-primary-100
                        text-sm text-slate-900 bg-white"
           />
         )}
@@ -194,7 +194,7 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
                 value={currentFilters.position || ''}
                 onChange={(e) => updateFilter('position', e.target.value || undefined)}
                 className="w-full px-4 py-2 rounded-lg border border-slate-200
-                           focus:border-green-500 focus:ring-2 focus:ring-green-100
+                           focus:border-primary-500 focus:ring-2 focus:ring-primary-100
                            text-sm text-slate-900 bg-white"
               >
                 <option value="">All Positions</option>
@@ -208,7 +208,7 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
             <div className="mb-6">
               <label className="block text-sm font-medium text-slate-700 mb-2">
                 State {currentFilters.states && currentFilters.states.length > 0 && (
-                  <span className="text-green-600 font-normal">
+                  <span className="text-primary-600 font-normal">
                     ({currentFilters.states.length} selected)
                   </span>
                 )}
@@ -226,7 +226,7 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
                   updateFilter('state', newStates.length > 0 ? newStates.join(',') : undefined);
                 }}
                 className="w-full px-4 py-2 rounded-lg border border-slate-200
-                           focus:border-green-500 focus:ring-2 focus:ring-green-100
+                           focus:border-primary-500 focus:ring-2 focus:ring-primary-100
                            text-sm text-slate-900 bg-white"
               >
                 <option value="">Add a state...</option>
@@ -250,11 +250,11 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
                         updateFilter('state', newStates.length > 0 ? newStates.join(',') : undefined);
                       }}
                       className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium
-                                 rounded-md bg-green-100 text-green-700 hover:bg-green-200
+                                 rounded-md bg-primary-100 text-primary-700 hover:bg-primary-200
                                  transition-colors"
                     >
                       {stateCode}
-                      <span className="text-green-500">×</span>
+                      <span className="text-primary-500">×</span>
                     </button>
                   ))}
                 </div>
@@ -276,7 +276,7 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
                   value={currentFilters.minVelo || ''}
                   onChange={(e) => updateFilter('minVelo', e.target.value || undefined)}
                   className="w-full px-3 py-2 rounded-lg border border-slate-200
-                             focus:border-green-500 focus:ring-2 focus:ring-green-100
+                             focus:border-primary-500 focus:ring-2 focus:ring-primary-100
                              text-sm text-slate-900"
                 />
                 <span className="text-slate-400">-</span>
@@ -286,7 +286,7 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
                   value={currentFilters.maxVelo || ''}
                   onChange={(e) => updateFilter('maxVelo', e.target.value || undefined)}
                   className="w-full px-3 py-2 rounded-lg border border-slate-200
-                             focus:border-green-500 focus:ring-2 focus:ring-green-100
+                             focus:border-primary-500 focus:ring-2 focus:ring-primary-100
                              text-sm text-slate-900"
                 />
               </div>
@@ -304,7 +304,7 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
                   value={currentFilters.minExit || ''}
                   onChange={(e) => updateFilter('minExit', e.target.value || undefined)}
                   className="w-full px-3 py-2 rounded-lg border border-slate-200
-                             focus:border-green-500 focus:ring-2 focus:ring-green-100
+                             focus:border-primary-500 focus:ring-2 focus:ring-primary-100
                              text-sm text-slate-900"
                 />
                 <span className="text-slate-400">-</span>
@@ -314,7 +314,7 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
                   value={currentFilters.maxExit || ''}
                   onChange={(e) => updateFilter('maxExit', e.target.value || undefined)}
                   className="w-full px-3 py-2 rounded-lg border border-slate-200
-                             focus:border-green-500 focus:ring-2 focus:ring-green-100
+                             focus:border-primary-500 focus:ring-2 focus:ring-primary-100
                              text-sm text-slate-900"
                 />
               </div>
@@ -327,8 +327,8 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
                   type="checkbox"
                   checked={currentFilters.hasVideo || false}
                   onChange={(e) => updateFilter('hasVideo', e.target.checked ? 'true' : undefined)}
-                  className="w-4 h-4 rounded border-slate-300 text-green-600
-                             focus:ring-green-500"
+                  className="w-4 h-4 rounded border-slate-300 text-primary-600
+                             focus:ring-primary-500"
                 />
                 <span className="text-sm leading-relaxed text-slate-700">Has highlight video</span>
               </label>
@@ -370,7 +370,7 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
             <div className="mb-6">
               <label className="block text-sm font-medium text-slate-700 mb-2">
                 State {currentFilters.states && currentFilters.states.length > 0 && (
-                  <span className="text-green-600 font-normal">
+                  <span className="text-primary-600 font-normal">
                     ({currentFilters.states.length} selected)
                   </span>
                 )}
@@ -388,7 +388,7 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
                   updateFilter('state', newStates.length > 0 ? newStates.join(',') : undefined);
                 }}
                 className="w-full px-4 py-2 rounded-lg border border-slate-200
-                           focus:border-green-500 focus:ring-2 focus:ring-green-100
+                           focus:border-primary-500 focus:ring-2 focus:ring-primary-100
                            text-sm text-slate-900 bg-white"
               >
                 <option value="">Add a state...</option>
@@ -412,11 +412,11 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
                         updateFilter('state', newStates.length > 0 ? newStates.join(',') : undefined);
                       }}
                       className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium
-                                 rounded-md bg-green-100 text-green-700 hover:bg-green-200
+                                 rounded-md bg-primary-100 text-primary-700 hover:bg-primary-200
                                  transition-colors"
                     >
                       {stateCode}
-                      <span className="text-green-500">×</span>
+                      <span className="text-primary-500">×</span>
                     </button>
                   ))}
                 </div>
@@ -427,11 +427,11 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
             </div>
 
             {/* Quick Tips for Teams */}
-            <div className="p-4 rounded-xl bg-green-50 border border-green-100">
-              <h4 className="text-sm font-medium text-green-900 mb-2">
+            <div className="p-4 rounded-xl bg-primary-50 border border-primary-100">
+              <h4 className="text-sm font-medium text-primary-900 mb-2">
                 Pro Tip
               </h4>
-              <p className="text-xs text-green-700 leading-relaxed">
+              <p className="text-xs text-primary-700 leading-relaxed">
                 Teams are sorted by number of recruiting-active players.
                 Click "View Roster" to see all available prospects from a program.
               </p>

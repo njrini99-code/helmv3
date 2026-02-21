@@ -51,13 +51,13 @@ export function InteractiveDemoSection() {
             <div className="col-span-1 sm:col-span-2 space-y-4">
               <div className="p-4 rounded-xl bg-white/[0.04] border border-white/[0.06]">
                 <div className="flex items-center gap-3 mb-4">
-                  <Sparkles className="w-5 h-5 text-helm-green-400" />
+                  <Sparkles className="w-5 h-5 text-helm-primary-400" />
                   <span className="text-white font-medium">Latest Insights</span>
                 </div>
                 <div className="space-y-2">
                   {['Scoring decline detected: Marcus J.', 'Surge player alert: Ryan M.', 'Qualifier tomorrow: 6 players'].map((item, i) => (
                     <div key={i} className="flex items-center gap-2 text-white/60 text-sm">
-                      <div className="w-1.5 h-1.5 rounded-full bg-helm-green-500" />
+                      <div className="w-1.5 h-1.5 rounded-full bg-helm-primary-500" />
                       {item}
                     </div>
                   ))}
@@ -82,7 +82,7 @@ export function InteractiveDemoSection() {
               <div className="p-4 rounded-xl bg-white/[0.04] border border-white/[0.06]">
                 <div className="text-white/40 text-xs mb-1">Team Average</div>
                 <div className="text-2xl font-bold text-white">72.8</div>
-                <div className="text-helm-green-400 text-xs">↓ 1.2 this month</div>
+                <div className="text-helm-primary-400 text-xs">↓ 1.2 this month</div>
               </div>
               <div className="p-4 rounded-xl bg-white/[0.04] border border-white/[0.06]">
                 <div className="text-white/40 text-xs mb-1">Next Event</div>
@@ -114,7 +114,7 @@ export function InteractiveDemoSection() {
               >
                 <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
                   insight.type === 'alert' ? 'bg-amber-500/20 text-amber-400' :
-                  insight.type === 'surge' ? 'bg-helm-green-500/20 text-helm-green-400' :
+                  insight.type === 'surge' ? 'bg-helm-primary-500/20 text-helm-primary-400' :
                   'bg-purple-500/20 text-purple-400'
                 }`}>
                   <Brain className="w-5 h-5" />
@@ -146,7 +146,7 @@ export function InteractiveDemoSection() {
         >
           <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6">
             See It in{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-helm-green-400 to-helm-amber-400">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-helm-primary-400 to-helm-amber-400">
               Action
             </span>
           </h2>
@@ -159,7 +159,7 @@ export function InteractiveDemoSection() {
             <button
               onClick={() => setMode('tour')}
               className={`w-full sm:w-auto px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
-                mode === 'tour' ? 'bg-helm-green-500 text-white' : 'text-white/60 hover:text-white'
+                mode === 'tour' ? 'bg-helm-primary-500 text-white' : 'text-white/60 hover:text-white'
               }`}
             >
               <Play className="w-4 h-4 inline mr-2" />
@@ -168,7 +168,7 @@ export function InteractiveDemoSection() {
             <button
               onClick={() => setMode('explore')}
               className={`w-full sm:w-auto px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all ${
-                mode === 'explore' ? 'bg-helm-green-500 text-white' : 'text-white/60 hover:text-white'
+                mode === 'explore' ? 'bg-helm-primary-500 text-white' : 'text-white/60 hover:text-white'
               }`}
             >
               Explore Freely
@@ -183,17 +183,17 @@ export function InteractiveDemoSection() {
           transition={{ delay: 0.2 }}
           className="relative"
         >
-          <div className="absolute -inset-4 bg-gradient-to-r from-helm-green-500/10 to-helm-amber-500/10 rounded-3xl blur-3xl" />
+          <div className="absolute -inset-4 bg-gradient-to-r from-helm-primary-500/10 to-helm-amber-500/10 rounded-3xl blur-3xl" />
           
           <div className="relative bg-white/[0.02] backdrop-blur-xl rounded-2xl border border-white/[0.08] overflow-hidden">
             {/* Demo Header */}
             <div className="px-4 sm:px-6 py-4 border-b border-white/[0.06] flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-helm-green-500/20 flex items-center justify-center">
-                  <Flag className="w-4 h-4 text-helm-green-400" />
+                <div className="w-8 h-8 rounded-lg bg-helm-primary-500/20 flex items-center justify-center">
+                  <Flag className="w-4 h-4 text-helm-primary-400" />
                 </div>
                 <span className="text-white font-medium">GolfHelm Demo</span>
-                <span className="px-2 py-0.5 rounded text-xs bg-helm-green-500/20 text-helm-green-400">Interactive</span>
+                <span className="px-2 py-0.5 rounded text-xs bg-helm-primary-500/20 text-helm-primary-400">Interactive</span>
               </div>
               
               {mode === 'tour' && (
@@ -201,7 +201,7 @@ export function InteractiveDemoSection() {
                   <span className="text-white/40 text-xs sm:text-sm">Step {tourStep + 1} of {tourSteps.length}</span>
                   <button
                     onClick={() => setTourStep(prev => (prev + 1) % tourSteps.length)}
-                    className="w-full sm:w-auto px-4 py-2 rounded-lg bg-helm-green-500/20 text-helm-green-400 text-xs sm:text-sm font-medium hover:bg-helm-green-500/30 transition-colors flex items-center justify-center gap-2"
+                    className="w-full sm:w-auto px-4 py-2 rounded-lg bg-helm-primary-500/20 text-helm-primary-400 text-xs sm:text-sm font-medium hover:bg-helm-primary-500/30 transition-colors flex items-center justify-center gap-2"
                   >
                     Next
                     <ChevronRight className="w-4 h-4" />
@@ -218,9 +218,9 @@ export function InteractiveDemoSection() {
                   onClick={() => setActiveTab(tab.id)}
                   className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-2 transition-all ${
                     activeTab === tab.id 
-                      ? 'bg-helm-green-500/20 text-helm-green-400' 
+                      ? 'bg-helm-primary-500/20 text-helm-primary-400' 
                       : 'text-white/40 hover:text-white hover:bg-white/[0.04]'
-                  } ${mode === 'tour' && activeStep?.highlight === tab.id ? 'ring-2 ring-helm-green-500/50' : ''}`}
+                  } ${mode === 'tour' && activeStep?.highlight === tab.id ? 'ring-2 ring-helm-primary-500/50' : ''}`}
                 >
                   <tab.icon className="w-4 h-4" />
                   {tab.label}
@@ -247,11 +247,11 @@ export function InteractiveDemoSection() {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="absolute bottom-4 left-4 right-4 p-3 sm:p-4 rounded-xl bg-stone-900/95 border border-helm-green-500/30 backdrop-blur-sm"
+                className="absolute bottom-4 left-4 right-4 p-3 sm:p-4 rounded-xl bg-stone-900/95 border border-helm-primary-500/30 backdrop-blur-sm"
               >
                 <div className="flex items-start gap-3 sm:gap-4">
-                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-helm-green-500/20 flex items-center justify-center flex-shrink-0">
-                    <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-helm-green-400" />
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-helm-primary-500/20 flex items-center justify-center flex-shrink-0">
+                    <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-helm-primary-400" />
                   </div>
                   <div className="flex-1">
                     <div className="text-white font-semibold mb-1">{activeStep?.title}</div>
@@ -261,7 +261,7 @@ export function InteractiveDemoSection() {
                     {tourSteps.map((_, i) => (
                       <div 
                         key={i}
-                        className={`w-2 h-2 rounded-full ${i === tourStep ? 'bg-helm-green-500' : 'bg-white/20'}`}
+                        className={`w-2 h-2 rounded-full ${i === tourStep ? 'bg-helm-primary-500' : 'bg-white/20'}`}
                       />
                     ))}
                   </div>

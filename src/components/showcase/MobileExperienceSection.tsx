@@ -33,7 +33,7 @@ export function MobileExperienceSection() {
               <div className="text-white font-semibold">Hole 7</div>
               <div className="text-white/40 text-xs">Par 4 • 385 yds</div>
             </div>
-            <div className="text-2xl font-bold text-helm-green-400">-2</div>
+            <div className="text-2xl font-bold text-helm-primary-400">-2</div>
           </div>
           <div className="grid grid-cols-4 gap-2 mb-4">
             {['Driver', '3W', '5i', '7i'].map(club => (
@@ -44,7 +44,7 @@ export function MobileExperienceSection() {
           </div>
           <div className="grid grid-cols-3 gap-2">
             {['Fairway', 'Green', 'Hole'].map(result => (
-              <button key={result} className="p-3 rounded-lg bg-helm-green-500/10 text-helm-green-400 text-sm border border-helm-green-500/20">
+              <button key={result} className="p-3 rounded-lg bg-helm-primary-500/10 text-helm-primary-400 text-sm border border-helm-primary-500/20">
                 {result}
               </button>
             ))}
@@ -74,7 +74,7 @@ export function MobileExperienceSection() {
                   insight.color === 'amber'
                     ? 'bg-helm-amber-500/15 text-helm-amber-400'
                     : insight.color === 'green'
-                      ? 'bg-helm-green-500/15 text-helm-green-400'
+                      ? 'bg-helm-primary-500/15 text-helm-primary-400'
                       : 'bg-blue-500/15 text-blue-400'
                 }`}
               >
@@ -101,7 +101,7 @@ export function MobileExperienceSection() {
             </div>
             <div>
               <div className="text-white font-semibold">Jake Thompson</div>
-              <div className="text-helm-green-400 text-xs">#1 Qualifying</div>
+              <div className="text-helm-primary-400 text-xs">#1 Qualifying</div>
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2 mb-4">
@@ -116,7 +116,7 @@ export function MobileExperienceSection() {
               </div>
             ))}
           </div>
-          <button className="w-full p-3 rounded-lg bg-helm-green-500/20 text-helm-green-400 text-sm font-medium">
+          <button className="w-full p-3 rounded-lg bg-helm-primary-500/20 text-helm-primary-400 text-sm font-medium">
             View Full Profile
           </button>
         </div>
@@ -180,7 +180,7 @@ export function MobileExperienceSection() {
               <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.04]">
                 <div className="text-white/40 text-xs w-16">{item.time}</div>
                 <div className={`w-1 h-8 rounded-full ${
-                  item.type === 'qualifier' ? 'bg-helm-green-500' :
+                  item.type === 'qualifier' ? 'bg-helm-primary-500' :
                   item.type === 'practice' ? 'bg-blue-500' : 'bg-helm-amber-500'
                 }`} />
                 <div className="text-white text-sm">{item.event}</div>
@@ -206,7 +206,7 @@ export function MobileExperienceSection() {
             transition={{ duration: 0.8 }}
             className="relative flex justify-center"
           >
-            <div className="absolute -inset-20 bg-gradient-to-r from-helm-green-500/10 to-helm-amber-500/10 rounded-full blur-[100px]" />
+            <div className="absolute -inset-20 bg-gradient-to-r from-helm-primary-500/10 to-helm-amber-500/10 rounded-full blur-[100px]" />
             
             {/* iPhone Frame */}
             <div className="relative w-[240px] h-[500px] sm:w-[280px] sm:h-[580px] bg-stone-950 rounded-[50px] border-[8px] border-stone-800 shadow-2xl overflow-hidden">
@@ -221,7 +221,7 @@ export function MobileExperienceSection() {
                     <motion.span 
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      className="text-white text-[10px] font-medium"
+                      className="text-white text-micro font-medium"
                     >
                       Hole 7 • -2
                     </motion.span>
@@ -243,8 +243,8 @@ export function MobileExperienceSection() {
               <div className="absolute top-12 sm:top-14 left-0 right-0 bottom-0 bg-stone-950">
                 {/* App Header */}
                 <div className="px-4 py-3 border-b border-white/[0.06] flex items-center gap-2">
-                  <div className="w-6 h-6 rounded bg-helm-green-500/20 flex items-center justify-center">
-                    <Flag className="w-3 h-3 text-helm-green-400" />
+                  <div className="w-6 h-6 rounded bg-helm-primary-500/20 flex items-center justify-center">
+                    <Flag className="w-3 h-3 text-helm-primary-400" />
                   </div>
                   <span className="text-white text-sm font-medium">{activeScreenData.title}</span>
                 </div>
@@ -269,7 +269,7 @@ export function MobileExperienceSection() {
                       key={i}
                       onClick={() => setActiveScreen(i)}
                       className={`p-2 rounded-lg transition-colors ${
-                        activeScreen === i ? 'text-helm-green-400' : 'text-white/30 hover:text-white/50'
+                        activeScreen === i ? 'text-helm-primary-400' : 'text-white/30 hover:text-white/50'
                       }`}
                     >
                       <Icon className="w-5 h-5" />
@@ -289,14 +289,14 @@ export function MobileExperienceSection() {
             animate={isInView ? { opacity: 1, x: 0 } : {}}
             transition={{ duration: 0.8, delay: 0.2 }}
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-helm-green-500/10 to-helm-amber-500/10 border border-white/10 mb-8">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-helm-primary-500/10 to-helm-amber-500/10 border border-white/10 mb-8">
               <Smartphone className="w-4 h-4 text-white/70" />
               <span className="text-sm font-medium text-white/80">Mobile Experience</span>
             </div>
 
             <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-6 leading-[1.1]">
               Powerful{' '}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-helm-green-400 to-helm-amber-400">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-helm-primary-400 to-helm-amber-400">
                 on the Go
               </span>
             </h2>
@@ -322,8 +322,8 @@ export function MobileExperienceSection() {
                   transition={{ duration: 0.5, delay: 0.4 + i * 0.08 }}
                   className="flex items-center gap-3"
                 >
-                  <div className="w-5 h-5 rounded-full flex items-center justify-center bg-helm-green-500/20">
-                    <Check className="w-3 h-3 text-helm-green-400" />
+                  <div className="w-5 h-5 rounded-full flex items-center justify-center bg-helm-primary-500/20">
+                    <Check className="w-3 h-3 text-helm-primary-400" />
                   </div>
                   <span className="text-white/70 text-sm">{feature}</span>
                 </motion.div>
@@ -337,7 +337,7 @@ export function MobileExperienceSection() {
                   key={i}
                   onClick={() => setActiveScreen(i)}
                   className={`w-2 h-2 rounded-full transition-all ${
-                    activeScreen === i ? 'w-6 bg-helm-green-500' : 'bg-white/20 hover:bg-white/40'
+                    activeScreen === i ? 'w-6 bg-helm-primary-500' : 'bg-white/20 hover:bg-white/40'
                   }`}
                 />
               ))}

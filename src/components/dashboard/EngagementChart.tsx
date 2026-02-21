@@ -54,7 +54,7 @@ export function EngagementChart({ data, loading }: EngagementChartProps) {
       {/* Mini stats */}
       <div className="flex items-center gap-4 mb-4">
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-green-500" />
+          <div className="w-2 h-2 rounded-full bg-primary-500" />
           <span className="text-xs text-slate-500">Views: <span className="font-medium text-slate-900">{totalViews}</span></span>
         </div>
         <div className="flex items-center gap-2">

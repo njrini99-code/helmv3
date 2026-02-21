@@ -1175,6 +1175,7 @@ export async function calculateAndStoreRoundSG(roundId: string): Promise<Strokes
 
 /**
  * Batch recalculate strokes gained for all rounds
+ * Uses Promise.all for parallel processing instead of sequential N+1 queries
  */
 export async function recalculateAllStrokesGained(playerId: string): Promise<number> {
   const rounds = await getPlayerRounds(playerId, {
@@ -1182,13 +1183,12 @@ export async function recalculateAllStrokesGained(playerId: string): Promise<num
     includeShots: true,
   });
 
-  let updated = 0;
-  for (const rnd of rounds) {
-    const result = await calculateAndStoreRoundSG(rnd.id);
-    if (result) {
-      updated++;
-    }
-  }
+  // Process all rounds in parallel instead of sequential N+1
+  const results = await Promise.all(
+    rounds.map(rnd => calculateAndStoreRoundSG(rnd.id))
+  );
+  
+  const updated = results.filter(result => result !== null).length;
 
   revalidatePath('/golf/dashboard');
   revalidatePath('/golf/dashboard/stats');

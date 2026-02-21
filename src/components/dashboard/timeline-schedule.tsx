@@ -75,7 +75,7 @@ export function TimelineSchedule({ items }: { items: ScheduleItem[] }) {
                     className="
                     px-2 py-0.5 rounded-full
                     bg-primary-100 text-primary-700
-                    text-[10px] font-semibold uppercase tracking-wide
+                    text-micro font-semibold uppercase tracking-wide
                   "
                   >
                     Now
@@ -109,7 +109,7 @@ export function TimelineSchedule({ items }: { items: ScheduleItem[] }) {
                             w-7 h-7 rounded-[8px]
                             bg-warm-100 border-2 border-white
                             flex items-center justify-center
-                            text-[10px] font-medium text-warm-600
+                            text-micro font-medium text-warm-600
                             overflow-hidden
                           "
                           title={player.name}
@@ -134,7 +134,7 @@ export function TimelineSchedule({ items }: { items: ScheduleItem[] }) {
                           w-7 h-7 rounded-[8px]
                           bg-warm-200 border-2 border-white
                           flex items-center justify-center
-                          text-[10px] font-medium text-warm-600
+                          text-micro font-medium text-warm-600
                         "
                         >
                           +{item.players.length - 4}

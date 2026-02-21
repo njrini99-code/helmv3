@@ -141,6 +141,8 @@ const config: Config = {
         serif: ['var(--font-serif)', 'Playfair Display', 'Georgia', 'serif'],
       },
       fontSize: {
+        'micro': ['10px', { lineHeight: '14px' }],  // Badges, annotations
+        'label': ['11px', { lineHeight: '16px' }],   // Form labels, captions
         'xs': '12px',
         'sm': '14px',
         'base': '16px',      // Body text

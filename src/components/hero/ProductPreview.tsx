@@ -164,7 +164,7 @@ export function ProductPreview() {
       >
         <div className="text-xs text-gray-500 mb-1">Commits</div>
         <div className="text-xl font-bold text-emerald-400">+3</div>
-        <div className="text-[10px] text-gray-600">this week</div>
+        <div className="text-micro text-gray-600">this week</div>
       </motion.div>
 
       <motion.div
@@ -185,7 +185,7 @@ export function ProductPreview() {
             </svg>
           </div>
           <div>
-            <div className="text-[10px] text-gray-500">Visit booked</div>
+            <div className="text-micro text-gray-500">Visit booked</div>
             <div className="text-xs font-medium text-white">J. Smith</div>
           </div>
         </div>

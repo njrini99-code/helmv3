@@ -6050,6 +6050,38 @@ export type Database = {
           },
         ]
       }
+      golf_player_notification_state: {
+        Row: {
+          created_at: string | null
+          id: string
+          last_announcements_seen_at: string | null
+          player_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          last_announcements_seen_at?: string | null
+          player_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          last_announcements_seen_at?: string | null
+          player_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_player_notification_state_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: true
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_player_settings: {
         Row: {
           created_at: string | null

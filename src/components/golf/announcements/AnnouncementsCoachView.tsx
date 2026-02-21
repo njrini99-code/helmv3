@@ -153,7 +153,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
             <div className="flex items-center gap-2 flex-wrap">
               {/* Urgency pill */}
               <span className={cn(
-                'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold uppercase tracking-wider border',
+                'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-label font-semibold uppercase tracking-wider border',
                 urg.bg, urg.text, urg.border
               )}>
                 <span className={cn('w-1.5 h-1.5 rounded-full', urg.dot)} />
@@ -281,7 +281,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
                     {/* Documents */}
                     {detail.documents && detail.documents.length > 0 && (
                       <div>
-                        <p className="text-[11px] font-semibold text-warm-400 uppercase tracking-widest mb-2.5">Attachments</p>
+                        <p className="text-label font-semibold text-warm-400 uppercase tracking-widest mb-2.5">Attachments</p>
                         <div className="flex flex-wrap gap-2">
                           {detail.documents.map((d) => (
                             <a
@@ -304,7 +304,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
                     {/* Tasks with player assignments */}
                     {detail.tasks && detail.tasks.length > 0 && (
                       <div>
-                        <p className="text-[11px] font-semibold text-warm-400 uppercase tracking-widest mb-2.5">Tasks</p>
+                        <p className="text-label font-semibold text-warm-400 uppercase tracking-widest mb-2.5">Tasks</p>
                         <div className="space-y-2">
                           {detail.tasks.map((t) => {
                             const completed = t.assignments?.filter(a => a.status === 'completed').length || 0;
@@ -343,7 +343,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
                                       <span
                                         key={a.player_id}
                                         className={cn(
-                                          'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium',
+                                          'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-label font-medium',
                                           a.status === 'completed'
                                             ? 'bg-primary-50 text-primary-700'
                                             : 'bg-warm-100 text-warm-500'
@@ -366,7 +366,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
                     {detail.requires_acknowledgement && (
                       <div>
                         <div className="flex items-center justify-between mb-2.5">
-                          <p className="text-[11px] font-semibold text-warm-400 uppercase tracking-widest">Acknowledgements</p>
+                          <p className="text-label font-semibold text-warm-400 uppercase tracking-widest">Acknowledgements</p>
                           <span className={cn(
                             'text-xs font-semibold tabular-nums',
                             detail.acknowledged_count >= detail.total_recipients ? 'text-primary-600' : 'text-warm-600'
@@ -401,7 +401,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
                                   <span className="text-xs text-warm-700 font-medium flex-1">
                                     {player ? `${player.first_name || ''} ${player.last_name || ''}` : 'Player'}
                                   </span>
-                                  <span className="text-[11px] text-warm-400 tabular-nums">
+                                  <span className="text-label text-warm-400 tabular-nums">
                                     {new Date(ack.acknowledged_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                                   </span>
                                 </div>

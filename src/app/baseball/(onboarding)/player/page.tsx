@@ -202,7 +202,7 @@ export default function PlayerOnboarding() {
             rotate: [0, 90, 0],
           }}
           transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-to-br from-green-100/20 to-transparent rounded-full blur-3xl"
+          className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-to-br from-primary-100/20 to-transparent rounded-full blur-3xl"
         />
         <motion.div
           animate={{
@@ -210,14 +210,14 @@ export default function PlayerOnboarding() {
             rotate: [90, 0, 90],
           }}
           transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-          className="absolute -bottom-1/2 -left-1/2 w-full h-full bg-gradient-to-tr from-green-50/20 to-transparent rounded-full blur-3xl"
+          className="absolute -bottom-1/2 -left-1/2 w-full h-full bg-gradient-to-tr from-primary-50/20 to-transparent rounded-full blur-3xl"
         />
       </div>
 
       {/* Progress Bar */}
       <div className="fixed top-0 left-0 right-0 h-1 bg-slate-200/50 backdrop-blur-sm z-50">
         <motion.div
-          className="h-full bg-gradient-to-r from-green-500 to-green-600"
+          className="h-full bg-gradient-to-r from-primary-500 to-primary-600"
           initial={{ width: 0 }}
           animate={{ width: `${progress}%` }}
           transition={{ duration: 0.5, ease: "easeInOut" }}
@@ -251,8 +251,8 @@ export default function PlayerOnboarding() {
                     className="mb-6 inline-block"
                   >
                     <div className="relative">
-                      <div className="absolute inset-0 bg-green-500/20 blur-2xl rounded-full" />
-                      <div className="relative w-20 h-20 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center shadow-xl shadow-green-900/20">
+                      <div className="absolute inset-0 bg-primary-500/20 blur-2xl rounded-full" />
+                      <div className="relative w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-xl shadow-primary-900/20">
                         <span className="text-white font-bold text-3xl">H</span>
                       </div>
                     </div>
@@ -270,7 +270,7 @@ export default function PlayerOnboarding() {
                   <Button
                     size="lg"
                     onClick={() => setStep('basic')}
-                    className="px-8 bg-green-600 hover:bg-green-700 active:bg-green-800 shadow-lg shadow-green-900/20 hover:shadow-xl hover:shadow-green-900/30 transition-all"
+                    className="px-8 bg-primary-600 hover:bg-primary-700 active:bg-primary-800 shadow-lg shadow-primary-900/20 hover:shadow-xl hover:shadow-primary-900/30 transition-all"
                   >
                     Get Started
                     <IconArrowRight size={16} className="ml-2" />
@@ -393,7 +393,7 @@ export default function PlayerOnboarding() {
                     <Button
                       onClick={() => setStep('baseball')}
                       disabled={!firstName || !lastName}
-                      className="flex-1 bg-green-600 hover:bg-green-700 transition-colors active:bg-green-800"
+                      className="flex-1 bg-primary-600 hover:bg-primary-700 transition-colors active:bg-primary-800"
                     >
                       Next
                     </Button>
@@ -526,7 +526,7 @@ export default function PlayerOnboarding() {
                     <Button
                       onClick={() => setStep('physical')}
                       disabled={!primaryPosition}
-                      className="flex-1 bg-green-600 hover:bg-green-700 transition-colors active:bg-green-800"
+                      className="flex-1 bg-primary-600 hover:bg-primary-700 transition-colors active:bg-primary-800"
                     >
                       Next
                     </Button>
@@ -619,7 +619,7 @@ export default function PlayerOnboarding() {
                     </Button>
                     <Button
                       onClick={() => setStep('metrics')}
-                      className="flex-1 bg-green-600 hover:bg-green-700 transition-colors active:bg-green-800"
+                      className="flex-1 bg-primary-600 hover:bg-primary-700 transition-colors active:bg-primary-800"
                     >
                       Next
                     </Button>
@@ -717,7 +717,7 @@ export default function PlayerOnboarding() {
                     <Button
                       onClick={() => setStep('photo')}
                       disabled={!pitchVelo && !exitVelo && !sixtyTime}
-                      className="flex-1 bg-green-600 hover:bg-green-700 transition-colors active:bg-green-800"
+                      className="flex-1 bg-primary-600 hover:bg-primary-700 transition-colors active:bg-primary-800"
                     >
                       Next
                     </Button>
@@ -790,7 +790,7 @@ export default function PlayerOnboarding() {
                     </Button>
                     <Button
                       onClick={() => setStep('team')}
-                      className="flex-1 bg-green-600 hover:bg-green-700 transition-colors active:bg-green-800"
+                      className="flex-1 bg-primary-600 hover:bg-primary-700 transition-colors active:bg-primary-800"
                     >
                       Next
                     </Button>
@@ -839,14 +839,14 @@ export default function PlayerOnboarding() {
                       animate={{ opacity: 1, scale: 1 }}
                       className="text-center py-4"
                     >
-                      <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <IconCheck size={32} className="text-green-600" />
+                      <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <IconCheck size={32} className="text-primary-600" />
                       </div>
                       <h3 className="text-lg font-semibold text-slate-900 mb-1">
                         Team Joined!
                       </h3>
                       <p className="text-slate-600">
-                        You are now a member of <span className="font-medium text-green-600">{teamName}</span>
+                        You are now a member of <span className="font-medium text-primary-600">{teamName}</span>
                       </p>
                     </motion.div>
                   ) : (
@@ -858,8 +858,8 @@ export default function PlayerOnboarding() {
                         transition={{ delay: 0.2 }}
                         className="flex flex-col items-center mb-6"
                       >
-                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-100 to-green-50 flex items-center justify-center mb-4 shadow-sm">
-                          <IconUsers size={28} className="text-green-600" />
+                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary-100 to-primary-50 flex items-center justify-center mb-4 shadow-sm">
+                          <IconUsers size={28} className="text-primary-600" />
                         </div>
                       </motion.div>
 
@@ -901,7 +901,7 @@ export default function PlayerOnboarding() {
                         onClick={handleJoinTeam}
                         disabled={!inviteCode.trim() || joiningTeam}
                         isLoading={joiningTeam}
-                        className="w-full bg-green-600 hover:bg-green-700 transition-colors active:bg-green-800"
+                        className="w-full bg-primary-600 hover:bg-primary-700 transition-colors active:bg-primary-800"
                       >
                         Join Team
                       </Button>
@@ -924,7 +924,7 @@ export default function PlayerOnboarding() {
                     </Button>
                     <Button
                       onClick={() => setStep('complete')}
-                      className="flex-1 bg-green-600 hover:bg-green-700 transition-colors active:bg-green-800"
+                      className="flex-1 bg-primary-600 hover:bg-primary-700 transition-colors active:bg-primary-800"
                     >
                       {teamJoined ? 'Continue' : 'Skip for Now'}
                     </Button>
@@ -959,8 +959,8 @@ export default function PlayerOnboarding() {
                     className="mb-6 inline-block"
                   >
                     <div className="relative">
-                      <div className="absolute inset-0 bg-green-500/20 blur-2xl rounded-full" />
-                      <div className="relative w-20 h-20 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center shadow-xl shadow-green-900/20">
+                      <div className="absolute inset-0 bg-primary-500/20 blur-2xl rounded-full" />
+                      <div className="relative w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-xl shadow-primary-900/20">
                         <motion.div
                           initial={{ scale: 0 }}
                           animate={{ scale: 1 }}
@@ -985,7 +985,7 @@ export default function PlayerOnboarding() {
                     size="lg"
                     onClick={handleComplete}
                     isLoading={loading}
-                    className="px-8 bg-green-600 hover:bg-green-700 active:bg-green-800 shadow-lg shadow-green-900/20 hover:shadow-xl hover:shadow-green-900/30 transition-all"
+                    className="px-8 bg-primary-600 hover:bg-primary-700 active:bg-primary-800 shadow-lg shadow-primary-900/20 hover:shadow-xl hover:shadow-primary-900/30 transition-all"
                   >
                     Go to Dashboard
                   </Button>

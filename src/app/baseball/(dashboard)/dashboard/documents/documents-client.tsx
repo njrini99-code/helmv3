@@ -70,7 +70,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId: _coachId
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search documents..."
-            className="w-full pl-9 pr-4 py-2.5 text-sm bg-white border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-50"
+            className="w-full pl-9 pr-4 py-2.5 text-sm bg-white border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50"
           />
         </div>
         <div className="flex gap-2 overflow-x-auto pb-1">
@@ -81,7 +81,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId: _coachId
               className={cn(
                 'px-3 py-1.5 text-xs font-medium rounded-full border transition-colors whitespace-nowrap',
                 category === cat.value
-                  ? 'bg-green-100 text-green-700 border-green-200'
+                  ? 'bg-primary-100 text-primary-700 border-primary-200'
                   : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
               )}
             >

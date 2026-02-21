@@ -18,7 +18,7 @@ export function ProgressTracker({ completed, total }: ProgressTrackerProps) {
       </div>
       <div className="mt-3 h-2 rounded-full bg-slate-200">
         <div
-          className={cn('h-2 rounded-full', percent >= 70 ? 'bg-green-600' : percent >= 40 ? 'bg-amber-500' : 'bg-slate-400')}
+          className={cn('h-2 rounded-full', percent >= 70 ? 'bg-primary-600' : percent >= 40 ? 'bg-amber-500' : 'bg-slate-400')}
           style={{ width: `${percent}%` }}
         />
       </div>

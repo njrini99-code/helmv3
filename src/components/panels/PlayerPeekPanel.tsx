@@ -128,7 +128,7 @@ export function PlayerPeekPanel({ playerId, onClose }: PlayerPeekPanelProps) {
     <PeekPanelRoot isOpen={!!playerId} onClose={onClose} width="lg">
       {loading ? (
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin h-8 w-8 border-2 border-green-600 border-t-transparent rounded-full" />
+          <div className="animate-spin h-8 w-8 border-2 border-primary-600 border-t-transparent rounded-full" />
         </div>
       ) : player ? (
         <div className="p-6 space-y-6">
@@ -241,12 +241,12 @@ export function PlayerPeekPanel({ playerId, onClose }: PlayerPeekPanelProps) {
             >
               {isPending ? (
                 <>
-                  <div className="animate-spin h-4 w-4 border-2 border-green-600 border-t-transparent rounded-full mr-2" />
+                  <div className="animate-spin h-4 w-4 border-2 border-primary-600 border-t-transparent rounded-full mr-2" />
                   Updating...
                 </>
               ) : isInWatchlist ? (
                 <>
-                  <IconStarFilled size={16} className="mr-2 text-green-600" />
+                  <IconStarFilled size={16} className="mr-2 text-primary-600" />
                   Remove from Watchlist
                 </>
               ) : (

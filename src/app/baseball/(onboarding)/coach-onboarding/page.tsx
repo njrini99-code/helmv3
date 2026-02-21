@@ -342,9 +342,9 @@ export default function CoachOnboarding() {
   // Show loading state during submission
   if (isSubmitting && currentStep !== 'welcome') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50/30 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-primary-50/30 flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-flex h-12 w-12 animate-spin rounded-full border-4 border-green-200 border-t-green-600 mb-4" />
+          <div className="inline-flex h-12 w-12 animate-spin rounded-full border-4 border-primary-200 border-t-primary-600 mb-4" />
           <p className="text-slate-600 font-medium">Setting up your account...</p>
         </div>
       </div>

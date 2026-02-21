@@ -11,7 +11,7 @@ const categoryColors: Record<string, string> = {
   conditioning: 'bg-red-50 text-red-700 border-red-100',
   academic: 'bg-amber-50 text-amber-700 border-amber-100',
   administrative: 'bg-blue-50 text-blue-700 border-blue-100',
-  practice: 'bg-green-50 text-green-700 border-green-100',
+  practice: 'bg-primary-50 text-primary-700 border-primary-100',
   game_prep: 'bg-purple-50 text-purple-700 border-purple-100',
 };
 
@@ -78,7 +78,7 @@ export function TemplateList({
   if (loading) {
     return (
       <div className={cn('flex items-center justify-center py-12', className)}>
-        <div className="animate-spin h-6 w-6 border-2 border-green-600 border-t-transparent rounded-full" />
+        <div className="animate-spin h-6 w-6 border-2 border-primary-600 border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -104,7 +104,7 @@ export function TemplateList({
         {onCreateTemplate && (
           <button
             onClick={onCreateTemplate}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 active:bg-green-800 shadow-sm transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 active:bg-primary-800 shadow-sm transition-colors"
           >
             <IconPlus size={16} />
             New Template
@@ -122,7 +122,7 @@ export function TemplateList({
               className={cn(
                 'px-3 py-1.5 text-xs font-medium rounded-full border whitespace-nowrap transition-colors',
                 selectedCategory === cat
-                  ? 'bg-green-50 text-green-700 border-green-200'
+                  ? 'bg-primary-50 text-primary-700 border-primary-200'
                   : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
               )}
             >
@@ -149,7 +149,7 @@ export function TemplateList({
             <div
               key={template.id}
               onClick={() => onSelectTemplate?.(template)}
-              className="bg-white border border-slate-200 rounded-xl p-4 hover:border-green-200 hover:shadow-sm transition-all cursor-pointer"
+              className="bg-white border border-slate-200 rounded-xl p-4 hover:border-primary-200 hover:shadow-sm transition-all cursor-pointer"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">

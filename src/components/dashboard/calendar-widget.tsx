@@ -102,7 +102,7 @@ export function CalendarWidget({ events, calendarUrl = '/dashboard/calendar' }: 
                   <div className="text-xs font-semibold text-warm-900">
                     {format(new Date(event.start_time), 'h:mm')}
                   </div>
-                  <div className="text-[10px] text-warm-400">
+                  <div className="text-micro text-warm-400">
                     {format(new Date(event.start_time), 'a')}
                   </div>
                   <div
@@ -126,7 +126,7 @@ export function CalendarWidget({ events, calendarUrl = '/dashboard/calendar' }: 
                   <div
                     className={cn(
                       'inline-block px-1.5 py-0.5 rounded-md mt-1',
-                      'text-[10px] font-medium',
+                      'text-micro font-medium',
                       config.bgColor,
                       config.textColor
                     )}

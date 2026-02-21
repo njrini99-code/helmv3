@@ -910,7 +910,7 @@ export function MultiTrendLineChart({
               <span
                 key={axisId}
                 className={cn(
-                  'text-[10px] text-warm-400',
+                  'text-micro text-warm-400',
                   idx === 0 ? 'text-left' : 'text-right'
                 )}
               >

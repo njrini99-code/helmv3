@@ -70,8 +70,8 @@ function getStatusConfig(status: PositionStatus) {
     case 'on_track':
       return {
         icon: IconCheck,
-        color: 'text-green-600',
-        bg: 'bg-green-50',
+        color: 'text-primary-600',
+        bg: 'bg-primary-50',
         label: 'On Track',
         description: 'Good pipeline coverage',
       };
@@ -275,7 +275,7 @@ export function PositionNeedsMatrix({
         {/* Progress bar */}
         <div className="mt-2 h-2 bg-slate-200 rounded-full overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-green-500 to-green-400 transition-all duration-500"
+            className="h-full bg-gradient-to-r from-primary-500 to-primary-400 transition-all duration-500"
             style={{ width: `${summary.percentFilled}%` }}
           />
         </div>
@@ -318,7 +318,7 @@ export function PositionNeedsMatrix({
                   <td className="px-6 py-3">
                     <Link
                       href={`/baseball/dashboard/discover?position=${pos.position}&grad_year=${gradYear}`}
-                      className="text-sm font-medium text-slate-900 hover:text-green-600 transition-colors"
+                      className="text-sm font-medium text-slate-900 hover:text-primary-600 transition-colors"
                     >
                       {pos.position}
                     </Link>
@@ -337,7 +337,7 @@ export function PositionNeedsMatrix({
                   <td className="px-4 py-3 text-center">
                     <span className={cn(
                       "text-sm font-semibold tabular-nums",
-                      pos.committed > 0 ? "text-green-600" : "text-slate-400"
+                      pos.committed > 0 ? "text-primary-600" : "text-slate-400"
                     )}>
                       {pos.committed}
                     </span>
@@ -366,14 +366,14 @@ export function PositionNeedsMatrix({
         {positionData.length > 6 && (
           <button
             onClick={() => setShowAllPositions(!showAllPositions)}
-            className="text-sm text-slate-600 hover:text-green-600 transition-colors"
+            className="text-sm text-slate-600 hover:text-primary-600 transition-colors"
           >
             {showAllPositions ? 'Show less' : `Show all ${positionData.length} positions`}
           </button>
         )}
         <Link
           href={`/baseball/dashboard/discover?grad_year=${gradYear}`}
-          className="text-sm text-slate-600 hover:text-green-600 transition-colors flex items-center gap-1 ml-auto"
+          className="text-sm text-slate-600 hover:text-primary-600 transition-colors flex items-center gap-1 ml-auto"
         >
           Find players <IconChevronRight size={14} />
         </Link>

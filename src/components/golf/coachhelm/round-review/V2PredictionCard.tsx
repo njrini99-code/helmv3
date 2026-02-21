@@ -59,7 +59,7 @@ export function V2PredictionCard({ prediction }: V2PredictionCardProps) {
         </div>
         <h3 className="text-sm font-semibold text-warm-900">Performance Forecast</h3>
         <span className={cn(
-          'text-[11px] font-semibold px-2.5 py-0.5 rounded-full ml-auto',
+          'text-label font-semibold px-2.5 py-0.5 rounded-full ml-auto',
           confidencePercent >= 75 ? 'bg-primary-100 text-primary-700' :
           confidencePercent >= 50 ? 'bg-amber-100 text-amber-700' :
           'bg-warm-100 text-warm-600'
@@ -95,7 +95,7 @@ export function V2PredictionCard({ prediction }: V2PredictionCardProps) {
 
           {/* Trend */}
           <div>
-            <div className="text-[11px] text-warm-500 mb-0.5">Trend</div>
+            <div className="text-label text-warm-500 mb-0.5">Trend</div>
             <div className={cn(
               'text-sm font-semibold',
               trend === 'improving' && 'text-primary-600',
@@ -111,7 +111,7 @@ export function V2PredictionCard({ prediction }: V2PredictionCardProps) {
             <>
               <div className="h-10 w-px bg-warm-100" />
               <div>
-                <div className="text-[11px] text-warm-500 mb-0.5">Range</div>
+                <div className="text-label text-warm-500 mb-0.5">Range</div>
                 <div className="text-sm font-medium text-warm-700 tabular-nums">
                   {Number(lowerBound).toFixed(1)} to {Number(upperBound).toFixed(1)}
                 </div>
@@ -124,7 +124,7 @@ export function V2PredictionCard({ prediction }: V2PredictionCardProps) {
             <>
               <div className="h-10 w-px bg-warm-100" />
               <div>
-                <div className="text-[11px] text-warm-500 mb-0.5">Factors</div>
+                <div className="text-label text-warm-500 mb-0.5">Factors</div>
                 <div className="text-sm font-medium text-warm-700">{inputFeatureCount}</div>
               </div>
             </>
@@ -134,14 +134,14 @@ export function V2PredictionCard({ prediction }: V2PredictionCardProps) {
         {/* Key Drivers */}
         {keyDrivers.length > 0 && (
           <div className="mt-4 pt-3.5 border-t border-warm-100 flex items-center gap-2 flex-wrap">
-            <span className="text-[11px] font-medium text-warm-500">Drivers:</span>
+            <span className="text-label font-medium text-warm-500">Drivers:</span>
             {keyDrivers.slice(0, 4).map((driver: string, i: number) => (
               <motion.span
                 key={i}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.5 + i * 0.06, duration: 0.25 }}
-                className="text-[11px] px-2.5 py-0.5 bg-blue-50 text-blue-700 rounded-md font-medium border border-blue-100/50"
+                className="text-label px-2.5 py-0.5 bg-blue-50 text-blue-700 rounded-md font-medium border border-blue-100/50"
               >
                 {formatLabel(driver)}
               </motion.span>

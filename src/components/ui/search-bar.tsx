@@ -102,7 +102,7 @@ export function SearchBar({
             'w-full h-11 pl-10 pr-10 rounded-xl border bg-white text-warm-900 text-sm',
             'placeholder:text-warm-400',
             'transition-all duration-200',
-            'focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500',
+            'focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500',
             'border-warm-200 hover:border-warm-300'
           )}
         />
@@ -127,16 +127,16 @@ export function SearchBar({
           className={cn(
             'relative h-11 px-4 rounded-xl border text-sm font-medium',
             'flex items-center gap-2 transition-all duration-200',
-            'focus:outline-none focus:ring-2 focus:ring-green-500/20',
+            'focus:outline-none focus:ring-2 focus:ring-primary-500/20',
             filterCount > 0
-              ? 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100'
+              ? 'bg-primary-50 border-primary-200 text-primary-700 hover:bg-primary-100'
               : 'bg-white border-warm-200 text-warm-600 hover:border-warm-300 hover:bg-warm-50'
           )}
         >
           <IconFilter size={16} />
           <span>Filters</span>
           {filterCount > 0 && (
-            <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-green-600 text-white
+            <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-primary-600 text-white
                            text-xs font-medium flex items-center justify-center">
               {filterCount}
             </span>
@@ -180,7 +180,7 @@ export function CompactSearch({
           'w-full h-11 lg:h-8 pl-8 pr-3 rounded-lg border bg-white text-warm-900 text-sm',
           'placeholder:text-warm-400',
           'transition-all duration-200',
-          'focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500',
+          'focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500',
           'border-warm-200 hover:border-warm-300'
         )}
       />

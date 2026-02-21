@@ -95,7 +95,7 @@ export const AdminStatCard = memo(function AdminStatCard({
       <div className="relative flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           {/* Label with premium styling */}
-          <p className="text-[11px] md:text-xs font-medium text-warm-400 uppercase tracking-wider mb-2">
+          <p className="text-label md:text-xs font-medium text-warm-400 uppercase tracking-wider mb-2">
             {label}
           </p>
 
@@ -124,7 +124,7 @@ export const AdminStatCard = memo(function AdminStatCard({
             {trend && (
               <span
                 className={cn(
-                  'inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full',
+                  'inline-flex items-center gap-0.5 text-micro font-semibold px-1.5 py-0.5 rounded-full',
                   trend.value > 0
                     ? 'bg-primary-50 text-primary-700'
                     : trend.value < 0

@@ -169,15 +169,15 @@ export function GrowthCard({ growth, users, usage, coachhelm, userJourney, stick
           <div className="grid grid-cols-3 gap-2">
             <div className="bg-white/50 rounded-xl p-2.5 text-center">
               <p className="text-lg font-semibold text-warm-900 tabular-nums">{stickiness.dau}</p>
-              <p className="text-[10px] text-warm-400">DAU</p>
+              <p className="text-micro text-warm-400">DAU</p>
             </div>
             <div className="bg-white/50 rounded-xl p-2.5 text-center">
               <p className="text-lg font-semibold text-warm-900 tabular-nums">{stickiness.wau}</p>
-              <p className="text-[10px] text-warm-400">WAU</p>
+              <p className="text-micro text-warm-400">WAU</p>
             </div>
             <div className="bg-white/50 rounded-xl p-2.5 text-center">
               <p className="text-lg font-semibold text-warm-900 tabular-nums">{stickiness.mau}</p>
-              <p className="text-[10px] text-warm-400">MAU</p>
+              <p className="text-micro text-warm-400">MAU</p>
             </div>
           </div>
         </div>
@@ -189,14 +189,14 @@ export function GrowthCard({ growth, users, usage, coachhelm, userJourney, stick
         <div className="grid grid-cols-4 gap-2">
           {growth.retentionCohorts.map((c) => (
             <div key={c.week} className="bg-white/50 rounded-xl p-2.5 text-center">
-              <p className="text-[10px] text-warm-400 uppercase tracking-wide">Week {c.week}</p>
+              <p className="text-micro text-warm-400 uppercase tracking-wide">Week {c.week}</p>
               <p className={cn(
                 'text-xl font-bold tabular-nums mt-0.5',
                 c.rate >= 50 ? 'text-primary-600' : c.rate >= 25 ? 'text-amber-600' : 'text-red-500'
               )}>
                 {c.rate}%
               </p>
-              <p className="text-[10px] text-warm-400 tabular-nums">{c.retained}/{c.total}</p>
+              <p className="text-micro text-warm-400 tabular-nums">{c.retained}/{c.total}</p>
             </div>
           ))}
         </div>

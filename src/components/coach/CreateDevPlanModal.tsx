@@ -196,7 +196,7 @@ export function CreateDevPlanModal({ open, onClose, teamId }: CreateDevPlanModal
                     onClick={() => setSelectedPlayerId(player.id)}
                     className={`flex items-center gap-3 p-2 rounded-lg text-left transition-colors ${
                       selectedPlayerId === player.id
-                        ? 'bg-green-50 border-2 border-green-500'
+                        ? 'bg-primary-50 border-2 border-primary-500'
                         : 'hover:bg-slate-50 active:bg-slate-100 border-2 border-transparent'
                     }`}
                   >
@@ -229,7 +229,7 @@ export function CreateDevPlanModal({ open, onClose, teamId }: CreateDevPlanModal
               required
               value={formData.title}
               onChange={e => setFormData({ ...formData, title: e.target.value })}
-              className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 text-slate-900"
+              className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-slate-900"
               placeholder="Off-Season Hitting Development"
             />
           </div>
@@ -242,7 +242,7 @@ export function CreateDevPlanModal({ open, onClose, teamId }: CreateDevPlanModal
               value={formData.description}
               onChange={e => setFormData({ ...formData, description: e.target.value })}
               rows={2}
-              className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 text-slate-900 resize-none"
+              className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-slate-900 resize-none"
               placeholder="Describe the focus areas and expectations..."
             />
           </div>
@@ -256,7 +256,7 @@ export function CreateDevPlanModal({ open, onClose, teamId }: CreateDevPlanModal
                 type="date"
                 value={formData.start_date}
                 onChange={e => setFormData({ ...formData, start_date: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 text-slate-900"
+                className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-slate-900"
               />
             </div>
             <div>
@@ -267,7 +267,7 @@ export function CreateDevPlanModal({ open, onClose, teamId }: CreateDevPlanModal
                 type="date"
                 value={formData.end_date}
                 onChange={e => setFormData({ ...formData, end_date: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100 text-slate-900"
+                className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-slate-900"
               />
             </div>
           </div>
@@ -316,7 +316,7 @@ export function CreateDevPlanModal({ open, onClose, teamId }: CreateDevPlanModal
                       value={goal.title}
                       onChange={e => updateGoal(goal.id, 'title', e.target.value)}
                       placeholder="Goal title (e.g., Increase bat speed)"
-                      className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                      className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
                     />
                     <div className="flex gap-2">
                       <input
@@ -324,13 +324,13 @@ export function CreateDevPlanModal({ open, onClose, teamId }: CreateDevPlanModal
                         value={goal.description}
                         onChange={e => updateGoal(goal.id, 'description', e.target.value)}
                         placeholder="Description (optional)"
-                        className="flex-1 px-3 py-2 text-sm rounded-lg border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                        className="flex-1 px-3 py-2 text-sm rounded-lg border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
                       />
                       <input
                         type="date"
                         value={goal.target_date}
                         onChange={e => updateGoal(goal.id, 'target_date', e.target.value)}
-                        className="px-3 py-2 text-sm rounded-lg border border-slate-200 focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                        className="px-3 py-2 text-sm rounded-lg border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
                       />
                     </div>
                   </div>

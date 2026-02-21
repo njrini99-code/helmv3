@@ -108,7 +108,7 @@ export default function BaseballAnnouncementsPage() {
         {/* Recent count badge */}
         {recentCount > 0 && !loading && (
           <div className="mb-4">
-            <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-green-50 text-green-700">
+            <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-primary-50 text-primary-700">
               {recentCount} new this week
             </span>
           </div>

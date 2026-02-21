@@ -55,28 +55,28 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
                 'text-xl font-bold tabular-nums',
                 errors24h > 0 ? 'text-red-600' : 'text-warm-900'
               )}>{errors24h}</p>
-              <p className="text-[10px] text-warm-400 uppercase tracking-wider mt-0.5">24h</p>
+              <p className="text-micro text-warm-400 uppercase tracking-wider mt-0.5">24h</p>
             </div>
             <div className="bg-white/50 rounded-xl p-3 text-center border border-white/30">
               <p className={cn(
                 'text-xl font-bold tabular-nums',
                 errors7d > 5 ? 'text-amber-600' : 'text-warm-900'
               )}>{errors7d}</p>
-              <p className="text-[10px] text-warm-400 uppercase tracking-wider mt-0.5">7 days</p>
+              <p className="text-micro text-warm-400 uppercase tracking-wider mt-0.5">7 days</p>
             </div>
             <div className="bg-white/50 rounded-xl p-3 text-center border border-white/30">
               <p className={cn(
                 'text-xl font-bold tabular-nums',
                 unresolvedErrors > 0 ? 'text-red-600' : 'text-warm-900'
               )}>{unresolvedErrors}</p>
-              <p className="text-[10px] text-warm-400 uppercase tracking-wider mt-0.5">Unresolved</p>
+              <p className="text-micro text-warm-400 uppercase tracking-wider mt-0.5">Unresolved</p>
             </div>
           </div>
 
           {/* UX Impact */}
           {(userExperienceIssues.chunkLoadErrors > 0 || userExperienceIssues.frameworkWarnings > 0 || userExperienceIssues.serverErrors > 0) && (
             <div>
-              <p className="text-[10px] text-warm-400 uppercase tracking-wider font-medium mb-2">UX Impact</p>
+              <p className="text-micro text-warm-400 uppercase tracking-wider font-medium mb-2">UX Impact</p>
               <div className="space-y-1">
                 {userExperienceIssues.frameworkWarnings > 0 && (
                   <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-amber-50/50">
@@ -103,7 +103,7 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
           {/* Top errors */}
           {errorLogs.topErrors.length > 0 && (
             <div>
-              <p className="text-[10px] text-warm-400 uppercase tracking-wider font-medium mb-2">Top Errors</p>
+              <p className="text-micro text-warm-400 uppercase tracking-wider font-medium mb-2">Top Errors</p>
               <div className="space-y-1.5">
                 {errorLogs.topErrors.slice(0, 3).map((err, i) => (
                   <div key={i} className="flex items-start gap-2 p-2 rounded-lg hover:bg-warm-50/50 transition-colors">
@@ -114,9 +114,9 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-warm-700 line-clamp-1">{err.message}</p>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[10px] text-warm-400 tabular-nums">{err.occurrences}×</span>
+                        <span className="text-micro text-warm-400 tabular-nums">{err.occurrences}×</span>
                         <Clock size={10} className="text-warm-300" />
-                        <span className="text-[10px] text-warm-400">{timeAgo(err.lastSeen)}</span>
+                        <span className="text-micro text-warm-400">{timeAgo(err.lastSeen)}</span>
                       </div>
                     </div>
                   </div>

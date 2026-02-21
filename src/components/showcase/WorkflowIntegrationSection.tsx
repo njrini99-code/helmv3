@@ -33,7 +33,7 @@ export function WorkflowIntegrationSection() {
     <section ref={ref} className="relative py-20 md:py-32 bg-gradient-to-b from-stone-950 via-stone-900 to-stone-950 overflow-hidden">
       {/* Background glow */}
       <div className="absolute inset-0">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-helm-green-500/10 rounded-full blur-[150px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-helm-primary-500/10 rounded-full blur-[150px]" />
       </div>
 
       <div className="relative max-w-5xl mx-auto px-6">
@@ -46,7 +46,7 @@ export function WorkflowIntegrationSection() {
         >
           <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4">
             How It All{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-helm-green-400 to-helm-amber-400">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-helm-primary-400 to-helm-amber-400">
               Flows
             </span>
           </h2>
@@ -74,7 +74,7 @@ export function WorkflowIntegrationSection() {
                   className="flex flex-col items-center gap-2"
                 >
                   <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl flex items-center justify-center
-                    ${source.color === 'green' ? 'bg-helm-green-500/20 text-helm-green-400' :
+                    ${source.color === 'green' ? 'bg-helm-primary-500/20 text-helm-primary-400' :
                       source.color === 'blue' ? 'bg-blue-500/20 text-blue-400' :
                       source.color === 'purple' ? 'bg-purple-500/20 text-purple-400' :
                       'bg-helm-amber-500/20 text-helm-amber-400'
@@ -105,9 +105,9 @@ export function WorkflowIntegrationSection() {
             className="flex flex-col items-center"
           >
             <div className="relative">
-              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-helm-green-500/30 to-helm-amber-500/30 blur-xl" />
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-helm-primary-500/30 to-helm-amber-500/30 blur-xl" />
               <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-stone-900 flex items-center justify-center border border-white/10">
-                <Brain className="w-12 h-12 sm:w-14 sm:h-14 text-helm-green-400" />
+                <Brain className="w-12 h-12 sm:w-14 sm:h-14 text-helm-primary-400" />
               </div>
             </div>
             <span className="mt-4 text-white font-semibold text-lg">CoachHelm AI</span>
@@ -142,7 +142,7 @@ export function WorkflowIntegrationSection() {
                   transition={{ delay: 1 + i * 0.1 }}
                   className={`px-4 py-2 rounded-full flex items-center gap-2 border
                     ${insight.color === 'amber' ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' :
-                      insight.color === 'green' ? 'bg-helm-green-500/10 border-helm-green-500/30 text-helm-green-400' :
+                      insight.color === 'green' ? 'bg-helm-primary-500/10 border-helm-primary-500/30 text-helm-primary-400' :
                       insight.color === 'blue' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' :
                       'bg-purple-500/10 border-purple-500/30 text-purple-400'
                     }`}
@@ -183,7 +183,7 @@ export function WorkflowIntegrationSection() {
                   className="flex flex-col items-center gap-2"
                 >
                   <div className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center
-                    ${output.color === 'green' ? 'bg-helm-green-500/20 text-helm-green-400' :
+                    ${output.color === 'green' ? 'bg-helm-primary-500/20 text-helm-primary-400' :
                       output.color === 'blue' ? 'bg-blue-500/20 text-blue-400' :
                       output.color === 'purple' ? 'bg-purple-500/20 text-purple-400' :
                       'bg-helm-amber-500/20 text-helm-amber-400'

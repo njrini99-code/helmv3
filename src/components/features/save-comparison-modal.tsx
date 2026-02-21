@@ -60,9 +60,9 @@ export function SaveComparisonModal({ open, onClose, onSave, playerCount }: Save
   return (
     <Modal isOpen={open} onClose={handleClose} title="Save Comparison" size="md">
       <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-            <p className="text-sm leading-relaxed text-green-800">
-              <IconCheck size={16} className="inline mr-1.5 text-green-600" />
+          <div className="bg-primary-50 border border-primary-200 rounded-lg p-3">
+            <p className="text-sm leading-relaxed text-primary-800">
+              <IconCheck size={16} className="inline mr-1.5 text-primary-600" />
               Comparing {playerCount} player{playerCount > 1 ? 's' : ''}
             </p>
           </div>

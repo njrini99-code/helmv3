@@ -459,7 +459,7 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
             {saveMessage && (
               <p className={cn(
                 'text-sm font-medium',
-                saveMessage.includes('successfully') ? 'text-green-600' : 'text-red-600'
+                saveMessage.includes('successfully') ? 'text-primary-600' : 'text-red-600'
               )}>
                 {saveMessage}
               </p>

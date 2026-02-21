@@ -60,9 +60,9 @@ function getUrgencyConfig(urgency: LeadUrgency) {
     case 'celebrate':
       return {
         icon: IconCheck,
-        iconBg: 'bg-green-50',
-        iconColor: 'text-green-500',
-        badge: 'bg-green-100 text-green-700',
+        iconBg: 'bg-primary-50',
+        iconColor: 'text-primary-500',
+        badge: 'bg-primary-100 text-primary-700',
         badgeText: 'New Win',
       };
     default:
@@ -209,8 +209,8 @@ export function HotLeadsSection({ watchlist, loading }: HotLeadsSectionProps) {
           </Link>
         </div>
         <div className="flex flex-col items-center justify-center py-12 px-6">
-          <div className="w-14 h-14 rounded-2xl bg-green-50 flex items-center justify-center mb-4">
-            <IconCheck size={24} className="text-green-500" />
+          <div className="w-14 h-14 rounded-2xl bg-primary-50 flex items-center justify-center mb-4">
+            <IconCheck size={24} className="text-primary-500" />
           </div>
           <h3 className="text-base font-medium text-slate-900 mb-1">All caught up!</h3>
           <p className="text-sm text-slate-500 text-center mb-4 max-w-xs">
@@ -265,7 +265,7 @@ export function HotLeadsSection({ watchlist, loading }: HotLeadsSectionProps) {
                   <div className="flex items-center gap-2 mb-1">
                     <Link
                       href={`/baseball/dashboard/players/${lead.playerId}`}
-                      className="text-sm font-medium text-slate-900 hover:text-green-600 transition-colors truncate"
+                      className="text-sm font-medium text-slate-900 hover:text-primary-600 transition-colors truncate"
                     >
                       {getFullName(lead.player.first_name, lead.player.last_name)}
                     </Link>
@@ -308,7 +308,7 @@ export function HotLeadsSection({ watchlist, loading }: HotLeadsSectionProps) {
       <div className="px-6 py-3 bg-slate-50/50 border-t border-slate-100/50">
         <Link
           href="/baseball/dashboard/pipeline"
-          className="text-sm text-slate-600 hover:text-green-600 transition-colors flex items-center justify-center gap-1"
+          className="text-sm text-slate-600 hover:text-primary-600 transition-colors flex items-center justify-center gap-1"
         >
           Manage full pipeline <IconChevronRight size={14} />
         </Link>

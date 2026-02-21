@@ -15,8 +15,8 @@ export function EmptyChatState({ onNewConversation, className }: EmptyChatStateP
       'flex flex-col items-center justify-center bg-slate-50/50',
       className
     )}>
-      <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-green-50 to-emerald-50 flex items-center justify-center mb-6">
-        <IconMessage size={36} className="text-green-600" />
+      <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary-50 to-emerald-50 flex items-center justify-center mb-6">
+        <IconMessage size={36} className="text-primary-600" />
       </div>
       <h3 className="text-lg font-semibold text-slate-900 mb-2">
         No conversation selected

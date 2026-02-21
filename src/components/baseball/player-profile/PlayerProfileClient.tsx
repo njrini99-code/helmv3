@@ -97,7 +97,7 @@ export function PlayerProfileClient({
   };
 
   const getTrendIcon = (trend: string | null | undefined) => {
-    if (trend === 'improving') return <IconTrendingUp size={16} className="text-green-500" />;
+    if (trend === 'improving') return <IconTrendingUp size={16} className="text-primary-500" />;
     if (trend === 'declining') return <IconTrendingDown size={16} className="text-red-500" />;
     return <IconMinus size={16} className="text-slate-400" />;
   };
@@ -140,7 +140,7 @@ export function PlayerProfileClient({
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   {player.jersey_number && (
-                    <span className="text-2xl font-bold text-green-600">
+                    <span className="text-2xl font-bold text-primary-600">
                       #{player.jersey_number}
                     </span>
                   )}
@@ -154,7 +154,7 @@ export function PlayerProfileClient({
                     <span className="px-2 py-0.5 bg-slate-100 rounded">{player.secondary_position}</span>
                   )}
                   {player.grad_year && (
-                    <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded">
+                    <span className="px-2 py-0.5 bg-primary-100 text-primary-700 rounded">
                       Class of {player.grad_year}
                     </span>
                   )}
@@ -239,12 +239,12 @@ export function PlayerProfileClient({
             </div>
 
             {/* Exit Velocity */}
-            <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl">
-              <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                <IconBolt size={20} className="text-green-600" />
+            <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-primary-50 to-emerald-50 rounded-xl">
+              <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
+                <IconBolt size={20} className="text-primary-600" />
               </div>
               <div>
-                <p className="text-xs font-medium text-green-600">Exit Velocity</p>
+                <p className="text-xs font-medium text-primary-600">Exit Velocity</p>
                 <p className="text-lg font-semibold text-slate-900">
                   {aggregates?.avg_exit_velocity?.toFixed(1) || 'N/A'} mph
                 </p>
@@ -272,7 +272,7 @@ export function PlayerProfileClient({
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
                 activeTab === tab.id
-                  ? 'bg-green-600 text-white'
+                  ? 'bg-primary-600 text-white'
                   : 'bg-white/70 text-slate-600 hover:bg-white active:bg-white/70'
               }`}
             >
@@ -383,7 +383,7 @@ export function PlayerProfileClient({
                   </div>
                   <div className="flex items-center justify-between pt-2 border-t border-slate-100">
                     <span className="text-sm font-medium text-slate-700">Total</span>
-                    <span className="font-bold text-green-600">{stats.length}</span>
+                    <span className="font-bold text-primary-600">{stats.length}</span>
                   </div>
                 </div>
               </div>
@@ -431,7 +431,7 @@ export function PlayerProfileClient({
                           <td className="px-4 py-3">
                             <span className={`px-2 py-0.5 text-xs font-medium rounded ${
                               stat.stat_type === 'game'
-                                ? 'bg-green-100 text-green-700'
+                                ? 'bg-primary-100 text-primary-700'
                                 : stat.stat_type === 'practice'
                                 ? 'bg-blue-100 text-blue-700'
                                 : 'bg-slate-100 text-slate-600'

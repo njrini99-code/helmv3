@@ -27,14 +27,14 @@ const toastIcons = {
 };
 
 const toastStyles = {
-  success: 'border-green-200/50',
+  success: 'border-primary-200/50',
   error: 'border-red-200/50',
   info: 'border-warm-200/50',
   warning: 'border-amber-200/50',
 };
 
 const iconStyles = {
-  success: 'bg-green-500 text-white shadow-sm',
+  success: 'bg-primary-500 text-white shadow-sm',
   error: 'bg-red-500 text-white shadow-sm',
   info: 'bg-warm-500 text-white shadow-sm',
   warning: 'bg-amber-500 text-white shadow-sm',

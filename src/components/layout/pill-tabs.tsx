@@ -89,7 +89,7 @@ export function PillTabs({
               <span
                 className={cn(
                   'rounded-full font-semibold',
-                  isCompact ? 'px-1.5 text-[10px]' : 'px-2 text-xs',
+                  isCompact ? 'px-1.5 text-micro' : 'px-2 text-xs',
                   isActive
                     ? 'bg-primary-100 text-primary-700'
                     : 'bg-warm-200 text-warm-700'

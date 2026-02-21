@@ -141,12 +141,12 @@ export function CreateFromTemplateModal({
               className={cn(
                 'w-full p-3 rounded-lg border-2 text-left transition-all',
                 assignToAll
-                  ? 'border-green-600 bg-green-50 shadow-sm'
+                  ? 'border-primary-600 bg-primary-50 shadow-sm'
                   : 'border-slate-200 hover:border-slate-300 hover:shadow-sm'
               )}
             >
               <div className="flex items-center gap-2">
-                <IconUsers size={16} className={assignToAll ? 'text-green-600' : 'text-slate-400'} />
+                <IconUsers size={16} className={assignToAll ? 'text-primary-600' : 'text-slate-400'} />
                 <div>
                   <p className="font-medium text-slate-900">All Team Members</p>
                   <p className="text-xs text-slate-500 mt-0.5">{players.length} players</p>
@@ -162,7 +162,7 @@ export function CreateFromTemplateModal({
               className={cn(
                 'w-full p-3 rounded-lg border-2 text-left transition-all',
                 !assignToAll
-                  ? 'border-green-600 bg-green-50 shadow-sm'
+                  ? 'border-primary-600 bg-primary-50 shadow-sm'
                   : 'border-slate-200 hover:border-slate-300 hover:shadow-sm'
               )}
             >
@@ -196,7 +196,7 @@ export function CreateFromTemplateModal({
                   className={cn(
                     'w-full px-3 py-2 rounded-md text-left text-sm flex items-center justify-between transition-all',
                     selectedPlayers.includes(player.id)
-                      ? 'bg-green-100 text-green-900 shadow-sm'
+                      ? 'bg-primary-100 text-primary-900 shadow-sm'
                       : 'hover:bg-slate-50 active:bg-slate-100 text-slate-700'
                   )}
                 >
@@ -204,7 +204,7 @@ export function CreateFromTemplateModal({
                     {player.first_name || ''} {player.last_name || ''}
                   </span>
                   {selectedPlayers.includes(player.id) && (
-                    <IconCheck size={14} className="text-green-600" />
+                    <IconCheck size={14} className="text-primary-600" />
                   )}
                 </motion.button>
               ))}

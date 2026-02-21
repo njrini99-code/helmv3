@@ -44,7 +44,7 @@ export const Badge = ({
   };
 
   const sizes = {
-    sm: 'px-2 py-0.5 text-[10px]',
+    sm: 'px-2 py-0.5 text-micro',
     md: 'px-2.5 py-0.5 text-xs',
     lg: 'px-3 py-1 text-sm',
   };
@@ -117,7 +117,7 @@ export function CountBadge({ count, max = 99, variant = 'danger', className }: C
     <span
       className={cn(
         'inline-flex items-center justify-center min-w-[18px] h-[18px] px-1',
-        'text-[10px] font-bold rounded-full tabular-nums',
+        'text-micro font-bold rounded-full tabular-nums',
         'animate-scale-in',
         variantClasses[variant],
         className

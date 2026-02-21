@@ -263,7 +263,7 @@ export function CRMDashboard({
                     {/* Hover tooltip showing exact numbers */}
                     <div className="absolute inset-0 flex items-center justify-end pr-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                       {widthPct <= 15 && stage.count > 0 && (
-                        <span className="text-[11px] font-semibold text-warm-600 bg-white/80 rounded px-1.5 py-0.5">{stage.pct}%</span>
+                        <span className="text-label font-semibold text-warm-600 bg-white/80 rounded px-1.5 py-0.5">{stage.pct}%</span>
                       )}
                     </div>
                   </div>
@@ -493,7 +493,7 @@ function KPICard({
     )}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <p className="text-[11px] font-semibold text-warm-500 uppercase tracking-wider">{label}</p>
+          <p className="text-label font-semibold text-warm-500 uppercase tracking-wider">{label}</p>
           <p className="text-3xl font-bold text-warm-900 tabular-nums tracking-tight mt-1">{value}</p>
           <p className="text-xs text-warm-400 mt-1">{detail}</p>
         </div>
@@ -548,17 +548,17 @@ function CoachRow({
       className="flex items-center gap-3 p-2 rounded-xl hover:bg-warm-50/50 transition-colors cursor-pointer"
     >
       <span className={cn(
-        'text-[10px] font-bold px-1.5 py-0.5 rounded flex-shrink-0',
+        'text-micro font-bold px-1.5 py-0.5 rounded flex-shrink-0',
         coach.division === 'D2' ? 'bg-blue-100 text-blue-700' : 'bg-primary-100 text-primary-700'
       )}>
         {coach.division}
       </span>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-warm-900 truncate">{coach.name}</p>
-        <p className="text-[11px] text-warm-400 truncate">{coach.school} · {coach.conference}</p>
+        <p className="text-label text-warm-400 truncate">{coach.school} · {coach.conference}</p>
       </div>
       {badge && (
-        <span className={cn('text-[10px] font-medium flex-shrink-0 tabular-nums', badgeColor || 'text-warm-500')}>
+        <span className={cn('text-micro font-medium flex-shrink-0 tabular-nums', badgeColor || 'text-warm-500')}>
           {badge}
         </span>
       )}

@@ -168,7 +168,7 @@ export function CommandCenterClient({
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-lg
-                               focus:border-green-500 focus:ring-2 focus:ring-green-100
+                               focus:border-primary-500 focus:ring-2 focus:ring-primary-100
                                text-slate-900 placeholder:text-slate-400 transition-colors"
                   />
                 </div>
@@ -197,7 +197,7 @@ export function CommandCenterClient({
                             onClick={() => setFilterType(type)}
                             className={`px-3 py-1 text-sm rounded-full transition-colors ${
                               filterType === type
-                                ? 'bg-green-600 text-white'
+                                ? 'bg-primary-600 text-white'
                                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200 active:bg-slate-300'
                             }`}
                           >
@@ -218,7 +218,7 @@ export function CommandCenterClient({
                       value={sortType}
                       onChange={(e) => setSortType(e.target.value as SortType)}
                       className="px-3 py-1 text-sm bg-white border border-slate-200 rounded-lg
-                                 focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                                 focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
                     >
                       <option value="name">Name</option>
                       <option value="avg">Career Avg</option>
@@ -278,8 +278,8 @@ export function CommandCenterClient({
                   href="/baseball/dashboard/stats/upload"
                   className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-50 active:bg-slate-100 transition-colors"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center">
-                    <IconUpload size={16} className="text-green-600" />
+                  <div className="w-8 h-8 rounded-lg bg-primary-100 flex items-center justify-center">
+                    <IconUpload size={16} className="text-primary-600" />
                   </div>
                   <div>
                     <p className="font-medium text-slate-900">Upload Stats</p>

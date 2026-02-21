@@ -85,7 +85,7 @@ export function BaseballEventCard({
           <div className="flex items-center gap-2 mb-1">
             <p className="font-semibold text-sm text-slate-900 truncate">{title}</p>
             {isMandatory && (
-              <span className="flex-shrink-0 px-1.5 py-0.5 text-[10px] font-bold rounded bg-red-100 text-red-600 uppercase">
+              <span className="flex-shrink-0 px-1.5 py-0.5 text-micro font-bold rounded bg-red-100 text-red-600 uppercase">
                 Required
               </span>
             )}

@@ -104,7 +104,7 @@ function DiffSection({ oldData, newData }: { oldData: Record<string, unknown> | 
     <div className="mt-1.5">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="text-[11px] text-warm-400 hover:text-warm-600 transition-colors flex items-center gap-1"
+        className="text-label text-warm-400 hover:text-warm-600 transition-colors flex items-center gap-1"
       >
         <svg
           width="10"
@@ -118,7 +118,7 @@ function DiffSection({ oldData, newData }: { oldData: Record<string, unknown> | 
         {expanded ? 'Hide' : 'Show'} changes
       </button>
       {expanded && (
-        <div className="mt-1.5 bg-warm-50/50 rounded-lg p-2 text-[11px] font-mono space-y-0.5 max-h-[120px] overflow-y-auto">
+        <div className="mt-1.5 bg-warm-50/50 rounded-lg p-2 text-label font-mono space-y-0.5 max-h-[120px] overflow-y-auto">
           {[...allKeys].map((key) => {
             const oldVal = oldData?.[key];
             const newVal = newData?.[key];
@@ -307,7 +307,7 @@ export function AuditFeed({ auditLog, loginSecurity }: Props) {
                     </div>
                   </div>
                   {isLocked && (
-                    <span className="text-[11px] font-medium bg-red-100 text-red-600 px-2 py-0.5 rounded-full shrink-0 ml-2">
+                    <span className="text-label font-medium bg-red-100 text-red-600 px-2 py-0.5 rounded-full shrink-0 ml-2">
                       Locked
                     </span>
                   )}

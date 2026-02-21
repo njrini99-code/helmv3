@@ -37,7 +37,7 @@ export function ProductSplit() {
       <div className="absolute inset-0 bg-gradient-to-br from-stone-900 via-stone-800 to-stone-900" />
 
       {/* Ambient glow orbs */}
-      <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-helm-green-500/20 rounded-full blur-[120px]" />
+      <div className="absolute top-1/4 left-1/4 w-[400px] h-[400px] bg-helm-primary-500/20 rounded-full blur-[120px]" />
       <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-amber-500/20 rounded-full blur-[120px]" />
 
       <div className="relative max-w-7xl mx-auto px-6">
@@ -64,11 +64,11 @@ export function ProductSplit() {
           {products.map((product, i) => {
             const isBaseball = product.accentColor === 'emerald'
             const accentClasses = isBaseball
-              ? 'from-helm-green-500/20 to-transparent group-hover:from-helm-green-500/30'
+              ? 'from-helm-primary-500/20 to-transparent group-hover:from-helm-primary-500/30'
               : 'from-amber-500/20 to-transparent group-hover:from-amber-500/30'
-            const textAccentClasses = isBaseball ? 'text-helm-green-400' : 'text-amber-400'
+            const textAccentClasses = isBaseball ? 'text-helm-primary-400' : 'text-amber-400'
             const hoverTextClasses = isBaseball
-              ? 'group-hover:text-helm-green-400'
+              ? 'group-hover:text-helm-primary-400'
               : 'group-hover:text-amber-400'
 
             return (
@@ -122,7 +122,7 @@ export function ProductSplit() {
                           absolute -inset-3 rounded-2xl blur-xl opacity-0
                           group-hover:opacity-100 transition-opacity duration-500
                           ${isBaseball
-                            ? 'bg-gradient-to-br from-helm-green-400/30 to-teal-400/30'
+                            ? 'bg-gradient-to-br from-helm-primary-400/30 to-teal-400/30'
                             : 'bg-gradient-to-br from-amber-400/30 to-orange-400/30'
                           }
                         `} />

@@ -90,9 +90,9 @@ export default function ActivateRecruitingPage() {
       />
       <div className="p-6 lg:p-8 max-w-4xl mx-auto">
         {/* Hero Section */}
-        <Card variant="glass" className="mb-6 bg-gradient-to-br from-green-50 to-white border-green-200">
+        <Card variant="glass" className="mb-6 bg-gradient-to-br from-primary-50 to-white border-primary-200">
           <CardContent className="p-8 text-center">
-            <div className="w-16 h-16 rounded-full bg-green-600 flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 rounded-full bg-primary-600 flex items-center justify-center mx-auto mb-4">
               <IconTarget size={32} className="text-white" />
             </div>
             <h2 className="text-2xl font-semibold tracking-tight text-slate-900 mb-3">
@@ -123,15 +123,15 @@ export default function ActivateRecruitingPage() {
               </p>
               <ul className="space-y-2 text-sm text-slate-600">
                 <li className="flex items-start gap-2">
-                  <IconCheck size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
+                  <IconCheck size={16} className="text-primary-600 mt-0.5 flex-shrink-0" />
                   <span>Appear in coach discovery searches</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <IconCheck size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
+                  <IconCheck size={16} className="text-primary-600 mt-0.5 flex-shrink-0" />
                   <span>Get matched with relevant programs</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <IconCheck size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
+                  <IconCheck size={16} className="text-primary-600 mt-0.5 flex-shrink-0" />
                   <span>See who's viewing your profile</span>
                 </li>
               </ul>
@@ -151,15 +151,15 @@ export default function ActivateRecruitingPage() {
               </p>
               <ul className="space-y-2 text-sm text-slate-600">
                 <li className="flex items-start gap-2">
-                  <IconCheck size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
+                  <IconCheck size={16} className="text-primary-600 mt-0.5 flex-shrink-0" />
                   <span>Know which coaches viewed you</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <IconCheck size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
+                  <IconCheck size={16} className="text-primary-600 mt-0.5 flex-shrink-0" />
                   <span>Track watchlist additions</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <IconCheck size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
+                  <IconCheck size={16} className="text-primary-600 mt-0.5 flex-shrink-0" />
                   <span>Direct messaging with coaches</span>
                 </li>
               </ul>
@@ -168,8 +168,8 @@ export default function ActivateRecruitingPage() {
 
           <Card variant="glass">
             <CardHeader>
-              <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center mb-3">
-                <IconTarget size={24} className="text-green-600" />
+              <div className="w-12 h-12 rounded-full bg-primary-50 flex items-center justify-center mb-3">
+                <IconTarget size={24} className="text-primary-600" />
               </div>
               <h3 className="font-semibold text-slate-900">Manage Your Journey</h3>
             </CardHeader>
@@ -179,15 +179,15 @@ export default function ActivateRecruitingPage() {
               </p>
               <ul className="space-y-2 text-sm text-slate-600">
                 <li className="flex items-start gap-2">
-                  <IconCheck size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
+                  <IconCheck size={16} className="text-primary-600 mt-0.5 flex-shrink-0" />
                   <span>Timeline of recruiting activity</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <IconCheck size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
+                  <IconCheck size={16} className="text-primary-600 mt-0.5 flex-shrink-0" />
                   <span>Track offers and commitments</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <IconCheck size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
+                  <IconCheck size={16} className="text-primary-600 mt-0.5 flex-shrink-0" />
                   <span>Organize your target schools</span>
                 </li>
               </ul>
@@ -207,15 +207,15 @@ export default function ActivateRecruitingPage() {
               </p>
               <ul className="space-y-2 text-sm text-slate-600">
                 <li className="flex items-start gap-2">
-                  <IconCheck size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
+                  <IconCheck size={16} className="text-primary-600 mt-0.5 flex-shrink-0" />
                   <span>Profile view statistics</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <IconCheck size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
+                  <IconCheck size={16} className="text-primary-600 mt-0.5 flex-shrink-0" />
                   <span>Video engagement metrics</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <IconCheck size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
+                  <IconCheck size={16} className="text-primary-600 mt-0.5 flex-shrink-0" />
                   <span>Interest by program type</span>
                 </li>
               </ul>

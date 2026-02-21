@@ -14,7 +14,7 @@ interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const sizes = {
-  xs: { container: 'w-6 h-6', text: 'text-[10px]', ring: 'p-[1.5px]', dot: 'w-2 h-2', px: 24 },
+  xs: { container: 'w-6 h-6', text: 'text-micro', ring: 'p-[1.5px]', dot: 'w-2 h-2', px: 24 },
   sm: { container: 'w-8 h-8', text: 'text-xs', ring: 'p-[2px]', dot: 'w-2.5 h-2.5', px: 32 },
   md: { container: 'w-10 h-10', text: 'text-sm', ring: 'p-[2px]', dot: 'w-3 h-3', px: 40 },
   lg: { container: 'w-12 h-12', text: 'text-base', ring: 'p-[2.5px]', dot: 'w-3.5 h-3.5', px: 48 },

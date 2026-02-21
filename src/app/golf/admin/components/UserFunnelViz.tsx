@@ -52,7 +52,7 @@ export function UserFunnelViz({ funnel }: Props) {
                     style={{ width: `${Math.max(widthPercent, 8)}%` }}
                   >
                     {widthPercent > 20 && (
-                      <span className="text-[10px] font-bold text-white tabular-nums">{step.count}</span>
+                      <span className="text-micro font-bold text-white tabular-nums">{step.count}</span>
                     )}
                   </div>
                 </div>
@@ -69,7 +69,7 @@ export function UserFunnelViz({ funnel }: Props) {
               {/* Count */}
               <div className="w-16 text-right flex-shrink-0">
                 <span className="text-sm font-bold text-warm-900 tabular-nums">{step.count}</span>
-                <span className="text-[10px] text-warm-400 ml-1">({step.percentage}%)</span>
+                <span className="text-micro text-warm-400 ml-1">({step.percentage}%)</span>
               </div>
             </div>
           );

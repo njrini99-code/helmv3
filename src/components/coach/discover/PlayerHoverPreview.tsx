@@ -195,7 +195,7 @@ export function PlayerHoverPreview({
           onClick={onWatchlist}
           className={cn(
             'flex-1 gap-1.5',
-            isOnWatchlist && 'text-green-600 border-green-200 bg-green-50'
+            isOnWatchlist && 'text-primary-600 border-primary-200 bg-primary-50'
           )}
         >
           {isOnWatchlist ? <IconHeartFilled size={14} /> : <IconHeart size={14} />}
@@ -213,7 +213,7 @@ export function PlayerHoverPreview({
         <Button
           size="sm"
           onClick={onView}
-          className="bg-green-600 hover:bg-green-700 transition-colors active:bg-green-800 text-white gap-1.5"
+          className="bg-primary-600 hover:bg-primary-700 transition-colors active:bg-primary-800 text-white gap-1.5"
         >
           View
           <IconArrowRight size={14} />
@@ -241,7 +241,7 @@ function StatItem({
     <div className="text-center">
       <p className={cn(
         'text-lg font-semibold',
-        highlight ? 'text-green-600' : 'text-slate-900'
+        highlight ? 'text-primary-600' : 'text-slate-900'
       )}>
         {value}
         {unit && <span className="text-xs font-normal text-slate-400 ml-0.5">{unit}</span>}

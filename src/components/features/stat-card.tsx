@@ -34,7 +34,7 @@ export function StatCard({ label, value, change, changeType = 'neutral', icon: I
             </p>
             {change && (
               <p className={cn('text-xs mt-1.5',
-                changeType === 'positive' && 'text-green-600',
+                changeType === 'positive' && 'text-primary-600',
                 changeType === 'negative' && 'text-red-500',
                 changeType === 'neutral' && 'text-slate-400'
               )}>{change}</p>

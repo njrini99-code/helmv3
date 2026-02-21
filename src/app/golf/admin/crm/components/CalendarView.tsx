@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import { 
@@ -152,11 +152,7 @@ export function CalendarView({
   // ============================================================================
   // FETCH EVENTS
   // ============================================================================
-  useEffect(() => {
-    fetchEvents();
-  }, [dateRange]);
-
-  const fetchEvents = async () => {
+  const fetchEvents = useCallback(async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase.rpc('get_crm_events_in_range', {
@@ -187,7 +183,11 @@ export function CalendarView({
     } finally {
       setLoading(false);
     }
-  };
+  }, [supabase, dateRange]);
+
+  useEffect(() => {
+    fetchEvents();
+  }, [fetchEvents]);
 
   // ============================================================================
   // NAVIGATION
@@ -225,7 +225,7 @@ export function CalendarView({
         {/* Day Headers */}
         <div className="grid grid-cols-7 border-b border-warm-100/50">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
-            <div key={d} className="p-2.5 text-center text-[11px] font-medium text-warm-400 uppercase tracking-wider bg-warm-50/30">
+            <div key={d} className="p-2.5 text-center text-label font-medium text-warm-400 uppercase tracking-wider bg-warm-50/30">
               {d}
             </div>
           ))}
@@ -269,7 +269,7 @@ export function CalendarView({
                             onMouseEnter={() => setHoveredEvent(event.id)}
                             onMouseLeave={() => setHoveredEvent(null)}
                             className={cn(
-                              'text-[11px] px-1.5 py-0.5 rounded-md truncate cursor-pointer transition-all font-medium',
+                              'text-label px-1.5 py-0.5 rounded-md truncate cursor-pointer transition-all font-medium',
                               config.bgColor,
                               config.textColor,
                               hoveredEvent === event.id && 'ring-2 ring-offset-1 ring-warm-400 scale-[1.02]'
@@ -280,7 +280,7 @@ export function CalendarView({
                         );
                       })}
                       {dayEvents.length > 3 && (
-                        <div className="text-[10px] text-warm-400 pl-1 font-medium">
+                        <div className="text-micro text-warm-400 pl-1 font-medium">
                           +{dayEvents.length - 3} more
                         </div>
                       )}
@@ -321,7 +321,7 @@ export function CalendarView({
                 isToday(date) && 'bg-primary-50/50'
               )}
             >
-              <div className="text-[11px] font-medium text-warm-400 uppercase tracking-wider">{format(date, 'EEE')}</div>
+              <div className="text-label font-medium text-warm-400 uppercase tracking-wider">{format(date, 'EEE')}</div>
               <div className={cn(
                 'text-lg font-bold mt-0.5',
                 isToday(date) ? 'text-primary-600' : 'text-warm-900'
@@ -339,7 +339,7 @@ export function CalendarView({
             <div className="w-16 shrink-0">
               {hours.map((hour) => (
                 <div key={hour} className="h-16 border-b border-warm-100/50 pr-2 text-right">
-                  <span className="text-[11px] text-warm-400 font-medium">
+                  <span className="text-label text-warm-400 font-medium">
                     {format(setHours(new Date(), hour), 'h a')}
                   </span>
                 </div>
@@ -396,12 +396,12 @@ export function CalendarView({
                           {config.icon} {event.title}
                         </div>
                         {height > 40 && (
-                          <div className="text-[11px] opacity-80 truncate">
+                          <div className="text-label opacity-80 truncate">
                             {format(startTime, 'h:mm a')}
                           </div>
                         )}
                         {height > 60 && event.coach_name && (
-                          <div className="text-[11px] opacity-80 truncate">
+                          <div className="text-label opacity-80 truncate">
                             {event.coach_name}
                           </div>
                         )}

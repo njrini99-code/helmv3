@@ -346,7 +346,7 @@ function AnnouncementDialog({
                     <IconUser size={11} />
                     Select
                     {!isAllTeam && recipientPlayerIds!.length > 0 && (
-                      <span className="bg-primary-200 text-primary-800 text-[10px] font-bold px-1.5 rounded-full leading-tight">
+                      <span className="bg-primary-200 text-primary-800 text-micro font-bold px-1.5 rounded-full leading-tight">
                         {recipientPlayerIds!.length}
                       </span>
                     )}
@@ -459,7 +459,7 @@ function AnnouncementDialog({
                 <IconClipboardList size={11} />
                 Add Task
                 {inlineTasks.length > 0 && (
-                  <span className="bg-warm-200 text-warm-600 text-[10px] font-bold px-1.5 rounded-full leading-tight">
+                  <span className="bg-warm-200 text-warm-600 text-micro font-bold px-1.5 rounded-full leading-tight">
                     {inlineTasks.length}
                   </span>
                 )}
@@ -541,7 +541,7 @@ function AnnouncementDialog({
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-medium text-warm-700 truncate">{doc.title}</p>
-                                <p className="text-[10px] text-warm-400">{formatFileSize(doc.file_size)}</p>
+                                <p className="text-micro text-warm-400">{formatFileSize(doc.file_size)}</p>
                               </div>
                               <IconPlus size={12} className="text-warm-400 flex-shrink-0" />
                             </button>
@@ -578,7 +578,7 @@ function AnnouncementDialog({
                   layout
                 >
                   <div className="flex items-start gap-2 p-2.5 border border-warm-200 rounded-xl bg-warm-50/30">
-                    <span className="w-5 h-5 rounded-md bg-warm-200/60 flex items-center justify-center text-[10px] font-bold text-warm-500 flex-shrink-0 mt-0.5">
+                    <span className="w-5 h-5 rounded-md bg-warm-200/60 flex items-center justify-center text-micro font-bold text-warm-500 flex-shrink-0 mt-0.5">
                       {index + 1}
                     </span>
                     <div className="flex-1 min-w-0 space-y-1">

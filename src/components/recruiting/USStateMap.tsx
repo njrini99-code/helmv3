@@ -413,7 +413,7 @@ export const USStateMap = memo(function USStateMap({
             </div>
 
             {/* Hint text */}
-            <p className="text-[10px] text-slate-500 mt-2 uppercase tracking-wider">
+            <p className="text-micro text-slate-500 mt-2 uppercase tracking-wider">
               Click to filter
             </p>
 
@@ -479,9 +479,9 @@ export const USStateMap = memo(function USStateMap({
 
             {/* Scale markers */}
             <div className="flex justify-between mt-1.5">
-              <span className="text-[10px] font-medium text-slate-400">0</span>
-              <span className="text-[10px] font-medium text-slate-400">{Math.round(maxPlayers / 2)}</span>
-              <span className="text-[10px] font-medium text-slate-400">{maxPlayers}+</span>
+              <span className="text-micro font-medium text-slate-400">0</span>
+              <span className="text-micro font-medium text-slate-400">{Math.round(maxPlayers / 2)}</span>
+              <span className="text-micro font-medium text-slate-400">{maxPlayers}+</span>
             </div>
           </div>
         </div>

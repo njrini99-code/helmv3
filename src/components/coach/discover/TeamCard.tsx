@@ -142,7 +142,7 @@ export const TeamCard = memo(function TeamCard({
             <div className="mb-1">
               <span
                 className={cn(
-                  'inline-flex px-2 py-0.5 text-[10px] font-medium rounded-full border',
+                  'inline-flex px-2 py-0.5 text-micro font-medium rounded-full border',
                   typeStyle.bg,
                   typeStyle.text,
                   typeStyle.border
@@ -177,9 +177,9 @@ export const TeamCard = memo(function TeamCard({
 
           {team.recruitingActiveCount > 0 && (
             <div className="flex items-center gap-1.5">
-              <IconSparkles size={14} className="text-green-500 flex-shrink-0" />
+              <IconSparkles size={14} className="text-primary-500 flex-shrink-0" />
               <span className="text-xs text-slate-600 whitespace-nowrap">
-                <span className="font-semibold text-green-600">
+                <span className="font-semibold text-primary-600">
                   {team.recruitingActiveCount}
                 </span>{' '}
                 active
@@ -191,7 +191,7 @@ export const TeamCard = memo(function TeamCard({
         {/* Top Prospects Preview */}
         {team.topProspects && team.topProspects.length > 0 && (
           <div className="mt-3 pt-3 border-t border-slate-100">
-            <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wide mb-1.5">
+            <p className="text-micro font-medium text-slate-400 uppercase tracking-wide mb-1.5">
               Top Prospects
             </p>
             <div className="flex items-center gap-2">
@@ -203,7 +203,7 @@ export const TeamCard = memo(function TeamCard({
                     className={cn(
                       'relative w-6 h-6 rounded-full border-2 border-white',
                       'bg-slate-200 flex items-center justify-center',
-                      'text-[10px] font-medium text-slate-600'
+                      'text-micro font-medium text-slate-600'
                     )}
                     style={{ zIndex: 3 - index }}
                   >

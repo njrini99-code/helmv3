@@ -266,8 +266,8 @@ function ItineraryCard({
         className="p-5 flex items-center gap-4 cursor-pointer hover:bg-white/80 transition-colors"
         onClick={onToggleExpand}
       >
-        <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center flex-shrink-0">
-          <IconMapPin size={24} className="text-green-600" />
+        <div className="w-12 h-12 rounded-xl bg-primary-50 flex items-center justify-center flex-shrink-0">
+          <IconMapPin size={24} className="text-primary-600" />
         </div>
 
         <div className="flex-1 min-w-0">
@@ -341,7 +341,7 @@ function ItineraryCard({
 
                 {loadingExpenses ? (
                   <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600 mx-auto" />
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600 mx-auto" />
                     <p className="text-sm text-warm-500 mt-2">Loading expenses...</p>
                   </div>
                 ) : (

@@ -19,7 +19,7 @@ const CATEGORY_CONFIG: Record<ExpenseCategory, { icon: string; label: string; co
   transport: { icon: '🚌', label: 'Transport', color: 'bg-purple-100 text-purple-700' },
   lodging: { icon: '🏨', label: 'Lodging', color: 'bg-blue-100 text-blue-700' },
   meals: { icon: '🍽️', label: 'Meals', color: 'bg-orange-100 text-orange-700' },
-  equipment: { icon: '⚾', label: 'Equipment', color: 'bg-green-100 text-green-700' },
+  equipment: { icon: '⚾', label: 'Equipment', color: 'bg-primary-100 text-primary-700' },
   other: { icon: '📦', label: 'Other', color: 'bg-warm-100 text-warm-700' },
 };
 
@@ -124,7 +124,7 @@ export function ExpenseList({ expenses, onRefresh, isCoach }: ExpenseListProps) 
               <div className="text-right">
                 <p className="font-semibold text-warm-900">{formatCurrency(expense.amount)}</p>
                 <span className={`text-xs px-2 py-0.5 rounded-full ${
-                  expense.paid_by === 'team' ? 'bg-green-100 text-green-700' :
+                  expense.paid_by === 'team' ? 'bg-primary-100 text-primary-700' :
                   expense.paid_by === 'pending_reimbursement' ? 'bg-amber-100 text-amber-700' :
                   'bg-warm-100 text-warm-600'
                 }`}>

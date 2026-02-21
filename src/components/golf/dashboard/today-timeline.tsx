@@ -149,13 +149,13 @@ export function TodayTimeline({ events, role, timezone }: TodayTimelineProps) {
                     <h3 className="text-[13px] font-semibold text-warm-600 tracking-wide">
                         Today&apos;s Schedule
                     </h3>
-                    <span className="px-1.5 py-0.5 rounded-md bg-warm-100 text-[11px] font-medium text-warm-500 tabular-nums">
+                    <span className="px-1.5 py-0.5 rounded-md bg-warm-100 text-label font-medium text-warm-500 tabular-nums">
                         {events.length}
                     </span>
                 </div>
                 <Link
                     href="/golf/dashboard/calendar"
-                    className="flex items-center gap-1 text-[11px] text-warm-400 hover:text-primary-600 transition-colors"
+                    className="flex items-center gap-1 text-label text-warm-400 hover:text-primary-600 transition-colors"
                 >
                     Calendar <IconArrowRight size={10} />
                 </Link>
@@ -178,7 +178,7 @@ export function TodayTimeline({ events, role, timezone }: TodayTimelineProps) {
                             const label = h === 0 ? '12 AM' : h < 12 ? `${h} AM` : h === 12 ? '12 PM' : `${h - 12} PM`;
                             return (
                                 <div key={h} className="absolute" style={{ left: x + 20 }}>
-                                    <span className="text-[10px] font-medium text-warm-300 tabular-nums whitespace-nowrap">
+                                    <span className="text-micro font-medium text-warm-300 tabular-nums whitespace-nowrap">
                                         {label}
                                     </span>
                                 </div>
@@ -297,7 +297,7 @@ export function TodayTimeline({ events, role, timezone }: TodayTimelineProps) {
                                                     )}
                                                 </div>
 
-                                                <div className="flex items-center gap-2 text-[10px] text-warm-400">
+                                                <div className="flex items-center gap-2 text-micro text-warm-400">
                                                     <span className="flex items-center gap-1 tabular-nums">
                                                         <IconClock size={9} className="text-warm-300" />
                                                         {formatTimeInTz(event.start_time, tz)}
@@ -319,12 +319,12 @@ export function TodayTimeline({ events, role, timezone }: TodayTimelineProps) {
                                                         {config.label}
                                                     </span>
                                                     {isNext && (
-                                                        <span className="text-[10px] text-primary-600 font-medium tabular-nums">
+                                                        <span className="text-micro text-primary-600 font-medium tabular-nums">
                                                             {getTimeUntil(event.start_time)}
                                                         </span>
                                                     )}
                                                     {role === 'coach' && event.rsvp_total !== undefined && (
-                                                        <span className="text-[10px] text-warm-400 tabular-nums">
+                                                        <span className="text-micro text-warm-400 tabular-nums">
                                                             {event.rsvp_yes}/{event.rsvp_total} confirmed
                                                         </span>
                                                     )}

@@ -313,7 +313,7 @@ export default async function TeamProfilePage({ params }: PageProps) {
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center gap-4">
             <Link href="/" className="flex items-center gap-2 group">
-              <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">H</span>
               </div>
               <span className="font-semibold text-slate-900">Helm</span>
@@ -329,7 +329,7 @@ export default async function TeamProfilePage({ params }: PageProps) {
           <div className="lg:col-span-2 space-y-6">
             {/* Team Header */}
             <Card className="overflow-hidden">
-              <div className="bg-gradient-to-br from-green-50 to-white p-8 border-b border-slate-200">
+              <div className="bg-gradient-to-br from-primary-50 to-white p-8 border-b border-slate-200">
                 <div className="flex items-start gap-6">
                   {org?.logo_url ? (
                     <Image
@@ -341,7 +341,7 @@ export default async function TeamProfilePage({ params }: PageProps) {
                       unoptimized
                     />
                   ) : (
-                    <div className="w-24 h-24 rounded-lg bg-green-600 flex items-center justify-center shadow-lg">
+                    <div className="w-24 h-24 rounded-lg bg-primary-600 flex items-center justify-center shadow-lg">
                       <IconBuilding size={48} className="text-white" />
                     </div>
                   )}
@@ -386,7 +386,7 @@ export default async function TeamProfilePage({ params }: PageProps) {
                 <div className="p-6 border-b border-slate-200 bg-white">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <IconUsers size={20} className="text-green-600" />
+                      <IconUsers size={20} className="text-primary-600" />
                       <h2 className="text-lg font-semibold tracking-tight text-slate-900">Roster</h2>
                     </div>
                     <span className="text-sm text-slate-500">{sortedRoster.length} players</span>
@@ -446,7 +446,7 @@ export default async function TeamProfilePage({ params }: PageProps) {
               <Card className="overflow-hidden">
                 <div className="p-6 border-b border-slate-200 bg-white">
                   <div className="flex items-center gap-2">
-                    <IconUsers size={20} className="text-green-600" />
+                    <IconUsers size={20} className="text-primary-600" />
                     <h2 className="text-lg font-semibold tracking-tight text-slate-900">Roster</h2>
                   </div>
                 </div>
@@ -469,7 +469,7 @@ export default async function TeamProfilePage({ params }: PageProps) {
               <Card className="overflow-hidden">
                 <div className="p-6 border-b border-slate-200 bg-white">
                   <div className="flex items-center gap-2">
-                    <IconUsers size={20} className="text-green-600" />
+                    <IconUsers size={20} className="text-primary-600" />
                     <h2 className="text-lg font-semibold tracking-tight text-slate-900">Coaching Staff</h2>
                   </div>
                 </div>
@@ -501,7 +501,7 @@ export default async function TeamProfilePage({ params }: PageProps) {
                             <h3 className="font-semibold text-slate-900 truncate">
                               {member.name}
                             </h3>
-                            <p className="text-sm leading-relaxed text-green-600 mb-2">{member.title}</p>
+                            <p className="text-sm leading-relaxed text-primary-600 mb-2">{member.title}</p>
                             {member.bio && (
                               <p className="text-xs text-slate-600 line-clamp-3">
                                 {member.bio}
@@ -581,7 +581,7 @@ export default async function TeamProfilePage({ params }: PageProps) {
           {/* Right Column - Sidebar */}
           <div className="space-y-6">
             {/* Quick Facts */}
-            <Card className="p-6 bg-gradient-to-br from-green-50 to-white">
+            <Card className="p-6 bg-gradient-to-br from-primary-50 to-white">
               <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wide mb-4">
                 Quick Facts
               </h3>
@@ -637,7 +637,7 @@ export default async function TeamProfilePage({ params }: PageProps) {
                   href={org.website_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm leading-relaxed text-green-600 hover:text-green-700 hover:underline break-all"
+                  className="text-sm leading-relaxed text-primary-600 hover:text-primary-700 hover:underline break-all"
                 >
                   Visit Website
                 </a>

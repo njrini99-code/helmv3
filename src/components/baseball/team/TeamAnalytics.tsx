@@ -56,7 +56,7 @@ export function TeamAnalytics({
           </div>
           <div className="h-2 rounded-full bg-slate-200">
             <div
-              className="h-2 rounded-full bg-green-600"
+              className="h-2 rounded-full bg-primary-600"
               style={{ width: `${recruitingPercent}%` }}
             />
           </div>
@@ -108,7 +108,7 @@ export function TeamAnalytics({
                   </div>
                   <div className="h-2 rounded-full bg-slate-200">
                     <div
-                      className="h-2 rounded-full bg-green-600"
+                      className="h-2 rounded-full bg-primary-600"
                       style={{ width: `${progress.progress_percentage}%` }}
                     />
                   </div>

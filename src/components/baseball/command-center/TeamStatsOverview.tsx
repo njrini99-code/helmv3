@@ -38,7 +38,7 @@ export function TeamStatsOverview({
       label: 'Improving',
       value: improvingCount,
       icon: IconTrendingUp,
-      color: 'bg-green-100 text-green-600',
+      color: 'bg-primary-100 text-primary-600',
       delta: totalPlayers > 0 ? `${Math.round((improvingCount / totalPlayers) * 100)}%` : null,
     },
     {

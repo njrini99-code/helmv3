@@ -154,7 +154,7 @@ export function MobileSidebarDrawer({
                 <div
                   className="
                     px-3 mb-2
-                    text-[11px] font-semibold text-warm-500
+                    text-label font-semibold text-warm-500
                     uppercase tracking-wider
                   "
                 >
@@ -216,7 +216,7 @@ export function MobileSidebarDrawer({
                             flex items-center justify-center
                             min-w-[20px] h-5 px-1.5
                             bg-primary-600 text-white
-                            text-[11px] font-bold
+                            text-label font-bold
                             rounded-full
                           "
                         >

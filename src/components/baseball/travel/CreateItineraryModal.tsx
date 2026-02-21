@@ -184,7 +184,7 @@ export function CreateItineraryModal({
             placeholder="Additional trip details, packing list, dress code..."
             rows={3}
             className="w-full px-4 py-2.5 rounded-lg border border-warm-200
-                     focus:border-green-500 focus:ring-2 focus:ring-green-100
+                     focus:border-primary-500 focus:ring-2 focus:ring-primary-100
                      text-warm-900 placeholder:text-warm-400 transition-colors resize-none"
           />
         </div>
