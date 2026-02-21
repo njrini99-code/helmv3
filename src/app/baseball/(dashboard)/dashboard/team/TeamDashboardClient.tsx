@@ -57,9 +57,9 @@ interface Event {
 interface Announcement {
   id: string;
   title: string;
-  body: string;
+  content: string;
   urgency: string | null;
-  requires_acknowledgement: boolean | null;
+  is_pinned: boolean | null;
   published_at: string | null;
 }
 
@@ -200,7 +200,7 @@ export default function TeamDashboardClient() {
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
 
   // Player stats
-  const [playerVideoCount, setPlayerVideoCount] = useState(0);
+  const [_playerVideoCount, setPlayerVideoCount] = useState(0);
   const [playerDevPlan, setPlayerDevPlan] = useState<DevPlan | null>(null);
   const [playerTeamCount, setPlayerTeamCount] = useState(0);
   const [playerTasks, setPlayerTasks] = useState<PlayerTask[]>([]);
@@ -367,18 +367,17 @@ export default function TeamDashboardClient() {
       // Team announcements (last 3)
       supabase
         .from('baseball_announcements')
-        .select('id, title, body, urgency, requires_acknowledgement, published_at')
+        .select('id, title, content, urgency, is_pinned, published_at')
         .eq('team_id', selectedTeamId)
         .order('published_at', { ascending: false })
         .limit(3),
 
-      // Player stats summary (recent sessions)
+      // Player aggregated stats
       supabase
-        .from('baseball_player_stats')
-        .select('batting_avg, session_date')
+        .from('baseball_player_aggregates')
+        .select('career_avg, recent_trend, total_sessions, last_5_avg')
         .eq('player_id', player.id)
-        .order('session_date', { ascending: false })
-        .limit(10),
+        .single(),
     ]);
 
     setPlayerVideoCount(videoResult.count || 0);
@@ -386,12 +385,21 @@ export default function TeamDashboardClient() {
     // Process dev plan
     if (devPlanResult.data) {
       const plan = devPlanResult.data;
-      const goals = Array.isArray(plan.goals) ? plan.goals as DevPlanGoal[] : [];
+      // Parse JSON goals into typed array - use unknown cast for safety
+      const rawGoals = (Array.isArray(plan.goals) ? plan.goals : []) as unknown as Array<Record<string, unknown>>;
+      const parsedGoals: DevPlanGoal[] = rawGoals
+        .filter((g) => g && typeof g === 'object' && 'id' in g)
+        .map((goalObj) => ({
+          id: String(goalObj.id ?? ''),
+          title: String(goalObj.title ?? ''),
+          status: String(goalObj.status ?? 'not_started') as DevPlanGoal['status'],
+          target_date: goalObj.target_date ? String(goalObj.target_date) : undefined,
+        }));
       setPlayerDevPlan({
         id: plan.id,
-        title: plan.title,
-        status: plan.status,
-        goals,
+        title: plan.title ?? '',
+        status: plan.status ?? 'draft',
+        goals: parsedGoals,
       });
     } else {
       setPlayerDevPlan(null);
@@ -417,26 +425,18 @@ export default function TeamDashboardClient() {
     // Set announcements
     setAnnouncements(announcementsResult.data || []);
 
-    // Process player stats
-    const statsData = statsResult.data || [];
-    if (statsData.length > 0) {
-      const avgBatting = statsData.reduce((sum, s) => sum + (s.batting_avg || 0), 0) / statsData.length;
-      
-      // Determine trend (compare first half vs second half of sessions)
-      let trend: 'up' | 'down' | 'stable' = 'stable';
-      if (statsData.length >= 4) {
-        const recentHalf = statsData.slice(0, Math.floor(statsData.length / 2));
-        const olderHalf = statsData.slice(Math.floor(statsData.length / 2));
-        const recentAvg = recentHalf.reduce((sum, s) => sum + (s.batting_avg || 0), 0) / recentHalf.length;
-        const olderAvg = olderHalf.reduce((sum, s) => sum + (s.batting_avg || 0), 0) / olderHalf.length;
-        if (recentAvg > olderAvg + 0.01) trend = 'up';
-        else if (recentAvg < olderAvg - 0.01) trend = 'down';
-      }
-
+    // Process player aggregated stats
+    const aggregateData = statsResult.data;
+    if (aggregateData) {
+      const trendMap: Record<string, 'up' | 'down' | 'stable'> = {
+        'improving': 'up',
+        'declining': 'down',
+        'stable': 'stable',
+      };
       setPlayerStats({
-        batting_avg: avgBatting,
-        sessions_count: statsData.length,
-        recent_trend: trend,
+        batting_avg: aggregateData.career_avg,
+        sessions_count: aggregateData.total_sessions || 0,
+        recent_trend: trendMap[aggregateData.recent_trend || 'stable'] || 'stable',
       });
     } else {
       setPlayerStats(null);
@@ -481,7 +481,7 @@ export default function TeamDashboardClient() {
 
   const getPriorityBadge = (priority: string | null) => {
     switch (priority) {
-      case 'high': return <Badge variant="destructive">High</Badge>;
+      case 'high': return <Badge variant="danger">High</Badge>;
       case 'normal': return <Badge variant="default">Normal</Badge>;
       case 'low': return <Badge variant="secondary">Low</Badge>;
       default: return <Badge variant="secondary">Normal</Badge>;
@@ -910,12 +910,12 @@ export default function TeamDashboardClient() {
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-start justify-between gap-2">
                                   <p className="font-medium text-slate-900 truncate">{announcement.title}</p>
-                                  {announcement.requires_acknowledgement && (
-                                    <Badge variant="warning" className="shrink-0 text-xs">Action Required</Badge>
+                                  {announcement.is_pinned && (
+                                    <Badge variant="warning" className="shrink-0 text-xs">Pinned</Badge>
                                   )}
                                 </div>
                                 <p className="text-sm text-slate-600 line-clamp-2 mt-1">
-                                  {announcement.body}
+                                  {announcement.content}
                                 </p>
                                 <p className="text-xs text-slate-400 mt-2">
                                   {announcement.published_at ? formatRelativeTime(announcement.published_at) : ''}

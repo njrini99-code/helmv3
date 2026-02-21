@@ -79,13 +79,13 @@ function CelebrationConfetti({ show }: { show: boolean }) {
 // Goal card component
 function GoalCard({
   goal,
-  planId,
+  planId: _planId,
   onComplete,
   onUncomplete,
   isPending,
 }: {
   goal: DevPlanGoal;
-  planId: string;
+  planId: string; // Reserved for future use (e.g., deep links)
   onComplete: (goalId: string) => void;
   onUncomplete: (goalId: string) => void;
   isPending: boolean;
@@ -318,7 +318,7 @@ function EmptyState() {
 }
 
 export default function PlayerDevPlanPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, player, loading: authLoading } = useAuth();
   const [plan, setPlan] = useState<DevelopmentalPlanWithGoals | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -327,10 +327,10 @@ export default function PlayerDevPlanPage() {
 
   // Fetch plan data
   const fetchPlan = useCallback(async () => {
-    if (!user?.player_id) return;
+    if (!player?.id) return;
 
     try {
-      const data = await getActiveDevPlan(user.player_id);
+      const data = await getActiveDevPlan(player.id);
       setPlan(data);
     } catch (err) {
       console.error('Error fetching dev plan:', err);
@@ -338,13 +338,13 @@ export default function PlayerDevPlanPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [user?.player_id]);
+  }, [player?.id]);
 
   useEffect(() => {
-    if (user?.player_id) {
+    if (player?.id) {
       fetchPlan();
     }
-  }, [user?.player_id, fetchPlan]);
+  }, [player?.id, fetchPlan]);
 
   // Handle goal completion
   const handleComplete = useCallback(

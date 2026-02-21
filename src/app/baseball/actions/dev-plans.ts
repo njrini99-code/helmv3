@@ -126,22 +126,22 @@ export async function updateGoalProgress(
   const goals = parseGoals(plan.goals);
   const goalIndex = goals.findIndex((g) => g.id === goalId);
 
-  if (goalIndex === -1) {
+  if (goalIndex === -1 || !goals[goalIndex]) {
     throw new Error('Goal not found');
   }
 
   // Update the goal (preserve required fields explicitly)
-  const currentGoal = goals[goalIndex];
+  const goal = goals[goalIndex]!; // Non-null assertion after check
   const newProgress = Math.min(100, Math.max(0, progress));
   goals[goalIndex] = {
-    id: currentGoal.id,
-    title: currentGoal.title,
-    description: currentGoal.description,
-    category: currentGoal.category,
-    target_date: currentGoal.target_date,
-    coach_notes: currentGoal.coach_notes,
-    completed_at: currentGoal.completed_at,
-    created_at: currentGoal.created_at,
+    id: goal.id,
+    title: goal.title,
+    description: goal.description,
+    category: goal.category,
+    target_date: goal.target_date,
+    coach_notes: goal.coach_notes,
+    completed_at: goal.completed_at,
+    created_at: goal.created_at,
     progress: newProgress,
     status: newProgress >= 100 ? 'completed' : newProgress > 0 ? 'in_progress' : 'not_started',
   };
@@ -186,13 +186,13 @@ export async function completeGoal(
 
   const goals = parseGoals(plan.goals);
   const goalIndex = goals.findIndex((g) => g.id === goalId);
-
-  if (goalIndex === -1) {
+  const currentGoal = goals[goalIndex];
+  
+  if (!currentGoal) {
     throw new Error('Goal not found');
   }
 
   // Mark complete (preserve required fields explicitly)
-  const currentGoal = goals[goalIndex];
   goals[goalIndex] = {
     id: currentGoal.id,
     title: currentGoal.title,
@@ -246,13 +246,13 @@ export async function uncompleteGoal(
 
   const goals = parseGoals(plan.goals);
   const goalIndex = goals.findIndex((g) => g.id === goalId);
-
-  if (goalIndex === -1) {
+  const currentGoal = goals[goalIndex];
+  
+  if (!currentGoal) {
     throw new Error('Goal not found');
   }
 
   // Unmark complete (preserve required fields explicitly)
-  const currentGoal = goals[goalIndex];
   goals[goalIndex] = {
     id: currentGoal.id,
     title: currentGoal.title,
@@ -287,18 +287,22 @@ export async function uncompleteGoal(
 function parseGoals(goalsJson: Json | null): DevPlanGoal[] {
   if (!goalsJson) return [];
   if (Array.isArray(goalsJson)) {
-    return goalsJson.map((g) => ({
-      id: String(g.id || crypto.randomUUID()),
-      title: String(g.title || 'Untitled Goal'),
-      description: g.description ? String(g.description) : undefined,
-      category: g.category ? String(g.category) : undefined,
-      progress: typeof g.progress === 'number' ? g.progress : 0,
-      status: validateGoalStatus(g.status),
-      target_date: g.target_date ? String(g.target_date) : undefined,
-      coach_notes: g.coach_notes ? String(g.coach_notes) : undefined,
-      completed_at: g.completed_at ? String(g.completed_at) : undefined,
-      created_at: g.created_at ? String(g.created_at) : new Date().toISOString(),
-    }));
+    return goalsJson
+      .filter((g): g is Record<string, Json | undefined> => 
+        typeof g === 'object' && g !== null && !Array.isArray(g)
+      )
+      .map((g) => ({
+        id: String(g.id || crypto.randomUUID()),
+        title: String(g.title || 'Untitled Goal'),
+        description: g.description ? String(g.description) : undefined,
+        category: g.category ? String(g.category) : undefined,
+        progress: typeof g.progress === 'number' ? g.progress : 0,
+        status: validateGoalStatus(g.status),
+        target_date: g.target_date ? String(g.target_date) : undefined,
+        coach_notes: g.coach_notes ? String(g.coach_notes) : undefined,
+        completed_at: g.completed_at ? String(g.completed_at) : undefined,
+        created_at: g.created_at ? String(g.created_at) : new Date().toISOString(),
+      }));
   }
   return [];
 }
