@@ -1,16 +1,21 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useMemo } from 'react';
 import { Header } from '@/components/layout/header';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Avatar } from '@/components/ui/avatar';
 import { PageLoading } from '@/components/ui/loading';
 import { SkeletonTable } from '@/components/ui/skeleton-loader';
-import { IconUsers, IconSearch, IconFilter, IconLink, IconClipboardList } from '@/components/icons';
+import {
+  IconUsers,
+  IconSearch,
+  IconFilter,
+  IconLink,
+  IconClipboardList,
+  IconX,
+  IconChevronDown,
+} from '@/components/icons';
 import { useAuth } from '@/hooks/use-auth';
 import { useTeamStore } from '@/stores/team-store';
 import { createClient } from '@/lib/supabase/client';
@@ -19,58 +24,75 @@ import { InviteModal } from '@/components/coach/InviteModal';
 import { LineupBuilder } from '@/components/coach/lineup/LineupBuilder';
 import { saveLineup } from '@/app/baseball/actions/lineups';
 import { useToast } from '@/components/ui/toast';
+import { PlayerRow } from '@/components/baseball/roster/PlayerRow';
+import { PlayerCard } from '@/components/baseball/roster/PlayerCard';
+import type { BaseballPlayerAggregates } from '@/lib/types';
 
 type MemberStatus = 'pending' | 'active' | 'inactive' | 'removed' | 'injured' | 'alumni';
 
+interface PlayerData {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+  primary_position: string | null;
+  secondary_position: string | null;
+  grad_year: number | null;
+  city: string | null;
+  state: string | null;
+  avatar_url: string | null;
+  recruiting_activated: boolean | null;
+}
+
 interface TeamMember {
   id: string;
-  player: {
-    id: string;
-    first_name: string | null;
-    last_name: string | null;
-    email: string | null;
-    primary_position: string | null;
-    secondary_position: string | null;
-    grad_year: number | null;
-    city: string | null;
-    state: string | null;
-    avatar_url: string | null;
-    recruiting_activated: boolean | null;
-  };
+  player: PlayerData;
   jersey_number: number | null;
   joined_at: string | null;
   status: MemberStatus | null;
 }
 
+const POSITIONS = ['C', '1B', '2B', '3B', 'SS', 'OF', 'LHP', 'RHP', 'UTL'];
+const GRAD_YEARS = [2025, 2026, 2027, 2028, 2029, 2030];
+
 export default function RosterPage() {
-  const router = useRouter();
   const { user, coach, loading: authLoading } = useAuth();
   const { selectedTeamId, getSelectedTeam } = useTeamStore();
   const selectedTeam = getSelectedTeam();
+
+  // State
   const [searchQuery, setSearchQuery] = useState('');
   const [roster, setRoster] = useState<TeamMember[]>([]);
+  const [aggregates, setAggregates] = useState<Record<string, BaseballPlayerAggregates>>({});
   const [loading, setLoading] = useState(true);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [activeView, setActiveView] = useState<'roster' | 'lineup'>('roster');
   const [, setSavingLineup] = useState(false);
   const { showToast } = useToast();
 
+  // Filters
+  const [showFilters, setShowFilters] = useState(false);
+  const [positionFilter, setPositionFilter] = useState<string>('');
+  const [gradYearFilter, setGradYearFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('');
+
   useEffect(() => {
     if (selectedTeamId) {
-      fetchRoster();
+      fetchRosterWithAggregates();
     } else {
       setLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchRoster only depends on selectedTeamId which is already in deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTeamId]);
 
-  async function fetchRoster() {
+  async function fetchRosterWithAggregates() {
     if (!selectedTeamId) return;
 
     setLoading(true);
     const supabase = createClient();
 
-    const { data, error } = await supabase
+    // Fetch roster
+    const { data: rosterData, error: rosterError } = await supabase
       .from('baseball_team_members')
       .select(`
         id,
@@ -94,16 +116,95 @@ export default function RosterPage() {
       .eq('team_id', selectedTeamId)
       .order('joined_at', { ascending: false });
 
-    if (error) {
-      console.error('[Roster] Failed to fetch roster:', error);
+    if (rosterError) {
+      console.error('[Roster] Failed to fetch roster:', rosterError);
       setRoster([]);
       setLoading(false);
       return;
     }
 
-    setRoster(data || []);
+    setRoster(rosterData || []);
+
+    // Fetch aggregates for all players on this team
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: aggregatesData, error: aggError } = await (supabase as any)
+      .from('baseball_player_aggregates')
+      .select('*')
+      .eq('team_id', selectedTeamId) as { data: BaseballPlayerAggregates[] | null; error: unknown };
+
+    if (!aggError && aggregatesData) {
+      const aggMap: Record<string, BaseballPlayerAggregates> = {};
+      aggregatesData.forEach((agg) => {
+        aggMap[agg.player_id] = agg;
+      });
+      setAggregates(aggMap);
+    }
+
     setLoading(false);
   }
+
+  // Filter logic
+  const filteredRoster = useMemo(() => {
+    return roster.filter((member) => {
+      const player = member.player;
+      const fullName = getFullName(player.first_name, player.last_name).toLowerCase();
+      const query = searchQuery.toLowerCase();
+
+      // Search filter
+      if (searchQuery) {
+        const matchesSearch =
+          fullName.includes(query) ||
+          player.primary_position?.toLowerCase().includes(query) ||
+          player.secondary_position?.toLowerCase().includes(query) ||
+          player.grad_year?.toString().includes(query) ||
+          member.jersey_number?.toString().includes(query);
+        if (!matchesSearch) return false;
+      }
+
+      // Position filter
+      if (positionFilter) {
+        const matchesPosition =
+          player.primary_position === positionFilter ||
+          player.secondary_position === positionFilter;
+        if (!matchesPosition) return false;
+      }
+
+      // Grad year filter
+      if (gradYearFilter) {
+        if (player.grad_year?.toString() !== gradYearFilter) return false;
+      }
+
+      // Status filter
+      if (statusFilter) {
+        if (member.status !== statusFilter) return false;
+      }
+
+      return true;
+    });
+  }, [roster, searchQuery, positionFilter, gradYearFilter, statusFilter]);
+
+  // Active filter count
+  const activeFilterCount = [positionFilter, gradYearFilter, statusFilter].filter(Boolean).length;
+
+  // Clear all filters
+  const clearFilters = () => {
+    setPositionFilter('');
+    setGradYearFilter('');
+    setStatusFilter('');
+    setSearchQuery('');
+  };
+
+  // Stats summary
+  const rosterStats = useMemo(() => {
+    const total = roster.length;
+    const active = roster.filter((m) => m.status === 'active').length;
+    const positions = new Set(
+      roster.map((m) => m.player.primary_position).filter(Boolean)
+    ).size;
+    const withStats = Object.keys(aggregates).length;
+
+    return { total, active, positions, withStats };
+  }, [roster, aggregates]);
 
   if (authLoading) return <PageLoading />;
 
@@ -119,18 +220,6 @@ export default function RosterPage() {
     );
   }
 
-  const filteredRoster = roster.filter((member) => {
-    if (!searchQuery) return true;
-    const player = member.player;
-    const fullName = getFullName(player.first_name, player.last_name).toLowerCase();
-    const query = searchQuery.toLowerCase();
-    return (
-      fullName.includes(query) ||
-      player.primary_position?.toLowerCase().includes(query) ||
-      player.grad_year?.toString().includes(query)
-    );
-  });
-
   return (
     <>
       <Header
@@ -142,6 +231,7 @@ export default function RosterPage() {
           Invite Players
         </Button>
       </Header>
+
       <div className="p-6 lg:p-8">
         {/* View Tabs */}
         <div className="flex items-center gap-2 mb-6">
@@ -180,267 +270,293 @@ export default function RosterPage() {
             {!loading && roster.length > 0 && (
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
                 <div className="glass-standard rounded-xl p-4">
-                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">Total Players</p>
-                  <p className="text-2xl font-semibold text-slate-900 mt-1 tabular-nums">{roster.length}</p>
+                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">
+                    Total Players
+                  </p>
+                  <p className="text-2xl font-semibold text-slate-900 mt-1 tabular-nums">
+                    {rosterStats.total}
+                  </p>
                 </div>
                 <div className="glass-standard rounded-xl p-4">
-                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">Active</p>
+                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">
+                    Active
+                  </p>
                   <p className="text-2xl font-semibold text-primary-600 mt-1 tabular-nums">
-                    {roster.filter(m => m.status === 'active').length}
+                    {rosterStats.active}
                   </p>
                 </div>
                 <div className="glass-standard rounded-xl p-4">
-                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">Positions</p>
+                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">
+                    Positions
+                  </p>
                   <p className="text-2xl font-semibold text-slate-900 mt-1 tabular-nums">
-                    {new Set(roster.map(m => m.player.primary_position).filter(Boolean)).size}
+                    {rosterStats.positions}
                   </p>
                 </div>
                 <div className="glass-standard rounded-xl p-4">
-                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">Recruiting</p>
+                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">
+                    With Stats
+                  </p>
                   <p className="text-2xl font-semibold text-slate-900 mt-1 tabular-nums">
-                    {roster.filter(m => m.player.recruiting_activated).length}
+                    {rosterStats.withStats}
                   </p>
                 </div>
               </div>
             )}
 
-            {/* Filters and Search */}
+            {/* Search and Filters */}
             <Card variant="glass" className="mb-6">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-4">
-              <div className="flex-1 relative">
-                <IconSearch size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <Input
-                  type="text"
-                  placeholder="Search players by name, position, or grad year..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <Button variant="secondary">
-                <IconFilter size={16} className="mr-2" />
-                Filters
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Roster Table */}
-        <Card variant="glass">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="font-semibold text-slate-900">Team Roster</h2>
-                <p className="text-sm leading-relaxed text-slate-500 mt-1">
-                  {filteredRoster.length} {filteredRoster.length === 1 ? 'player' : 'players'}
-                </p>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <>
-                {/* Mobile loading skeleton */}
-                <div className="lg:hidden grid grid-cols-1 gap-4">
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <div key={i} className="bg-white rounded-xl border border-slate-200 p-4 animate-pulse">
-                      <div className="flex items-start gap-3 mb-3">
-                        <div className="w-10 h-10 rounded-full bg-slate-200" />
-                        <div className="flex-1">
-                          <div className="h-4 bg-slate-200 rounded w-2/3 mb-2" />
-                          <div className="h-3 bg-slate-200 rounded w-1/3" />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2 mb-3">
-                        <div className="h-3 bg-slate-200 rounded" />
-                        <div className="h-3 bg-slate-200 rounded" />
-                      </div>
-                      <div className="h-11 bg-slate-200 rounded-lg" />
+              <CardContent className="p-4">
+                <div className="flex flex-col gap-4">
+                  {/* Search Row */}
+                  <div className="flex items-center gap-4">
+                    <div className="flex-1 relative">
+                      <IconSearch
+                        size={18}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                      />
+                      <Input
+                        type="text"
+                        placeholder="Search by name, position, grad year, or jersey #..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10"
+                      />
                     </div>
-                  ))}
-                </div>
-                {/* Desktop loading skeleton */}
-                <div className="hidden lg:block">
-                  <SkeletonTable rows={5} columns={7} />
-                </div>
-              </>
-            ) : roster.length === 0 ? (
-              /* Empty State */
-              <div className="text-center py-12">
-                <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                  <IconUsers size={32} className="text-slate-400" />
-                </div>
-                <h3 className="text-lg font-medium text-slate-900 mb-2">Build your roster</h3>
-                <p className="text-sm leading-relaxed text-slate-500 mb-6 max-w-md mx-auto">
-                  Invite players to join your team by generating a team invite link. Players can use this link to join and complete their profiles.
-                </p>
-                <Button onClick={() => setShowInviteModal(true)}>
-                  <IconLink size={16} className="mr-2" />
-                  Generate Invite Link
-                </Button>
-              </div>
-            ) : (
-              <>
-                {/* Mobile card view */}
-                <div className="lg:hidden grid grid-cols-1 gap-4">
-                  {filteredRoster.map((member) => (
-                    <div
-                      key={member.id}
-                      className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md hover:border-slate-300 active:scale-[0.98] transition-all duration-200 cursor-pointer"
-                      onClick={() => router.push(`/baseball/player/${member.player.id}`)}
+                    <Button
+                      variant={showFilters || activeFilterCount > 0 ? 'primary' : 'secondary'}
+                      onClick={() => setShowFilters(!showFilters)}
                     >
-                      {/* Player header with avatar + name */}
-                      <div className="flex items-start gap-3 mb-3">
-                        <Avatar
-                          name={getFullName(member.player.first_name, member.player.last_name)}
-                          src={member.player.avatar_url || undefined}
-                          size="md"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-slate-900 truncate">
-                            {getFullName(member.player.first_name, member.player.last_name)}
-                          </h3>
-                          <p className="text-sm text-slate-500">
-                            {member.player.primary_position || 'N/A'}
-                            {member.player.secondary_position && `, ${member.player.secondary_position}`}
-                            {member.player.grad_year ? ` \u2022 ${member.player.grad_year}` : ''}
-                          </p>
-                        </div>
-                        {member.status === 'active' && (
-                          <Badge variant="success">Active</Badge>
-                        )}
-                        {member.status === 'inactive' && (
-                          <Badge variant="secondary">Inactive</Badge>
-                        )}
-                        {member.status === 'injured' && (
-                          <Badge variant="warning">Injured</Badge>
-                        )}
-                        {member.status === 'alumni' && (
-                          <Badge variant="secondary">Alumni</Badge>
-                        )}
+                      <IconFilter size={16} className="mr-2" />
+                      Filters
+                      {activeFilterCount > 0 && (
+                        <span className="ml-2 px-1.5 py-0.5 text-xs bg-white/20 rounded-full">
+                          {activeFilterCount}
+                        </span>
+                      )}
+                      <IconChevronDown
+                        size={14}
+                        className={`ml-1 transition-transform ${showFilters ? 'rotate-180' : ''}`}
+                      />
+                    </Button>
+                  </div>
+
+                  {/* Filter Row */}
+                  {showFilters && (
+                    <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-slate-200">
+                      {/* Position Filter */}
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs font-medium text-slate-500">Position</label>
+                        <select
+                          value={positionFilter}
+                          onChange={(e) => setPositionFilter(e.target.value)}
+                          className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        >
+                          <option value="">All Positions</option>
+                          {POSITIONS.map((pos) => (
+                            <option key={pos} value={pos}>
+                              {pos}
+                            </option>
+                          ))}
+                        </select>
                       </div>
 
-                      {/* Quick stats grid */}
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 mb-3 text-sm">
-                        <div>
-                          <span className="text-slate-500">Location:</span>
-                          <span className="ml-1 text-slate-900">
-                            {member.player.city && member.player.state
-                              ? `${member.player.city}, ${member.player.state}`
-                              : '-'}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-slate-500">Jersey:</span>
-                          <span className="ml-1 text-slate-900 font-medium">
-                            {member.jersey_number ? `#${member.jersey_number}` : '-'}
-                          </span>
-                        </div>
-                        {member.player.email && (
-                          <div className="col-span-2 truncate">
-                            <span className="text-slate-500">Email:</span>
-                            <span className="ml-1 text-slate-900">{member.player.email}</span>
-                          </div>
-                        )}
+                      {/* Grad Year Filter */}
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs font-medium text-slate-500">Grad Year</label>
+                        <select
+                          value={gradYearFilter}
+                          onChange={(e) => setGradYearFilter(e.target.value)}
+                          className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        >
+                          <option value="">All Years</option>
+                          {GRAD_YEARS.map((year) => (
+                            <option key={year} value={year.toString()}>
+                              Class of {year}
+                            </option>
+                          ))}
+                        </select>
                       </div>
 
-                      {/* Action */}
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        className="w-full min-h-[44px]"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          router.push(`/baseball/player/${member.player.id}`);
-                        }}
-                      >
-                        View Profile
-                      </Button>
+                      {/* Status Filter */}
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs font-medium text-slate-500">Status</label>
+                        <select
+                          value={statusFilter}
+                          onChange={(e) => setStatusFilter(e.target.value)}
+                          className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        >
+                          <option value="">All Status</option>
+                          <option value="active">Active</option>
+                          <option value="inactive">Inactive</option>
+                          <option value="injured">Injured</option>
+                          <option value="alumni">Alumni</option>
+                          <option value="pending">Pending</option>
+                        </select>
+                      </div>
+
+                      {/* Clear Filters */}
+                      {activeFilterCount > 0 && (
+                        <button
+                          onClick={clearFilters}
+                          className="flex items-center gap-1 px-3 py-2 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors mt-auto"
+                        >
+                          <IconX size={14} />
+                          Clear filters
+                        </button>
+                      )}
                     </div>
-                  ))}
+                  )}
                 </div>
+              </CardContent>
+            </Card>
 
-                {/* Desktop table view */}
-                <div className="hidden lg:block overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-slate-200">
-                        <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">Player</th>
-                        <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">Position</th>
-                        <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">Grad Year</th>
-                        <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">Location</th>
-                        <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">Jersey</th>
-                        <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">Status</th>
-                        <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-200">
-                      {filteredRoster.map((member) => (
-                        <tr key={member.id} className="hover:bg-slate-50 active:bg-slate-100 transition-colors">
-                          <td className="py-4 px-4">
-                            <div className="flex items-center gap-3">
-                              <Avatar
-                                name={getFullName(member.player.first_name, member.player.last_name)}
-                                src={member.player.avatar_url || undefined}
-                                size="sm"
-                              />
-                              <div>
-                                <p className="font-medium text-slate-900">
-                                  {getFullName(member.player.first_name, member.player.last_name)}
-                                </p>
-                                <p className="text-xs text-slate-500">{member.player.email}</p>
-                              </div>
+            {/* Roster Table */}
+            <Card variant="glass">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="font-semibold text-slate-900">Team Roster</h2>
+                    <p className="text-sm leading-relaxed text-slate-500 mt-1">
+                      {filteredRoster.length} {filteredRoster.length === 1 ? 'player' : 'players'}
+                      {(searchQuery || activeFilterCount > 0) && roster.length !== filteredRoster.length && (
+                        <span className="text-slate-400"> of {roster.length}</span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <>
+                    {/* Mobile loading skeleton */}
+                    <div className="lg:hidden grid grid-cols-1 gap-4">
+                      {Array.from({ length: 3 }).map((_, i) => (
+                        <div
+                          key={i}
+                          className="bg-white rounded-xl border border-slate-200 p-4 animate-pulse"
+                        >
+                          <div className="flex items-start gap-3 mb-3">
+                            <div className="w-10 h-10 rounded-full bg-slate-200" />
+                            <div className="flex-1">
+                              <div className="h-4 bg-slate-200 rounded w-2/3 mb-2" />
+                              <div className="h-3 bg-slate-200 rounded w-1/3" />
                             </div>
-                          </td>
-                          <td className="py-4 px-4 text-sm text-slate-600">
-                            {member.player.primary_position || '-'}
-                            {member.player.secondary_position && `, ${member.player.secondary_position}`}
-                          </td>
-                          <td className="py-4 px-4 text-sm text-slate-600">
-                            {member.player.grad_year || '-'}
-                          </td>
-                          <td className="py-4 px-4 text-sm text-slate-600">
-                            {member.player.city && member.player.state
-                              ? `${member.player.city}, ${member.player.state}`
-                              : '-'}
-                          </td>
-                          <td className="py-4 px-4 text-sm text-slate-600">
-                            {member.jersey_number || '-'}
-                          </td>
-                          <td className="py-4 px-4">
-                            {member.status === 'active' && (
-                              <Badge variant="success">Active</Badge>
-                            )}
-                            {member.status === 'inactive' && (
-                              <Badge variant="secondary">Inactive</Badge>
-                            )}
-                            {member.status === 'injured' && (
-                              <Badge variant="warning">Injured</Badge>
-                            )}
-                            {member.status === 'alumni' && (
-                              <Badge variant="secondary">Alumni</Badge>
-                            )}
-                          </td>
-                          <td className="py-4 px-4">
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              onClick={() => router.push(`/baseball/player/${member.player.id}`)}
-                            >
-                              View Profile
-                            </Button>
-                          </td>
-                        </tr>
+                          </div>
+                          <div className="grid grid-cols-4 gap-2 mb-3">
+                            {Array.from({ length: 4 }).map((_, j) => (
+                              <div key={j} className="h-16 bg-slate-100 rounded-lg" />
+                            ))}
+                          </div>
+                          <div className="flex gap-2">
+                            <div className="h-11 bg-slate-200 rounded-lg flex-1" />
+                            <div className="h-11 bg-slate-200 rounded-lg flex-1" />
+                          </div>
+                        </div>
                       ))}
-                    </tbody>
-                  </table>
-                </div>
-              </>
+                    </div>
+                    {/* Desktop loading skeleton */}
+                    <div className="hidden lg:block">
+                      <SkeletonTable rows={5} columns={9} />
+                    </div>
+                  </>
+                ) : roster.length === 0 ? (
+                  /* Empty State */
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                      <IconUsers size={32} className="text-slate-400" />
+                    </div>
+                    <h3 className="text-lg font-medium text-slate-900 mb-2">Build your roster</h3>
+                    <p className="text-sm leading-relaxed text-slate-500 mb-6 max-w-md mx-auto">
+                      Invite players to join your team by generating a team invite link. Players
+                      can use this link to join and complete their profiles.
+                    </p>
+                    <Button onClick={() => setShowInviteModal(true)}>
+                      <IconLink size={16} className="mr-2" />
+                      Generate Invite Link
+                    </Button>
+                  </div>
+                ) : filteredRoster.length === 0 ? (
+                  /* No Results */
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                      <IconSearch size={32} className="text-slate-400" />
+                    </div>
+                    <h3 className="text-lg font-medium text-slate-900 mb-2">No players found</h3>
+                    <p className="text-sm leading-relaxed text-slate-500 mb-6 max-w-md mx-auto">
+                      Try adjusting your search or filters to find what you&apos;re looking for.
+                    </p>
+                    <Button variant="secondary" onClick={clearFilters}>
+                      Clear all filters
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    {/* Mobile card view */}
+                    <div className="lg:hidden grid grid-cols-1 gap-4">
+                      {filteredRoster.map((member) => (
+                        <PlayerCard
+                          key={member.id}
+                          player={member.player}
+                          jerseyNumber={member.jersey_number}
+                          status={member.status}
+                          aggregates={aggregates[member.player.id]}
+                        />
+                      ))}
+                    </div>
 
-            )}
-          </CardContent>
-        </Card>
+                    {/* Desktop table view */}
+                    <div className="hidden lg:block overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-slate-200">
+                            <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">
+                              Player
+                            </th>
+                            <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">
+                              Position
+                            </th>
+                            <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">
+                              Class
+                            </th>
+                            <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">
+                              AVG
+                            </th>
+                            <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">
+                              Last 5
+                            </th>
+                            <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">
+                              Exit Velo
+                            </th>
+                            <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">
+                              Sessions
+                            </th>
+                            <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">
+                              Status
+                            </th>
+                            <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">
+                              Actions
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-200">
+                          {filteredRoster.map((member) => (
+                            <PlayerRow
+                              key={member.id}
+                              memberId={member.id}
+                              player={member.player}
+                              jerseyNumber={member.jersey_number}
+                              status={member.status}
+                              aggregates={aggregates[member.player.id]}
+                            />
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
 
             {/* Team Invite Instructions - Only show when there's no roster */}
             {roster.length === 0 && (
@@ -456,7 +572,9 @@ export default function RosterPage() {
                       </span>
                       <div>
                         <span className="font-medium text-slate-900">Generate an invite link</span>
-                        <p className="text-slate-500 mt-1">Create a unique link that players can use to join your team.</p>
+                        <p className="text-slate-500 mt-1">
+                          Create a unique link that players can use to join your team.
+                        </p>
                       </div>
                     </li>
                     <li className="flex gap-3">
@@ -465,7 +583,9 @@ export default function RosterPage() {
                       </span>
                       <div>
                         <span className="font-medium text-slate-900">Share with your players</span>
-                        <p className="text-slate-500 mt-1">Send the link via email, text, or team messaging platform.</p>
+                        <p className="text-slate-500 mt-1">
+                          Send the link via email, text, or team messaging platform.
+                        </p>
                       </div>
                     </li>
                     <li className="flex gap-3">
@@ -473,8 +593,12 @@ export default function RosterPage() {
                         3
                       </span>
                       <div>
-                        <span className="font-medium text-slate-900">Players join automatically</span>
-                        <p className="text-slate-500 mt-1">When players sign up using your link, they'll be added to your roster.</p>
+                        <span className="font-medium text-slate-900">
+                          Players join automatically
+                        </span>
+                        <p className="text-slate-500 mt-1">
+                          When players sign up using your link, they&apos;ll be added to your roster.
+                        </p>
                       </div>
                     </li>
                   </ol>
@@ -503,8 +627,8 @@ export default function RosterPage() {
 
               // Filter out empty slots and map to the format expected by saveLineup
               const positions = lineup
-                .filter(slot => slot.player !== null)
-                .map(slot => ({
+                .filter((slot) => slot.player !== null)
+                .map((slot) => ({
                   order: slot.order,
                   playerId: slot.player!.id,
                 }));
