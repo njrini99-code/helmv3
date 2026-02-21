@@ -33,6 +33,7 @@ import {
   IconMap,
   IconBell,
   IconAirplane,
+  IconBookmark,
 } from '@/components/icons';
 import { TeamSwitcher } from './team-switcher';
 import { useTeams } from '@/hooks/use-teams';
@@ -47,6 +48,7 @@ const coachRecruitingNav = [
   { name: 'Upload Stats', href: '/baseball/dashboard/stats/upload', icon: IconChart },
   { name: 'Discover', href: '/baseball/dashboard/discover', icon: IconSearch },
   { name: 'Pipeline', href: '/baseball/dashboard/pipeline', icon: IconStar },
+  { name: 'Watchlist', href: '/baseball/dashboard/watchlist', icon: IconBookmark },
   { name: 'Compare', href: '/baseball/dashboard/compare', icon: IconTarget },
   { name: 'Calendar', href: '/baseball/dashboard/calendar', icon: IconCalendar },
   { name: 'Camps', href: '/baseball/dashboard/camps', icon: IconBuilding },
@@ -114,10 +116,11 @@ const playerRecruitingNav = [
   { name: 'Analytics', href: '/baseball/dashboard/analytics', icon: IconChart },
 ];
 
-// Player - Team Mode
+// Player - Team Mode (used for college players + non-recruiting-activated players)
 const playerTeamNav = [
   { name: 'Dashboard', href: '/baseball/dashboard/team', icon: IconHome },
   { name: 'My Profile', href: '/baseball/dashboard/profile', icon: IconUser },
+  { name: 'My Stats', href: '/baseball/dashboard/my-stats', icon: IconChartBar },
   { name: 'Videos', href: '/baseball/dashboard/videos', icon: IconVideo },
   { name: 'Dev Plan', href: '/baseball/dashboard/dev-plan', icon: IconNote },
   { name: 'Calendar', href: '/baseball/dashboard/calendar', icon: IconCalendar },
