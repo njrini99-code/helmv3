@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import { StatsUploadClient } from '@/components/baseball/stats/StatsUploadClient';
+import { StatsUploadClient, UploadHistory } from '@/components/baseball/stats';
 
 export default async function StatsUploadPage() {
   const supabase = await createClient();
@@ -65,10 +65,15 @@ export default async function StatsUploadPage() {
   }));
 
   return (
-    <StatsUploadClient
-      teamId={team.id}
-      teamName={team.name}
-      players={players}
-    />
+    <div className="space-y-8">
+      <StatsUploadClient
+        teamId={team.id}
+        teamName={team.name}
+        players={players}
+      />
+      <div className="max-w-4xl mx-auto px-4 sm:px-6">
+        <UploadHistory teamId={team.id} />
+      </div>
+    </div>
   );
 }
