@@ -1,10 +1,11 @@
 'use client';
 
-import { ChevronLeft, ChevronRight, Plus, List, CalendarDays, Menu } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, List, CalendarDays, Menu, LayoutGrid } from 'lucide-react';
+import { startOfWeek, endOfWeek, format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useMediaQuery } from '@/hooks/use-media-query';
 
-export type BaseballCalendarView = 'month' | 'list';
+export type BaseballCalendarView = 'day' | 'week' | 'month' | 'list';
 
 export interface CalendarHeaderProps {
   view: BaseballCalendarView;
@@ -25,10 +26,40 @@ export function CalendarHeader({
 }: CalendarHeaderProps) {
   const isMobile = useMediaQuery('(max-width: 768px)');
 
-  const title = currentDate.toLocaleDateString('en-US', {
-    month: 'long',
-    year: 'numeric',
-  });
+  const getTitle = () => {
+    if (view === 'day') {
+      return currentDate.toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+      });
+    }
+
+    if (view === 'week') {
+      const ws = startOfWeek(currentDate, { weekStartsOn: 0 });
+      const we = endOfWeek(currentDate, { weekStartsOn: 0 });
+      const startYear = ws.getFullYear();
+      const endYear = we.getFullYear();
+      const startMonth = format(ws, 'MMM');
+      const endMonth = format(we, 'MMM');
+
+      if (startYear !== endYear) {
+        return `${format(ws, 'MMM d, yyyy')} \u2013 ${format(we, 'MMM d, yyyy')}`;
+      } else if (startMonth !== endMonth) {
+        return `${format(ws, 'MMM d')} \u2013 ${format(we, 'MMM d, yyyy')}`;
+      } else {
+        return `${format(ws, 'MMM d')} \u2013 ${format(we, 'd, yyyy')}`;
+      }
+    }
+
+    return currentDate.toLocaleDateString('en-US', {
+      month: 'long',
+      year: 'numeric',
+    });
+  };
+
+  const title = getTitle();
 
   return (
     <header className="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 flex-shrink-0">
@@ -99,7 +130,7 @@ export function CalendarHeader({
 
       {/* Right: View Toggle + Add Event */}
       <div className="flex items-center gap-2 md:gap-3">
-        {/* View Toggle */}
+        {/* View Toggle - Desktop: Day/Week/Month, Mobile: Day/List */}
         <div
           className="inline-flex rounded-xl p-1"
           style={{
@@ -107,10 +138,17 @@ export function CalendarHeader({
             border: '1px solid rgba(214, 211, 209, 0.2)',
           }}
         >
-          {([
-            { key: 'month' as const, icon: CalendarDays, label: 'Month' },
-            { key: 'list' as const, icon: List, label: 'List' },
-          ]).map(({ key, icon: Icon, label }) => (
+          {(isMobile
+            ? [
+                { key: 'day' as const, icon: CalendarDays, label: 'Day' },
+                { key: 'list' as const, icon: List, label: 'List' },
+              ]
+            : [
+                { key: 'day' as const, icon: CalendarDays, label: 'Day' },
+                { key: 'week' as const, icon: LayoutGrid, label: 'Week' },
+                { key: 'month' as const, icon: CalendarDays, label: 'Month' },
+              ]
+          ).map(({ key, icon: Icon, label }) => (
             <button
               type="button"
               key={key}

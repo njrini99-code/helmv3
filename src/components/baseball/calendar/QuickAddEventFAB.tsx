@@ -5,6 +5,9 @@ import { cn } from '@/lib/utils';
 import { Plus, X, Calendar } from 'lucide-react';
 import { BASEBALL_EVENT_TYPES, type BaseballEventType } from './event-type-config';
 
+// Re-export for convenience
+export type { BaseballEventType };
+
 interface QuickAddEventFABProps {
   onAddEvent: (eventType?: BaseballEventType) => void;
   className?: string;

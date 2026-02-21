@@ -26,6 +26,13 @@ import { saveLineup } from '@/app/baseball/actions/lineups';
 import { useToast } from '@/components/ui/toast';
 import { PlayerRow } from '@/components/baseball/roster/PlayerRow';
 import { PlayerCard } from '@/components/baseball/roster/PlayerCard';
+import {
+  RosterToolbar,
+  exportRosterCSV,
+  type SortField,
+  type SortDirection,
+  type ViewMode,
+} from '@/components/baseball/roster/RosterToolbar';
 import type { BaseballPlayerAggregates } from '@/lib/types';
 
 type MemberStatus = 'pending' | 'active' | 'inactive' | 'removed' | 'injured' | 'alumni';
@@ -75,6 +82,11 @@ export default function RosterPage() {
   const [positionFilter, setPositionFilter] = useState<string>('');
   const [gradYearFilter, setGradYearFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
+
+  // Sort and View
+  const [sortField, setSortField] = useState<SortField>('name');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [viewMode, setViewMode] = useState<ViewMode>('expanded');
 
   useEffect(() => {
     if (selectedTeamId) {
@@ -143,9 +155,10 @@ export default function RosterPage() {
     setLoading(false);
   }
 
-  // Filter logic
+  // Filter and sort logic
   const filteredRoster = useMemo(() => {
-    return roster.filter((member) => {
+    // First filter
+    const filtered = roster.filter((member) => {
       const player = member.player;
       const fullName = getFullName(player.first_name, player.last_name).toLowerCase();
       const query = searchQuery.toLowerCase();
@@ -181,7 +194,60 @@ export default function RosterPage() {
 
       return true;
     });
-  }, [roster, searchQuery, positionFilter, gradYearFilter, statusFilter]);
+
+    // Then sort
+    const sorted = [...filtered].sort((a, b) => {
+      const playerA = a.player;
+      const playerB = b.player;
+      const aggA = aggregates[playerA.id];
+      const aggB = aggregates[playerB.id];
+
+      let comparison = 0;
+
+      switch (sortField) {
+        case 'name': {
+          const nameA = getFullName(playerA.first_name, playerA.last_name).toLowerCase();
+          const nameB = getFullName(playerB.first_name, playerB.last_name).toLowerCase();
+          comparison = nameA.localeCompare(nameB);
+          break;
+        }
+        case 'position': {
+          const posA = playerA.primary_position || 'ZZZ';
+          const posB = playerB.primary_position || 'ZZZ';
+          comparison = posA.localeCompare(posB);
+          break;
+        }
+        case 'avg': {
+          const avgA = aggA?.career_avg ?? -1;
+          const avgB = aggB?.career_avg ?? -1;
+          comparison = avgB - avgA; // Higher is better
+          break;
+        }
+        case 'obp': {
+          const obpA = aggA?.career_obp ?? -1;
+          const obpB = aggB?.career_obp ?? -1;
+          comparison = obpB - obpA; // Higher is better
+          break;
+        }
+        case 'exit_velo': {
+          const veloA = aggA?.avg_exit_velocity ?? -1;
+          const veloB = aggB?.avg_exit_velocity ?? -1;
+          comparison = veloB - veloA; // Higher is better
+          break;
+        }
+        case 'sessions': {
+          const sessA = aggA?.total_sessions ?? 0;
+          const sessB = aggB?.total_sessions ?? 0;
+          comparison = sessB - sessA; // More is better
+          break;
+        }
+      }
+
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+
+    return sorted;
+  }, [roster, searchQuery, positionFilter, gradYearFilter, statusFilter, sortField, sortDirection, aggregates]);
 
   // Active filter count
   const activeFilterCount = [positionFilter, gradYearFilter, statusFilter].filter(Boolean).length;
@@ -192,6 +258,34 @@ export default function RosterPage() {
     setGradYearFilter('');
     setStatusFilter('');
     setSearchQuery('');
+  };
+
+  // Handle sort change
+  const handleSortChange = (field: SortField, direction: SortDirection) => {
+    setSortField(field);
+    setSortDirection(direction);
+  };
+
+  // Handle view mode change
+  const handleViewModeChange = (mode: ViewMode) => {
+    setViewMode(mode);
+  };
+
+  // Handle export
+  const handleExport = () => {
+    const exportData = filteredRoster.map((member) => ({
+      first_name: member.player.first_name,
+      last_name: member.player.last_name,
+      primary_position: member.player.primary_position,
+      grad_year: member.player.grad_year,
+      jersey_number: member.jersey_number,
+      career_avg: aggregates[member.player.id]?.career_avg ?? null,
+      career_obp: aggregates[member.player.id]?.career_obp ?? null,
+      avg_exit_velocity: aggregates[member.player.id]?.avg_exit_velocity ?? null,
+      total_sessions: aggregates[member.player.id]?.total_sessions ?? null,
+      status: member.status,
+    }));
+    exportRosterCSV(exportData);
   };
 
   // Stats summary
@@ -411,6 +505,21 @@ export default function RosterPage() {
               </CardContent>
             </Card>
 
+            {/* Roster Toolbar - Sort & View Controls */}
+            {!loading && roster.length > 0 && (
+              <div className="mb-4">
+                <RosterToolbar
+                  playerCount={filteredRoster.length}
+                  sortField={sortField}
+                  sortDirection={sortDirection}
+                  viewMode={viewMode}
+                  onSortChange={handleSortChange}
+                  onViewModeChange={handleViewModeChange}
+                  onExport={handleExport}
+                />
+              </div>
+            )}
+
             {/* Roster Table */}
             <Card variant="glass">
               <CardHeader>
@@ -523,14 +632,21 @@ export default function RosterPage() {
                               AVG
                             </th>
                             <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">
-                              Last 5
+                              OBP
                             </th>
-                            <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">
-                              Exit Velo
-                            </th>
-                            <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">
-                              Sessions
-                            </th>
+                            {viewMode === 'expanded' && (
+                              <>
+                                <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">
+                                  Last 5
+                                </th>
+                                <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">
+                                  Exit Velo
+                                </th>
+                                <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">
+                                  Sessions
+                                </th>
+                              </>
+                            )}
                             <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">
                               Status
                             </th>
@@ -548,6 +664,7 @@ export default function RosterPage() {
                               jerseyNumber={member.jersey_number}
                               status={member.status}
                               aggregates={aggregates[member.player.id]}
+                              compact={viewMode === 'compact'}
                             />
                           ))}
                         </tbody>

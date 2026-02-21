@@ -38,12 +38,19 @@ interface PlayerRowProps {
   status: MemberStatus | null;
   aggregates?: BaseballPlayerAggregates;
   onMessage?: (playerId: string) => void;
+  compact?: boolean;
 }
 
 // Format batting average (e.g., .345)
 function formatAvg(avg: number | null | undefined): string {
   if (avg == null) return '---';
   return avg.toFixed(3).replace('0.', '.');
+}
+
+// Format OBP (e.g., .420)
+function formatOBP(obp: number | null | undefined): string {
+  if (obp == null) return '---';
+  return obp.toFixed(3).replace('0.', '.');
 }
 
 // Format exit velocity
@@ -76,6 +83,7 @@ export function PlayerRow({
   status,
   aggregates,
   onMessage,
+  compact = false,
 }: PlayerRowProps) {
   const router = useRouter();
   const [showPreview, setShowPreview] = useState(false);
@@ -174,27 +182,38 @@ export function PlayerRow({
         </div>
       </td>
 
-      {/* Last 5 AVG */}
+      {/* OBP */}
       <td className="py-4 px-4 text-sm text-slate-600 tabular-nums">
-        {formatAvg(aggregates?.last_5_avg)}
+        {formatOBP(aggregates?.career_obp)}
       </td>
 
-      {/* Exit Velo */}
-      <td className="py-4 px-4 text-sm text-slate-600 tabular-nums">
-        {aggregates?.avg_exit_velocity ? (
-          <span>
-            {formatExitVelo(aggregates.avg_exit_velocity)}
-            <span className="text-slate-400 text-xs ml-0.5">mph</span>
-          </span>
-        ) : (
-          '---'
-        )}
-      </td>
+      {/* Last 5 AVG - Hidden in compact mode */}
+      {!compact && (
+        <td className="py-4 px-4 text-sm text-slate-600 tabular-nums">
+          {formatAvg(aggregates?.last_5_avg)}
+        </td>
+      )}
 
-      {/* Sessions */}
-      <td className="py-4 px-4 text-sm text-slate-600 tabular-nums">
-        {aggregates?.total_sessions ?? 0}
-      </td>
+      {/* Exit Velo - Hidden in compact mode */}
+      {!compact && (
+        <td className="py-4 px-4 text-sm text-slate-600 tabular-nums">
+          {aggregates?.avg_exit_velocity ? (
+            <span>
+              {formatExitVelo(aggregates.avg_exit_velocity)}
+              <span className="text-slate-400 text-xs ml-0.5">mph</span>
+            </span>
+          ) : (
+            '---'
+          )}
+        </td>
+      )}
+
+      {/* Sessions - Hidden in compact mode */}
+      {!compact && (
+        <td className="py-4 px-4 text-sm text-slate-600 tabular-nums">
+          {aggregates?.total_sessions ?? 0}
+        </td>
+      )}
 
       {/* Status */}
       <td className="py-4 px-4">{getStatusBadge(status)}</td>
@@ -244,22 +263,28 @@ export function PlayerRow({
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-2 mb-3">
+            <div className="grid grid-cols-4 gap-2 mb-3">
               <div className="bg-slate-50 rounded-lg p-2 text-center">
                 <p className="text-xs text-slate-500 mb-0.5">AVG</p>
-                <p className="text-lg font-semibold text-slate-900 tabular-nums">
+                <p className="text-base font-semibold text-slate-900 tabular-nums">
                   {formatAvg(aggregates.career_avg)}
                 </p>
               </div>
               <div className="bg-slate-50 rounded-lg p-2 text-center">
+                <p className="text-xs text-slate-500 mb-0.5">OBP</p>
+                <p className="text-base font-semibold text-slate-900 tabular-nums">
+                  {formatOBP(aggregates.career_obp)}
+                </p>
+              </div>
+              <div className="bg-slate-50 rounded-lg p-2 text-center">
                 <p className="text-xs text-slate-500 mb-0.5">Last 5</p>
-                <p className="text-lg font-semibold text-slate-900 tabular-nums">
+                <p className="text-base font-semibold text-slate-900 tabular-nums">
                   {formatAvg(aggregates.last_5_avg)}
                 </p>
               </div>
               <div className="bg-slate-50 rounded-lg p-2 text-center">
                 <p className="text-xs text-slate-500 mb-0.5">Sessions</p>
-                <p className="text-lg font-semibold text-slate-900 tabular-nums">
+                <p className="text-base font-semibold text-slate-900 tabular-nums">
                   {aggregates.total_sessions ?? 0}
                 </p>
               </div>

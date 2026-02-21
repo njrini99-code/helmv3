@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Header } from '@/components/layout/header';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { PageLoading } from '@/components/ui/loading';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { IconCalendar, IconMapPin, IconUsers, IconPlus, IconHeart, IconHeartFilled, IconEdit, IconTrash } from '@/components/icons';
+import { IconCalendar, IconMapPin, IconUsers, IconPlus, IconHeart, IconHeartFilled, IconEdit, IconTrash, IconEye } from '@/components/icons';
 import { CreateCampModal } from '@/components/coach/CreateCampModal';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
@@ -154,6 +155,16 @@ function CampCard({
         {/* Coach Actions */}
         {isCoach && (
           <div className="mt-4 pt-4 border-t border-slate-100 flex justify-end gap-2">
+            <Link href={`/baseball/dashboard/camps/${camp.id}`}>
+              <Button
+                variant="secondary"
+                size="sm"
+                aria-label={`View roster for ${camp.name}`}
+              >
+                <IconEye size={16} className="mr-1.5" />
+                Roster
+              </Button>
+            </Link>
             <Button
               variant="secondary"
               size="sm"

@@ -514,6 +514,8 @@ export type BaseballInsightType =
   | 'milestone';
 export type BaseballInsightPriority = 'critical' | 'urgent' | 'high' | 'medium' | 'low';
 export type BaseballInsightStatus = 'active' | 'acknowledged' | 'dismissed' | 'resolved' | 'addressed';
+export type BaseballInsightCategory = 'performance' | 'recruiting' | 'team_health';
+export type BaseballInsightFeedback = 'helpful' | 'not_helpful' | null;
 export type BaseballAlertSensitivity = 'aggressive' | 'balanced' | 'conservative';
 
 export interface BaseballPlayerStats {
@@ -719,6 +721,10 @@ export interface BaseballInsightMetadata {
   sessionsAnalyzed?: number;
   comparisonPlayerId?: string;
   comparisonPlayerName?: string;
+  // Category and feedback for AI insights
+  category?: BaseballInsightCategory;
+  feedback?: BaseballInsightFeedback;
+  feedbackAt?: string;
   [key: string]: unknown;
 }
 

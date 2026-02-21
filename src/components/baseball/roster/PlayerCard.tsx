@@ -43,6 +43,12 @@ function formatAvg(avg: number | null | undefined): string {
   return avg.toFixed(3).replace('0.', '.');
 }
 
+// Format OBP
+function formatOBP(obp: number | null | undefined): string {
+  if (obp == null) return '---';
+  return obp.toFixed(3).replace('0.', '.');
+}
+
 // Format exit velocity
 function formatExitVelo(velo: number | null | undefined): string {
   if (velo == null) return '---';
@@ -162,32 +168,43 @@ export function PlayerCard({
 
       {/* Stats Grid */}
       {aggregates && (aggregates.career_avg != null || aggregates.total_sessions) ? (
-        <div className="grid grid-cols-4 gap-2 mb-3">
-          <div className="bg-slate-50 rounded-lg p-2 text-center">
-            <p className="text-xs text-slate-500 mb-0.5">AVG</p>
-            <p className="text-base font-semibold text-slate-900 tabular-nums">
-              {formatAvg(aggregates.career_avg)}
-            </p>
+        <>
+          <div className="grid grid-cols-4 gap-2 mb-2">
+            <div className="bg-slate-50 rounded-lg p-2 text-center">
+              <p className="text-xs text-slate-500 mb-0.5">AVG</p>
+              <p className="text-base font-semibold text-slate-900 tabular-nums">
+                {formatAvg(aggregates.career_avg)}
+              </p>
+            </div>
+            <div className="bg-slate-50 rounded-lg p-2 text-center">
+              <p className="text-xs text-slate-500 mb-0.5">OBP</p>
+              <p className="text-base font-semibold text-slate-900 tabular-nums">
+                {formatOBP(aggregates.career_obp)}
+              </p>
+            </div>
+            <div className="bg-slate-50 rounded-lg p-2 text-center">
+              <p className="text-xs text-slate-500 mb-0.5">Exit V</p>
+              <p className="text-base font-semibold text-slate-900 tabular-nums">
+                {formatExitVelo(aggregates.avg_exit_velocity)}
+              </p>
+            </div>
+            <div className="bg-slate-50 rounded-lg p-2 text-center">
+              <p className="text-xs text-slate-500 mb-0.5">Sessions</p>
+              <p className="text-base font-semibold text-slate-900 tabular-nums">
+                {aggregates.total_sessions ?? 0}
+              </p>
+            </div>
           </div>
-          <div className="bg-slate-50 rounded-lg p-2 text-center">
-            <p className="text-xs text-slate-500 mb-0.5">Last 5</p>
-            <p className="text-base font-semibold text-slate-900 tabular-nums">
-              {formatAvg(aggregates.last_5_avg)}
-            </p>
-          </div>
-          <div className="bg-slate-50 rounded-lg p-2 text-center">
-            <p className="text-xs text-slate-500 mb-0.5">Exit V</p>
-            <p className="text-base font-semibold text-slate-900 tabular-nums">
-              {formatExitVelo(aggregates.avg_exit_velocity)}
-            </p>
-          </div>
-          <div className="bg-slate-50 rounded-lg p-2 text-center">
-            <p className="text-xs text-slate-500 mb-0.5">Sessions</p>
-            <p className="text-base font-semibold text-slate-900 tabular-nums">
-              {aggregates.total_sessions ?? 0}
-            </p>
-          </div>
-        </div>
+          {/* Last 5 as secondary stat */}
+          {aggregates.last_5_avg != null && (
+            <div className="flex items-center justify-between text-xs mb-3 px-1">
+              <span className="text-slate-500">Last 5 games</span>
+              <span className="font-medium text-slate-700 tabular-nums">
+                {formatAvg(aggregates.last_5_avg)}
+              </span>
+            </div>
+          )}
+        </>
       ) : (
         <div className="bg-slate-50 rounded-lg p-3 mb-3 text-center">
           <p className="text-sm text-slate-500">No stats uploaded yet</p>
