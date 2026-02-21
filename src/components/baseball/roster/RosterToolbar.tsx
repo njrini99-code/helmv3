@@ -10,7 +10,7 @@ import {
   IconDownload,
 } from '@/components/icons';
 
-export type SortField = 'name' | 'position' | 'avg' | 'obp' | 'exit_velo' | 'sessions';
+export type SortField = 'name' | 'position' | 'avg' | 'obp' | 'slg' | 'ops' | 'exit_velo' | 'sessions';
 export type SortDirection = 'asc' | 'desc';
 export type ViewMode = 'compact' | 'expanded';
 
@@ -27,8 +27,10 @@ interface RosterToolbarProps {
 const SORT_OPTIONS: { value: SortField; label: string }[] = [
   { value: 'name', label: 'Name' },
   { value: 'position', label: 'Position' },
-  { value: 'avg', label: 'Batting Avg' },
+  { value: 'avg', label: 'AVG' },
   { value: 'obp', label: 'OBP' },
+  { value: 'slg', label: 'SLG' },
+  { value: 'ops', label: 'OPS' },
   { value: 'exit_velo', label: 'Exit Velo' },
   { value: 'sessions', label: 'Sessions' },
 ];

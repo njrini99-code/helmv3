@@ -183,17 +183,27 @@ export function PlayerCard({
       {/* Stats Grid */}
       {aggregates && (aggregates.career_avg != null || aggregates.total_sessions) ? (
         <>
+          {/* Slash Line Header */}
+          <div className="bg-slate-50 rounded-lg p-2 mb-2">
+            <p className="text-xs text-slate-500 mb-0.5 text-center">Slash Line (AVG/OBP/SLG/OPS)</p>
+            <p className="text-sm font-semibold text-slate-900 tabular-nums text-center tracking-wide">
+              {formatAvg(aggregates.career_avg)} / {formatOBP(aggregates.career_obp)} / {formatSLG(aggregates.career_slg)} / {formatOPS(aggregates.career_ops)}
+            </p>
+          </div>
+
           <div className="grid grid-cols-4 gap-2 mb-2">
             <div className="bg-slate-50 rounded-lg p-2 text-center">
-              <p className="text-xs text-slate-500 mb-0.5">AVG</p>
-              <p className="text-base font-semibold text-slate-900 tabular-nums">
-                {formatAvg(aggregates.career_avg)}
-              </p>
-            </div>
-            <div className="bg-slate-50 rounded-lg p-2 text-center">
-              <p className="text-xs text-slate-500 mb-0.5">OBP</p>
-              <p className="text-base font-semibold text-slate-900 tabular-nums">
-                {formatOBP(aggregates.career_obp)}
+              <p className="text-xs text-slate-500 mb-0.5">OPS</p>
+              <p
+                className={`text-base font-semibold tabular-nums ${
+                  aggregates.career_ops != null && aggregates.career_ops >= 0.8
+                    ? 'text-primary-600'
+                    : aggregates.career_ops != null && aggregates.career_ops >= 0.7
+                      ? 'text-slate-900'
+                      : 'text-slate-600'
+                }`}
+              >
+                {formatOPS(aggregates.career_ops)}
               </p>
             </div>
             <div className="bg-slate-50 rounded-lg p-2 text-center">
@@ -203,21 +213,18 @@ export function PlayerCard({
               </p>
             </div>
             <div className="bg-slate-50 rounded-lg p-2 text-center">
+              <p className="text-xs text-slate-500 mb-0.5">Last 5</p>
+              <p className="text-base font-semibold text-slate-900 tabular-nums">
+                {formatAvg(aggregates.last_5_avg)}
+              </p>
+            </div>
+            <div className="bg-slate-50 rounded-lg p-2 text-center">
               <p className="text-xs text-slate-500 mb-0.5">Sessions</p>
               <p className="text-base font-semibold text-slate-900 tabular-nums">
                 {aggregates.total_sessions ?? 0}
               </p>
             </div>
           </div>
-          {/* Last 5 as secondary stat */}
-          {aggregates.last_5_avg != null && (
-            <div className="flex items-center justify-between text-xs mb-3 px-1">
-              <span className="text-slate-500">Last 5 games</span>
-              <span className="font-medium text-slate-700 tabular-nums">
-                {formatAvg(aggregates.last_5_avg)}
-              </span>
-            </div>
-          )}
         </>
       ) : (
         <div className="bg-slate-50 rounded-lg p-3 mb-3 text-center">

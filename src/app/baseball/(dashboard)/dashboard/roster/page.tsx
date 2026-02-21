@@ -229,6 +229,18 @@ export default function RosterPage() {
           comparison = obpB - obpA; // Higher is better
           break;
         }
+        case 'slg': {
+          const slgA = aggA?.career_slg ?? -1;
+          const slgB = aggB?.career_slg ?? -1;
+          comparison = slgB - slgA; // Higher is better
+          break;
+        }
+        case 'ops': {
+          const opsA = aggA?.career_ops ?? -1;
+          const opsB = aggB?.career_ops ?? -1;
+          comparison = opsB - opsA; // Higher is better
+          break;
+        }
         case 'exit_velo': {
           const veloA = aggA?.avg_exit_velocity ?? -1;
           const veloB = aggB?.avg_exit_velocity ?? -1;
