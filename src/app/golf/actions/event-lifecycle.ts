@@ -11,7 +11,8 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, updateTag } from 'next/cache';
+import { CACHE_TAGS } from '@/lib/cache/tags';
 import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
 
 /** Build timezone offset string from minutes (e.g. 360 → "-06:00") */
@@ -91,6 +92,8 @@ export async function publishEvent(eventId: string): Promise<ActionResult> {
     }
 
     revalidatePath('/golf/dashboard/calendar');
+    updateTag(CACHE_TAGS.DASHBOARD);
+    updateTag(CACHE_TAGS.CALENDAR);
     return { success: true };
   } catch (error) {
     console.error('[publishEvent Error]', error);
@@ -192,6 +195,8 @@ export async function cancelEvent(
     }
 
     revalidatePath('/golf/dashboard/calendar');
+    updateTag(CACHE_TAGS.DASHBOARD);
+    updateTag(CACHE_TAGS.CALENDAR);
     return { success: true };
   } catch (error) {
     console.error('[cancelEvent Error]', error);

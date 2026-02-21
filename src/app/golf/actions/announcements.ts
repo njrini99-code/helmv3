@@ -12,7 +12,8 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, updateTag } from 'next/cache';
+import { CACHE_TAGS } from '@/lib/cache/tags';
 import { z } from 'zod';
 import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -205,6 +206,7 @@ export async function createEnrichedAnnouncement(input: {
     }
 
     revalidatePath('/golf/dashboard/announcements');
+    updateTag(CACHE_TAGS.DASHBOARD);
     return { success: true, data: { announcementId } };
 
   } catch (error) {

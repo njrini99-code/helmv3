@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { headers } from 'next/headers';
+
+// ============================================
+// CORS
+// ============================================
+
+const ALLOWED_ORIGIN = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
 
 // ============================================
 // TYPES
@@ -132,7 +139,17 @@ export async function POST(request: NextRequest) {
         { status: 429 }
       );
     }
-    
+
+    // Require authenticated user
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
     // Parse body
     let body: unknown;
     const contentType = request.headers.get('content-type');
@@ -163,9 +180,9 @@ export async function POST(request: NextRequest) {
     // Sanitize
     const sanitized = sanitizePayload(body);
     
-    // Insert via admin client (service role)
+    // Insert via admin client (service role — admin_events may not have RLS for inserts)
     const adminDb = createAdminClient();
-    
+
     type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
     const { data, error } = await adminDb
       .from('admin_events')
@@ -178,6 +195,7 @@ export async function POST(request: NextRequest) {
         url: sanitized.url ?? null,
         stack_trace: sanitized.stackTrace ?? null,
         browser_info: (sanitized.browserInfo ?? null) as Json,
+        user_id: user.id,
       })
       .select('id')
       .single();
@@ -208,9 +226,10 @@ export async function OPTIONS() {
   return new NextResponse(null, {
     status: 204,
     headers: {
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Credentials': 'true',
     },
   });
 }

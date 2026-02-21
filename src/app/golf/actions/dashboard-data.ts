@@ -1,7 +1,9 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { unstable_cache } from 'next/cache';
 import { getTodayRangeForTz } from '@/lib/utils/timezone';
+import { CACHE_TAGS } from '@/lib/cache/tags';
 
 // ============================================================================
 // TYPES
@@ -855,3 +857,37 @@ export async function getPlayerDashboardData(
         timezone: playerTeamTimezone,
     };
 }
+
+// ============================================================================
+// CACHED VERSIONS — for server component pages (60s TTL + tag-based invalidation)
+// ============================================================================
+
+/**
+ * Cached coach dashboard data. Keyed on coachId+userId+teamId.
+ * Invalidate with: revalidateTag(CACHE_TAGS.DASHBOARD)
+ */
+export const getCachedCoachDashboardData = unstable_cache(
+    async (coachId: string, userId: string, teamId: string) => {
+        return getCoachDashboardData(coachId, userId, teamId);
+    },
+    ['coach-dashboard-data'],
+    {
+        revalidate: 60,
+        tags: [CACHE_TAGS.DASHBOARD, CACHE_TAGS.ROUNDS, CACHE_TAGS.CALENDAR, CACHE_TAGS.ROSTER],
+    }
+);
+
+/**
+ * Cached player dashboard data. Keyed on playerId+userId+teamId.
+ * Invalidate with: revalidateTag(CACHE_TAGS.DASHBOARD)
+ */
+export const getCachedPlayerDashboardData = unstable_cache(
+    async (playerId: string, userId: string, teamId: string | null) => {
+        return getPlayerDashboardData(playerId, userId, teamId);
+    },
+    ['player-dashboard-data'],
+    {
+        revalidate: 60,
+        tags: [CACHE_TAGS.DASHBOARD, CACHE_TAGS.ROUNDS, CACHE_TAGS.STATS],
+    }
+);

@@ -33,6 +33,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useTeamStore } from '@/stores/team-store';
 import { createClient } from '@/lib/supabase/client';
 import { getFullName, formatRelativeTime } from '@/lib/utils';
+import { JucoTeamDashboard } from './JucoTeamDashboard';
 
 // ============================================================================
 // TYPES
@@ -775,6 +776,19 @@ export default function TeamDashboardClient() {
   // ============================================================================
 
   if (user?.role === 'coach') {
+    // Use premium dashboard for JUCO coaches
+    if (coach?.coach_type === 'juco') {
+      return (
+        <JucoTeamDashboard
+          coachName={coach.full_name || 'Coach'}
+          coachType={coach.coach_type}
+          organizationName={(coach.organization as { name?: string })?.name}
+          teamId={selectedTeamId || undefined}
+        />
+      );
+    }
+
+    // Existing dashboard for other coach types (HS, showcase)
     return (
       <>
         <Header

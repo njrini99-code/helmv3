@@ -4,7 +4,8 @@ import { randomInt } from 'crypto';
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, updateTag } from 'next/cache';
+import { CACHE_TAGS } from '@/lib/cache/tags';
 import type { HoleStats, ShotRecord } from '@/components/golf/ShotTrackingComprehensive';
 import { z } from 'zod';
 import {
@@ -942,6 +943,9 @@ export async function submitGolfRoundComprehensive(
     revalidatePath('/golf/dashboard');
     revalidatePath('/golf/dashboard/rounds');
     revalidatePath('/golf/dashboard/stats');
+    updateTag(CACHE_TAGS.DASHBOARD);
+    updateTag(CACHE_TAGS.ROUNDS);
+    updateTag(CACHE_TAGS.STATS);
 
     // If this is a qualifier round, update the qualifier entry stats and revalidate
     if (data.qualifierId) {
@@ -1086,6 +1090,9 @@ export async function submitGolfRound(data: GolfRoundInput): Promise<ActionResul
     revalidatePath('/golf/dashboard');
     revalidatePath('/golf/dashboard/rounds');
     revalidatePath('/golf/dashboard/stats');
+    updateTag(CACHE_TAGS.DASHBOARD);
+    updateTag(CACHE_TAGS.ROUNDS);
+    updateTag(CACHE_TAGS.STATS);
 
     // Fire-and-forget: invalidate stats cache for dashboard updates
     invalidateOnRoundComplete(player.id, round.id).catch(() => {});

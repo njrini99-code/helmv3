@@ -10,7 +10,8 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, updateTag } from 'next/cache';
+import { CACHE_TAGS } from '@/lib/cache/tags';
 import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
 
 // ============================================================================
@@ -163,6 +164,7 @@ export async function completeTask(
     }
 
     revalidatePath('/golf/dashboard/tasks');
+    updateTag(CACHE_TAGS.DASHBOARD);
     return { success: true };
   } catch (error) {
     console.error('[completeTask Error]', error);

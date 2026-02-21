@@ -1,7 +1,8 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, updateTag } from 'next/cache';
+import { CACHE_TAGS } from '@/lib/cache/tags';
 
 // ============================================================================
 // TYPES
@@ -99,6 +100,8 @@ export async function removePlayerFromTeam(playerId: string): Promise<RosterActi
   // 5. Revalidate relevant paths
   revalidatePath('/golf/dashboard');
   revalidatePath('/golf/dashboard/roster');
+  updateTag(CACHE_TAGS.DASHBOARD);
+  updateTag(CACHE_TAGS.ROSTER);
 
   return { success: true };
 }

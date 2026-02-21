@@ -8,7 +8,8 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, updateTag } from 'next/cache';
+import { CACHE_TAGS } from '@/lib/cache/tags';
 import {
   getFullPlayerStats,
   getStatsFromCache,
@@ -210,6 +211,8 @@ export async function refreshStatsCacheAction(
 
     revalidatePath('/golf/dashboard');
     revalidatePath('/golf/dashboard/stats');
+    updateTag(CACHE_TAGS.DASHBOARD);
+    updateTag(CACHE_TAGS.STATS);
 
     return { success: true, data: undefined };
   } catch (error) {
