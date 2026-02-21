@@ -40,7 +40,7 @@ function Confetti({ active }: { active: boolean }) {
       newPieces.push({
         id: i,
         x: Math.random() * 100,
-        color: colors[Math.floor(Math.random() * colors.length)],
+        color: colors[Math.floor(Math.random() * colors.length)] ?? '#22c55e',
         delay: Math.random() * 0.5,
         duration: 2 + Math.random() * 2,
         size: 6 + Math.random() * 8,
