@@ -139,6 +139,12 @@ export default function DashboardPage() {
   useEffect(() => {
     if (authLoading) return;
 
+    // College players go directly to team dashboard (they can't recruit)
+    if (user?.role === 'player' && player?.player_type === 'college') {
+      router.replace('/baseball/dashboard/team');
+      return;
+    }
+
     if (user?.role === 'coach' && coach) {
       switch (coach.coach_type) {
         case 'high_school':
@@ -166,11 +172,16 @@ export default function DashboardPage() {
           return;
       }
     }
-  }, [authLoading, user, coach, coachMode, router, pathname]);
+  }, [authLoading, user, coach, player, coachMode, router, pathname]);
 
   if (authLoading) return <PageLoading />;
 
   // Show loading while redirecting
+  // College players always redirect to team dashboard
+  if (user?.role === 'player' && player?.player_type === 'college') {
+    return <PageLoading />;
+  }
+
   if (user?.role === 'coach' && coach) {
     if (coach.coach_type === 'high_school' ||
         coach.coach_type === 'showcase' ||

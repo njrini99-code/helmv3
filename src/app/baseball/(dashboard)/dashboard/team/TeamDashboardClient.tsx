@@ -8,12 +8,32 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { PageLoading } from '@/components/ui/loading';
-import { IconUsers, IconVideo, IconCalendar, IconNote, IconChevronRight, IconBuilding } from '@/components/icons';
+import { Skeleton } from '@/components/ui/skeleton-loader';
+import {
+  IconUsers,
+  IconVideo,
+  IconCalendar,
+  IconNote,
+  IconChevronRight,
+  IconBuilding,
+  IconMessage,
+  IconUser,
+  IconBell,
+  IconChart,
+  IconTrendingUp,
+  IconCheck,
+  IconClock,
+  IconClipboardList,
+  IconTarget,
+} from '@/components/icons';
 import { useAuth } from '@/hooks/use-auth';
 import { useTeamStore } from '@/stores/team-store';
 import { createClient } from '@/lib/supabase/client';
 import { getFullName, formatRelativeTime } from '@/lib/utils';
+
+// ============================================================================
+// TYPES
+// ============================================================================
 
 interface TeamMember {
   id: string;
@@ -34,6 +54,138 @@ interface Event {
   start_time: string;
 }
 
+interface Announcement {
+  id: string;
+  title: string;
+  body: string;
+  urgency: string | null;
+  requires_acknowledgement: boolean | null;
+  published_at: string | null;
+}
+
+interface PlayerTask {
+  id: string;
+  title: string;
+  description: string | null;
+  due_date: string | null;
+  priority: string | null;
+  category: string | null;
+  assignment_status: string;
+}
+
+interface DevPlan {
+  id: string;
+  title: string;
+  status: string;
+  goals: DevPlanGoal[] | null;
+}
+
+interface DevPlanGoal {
+  id: string;
+  title: string;
+  status: string;
+  target_date?: string;
+}
+
+interface PlayerStats {
+  batting_avg: number | null;
+  sessions_count: number;
+  recent_trend: 'up' | 'down' | 'stable';
+}
+
+// ============================================================================
+// SKELETON COMPONENTS
+// ============================================================================
+
+function StatCardSkeleton() {
+  return (
+    <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/20 p-6 animate-pulse">
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <Skeleton variant="text" width="50%" height={12} className="mb-3" />
+          <Skeleton variant="text" width="40%" height={32} className="mb-2" />
+          <div className="flex items-center gap-2 mt-3">
+            <Skeleton variant="rectangular" width={16} height={16} className="rounded" />
+            <Skeleton variant="text" width="60%" height={10} />
+          </div>
+        </div>
+        <Skeleton variant="rectangular" width={40} height={40} className="rounded-xl" />
+      </div>
+    </div>
+  );
+}
+
+function AnnouncementSkeleton() {
+  return (
+    <div className="p-4 border border-slate-200 rounded-lg animate-pulse">
+      <div className="flex items-start gap-3">
+        <Skeleton variant="rectangular" width={4} height={40} className="rounded-full" />
+        <div className="flex-1">
+          <Skeleton variant="text" width="70%" height={16} className="mb-2" />
+          <Skeleton variant="text" width="90%" height={12} className="mb-1" />
+          <Skeleton variant="text" width="40%" height={10} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EventSkeleton() {
+  return (
+    <div className="flex items-start gap-3 p-3 border border-slate-200 rounded-lg animate-pulse">
+      <Skeleton variant="circular" width={12} height={12} />
+      <div className="flex-1">
+        <Skeleton variant="text" width="70%" height={14} className="mb-2" />
+        <Skeleton variant="text" width="50%" height={12} />
+      </div>
+    </div>
+  );
+}
+
+function TaskSkeleton() {
+  return (
+    <div className="flex items-center gap-3 p-3 border border-slate-200 rounded-lg animate-pulse">
+      <Skeleton variant="circular" width={20} height={20} />
+      <div className="flex-1">
+        <Skeleton variant="text" width="60%" height={14} className="mb-1" />
+        <Skeleton variant="text" width="40%" height={10} />
+      </div>
+      <Skeleton variant="rectangular" width={60} height={20} className="rounded-full" />
+    </div>
+  );
+}
+
+function QuickActionSkeleton() {
+  return (
+    <Skeleton variant="rectangular" className="w-full h-10 rounded-lg" />
+  );
+}
+
+function PlayerHeaderSkeleton() {
+  return (
+    <Card variant="glass" className="mb-6">
+      <CardContent className="p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 animate-pulse">
+          <Skeleton variant="circular" width={80} height={80} className="shrink-0" />
+          <div className="flex-1 w-full">
+            <Skeleton variant="text" width="50%" height={28} className="mb-2" />
+            <Skeleton variant="text" width="40%" height={16} className="mb-1" />
+            <Skeleton variant="text" width="30%" height={14} className="mb-3" />
+            <div className="flex gap-2">
+              <Skeleton variant="rectangular" width={70} height={22} className="rounded-full" />
+              <Skeleton variant="rectangular" width={100} height={22} className="rounded-full" />
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
+
 export default function TeamDashboardClient() {
   const { user, coach, player, loading: authLoading } = useAuth();
   const { selectedTeamId } = useTeamStore();
@@ -49,8 +201,11 @@ export default function TeamDashboardClient() {
 
   // Player stats
   const [playerVideoCount, setPlayerVideoCount] = useState(0);
-  const [playerDevPlanTasks, setPlayerDevPlanTasks] = useState(0);
+  const [playerDevPlan, setPlayerDevPlan] = useState<DevPlan | null>(null);
   const [playerTeamCount, setPlayerTeamCount] = useState(0);
+  const [playerTasks, setPlayerTasks] = useState<PlayerTask[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [playerStats, setPlayerStats] = useState<PlayerStats | null>(null);
 
   useEffect(() => {
     if (selectedTeamId && coach?.id && user?.role === 'coach') {
@@ -137,7 +292,7 @@ export default function TeamDashboardClient() {
     setVideoCount(videoResult.count || 0);
     setDevPlanCount(devPlanResult.count || 0);
     setUpcomingEventsCount(eventsResult.data?.length || 0);
-    setRecentMembers(recentMembersResult.data || []);
+    setRecentMembers(recentMembersResult.data as TeamMember[] || []);
     setUpcomingEvents(eventsResult.data || []);
     setLoading(false);
   }
@@ -148,12 +303,15 @@ export default function TeamDashboardClient() {
     const supabase = createClient();
     setLoading(true);
 
-    // Fetch player stats in parallel
+    // Fetch player data in parallel
     const [
       videoResult,
       devPlanResult,
       teamCountResult,
       eventsResult,
+      tasksResult,
+      announcementsResult,
+      statsResult,
     ] = await Promise.all([
       // Player video count
       supabase
@@ -161,13 +319,15 @@ export default function TeamDashboardClient() {
         .select('*', { count: 'exact', head: true })
         .eq('player_id', player.id),
 
-      // Player dev plan tasks
+      // Player dev plan with goals
       supabase
         .from('baseball_developmental_plans')
-        .select('goals')
+        .select('id, title, status, goals')
         .eq('player_id', player.id)
         .in('status', ['sent', 'in_progress'])
-        .single(),
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
 
       // Team member count
       supabase
@@ -175,28 +335,119 @@ export default function TeamDashboardClient() {
         .select('*', { count: 'exact', head: true })
         .eq('team_id', selectedTeamId),
 
-      // Upcoming events
+      // Upcoming events (next 5)
       supabase
         .from('baseball_events')
         .select('id, title, event_type, start_time')
         .eq('team_id', selectedTeamId)
         .gte('start_time', new Date().toISOString())
         .order('start_time', { ascending: true })
+        .limit(5),
+
+      // Player tasks (pending ones, limit 5)
+      supabase
+        .from('baseball_task_assignments')
+        .select(`
+          id,
+          status,
+          task:baseball_tasks (
+            id,
+            title,
+            description,
+            due_date,
+            priority,
+            category
+          )
+        `)
+        .eq('player_id', player.id)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(5),
+
+      // Team announcements (last 3)
+      supabase
+        .from('baseball_announcements')
+        .select('id, title, body, urgency, requires_acknowledgement, published_at')
+        .eq('team_id', selectedTeamId)
+        .order('published_at', { ascending: false })
         .limit(3),
+
+      // Player stats summary (recent sessions)
+      supabase
+        .from('baseball_player_stats')
+        .select('batting_avg, session_date')
+        .eq('player_id', player.id)
+        .order('session_date', { ascending: false })
+        .limit(10),
     ]);
 
     setPlayerVideoCount(videoResult.count || 0);
-    setPlayerDevPlanTasks(
-      devPlanResult.data?.goals && Array.isArray(devPlanResult.data.goals)
-        ? devPlanResult.data.goals.length
-        : 0
-    );
+    
+    // Process dev plan
+    if (devPlanResult.data) {
+      const plan = devPlanResult.data;
+      const goals = Array.isArray(plan.goals) ? plan.goals as DevPlanGoal[] : [];
+      setPlayerDevPlan({
+        id: plan.id,
+        title: plan.title,
+        status: plan.status,
+        goals,
+      });
+    } else {
+      setPlayerDevPlan(null);
+    }
+
     setPlayerTeamCount(teamCountResult.count || 0);
     setUpcomingEvents(eventsResult.data || []);
+
+    // Process tasks
+    const processedTasks: PlayerTask[] = (tasksResult.data || [])
+      .filter((t: { task: unknown }) => t.task)
+      .map((t: { id: string; status: string | null; task: { id: string; title: string; description: string | null; due_date: string | null; priority: string | null; category: string | null } }) => ({
+        id: t.task.id,
+        title: t.task.title,
+        description: t.task.description,
+        due_date: t.task.due_date,
+        priority: t.task.priority,
+        category: t.task.category,
+        assignment_status: t.status || 'pending',
+      }));
+    setPlayerTasks(processedTasks);
+
+    // Set announcements
+    setAnnouncements(announcementsResult.data || []);
+
+    // Process player stats
+    const statsData = statsResult.data || [];
+    if (statsData.length > 0) {
+      const avgBatting = statsData.reduce((sum, s) => sum + (s.batting_avg || 0), 0) / statsData.length;
+      
+      // Determine trend (compare first half vs second half of sessions)
+      let trend: 'up' | 'down' | 'stable' = 'stable';
+      if (statsData.length >= 4) {
+        const recentHalf = statsData.slice(0, Math.floor(statsData.length / 2));
+        const olderHalf = statsData.slice(Math.floor(statsData.length / 2));
+        const recentAvg = recentHalf.reduce((sum, s) => sum + (s.batting_avg || 0), 0) / recentHalf.length;
+        const olderAvg = olderHalf.reduce((sum, s) => sum + (s.batting_avg || 0), 0) / olderHalf.length;
+        if (recentAvg > olderAvg + 0.01) trend = 'up';
+        else if (recentAvg < olderAvg - 0.01) trend = 'down';
+      }
+
+      setPlayerStats({
+        batting_avg: avgBatting,
+        sessions_count: statsData.length,
+        recent_trend: trend,
+      });
+    } else {
+      setPlayerStats(null);
+    }
+
     setLoading(false);
   }
 
-  if (authLoading || loading) return <PageLoading />;
+  // ============================================================================
+  // HELPER FUNCTIONS
+  // ============================================================================
 
   const getEventColor = (type: string) => {
     switch (type) {
@@ -218,151 +469,76 @@ export default function TeamDashboardClient() {
     });
   };
 
-  // Coach Team Dashboard
-  if (user?.role === 'coach') {
+  const getUrgencyColor = (urgency: string | null) => {
+    switch (urgency) {
+      case 'urgent': return 'bg-red-500';
+      case 'high': return 'bg-orange-500';
+      case 'normal': return 'bg-blue-500';
+      case 'low': return 'bg-slate-400';
+      default: return 'bg-blue-500';
+    }
+  };
+
+  const getPriorityBadge = (priority: string | null) => {
+    switch (priority) {
+      case 'high': return <Badge variant="destructive">High</Badge>;
+      case 'normal': return <Badge variant="default">Normal</Badge>;
+      case 'low': return <Badge variant="secondary">Low</Badge>;
+      default: return <Badge variant="secondary">Normal</Badge>;
+    }
+  };
+
+  const formatDueDate = (date: string | null) => {
+    if (!date) return null;
+    const due = new Date(date);
+    const now = new Date();
+    const diffDays = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 0) return 'Overdue';
+    if (diffDays === 0) return 'Due today';
+    if (diffDays === 1) return 'Due tomorrow';
+    if (diffDays <= 7) return `Due in ${diffDays} days`;
+    return due.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  // Calculate dev plan progress
+  const devPlanProgress = playerDevPlan?.goals?.length
+    ? Math.round(
+        (playerDevPlan.goals.filter(g => g.status === 'completed').length /
+          playerDevPlan.goals.length) *
+          100
+      )
+    : 0;
+
+  const nextGoal = playerDevPlan?.goals?.find(g => g.status !== 'completed');
+
+  // ============================================================================
+  // LOADING STATE
+  // ============================================================================
+
+  if (authLoading) {
     return (
       <>
-        <Header
-          title="Team Dashboard"
-          subtitle={`${(coach?.organization as { name?: string })?.name || 'Your Team'} - ${coach?.coach_type?.replace('_', ' ').toUpperCase()}`}
-        />
-        <div className="p-6 lg:p-8">
-          <div className="grid grid-cols-4 gap-4 mb-8">
-            <StatCard
-              label="Roster Size"
-              value={rosterCount}
-              change="Active players"
-              icon={IconUsers}
-            />
-            <StatCard
-              label="Videos"
-              value={videoCount}
-              change="Total uploads"
-              icon={IconVideo}
-            />
-            <StatCard
-              label="Dev Plans"
-              value={devPlanCount}
-              change="Active plans"
-              icon={IconNote}
-            />
-            <StatCard
-              label="Upcoming"
-              value={upcomingEventsCount}
-              change="Events this week"
-              icon={IconCalendar}
-            />
+        <Header title="Team Dashboard" subtitle="Loading..." />
+        <div className="p-4 sm:p-6 lg:p-8">
+          <PlayerHeaderSkeleton />
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
+            {[1, 2, 3, 4].map(i => <StatCardSkeleton key={i} />)}
           </div>
-
-          <div className="grid grid-cols-3 gap-6">
-            <div className="col-span-2">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
               <Card variant="glass">
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <h2 className="font-semibold text-slate-900">Recent Roster Activity</h2>
-                  <Link href="/baseball/dashboard/roster" className="text-sm leading-relaxed text-primary-600 hover:underline flex items-center gap-1">
-                    View roster <IconChevronRight size={14} />
-                  </Link>
-                </CardHeader>
-                <CardContent>
-                  {recentMembers.length === 0 ? (
-                    <div className="text-center py-12">
-                      <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                        <IconUsers size={24} className="text-slate-400" />
-                      </div>
-                      <h3 className="text-lg font-medium text-slate-900 mb-2">No players yet</h3>
-                      <p className="text-sm leading-relaxed text-slate-500 mb-4 max-w-sm mx-auto">
-                        Start building your roster by inviting players to join your team.
-                      </p>
-                      <Link href="/baseball/dashboard/roster">
-                        <Button>Manage Roster</Button>
-                      </Link>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {recentMembers.map((member) => (
-                        <div
-                          key={member.id}
-                          className="flex items-center gap-3 p-3 border border-slate-200 rounded-lg hover:border-slate-300 transition-colors"
-                        >
-                          <Avatar
-                            name={getFullName(member.player?.first_name, member.player?.last_name)}
-                            src={member.player?.avatar_url || undefined}
-                            size="sm"
-                          />
-                          <div className="flex-1">
-                            <p className="font-medium text-slate-900">
-                              {getFullName(member.player?.first_name, member.player?.last_name)}
-                            </p>
-                            <p className="text-sm leading-relaxed text-slate-500">
-                              {member.player?.primary_position} • Joined {member.joined_at ? formatRelativeTime(member.joined_at) : 'recently'}
-                            </p>
-                          </div>
-                          <Badge variant="success">Active</Badge>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                <CardHeader><Skeleton variant="text" width={150} height={20} /></CardHeader>
+                <CardContent className="space-y-3">
+                  {[1, 2, 3].map(i => <AnnouncementSkeleton key={i} />)}
                 </CardContent>
               </Card>
             </div>
-
             <div className="space-y-6">
               <Card variant="glass">
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <h2 className="font-semibold text-slate-900">Quick Actions</h2>
-                </CardHeader>
+                <CardHeader><Skeleton variant="text" width={120} height={18} /></CardHeader>
                 <CardContent className="space-y-3">
-                  <Link href="/baseball/dashboard/roster" className="block">
-                    <Button variant="secondary" className="w-full justify-start">
-                      <IconUsers size={16} className="mr-2" /> Manage Roster
-                    </Button>
-                  </Link>
-                  <Link href="/baseball/dashboard/videos" className="block">
-                    <Button variant="secondary" className="w-full justify-start">
-                      <IconVideo size={16} className="mr-2" /> Video Library
-                    </Button>
-                  </Link>
-                  <Link href="/baseball/dashboard/dev-plans" className="block">
-                    <Button variant="secondary" className="w-full justify-start">
-                      <IconNote size={16} className="mr-2" /> Dev Plans
-                    </Button>
-                  </Link>
-                  <Link href="/baseball/dashboard/calendar" className="block">
-                    <Button variant="secondary" className="w-full justify-start">
-                      <IconCalendar size={16} className="mr-2" /> Calendar
-                    </Button>
-                  </Link>
-                  <Link href="/baseball/dashboard/program" className="block">
-                    <Button variant="secondary" className="w-full justify-start">
-                      <IconBuilding size={16} className="mr-2" /> Edit Program Profile
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-
-              <Card variant="glass">
-                <CardHeader>
-                  <h2 className="font-semibold text-slate-900">Upcoming Events</h2>
-                </CardHeader>
-                <CardContent>
-                  {upcomingEvents.length === 0 ? (
-                    <div className="text-center py-8">
-                      <IconCalendar size={32} className="text-slate-300 mx-auto mb-2" />
-                      <p className="text-sm leading-relaxed text-slate-500">No upcoming events</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {upcomingEvents.map((event) => (
-                        <div key={event.id} className="flex items-start gap-2">
-                          <div className={`w-2 h-2 rounded-full mt-1.5 ${getEventColor(event.event_type)}`}></div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-slate-900 truncate">{event.title}</p>
-                            <p className="text-xs text-slate-500">{formatEventDate(event.start_time)}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  {[1, 2, 3, 4].map(i => <QuickActionSkeleton key={i} />)}
                 </CardContent>
               </Card>
             </div>
@@ -372,134 +548,640 @@ export default function TeamDashboardClient() {
     );
   }
 
-  // Player Team Dashboard
+  // ============================================================================
+  // COACH DASHBOARD
+  // ============================================================================
+
+  if (user?.role === 'coach') {
+    return (
+      <>
+        <Header
+          title="Team Dashboard"
+          subtitle={`${(coach?.organization as { name?: string })?.name || 'Your Team'} - ${coach?.coach_type?.replace('_', ' ').toUpperCase()}`}
+        />
+        <div className="p-4 sm:p-6 lg:p-8">
+          {loading ? (
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+                {[1, 2, 3, 4].map(i => <StatCardSkeleton key={i} />)}
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2">
+                  <Card variant="glass">
+                    <CardHeader><Skeleton variant="text" width={180} height={20} /></CardHeader>
+                    <CardContent className="space-y-3">
+                      {[1, 2, 3, 4, 5].map(i => (
+                        <div key={i} className="flex items-center gap-3 p-3 border border-slate-200 rounded-lg animate-pulse">
+                          <Skeleton variant="circular" width={40} height={40} />
+                          <div className="flex-1">
+                            <Skeleton variant="text" width="60%" className="mb-2" />
+                            <Skeleton variant="text" width="40%" height={12} />
+                          </div>
+                          <Skeleton variant="rectangular" width={60} height={22} className="rounded-full" />
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                </div>
+                <div className="space-y-6">
+                  <Card variant="glass">
+                    <CardHeader><Skeleton variant="text" width={100} height={18} /></CardHeader>
+                    <CardContent className="space-y-3">
+                      {[1, 2, 3, 4, 5].map(i => <QuickActionSkeleton key={i} />)}
+                    </CardContent>
+                  </Card>
+                  <Card variant="glass">
+                    <CardHeader><Skeleton variant="text" width={130} height={18} /></CardHeader>
+                    <CardContent className="space-y-3">
+                      {[1, 2, 3].map(i => <EventSkeleton key={i} />)}
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+                <StatCard
+                  label="Roster Size"
+                  value={rosterCount}
+                  change="Active players"
+                  icon={IconUsers}
+                />
+                <StatCard
+                  label="Videos"
+                  value={videoCount}
+                  change="Total uploads"
+                  icon={IconVideo}
+                />
+                <StatCard
+                  label="Dev Plans"
+                  value={devPlanCount}
+                  change="Active plans"
+                  icon={IconNote}
+                />
+                <StatCard
+                  label="Upcoming"
+                  value={upcomingEventsCount}
+                  change="Events this week"
+                  icon={IconCalendar}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2">
+                  <Card variant="glass">
+                    <CardHeader className="flex flex-row items-center justify-between">
+                      <h2 className="font-semibold text-slate-900">Recent Roster Activity</h2>
+                      <Link href="/baseball/dashboard/roster" className="text-sm leading-relaxed text-primary-600 hover:underline flex items-center gap-1">
+                        View roster <IconChevronRight size={14} />
+                      </Link>
+                    </CardHeader>
+                    <CardContent>
+                      {recentMembers.length === 0 ? (
+                        <div className="text-center py-12">
+                          <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                            <IconUsers size={24} className="text-slate-400" />
+                          </div>
+                          <h3 className="text-lg font-medium text-slate-900 mb-2">No players yet</h3>
+                          <p className="text-sm leading-relaxed text-slate-500 mb-4 max-w-sm mx-auto">
+                            Start building your roster by inviting players to join your team.
+                          </p>
+                          <Link href="/baseball/dashboard/roster">
+                            <Button>Manage Roster</Button>
+                          </Link>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {recentMembers.map((member) => (
+                            <div
+                              key={member.id}
+                              className="flex items-center gap-3 p-3 border border-slate-200 rounded-lg hover:border-slate-300 transition-colors"
+                            >
+                              <Avatar
+                                name={getFullName(member.player?.first_name, member.player?.last_name)}
+                                src={member.player?.avatar_url || undefined}
+                                size="sm"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-slate-900 truncate">
+                                  {getFullName(member.player?.first_name, member.player?.last_name)}
+                                </p>
+                                <p className="text-sm leading-relaxed text-slate-500 truncate">
+                                  {member.player?.primary_position} • Joined {member.joined_at ? formatRelativeTime(member.joined_at) : 'recently'}
+                                </p>
+                              </div>
+                              <Badge variant="success" className="shrink-0">Active</Badge>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div className="space-y-6">
+                  <Card variant="glass">
+                    <CardHeader className="flex flex-row items-center justify-between">
+                      <h2 className="font-semibold text-slate-900">Quick Actions</h2>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <Link href="/baseball/dashboard/roster" className="block">
+                        <Button variant="secondary" className="w-full justify-start">
+                          <IconUsers size={16} className="mr-2" /> Manage Roster
+                        </Button>
+                      </Link>
+                      <Link href="/baseball/dashboard/videos" className="block">
+                        <Button variant="secondary" className="w-full justify-start">
+                          <IconVideo size={16} className="mr-2" /> Video Library
+                        </Button>
+                      </Link>
+                      <Link href="/baseball/dashboard/dev-plans" className="block">
+                        <Button variant="secondary" className="w-full justify-start">
+                          <IconNote size={16} className="mr-2" /> Dev Plans
+                        </Button>
+                      </Link>
+                      <Link href="/baseball/dashboard/calendar" className="block">
+                        <Button variant="secondary" className="w-full justify-start">
+                          <IconCalendar size={16} className="mr-2" /> Calendar
+                        </Button>
+                      </Link>
+                      <Link href="/baseball/dashboard/program" className="block">
+                        <Button variant="secondary" className="w-full justify-start">
+                          <IconBuilding size={16} className="mr-2" /> Edit Program Profile
+                        </Button>
+                      </Link>
+                    </CardContent>
+                  </Card>
+
+                  <Card variant="glass">
+                    <CardHeader>
+                      <h2 className="font-semibold text-slate-900">Upcoming Events</h2>
+                    </CardHeader>
+                    <CardContent>
+                      {upcomingEvents.length === 0 ? (
+                        <div className="text-center py-8">
+                          <IconCalendar size={32} className="text-slate-300 mx-auto mb-2" />
+                          <p className="text-sm leading-relaxed text-slate-500">No upcoming events</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {upcomingEvents.map((event) => (
+                            <div key={event.id} className="flex items-start gap-2">
+                              <div className={`w-2 h-2 rounded-full mt-1.5 ${getEventColor(event.event_type)}`}></div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-slate-900 truncate">{event.title}</p>
+                                <p className="text-xs text-slate-500">{formatEventDate(event.start_time)}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </>
+    );
+  }
+
+  // ============================================================================
+  // PLAYER DASHBOARD
+  // ============================================================================
+
   return (
     <>
       <Header
         title="Team Dashboard"
         subtitle={`${player?.high_school_name || 'Your Team'}`}
       />
-      <div className="p-8">
-        <Card variant="glass" className="mb-6">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-6">
-              <Avatar name={getFullName(player?.first_name, player?.last_name)} size="2xl" src={player?.avatar_url} />
-              <div className="flex-1">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h2 className="text-2xl font-semibold tracking-tight text-slate-900">{player?.first_name} {player?.last_name}</h2>
-                    <p className="text-slate-500">{player?.primary_position} • Class of {player?.grad_year}</p>
-                    <p className="text-sm leading-relaxed text-slate-400 mt-1">{player?.high_school_name}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 mt-4">
-                  <Badge variant="default">{player?.player_type?.replace('_', ' ').toUpperCase()}</Badge>
-                  {player?.recruiting_activated && (
-                    <Badge variant="success">Recruiting Active</Badge>
-                  )}
-                </div>
+      <div className="p-4 sm:p-6 lg:p-8">
+        {loading ? (
+          <>
+            <PlayerHeaderSkeleton />
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
+              {[1, 2, 3, 4].map(i => <StatCardSkeleton key={i} />)}
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 space-y-6">
+                <Card variant="glass">
+                  <CardHeader><Skeleton variant="text" width={180} height={20} /></CardHeader>
+                  <CardContent className="space-y-3">
+                    {[1, 2, 3].map(i => <AnnouncementSkeleton key={i} />)}
+                  </CardContent>
+                </Card>
+                <Card variant="glass">
+                  <CardHeader><Skeleton variant="text" width={150} height={20} /></CardHeader>
+                  <CardContent className="space-y-3">
+                    {[1, 2, 3, 4, 5].map(i => <EventSkeleton key={i} />)}
+                  </CardContent>
+                </Card>
+              </div>
+              <div className="space-y-6">
+                <Card variant="glass">
+                  <CardHeader><Skeleton variant="text" width={120} height={18} /></CardHeader>
+                  <CardContent className="space-y-3">
+                    {[1, 2, 3, 4].map(i => <TaskSkeleton key={i} />)}
+                  </CardContent>
+                </Card>
+                <Card variant="glass">
+                  <CardHeader><Skeleton variant="text" width={100} height={18} /></CardHeader>
+                  <CardContent className="space-y-3">
+                    {[1, 2, 3, 4, 5, 6].map(i => <QuickActionSkeleton key={i} />)}
+                  </CardContent>
+                </Card>
               </div>
             </div>
-          </CardContent>
-        </Card>
-
-        <div className="grid grid-cols-4 gap-4 mb-8">
-          <StatCard
-            label="Videos"
-            value={playerVideoCount}
-            change="Uploaded"
-            icon={IconVideo}
-          />
-          <StatCard
-            label="Dev Plan"
-            value={playerDevPlanTasks}
-            change="Tasks remaining"
-            icon={IconNote}
-          />
-          <StatCard
-            label="Practice"
-            value={upcomingEvents.filter(e => e.event_type === 'practice').length}
-            change="This week"
-            icon={IconCalendar}
-          />
-          <StatCard
-            label="Team"
-            value={playerTeamCount}
-            change="Members"
-            icon={IconUsers}
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-6">
-          <Card variant="glass">
-            <CardHeader>
-              <h2 className="font-semibold text-slate-900">My Development Plan</h2>
-            </CardHeader>
-            <CardContent>
-              {playerDevPlanTasks === 0 ? (
-                <div className="text-center py-12">
-                  <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                    <IconNote size={24} className="text-slate-400" />
-                  </div>
-                  <h3 className="text-lg font-medium text-slate-900 mb-2">No active plan</h3>
-                  <p className="text-sm leading-relaxed text-slate-500 mb-4 max-w-sm mx-auto">
-                    Your coach will create a personalized development plan for you.
-                  </p>
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <div className="w-12 h-12 rounded-full bg-primary-50 flex items-center justify-center mx-auto mb-4">
-                    <IconNote size={24} className="text-primary-600" />
-                  </div>
-                  <h3 className="text-lg font-medium text-slate-900 mb-2">Active Plan</h3>
-                  <p className="text-sm leading-relaxed text-slate-500 mb-4 max-w-sm mx-auto">
-                    You have {playerDevPlanTasks} {playerDevPlanTasks === 1 ? 'goal' : 'goals'} to work on.
-                  </p>
-                  <Link href="/baseball/dashboard/dev-plan">
-                    <Button>View Plan</Button>
-                  </Link>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card variant="glass">
-            <CardHeader>
-              <h2 className="font-semibold text-slate-900">Team Schedule</h2>
-            </CardHeader>
-            <CardContent>
-              {upcomingEvents.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                    <IconCalendar size={24} className="text-slate-400" />
-                  </div>
-                  <h3 className="text-lg font-medium text-slate-900 mb-2">No upcoming events</h3>
-                  <p className="text-sm leading-relaxed text-slate-500 mb-4 max-w-sm mx-auto">
-                    Team practices and games will appear here.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {upcomingEvents.map((event) => (
-                    <div
-                      key={event.id}
-                      className="flex items-start gap-3 p-3 border border-slate-200 rounded-lg"
-                    >
-                      <div className={`w-3 h-3 rounded-full mt-1 ${getEventColor(event.event_type)}`}></div>
-                      <div className="flex-1">
-                        <p className="font-medium text-slate-900">{event.title}</p>
-                        <p className="text-sm leading-relaxed text-slate-500">{formatEventDate(event.start_time)}</p>
+          </>
+        ) : (
+          <>
+            {/* Player Header Card */}
+            <Card variant="glass" className="mb-6">
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
+                  <Avatar 
+                    name={getFullName(player?.first_name, player?.last_name)} 
+                    size="2xl" 
+                    src={player?.avatar_url} 
+                    className="shrink-0"
+                  />
+                  <div className="flex-1 w-full">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                      <div>
+                        <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-900">
+                          {player?.first_name} {player?.last_name}
+                        </h2>
+                        <p className="text-slate-500">
+                          {player?.primary_position} • Class of {player?.grad_year}
+                        </p>
+                        <p className="text-sm leading-relaxed text-slate-400 mt-1">
+                          {player?.high_school_name}
+                        </p>
                       </div>
                     </div>
-                  ))}
-                  <Link href="/baseball/dashboard/calendar">
-                    <Button variant="secondary" className="w-full">View Full Schedule</Button>
-                  </Link>
+                    <div className="flex flex-wrap items-center gap-2 mt-3 sm:mt-4">
+                      <Badge variant="default">
+                        {player?.player_type?.replace('_', ' ').toUpperCase()}
+                      </Badge>
+                      {player?.recruiting_activated && (
+                        <Badge variant="success">Recruiting Active</Badge>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+              </CardContent>
+            </Card>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
+              {/* My AVG Stat */}
+              <StatCard
+                label="My AVG"
+                value={playerStats?.batting_avg 
+                  ? `.${Math.round(playerStats.batting_avg * 1000).toString().padStart(3, '0')}`
+                  : '---'}
+                change={playerStats?.recent_trend === 'up' ? 'Trending up' : 
+                        playerStats?.recent_trend === 'down' ? 'Needs work' : 
+                        'No trend data'}
+                icon={IconChart}
+              />
+              
+              {/* My Sessions */}
+              <StatCard
+                label="Sessions"
+                value={playerStats?.sessions_count || 0}
+                change="Total recorded"
+                icon={IconTrendingUp}
+              />
+
+              {/* Dev Plan Progress */}
+              <StatCard
+                label="Dev Plan"
+                value={playerDevPlan ? `${devPlanProgress}%` : '---'}
+                change={nextGoal?.title || 'No active plan'}
+                icon={IconTarget}
+              />
+
+              {/* Team Size */}
+              <StatCard
+                label="Team"
+                value={playerTeamCount}
+                change="Members"
+                icon={IconUsers}
+              />
+            </div>
+
+            {/* Main Content Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Left Column - Main Content */}
+              <div className="lg:col-span-2 space-y-6">
+                {/* Recent Announcements */}
+                <Card variant="glass">
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <h2 className="font-semibold text-slate-900">Team Announcements</h2>
+                    <Link href="/baseball/dashboard/announcements" className="text-sm leading-relaxed text-primary-600 hover:underline flex items-center gap-1">
+                      View all <IconChevronRight size={14} />
+                    </Link>
+                  </CardHeader>
+                  <CardContent>
+                    {announcements.length === 0 ? (
+                      <div className="text-center py-8">
+                        <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                          <IconBell size={24} className="text-slate-400" />
+                        </div>
+                        <h3 className="text-lg font-medium text-slate-900 mb-2">No announcements</h3>
+                        <p className="text-sm leading-relaxed text-slate-500 max-w-sm mx-auto">
+                          Team announcements from your coach will appear here.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {announcements.map((announcement) => (
+                          <Link
+                            key={announcement.id}
+                            href={`/baseball/dashboard/announcements`}
+                            className="block p-3 sm:p-4 border border-slate-200 rounded-lg hover:border-slate-300 hover:bg-slate-50/50 transition-colors"
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className={`w-1 h-full min-h-[40px] rounded-full ${getUrgencyColor(announcement.urgency)}`}></div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-2">
+                                  <p className="font-medium text-slate-900 truncate">{announcement.title}</p>
+                                  {announcement.requires_acknowledgement && (
+                                    <Badge variant="warning" className="shrink-0 text-xs">Action Required</Badge>
+                                  )}
+                                </div>
+                                <p className="text-sm text-slate-600 line-clamp-2 mt-1">
+                                  {announcement.body}
+                                </p>
+                                <p className="text-xs text-slate-400 mt-2">
+                                  {announcement.published_at ? formatRelativeTime(announcement.published_at) : ''}
+                                </p>
+                              </div>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Upcoming Events */}
+                <Card variant="glass">
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <h2 className="font-semibold text-slate-900">Upcoming Events</h2>
+                    <Link href="/baseball/dashboard/calendar" className="text-sm leading-relaxed text-primary-600 hover:underline flex items-center gap-1">
+                      Full calendar <IconChevronRight size={14} />
+                    </Link>
+                  </CardHeader>
+                  <CardContent>
+                    {upcomingEvents.length === 0 ? (
+                      <div className="text-center py-8">
+                        <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                          <IconCalendar size={24} className="text-slate-400" />
+                        </div>
+                        <h3 className="text-lg font-medium text-slate-900 mb-2">No upcoming events</h3>
+                        <p className="text-sm leading-relaxed text-slate-500 max-w-sm mx-auto">
+                          Team practices and games will appear here.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {upcomingEvents.map((event) => (
+                          <div
+                            key={event.id}
+                            className="flex items-start gap-3 p-3 border border-slate-200 rounded-lg"
+                          >
+                            <div className={`w-3 h-3 rounded-full mt-1 shrink-0 ${getEventColor(event.event_type)}`}></div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-slate-900 truncate">{event.title}</p>
+                              <p className="text-sm leading-relaxed text-slate-500">{formatEventDate(event.start_time)}</p>
+                            </div>
+                            <Badge variant="secondary" className="shrink-0 text-xs capitalize">
+                              {event.event_type}
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Dev Plan Progress (Mobile: shows here, Desktop: in sidebar) */}
+                <Card variant="glass" className="lg:hidden">
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <h2 className="font-semibold text-slate-900">My Development Plan</h2>
+                    <Link href="/baseball/dashboard/dev-plan" className="text-sm leading-relaxed text-primary-600 hover:underline flex items-center gap-1">
+                      View plan <IconChevronRight size={14} />
+                    </Link>
+                  </CardHeader>
+                  <CardContent>
+                    {!playerDevPlan ? (
+                      <div className="text-center py-8">
+                        <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                          <IconNote size={24} className="text-slate-400" />
+                        </div>
+                        <h3 className="text-lg font-medium text-slate-900 mb-2">No active plan</h3>
+                        <p className="text-sm leading-relaxed text-slate-500 max-w-sm mx-auto">
+                          Your coach will create a personalized development plan for you.
+                        </p>
+                      </div>
+                    ) : (
+                      <div>
+                        {/* Progress Bar */}
+                        <div className="mb-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-slate-700">Progress</span>
+                            <span className="text-sm font-semibold text-primary-600">{devPlanProgress}%</span>
+                          </div>
+                          <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-primary-500 rounded-full transition-all duration-500"
+                              style={{ width: `${devPlanProgress}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Next Goal */}
+                        {nextGoal && (
+                          <div className="p-3 bg-primary-50 rounded-lg border border-primary-100">
+                            <p className="text-xs font-medium text-primary-600 uppercase tracking-wide mb-1">Next Goal</p>
+                            <p className="font-medium text-slate-900">{nextGoal.title}</p>
+                            {nextGoal.target_date && (
+                              <p className="text-xs text-slate-500 mt-1">
+                                Target: {new Date(nextGoal.target_date).toLocaleDateString()}
+                              </p>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Goal Stats */}
+                        <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-200">
+                          <div className="flex items-center gap-2 text-sm text-slate-600">
+                            <IconCheck size={16} className="text-primary-600" />
+                            <span>{playerDevPlan.goals?.filter(g => g.status === 'completed').length || 0} completed</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-slate-600">
+                            <IconClock size={16} className="text-amber-600" />
+                            <span>{playerDevPlan.goals?.filter(g => g.status !== 'completed').length || 0} remaining</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Right Column - Sidebar */}
+              <div className="space-y-6">
+                {/* My Tasks Due */}
+                <Card variant="glass">
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <h2 className="font-semibold text-slate-900">My Tasks</h2>
+                    <Link href="/baseball/dashboard/tasks" className="text-sm leading-relaxed text-primary-600 hover:underline flex items-center gap-1">
+                      All tasks <IconChevronRight size={14} />
+                    </Link>
+                  </CardHeader>
+                  <CardContent>
+                    {playerTasks.length === 0 ? (
+                      <div className="text-center py-6">
+                        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
+                          <IconClipboardList size={20} className="text-slate-400" />
+                        </div>
+                        <p className="text-sm text-slate-500">No pending tasks</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {playerTasks.map((task) => (
+                          <Link
+                            key={task.id}
+                            href="/baseball/dashboard/tasks"
+                            className="flex items-center gap-3 p-2.5 border border-slate-200 rounded-lg hover:border-slate-300 hover:bg-slate-50/50 transition-colors"
+                          >
+                            <div className="w-5 h-5 rounded-full border-2 border-slate-300 shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-slate-900 truncate">{task.title}</p>
+                              {task.due_date && (
+                                <p className={`text-xs ${
+                                  formatDueDate(task.due_date) === 'Overdue' 
+                                    ? 'text-red-500' 
+                                    : formatDueDate(task.due_date) === 'Due today'
+                                    ? 'text-amber-600'
+                                    : 'text-slate-400'
+                                }`}>
+                                  {formatDueDate(task.due_date)}
+                                </p>
+                              )}
+                            </div>
+                            {getPriorityBadge(task.priority)}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Dev Plan Progress (Desktop only) */}
+                <Card variant="glass" className="hidden lg:block">
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <h2 className="font-semibold text-slate-900">Dev Plan</h2>
+                    <Link href="/baseball/dashboard/dev-plan" className="text-sm leading-relaxed text-primary-600 hover:underline flex items-center gap-1">
+                      View <IconChevronRight size={14} />
+                    </Link>
+                  </CardHeader>
+                  <CardContent>
+                    {!playerDevPlan ? (
+                      <div className="text-center py-6">
+                        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
+                          <IconNote size={20} className="text-slate-400" />
+                        </div>
+                        <p className="text-sm text-slate-500">No active plan</p>
+                      </div>
+                    ) : (
+                      <div>
+                        {/* Progress Bar */}
+                        <div className="mb-3">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-xs font-medium text-slate-600">Progress</span>
+                            <span className="text-xs font-semibold text-primary-600">{devPlanProgress}%</span>
+                          </div>
+                          <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-primary-500 rounded-full transition-all duration-500"
+                              style={{ width: `${devPlanProgress}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Next Goal */}
+                        {nextGoal && (
+                          <div className="p-2.5 bg-primary-50 rounded-lg border border-primary-100">
+                            <p className="text-xs font-medium text-primary-600 uppercase tracking-wide mb-0.5">Next</p>
+                            <p className="text-sm font-medium text-slate-900 truncate">{nextGoal.title}</p>
+                          </div>
+                        )}
+
+                        {/* Goal Stats */}
+                        <div className="flex items-center gap-4 mt-3 text-xs text-slate-600">
+                          <span className="flex items-center gap-1">
+                            <IconCheck size={12} className="text-primary-600" />
+                            {playerDevPlan.goals?.filter(g => g.status === 'completed').length || 0} done
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <IconClock size={12} className="text-amber-600" />
+                            {playerDevPlan.goals?.filter(g => g.status !== 'completed').length || 0} left
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Quick Actions */}
+                <Card variant="glass">
+                  <CardHeader>
+                    <h2 className="font-semibold text-slate-900">Quick Actions</h2>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <Link href="/baseball/dashboard/videos" className="block">
+                      <Button variant="secondary" className="w-full justify-start">
+                        <IconVideo size={16} className="mr-2" /> My Videos
+                      </Button>
+                    </Link>
+                    <Link href="/baseball/dashboard/messages" className="block">
+                      <Button variant="secondary" className="w-full justify-start">
+                        <IconMessage size={16} className="mr-2" /> Messages
+                      </Button>
+                    </Link>
+                    <Link href="/baseball/dashboard/dev-plan" className="block">
+                      <Button variant="secondary" className="w-full justify-start">
+                        <IconNote size={16} className="mr-2" /> Development Plan
+                      </Button>
+                    </Link>
+                    <Link href="/baseball/dashboard/profile" className="block">
+                      <Button variant="secondary" className="w-full justify-start">
+                        <IconUser size={16} className="mr-2" /> My Profile
+                      </Button>
+                    </Link>
+                    <Link href="/baseball/dashboard/calendar" className="block">
+                      <Button variant="secondary" className="w-full justify-start">
+                        <IconCalendar size={16} className="mr-2" /> Calendar
+                      </Button>
+                    </Link>
+                    <Link href="/baseball/dashboard/documents" className="block">
+                      <Button variant="secondary" className="w-full justify-start">
+                        <IconNote size={16} className="mr-2" /> Documents
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </>
   );

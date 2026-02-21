@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { JoinTeamClient } from './join-team-client';
+import Link from 'next/link';
+import { IconX, IconWarning, IconArrowRight } from '@/components/icons';
 
 export const metadata = {
   title: 'Join Team | Helm Baseball',
@@ -33,7 +35,8 @@ export default async function JoinTeamPage({ params }: PageProps) {
     redirect('/baseball/signup');
   }
 
-  // Find team by invite code (baseball uses team_invitations table)
+  // Find team by invite code - try both methods
+  // 1. First check baseball_team_invitations table
   type InvitationWithTeam = {
     id: string;
     team_id: string;
@@ -76,59 +79,135 @@ export default async function JoinTeamPage({ params }: PageProps) {
     .eq('code', code)
     .single() as { data: InvitationWithTeam | null };
 
-  if (!invitation || !invitation.baseball_teams) {
+  // 2. If not found, check direct invite_code on baseball_teams
+  type TeamWithInviteCode = {
+    id: string;
+    name: string;
+    team_type: string;
+    organizations: {
+      name: string;
+      location_city: string | null;
+      location_state: string | null;
+      logo_url: string | null;
+    } | null;
+  };
+
+  let team: TeamWithInviteCode | null = null;
+  let isInvitationBased = false;
+  let isExpired = false;
+  let isInactive = false;
+
+  if (invitation?.baseball_teams) {
+    team = invitation.baseball_teams;
+    isInvitationBased = true;
+    isInactive = !invitation.is_active;
+    isExpired = invitation.expires_at ? new Date(invitation.expires_at) < new Date() : false;
+  } else {
+    // Try direct team invite code
+    const { data: directTeam } = await supabase
+      .from('baseball_teams')
+      .select(`
+        id,
+        name,
+        team_type,
+        organizations (
+          name,
+          location_city,
+          location_state,
+          logo_url
+        )
+      `)
+      .eq('invite_code' as 'id', code)
+      .single() as { data: TeamWithInviteCode | null };
+
+    team = directTeam;
+  }
+
+  // Check if player is already a member of this team
+  if (team) {
+    const { data: existingMembership } = await supabase
+      .from('baseball_team_members')
+      .select('id')
+      .eq('player_id', player.id)
+      .eq('team_id', team.id)
+      .single();
+
+    if (existingMembership) {
+      return (
+        <div className="min-h-screen bg-auth-baseball flex items-center justify-center p-4 sm:p-6">
+          <div className="max-w-md w-full bg-white/80 backdrop-blur-xl rounded-2xl border border-white/30 p-6 sm:p-8 text-center">
+            <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h1 className="text-xl font-semibold text-slate-900 mb-2">Already a Member</h1>
+            <p className="text-slate-600 mb-6">
+              You&apos;re already a member of <span className="font-medium">{team.name}</span>.
+            </p>
+            <Link
+              href="/baseball/dashboard/team"
+              className="inline-flex items-center gap-2 px-6 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 active:bg-primary-800 transition-colors"
+            >
+              Go to Team Dashboard
+              <IconArrowRight size={18} />
+            </Link>
+          </div>
+        </div>
+      );
+    }
+  }
+
+  // Invalid code - team not found
+  if (!team) {
     return (
-      <div className="min-h-screen bg-[#FAF6F1] flex items-center justify-center p-6">
-        <div className="max-w-md w-full bg-white rounded-2xl border border-slate-200 p-8 text-center">
+      <div className="min-h-screen bg-auth-baseball flex items-center justify-center p-4 sm:p-6">
+        <div className="max-w-md w-full bg-white/80 backdrop-blur-xl rounded-2xl border border-white/30 p-6 sm:p-8 text-center">
           <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <IconX size={32} className="text-red-600" />
           </div>
           <h1 className="text-xl font-semibold text-slate-900 mb-2">Invalid Invite Code</h1>
           <p className="text-slate-600 mb-6">
             This team invitation code is invalid or has expired.
           </p>
-          <a
+          <Link
             href="/baseball/dashboard"
-            className="inline-block px-6 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 active:bg-primary-800 transition-colors"
+            className="inline-flex items-center gap-2 px-6 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 active:bg-primary-800 transition-colors"
           >
             Go to Dashboard
-          </a>
+            <IconArrowRight size={18} />
+          </Link>
         </div>
       </div>
     );
   }
 
-  // Check if invitation is active and not expired
-  const isActive = invitation.is_active;
-  const isExpired = invitation.expires_at ? new Date(invitation.expires_at) < new Date() : false;
-
-  if (!isActive || isExpired) {
+  // Check if invitation is active and not expired (only for invitation-based joins)
+  if (isInvitationBased && (isInactive || isExpired)) {
     return (
-      <div className="min-h-screen bg-[#FAF6F1] flex items-center justify-center p-6">
-        <div className="max-w-md w-full bg-white rounded-2xl border border-slate-200 p-8 text-center">
+      <div className="min-h-screen bg-auth-baseball flex items-center justify-center p-4 sm:p-6">
+        <div className="max-w-md w-full bg-white/80 backdrop-blur-xl rounded-2xl border border-white/30 p-6 sm:p-8 text-center">
           <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
+            <IconWarning size={32} className="text-amber-600" />
           </div>
-          <h1 className="text-xl font-semibold text-slate-900 mb-2">Invitation {isExpired ? 'Expired' : 'Inactive'}</h1>
+          <h1 className="text-xl font-semibold text-slate-900 mb-2">
+            Invitation {isExpired ? 'Expired' : 'Inactive'}
+          </h1>
           <p className="text-slate-600 mb-6">
             This team invitation is no longer {isExpired ? 'valid' : 'active'}. Please contact your coach for a new invite link.
           </p>
-          <a
+          <Link
             href="/baseball/dashboard"
-            className="inline-block px-6 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 active:bg-primary-800 transition-colors"
+            className="inline-flex items-center gap-2 px-6 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 active:bg-primary-800 transition-colors"
           >
             Go to Dashboard
-          </a>
+            <IconArrowRight size={18} />
+          </Link>
         </div>
       </div>
     );
   }
 
-  const team = invitation.baseball_teams;
   const organization = team.organizations;
 
   return (

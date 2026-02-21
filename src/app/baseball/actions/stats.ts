@@ -473,6 +473,142 @@ export async function recalculateTeamAggregates(teamId: string): Promise<{ succe
 }
 
 // ============================================================================
+// PLAYER SELF-SERVICE QUERIES
+// ============================================================================
+
+interface PlayerAuthResult {
+  user: { id: string };
+  player: { id: string; first_name: string | null; last_name: string | null; avatar_url: string | null; primary_position: string | null; secondary_position: string | null; grad_year: number | null };
+  supabase: Awaited<ReturnType<typeof createClient>>;
+}
+
+/**
+ * SECURITY: Require authenticated player for player self-service operations
+ */
+async function requirePlayerAuth(): Promise<PlayerAuthResult | { error: string }> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'Not authenticated' };
+  }
+
+  const { data: player } = await supabase
+    .from('baseball_players')
+    .select('id, first_name, last_name, avatar_url, primary_position, secondary_position, grad_year')
+    .eq('user_id', user.id)
+    .single();
+
+  if (!player) {
+    return { error: 'Player profile not found' };
+  }
+
+  return { user, player, supabase };
+}
+
+/**
+ * Get the authenticated player's own stats
+ * SECURITY: Players can only view their own stats
+ */
+export async function getMyStats(
+  filters?: StatsFilter
+): Promise<{ data: BaseballPlayerStats[] | null; error?: string }> {
+  const authResult = await requirePlayerAuth();
+  if ('error' in authResult) {
+    return { data: null, error: authResult.error };
+  }
+  const { player, supabase } = authResult;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let query = (supabase as any)
+    .from('baseball_player_stats')
+    .select('*')
+    .eq('player_id', player.id)
+    .order('session_date', { ascending: false });
+
+  if (filters?.statType) {
+    query = query.eq('stat_type', filters.statType);
+  }
+
+  if (filters?.startDate) {
+    query = query.gte('session_date', filters.startDate);
+  }
+
+  if (filters?.endDate) {
+    query = query.lte('session_date', filters.endDate);
+  }
+
+  const { data, error } = await query as { data: BaseballPlayerStats[] | null; error: unknown };
+
+  if (error) {
+    return { data: null, error: 'Failed to fetch your stats' };
+  }
+
+  return { data };
+}
+
+/**
+ * Get the authenticated player's aggregates
+ * SECURITY: Players can only view their own aggregates
+ */
+export async function getMyAggregates(): Promise<{ 
+  data: BaseballPlayerAggregates | null; 
+  player: PlayerAuthResult['player'] | null;
+  teamName: string | null;
+  error?: string 
+}> {
+  const authResult = await requirePlayerAuth();
+  if ('error' in authResult) {
+    return { data: null, player: null, teamName: null, error: authResult.error };
+  }
+  const { player, supabase } = authResult;
+
+  // Get player's team info
+  const { data: teamMembership } = await supabase
+    .from('baseball_team_members')
+    .select(`
+      jersey_number,
+      baseball_teams (
+        id,
+        name
+      )
+    `)
+    .eq('player_id', player.id)
+    .limit(1)
+    .single();
+
+  const teamName = (teamMembership?.baseball_teams as { name: string } | null)?.name || null;
+  const teamId = (teamMembership?.baseball_teams as { id: string } | null)?.id;
+  const jerseyNumber = teamMembership?.jersey_number || null;
+
+  // Add jersey number to player response
+  const playerWithJersey = { ...player, jersey_number: jerseyNumber };
+
+  // Get aggregates for this player (they may have aggregates for multiple teams)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let aggregatesQuery = (supabase as any)
+    .from('baseball_player_aggregates')
+    .select('*')
+    .eq('player_id', player.id);
+
+  // If on a team, get that team's aggregates
+  if (teamId) {
+    aggregatesQuery = aggregatesQuery.eq('team_id', teamId);
+  }
+
+  const { data: aggregates, error } = await aggregatesQuery.maybeSingle() as { 
+    data: BaseballPlayerAggregates | null; 
+    error: unknown 
+  };
+
+  if (error) {
+    return { data: null, player: playerWithJersey, teamName, error: 'Failed to fetch your aggregates' };
+  }
+
+  return { data: aggregates, player: playerWithJersey, teamName };
+}
+
+// ============================================================================
 // STATS QUERIES
 // ============================================================================
 

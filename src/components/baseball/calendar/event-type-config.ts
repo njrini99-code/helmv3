@@ -12,6 +12,8 @@ import {
   Target,
   Tent,
   MoreHorizontal,
+  UserCheck,
+  CalendarClock,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -23,6 +25,8 @@ export type BaseballEventType =
   | 'workout'
   | 'scrimmage'
   | 'camp'
+  | 'recruiting_visit'
+  | 'deadline'
   | 'other';
 
 export interface EventTypeConfig {
@@ -146,6 +150,36 @@ export const BASEBALL_EVENT_TYPES: EventTypeConfig[] = [
     inactiveBg: 'bg-pink-50 hover:bg-pink-100',
     inactiveText: 'text-pink-700',
     headerGradient: 'from-pink-50 to-white',
+  },
+  {
+    type: 'recruiting_visit',
+    label: 'Recruiting Visit',
+    icon: UserCheck,
+    dotColor: 'bg-indigo-500',
+    bgColor: 'bg-indigo-50/80',
+    textColor: 'text-indigo-800',
+    borderColor: 'border-l-indigo-500',
+    activeBg: 'bg-indigo-600',
+    activeText: 'text-white',
+    activeShadow: 'shadow-indigo-600/30',
+    inactiveBg: 'bg-indigo-50 hover:bg-indigo-100',
+    inactiveText: 'text-indigo-700',
+    headerGradient: 'from-indigo-50 to-white',
+  },
+  {
+    type: 'deadline',
+    label: 'Deadline',
+    icon: CalendarClock,
+    dotColor: 'bg-red-500',
+    bgColor: 'bg-red-50/80',
+    textColor: 'text-red-800',
+    borderColor: 'border-l-red-500',
+    activeBg: 'bg-red-600',
+    activeText: 'text-white',
+    activeShadow: 'shadow-red-600/30',
+    inactiveBg: 'bg-red-50 hover:bg-red-100',
+    inactiveText: 'text-red-700',
+    headerGradient: 'from-red-50 to-white',
   },
   {
     type: 'other',

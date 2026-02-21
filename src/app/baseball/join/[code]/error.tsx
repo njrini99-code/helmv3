@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { IconWarning, IconRefresh, IconArrowLeft } from '@/components/icons';
 
 export default function Error({
   error,
@@ -10,8 +11,11 @@ export default function Error({
   reset: () => void;
 }) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#FAF6F1]">
-      <div className="text-center p-8 max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-auth-baseball p-4 sm:p-6">
+      <div className="text-center p-6 sm:p-8 max-w-md w-full bg-white/80 backdrop-blur-xl rounded-2xl border border-white/30">
+        <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4">
+          <IconWarning size={32} className="text-amber-600" />
+        </div>
         <h2 className="text-xl font-semibold text-slate-900 mb-2">
           Unable to Join Team
         </h2>
@@ -24,15 +28,17 @@ export default function Error({
           <button
             onClick={reset}
             aria-label="Try again"
-            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 active:bg-primary-800 transition-colors"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 active:bg-primary-800 transition-colors"
           >
+            <IconRefresh size={18} />
             Try again
           </button>
           <Link
-            href="/baseball/login"
-            className="px-4 py-2 text-slate-600 hover:text-slate-900 transition-colors"
+            href="/baseball/dashboard"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 text-slate-600 hover:text-slate-900 transition-colors"
           >
-            Go to Login
+            <IconArrowLeft size={18} />
+            Go to Dashboard
           </Link>
         </div>
       </div>
