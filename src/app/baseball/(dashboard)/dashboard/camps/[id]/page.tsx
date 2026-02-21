@@ -388,15 +388,15 @@ export default function CampDetailPage() {
                     </p>
                     {reg.attended_at && (
                       <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
-                        <IconCheckCircle size={12} />
+                        <IconCheck size={12} />
                         Checked in {formatRelativeTime(reg.attended_at)}
                       </p>
                     )}
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <Badge className={cn(statusConfig[reg.status].bg, statusConfig[reg.status].color)}>
-                      {statusConfig[reg.status].label}
+                    <Badge className={cn(statusConfig[reg.status]?.bg ?? 'bg-slate-100', statusConfig[reg.status]?.color ?? 'text-slate-600')}>
+                      {statusConfig[reg.status]?.label ?? reg.status}
                     </Badge>
                     
                     {isCoach && (reg.status === 'registered' || reg.status === 'confirmed') && (

@@ -203,6 +203,7 @@ export default async function CommandCenterPage() {
       // Cast to expected type - the local type has the same shape
       players={players as unknown as import('@/lib/types').BaseballRosterPlayer[]}
       insights={teamInsights as BaseballCoachInsight[]}
+      coachId={coach.id}
       coachName={coach.full_name || 'Coach'}
     />
   );

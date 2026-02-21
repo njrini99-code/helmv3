@@ -33,6 +33,7 @@ interface CommandCenterClientProps {
   };
   players: BaseballRosterPlayer[];
   insights: BaseballCoachInsight[];
+  coachId: string;
   coachName?: string; // Optional - for future greeting/personalization
 }
 
@@ -44,6 +45,7 @@ export function CommandCenterClient({
   team,
   players,
   insights,
+  coachId,
   coachName: _coachName,
 }: CommandCenterClientProps) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -370,6 +372,8 @@ export function CommandCenterClient({
                 ...insights,
                 ...players.flatMap((p) => p.insights || []),
               ]}
+              teamId={team.id}
+              coachId={coachId}
             />
 
             {/* Quick Actions */}
