@@ -140,7 +140,6 @@ export function StatsUploadClient({
   const [sessionName, setSessionName] = useState<string>('');
   const [parsedRows, setParsedRows] = useState<Array<Record<string, string>>>([]);
   const [playerMatches, setPlayerMatches] = useState<PlayerMatch[]>([]);
-  const [manualAssignments, setManualAssignments] = useState<Record<string, string>>({});
   const [uploadResult, setUploadResult] = useState<{
     success: boolean;
     matchedRows?: number;
@@ -158,7 +157,6 @@ export function StatsUploadClient({
 
   // Column mapping state
   const [columnMappings, setColumnMappings] = useState<ColumnMapping[]>([]);
-  const [userColumnMappings, setUserColumnMappings] = useState<Record<string, string | null>>({});
 
   // ============================================================================
   // FILE HANDLING
@@ -296,26 +294,17 @@ export function StatsUploadClient({
   const handleManualAssignment = useCallback(
     (csvName: string, playerId: string | null) => {
       if (!playerId) {
-        // Skip this player
-        setManualAssignments((prev) => {
-          const newAssignments = { ...prev };
-          delete newAssignments[csvName];
-          return newAssignments;
-        });
+        // Skip this player - mark with isManualMatch but no playerId
         setPlayerMatches((prev) =>
           prev.map((match) =>
             match.csvName === csvName
-              ? { ...match, playerId: null, playerName: null, confidence: 0, isManualMatch: false }
+              ? { ...match, playerId: null, playerName: null, confidence: 0, isManualMatch: true }
               : match
           )
         );
+        setExpandedUnmatchedPlayer(null);
         return;
       }
-
-      setManualAssignments((prev) => ({
-        ...prev,
-        [csvName]: playerId,
-      }));
 
       const player = players.find((p) => p.id === playerId);
       setPlayerMatches((prev) =>

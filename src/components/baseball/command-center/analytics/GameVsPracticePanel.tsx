@@ -4,7 +4,6 @@ import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import type { BaseballRosterPlayer } from '@/lib/types';
 import {
-  IconTarget,
   IconTrendingUp,
   IconTrendingDown,
   IconMinus,

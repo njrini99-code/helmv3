@@ -182,14 +182,30 @@ const PlayerPeekContentComponent = function PlayerPeekContent({
       ? `${player.heightFeet}'${player.heightInches}"`
       : null;
 
-  // Build stats array
-  const stats = [
-    player.stats.pitchVelo && { label: 'Velo', value: player.stats.pitchVelo, unit: ' mph', highlight: true },
-    player.stats.exitVelo && { label: 'Exit Velo', value: player.stats.exitVelo, unit: ' mph' },
-    player.stats.sixtyTime && { label: '60 yd', value: player.stats.sixtyTime, unit: 's' },
-    player.stats.popTime && { label: 'Pop Time', value: player.stats.popTime, unit: 's' },
-    player.gpa && { label: 'GPA', value: player.gpa },
-  ].filter((s): s is NonNullable<typeof s> => Boolean(s));
+  // Build stats array - explicitly check for null/undefined to allow 0 values
+  type StatItem = {
+    label: string;
+    value: string | number;
+    unit?: string;
+    highlight?: boolean;
+  };
+
+  const stats: StatItem[] = [];
+  if (player.stats.pitchVelo != null) {
+    stats.push({ label: 'Velo', value: player.stats.pitchVelo, unit: ' mph', highlight: true });
+  }
+  if (player.stats.exitVelo != null) {
+    stats.push({ label: 'Exit Velo', value: player.stats.exitVelo, unit: ' mph' });
+  }
+  if (player.stats.sixtyTime != null) {
+    stats.push({ label: '60 yd', value: player.stats.sixtyTime, unit: 's' });
+  }
+  if (player.stats.popTime != null) {
+    stats.push({ label: 'Pop Time', value: player.stats.popTime, unit: 's' });
+  }
+  if (player.gpa != null) {
+    stats.push({ label: 'GPA', value: player.gpa });
+  }
 
   return (
     <div className={cn('flex flex-col h-full', className)}>

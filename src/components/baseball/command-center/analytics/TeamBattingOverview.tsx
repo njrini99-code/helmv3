@@ -98,6 +98,7 @@ function getStatColor(value: number | null, type: 'avg' | 'obp' | 'slg' | 'ops')
   };
 
   const t = thresholds[type];
+  if (!t) return 'text-slate-900';
   if (value >= t.good) return 'text-primary-600';
   if (value >= t.average) return 'text-slate-900';
   return 'text-amber-600';

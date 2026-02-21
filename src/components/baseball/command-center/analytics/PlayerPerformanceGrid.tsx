@@ -112,7 +112,7 @@ function getHeatmapColor(
     below: 'bg-red-100 text-red-700',
   };
 
-  return colors[level];
+  return colors[level] ?? 'bg-slate-100 text-slate-600';
 }
 
 export function PlayerPerformanceGrid({ players }: PlayerPerformanceGridProps) {
