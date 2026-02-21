@@ -97,12 +97,6 @@ function getPlayerSuggestions(
   players: Array<{ id: string; firstName: string; lastName: string }>,
   limit = 3
 ): Array<{ player: { id: string; firstName: string; lastName: string }; confidence: number }> {
-  const dbPlayers = players.map((p) => ({
-    id: p.id,
-    first_name: p.firstName,
-    last_name: p.lastName,
-  }));
-
   const suggestions: Array<{
     player: { id: string; firstName: string; lastName: string };
     confidence: number;

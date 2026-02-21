@@ -1,69 +1,153 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
+import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
+import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/select';
 import { PageLoading } from '@/components/ui/loading';
-import { IconArrowRight, IconCheck, IconUser, IconUpload, IconUsers } from '@/components/icons';
+import {
+  IconArrowRight,
+  IconArrowLeft,
+  IconCheck,
+  IconUser,
+  IconFlag,
+  IconUsers,
+} from '@/components/icons';
 import { processTeamInvitation } from '@/app/baseball/actions/teams';
 
-type Step = 'welcome' | 'basic' | 'baseball' | 'physical' | 'metrics' | 'photo' | 'team' | 'complete';
+// ─── Types & Constants ──────────────────────────────────────────────────────
 
-const positions = ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'OF', 'INF', 'UTIL'];
-const handedness = ['R', 'L', 'S'];
-const gradYears = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() + i);
+type Step = 'about' | 'measurables' | 'team' | 'complete';
 
-const STEPS = ['welcome', 'basic', 'baseball', 'physical', 'metrics', 'photo', 'team', 'complete'] as const;
+const STEPS_CONFIG = [
+  { id: 'about' as const, label: 'About You', Icon: IconFlag },
+  { id: 'measurables' as const, label: 'Measurables', Icon: IconUser },
+  { id: 'team' as const, label: 'Team', Icon: IconUsers },
+  { id: 'complete' as const, label: 'Done', Icon: IconCheck },
+];
 
-const pageVariants = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -20 },
+const POSITIONS = ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'OF', 'INF', 'UTIL'];
+const HANDEDNESS = ['R', 'L', 'S'];
+const GRAD_YEARS = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() + i);
+
+// ─── Animation Variants ─────────────────────────────────────────────────────
+
+const slideVariants = {
+  initial: (direction: number) => ({
+    x: direction > 0 ? 60 : -60,
+    opacity: 0,
+  }),
+  animate: {
+    x: 0,
+    opacity: 1,
+    transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] as const },
+  },
+  exit: (direction: number) => ({
+    x: direction > 0 ? -60 : 60,
+    opacity: 0,
+    transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] as const },
+  }),
 };
 
 const staggerContainer = {
-  animate: {
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
+  animate: { transition: { staggerChildren: 0.06 } },
 };
 
 const staggerItem = {
-  initial: { opacity: 0, y: 20 },
-  animate: { opacity: 1, y: 0 },
+  initial: { opacity: 0, y: 16 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] as const } },
 };
 
-export default function PlayerOnboarding() {
+// ─── Step Indicator ─────────────────────────────────────────────────────────
+
+function StepIndicator({ currentStep }: { currentStep: Step }) {
+  const currentIndex = STEPS_CONFIG.findIndex((s) => s.id === currentStep);
+
+  return (
+    <nav aria-label="Onboarding progress" className="flex items-center justify-center gap-0 mb-8 sm:mb-10">
+      {STEPS_CONFIG.map((step, index) => {
+        const isCompleted = index < currentIndex;
+        const isCurrent = index === currentIndex;
+
+        return (
+          <Fragment key={step.id}>
+            {index > 0 && (
+              <div
+                aria-hidden="true"
+                className={cn(
+                  'h-[2px] w-8 sm:w-12 transition-colors duration-500',
+                  isCompleted ? 'bg-primary-500' : 'bg-warm-200'
+                )}
+              />
+            )}
+            <div
+              className="flex flex-col items-center gap-1.5"
+              role="listitem"
+              aria-current={isCurrent ? 'step' : undefined}
+            >
+              <div
+                className={cn(
+                  'w-8 h-8 rounded-full flex items-center justify-center transition-all duration-500 text-sm font-semibold',
+                  isCompleted && 'bg-primary-600 text-white shadow-sm shadow-primary-600/30',
+                  isCurrent && 'bg-white border-2 border-primary-600 text-primary-600 shadow-sm',
+                  !isCompleted && !isCurrent && 'bg-warm-100 text-warm-400'
+                )}
+                aria-hidden="true"
+              >
+                {isCompleted ? <IconCheck size={14} /> : index + 1}
+              </div>
+              <span
+                className={cn(
+                  'text-label font-medium transition-colors duration-500',
+                  isCurrent ? 'text-warm-900' : isCompleted ? 'text-primary-600' : 'text-warm-400'
+                )}
+              >
+                {step.label}
+              </span>
+              <span className="sr-only">
+                {isCompleted ? '(completed)' : isCurrent ? '(current step)' : '(upcoming)'}
+              </span>
+            </div>
+          </Fragment>
+        );
+      })}
+    </nav>
+  );
+}
+
+// ─── Main Component ─────────────────────────────────────────────────────────
+
+export default function BaseballPlayerOnboarding() {
   const router = useRouter();
   const supabase = createClient();
   const { user, player, loading: authLoading } = useAuth();
 
-  const [step, setStep] = useState<Step>('welcome');
+  const [step, setStep] = useState<Step>('about');
+  const [direction, setDirection] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Form data
+  // About You data
   const [firstName, setFirstName] = useState(player?.first_name || '');
   const [lastName, setLastName] = useState(player?.last_name || '');
-  const [gradYear, setGradYear] = useState<number>(player?.grad_year ?? gradYears[4] ?? new Date().getFullYear() + 4);
+  const [gradYear, setGradYear] = useState<number>(player?.grad_year ?? GRAD_YEARS[4] ?? new Date().getFullYear() + 4);
   const [city, setCity] = useState(player?.city || '');
   const [state, setState] = useState(player?.state || '');
-
   const [primaryPosition, setPrimaryPosition] = useState(player?.primary_position || '');
   const [secondaryPosition, setSecondaryPosition] = useState(player?.secondary_position || '');
   const [bats, setBats] = useState(player?.bats || '');
-  const [throws, setThrows] = useState(player?.throws || '');
+  const [throws_, setThrows] = useState(player?.throws || '');
 
+  // Measurables data
   const [heightFeet, setHeightFeet] = useState<number>(player?.height_feet || 5);
   const [heightInches, setHeightInches] = useState<number>(player?.height_inches || 10);
-  const [weight, setWeight] = useState<number>(player?.weight_lbs || 150);
-
+  const [weight, setWeight] = useState<string>(player?.weight_lbs?.toString() || '');
   const [pitchVelo, setPitchVelo] = useState<string>(player?.pitch_velo?.toString() || '');
   const [exitVelo, setExitVelo] = useState<string>(player?.exit_velo?.toString() || '');
   const [sixtyTime, setSixtyTime] = useState<string>(player?.sixty_time?.toString() || '');
@@ -75,22 +159,36 @@ export default function PlayerOnboarding() {
   const [teamJoined, setTeamJoined] = useState(false);
   const [teamName, setTeamName] = useState('');
 
-  if (authLoading) return <PageLoading />;
+  // ─── Auth Guard ───────────────────────────────────────────────────────────
 
-  if (!user || user.role !== 'player') {
-    router.push('/baseball/login');
-    return null;
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user || user.role !== 'player') {
+      router.push('/baseball/login');
+    } else if (player?.onboarding_completed) {
+      router.push('/baseball/dashboard');
+    }
+  }, [authLoading, user, player, router]);
+
+  if (authLoading || !user || user.role !== 'player' || player?.onboarding_completed) {
+    return <PageLoading />;
   }
 
-  if (player?.onboarding_completed) {
-    router.push('/baseball/dashboard');
-    return null;
+  // ─── Navigation ───────────────────────────────────────────────────────────
+
+  function goForward(to: Step) {
+    setDirection(1);
+    setStep(to);
   }
 
-  const currentStepIndex = STEPS.indexOf(step);
-  const progress = ((currentStepIndex + 1) / STEPS.length) * 100;
+  function goBack(to: Step) {
+    setDirection(-1);
+    setStep(to);
+  }
 
-  const handleJoinTeam = async () => {
+  // ─── Team Join ────────────────────────────────────────────────────────────
+
+  async function handleJoinTeam() {
     if (!inviteCode.trim() || !player?.id) return;
 
     setJoiningTeam(true);
@@ -105,16 +203,10 @@ export default function PlayerOnboarding() {
         return;
       }
 
-      // Fetch the team name after joining
       type TeamMemberWithTeam = { team_id: string; baseball_teams: { name: string } };
       const { data: teamMember } = await supabase
         .from('baseball_team_members')
-        .select(`
-          team_id,
-          baseball_teams!inner (
-            name
-          )
-        `)
+        .select(`team_id, baseball_teams!inner (name)`)
         .eq('player_id', player.id)
         .order('joined_at', { ascending: false })
         .limit(1)
@@ -130,17 +222,19 @@ export default function PlayerOnboarding() {
       setTeamJoinError(err instanceof Error ? err.message : 'Failed to join team');
       setJoiningTeam(false);
     }
-  };
+  }
 
-  const handleComplete = async () => {
+  // ─── Submit Onboarding ────────────────────────────────────────────────────
+
+  async function handleComplete() {
+    if (!user) return;
     setLoading(true);
     setError('');
 
     try {
-      // Calculate profile completion
-      let completionScore = 40; // Base score for onboarding
+      let completionScore = 40;
       if (secondaryPosition) completionScore += 5;
-      if (bats && throws) completionScore += 10;
+      if (bats && throws_) completionScore += 10;
       if (heightFeet && heightInches && weight) completionScore += 15;
       if (pitchVelo || exitVelo || sixtyTime) completionScore += 20;
       if (pitchVelo && exitVelo && sixtyTime) completionScore += 10;
@@ -156,10 +250,10 @@ export default function PlayerOnboarding() {
           primary_position: primaryPosition,
           secondary_position: secondaryPosition || null,
           bats: bats || null,
-          throws: throws || null,
+          throws: throws_ || null,
           height_feet: heightFeet,
           height_inches: heightInches,
-          weight_lbs: weight,
+          weight_lbs: weight ? parseInt(weight) : null,
           pitch_velo: pitchVelo ? parseFloat(pitchVelo) : null,
           exit_velo: exitVelo ? parseFloat(exitVelo) : null,
           sixty_time: sixtyTime ? parseFloat(sixtyTime) : null,
@@ -174,13 +268,9 @@ export default function PlayerOnboarding() {
         return;
       }
 
-      // Check for stored returnTo URL (from invite link flow)
       const storedReturnTo = sessionStorage.getItem('baseball_signup_returnTo');
-
       if (storedReturnTo) {
-        // Clear the stored URL
         sessionStorage.removeItem('baseball_signup_returnTo');
-        // Redirect to the invite join page
         router.push(storedReturnTo);
       } else {
         router.push('/baseball/dashboard');
@@ -190,684 +280,386 @@ export default function PlayerOnboarding() {
       setError('An error occurred. Please try again.');
       setLoading(false);
     }
-  };
+  }
+
+  // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#FAF6F1] via-[#F5F1EC] to-[#EAE6E1] relative overflow-hidden">
-      {/* Animated Background Elements */}
+    <div className="min-h-dvh bg-auth-baseball relative">
+      {/* Floating Orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <motion.div
-          animate={{
-            scale: [1, 1.2, 1],
-            rotate: [0, 90, 0],
-          }}
-          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-          className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-to-br from-primary-100/20 to-transparent rounded-full blur-3xl"
-        />
-        <motion.div
-          animate={{
-            scale: [1.2, 1, 1.2],
-            rotate: [90, 0, 90],
-          }}
-          transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-          className="absolute -bottom-1/2 -left-1/2 w-full h-full bg-gradient-to-tr from-primary-50/20 to-transparent rounded-full blur-3xl"
-        />
+        <div className="auth-orb auth-orb-1 w-[400px] h-[400px] sm:w-[500px] sm:h-[500px] -top-24 -right-24 bg-gradient-to-br from-helm-amber-400/40 to-helm-amber-500/25" />
+        <div className="auth-orb auth-orb-2 w-[350px] h-[350px] sm:w-[400px] sm:h-[400px] -bottom-20 -left-20 bg-gradient-to-tr from-helm-amber-400/25 to-helm-amber-400/15" />
+        <div className="auth-orb auth-orb-3 hidden sm:block w-[200px] h-[200px] top-1/3 left-[8%] bg-gradient-to-br from-helm-amber-300/20 to-helm-amber-400/15" />
       </div>
 
-      {/* Progress Bar */}
-      <div className="fixed top-0 left-0 right-0 h-1 bg-slate-200/50 backdrop-blur-sm z-50">
-        <motion.div
-          className="h-full bg-gradient-to-r from-primary-500 to-primary-600"
-          initial={{ width: 0 }}
-          animate={{ width: `${progress}%` }}
-          transition={{ duration: 0.5, ease: "easeInOut" }}
-        />
-      </div>
+      <div className="relative min-h-dvh flex flex-col items-center justify-center p-4 sm:p-6 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+        {/* Logo */}
+        <m.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="mb-6 sm:mb-8"
+        >
+          <div className="relative">
+            <div className="absolute inset-0 bg-helm-amber-500/25 rounded-full blur-xl scale-150" />
+            <div className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-xl overflow-hidden">
+              <Image
+                src="/helm-baseball-logo.png"
+                alt="BaseballHelm"
+                width={48}
+                height={48}
+                className="w-full h-full object-cover"
+                priority
+                unoptimized
+              />
+            </div>
+          </div>
+        </m.div>
 
-      <div className="relative min-h-screen flex items-center justify-center p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-        <AnimatePresence mode="wait">
-          {step === 'welcome' && (
-            <motion.div
-              key="welcome"
-              variants={pageVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full max-w-lg"
-            >
-              <motion.div
-                variants={staggerContainer}
+        <LazyMotion features={domAnimation}>
+          {/* Step Indicator */}
+          <m.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <StepIndicator currentStep={step} />
+          </m.div>
+
+          <AnimatePresence mode="wait" custom={direction}>
+            {/* ─── Step 1: About You ───────────────────────────────────── */}
+            {step === 'about' && (
+              <m.div
+                key="about"
+                custom={direction}
+                variants={slideVariants}
                 initial="initial"
                 animate="animate"
-                className="space-y-8"
+                exit="exit"
+                className="w-full max-w-[460px]"
               >
-                {/* Logo & Header */}
-                <motion.div variants={staggerItem} className="text-center">
-                  <motion.div
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                    className="mb-6 inline-block"
-                  >
-                    <div className="relative">
-                      <div className="absolute inset-0 bg-primary-500/20 blur-2xl rounded-full" />
-                      <div className="relative w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-xl shadow-primary-900/20">
-                        <span className="text-white font-bold text-3xl">H</span>
-                      </div>
-                    </div>
-                  </motion.div>
-                  <h1 className="text-4xl font-bold tracking-tight text-slate-900 mb-3">
-                    Let's build your profile
-                  </h1>
-                  <p className="text-slate-600 text-lg max-w-md mx-auto leading-relaxed">
-                    We'll help you create a profile that stands out to college coaches. This will take about 3 minutes.
-                  </p>
-                </motion.div>
+                <m.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-5">
+                  {/* Header */}
+                  <m.div variants={staggerItem} className="text-center">
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-warm-900">
+                      About you
+                    </h1>
+                    <p className="text-warm-500 mt-2 text-sm sm:text-base">
+                      Help coaches get to know you
+                    </p>
+                  </m.div>
 
-                {/* Get Started Button */}
-                <motion.div variants={staggerItem} className="text-center">
-                  <Button
-                    size="lg"
-                    onClick={() => setStep('basic')}
-                    className="px-8 bg-primary-600 hover:bg-primary-700 active:bg-primary-800 shadow-lg shadow-primary-900/20 hover:shadow-xl hover:shadow-primary-900/30 transition-all"
-                  >
-                    Get Started
-                    <IconArrowRight size={16} className="ml-2" />
-                  </Button>
-                </motion.div>
-              </motion.div>
-            </motion.div>
-          )}
-
-          {step === 'basic' && (
-            <motion.div
-              key="basic"
-              variants={pageVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full max-w-md"
-            >
-              <motion.div
-                variants={staggerContainer}
-                initial="initial"
-                animate="animate"
-                className="space-y-6"
-              >
-                <motion.div variants={staggerItem} className="text-center mb-8">
-                  <div className="text-sm font-medium text-slate-500 mb-2">
-                    Step 1 of 6
-                  </div>
-                  <h2 className="text-2xl font-bold text-slate-900">Basic Information</h2>
-                </motion.div>
-
-                <motion.div
-                  variants={staggerItem}
-                  className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 p-8 shadow-xl shadow-slate-900/5"
-                >
-                  <div className="space-y-5">
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.2 }}
-                    >
-                      <Input
-                        label="First Name"
-                        value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
-                        placeholder="John"
-                        required
-                        autoFocus
-                      />
-                    </motion.div>
-
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.3 }}
-                    >
-                      <Input
-                        label="Last Name"
-                        value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
-                        placeholder="Smith"
-                        required
-                      />
-                    </motion.div>
-
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.4 }}
-                    >
-                      <NativeSelect
-                        label="Graduation Year"
-                        value={gradYear.toString()}
-                        onChange={(e) => setGradYear(parseInt(e.target.value))}
-                        required
-                      >
-                        {gradYears && gradYears.length > 0 ? (
-                          gradYears.map((year) => (
-                            <option key={year} value={year}>
-                              {year}
-                            </option>
-                          ))
-                        ) : (
-                          <option value="">No years available</option>
-                        )}
-                      </NativeSelect>
-                    </motion.div>
-
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.5 }}
-                      className="grid grid-cols-2 gap-4"
-                    >
-                      <Input
-                        label="City"
-                        value={city}
-                        onChange={(e) => setCity(e.target.value)}
-                        placeholder="Houston"
-                      />
-                      <Input
-                        label="State"
-                        value={state}
-                        onChange={(e) => setState(e.target.value)}
-                        placeholder="TX"
-                        maxLength={2}
-                      />
-                    </motion.div>
-                  </div>
-
-                  <div className="flex gap-3 mt-8">
-                    <Button
-                      variant="secondary"
-                      onClick={() => setStep('welcome')}
-                      className="flex-1"
-                    >
-                      Back
-                    </Button>
-                    <Button
-                      onClick={() => setStep('baseball')}
-                      disabled={!firstName || !lastName}
-                      className="flex-1 bg-primary-600 hover:bg-primary-700 transition-colors active:bg-primary-800"
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </motion.div>
-              </motion.div>
-            </motion.div>
-          )}
-
-          {step === 'baseball' && (
-            <motion.div
-              key="baseball"
-              variants={pageVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full max-w-md"
-            >
-              <motion.div
-                variants={staggerContainer}
-                initial="initial"
-                animate="animate"
-                className="space-y-6"
-              >
-                <motion.div variants={staggerItem} className="text-center mb-8">
-                  <div className="text-sm font-medium text-slate-500 mb-2">
-                    Step 2 of 6
-                  </div>
-                  <h2 className="text-2xl font-bold text-slate-900">Baseball Info</h2>
-                </motion.div>
-
-                <motion.div
-                  variants={staggerItem}
-                  className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 p-8 shadow-xl shadow-slate-900/5"
-                >
-                  <div className="space-y-5">
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.2 }}
-                    >
-                      <NativeSelect
-                        label="Primary Position"
-                        value={primaryPosition}
-                        onChange={(e) => setPrimaryPosition(e.target.value)}
-                        required
-                      >
-                        <option value="">Select position</option>
-                        {positions && positions.length > 0 ? (
-                          positions.map((pos) => (
-                            <option key={pos} value={pos}>
-                              {pos}
-                            </option>
-                          ))
-                        ) : (
-                          <option value="">No positions available</option>
-                        )}
-                      </NativeSelect>
-                    </motion.div>
-
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.3 }}
-                    >
-                      <NativeSelect
-                        label="Secondary Position"
-                        value={secondaryPosition}
-                        onChange={(e) => setSecondaryPosition(e.target.value)}
-                      >
-                        <option value="">None</option>
-                        {positions && positions.length > 0 ? (
-                          positions.map((pos) => (
-                            <option key={pos} value={pos}>
-                              {pos}
-                            </option>
-                          ))
-                        ) : (
-                          <option value="">No positions available</option>
-                        )}
-                      </NativeSelect>
-                    </motion.div>
-
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.4 }}
-                      className="grid grid-cols-2 gap-4"
-                    >
-                      <NativeSelect
-                        label="Bats"
-                        value={bats}
-                        onChange={(e) => setBats(e.target.value)}
-                      >
-                        <option value="">Select</option>
-                        {handedness.map((h) => (
-                          <option key={h} value={h}>
-                            {h}
-                          </option>
-                        ))}
-                      </NativeSelect>
-                      <NativeSelect
-                        label="Throws"
-                        value={throws}
-                        onChange={(e) => setThrows(e.target.value)}
-                      >
-                        <option value="">Select</option>
-                        {handedness && handedness.length > 0 ? (
-                          handedness.map((h) => (
-                            <option key={h} value={h}>
-                              {h}
-                            </option>
-                          ))
-                        ) : (
-                          <option value="">No options available</option>
-                        )}
-                      </NativeSelect>
-                    </motion.div>
-                  </div>
-
-                  <div className="flex gap-3 mt-8">
-                    <Button
-                      variant="secondary"
-                      onClick={() => setStep('basic')}
-                      className="flex-1"
-                    >
-                      Back
-                    </Button>
-                    <Button
-                      onClick={() => setStep('physical')}
-                      disabled={!primaryPosition}
-                      className="flex-1 bg-primary-600 hover:bg-primary-700 transition-colors active:bg-primary-800"
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </motion.div>
-              </motion.div>
-            </motion.div>
-          )}
-
-          {step === 'physical' && (
-            <motion.div
-              key="physical"
-              variants={pageVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full max-w-md"
-            >
-              <motion.div
-                variants={staggerContainer}
-                initial="initial"
-                animate="animate"
-                className="space-y-6"
-              >
-                <motion.div variants={staggerItem} className="text-center mb-8">
-                  <div className="text-sm font-medium text-slate-500 mb-2">
-                    Step 3 of 6
-                  </div>
-                  <h2 className="text-2xl font-bold text-slate-900">Physical Measurements</h2>
-                </motion.div>
-
-                <motion.div
-                  variants={staggerItem}
-                  className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 p-8 shadow-xl shadow-slate-900/5"
-                >
-                  <div className="space-y-5">
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.2 }}
-                    >
-                      <label className="block text-sm font-medium text-slate-700 mb-3">Height</label>
-                      <div className="grid grid-cols-2 gap-4">
-                        <NativeSelect
-                          value={heightFeet.toString()}
-                          onChange={(e) => setHeightFeet(parseInt(e.target.value))}
-                        >
-                          {[4, 5, 6, 7].map((ft) => (
-                            <option key={ft} value={ft}>
-                              {ft} ft
-                            </option>
-                          ))}
-                        </NativeSelect>
-                        <NativeSelect
-                          value={heightInches.toString()}
-                          onChange={(e) => setHeightInches(parseInt(e.target.value))}
-                        >
-                          {Array.from({ length: 12 }, (_, i) => (
-                            <option key={i} value={i}>
-                              {i} in
-                            </option>
-                          ))}
-                        </NativeSelect>
-                      </div>
-                    </motion.div>
-
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.3 }}
-                    >
-                      <Input
-                        label="Weight (lbs)"
-                        type="number"
-                        value={weight}
-                        onChange={(e) => setWeight(parseInt(e.target.value))}
-                        placeholder="175"
-                      />
-                    </motion.div>
-                  </div>
-
-                  <div className="flex gap-3 mt-8">
-                    <Button
-                      variant="secondary"
-                      onClick={() => setStep('baseball')}
-                      className="flex-1"
-                    >
-                      Back
-                    </Button>
-                    <Button
-                      onClick={() => setStep('metrics')}
-                      className="flex-1 bg-primary-600 hover:bg-primary-700 transition-colors active:bg-primary-800"
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </motion.div>
-              </motion.div>
-            </motion.div>
-          )}
-
-          {step === 'metrics' && (
-            <motion.div
-              key="metrics"
-              variants={pageVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full max-w-md"
-            >
-              <motion.div
-                variants={staggerContainer}
-                initial="initial"
-                animate="animate"
-                className="space-y-6"
-              >
-                <motion.div variants={staggerItem} className="text-center mb-8">
-                  <div className="text-sm font-medium text-slate-500 mb-2">
-                    Step 4 of 6
-                  </div>
-                  <h2 className="text-2xl font-bold text-slate-900">Metrics</h2>
-                  <p className="text-sm text-slate-600 mt-2">
-                    Add at least one metric. You can add more later.
-                  </p>
-                </motion.div>
-
-                <motion.div
-                  variants={staggerItem}
-                  className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 p-8 shadow-xl shadow-slate-900/5"
-                >
-                  <div className="space-y-5">
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.2 }}
-                    >
-                      <Input
-                        label="Pitch Velocity (mph)"
-                        type="number"
-                        step="0.1"
-                        value={pitchVelo}
-                        onChange={(e) => setPitchVelo(e.target.value)}
-                        placeholder="85.0"
-                      />
-                    </motion.div>
-
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.3 }}
-                    >
-                      <Input
-                        label="Exit Velocity (mph)"
-                        type="number"
-                        step="0.1"
-                        value={exitVelo}
-                        onChange={(e) => setExitVelo(e.target.value)}
-                        placeholder="90.0"
-                      />
-                    </motion.div>
-
-                    <motion.div
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.4 }}
-                    >
-                      <Input
-                        label="60-Yard Time (sec)"
-                        type="number"
-                        step="0.01"
-                        value={sixtyTime}
-                        onChange={(e) => setSixtyTime(e.target.value)}
-                        placeholder="6.90"
-                      />
-                    </motion.div>
-                  </div>
-
-                  <div className="flex gap-3 mt-8">
-                    <Button
-                      variant="secondary"
-                      onClick={() => setStep('physical')}
-                      className="flex-1"
-                    >
-                      Back
-                    </Button>
-                    <Button
-                      onClick={() => setStep('photo')}
-                      disabled={!pitchVelo && !exitVelo && !sixtyTime}
-                      className="flex-1 bg-primary-600 hover:bg-primary-700 transition-colors active:bg-primary-800"
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </motion.div>
-              </motion.div>
-            </motion.div>
-          )}
-
-          {step === 'photo' && (
-            <motion.div
-              key="photo"
-              variants={pageVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full max-w-md"
-            >
-              <motion.div
-                variants={staggerContainer}
-                initial="initial"
-                animate="animate"
-                className="space-y-6"
-              >
-                <motion.div variants={staggerItem} className="text-center mb-8">
-                  <div className="text-sm font-medium text-slate-500 mb-2">
-                    Step 5 of 6
-                  </div>
-                  <h2 className="text-2xl font-bold text-slate-900">Profile Photo</h2>
-                  <p className="text-sm text-slate-600 mt-2">
-                    Add a profile photo to help coaches recognize you. You can skip this and add one later.
-                  </p>
-                </motion.div>
-
-                <motion.div
-                  variants={staggerItem}
-                  className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 p-8 shadow-xl shadow-slate-900/5"
-                >
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.2 }}
-                    className="flex flex-col items-center mb-6"
-                  >
-                    <div className="w-32 h-32 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center mb-4 shadow-sm">
-                      <IconUser size={48} className="text-slate-400" />
-                    </div>
-                    <Button variant="secondary" size="sm">
-                      <IconUpload size={16} className="mr-2" />
-                      Upload Photo
-                    </Button>
-                    <p className="text-xs text-slate-500 mt-2">JPG or PNG, max 5MB</p>
-                  </motion.div>
-
-                  <div className="flex gap-3 mt-8">
-                    <Button
-                      variant="secondary"
-                      onClick={() => setStep('metrics')}
-                      className="flex-1"
-                    >
-                      Back
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      onClick={() => setStep('team')}
-                      className="flex-1"
-                    >
-                      Skip
-                    </Button>
-                    <Button
-                      onClick={() => setStep('team')}
-                      className="flex-1 bg-primary-600 hover:bg-primary-700 transition-colors active:bg-primary-800"
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </motion.div>
-              </motion.div>
-            </motion.div>
-          )}
-
-          {step === 'team' && (
-            <motion.div
-              key="team"
-              variants={pageVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full max-w-md"
-            >
-              <motion.div
-                variants={staggerContainer}
-                initial="initial"
-                animate="animate"
-                className="space-y-6"
-              >
-                <motion.div variants={staggerItem} className="text-center mb-8">
-                  <div className="text-sm font-medium text-slate-500 mb-2">
-                    Step 6 of 6
-                  </div>
-                  <h2 className="text-2xl font-bold text-slate-900">Join a Team</h2>
-                  <p className="text-sm text-slate-600 mt-2">
-                    {teamJoined
-                      ? "You're on a team!"
-                      : "Have an invite code from your coach? Enter it below to join your team."}
-                  </p>
-                </motion.div>
-
-                <motion.div
-                  variants={staggerItem}
-                  className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200/50 p-8 shadow-xl shadow-slate-900/5"
-                >
-                  {teamJoined ? (
-                    // Already on a team - show success state
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="text-center py-4"
-                    >
-                      <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <IconCheck size={32} className="text-primary-600" />
-                      </div>
-                      <h3 className="text-lg font-semibold text-slate-900 mb-1">
-                        Team Joined!
-                      </h3>
-                      <p className="text-slate-600">
-                        You are now a member of <span className="font-medium text-primary-600">{teamName}</span>
-                      </p>
-                    </motion.div>
-                  ) : (
-                    // No team yet - show join form
+                  {/* Form Card */}
+                  <m.div variants={staggerItem} className="auth-glass-card rounded-3xl p-6 sm:p-8">
                     <div className="space-y-5">
-                      <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.2 }}
-                        className="flex flex-col items-center mb-6"
-                      >
-                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary-100 to-primary-50 flex items-center justify-center mb-4 shadow-sm">
-                          <IconUsers size={28} className="text-primary-600" />
-                        </div>
-                      </motion.div>
+                      {/* Name */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <Input
+                          label="First Name"
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                          placeholder="John"
+                          required
+                          autoFocus
+                        />
+                        <Input
+                          label="Last Name"
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                          placeholder="Smith"
+                          required
+                        />
+                      </div>
 
-                      <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.3 }}
+                      {/* Grad Year & Position */}
+                      <div className="grid grid-cols-2 gap-3">
+                        <NativeSelect
+                          label="Graduation Year"
+                          value={gradYear.toString()}
+                          onChange={(e) => setGradYear(parseInt(e.target.value))}
+                        >
+                          {GRAD_YEARS.map((y) => (
+                            <option key={y} value={y}>{y}</option>
+                          ))}
+                        </NativeSelect>
+                        <NativeSelect
+                          label="Primary Position"
+                          value={primaryPosition}
+                          onChange={(e) => setPrimaryPosition(e.target.value)}
+                          required
+                        >
+                          <option value="">Select</option>
+                          {POSITIONS.map((pos) => (
+                            <option key={pos} value={pos}>{pos}</option>
+                          ))}
+                        </NativeSelect>
+                      </div>
+
+                      {/* Bats/Throws & Secondary Position */}
+                      <div className="grid grid-cols-3 gap-3">
+                        <NativeSelect
+                          label="Bats"
+                          value={bats}
+                          onChange={(e) => setBats(e.target.value)}
+                        >
+                          <option value="">—</option>
+                          {HANDEDNESS.map((h) => (
+                            <option key={h} value={h}>{h}</option>
+                          ))}
+                        </NativeSelect>
+                        <NativeSelect
+                          label="Throws"
+                          value={throws_}
+                          onChange={(e) => setThrows(e.target.value)}
+                        >
+                          <option value="">—</option>
+                          {HANDEDNESS.map((h) => (
+                            <option key={h} value={h}>{h}</option>
+                          ))}
+                        </NativeSelect>
+                        <NativeSelect
+                          label="2nd Pos."
+                          value={secondaryPosition}
+                          onChange={(e) => setSecondaryPosition(e.target.value)}
+                        >
+                          <option value="">None</option>
+                          {POSITIONS.map((pos) => (
+                            <option key={pos} value={pos}>{pos}</option>
+                          ))}
+                        </NativeSelect>
+                      </div>
+
+                      {/* Hometown */}
+                      <div>
+                        <p className="text-label font-semibold text-warm-400 uppercase tracking-wider mb-3">
+                          Hometown
+                        </p>
+                        <div className="grid grid-cols-3 gap-3">
+                          <div className="col-span-2">
+                            <Input
+                              label="City"
+                              value={city}
+                              onChange={(e) => setCity(e.target.value)}
+                              placeholder="Houston"
+                            />
+                          </div>
+                          <Input
+                            label="State"
+                            value={state}
+                            onChange={(e) => setState(e.target.value)}
+                            placeholder="TX"
+                            maxLength={2}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="mt-8">
+                      <Button
+                        onClick={() => goForward('measurables')}
+                        disabled={!firstName.trim() || !lastName.trim() || !primaryPosition}
+                        className="w-full bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
+                        size="lg"
                       >
+                        Continue
+                        <IconArrowRight size={16} className="ml-2" />
+                      </Button>
+                    </div>
+                  </m.div>
+                </m.div>
+              </m.div>
+            )}
+
+            {/* ─── Step 2: Measurables ─────────────────────────────────── */}
+            {step === 'measurables' && (
+              <m.div
+                key="measurables"
+                custom={direction}
+                variants={slideVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                className="w-full max-w-[460px]"
+              >
+                <m.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-5">
+                  {/* Back Button */}
+                  <m.div variants={staggerItem}>
+                    <button
+                      onClick={() => goBack('about')}
+                      className="flex items-center gap-1.5 text-sm font-medium text-warm-600 hover:text-warm-800 transition-colors min-h-[44px] px-2 -ml-2 rounded-lg active:bg-warm-100"
+                    >
+                      <IconArrowLeft size={16} />
+                      Back
+                    </button>
+                  </m.div>
+
+                  {/* Header */}
+                  <m.div variants={staggerItem} className="text-center">
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-warm-900">
+                      Measurables
+                    </h1>
+                    <p className="text-warm-500 mt-2 text-sm sm:text-base">
+                      Add your physical stats and metrics
+                    </p>
+                  </m.div>
+
+                  {/* Form Card */}
+                  <m.div variants={staggerItem} className="auth-glass-card rounded-3xl p-6 sm:p-8">
+                    <div className="space-y-5">
+                      {/* Height & Weight */}
+                      <div>
+                        <p className="text-label font-semibold text-warm-400 uppercase tracking-wider mb-3">
+                          Physical
+                        </p>
+                        <div className="grid grid-cols-3 gap-3">
+                          <NativeSelect
+                            label="Height (ft)"
+                            value={heightFeet.toString()}
+                            onChange={(e) => setHeightFeet(parseInt(e.target.value))}
+                          >
+                            {[4, 5, 6, 7].map((ft) => (
+                              <option key={ft} value={ft}>{ft} ft</option>
+                            ))}
+                          </NativeSelect>
+                          <NativeSelect
+                            label="Height (in)"
+                            value={heightInches.toString()}
+                            onChange={(e) => setHeightInches(parseInt(e.target.value))}
+                          >
+                            {Array.from({ length: 12 }, (_, i) => (
+                              <option key={i} value={i}>{i} in</option>
+                            ))}
+                          </NativeSelect>
+                          <Input
+                            label="Weight (lbs)"
+                            type="text"
+                            inputMode="numeric"
+                            value={weight}
+                            onChange={(e) => setWeight(e.target.value)}
+                            placeholder="175"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Metrics */}
+                      <div>
+                        <p className="text-label font-semibold text-warm-400 uppercase tracking-wider mb-3">
+                          Performance Metrics
+                        </p>
+                        <div className="grid grid-cols-3 gap-3">
+                          <Input
+                            label="Pitch Velo"
+                            type="text"
+                            inputMode="decimal"
+                            value={pitchVelo}
+                            onChange={(e) => setPitchVelo(e.target.value)}
+                            placeholder="85"
+                            hint="mph"
+                          />
+                          <Input
+                            label="Exit Velo"
+                            type="text"
+                            inputMode="decimal"
+                            value={exitVelo}
+                            onChange={(e) => setExitVelo(e.target.value)}
+                            placeholder="90"
+                            hint="mph"
+                          />
+                          <Input
+                            label="60-Yard"
+                            type="text"
+                            inputMode="decimal"
+                            value={sixtyTime}
+                            onChange={(e) => setSixtyTime(e.target.value)}
+                            placeholder="6.90"
+                            hint="sec"
+                          />
+                        </div>
+                        <p className="text-xs text-warm-400 mt-2">
+                          All metrics are optional — you can add or update them later.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="mt-8">
+                      <Button
+                        onClick={() => goForward('team')}
+                        className="w-full bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
+                        size="lg"
+                      >
+                        Continue
+                        <IconArrowRight size={16} className="ml-2" />
+                      </Button>
+                    </div>
+                  </m.div>
+                </m.div>
+              </m.div>
+            )}
+
+            {/* ─── Step 3: Join a Team ─────────────────────────────────── */}
+            {step === 'team' && (
+              <m.div
+                key="team"
+                custom={direction}
+                variants={slideVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                className="w-full max-w-[460px]"
+              >
+                <m.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-5">
+                  {/* Back Button */}
+                  <m.div variants={staggerItem}>
+                    <button
+                      onClick={() => goBack('measurables')}
+                      className="flex items-center gap-1.5 text-sm font-medium text-warm-600 hover:text-warm-800 transition-colors min-h-[44px] px-2 -ml-2 rounded-lg active:bg-warm-100"
+                    >
+                      <IconArrowLeft size={16} />
+                      Back
+                    </button>
+                  </m.div>
+
+                  {/* Header */}
+                  <m.div variants={staggerItem} className="text-center">
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-warm-900">
+                      Join a team
+                    </h1>
+                    <p className="text-warm-500 mt-2 text-sm sm:text-base">
+                      {teamJoined
+                        ? "You're on a team!"
+                        : 'Have an invite code from your coach? Enter it below.'}
+                    </p>
+                  </m.div>
+
+                  {/* Form Card */}
+                  <m.div variants={staggerItem} className="auth-glass-card rounded-3xl p-6 sm:p-8">
+                    {teamJoined ? (
+                      <m.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="text-center py-4"
+                      >
+                        <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <IconCheck size={32} className="text-primary-600" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-warm-900 mb-1">
+                          Team Joined!
+                        </h3>
+                        <p className="text-warm-600">
+                          You are now a member of <span className="font-medium text-primary-600">{teamName}</span>
+                        </p>
+                      </m.div>
+                    ) : (
+                      <div className="space-y-5">
+                        <div className="flex justify-center mb-2">
+                          <div className="w-14 h-14 rounded-full bg-primary-100 flex items-center justify-center">
+                            <IconUsers size={24} className="text-primary-600" />
+                          </div>
+                        </div>
+
                         <Input
                           label="Team Invite Code"
                           value={inviteCode}
@@ -885,124 +677,141 @@ export default function PlayerOnboarding() {
                           maxLength={20}
                           className="text-center tracking-widest font-mono text-lg"
                         />
-                      </motion.div>
 
-                      {teamJoinError && (
-                        <motion.p
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="text-sm text-red-600 text-center bg-red-50 border border-red-200 rounded-xl px-4 py-3"
+                        {teamJoinError && (
+                          <m.p
+                            initial={{ opacity: 0, y: -8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="text-sm text-red-600 text-center bg-red-50 border border-red-200 rounded-xl px-4 py-3"
+                          >
+                            {teamJoinError}
+                          </m.p>
+                        )}
+
+                        <Button
+                          onClick={handleJoinTeam}
+                          disabled={!inviteCode.trim() || joiningTeam}
+                          isLoading={joiningTeam}
+                          className="w-full bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 transition-all"
                         >
-                          {teamJoinError}
-                        </motion.p>
-                      )}
+                          Join Team
+                        </Button>
 
-                      <Button
-                        onClick={handleJoinTeam}
-                        disabled={!inviteCode.trim() || joiningTeam}
-                        isLoading={joiningTeam}
-                        className="w-full bg-primary-600 hover:bg-primary-700 transition-colors active:bg-primary-800"
-                      >
-                        Join Team
-                      </Button>
-
-                      <div className="text-center">
-                        <p className="text-xs text-slate-500">
-                          Don't have a code? You can join a team later from your Dashboard.
+                        <p className="text-xs text-warm-400 text-center">
+                          Don't have a code? You can join a team later from your dashboard.
                         </p>
                       </div>
+                    )}
+
+                    {/* Actions */}
+                    <div className="mt-8">
+                      <Button
+                        onClick={() => goForward('complete')}
+                        className="w-full bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
+                        size="lg"
+                      >
+                        {teamJoined ? 'Continue' : 'Skip for Now'}
+                        <IconArrowRight size={16} className="ml-2" />
+                      </Button>
                     </div>
-                  )}
+                  </m.div>
+                </m.div>
+              </m.div>
+            )}
 
-                  <div className="flex gap-3 mt-8">
-                    <Button
-                      variant="secondary"
-                      onClick={() => setStep('photo')}
-                      className="flex-1"
-                    >
-                      Back
-                    </Button>
-                    <Button
-                      onClick={() => setStep('complete')}
-                      className="flex-1 bg-primary-600 hover:bg-primary-700 transition-colors active:bg-primary-800"
-                    >
-                      {teamJoined ? 'Continue' : 'Skip for Now'}
-                    </Button>
-                  </div>
-                </motion.div>
-              </motion.div>
-            </motion.div>
-          )}
-
-          {step === 'complete' && (
-            <motion.div
-              key="complete"
-              variants={pageVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full max-w-lg"
-            >
-              <motion.div
-                variants={staggerContainer}
+            {/* ─── Step 4: Complete ─────────────────────────────────────── */}
+            {step === 'complete' && (
+              <m.div
+                key="complete"
+                custom={direction}
+                variants={slideVariants}
                 initial="initial"
                 animate="animate"
-                className="space-y-8"
+                exit="exit"
+                className="w-full max-w-[480px]"
               >
-                {/* Success Icon */}
-                <motion.div variants={staggerItem} className="text-center">
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 0.2, type: "spring", stiffness: 200, damping: 15 }}
-                    className="mb-6 inline-block"
-                  >
+                <m.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-6">
+                  {/* Success Icon with Celebration */}
+                  <m.div variants={staggerItem} className="flex justify-center">
                     <div className="relative">
-                      <div className="absolute inset-0 bg-primary-500/20 blur-2xl rounded-full" />
-                      <div className="relative w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-xl shadow-primary-900/20">
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          transition={{ delay: 0.4 }}
+                      {/* Celebration particles */}
+                      {[...Array(8)].map((_, i) => (
+                        <m.div
+                          key={i}
+                          className="absolute top-1/2 left-1/2 w-2 h-2 rounded-full"
+                          style={{
+                            background: i % 2 === 0
+                              ? 'rgb(22, 163, 74)'
+                              : 'rgb(74, 222, 128)',
+                          }}
+                          initial={{ scale: 0, opacity: 1, x: 0, y: 0 }}
+                          animate={{
+                            scale: [0, 1.2, 0],
+                            opacity: [0, 1, 0],
+                            x: Math.cos((i / 8) * Math.PI * 2) * 50,
+                            y: Math.sin((i / 8) * Math.PI * 2) * 50,
+                          }}
+                          transition={{ duration: 0.8, delay: 0.3 + i * 0.04, ease: 'easeOut' }}
+                        />
+                      ))}
+
+                      {/* Glow */}
+                      <div className="absolute inset-0 bg-primary-500/20 blur-2xl rounded-full scale-[2]" />
+
+                      {/* Check Icon */}
+                      <m.div
+                        initial={{ scale: 0, rotate: -20 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        transition={{ type: 'spring', stiffness: 200, damping: 12, delay: 0.15 }}
+                        className="relative w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-xl shadow-primary-900/20"
+                      >
+                        <m.div
+                          initial={{ scale: 0, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{ delay: 0.4, type: 'spring', stiffness: 300 }}
                         >
                           <IconCheck size={40} className="text-white" />
-                        </motion.div>
-                      </div>
+                        </m.div>
+                      </m.div>
                     </div>
-                  </motion.div>
-                  <h1 className="text-3xl font-bold text-slate-900 mb-3">
-                    Your profile is ready!
-                  </h1>
-                  <p className="text-slate-600 text-lg max-w-md mx-auto leading-relaxed">
-                    You're all set to start connecting with college coaches.
-                  </p>
-                </motion.div>
+                  </m.div>
 
-                {/* CTA Button */}
-                <motion.div variants={staggerItem} className="text-center">
-                  <Button
-                    size="lg"
-                    onClick={handleComplete}
-                    isLoading={loading}
-                    className="px-8 bg-primary-600 hover:bg-primary-700 active:bg-primary-800 shadow-lg shadow-primary-900/20 hover:shadow-xl hover:shadow-primary-900/30 transition-all"
-                  >
-                    Go to Dashboard
-                  </Button>
-                  {error && (
-                    <motion.p
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="text-sm text-red-600 mt-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3"
+                  {/* Personalized Heading */}
+                  <m.div variants={staggerItem} className="text-center">
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-warm-900 mb-2">
+                      Welcome, {firstName || 'Player'}!
+                    </h1>
+                    <p className="text-warm-500 text-sm sm:text-base leading-relaxed max-w-sm mx-auto">
+                      Your profile is ready. Head to your dashboard to connect with your team and coaches.
+                    </p>
+                  </m.div>
+
+                  {/* Dashboard CTA */}
+                  <m.div variants={staggerItem} className="text-center">
+                    <Button
+                      size="lg"
+                      onClick={handleComplete}
+                      isLoading={loading}
+                      className="w-full sm:w-auto px-10 bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
                     >
-                      {error}
-                    </motion.p>
-                  )}
-                </motion.div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                      Go to Dashboard
+                      <IconArrowRight size={16} className="ml-2" />
+                    </Button>
+                    {error && (
+                      <m.p
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="text-sm text-red-600 mt-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-center"
+                      >
+                        {error}
+                      </m.p>
+                    )}
+                  </m.div>
+                </m.div>
+              </m.div>
+            )}
+          </AnimatePresence>
+        </LazyMotion>
       </div>
     </div>
   );

@@ -241,36 +241,73 @@ export function PlayerComparison({
     setExporting(true);
 
     try {
-      // Capture the comparison element as canvas
+      // Wait a tick for any pending renders
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Capture the comparison element as canvas with improved options
       const canvas = await html2canvas(comparisonRef.current, {
         scale: 2, // Higher quality
         logging: false,
         useCORS: true,
+        allowTaint: true,
         backgroundColor: '#FAF6F1', // Cream background
+        windowWidth: comparisonRef.current.scrollWidth,
+        windowHeight: comparisonRef.current.scrollHeight,
+        onclone: (clonedDoc) => {
+          // Ensure the cloned element is fully visible
+          const clonedElement = clonedDoc.querySelector('[data-comparison-ref]');
+          if (clonedElement instanceof HTMLElement) {
+            clonedElement.style.overflow = 'visible';
+          }
+        },
       });
 
-      // Calculate PDF dimensions
-      const imgWidth = 210; // A4 width in mm
+      // Calculate PDF dimensions - use landscape if wider than tall
+      const imgRatio = canvas.width / canvas.height;
+      const isLandscape = imgRatio > 1.2;
+      
+      const pdf = new jsPDF(isLandscape ? 'l' : 'p', 'mm', 'a4');
+      const pageWidth = isLandscape ? 297 : 210; // A4 dimensions
+      const pageHeight = isLandscape ? 210 : 297;
+      
+      const imgWidth = pageWidth - 20; // 10mm margins on each side
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      const imgData = canvas.toDataURL('image/png', 1.0);
 
-      // Create PDF
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgData = canvas.toDataURL('image/png');
+      // Check if we need multiple pages
+      if (imgHeight > pageHeight - 20) {
+        // Scale down to fit single page
+        const scaledHeight = pageHeight - 20;
+        const scaledWidth = (canvas.width * scaledHeight) / canvas.height;
+        const xOffset = (pageWidth - scaledWidth) / 2;
+        pdf.addImage(imgData, 'PNG', xOffset, 10, scaledWidth, scaledHeight);
+      } else {
+        pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+      }
 
-      // Add image to PDF
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      // Add header/footer
+      pdf.setFontSize(8);
+      pdf.setTextColor(128, 128, 128);
+      pdf.text(`Generated on ${new Date().toLocaleDateString()}`, 10, pageHeight - 5);
 
-      // Generate filename with player names
-      const playerNames = players.map(p => getFullName(p.first_name, p.last_name)).join('_');
-      const filename = `player_comparison_${playerNames.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+      // Generate filename with player names (sanitized)
+      const playerNames = players
+        .map(p => getFullName(p.first_name, p.last_name))
+        .join('_')
+        .replace(/[^a-zA-Z0-9_]/g, '');
+      const filename = `player_comparison_${playerNames}_${new Date().toISOString().split('T')[0]}.pdf`;
 
       // Save PDF
       pdf.save(filename);
 
       toast.success('PDF exported successfully!');
     } catch (error) {
-      toast.error('Failed to export PDF');
-      console.error('Export error:', error);
+      toast.error('Failed to export PDF. Please try again.');
+      // Log error but don't expose details
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Export error:', error);
+      }
     } finally {
       setExporting(false);
     }
@@ -278,7 +315,7 @@ export function PlayerComparison({
 
   return (
     <>
-      <div ref={comparisonRef}>
+      <div ref={comparisonRef} data-comparison-ref>
         <Card variant="glass" className={cn('overflow-hidden border-white/40', className)}>
           {onClose && (
         <CardHeader className="flex flex-row items-center justify-between border-b border-border-light">
@@ -290,8 +327,9 @@ export function PlayerComparison({
       )}
 
       <CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <table className="w-full">
+        {/* Horizontal scroll container for mobile */}
+        <div className="overflow-x-auto scrollbar-hide -webkit-overflow-scrolling-touch">
+          <table className="w-full min-w-[600px]">
             {/* Player Headers */}
             <thead className="bg-cream-50 border-b border-border-light">
               <tr>

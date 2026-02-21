@@ -1,3 +1,10 @@
+import {
+  TeamBattingOverviewSkeleton,
+  GameVsPracticePanelSkeleton,
+  PlayerPerformanceGridSkeleton,
+  TrendAnalysisPanelSkeleton,
+} from '@/components/baseball/command-center/analytics';
+
 export default function CommandCenterLoading() {
   return (
     <div className="min-h-screen bg-[#FFFEFA]">
@@ -14,7 +21,7 @@ export default function CommandCenterLoading() {
           </div>
         </div>
 
-        {/* Stats Skeleton */}
+        {/* Stats Overview Skeleton */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {[1, 2, 3, 4].map((i) => (
             <div
@@ -30,8 +37,25 @@ export default function CommandCenterLoading() {
           ))}
         </div>
 
+        {/* Analytics Dashboard Skeleton */}
+        <div className="space-y-6">
+          {/* Team Batting + Game vs Practice Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <TeamBattingOverviewSkeleton />
+            <GameVsPracticePanelSkeleton />
+          </div>
+
+          {/* Trend Analysis */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <PlayerPerformanceGridSkeleton />
+            </div>
+            <TrendAnalysisPanelSkeleton />
+          </div>
+        </div>
+
         {/* Content Skeleton */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
           <div className="lg:col-span-2 space-y-4">
             {/* Search Skeleton */}
             <div className="glass-standard rounded-xl p-4">

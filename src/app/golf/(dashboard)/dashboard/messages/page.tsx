@@ -13,7 +13,7 @@ import { useGolfConversations, useGolfMessages } from '@/hooks/golf/use-golf-mes
 import { createGolfConversation, getPlayerUserId } from '@/app/golf/actions/messages';
 import { GolfNewMessageModal } from '@/components/golf/messages/GolfNewMessageModal';
 import { GolfTeamBroadcastModal } from '@/components/golf/messages/GolfTeamBroadcastModal';
-import { useTeamContext } from '@/hooks/golf/use-team-context';
+import { useGolfUser } from '@/contexts/golf-user-context';
 import type { GolfConversationWithMeta, MessageWithReadStatus } from '@/hooks/golf/use-golf-messages';
 
 export default function GolfMessagesPage() {
@@ -22,14 +22,8 @@ export default function GolfMessagesPage() {
   const router = useRouter();
   const playerIdFromUrl = searchParams.get('player');
 
-  // USE THE TEAM CONTEXT HOOK - This ensures we have valid team info
-  const {
-    userId,
-    userRole,
-    teamId,
-    teamName,
-    loading: contextLoading
-  } = useTeamContext();
+  // Use server-resolved user data — no client-side loading needed
+  const { userId, role: userRole, teamId, teamName } = useGolfUser();
 
   const { conversations, loading: conversationsLoading, refetch } = useGolfConversations();
 
@@ -251,9 +245,6 @@ export default function GolfMessagesPage() {
     setDeleteConfirmId(null);
   };
 
-  // Loading state
-  if (contextLoading || conversationsLoading) return null;
-
   // No team error state - CRITICAL: Show helpful message
   if (!teamId) {
     return (
@@ -333,7 +324,22 @@ export default function GolfMessagesPage() {
 
         {/* Conversation List */}
         <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y pt-[env(safe-area-inset-top)]" data-scroll-container>
-          {!conversations || conversations.length === 0 ? (
+          {conversationsLoading ? (
+            <div className="p-2 space-y-1">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-start gap-3 p-3 rounded-xl">
+                  <div className="w-10 h-10 rounded-full bg-warm-200 skeleton-shimmer flex-shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="flex justify-between">
+                      <div className="h-4 w-24 bg-warm-200 rounded skeleton-shimmer" />
+                      <div className="h-3 w-10 bg-warm-100 rounded skeleton-shimmer" />
+                    </div>
+                    <div className="h-3 w-40 bg-warm-100 rounded skeleton-shimmer" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : !conversations || conversations.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
               <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mb-3">
                 <IconMail size={20} className="text-warm-400" />

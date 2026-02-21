@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { loginAction } from '@/app/baseball/actions/auth';
 import { createClient } from '@/lib/supabase/client';
@@ -34,7 +34,18 @@ export function BaseballSignInForm() {
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
+
+  // Get returnTo from URL params (e.g., /baseball/login?returnTo=/baseball/dashboard/team)
+  const returnTo = searchParams.get('returnTo');
+
+  // Store returnTo in sessionStorage so it persists through login
+  useEffect(() => {
+    if (returnTo) {
+      sessionStorage.setItem('baseball_login_returnTo', returnTo);
+    }
+  }, [returnTo]);
 
   useEffect(() => {
     async function checkAuth() {
@@ -68,10 +79,10 @@ export function BaseballSignInForm() {
           You&apos;re already signed in
         </div>
         <button
-          onClick={() => router.push('/baseball/dashboard')}
+          onClick={() => router.push(returnTo || '/baseball/dashboard')}
           className="w-full py-3 bg-primary-600 text-white font-medium text-sm rounded-[10px] shadow-sm transition-all duration-200 hover:bg-primary-700 hover:shadow-md"
         >
-          Continue to Dashboard
+          {returnTo ? 'Continue' : 'Continue to Dashboard'}
         </button>
         <button
           onClick={handleSignOut}
@@ -98,8 +109,28 @@ export function BaseballSignInForm() {
         return;
       }
 
-      router.push(result.redirectTo || '/baseball/dashboard');
+      // Refresh first to ensure session cookies are recognized
       router.refresh();
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Check for stored returnTo URL
+      const storedReturnTo = sessionStorage.getItem('baseball_login_returnTo');
+
+      // Validate returnTo to prevent open redirect attacks
+      const isValidReturnTo = (path: string): boolean => {
+        return (path.startsWith('/baseball/') || path.startsWith('/golf/')) && !path.includes('//');
+      };
+
+      // Only use returnTo if the user is fully onboarded (redirectTo = dashboard)
+      const needsOnboarding = result.redirectTo === '/baseball/coach-onboarding' || result.redirectTo === '/baseball/player';
+
+      if (storedReturnTo && !needsOnboarding && isValidReturnTo(storedReturnTo)) {
+        sessionStorage.removeItem('baseball_login_returnTo');
+        router.push(storedReturnTo);
+      } else {
+        if (storedReturnTo) sessionStorage.removeItem('baseball_login_returnTo');
+        router.push(result.redirectTo || '/baseball/dashboard');
+      }
     } catch {
       setError('An unexpected error occurred. Please try again.');
       setIsLoading(false);

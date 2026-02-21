@@ -1,0 +1,61 @@
+[    3704ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://helmsportslabs.com/icons/icon-192.png:0
+[    3704ms] [WARNING] Error while trying to use the following icon from the Manifest: https://helmsportslabs.com/icons/icon-192.png (Download error or resource isn't a valid image) @ https://helmsportslabs.com/golf/admin:0
+[    3989ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://helmsportslabs.com/icons/icon-192.png:0
+[    3989ms] [WARNING] Error while trying to use the following icon from the Manifest: https://helmsportslabs.com/icons/icon-192.png (Download error or resource isn't a valid image) @ https://helmsportslabs.com/golf/login:0
+[   25107ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://helmsportslabs.com/icons/icon-192.png:0
+[   25107ms] [WARNING] Error while trying to use the following icon from the Manifest: https://helmsportslabs.com/icons/icon-192.png (Download error or resource isn't a valid image) @ https://helmsportslabs.com/golf/dashboard:0
+[   25459ms] [WARNING] [TamboProvider] Neither userKey nor userToken provided. API requests will be blocked until authentication is configured. @ https://helmsportslabs.com/_next/static/chunks/1034-e2a3f9fb99d8d217.js?dpl=dpl_HnWNRpJ5aPGdwKctjT2nn4cMM5cb:4
+[   29742ms] [WARNING] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width. @ https://helmsportslabs.com/_next/static/chunks/1034-e2a3f9fb99d8d217.js?dpl=dpl_HnWNRpJ5aPGdwKctjT2nn4cMM5cb:4
+[   29746ms] [WARNING] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width. @ https://helmsportslabs.com/_next/static/chunks/1034-e2a3f9fb99d8d217.js?dpl=dpl_HnWNRpJ5aPGdwKctjT2nn4cMM5cb:4
+[   36592ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://helmsportslabs.com/_next/static/chunks/7685-629d751c1e8a4c80.js?dpl=dpl_4hP8fFEvxRbCrAxCarXcCcbBLbkW:0
+[   36592ms] [ERROR] Refused to execute script from 'https://helmsportslabs.com/_next/static/chunks/7685-629d751c1e8a4c80.js?dpl=dpl_4hP8fFEvxRbCrAxCarXcCcbBLbkW' because its MIME type ('text/plain') is not executable, and strict MIME type checking is enabled. @ https://helmsportslabs.com/golf/dashboard:0
+[   48005ms] [ERROR] TypeError: Cannot read properties of undefined (reading 'call')
+    at d (https://helmsportslabs.com/_next/static/chunks/webpack-3d936e1dc9fef702.js?dpl=dpl_HnWNRpJ5aPGdwKctjT2nn4cMM5cb:1:528)
+    at c (https://helmsportslabs.com/_next/static/chunks/1034-e2a3f9fb99d8d217.js?dpl=dpl_HnWNRpJ5aPGdwKctjT2nn4cMM5cb:23:25870)
+    at D (https://helmsportslabs.com/_next/static/chunks/1034-e2a3f9fb99d8d217.js?dpl=dpl_HnWNRpJ5aPGdwKctjT2nn4cMM5cb:23:29356)
+    at P (https://helmsportslabs.com/_next/static/chunks/1034-e2a3f9fb99d8d217.js?dpl=dpl_HnWNRpJ5aPGdwKctjT2nn4cMM5cb:23:26607)
+    at lL (https://helmsportslabs.com/_next/static/chunks/4bd1b696-b3b0f11f38398426.js?dpl=dpl_HnWNRpJ5aPGdwKctjT2nn4cMM5cb:1:43147)
+    at is (https://helmsportslabs.com/_next/static/chunks/4bd1b696-b3b0f11f38398426.js?dpl=dpl_HnWNRpJ5aPGdwKctjT2nn4cMM5cb:1:84358)
+    at sp (https://helmsportslabs.com/_next/static/chunks/4bd1b696-b3b0f11f38398426.js?dpl=dpl_HnWNRpJ5aPGdwKctjT2nn4cMM5cb:1:128442)
+    at https://helmsportslabs.com/_next/static/chunks/4bd1b696-b3b0f11f38398426.js?dpl=dpl_HnWNRpJ5aPGdwKctjT2nn4cMM5cb:1:123332
+    at sn (https://helmsportslabs.com/_next/static/chunks/4bd1b696-b3b0f11f38398426.js?dpl=dpl_HnWNRpJ5aPGdwKctjT2nn4cMM5cb:1:123433)
+    at sQ (https://helmsportslabs.com/_next/static/chunks/4bd1b696-b3b0f11f38398426.js?dpl=dpl_HnWNRpJ5aPGdwKctjT2nn4cMM5cb:1:149821)
+    at MessagePort.x (https://helmsportslabs.com/_next/static/chunks/1034-e2a3f9fb99d8d217.js?dpl=dpl_HnWNRpJ5aPGdwKctjT2nn4cMM5cb:4:59158) @ https://helmsportslabs.com/_next/static/chunks/1034-e2a3f9fb99d8d217.js?dpl=dpl_HnWNRpJ5aPGdwKctjT2nn4cMM5cb:4
+[   48147ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://helmsportslabs.com/icons/icon-192.png:0
+[   48148ms] [WARNING] Error while trying to use the following icon from the Manifest: https://helmsportslabs.com/icons/icon-192.png (Download error or resource isn't a valid image) @ https://helmsportslabs.com/golf/dashboard/announcements:0
+[   48866ms] [WARNING] [TamboProvider] Neither userKey nor userToken provided. API requests will be blocked until authentication is configured. @ https://helmsportslabs.com/_next/static/chunks/1034-e2a3f9fb99d8d217.js?dpl=dpl_HnWNRpJ5aPGdwKctjT2nn4cMM5cb:4
+[   49220ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://helmsportslabs.com/icons/icon-192.png:0
+[   49226ms] [WARNING] Error while trying to use the following icon from the Manifest: https://helmsportslabs.com/icons/icon-192.png (Download error or resource isn't a valid image) @ https://helmsportslabs.com/golf/dashboard/announcements:0
+[   64390ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://helmsportslabs.com/icons/icon-192.png:0
+[   64390ms] [WARNING] Error while trying to use the following icon from the Manifest: https://helmsportslabs.com/icons/icon-192.png (Download error or resource isn't a valid image) @ https://helmsportslabs.com/golf/dashboard/announcements:0
+[   70156ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://helmsportslabs.com/icons/icon-192.png:0
+[   70156ms] [WARNING] Error while trying to use the following icon from the Manifest: https://helmsportslabs.com/icons/icon-192.png (Download error or resource isn't a valid image) @ https://helmsportslabs.com/golf/dashboard:0
+[   70844ms] [WARNING] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width. @ https://helmsportslabs.com/_next/static/chunks/1034-e2a3f9fb99d8d217.js?dpl=dpl_HnWNRpJ5aPGdwKctjT2nn4cMM5cb:4
+[   70862ms] [WARNING] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width. @ https://helmsportslabs.com/_next/static/chunks/1034-e2a3f9fb99d8d217.js?dpl=dpl_HnWNRpJ5aPGdwKctjT2nn4cMM5cb:4
+[   70888ms] [WARNING] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width. @ https://helmsportslabs.com/_next/static/chunks/1034-e2a3f9fb99d8d217.js?dpl=dpl_HnWNRpJ5aPGdwKctjT2nn4cMM5cb:4
+[   70936ms] [WARNING] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width. @ https://helmsportslabs.com/_next/static/chunks/1034-e2a3f9fb99d8d217.js?dpl=dpl_HnWNRpJ5aPGdwKctjT2nn4cMM5cb:4
+[   71093ms] [WARNING] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width. @ https://helmsportslabs.com/_next/static/chunks/1034-e2a3f9fb99d8d217.js?dpl=dpl_HnWNRpJ5aPGdwKctjT2nn4cMM5cb:4
+[   82024ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://helmsportslabs.com/icons/icon-192.png:0
+[   82024ms] [WARNING] Error while trying to use the following icon from the Manifest: https://helmsportslabs.com/icons/icon-192.png (Download error or resource isn't a valid image) @ https://helmsportslabs.com/golf/dashboard/calendar:0
+[  107410ms] [WARNING] Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}. @ https://helmsportslabs.com/_next/static/chunks/1034-e2a3f9fb99d8d217.js?dpl=dpl_HnWNRpJ5aPGdwKctjT2nn4cMM5cb:4

@@ -7,6 +7,12 @@ import { BaseballInviteButton } from './BaseballInviteButton';
 import { PlayerCommandCard } from './PlayerCommandCard';
 import { InsightsFeed } from './InsightsFeed';
 import { TeamStatsOverview } from './TeamStatsOverview';
+import {
+  TeamBattingOverview,
+  GameVsPracticePanel,
+  PlayerPerformanceGrid,
+  TrendAnalysisPanel,
+} from './analytics';
 import type { BaseballRosterPlayer, BaseballCoachInsight } from '@/lib/types';
 import {
   IconUsers,
@@ -14,6 +20,8 @@ import {
   IconUpload,
   IconSearch,
   IconFilter,
+  IconLayoutGrid,
+  IconList,
 } from '@/components/icons';
 
 interface CommandCenterClientProps {
@@ -30,18 +38,19 @@ interface CommandCenterClientProps {
 
 type FilterType = 'all' | 'improving' | 'declining' | 'needs_attention';
 type SortType = 'name' | 'avg' | 'recent' | 'trend';
+type ViewMode = 'cards' | 'grid';
 
 export function CommandCenterClient({
   team,
   players,
   insights,
-   
   coachName: _coachName,
 }: CommandCenterClientProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<FilterType>('all');
   const [sortType, setSortType] = useState<SortType>('name');
   const [showFilters, setShowFilters] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('cards');
 
   // Filter and sort players
   const filteredPlayers = useMemo(() => {
@@ -149,6 +158,23 @@ export function CommandCenterClient({
           insights={insights}
         />
 
+        {/* Analytics Dashboard Section */}
+        <div className="mt-8 space-y-6">
+          {/* Team Batting + Game vs Practice Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <TeamBattingOverview players={players} />
+            <GameVsPracticePanel players={players} />
+          </div>
+
+          {/* Trend Analysis */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <PlayerPerformanceGrid players={players} />
+            </div>
+            <TrendAnalysisPanel players={players} />
+          </div>
+        </div>
+
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
           {/* Players List (2/3) */}
@@ -171,6 +197,32 @@ export function CommandCenterClient({
                                focus:border-primary-500 focus:ring-2 focus:ring-primary-100
                                text-slate-900 placeholder:text-slate-400 transition-colors"
                   />
+                </div>
+
+                {/* View Mode Toggle */}
+                <div className="flex bg-slate-100 rounded-lg p-1">
+                  <button
+                    onClick={() => setViewMode('cards')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                      viewMode === 'cards'
+                        ? 'bg-white text-slate-900 shadow-sm'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <IconLayoutGrid size={16} />
+                    Cards
+                  </button>
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                      viewMode === 'grid'
+                        ? 'bg-white text-slate-900 shadow-sm'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <IconList size={16} />
+                    List
+                  </button>
                 </div>
 
                 {/* Filter Toggle */}
@@ -252,11 +304,61 @@ export function CommandCenterClient({
                   />
                 )}
               </div>
-            ) : (
+            ) : viewMode === 'cards' ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {filteredPlayers.map((player) => (
                   <PlayerCommandCard key={player.id} player={player} />
                 ))}
+              </div>
+            ) : (
+              // Compact List View
+              <div className="glass-standard rounded-2xl divide-y divide-slate-100 overflow-hidden">
+                {filteredPlayers.map((player) => {
+                  const fullName = `${player.first_name || ''} ${player.last_name || ''}`.trim();
+                  const trend = player.aggregates?.recent_trend;
+                  const formatAvg = (v: number | null | undefined) =>
+                    v != null ? v.toFixed(3).replace('0.', '.') : '---';
+
+                  return (
+                    <Link
+                      key={player.id}
+                      href={`/baseball/dashboard/players/${player.id}`}
+                      className="flex items-center gap-4 p-4 hover:bg-slate-50 transition-colors"
+                    >
+                      <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-sm font-semibold text-slate-600">
+                        {(player.first_name?.[0] || '') + (player.last_name?.[0] || '')}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-slate-900 truncate">
+                          {fullName}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          {player.primary_position || 'N/A'} · {player.aggregates?.total_sessions || 0} games
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-semibold tabular-nums text-slate-900">
+                          {formatAvg(player.aggregates?.career_avg)}
+                        </p>
+                        <p
+                          className={`text-xs font-medium ${
+                            trend === 'improving'
+                              ? 'text-primary-600'
+                              : trend === 'declining'
+                              ? 'text-red-500'
+                              : 'text-slate-400'
+                          }`}
+                        >
+                          {trend === 'improving'
+                            ? '↑ Improving'
+                            : trend === 'declining'
+                            ? '↓ Declining'
+                            : '— Stable'}
+                        </p>
+                      </div>
+                    </Link>
+                  );
+                })}
               </div>
             )}
           </div>
