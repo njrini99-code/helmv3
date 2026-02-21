@@ -22,7 +22,8 @@ import {
   IconEdit, 
   IconUsers, 
   IconPlay,
-  IconEye
+  IconEye,
+  IconLink
 } from '@/components/icons';
 import { useAuth } from '@/hooks/use-auth';
 import { useTeamStore } from '@/stores/team-store';
@@ -261,6 +262,24 @@ export default function VideosPage() {
       .update({ view_count: (video.view_count || 0) + 1 })
       .eq('id', video.id)
       .then(() => {});
+  };
+
+  const handleShareVideo = async (video: VideoWithPlayer) => {
+    if (!video.url) return;
+    
+    try {
+      await navigator.clipboard.writeText(video.url);
+      showToast('Video link copied to clipboard', 'success');
+    } catch {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = video.url;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      showToast('Video link copied to clipboard', 'success');
+    }
   };
 
   if (authLoading) return <PageLoading />;
@@ -520,19 +539,32 @@ export default function VideosPage() {
             {viewingVideo.description && (
               <p className="text-sm text-slate-600 leading-relaxed">{viewingVideo.description}</p>
             )}
-            <div className="flex items-center gap-4 text-sm text-slate-500">
-              {viewingVideo.video_type && (
-                <Badge variant="secondary" className="capitalize">
-                  {viewingVideo.video_type.replace(/_/g, ' ')}
-                </Badge>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4 text-sm text-slate-500 flex-wrap">
+                {viewingVideo.video_type && (
+                  <Badge variant="secondary" className="capitalize">
+                    {viewingVideo.video_type.replace(/_/g, ' ')}
+                  </Badge>
+                )}
+                {viewingVideo.created_at && (
+                  <span>Uploaded {formatRelativeTime(viewingVideo.created_at)}</span>
+                )}
+                <span className="flex items-center gap-1">
+                  <IconEye size={14} />
+                  {viewingVideo.view_count || 0} views
+                </span>
+              </div>
+              {viewingVideo.url && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => handleShareVideo(viewingVideo)}
+                  className="flex-shrink-0"
+                >
+                  <IconLink size={14} />
+                  <span className="ml-1">Share</span>
+                </Button>
               )}
-              {viewingVideo.created_at && (
-                <span>Uploaded {formatRelativeTime(viewingVideo.created_at)}</span>
-              )}
-              <span className="flex items-center gap-1">
-                <IconEye size={14} />
-                {viewingVideo.view_count || 0} views
-              </span>
             </div>
           </div>
         )}
