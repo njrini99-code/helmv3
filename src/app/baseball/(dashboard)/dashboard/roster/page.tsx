@@ -24,15 +24,15 @@ import { InviteModal } from '@/components/coach/InviteModal';
 import { LineupBuilder } from '@/components/coach/lineup/LineupBuilder';
 import { saveLineup } from '@/app/baseball/actions/lineups';
 import { useToast } from '@/components/ui/toast';
-import { PlayerRow } from '@/components/baseball/roster/PlayerRow';
-import { PlayerCard } from '@/components/baseball/roster/PlayerCard';
 import {
+  PlayerRow,
+  PlayerCard,
   RosterToolbar,
   exportRosterCSV,
   type SortField,
   type SortDirection,
   type ViewMode,
-} from '@/components/baseball/roster/RosterToolbar';
+} from '@/components/baseball/roster';
 import type { BaseballPlayerAggregates } from '@/lib/types';
 
 type MemberStatus = 'pending' | 'active' | 'inactive' | 'removed' | 'injured' | 'alumni';
