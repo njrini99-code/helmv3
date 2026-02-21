@@ -16,17 +16,19 @@ import {
 // TYPES
 // ============================================================================
 
+// Interface matching the database schema for baseball_stat_uploads
 interface Upload {
   id: string;
   filename: string;
-  stat_type: 'practice' | 'game' | 'other';
-  session_date: string;
-  session_name: string | null;
-  total_rows: number;
-  matched_rows: number;
-  unmatched_rows: number;
-  status: string;
-  created_at: string;
+  coach_id: string;
+  team_id: string;
+  status: string | null;
+  row_count: number | null;
+  processed_count: number | null;
+  error_message: string | null;
+  file_url: string | null;
+  completed_at: string | null;
+  created_at: string | null;
 }
 
 interface UploadHistoryProps {
@@ -185,60 +187,66 @@ export function UploadHistory({
         </button>
       </div>
       <div className="space-y-3">
-        {uploads.map((upload) => (
-          <div
-            key={upload.id}
-            className="flex items-center gap-4 p-3 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors cursor-default"
-          >
-            <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center shadow-sm">
-              <IconFile size={20} className="text-slate-400" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-slate-900 truncate">
-                {upload.session_name || upload.filename}
-              </p>
-              <div className="flex items-center flex-wrap gap-x-2 gap-y-1 text-xs text-slate-500">
-                <span
-                  className={`px-1.5 py-0.5 rounded font-medium ${
-                    upload.stat_type === 'game'
-                      ? 'bg-primary-100 text-primary-700'
-                      : upload.stat_type === 'practice'
-                        ? 'bg-amber-100 text-amber-700'
-                        : 'bg-slate-100 text-slate-600'
-                  }`}
-                >
-                  {upload.stat_type}
-                </span>
-                <span>•</span>
-                <span>
-                  {new Date(upload.session_date).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                  })}
-                </span>
-                <span className="hidden sm:inline">•</span>
-                <span className="hidden sm:inline">
-                  {formatDistanceToNow(new Date(upload.created_at), {
-                    addSuffix: true,
-                  })}
-                </span>
+        {uploads.map((upload) => {
+          const isComplete = upload.status === 'completed';
+          const isProcessing = upload.status === 'processing';
+          const hasFailed = upload.status === 'failed' || !!upload.error_message;
+
+          return (
+            <div
+              key={upload.id}
+              className="flex items-center gap-4 p-3 bg-slate-50 hover:bg-slate-100 rounded-lg transition-colors cursor-default"
+            >
+              <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                <IconFile size={20} className="text-slate-400" />
               </div>
-            </div>
-            <div className="flex items-center gap-3 text-sm flex-shrink-0">
-              <div className="flex items-center gap-1 text-primary-600" title="Matched players">
-                <IconCheck size={14} />
-                <span className="font-medium">{upload.matched_rows}</span>
-              </div>
-              {upload.unmatched_rows > 0 && (
-                <div className="flex items-center gap-1 text-amber-600" title="Unmatched players">
-                  <IconX size={14} />
-                  <span className="font-medium">{upload.unmatched_rows}</span>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-slate-900 truncate">
+                  {upload.filename}
+                </p>
+                <div className="flex items-center flex-wrap gap-x-2 gap-y-1 text-xs text-slate-500">
+                  <span
+                    className={`px-1.5 py-0.5 rounded font-medium ${
+                      isComplete
+                        ? 'bg-primary-100 text-primary-700'
+                        : isProcessing
+                          ? 'bg-amber-100 text-amber-700'
+                          : hasFailed
+                            ? 'bg-red-100 text-red-700'
+                            : 'bg-slate-100 text-slate-600'
+                    }`}
+                  >
+                    {upload.status || 'pending'}
+                  </span>
+                  {upload.created_at && (
+                    <>
+                      <span>•</span>
+                      <span>
+                        {formatDistanceToNow(new Date(upload.created_at), {
+                          addSuffix: true,
+                        })}
+                      </span>
+                    </>
+                  )}
                 </div>
-              )}
+              </div>
+              <div className="flex items-center gap-3 text-sm flex-shrink-0">
+                {upload.processed_count != null && upload.processed_count > 0 && (
+                  <div className="flex items-center gap-1 text-primary-600" title="Processed rows">
+                    <IconCheck size={14} />
+                    <span className="font-medium">{upload.processed_count}</span>
+                  </div>
+                )}
+                {upload.row_count != null && upload.row_count > 0 && upload.processed_count != null && upload.row_count > upload.processed_count && (
+                  <div className="flex items-center gap-1 text-amber-600" title="Unprocessed rows">
+                    <IconX size={14} />
+                    <span className="font-medium">{upload.row_count - upload.processed_count}</span>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {showViewAll && onViewAll && uploads.length >= limit && (

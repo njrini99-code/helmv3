@@ -194,7 +194,6 @@ export function StatsUploadClient({
         }));
 
         setColumnMappings(mappings);
-        setUserColumnMappings(autoMappings);
 
         setStep('preview');
       };
@@ -238,10 +237,6 @@ export function StatsUploadClient({
 
   const handleColumnMappingChange = useCallback(
     (csvColumn: string, mappedTo: string | null) => {
-      setUserColumnMappings((prev) => ({
-        ...prev,
-        [csvColumn]: mappedTo,
-      }));
       setColumnMappings((prev) =>
         prev.map((m) => (m.csvColumn === csvColumn ? { ...m, mappedTo } : m))
       );
@@ -344,9 +339,6 @@ export function StatsUploadClient({
   const poorMatches = playerMatches.filter(
     (m) => m.confidence < 0.7 && !m.isManualMatch
   );
-  const skippedPlayers = playerMatches.filter(
-    (m) => m.confidence < 0.7 && m.isManualMatch && !m.playerId
-  );
 
   // ============================================================================
   // UPLOAD
@@ -381,7 +373,7 @@ export function StatsUploadClient({
           description: result.error || 'An error occurred',
         });
       }
-    } catch (error) {
+    } catch {
       setUploadResult({
         success: false,
         error: 'An unexpected error occurred',
@@ -403,9 +395,7 @@ export function StatsUploadClient({
     setFileName('');
     setParsedRows([]);
     setPlayerMatches([]);
-    setManualAssignments({});
     setColumnMappings([]);
-    setUserColumnMappings({});
     setUploadResult(null);
     setExpandedUnmatchedPlayer(null);
     setPlayerSearchQuery('');
