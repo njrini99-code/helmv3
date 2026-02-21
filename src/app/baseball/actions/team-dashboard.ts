@@ -167,7 +167,7 @@ export async function getTeamDashboardData(teamId?: string): Promise<
   const auth = await requireCoachAuth();
   if ('error' in auth) return { success: false, error: auth.error as string };
 
-  const { supabase, coach } = auth;
+  const { supabase, coach, user } = auth;
 
   // Get team ID if not provided
   let resolvedTeamId = teamId ?? null;
@@ -182,6 +182,9 @@ export async function getTeamDashboardData(teamId?: string): Promise<
   try {
     const currentTeamId = resolvedTeamId;
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const sixtyDaysAgo = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString();
 
     // Parallel fetch core data
     const [
@@ -191,6 +194,8 @@ export async function getTeamDashboardData(teamId?: string): Promise<
       eventsResult,
       devPlansResult,
       videosResult,
+      tasksResult,
+      messagesResult,
     ] = await Promise.all([
       // Total roster count
       supabase
@@ -259,6 +264,20 @@ export async function getTeamDashboardData(teamId?: string): Promise<
         .gte('created_at', sevenDaysAgo)
         .order('created_at', { ascending: false })
         .limit(10),
+
+      // Pending tasks for this coach
+      supabase
+        .from('baseball_task_assignments')
+        .select('*', { count: 'exact', head: true })
+        .eq('assigned_to', user.id)
+        .eq('status', 'pending'),
+
+      // Unread messages for this user
+      supabase
+        .from('baseball_messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('recipient_id', user.id)
+        .eq('is_read', false),
     ]);
 
     // Process roster data
@@ -278,6 +297,97 @@ export async function getTeamDashboardData(teamId?: string): Promise<
     const rosterCount = rosterResult.count || 0;
     const recentJoins = recentJoinsResult.count || 0;
 
+    // Build player ID list and name map
+    const playerIds: string[] = [];
+    const playerMap = new Map<string, string>();
+
+    for (const member of players) {
+      playerIds.push(member.player_id);
+      const player = member.player;
+      if (player) {
+        const name = [player.first_name, player.last_name].filter(Boolean).join(' ') || 'Unknown';
+        playerMap.set(player.id, name);
+      }
+    }
+
+    // Second batch: queries that depend on playerIds
+    const [
+      statsResult,
+      aggregatesResult,
+      engagementRecentResult,
+      engagementPreviousResult,
+      watchlistAddsResult,
+    ] = await Promise.all([
+      // Stats for trend chart (last 14 days)
+      playerIds.length > 0
+        ? supabase
+            .from('baseball_player_stats')
+            .select('session_date, at_bats, hits, walks, exit_velocity')
+            .in('player_id', playerIds)
+            .gte('session_date', fourteenDaysAgo.split('T')[0])
+            .order('session_date', { ascending: true })
+        : Promise.resolve({ data: [] }),
+
+      // Player aggregates for declining stats
+      playerIds.length > 0
+        ? supabase
+            .from('baseball_player_aggregates')
+            .select('player_id, recent_trend')
+            .in('player_id', playerIds)
+        : Promise.resolve({ data: [] }),
+
+      // Engagement events (last 30 days) for college interest
+      playerIds.length > 0
+        ? supabase
+            .from('baseball_player_engagement_events')
+            .select('*', { count: 'exact', head: true })
+            .in('player_id', playerIds)
+            .eq('engagement_type', 'profile_view')
+            .gte('created_at', thirtyDaysAgo)
+        : Promise.resolve({ count: 0 }),
+
+      // Engagement events (30-60 days ago) for comparison
+      playerIds.length > 0
+        ? supabase
+            .from('baseball_player_engagement_events')
+            .select('*', { count: 'exact', head: true })
+            .in('player_id', playerIds)
+            .eq('engagement_type', 'profile_view')
+            .gte('created_at', sixtyDaysAgo)
+            .lt('created_at', thirtyDaysAgo)
+        : Promise.resolve({ count: 0 }),
+
+      // Watchlist adds
+      playerIds.length > 0
+        ? supabase
+            .from('baseball_player_engagement_events')
+            .select('*', { count: 'exact', head: true })
+            .in('player_id', playerIds)
+            .eq('engagement_type', 'watchlist_add')
+            .gte('created_at', thirtyDaysAgo)
+        : Promise.resolve({ count: 0 }),
+    ]);
+
+    // Third batch: top interest details
+    const { data: topEngagementData } = playerIds.length > 0
+      ? await supabase
+          .from('baseball_player_engagement_events')
+          .select(`
+            player_id,
+            coach_id,
+            engagement_type,
+            created_at,
+            coach:baseball_coaches!coach_id (
+              id,
+              school_name
+            )
+          `)
+          .in('player_id', playerIds)
+          .gte('created_at', thirtyDaysAgo)
+          .order('created_at', { ascending: false })
+          .limit(50)
+      : { data: [] };
+
     // Calculate team health metrics
     let eligibleCount = 0;
     let transferReadyCount = 0;
@@ -286,16 +396,9 @@ export async function getTeamDashboardData(teamId?: string): Promise<
     let atRiskCount = 0;
     let ineligibleCount = 0;
 
-    const playerIds: string[] = [];
-    const playerMap = new Map<string, string>();
-
     for (const member of players) {
-      playerIds.push(member.player_id);
       const player = member.player;
       if (!player) continue;
-
-      const name = [player.first_name, player.last_name].filter(Boolean).join(' ') || 'Unknown';
-      playerMap.set(player.id, name);
 
       if (player.gpa && player.gpa >= 2.0) {
         eligibleCount++;
@@ -316,6 +419,44 @@ export async function getTeamDashboardData(teamId?: string): Promise<
 
     const teamGpa = gpaCount > 0 ? Math.round((totalGpa / gpaCount) * 100) / 100 : null;
     const eligibilityPct = rosterCount > 0 ? Math.round((eligibleCount / rosterCount) * 100) : 0;
+
+    // Process stats trend
+    const statsTrend: TeamStatsTrendPoint[] = [];
+    const statsData = (statsResult.data || []) as Array<{
+      session_date: string;
+      at_bats: number | null;
+      hits: number | null;
+      walks: number | null;
+      exit_velocity: number | null;
+    }>;
+
+    // Group by date
+    const dateMap = new Map<string, { atBats: number; hits: number; walks: number; exitVelos: number[] }>();
+    for (const stat of statsData) {
+      const date = stat.session_date;
+      if (!dateMap.has(date)) {
+        dateMap.set(date, { atBats: 0, hits: 0, walks: 0, exitVelos: [] });
+      }
+      const entry = dateMap.get(date)!;
+      entry.atBats += stat.at_bats || 0;
+      entry.hits += stat.hits || 0;
+      entry.walks += stat.walks || 0;
+      if (stat.exit_velocity) {
+        entry.exitVelos.push(stat.exit_velocity);
+      }
+    }
+
+    for (const [date, data] of dateMap.entries()) {
+      const teamAvg = data.atBats > 0 ? Math.round((data.hits / data.atBats) * 1000) / 1000 : null;
+      const exitVelo = data.exitVelos.length > 0
+        ? Math.round((data.exitVelos.reduce((a, b) => a + b, 0) / data.exitVelos.length) * 10) / 10
+        : null;
+      const obp = (data.atBats + data.walks) > 0
+        ? Math.round(((data.hits + data.walks) / (data.atBats + data.walks)) * 1000) / 1000
+        : null;
+
+      statsTrend.push({ date, teamAvg, exitVelo, obp });
+    }
 
     // Process dev plans
     const now = new Date();
@@ -379,6 +520,20 @@ export async function getTeamDashboardData(teamId?: string): Promise<
       });
     }
 
+    // Declining stats from aggregates
+    const decliningPlayers = ((aggregatesResult.data || []) as Array<{ player_id: string; recent_trend: string | null }>)
+      .filter(a => a.recent_trend === 'declining')
+      .map(a => a.player_id);
+
+    if (decliningPlayers.length > 0) {
+      attentionItems.push({
+        type: 'declining_stats',
+        count: decliningPlayers.length,
+        playerIds: decliningPlayers,
+        description: 'Performance trending down',
+      });
+    }
+
     if (overduePlayerIds.size > 0) {
       attentionItems.push({
         type: 'overdue_goals',
@@ -403,6 +558,69 @@ export async function getTeamDashboardData(teamId?: string): Promise<
     }
 
     attentionItems.sort((a, b) => b.count - a.count);
+
+    // Build college interest summary
+    const totalProfileViews = engagementRecentResult.count || 0;
+    const previousViews = engagementPreviousResult.count || 0;
+    const watchlistAdds = watchlistAddsResult.count || 0;
+
+    const profileViewsChange = previousViews > 0
+      ? Math.round(((totalProfileViews - previousViews) / previousViews) * 100)
+      : totalProfileViews > 0 ? 100 : 0;
+
+    // Build top interest from engagement data
+    const schoolInterest = new Map<string, {
+      schoolName: string;
+      playerId: string;
+      playerName: string;
+      viewCount: number;
+      isWatchlisted: boolean;
+      lastViewed: string;
+    }>();
+
+    const uniqueSchools = new Set<string>();
+
+    for (const event of (topEngagementData || []) as Array<{
+      player_id: string;
+      coach_id: string;
+      engagement_type: string;
+      created_at: string;
+      coach: { id: string; school_name: string | null } | null;
+    }>) {
+      const coachData = event.coach;
+      if (!coachData?.school_name) continue;
+
+      uniqueSchools.add(coachData.school_name);
+      const key = `${coachData.school_name}-${event.player_id}`;
+
+      if (!schoolInterest.has(key)) {
+        schoolInterest.set(key, {
+          schoolName: coachData.school_name,
+          playerId: event.player_id,
+          playerName: playerMap.get(event.player_id) || 'Unknown',
+          viewCount: 0,
+          isWatchlisted: false,
+          lastViewed: event.created_at,
+        });
+      }
+
+      const entry = schoolInterest.get(key)!;
+      entry.viewCount++;
+      if (event.engagement_type === 'watchlist_add') {
+        entry.isWatchlisted = true;
+      }
+    }
+
+    const topInterest: CollegeInterestItem[] = Array.from(schoolInterest.values())
+      .sort((a, b) => {
+        if (a.isWatchlisted !== b.isWatchlisted) return a.isWatchlisted ? -1 : 1;
+        return b.viewCount - a.viewCount;
+      })
+      .slice(0, 5)
+      .map(item => ({
+        ...item,
+        schoolLogo: null,
+      }));
 
     // Build recent activity
     const recentActivity: TeamActivity[] = [];
@@ -453,13 +671,13 @@ export async function getTeamDashboardData(teamId?: string): Promise<
       },
       devPlanProgress: devPlanProgress.slice(0, 5),
       attentionItems,
-      statsTrend: [], // Simplified - would need stats query
+      statsTrend,
       collegeInterest: {
-        totalProfileViews: 0,
-        profileViewsChange: 0,
-        schoolsInterested: 0,
-        watchlistAdds: 0,
-        topInterest: [],
+        totalProfileViews,
+        profileViewsChange,
+        schoolsInterested: uniqueSchools.size,
+        watchlistAdds,
+        topInterest,
       },
       recentActivity: recentActivity.slice(0, 10),
       upcomingEvents: (eventsResult.data || []).map(e => ({
@@ -468,8 +686,8 @@ export async function getTeamDashboardData(teamId?: string): Promise<
         eventType: e.event_type,
         startTime: e.start_time,
       })),
-      pendingTasks: 0,
-      unreadMessages: 0,
+      pendingTasks: tasksResult.count || 0,
+      unreadMessages: messagesResult.count || 0,
     };
 
     return { success: true, data };
