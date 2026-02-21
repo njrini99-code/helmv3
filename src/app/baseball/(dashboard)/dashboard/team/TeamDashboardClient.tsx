@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Header } from '@/components/layout/header';
 import { StatCard } from '@/components/features/stat-card';
@@ -8,6 +9,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton-loader';
 import {
   IconUsers,
@@ -26,6 +28,7 @@ import {
   IconClipboardList,
   IconTarget,
 } from '@/components/icons';
+import { joinTeamByCode } from '@/app/baseball/actions/teams';
 import { useAuth } from '@/hooks/use-auth';
 import { useTeamStore } from '@/stores/team-store';
 import { createClient } from '@/lib/supabase/client';
@@ -89,8 +92,24 @@ interface DevPlanGoal {
 
 interface PlayerStats {
   batting_avg: number | null;
+  obp: number | null;
+  slg: number | null;
+  ops: number | null;
   sessions_count: number;
   recent_trend: 'up' | 'down' | 'stable';
+}
+
+interface TeamVideo {
+  id: string;
+  title: string;
+  thumbnail_url: string | null;
+  duration: number | null;
+  video_type: string | null;
+  created_at: string | null;
+  player: {
+    first_name: string | null;
+    last_name: string | null;
+  } | null;
 }
 
 // ============================================================================
@@ -161,6 +180,18 @@ function QuickActionSkeleton() {
   );
 }
 
+function VideoSkeleton() {
+  return (
+    <div className="flex items-start gap-3 p-3 border border-slate-200 rounded-lg animate-pulse">
+      <Skeleton variant="rectangular" width={80} height={48} className="rounded-lg shrink-0" />
+      <div className="flex-1 min-w-0">
+        <Skeleton variant="text" width="70%" height={14} className="mb-2" />
+        <Skeleton variant="text" width="50%" height={12} />
+      </div>
+    </div>
+  );
+}
+
 function PlayerHeaderSkeleton() {
   return (
     <Card variant="glass" className="mb-6">
@@ -183,6 +214,129 @@ function PlayerHeaderSkeleton() {
 }
 
 // ============================================================================
+// NO TEAM CARD - Join Team Flow for Players Without a Team
+// ============================================================================
+
+function NoTeamCard({ playerId }: { playerId?: string }) {
+  const router = useRouter();
+  const [inviteCode, setInviteCode] = useState('');
+  const [isJoining, setIsJoining] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleJoinTeam(e: React.FormEvent) {
+    e.preventDefault();
+    if (!inviteCode.trim() || !playerId) return;
+
+    setIsJoining(true);
+    setError(null);
+
+    try {
+      const result = await joinTeamByCode(inviteCode.trim().toUpperCase(), playerId);
+      
+      if (!result.success) {
+        // Map error messages to user-friendly versions
+        const errorMessages: Record<string, string> = {
+          'Invalid invite code': 'This invite code is invalid. Please check and try again.',
+          'You are already a member of this team': "You're already on this team!",
+          'College players can only be on one team': 'College players can only be on one team at a time.',
+          'JUCO players can only be on one team': 'JUCO players can only be on one team at a time.',
+          'This team is at capacity': 'This team has reached its maximum roster size.',
+        };
+        setError(errorMessages[result.error || ''] || result.error || 'Failed to join team');
+        setIsJoining(false);
+        return;
+      }
+
+      // Success - redirect to team dashboard (will refresh with new team)
+      router.refresh();
+    } catch {
+      setError('An unexpected error occurred. Please try again.');
+      setIsJoining(false);
+    }
+  }
+
+  return (
+    <div className="max-w-2xl mx-auto">
+      <Card variant="glass">
+        <CardContent className="p-6 sm:p-8">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <IconUsers size={32} className="text-primary-600" />
+            </div>
+            <h2 className="text-xl sm:text-2xl font-semibold text-slate-900 mb-2">
+              Join Your Team
+            </h2>
+            <p className="text-slate-600 max-w-sm mx-auto">
+              Enter the invite code from your coach to join your team and access team features.
+            </p>
+          </div>
+
+          {/* Join Form */}
+          <form onSubmit={handleJoinTeam} className="space-y-4">
+            <div>
+              <Input
+                label="Team Invite Code"
+                value={inviteCode}
+                onChange={(e) => {
+                  setInviteCode(e.target.value.toUpperCase());
+                  setError(null);
+                }}
+                placeholder="Enter code (e.g. ABC12345)"
+                maxLength={20}
+                className="text-center tracking-widest font-mono text-lg uppercase"
+                autoFocus
+              />
+            </div>
+
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600 text-center">
+                {error}
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              disabled={!inviteCode.trim() || isJoining}
+              isLoading={isJoining}
+              className="w-full bg-primary-600 hover:bg-primary-700"
+              size="lg"
+            >
+              <IconCheck size={18} className="mr-2" />
+              Join Team
+            </Button>
+          </form>
+
+          {/* Alternative Actions */}
+          <div className="mt-8 pt-6 border-t border-slate-200">
+            <p className="text-sm text-slate-500 text-center mb-4">
+              Don't have an invite code?
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Link href="/baseball/dashboard/profile" className="flex-1">
+                <Button variant="secondary" className="w-full justify-center">
+                  <IconUser size={16} className="mr-2" />
+                  Complete Profile
+                </Button>
+              </Link>
+              <Link href="/baseball/dashboard/videos" className="flex-1">
+                <Button variant="secondary" className="w-full justify-center">
+                  <IconVideo size={16} className="mr-2" />
+                  Upload Videos
+                </Button>
+              </Link>
+            </div>
+            <p className="text-xs text-slate-400 text-center mt-4">
+              Contact your coach for an invite code to join their team.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
@@ -200,12 +354,12 @@ export default function TeamDashboardClient() {
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
 
   // Player stats
-  const [_playerVideoCount, setPlayerVideoCount] = useState(0);
   const [playerDevPlan, setPlayerDevPlan] = useState<DevPlan | null>(null);
   const [playerTeamCount, setPlayerTeamCount] = useState(0);
   const [playerTasks, setPlayerTasks] = useState<PlayerTask[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [playerStats, setPlayerStats] = useState<PlayerStats | null>(null);
+  const [recentTeamVideos, setRecentTeamVideos] = useState<TeamVideo[]>([]);
 
   useEffect(() => {
     if (selectedTeamId && coach?.id && user?.role === 'coach') {
@@ -305,20 +459,15 @@ export default function TeamDashboardClient() {
 
     // Fetch player data in parallel
     const [
-      videoResult,
       devPlanResult,
       teamCountResult,
       eventsResult,
       tasksResult,
       announcementsResult,
       statsResult,
+      rawStatsResult,
+      teamVideosResult,
     ] = await Promise.all([
-      // Player video count
-      supabase
-        .from('baseball_videos')
-        .select('*', { count: 'exact', head: true })
-        .eq('player_id', player.id),
-
       // Player dev plan with goals
       supabase
         .from('baseball_developmental_plans')
@@ -378,9 +527,32 @@ export default function TeamDashboardClient() {
         .select('career_avg, recent_trend, total_sessions, last_5_avg')
         .eq('player_id', player.id)
         .single(),
-    ]);
 
-    setPlayerVideoCount(videoResult.count || 0);
+      // Raw stats for computing OBP/SLG/OPS
+      supabase
+        .from('baseball_player_stats')
+        .select('at_bats, hits, walks, doubles, triples, home_runs')
+        .eq('player_id', player.id),
+
+      // Recent team videos (last 3)
+      supabase
+        .from('baseball_videos')
+        .select(`
+          id,
+          title,
+          thumbnail_url,
+          duration,
+          video_type,
+          created_at,
+          player:baseball_players (
+            first_name,
+            last_name
+          )
+        `)
+        .eq('team_id', selectedTeamId)
+        .order('created_at', { ascending: false })
+        .limit(3),
+    ]);
     
     // Process dev plan
     if (devPlanResult.data) {
@@ -425,8 +597,48 @@ export default function TeamDashboardClient() {
     // Set announcements
     setAnnouncements(announcementsResult.data || []);
 
-    // Process player aggregated stats
+    // Process player aggregated stats and compute OBP/SLG/OPS from raw stats
     const aggregateData = statsResult.data;
+    const rawStats = rawStatsResult.data || [];
+
+    // Compute OBP, SLG, OPS from raw stats
+    let obp: number | null = null;
+    let slg: number | null = null;
+    let ops: number | null = null;
+
+    if (rawStats.length > 0) {
+      const totals = rawStats.reduce(
+        (acc, s) => ({
+          at_bats: acc.at_bats + (s.at_bats || 0),
+          hits: acc.hits + (s.hits || 0),
+          walks: acc.walks + (s.walks || 0),
+          doubles: acc.doubles + (s.doubles || 0),
+          triples: acc.triples + (s.triples || 0),
+          home_runs: acc.home_runs + (s.home_runs || 0),
+        }),
+        { at_bats: 0, hits: 0, walks: 0, doubles: 0, triples: 0, home_runs: 0 }
+      );
+
+      const { at_bats, hits, walks, doubles, triples, home_runs } = totals;
+      const singles = hits - doubles - triples - home_runs;
+      const plateAppearances = at_bats + walks; // Simplified PA (not including HBP, SF, etc.)
+
+      if (plateAppearances > 0) {
+        // OBP = (H + BB) / PA
+        obp = (hits + walks) / plateAppearances;
+      }
+
+      if (at_bats > 0) {
+        // SLG = Total Bases / AB
+        const totalBases = singles + (doubles * 2) + (triples * 3) + (home_runs * 4);
+        slg = totalBases / at_bats;
+      }
+
+      if (obp !== null && slg !== null) {
+        ops = obp + slg;
+      }
+    }
+
     if (aggregateData) {
       const trendMap: Record<string, 'up' | 'down' | 'stable'> = {
         'improving': 'up',
@@ -435,12 +647,18 @@ export default function TeamDashboardClient() {
       };
       setPlayerStats({
         batting_avg: aggregateData.career_avg,
+        obp,
+        slg,
+        ops,
         sessions_count: aggregateData.total_sessions || 0,
         recent_trend: trendMap[aggregateData.recent_trend || 'stable'] || 'stable',
       });
     } else {
       setPlayerStats(null);
     }
+
+    // Process team videos
+    setRecentTeamVideos(teamVideosResult.data as TeamVideo[] || []);
 
     setLoading(false);
   }
@@ -759,7 +977,10 @@ export default function TeamDashboardClient() {
         subtitle={`${player?.high_school_name || 'Your Team'}`}
       />
       <div className="p-4 sm:p-6 lg:p-8">
-        {loading ? (
+        {/* No Team State - Show join team card */}
+        {!loading && !selectedTeamId ? (
+          <NoTeamCard playerId={player?.id} />
+        ) : loading ? (
           <>
             <PlayerHeaderSkeleton />
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
@@ -777,6 +998,12 @@ export default function TeamDashboardClient() {
                   <CardHeader><Skeleton variant="text" width={150} height={20} /></CardHeader>
                   <CardContent className="space-y-3">
                     {[1, 2, 3, 4, 5].map(i => <EventSkeleton key={i} />)}
+                  </CardContent>
+                </Card>
+                <Card variant="glass">
+                  <CardHeader><Skeleton variant="text" width={160} height={20} /></CardHeader>
+                  <CardContent className="space-y-3">
+                    {[1, 2, 3].map(i => <VideoSkeleton key={i} />)}
                   </CardContent>
                 </Card>
               </div>
@@ -835,42 +1062,48 @@ export default function TeamDashboardClient() {
               </CardContent>
             </Card>
 
-            {/* Stats Grid */}
+            {/* My Stats Card - AVG, OBP, SLG, OPS */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
-              {/* My AVG Stat */}
+              {/* AVG */}
               <StatCard
-                label="My AVG"
+                label="AVG"
                 value={playerStats?.batting_avg 
                   ? `.${Math.round(playerStats.batting_avg * 1000).toString().padStart(3, '0')}`
                   : '---'}
                 change={playerStats?.recent_trend === 'up' ? 'Trending up' : 
                         playerStats?.recent_trend === 'down' ? 'Needs work' : 
-                        'No trend data'}
+                        `${playerStats?.sessions_count || 0} sessions`}
                 icon={IconChart}
               />
               
-              {/* My Sessions */}
+              {/* OBP */}
               <StatCard
-                label="Sessions"
-                value={playerStats?.sessions_count || 0}
-                change="Total recorded"
+                label="OBP"
+                value={playerStats?.obp 
+                  ? `.${Math.round(playerStats.obp * 1000).toString().padStart(3, '0')}`
+                  : '---'}
+                change="On-base pct"
                 icon={IconTrendingUp}
               />
 
-              {/* Dev Plan Progress */}
+              {/* SLG */}
               <StatCard
-                label="Dev Plan"
-                value={playerDevPlan ? `${devPlanProgress}%` : '---'}
-                change={nextGoal?.title || 'No active plan'}
+                label="SLG"
+                value={playerStats?.slg 
+                  ? `.${Math.round(playerStats.slg * 1000).toString().padStart(3, '0')}`
+                  : '---'}
+                change="Slugging pct"
                 icon={IconTarget}
               />
 
-              {/* Team Size */}
+              {/* OPS */}
               <StatCard
-                label="Team"
-                value={playerTeamCount}
-                change="Members"
-                icon={IconUsers}
+                label="OPS"
+                value={playerStats?.ops 
+                  ? `.${Math.round(playerStats.ops * 1000).toString().padStart(3, '0')}`
+                  : '---'}
+                change="OBP + SLG"
+                icon={IconChart}
               />
             </div>
 
@@ -964,6 +1197,73 @@ export default function TeamDashboardClient() {
                               {event.event_type}
                             </Badge>
                           </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Recent Team Videos */}
+                <Card variant="glass">
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <h2 className="font-semibold text-slate-900">Recent Team Videos</h2>
+                    <Link href="/baseball/dashboard/videos" className="text-sm leading-relaxed text-primary-600 hover:underline flex items-center gap-1">
+                      All videos <IconChevronRight size={14} />
+                    </Link>
+                  </CardHeader>
+                  <CardContent>
+                    {recentTeamVideos.length === 0 ? (
+                      <div className="text-center py-8">
+                        <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                          <IconVideo size={24} className="text-slate-400" />
+                        </div>
+                        <h3 className="text-lg font-medium text-slate-900 mb-2">No team videos</h3>
+                        <p className="text-sm leading-relaxed text-slate-500 max-w-sm mx-auto">
+                          Team videos and highlights will appear here.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {recentTeamVideos.map((video) => (
+                          <Link
+                            key={video.id}
+                            href={`/baseball/dashboard/videos/${video.id}`}
+                            className="flex items-start gap-3 p-3 border border-slate-200 rounded-lg hover:border-slate-300 hover:bg-slate-50/50 transition-colors"
+                          >
+                            <div className="w-20 h-12 bg-slate-200 rounded-lg shrink-0 flex items-center justify-center overflow-hidden">
+                              {video.thumbnail_url ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={video.thumbnail_url}
+                                  alt={video.title}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <IconVideo size={20} className="text-slate-400" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-slate-900 truncate">{video.title}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                {video.player && (
+                                  <span className="text-xs text-slate-500">
+                                    {getFullName(video.player.first_name, video.player.last_name)}
+                                  </span>
+                                )}
+                                {video.duration && (
+                                  <span className="text-xs text-slate-400">
+                                    {Math.floor(video.duration / 60)}:{(video.duration % 60).toString().padStart(2, '0')}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-slate-400 mt-1">
+                                {video.created_at ? formatRelativeTime(video.created_at) : ''}
+                              </p>
+                            </div>
+                            <Badge variant="secondary" className="shrink-0 text-xs capitalize">
+                              {video.video_type || 'video'}
+                            </Badge>
+                          </Link>
                         ))}
                       </div>
                     )}

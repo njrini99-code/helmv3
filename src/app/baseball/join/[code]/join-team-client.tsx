@@ -1,11 +1,101 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { processTeamInvitation } from '@/app/baseball/actions/teams';
 import Image from 'next/image';
 import { IconCheck, IconUsers, IconUser, IconX, IconArrowLeft } from '@/components/icons';
 import { cn } from '@/lib/utils';
+
+// ============================================================================
+// CONFETTI COMPONENT
+// ============================================================================
+
+interface ConfettiPiece {
+  id: number;
+  x: number;
+  color: string;
+  delay: number;
+  duration: number;
+  size: number;
+}
+
+function Confetti({ active }: { active: boolean }) {
+  const [pieces, setPieces] = useState<ConfettiPiece[]>([]);
+
+  const generateConfetti = useCallback(() => {
+    const colors = [
+      '#22c55e', // green-500
+      '#16a34a', // green-600
+      '#4ade80', // green-400
+      '#fbbf24', // amber-400
+      '#f59e0b', // amber-500
+      '#3b82f6', // blue-500
+      '#8b5cf6', // violet-500
+      '#ec4899', // pink-500
+    ];
+
+    const newPieces: ConfettiPiece[] = [];
+    for (let i = 0; i < 50; i++) {
+      newPieces.push({
+        id: i,
+        x: Math.random() * 100,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        delay: Math.random() * 0.5,
+        duration: 2 + Math.random() * 2,
+        size: 6 + Math.random() * 8,
+      });
+    }
+    setPieces(newPieces);
+  }, []);
+
+  useEffect(() => {
+    if (active) {
+      generateConfetti();
+    }
+  }, [active, generateConfetti]);
+
+  if (!active || pieces.length === 0) return null;
+
+  return (
+    <div className="fixed inset-0 pointer-events-none overflow-hidden z-50">
+      {pieces.map((piece) => (
+        <div
+          key={piece.id}
+          className="absolute animate-confetti-fall"
+          style={{
+            left: `${piece.x}%`,
+            top: '-20px',
+            width: `${piece.size}px`,
+            height: `${piece.size}px`,
+            backgroundColor: piece.color,
+            borderRadius: Math.random() > 0.5 ? '50%' : '2px',
+            animationDelay: `${piece.delay}s`,
+            animationDuration: `${piece.duration}s`,
+            transform: `rotate(${Math.random() * 360}deg)`,
+          }}
+        />
+      ))}
+      <style jsx>{`
+        @keyframes confetti-fall {
+          0% {
+            transform: translateY(0) rotate(0deg);
+            opacity: 1;
+          }
+          100% {
+            transform: translateY(100vh) rotate(720deg);
+            opacity: 0;
+          }
+        }
+        .animate-confetti-fall {
+          animation-name: confetti-fall;
+          animation-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+          animation-fill-mode: forwards;
+        }
+      `}</style>
+    </div>
+  );
+}
 
 interface JoinTeamClientProps {
   inviteCode: string;
@@ -60,30 +150,33 @@ export function JoinTeamClient({
     }, 1500);
   }
 
-  // Success state with celebration
+  // Success state with celebration and confetti
   if (state === 'success') {
     return (
-      <div className="min-h-screen bg-auth-baseball flex items-center justify-center p-6">
-        <div className="max-w-lg w-full bg-white/80 backdrop-blur-xl rounded-2xl border border-white/30 overflow-hidden shadow-sm animate-in zoom-in-95 duration-300">
-          <div className="p-12 text-center">
-            {/* Success animation */}
-            <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 animate-in zoom-in-50 duration-500">
-              <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center animate-in zoom-in-50 duration-300 delay-200">
-                <IconCheck size={32} className="text-white animate-in slide-in-from-bottom-2 duration-300 delay-300" />
+      <>
+        <Confetti active={true} />
+        <div className="min-h-screen bg-auth-baseball flex items-center justify-center p-6">
+          <div className="max-w-lg w-full bg-white/80 backdrop-blur-xl rounded-2xl border border-white/30 overflow-hidden shadow-sm animate-in zoom-in-95 duration-300">
+            <div className="p-12 text-center">
+              {/* Success animation */}
+              <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 animate-in zoom-in-50 duration-500">
+                <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center animate-in zoom-in-50 duration-300 delay-200">
+                  <IconCheck size={32} className="text-white animate-in slide-in-from-bottom-2 duration-300 delay-300" />
+                </div>
               </div>
+              <h1 className="text-2xl font-semibold text-slate-900 mb-2 animate-in fade-in slide-in-from-bottom-2 duration-300 delay-150">
+                Welcome to {team.name}! 🎉
+              </h1>
+              <p className="text-slate-600 animate-in fade-in slide-in-from-bottom-2 duration-300 delay-200">
+                You&apos;re now officially part of the team
+              </p>
+              <p className="text-sm text-slate-500 mt-4 animate-in fade-in duration-300 delay-300">
+                Redirecting to your team dashboard...
+              </p>
             </div>
-            <h1 className="text-2xl font-semibold text-slate-900 mb-2 animate-in fade-in slide-in-from-bottom-2 duration-300 delay-150">
-              Welcome to the Team! 🎉
-            </h1>
-            <p className="text-slate-600 animate-in fade-in slide-in-from-bottom-2 duration-300 delay-200">
-              You&apos;ve successfully joined <span className="font-medium">{team.name}</span>
-            </p>
-            <p className="text-sm text-slate-500 mt-4 animate-in fade-in duration-300 delay-300">
-              Redirecting to your dashboard...
-            </p>
           </div>
         </div>
-      </div>
+      </>
     );
   }
 
