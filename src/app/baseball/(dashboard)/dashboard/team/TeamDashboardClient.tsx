@@ -607,31 +607,35 @@ export default function TeamDashboardClient() {
     let ops: number | null = null;
 
     if (rawStats.length > 0) {
-      const totals = rawStats.reduce(
-        (acc, s) => ({
-          at_bats: acc.at_bats + (s.at_bats || 0),
-          hits: acc.hits + (s.hits || 0),
-          walks: acc.walks + (s.walks || 0),
-          doubles: acc.doubles + (s.doubles || 0),
-          triples: acc.triples + (s.triples || 0),
-          home_runs: acc.home_runs + (s.home_runs || 0),
-        }),
-        { at_bats: 0, hits: 0, walks: 0, doubles: 0, triples: 0, home_runs: 0 }
-      );
+      // Aggregate all raw stats to compute slash line
+      let totalAB = 0;
+      let totalHits = 0;
+      let totalWalks = 0;
+      let totalDoubles = 0;
+      let totalTriples = 0;
+      let totalHR = 0;
 
-      const { at_bats, hits, walks, doubles, triples, home_runs } = totals;
-      const singles = hits - doubles - triples - home_runs;
-      const plateAppearances = at_bats + walks; // Simplified PA (not including HBP, SF, etc.)
+      for (const s of rawStats) {
+        totalAB += s.at_bats || 0;
+        totalHits += s.hits || 0;
+        totalWalks += s.walks || 0;
+        totalDoubles += s.doubles || 0;
+        totalTriples += s.triples || 0;
+        totalHR += s.home_runs || 0;
+      }
+
+      const singles = totalHits - totalDoubles - totalTriples - totalHR;
+      const plateAppearances = totalAB + totalWalks; // Simplified PA (not including HBP, SF, etc.)
 
       if (plateAppearances > 0) {
         // OBP = (H + BB) / PA
-        obp = (hits + walks) / plateAppearances;
+        obp = (totalHits + totalWalks) / plateAppearances;
       }
 
-      if (at_bats > 0) {
+      if (totalAB > 0) {
         // SLG = Total Bases / AB
-        const totalBases = singles + (doubles * 2) + (triples * 3) + (home_runs * 4);
-        slg = totalBases / at_bats;
+        const totalBases = singles + (totalDoubles * 2) + (totalTriples * 3) + (totalHR * 4);
+        slg = totalBases / totalAB;
       }
 
       if (obp !== null && slg !== null) {
@@ -1104,6 +1108,33 @@ export default function TeamDashboardClient() {
                   : '---'}
                 change="OBP + SLG"
                 icon={IconChart}
+              />
+            </div>
+
+            {/* Dev Plan Progress Card */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
+              {/* Dev Plan Progress */}
+              <StatCard
+                label="Dev Plan"
+                value={playerDevPlan ? `${devPlanProgress}%` : '---'}
+                change={nextGoal?.title ? `Next: ${nextGoal.title}` : 'No active plan'}
+                icon={IconTarget}
+              />
+              
+              {/* Sessions */}
+              <StatCard
+                label="Sessions"
+                value={playerStats?.sessions_count || 0}
+                change="Total recorded"
+                icon={IconTrendingUp}
+              />
+
+              {/* Team Members */}
+              <StatCard
+                label="Team"
+                value={playerTeamCount}
+                change="Members"
+                icon={IconUsers}
               />
             </div>
 

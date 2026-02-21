@@ -1,0 +1,1 @@
+export { CollegeProfileEditor } from './CollegeProfileEditor';
