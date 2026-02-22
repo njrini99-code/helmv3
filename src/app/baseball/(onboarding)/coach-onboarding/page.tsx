@@ -1,11 +1,15 @@
 'use client';
 
-import { useState, useEffect, Fragment, useCallback } from 'react';
+import { useState, useEffect, useRef, Fragment, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
+import {
+  completeCoachOnboarding,
+  signupAndCompleteCoachOnboarding,
+} from '@/app/baseball/actions/onboarding';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/select';
@@ -235,7 +239,7 @@ function PlanComparisonModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
 
 export default function BaseballCoachOnboarding() {
   const router = useRouter();
-  const supabase = createClient();
+  const supabaseRef = useRef(createClient());
 
   const [step, setStep] = useState<Step>('type');
   const [direction, setDirection] = useState(1);
@@ -268,7 +272,7 @@ export default function BaseballCoachOnboarding() {
 
   useEffect(() => {
     async function checkAuth() {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await supabaseRef.current.auth.getUser();
       if (user) {
         const meta = user.user_metadata || {};
         const name = [meta.first_name, meta.last_name].filter(Boolean).join(' ') || '';
@@ -310,12 +314,13 @@ export default function BaseballCoachOnboarding() {
   const persistState = useCallback(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        step, coachType, division, schoolName, city, state, fullName, title, email,
+        step, coachType, division, schoolName, city, state, fullName, title,
+        // email intentionally excluded — PII should not persist in localStorage
       }));
     } catch {
       // Ignore storage errors
     }
-  }, [step, coachType, division, schoolName, city, state, fullName, title, email]);
+  }, [step, coachType, division, schoolName, city, state, fullName, title]);
 
   useEffect(() => {
     persistState();
@@ -337,87 +342,26 @@ export default function BaseballCoachOnboarding() {
     setStep(to);
   }
 
-  // ─── Create Coach Records ─────────────────────────────────────────────
+  // ─── Return-to Validation ────────────────────────────────────────────
 
-  async function createCoachRecords(userId: string, userEmail: string, coachType: 'college' | 'juco' | 'high_school' | 'showcase') {
-    await supabase
-      .from('users')
-      .upsert({ id: userId, email: userEmail, role: 'coach' }, { onConflict: 'id' });
+  function isValidReturnTo(path: string): boolean {
+    return (path.startsWith('/baseball/') || path.startsWith('/golf/')) && !path.includes('//');
+  }
 
-    const orgType = coachType === 'college' ? 'college'
-      : coachType === 'juco' ? 'juco'
-      : coachType === 'high_school' ? 'high_school'
-      : 'showcase';
-
-    const { data: org, error: orgError } = await supabase
-      .from('organizations')
-      .insert({
-        name: schoolName,
-        type: orgType,
-        division: division || null,
-        location_city: city || null,
-        location_state: state || null,
-      })
-      .select()
-      .single();
-
-    if (orgError) {
-      setError(`Failed to create organization: ${orgError.message}`);
-      setLoading(false);
-      return;
-    }
-
-    const resolvedName = fullName || existingUser?.fullName || '';
-
-    const { error: coachError } = await supabase
-      .from('baseball_coaches')
-      .insert({
-        user_id: userId,
-        coach_type: coachType,
-        organization_id: org.id,
-        full_name: resolvedName,
-        email: userEmail,
-        title: title || null,
-        onboarding_completed: true,
-      });
-
-    if (coachError) {
-      setError(`Failed to create coach profile: ${coachError.message}`);
-      setLoading(false);
-      return;
-    }
-
-    const joinCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-    const teamType = coachType === 'college' ? 'college'
-      : coachType === 'juco' ? 'juco'
-      : coachType === 'high_school' ? 'high_school'
-      : 'showcase';
-
-    await supabase
-      .from('baseball_teams')
-      .insert({
-        name: `${schoolName} Baseball`,
-        team_type: teamType,
-        organization_id: org.id,
-        join_code: joinCode,
-        created_by: userId,
-      });
-
+  function navigateAfterOnboarding(defaultRedirect: string) {
     clearStorage();
-    setLoading(false);
-
     const storedReturnTo = sessionStorage.getItem('baseball_signup_returnTo');
-    if (storedReturnTo) {
+    if (storedReturnTo && isValidReturnTo(storedReturnTo)) {
       sessionStorage.removeItem('baseball_signup_returnTo');
       router.push(storedReturnTo);
     } else {
-      const dashboardPath = `/baseball/coach/${coachType.replace('_', '-')}`;
-      router.push(dashboardPath);
+      if (storedReturnTo) sessionStorage.removeItem('baseball_signup_returnTo');
+      router.push(defaultRedirect);
     }
     router.refresh();
   }
 
-  // ─── Submit ───────────────────────────────────────────────────────────
+  // ─── Submit (via server actions) ───────────────────────────────────────
 
   async function handleSubmit() {
     if (loading) return;
@@ -426,82 +370,44 @@ export default function BaseballCoachOnboarding() {
 
     try {
       const finalCoachType = coachType as CoachType;
+      const resolvedName = fullName || existingUser?.fullName || '';
 
-      // If user is already authenticated (came from signup page), use existing session
+      let result;
+
       if (existingUser) {
-        await createCoachRecords(existingUser.id, existingUser.email, finalCoachType);
-        return;
+        // Authenticated user — server action creates org/coach/team
+        result = await completeCoachOnboarding({
+          coachType: finalCoachType,
+          schoolName,
+          division: division || undefined,
+          city: city || undefined,
+          state: state || undefined,
+          fullName: resolvedName,
+          title: title || undefined,
+        });
+      } else {
+        // New user — server action handles signup + onboarding
+        result = await signupAndCompleteCoachOnboarding({
+          email: email.trim(),
+          password,
+          fullName: resolvedName,
+          coachType: finalCoachType,
+          schoolName,
+          division: division || undefined,
+          city: city || undefined,
+          state: state || undefined,
+          title: title || undefined,
+        });
       }
 
-      // Otherwise, create a new account (direct onboarding flow without prior signup)
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: email.trim(),
-        password,
-        options: {
-          data: {
-            role: 'coach',
-            sport: 'baseball',
-            coach_type: finalCoachType,
-            first_name: fullName.split(' ')[0] || '',
-            last_name: fullName.split(' ').slice(1).join(' ') || '',
-          },
-        },
-      });
-
-      if (authError) {
-        if (authError.status === 422 || authError.message?.includes('already registered') || (authError as { code?: string }).code === 'user_already_exists') {
-          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-            email: email.trim(),
-            password,
-          });
-
-          if (signInError) {
-            setError('An account with this email already exists. Please sign in instead.');
-            setLoading(false);
-            return;
-          }
-
-          if (signInData.user) {
-            const { data: existingCoach } = await supabase
-              .from('baseball_coaches')
-              .select('id')
-              .eq('user_id', signInData.user.id)
-              .single();
-
-            if (existingCoach) {
-              clearStorage();
-              router.push(`/baseball/coach/${finalCoachType.replace('_', '-')}`);
-              router.refresh();
-              return;
-            }
-
-            await createCoachRecords(signInData.user.id, signInData.user.email || email, finalCoachType);
-            return;
-          }
-        }
-
-        setError(`Failed to create account: ${authError.message}`);
+      if (!result.success) {
+        setError(result.error || 'Something went wrong. Please try again.');
         setLoading(false);
         return;
       }
 
-      if (!authData.user) {
-        setError('Failed to create account. Please try again.');
-        setLoading(false);
-        return;
-      }
-
-      const { error: userError } = await supabase
-        .from('users')
-        .upsert({ id: authData.user.id, email: authData.user.email || email, role: 'coach' }, { onConflict: 'id' });
-
-      if (userError) {
-        setError(`Failed to set user role: ${userError.message}`);
-        setLoading(false);
-        return;
-      }
-
-      await createCoachRecords(authData.user.id, authData.user.email || email, finalCoachType);
+      setLoading(false);
+      navigateAfterOnboarding(result.redirectTo || `/baseball/coach/${finalCoachType.replace('_', '-')}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred.');
       setLoading(false);
@@ -509,15 +415,16 @@ export default function BaseballCoachOnboarding() {
   }
 
   function handlePlanSelectAndSubmit(selectedPlan: 'free' | 'elite') {
+    if (loading) return;
     setPlan(selectedPlan);
     goForward('complete');
-    setTimeout(() => handleSubmit(), 300);
+    handleSubmit();
   }
 
   function handleGoToDashboard() {
-    router.refresh();
     const dashboardPath = coachType ? `/baseball/coach/${coachType.replace('_', '-')}` : '/baseball/dashboard';
-    setTimeout(() => router.push(dashboardPath), 150);
+    router.push(dashboardPath);
+    router.refresh();
   }
 
   // ─── Render ─────────────────────────────────────────────────────────────
@@ -783,14 +690,14 @@ export default function BaseballCoachOnboarding() {
                           placeholder="Create a password"
                           required
                         />
-                        <p className="text-xs text-warm-400 mt-1.5">At least 6 characters</p>
+                        <p className="text-xs text-warm-400 mt-1.5">At least 8 characters with uppercase, lowercase, and number</p>
                       </div>
                     </div>
 
                     <div className="mt-8">
                       <Button
                         onClick={() => goForward('plan')}
-                        disabled={!fullName.trim() || !title.trim() || !email.trim() || password.length < 6}
+                        disabled={!fullName.trim() || !title.trim() || !email.trim() || password.length < 8}
                         className="w-full bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
                         size="lg"
                       >

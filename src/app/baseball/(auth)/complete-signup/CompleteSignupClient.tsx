@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { IconUsers, IconUser } from '@/components/icons';
+import { completeBaseballSignup } from '@/app/baseball/actions/onboarding';
 import type { CoachType, PlayerType } from '@/lib/types';
 
 type Role = 'coach' | 'player';
@@ -18,69 +19,45 @@ export default function CompleteSignupClient() {
   const [error, setError] = useState('');
   const [checking, setChecking] = useState(true);
   const router = useRouter();
-  const supabase = createClient();
+  const supabaseRef = useRef(createClient());
 
   // Check if user is logged in and doesn't have a profile
   useEffect(() => {
     async function checkUser() {
       try {
+        const supabase = supabaseRef.current;
         const { data: { user }, error: userError } = await supabase.auth.getUser();
 
-        if (userError) {
-          console.error('Error getting user:', userError);
+        if (userError || !user) {
           router.push('/baseball/login');
           return;
         }
 
-        if (!user) {
-          router.push('/baseball/login');
-          return;
-        }
+        // Check if profile already exists (parallel queries)
+        const [coachResult, playerResult] = await Promise.all([
+          supabase.from('baseball_coaches').select('id').eq('user_id', user.id).maybeSingle(),
+          supabase.from('baseball_players').select('id').eq('user_id', user.id).maybeSingle(),
+        ]);
 
-        // Check if profile already exists
-        const { data: coach, error: coachError } = await supabase
-          .from('baseball_coaches')
-          .select('id')
-          .eq('user_id', user.id)
-          .single();
-
-        // Ignore "not found" errors, only handle real errors
-        if (coachError && coachError.code !== 'PGRST116') {
-          console.error('Error checking coach profile:', coachError);
-        }
-
-        if (coach) {
+        if (coachResult.data) {
           router.push('/baseball/coach');
           return;
         }
-
-        const { data: player, error: playerError } = await supabase
-          .from('baseball_players')
-          .select('id')
-          .eq('user_id', user.id)
-          .single();
-
-        // Ignore "not found" errors, only handle real errors
-        if (playerError && playerError.code !== 'PGRST116') {
-          console.error('Error checking player profile:', playerError);
-        }
-
-        if (player) {
+        if (playerResult.data) {
           router.push('/baseball/player');
           return;
         }
 
         // User has no profile - show role selection
         setChecking(false);
-      } catch (err) {
-        console.error('Unexpected error checking user:', err);
+      } catch {
         // Show the form anyway - user can try to proceed
         setChecking(false);
       }
     }
 
     checkUser();
-  }, [supabase, router]);
+  }, [router]);
 
   const handleSubmit = async () => {
     if (!role || (role === 'coach' && !coachType) || (role === 'player' && !playerType)) {
@@ -92,71 +69,24 @@ export default function CompleteSignupClient() {
     setError('');
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const result = await completeBaseballSignup({
+        role,
+        coachType: role === 'coach' ? coachType! : undefined,
+        playerType: role === 'player' ? playerType! : undefined,
+      });
 
-      if (!user) {
-        router.push('/baseball/login');
-        return;
-      }
-
-      // Update users table with role
-      const userEmail = user.email;
-      if (!userEmail) {
-        setError('Email is required');
+      if (!result.success) {
+        setError(result.error || 'Something went wrong. Please try again.');
         setLoading(false);
         return;
       }
 
-      await supabase
-        .from('users')
-        .upsert({
-          id: user.id,
-          email: userEmail,
-          role,
-        }, { onConflict: 'id' });
-
-      // Create profile
-      if (role === 'coach') {
-        const { error: coachError } = await supabase.from('baseball_coaches').insert({
-          user_id: user.id,
-          coach_type: coachType!,
-          full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Coach',
-          onboarding_completed: false
-        });
-
-        if (coachError) {
-          setError(`Failed to create profile: ${coachError.message}`);
-          setLoading(false);
-          return;
-        }
-
-        router.push('/baseball/coach');
-        return;
-      } else {
-        const fullName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'Player';
-        const [firstName, ...lastParts] = fullName.split(' ');
-
-        const { error: playerError } = await supabase.from('baseball_players').insert({
-          user_id: user.id,
-          player_type: playerType!,
-          first_name: firstName,
-          last_name: lastParts.join(' ') || '',
-          recruiting_activated: playerType !== 'college',
-          onboarding_completed: false,
-          profile_completion_percent: 0
-        });
-
-        if (playerError) {
-          setError(`Failed to create profile: ${playerError.message}`);
-          setLoading(false);
-          return;
-        }
-
-        router.push('/baseball/player');
-        return;
+      if (result.redirectTo) {
+        router.push(result.redirectTo);
+        router.refresh();
       }
     } catch {
-      setError('An unexpected error occurred');
+      setError('An unexpected error occurred. Please try again.');
       setLoading(false);
     }
   };
