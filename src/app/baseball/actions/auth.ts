@@ -160,12 +160,12 @@ export async function loginAction(
   const [coachResult, playerResult] = await Promise.all([
     supabase
       .from('baseball_coaches')
-      .select('id, onboarding_completed')
+      .select('id, onboarding_completed, coach_type')
       .eq('user_id', data.user.id)
       .maybeSingle(),
     supabase
       .from('baseball_players')
-      .select('id, onboarding_completed')
+      .select('id, onboarding_completed, player_type')
       .eq('user_id', data.user.id)
       .maybeSingle(),
   ]);
@@ -204,14 +204,20 @@ export async function loginAction(
   if (resolvedRole === 'coach') {
     if (!coachProfile || !coachProfile.onboarding_completed) {
       redirectTo = '/baseball/coach-onboarding';
+    } else {
+      const type = (coachProfile.coach_type || 'college').replace('_', '-');
+      redirectTo = `/baseball/coach/${type}`;
     }
   } else if (resolvedRole === 'player') {
     if (!playerProfile || !playerProfile.onboarding_completed) {
       redirectTo = '/baseball/player';
+    } else {
+      const type = (playerProfile.player_type || 'high-school').replace('_', '-');
+      redirectTo = `/baseball/player/${type}`;
     }
   }
 
-  revalidatePath('/baseball/dashboard');
+  revalidatePath('/baseball');
 
   return {
     success: true,
@@ -236,7 +242,9 @@ export type SignupResult = {
 export async function signupAction(
   email: string,
   password: string,
-  role: 'player' | 'coach'
+  role: 'player' | 'coach',
+  firstName?: string,
+  lastName?: string
 ): Promise<SignupResult> {
   // Normalize email
   const normalizedEmail = email.toLowerCase().trim();
@@ -281,6 +289,8 @@ export async function signupAction(
       data: {
         role,
         sport: 'baseball',  // IMPORTANT: Tells trigger to create baseball-only records
+        first_name: firstName || '',
+        last_name: lastName || '',
       },
     },
   });
