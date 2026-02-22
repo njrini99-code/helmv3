@@ -1,23 +1,26 @@
 import * as Sentry from '@sentry/nextjs';
 
+const isDev = process.env.NODE_ENV === 'development';
+
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 
-  // Only enable debug in development
-  debug: process.env.NODE_ENV === 'development',
+  // Never enable debug — it floods the console
+  debug: false,
 
-  // Sample 100% of transactions for performance monitoring
-  tracesSampleRate: 1.0,
+  // 100% in prod, 10% in dev to reduce overhead
+  tracesSampleRate: isDev ? 0.1 : 1.0,
 
-  // Capture 100% of sessions with errors, 10% of all sessions
+  // Capture 100% of sessions with errors, 10% of all sessions (prod only)
   replaysOnErrorSampleRate: 1.0,
-  replaysSessionSampleRate: 0.1,
+  replaysSessionSampleRate: isDev ? 0 : 0.1,
 
   integrations: typeof window !== 'undefined' ? [
-    Sentry.replayIntegration({
+    // Skip replay in dev — it records DOM mutations and adds overhead
+    ...(!isDev ? [Sentry.replayIntegration({
       maskAllText: false,
       blockAllMedia: false,
-    }),
+    })] : []),
     Sentry.browserTracingIntegration(),
   ] : [],
 

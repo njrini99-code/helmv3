@@ -1,6 +1,8 @@
 import * as Sentry from '@sentry/nextjs';
 
 export async function register() {
+  const isDev = process.env.NODE_ENV === 'development';
+
   if (process.env.NEXT_RUNTIME === 'nodejs') {
     // Server-side Sentry initialization
     let profilingIntegration: ReturnType<typeof import('@sentry/profiling-node').nodeProfilingIntegration> | undefined;
@@ -16,17 +18,18 @@ export async function register() {
       dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 
       integrations: [
-        ...(profilingIntegration ? [profilingIntegration] : []),
+        // Only load profiling in production — it adds significant CPU overhead
+        ...(!isDev && profilingIntegration ? [profilingIntegration] : []),
       ],
 
-      // Only enable debug in development
-      debug: process.env.NODE_ENV === 'development',
+      // Never enable debug — it floods the console and slows down the server
+      debug: false,
 
-      // Tracing must be enabled for profiling to work
-      tracesSampleRate: 1.0,
+      // 100% in prod for full visibility, 10% in dev to reduce overhead
+      tracesSampleRate: isDev ? 0.1 : 1.0,
 
-      // Set sampling rate for profiling
-      profileSessionSampleRate: 1.0,
+      // Profiling is expensive — disable in dev, sample in prod
+      profileSessionSampleRate: isDev ? 0 : 0.3,
 
       // Trace lifecycle automatically enables profiling during active traces
       profileLifecycle: 'trace',
@@ -45,8 +48,8 @@ export async function register() {
     // Edge runtime Sentry initialization
     Sentry.init({
       dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
-      debug: process.env.NODE_ENV === 'development',
-      tracesSampleRate: 1.0,
+      debug: false,
+      tracesSampleRate: isDev ? 0.1 : 1.0,
       environment: process.env.NODE_ENV || 'development',
     });
   }

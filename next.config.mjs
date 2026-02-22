@@ -78,7 +78,18 @@ const nextConfig = {
       bodySizeLimit: '2mb',
     },
     // Optimize package imports
-    optimizePackageImports: ['recharts', 'date-fns', 'framer-motion', '@supabase/supabase-js'],
+    optimizePackageImports: [
+      'recharts',
+      'date-fns',
+      'date-fns-tz',
+      'framer-motion',
+      '@supabase/supabase-js',
+      'lucide-react',
+      'zod',
+      '@radix-ui/react-dialog',
+      '@dnd-kit/core',
+      '@dnd-kit/sortable',
+    ],
   },
 
   // Webpack optimizations
@@ -177,37 +188,43 @@ const nextConfig = {
   },
 };
 
-export default withSentryConfig(
-  withBundleAnalyzer(nextConfig),
-  {
-    // For all available options, see:
-    // https://github.com/getsentry/sentry-webpack-plugin#options
+// Skip Sentry webpack plugin in dev — it adds build overhead without benefit
+// Sentry still works in dev via instrumentation.ts, just without source map uploads
+const isDev = process.env.NODE_ENV === 'development';
 
-    // Suppresses source map uploading logs during build
-    silent: true,
-    org: process.env.SENTRY_ORG,
-    project: process.env.SENTRY_PROJECT,
-  },
-  {
-    // For all available options, see:
-    // https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
+export default isDev
+  ? withBundleAnalyzer(nextConfig)
+  : withSentryConfig(
+      withBundleAnalyzer(nextConfig),
+      {
+        // For all available options, see:
+        // https://github.com/getsentry/sentry-webpack-plugin#options
 
-    // Upload a larger set of source maps for prettier stack traces (increases build time)
-    widenClientFileUpload: true,
+        // Suppresses source map uploading logs during build
+        silent: true,
+        org: process.env.SENTRY_ORG,
+        project: process.env.SENTRY_PROJECT,
+      },
+      {
+        // For all available options, see:
+        // https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
 
-    // Transpiles SDK to be compatible with IE11 (increases bundle size)
-    transpileClientSDK: false,
+        // Upload a larger set of source maps for prettier stack traces (increases build time)
+        widenClientFileUpload: true,
 
-    // Routes browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers (increases server load)
-    tunnelRoute: '/monitoring',
+        // Transpiles SDK to be compatible with IE11 (increases bundle size)
+        transpileClientSDK: false,
 
-    // Hides source maps from generated client bundles
-    hideSourceMaps: true,
+        // Routes browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers (increases server load)
+        tunnelRoute: '/monitoring',
 
-    // Automatically tree-shake Sentry logger statements to reduce bundle size
-    disableLogger: true,
+        // Hides source maps from generated client bundles
+        hideSourceMaps: true,
 
-    // Enables automatic instrumentation of Vercel Cron Monitors.
-    automaticVercelMonitors: true,
-  }
-);
+        // Automatically tree-shake Sentry logger statements to reduce bundle size
+        disableLogger: true,
+
+        // Enables automatic instrumentation of Vercel Cron Monitors.
+        automaticVercelMonitors: true,
+      }
+    );

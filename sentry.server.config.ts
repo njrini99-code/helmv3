@@ -9,23 +9,22 @@ try {
   // Profiling native module not available - skip
 }
 
+const isDev = process.env.NODE_ENV === 'development';
+
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 
   integrations: [
-    ...(profilingIntegration ? [profilingIntegration] : []),
+    ...(!isDev && profilingIntegration ? [profilingIntegration] : []),
   ],
 
-  // Only enable debug in development
-  debug: process.env.NODE_ENV === 'development',
+  debug: false,
 
-  // Tracing must be enabled for profiling to work
-  tracesSampleRate: 1.0,
+  tracesSampleRate: isDev ? 0.1 : 1.0,
 
-  // Set sampling rate for profiling
-  profileSessionSampleRate: 1.0,
+  // Profiling is expensive — disable in dev, sample in prod
+  profileSessionSampleRate: isDev ? 0 : 0.3,
 
-  // Trace lifecycle automatically enables profiling during active traces
   profileLifecycle: 'trace',
 
   environment: process.env.NODE_ENV || 'development',
