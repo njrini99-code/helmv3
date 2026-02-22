@@ -275,7 +275,8 @@ export async function getTeamGames(
   if (error) return { success: false, error: error.message };
 
   // Attach counts
-  const games = (data ?? []).map((g) => ({
+  type GameRow = Record<string, unknown> & { batting?: unknown[]; pitching?: unknown[] };
+  const games = (data ?? []).map((g: GameRow) => ({
     ...g,
     batting_count: Array.isArray(g.batting) ? g.batting.length : 0,
     pitching_count: Array.isArray(g.pitching) ? g.pitching.length : 0,
@@ -542,8 +543,8 @@ export async function markGameCompleted(
 
   const allPlayerIds = [
     ...new Set([
-      ...(battingPlayers ?? []).map((p) => p.player_id),
-      ...(pitchingPlayers ?? []).map((p) => p.player_id),
+      ...(battingPlayers ?? []).map((p: { player_id: string }) => p.player_id),
+      ...(pitchingPlayers ?? []).map((p: { player_id: string }) => p.player_id),
     ]),
   ];
 

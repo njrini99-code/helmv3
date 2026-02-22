@@ -182,7 +182,7 @@ export function GamesList({ teamId, title = 'Games & Scrimmages', showAddButton 
         <div className="space-y-3">
           {games.map((game) => (
             <div key={game.id} className="relative">
-              <GameCard game={game} teamId={teamId} />
+              <GameCard game={game} />
               {deletingId === game.id && (
                 <div className="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-2xl flex items-center justify-center">
                   <span className="text-sm text-slate-500">Deleting...</span>

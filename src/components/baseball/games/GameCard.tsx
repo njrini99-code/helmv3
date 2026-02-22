@@ -6,7 +6,6 @@ import { IconCalendar, IconMapPin, IconTrendingUp } from '@/components/icons';
 
 interface GameCardProps {
   game: BaseballGame;
-  teamId: string;
   onDelete?: (gameId: string) => void;
 }
 
@@ -35,7 +34,7 @@ const STATUS_LABELS: Record<string, string> = {
   postponed: 'Postponed',
 };
 
-export function GameCard({ game, teamId }: GameCardProps) {
+export function GameCard({ game }: GameCardProps) {
   const result = getResultInfo(game);
   const gameDate = new Date(game.game_date + 'T00:00:00');
   const formattedDate = gameDate.toLocaleDateString('en-US', {

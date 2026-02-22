@@ -101,7 +101,7 @@ function exportToCSV(stats: BaseballPlayerSeasonStats[], tab: StatsTab) {
 export function SeasonStatsTable({
   stats: initialStats,
   seasonYear,
-  teamId,
+  teamId: _teamId,
   onYearChange,
   availableYears = SEASON_YEARS,
 }: SeasonStatsTableProps) {

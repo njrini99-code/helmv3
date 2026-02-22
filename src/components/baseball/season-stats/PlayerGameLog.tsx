@@ -143,8 +143,6 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
                     <td colSpan={18} className="px-4 py-6 text-center text-slate-400">No batting stats</td>
                   </tr>
                 ) : filteredBatting.map((row) => {
-                  const won = row.game?.our_score != null && row.game?.opponent_score != null && row.game.our_score > row.game.opponent_score;
-                  const lost = row.game?.our_score != null && row.game?.opponent_score != null && row.game.our_score < row.game.opponent_score;
                   const singles = row.h - row.doubles - row.triples - row.hr;
                   const slg = row.ab > 0 ? ((singles + 2 * row.doubles + 3 * row.triples + 4 * row.hr) / row.ab) : null;
                   const pa = row.ab + row.bb + row.hbp + row.sf;
