@@ -23,7 +23,16 @@ import { processTeamInvitation } from '@/app/baseball/actions/teams';
 
 // ─── Types & Constants ──────────────────────────────────────────────────────
 
-type Step = 'about' | 'measurables' | 'team' | 'complete';
+type Step = 'type' | 'about' | 'measurables' | 'team' | 'complete';
+
+type PlayerType = 'high_school' | 'showcase' | 'juco' | 'college';
+
+const PLAYER_TYPES = [
+  { value: 'high_school' as const, label: 'High School Player', desc: 'Currently playing high school baseball', emoji: '🏫' },
+  { value: 'showcase' as const, label: 'Showcase / Travel Ball', desc: 'Playing on a showcase or travel team', emoji: '⚾' },
+  { value: 'juco' as const, label: 'JUCO Player', desc: 'Playing at a junior college', emoji: '🎓' },
+  { value: 'college' as const, label: 'College Player', desc: 'Playing at a 4-year college', emoji: '🏟️' },
+] as const;
 
 const STEPS_CONFIG = [
   { id: 'about' as const, label: 'About You', Icon: IconFlag },
@@ -128,10 +137,13 @@ export default function BaseballPlayerOnboarding() {
   const supabase = createClient();
   const { user, player, loading: authLoading } = useAuth();
 
-  const [step, setStep] = useState<Step>('about');
+  const [step, setStep] = useState<Step>('type');
   const [direction, setDirection] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Player type
+  const [playerType, setPlayerType] = useState<PlayerType | ''>('');
 
   // About You data
   const [firstName, setFirstName] = useState(player?.first_name || '');
@@ -257,6 +269,7 @@ export default function BaseballPlayerOnboarding() {
           pitch_velo: pitchVelo ? parseFloat(pitchVelo) : null,
           exit_velo: exitVelo ? parseFloat(exitVelo) : null,
           sixty_time: sixtyTime ? parseFloat(sixtyTime) : null,
+          player_type: playerType || null,
           onboarding_completed: true,
           profile_completion_percent: completionScore,
         })
@@ -273,7 +286,8 @@ export default function BaseballPlayerOnboarding() {
         sessionStorage.removeItem('baseball_signup_returnTo');
         router.push(storedReturnTo);
       } else {
-        router.push('/baseball/dashboard');
+        const dashboardPath = playerType ? `/baseball/player/${playerType.replace('_', '-')}` : '/baseball/dashboard';
+        router.push(dashboardPath);
       }
       router.refresh();
     } catch {
@@ -318,16 +332,63 @@ export default function BaseballPlayerOnboarding() {
         </m.div>
 
         <LazyMotion features={domAnimation}>
-          {/* Step Indicator */}
-          <m.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <StepIndicator currentStep={step} />
-          </m.div>
+          {/* Step Indicator - only after type selection */}
+          {step !== 'type' && (
+            <m.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+            >
+              <StepIndicator currentStep={step} />
+            </m.div>
+          )}
 
           <AnimatePresence mode="wait" custom={direction}>
+            {/* ─── Pre-Step: Player Type Selection ─────────────────────── */}
+            {step === 'type' && (
+              <m.div
+                key="type"
+                custom={direction}
+                variants={slideVariants}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                className="w-full max-w-[460px]"
+              >
+                <m.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-5">
+                  <m.div variants={staggerItem} className="text-center">
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-warm-900">
+                      What type of player are you?
+                    </h1>
+                    <p className="text-warm-500 mt-2 text-sm sm:text-base">
+                      This determines your dashboard experience
+                    </p>
+                  </m.div>
+
+                  <m.div variants={staggerItem} className="space-y-3">
+                    {PLAYER_TYPES.map((opt) => (
+                      <button
+                        key={opt.value}
+                        onClick={() => { setPlayerType(opt.value); setDirection(1); setStep('about'); }}
+                        className="w-full auth-glass-card rounded-2xl p-5 text-left hover:bg-white/90 transition-all group"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                            {opt.emoji}
+                          </div>
+                          <div>
+                            <p className="text-lg font-semibold text-warm-900">{opt.label}</p>
+                            <p className="text-sm text-warm-500">{opt.desc}</p>
+                          </div>
+                          <IconArrowRight size={16} className="ml-auto text-warm-400 group-hover:text-warm-600 transition-colors" />
+                        </div>
+                      </button>
+                    ))}
+                  </m.div>
+                </m.div>
+              </m.div>
+            )}
+
             {/* ─── Step 1: About You ───────────────────────────────────── */}
             {step === 'about' && (
               <m.div
@@ -340,6 +401,17 @@ export default function BaseballPlayerOnboarding() {
                 className="w-full max-w-[460px]"
               >
                 <m.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-5">
+                  {/* Back Button */}
+                  <m.div variants={staggerItem}>
+                    <button
+                      onClick={() => goBack('type')}
+                      className="flex items-center gap-1.5 text-sm font-medium text-warm-600 hover:text-warm-800 transition-colors min-h-[44px] px-2 -ml-2 rounded-lg active:bg-warm-100"
+                    >
+                      <IconArrowLeft size={16} />
+                      Back
+                    </button>
+                  </m.div>
+
                   {/* Header */}
                   <m.div variants={staggerItem} className="text-center">
                     <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-warm-900">
