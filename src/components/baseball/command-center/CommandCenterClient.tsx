@@ -343,11 +343,13 @@ export function CommandCenterClient({
               </p>
             </div>
             <div className="flex items-center gap-2.5">
-              <BaseballInviteButton
-                teamId={team.id}
-                teamName={team.name}
-                existingCode={team.inviteCode}
-              />
+              {team.id && (
+                <BaseballInviteButton
+                  teamId={team.id}
+                  teamName={team.name}
+                  existingCode={team.inviteCode}
+                />
+              )}
               <Link href="/baseball/dashboard/stats/upload">
                 <button className="flex items-center gap-2 px-4 py-2 bg-white/70 backdrop-blur-sm
                                    border border-white/20 rounded-xl text-sm font-medium text-slate-700
@@ -497,11 +499,13 @@ export function CommandCenterClient({
                   <p className="text-slate-500 mb-6 max-w-sm mx-auto text-sm">
                     Share your join code to invite players to your roster.
                   </p>
-                  <BaseballInviteButton
-                    teamId={team.id}
-                    teamName={team.name}
-                    existingCode={team.inviteCode}
-                  />
+                  {team.id && (
+                    <BaseballInviteButton
+                      teamId={team.id}
+                      teamName={team.name}
+                      existingCode={team.inviteCode}
+                    />
+                  )}
                 </div>
               ) : filteredPlayers.length === 0 ? (
                 <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-10 text-center">
