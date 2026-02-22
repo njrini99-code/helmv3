@@ -232,6 +232,21 @@ export default async function CommandCenterPage() {
     (i: BaseballCoachInsight) => !i.player_id
   );
 
+  // Fetch calendar events for the current week
+  const now = new Date();
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - now.getDay());
+  weekStart.setHours(0, 0, 0, 0);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 7);
+
+  const { data: calendarEvents } = await supabase
+    .from('baseball_events')
+    .select('id, title, event_type, start_time, end_time')
+    .eq('team_id', team.id)
+    .gte('start_time', weekStart.toISOString())
+    .lt('start_time', weekEnd.toISOString());
+
   return (
     <CommandCenterClient
       team={{
@@ -245,6 +260,7 @@ export default async function CommandCenterPage() {
       insights={teamInsights as BaseballCoachInsight[]}
       coachId={coach.id}
       coachName={coach.full_name || 'Coach'}
+      calendarEvents={calendarEvents ?? []}
     />
   );
 }

@@ -684,6 +684,12 @@ export interface BaseballPlayerAggregates {
 
   development_stage: BaseballDevelopmentStage | null;
 
+  // Optional extended fields
+  total_at_bats?: number | null;
+  total_hits?: number | null;
+  /** Array of {date: string; avg: number} for charting team/player trend over time */
+  trend_data?: Array<{ date: string; avg: number }> | null;
+
   last_calculated_at: string;
   updated_at: string;
 }
@@ -782,6 +788,11 @@ export interface BaseballRosterPlayer extends Player {
   aggregates?: BaseballPlayerAggregates;
   recentStats?: BaseballPlayerStats[];
   insights?: BaseballCoachInsight[];
+  // Team membership fields (populated when fetched via baseball_team_members join)
+  jersey_number?: number | null;
+  team_position?: string | null;
+  team_status?: string | null;
+  joined_at?: string | null;
 }
 
 // Pressure Performance Index
