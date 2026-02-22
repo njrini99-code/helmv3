@@ -52,14 +52,14 @@ export default function ProductsPage() {
       <SmoothScroll />
 
       {/* Navigation */}
-      <div className="fixed top-0 left-0 right-0 z-50">
+      <div className="relative z-10">
         <Navigation />
       </div>
 
       {/* Hero Section */}
       <motion.section
         id="main-content"
-        className="relative pt-24 px-5 sm:px-6 py-16 md:py-24 max-w-6xl mx-auto"
+        className="relative px-5 sm:px-6 py-16 md:py-24 max-w-6xl mx-auto"
         initial="hidden"
         animate="visible"
         variants={staggerContainer}

@@ -2725,12 +2725,14 @@ export async function savePartialRound(
 
     if (existingRoundId) {
       // Update existing incomplete round
+      // Note: don't filter by status='in_progress' — rounds may have null/paused status
+      // due to schema migrations. Only block updating a fully completed round.
       const { data: round, error: roundError } = await supabase
         .from('golf_rounds')
         .update(roundData)
         .eq('id', existingRoundId)
         .eq('player_id', player.id)
-        .eq('status', 'in_progress')
+        .neq('status', 'completed')
         .select()
         .maybeSingle();
 
@@ -2742,10 +2744,10 @@ export async function savePartialRound(
       }
 
       if (!round) {
-        // Round doesn't exist or is no longer in_progress — don't silently create a duplicate
+        // Round doesn't exist, belongs to another player, or is already completed
         return {
           success: false,
-          error: 'Round not found or already completed. Please start a new round.'
+          error: 'Could not save round. The round may have already been completed or deleted.'
         };
       } else {
         roundId = round.id;
@@ -2911,10 +2913,12 @@ export async function savePartialRound(
 
     return { success: true, data: { roundId } };
 
-  } catch {
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('[savePartialRound] Unexpected error:', message);
     return {
       success: false,
-      error: 'Failed to save round. Please try again.'
+      error: `Failed to save round. Please try again. (${message})`
     };
   }
 }

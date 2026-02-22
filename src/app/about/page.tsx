@@ -64,9 +64,8 @@ export default function AboutPage() {
         Skip to main content
       </a>
       {/* Navigation */}
-      <header className="fixed top-0 left-0 right-0 z-50">
-        <div className="absolute inset-0 bg-[#FAFAF8]/90 backdrop-blur-md border-b border-warm-200/50" />
-        <div className="relative max-w-5xl mx-auto px-5 py-4 flex items-center justify-between">
+      <header className="relative z-10 border-b border-warm-200/50 bg-[#FAFAF8]">
+        <div className="max-w-5xl mx-auto px-5 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3">
             <Image
               src="/Helm-Logo-New-Main.png"
@@ -117,7 +116,7 @@ export default function AboutPage() {
       <section
         id="main-content"
         ref={heroRef}
-        className="relative pt-28 pb-16 md:pt-36 md:pb-20 px-5"
+        className="relative pt-12 pb-16 md:pt-16 md:pb-20 px-5"
       >
         <motion.div
           className="relative max-w-3xl mx-auto text-center"
