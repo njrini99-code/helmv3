@@ -72,6 +72,7 @@ CREATE TRIGGER golf_task_reminders_updated_at
 ALTER TABLE golf_task_reminders ENABLE ROW LEVEL SECURITY;
 
 -- Coaches can view reminders for their team's tasks (via organization)
+DROP POLICY IF EXISTS "Coaches can view team task reminders" ON golf_task_reminders;
 CREATE POLICY "Coaches can view team task reminders" ON golf_task_reminders
     FOR SELECT
     USING (
@@ -85,6 +86,7 @@ CREATE POLICY "Coaches can view team task reminders" ON golf_task_reminders
     );
 
 -- Coaches can create reminders for their team's tasks
+DROP POLICY IF EXISTS "Coaches can create team task reminders" ON golf_task_reminders;
 CREATE POLICY "Coaches can create team task reminders" ON golf_task_reminders
     FOR INSERT
     WITH CHECK (
@@ -98,6 +100,7 @@ CREATE POLICY "Coaches can create team task reminders" ON golf_task_reminders
     );
 
 -- Coaches can update reminders for their team's tasks
+DROP POLICY IF EXISTS "Coaches can update team task reminders" ON golf_task_reminders;
 CREATE POLICY "Coaches can update team task reminders" ON golf_task_reminders
     FOR UPDATE
     USING (
@@ -111,6 +114,7 @@ CREATE POLICY "Coaches can update team task reminders" ON golf_task_reminders
     );
 
 -- Coaches can delete reminders for their team's tasks
+DROP POLICY IF EXISTS "Coaches can delete team task reminders" ON golf_task_reminders;
 CREATE POLICY "Coaches can delete team task reminders" ON golf_task_reminders
     FOR DELETE
     USING (
@@ -124,6 +128,7 @@ CREATE POLICY "Coaches can delete team task reminders" ON golf_task_reminders
     );
 
 -- Service role can do everything (for edge function processing)
+DROP POLICY IF EXISTS "Service role full access" ON golf_task_reminders;
 CREATE POLICY "Service role full access" ON golf_task_reminders
     FOR ALL
     USING (auth.role() = 'service_role');

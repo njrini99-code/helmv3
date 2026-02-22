@@ -1746,6 +1746,7 @@ export type Database = {
         Row: {
           coach_id: string | null
           created_at: string | null
+          engagement_date: string | null
           engagement_type: string
           id: string
           metadata: Json | null
@@ -1754,6 +1755,7 @@ export type Database = {
         Insert: {
           coach_id?: string | null
           created_at?: string | null
+          engagement_date?: string | null
           engagement_type: string
           id?: string
           metadata?: Json | null
@@ -1762,6 +1764,7 @@ export type Database = {
         Update: {
           coach_id?: string | null
           created_at?: string | null
+          engagement_date?: string | null
           engagement_type?: string
           id?: string
           metadata?: Json | null
@@ -9042,6 +9045,7 @@ export type Database = {
           width: number
         }[]
       }
+      get_my_baseball_conversation_ids: { Args: never; Returns: string[] }
       get_my_coach_id: { Args: never; Returns: string }
       get_my_player_id: { Args: never; Returns: string }
       get_pending_task_reminders: {
@@ -9104,6 +9108,10 @@ export type Database = {
       get_users_with_auth: { Args: never; Returns: Json }
       heartbeat: { Args: never; Returns: undefined }
       is_admin: { Args: never; Returns: boolean }
+      is_baseball_primary_coach: {
+        Args: { p_team_id: string }
+        Returns: boolean
+      }
       is_baseball_team_coach: { Args: { team_uuid: string }; Returns: boolean }
       is_baseball_team_member: { Args: { team_uuid: string }; Returns: boolean }
       is_baseball_team_player: { Args: { team_uuid: string }; Returns: boolean }
