@@ -136,12 +136,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           .maybeSingle(),
         supabase
           .from('baseball_coaches')
-          .select('id, onboarding_completed')
+          .select('id, onboarding_completed, coach_type')
           .eq('user_id', user.id)
           .maybeSingle(),
         supabase
           .from('baseball_players')
-          .select('id, onboarding_completed')
+          .select('id, onboarding_completed, player_type')
           .eq('user_id', user.id)
           .maybeSingle(),
       ]);
