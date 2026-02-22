@@ -46,25 +46,12 @@ export function useTeams() {
         console.error('Error fetching teams from staff:', staffError.message);
       }
 
-      // Also check if coach is head_coach of any teams
-      const { data: headCoachData, error: headError } = await supabase
-        .from('baseball_teams')
-        .select('id, name, team_type, logo_url, primary_color, secondary_color, description')
-        .eq('head_coach_id', coach.id);
+      // baseball_teams does not have a head_coach_id column.
+      // All coach-team relationships are managed via baseball_team_coach_staff.
 
-      if (headError) {
-        console.error('Error fetching head coach teams:', headError.message);
-      }
-
-      // Combine and deduplicate
+      // Build team map from staff entries
       const teamMap = new Map<string, Team>();
 
-      // Add head coach teams
-      (headCoachData || []).forEach((team) => {
-        teamMap.set(team.id, team as Team);
-      });
-
-      // Add staff teams
       (staffData || []).forEach((item) => {
         const team = item.baseball_teams as Team | null;
         if (team && !teamMap.has(team.id)) {

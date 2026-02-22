@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/stores/auth-store';
 import { toast } from '@/components/ui/toast';
@@ -10,7 +10,9 @@ export function useWatchlist() {
   const [watchlist, setWatchlist] = useState<WatchlistWithPlayer[]>([]);
   const [loading, setLoading] = useState(true);
   const { coach } = useAuthStore();
-  const supabase = createClient();
+  // Memoize supabase client — without this, createClient() creates a new object each render,
+  // which ends up in useCallback deps and causes an infinite refetch loop.
+  const supabase = useMemo(() => createClient(), []);
 
   const fetchWatchlist = useCallback(async () => {
     if (!coach) {
@@ -19,26 +21,32 @@ export function useWatchlist() {
     }
 
     setLoading(true);
-    const { data } = await supabase
-      .from('baseball_watchlists')
-      .select(`
-        id,
-        coach_id,
-        player_id,
-        pipeline_stage,
-        notes,
-        priority,
-        tags,
-        added_at,
-        created_at,
-        updated_at,
-        player:baseball_players(*)
-      `)
-      .eq('coach_id', coach.id)
-      .order('priority', { ascending: false });
+    try {
+      const { data } = await supabase
+        .from('baseball_watchlists')
+        .select(`
+          id,
+          coach_id,
+          player_id,
+          pipeline_stage,
+          notes,
+          priority,
+          tags,
+          added_at,
+          created_at,
+          updated_at,
+          player:baseball_players(*)
+        `)
+        .eq('coach_id', coach.id)
+        .order('priority', { ascending: false });
 
-    setWatchlist((data || []) as WatchlistWithPlayer[]);
-    setLoading(false);
+      setWatchlist((data || []) as WatchlistWithPlayer[]);
+    } catch (err) {
+      console.error('[useWatchlist] fetchWatchlist failed:', err);
+      setWatchlist([]);
+    } finally {
+      setLoading(false);
+    }
   }, [coach, supabase]);
 
   useEffect(() => {

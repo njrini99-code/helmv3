@@ -76,7 +76,8 @@ export function WatchlistClient() {
   const { showToast } = useToast();
   const { coach } = useAuth();
   const { watchlist, loading, refetch } = useWatchlist();
-  const supabase = createClient();
+  // Memoize so supabase is a stable reference in useCallback deps (prevents infinite refetch loops)
+  const supabase = useMemo(() => createClient(), []);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');

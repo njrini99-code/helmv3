@@ -82,16 +82,32 @@ export default function TeamsPage() {
       setLoading(true);
       const supabase = createClient();
 
-      // Get teams where this coach is the head coach
-      const { data: teamsData, error } = await supabase
-        .from('baseball_teams')
-        .select('*')
-        .eq('head_coach_id', coach.id)
-        .order('created_at', { ascending: false });
+      // baseball_teams does not have head_coach_id — use baseball_team_coach_staff for lookups
+      const { data: staffData, error: staffError } = await supabase
+        .from('baseball_team_coach_staff')
+        .select('team_id')
+        .eq('coach_id', coach.id);
 
-      if (error) {
+      if (staffError) {
         setLoading(false);
         return;
+      }
+
+      const coachTeamIds = (staffData || []).map((s) => s.team_id);
+
+      let teamsData: Team[] = [];
+      if (coachTeamIds.length > 0) {
+        const { data: fetchedTeams, error: teamsError } = await supabase
+          .from('baseball_teams')
+          .select('*')
+          .in('id', coachTeamIds)
+          .order('created_at', { ascending: false });
+
+        if (teamsError) {
+          setLoading(false);
+          return;
+        }
+        teamsData = (fetchedTeams || []) as Team[];
       }
 
       // Get member counts

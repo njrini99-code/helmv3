@@ -32,26 +32,10 @@ export async function getCoachProfile(coachId: string) {
 export async function getCoachTeams(coachId: string) {
   const supabase = await createClient();
 
-  // Get teams where coach is head coach
-  const { data: headCoachTeams, error: headCoachError } = await supabase
-    .from('baseball_teams')
-    .select(
-      `
-      *,
-      organization:organizations(*),
-      members:baseball_team_members(count)
-    `
-    )
-    .eq('head_coach_id', coachId)
-    .order('created_at', { ascending: false });
-
-  if (headCoachError) {
-    console.error('Error fetching head coach teams:', headCoachError);
-    throw headCoachError;
-  }
-
-  // Get teams where coach is staff
-  const { data: staffTeams, error: staffError } = await supabase
+  // baseball_teams does not have head_coach_id column.
+  // All coach-team relationships are in baseball_team_coach_staff.
+  // Primary coaches (is_primary = true) are the "head coaches".
+  const { data: staffData, error: staffError } = await supabase
     .from('baseball_team_coach_staff')
     .select(
       `
@@ -64,16 +48,24 @@ export async function getCoachTeams(coachId: string) {
     `
     )
     .eq('coach_id', coachId)
-    .order('joined_at', { ascending: false});
+    .order('created_at', { ascending: false });
 
   if (staffError) {
-    console.error('Error fetching staff teams:', staffError);
+    console.error('Error fetching coach teams:', staffError);
     throw staffError;
   }
 
+  const allStaffEntries = staffData || [];
+
+  // Split into "primary" (head coach) vs regular staff for callers that need the distinction
+  const headCoachStaff = allStaffEntries
+    .filter(s => s.is_primary)
+    .map(s => s.team)
+    .filter(Boolean);
+
   return {
-    headCoachTeams: headCoachTeams || [],
-    staffTeams: staffTeams || [],
+    headCoachTeams: headCoachStaff as NonNullable<(typeof allStaffEntries)[number]['team']>[],
+    staffTeams: allStaffEntries,
   };
 }
 
