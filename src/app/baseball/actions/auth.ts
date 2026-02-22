@@ -8,7 +8,7 @@ import {
   resetRateLimit,
   RATE_LIMITS,
   formatTimeRemaining,
-} from '@/lib/auth/rate-limit';
+} from '@/lib/auth/supabase-rate-limit';
 import {
   recordFailedLogin,
   checkAccountLockout,
@@ -59,8 +59,8 @@ export async function loginAction(
     };
   }
 
-  // Check rate limit (in-memory, faster)
-  const emailRateLimit = checkRateLimit(
+  // Check rate limit (DB-backed, works across serverless instances)
+  const emailRateLimit = await checkRateLimit(
     `login:email:${normalizedEmail}`,
     RATE_LIMITS.LOGIN
   );
@@ -81,7 +81,7 @@ export async function loginAction(
   }
 
   // Also rate limit by IP to prevent distributed attacks
-  const ipRateLimit = checkRateLimit(`login:ip:${ip}`, RATE_LIMITS.LOGIN);
+  const ipRateLimit = await checkRateLimit(`login:ip:${ip}`, RATE_LIMITS.LOGIN);
 
   if (!ipRateLimit.allowed) {
     const remaining = formatTimeRemaining(ipRateLimit.resetAt - Date.now());
@@ -139,9 +139,11 @@ export async function loginAction(
   }
 
   // Successful login - reset both rate limits and lockout tracking
-  resetRateLimit(`login:email:${normalizedEmail}`);
-  resetRateLimit(`login:ip:${ip}`);
-  await resetLoginAttempts(normalizedEmail);
+  await Promise.all([
+    resetRateLimit(`login:email:${normalizedEmail}`),
+    resetRateLimit(`login:ip:${ip}`),
+    resetLoginAttempts(normalizedEmail),
+  ]);
 
   // Log successful login
   console.info('[Auth] Successful login:', {
@@ -215,6 +217,9 @@ export async function loginAction(
       const type = (playerProfile.player_type || 'high-school').replace('_', '-');
       redirectTo = `/baseball/player/${type}`;
     }
+  } else {
+    // No role or profile found — send to complete-signup to create a profile
+    redirectTo = '/baseball/complete-signup';
   }
 
   revalidatePath('/baseball');
@@ -263,7 +268,7 @@ export async function signupAction(
   const ip = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown';
 
   // Check rate limit (prevent signup spam)
-  const rateLimit = checkRateLimit(`signup:ip:${ip}`, RATE_LIMITS.SIGNUP);
+  const rateLimit = await checkRateLimit(`signup:ip:${ip}`, RATE_LIMITS.SIGNUP);
 
   if (!rateLimit.allowed) {
     const remaining = formatTimeRemaining(rateLimit.resetAt - Date.now());
@@ -323,7 +328,7 @@ export async function signupAction(
 
     return {
       success: false,
-      error: error.message,
+      error: 'An unexpected error occurred. Please try again.',
     };
   }
 
@@ -377,7 +382,7 @@ export async function requestPasswordResetAction(
   const ip = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown';
 
   // Check rate limit (prevent password reset spam/DoS)
-  const rateLimit = checkRateLimit(
+  const rateLimit = await checkRateLimit(
     `password-reset:email:${normalizedEmail}`,
     RATE_LIMITS.PASSWORD_RESET
   );

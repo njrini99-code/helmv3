@@ -285,7 +285,6 @@ export default function BaseballCoachOnboarding() {
       }
     }
     checkAuth();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ─── LocalStorage Persistence ─────────────────────────────────────────
@@ -690,7 +689,7 @@ export default function BaseballCoachOnboarding() {
                           placeholder="Create a password"
                           required
                         />
-                        <p className="text-xs text-warm-400 mt-1.5">At least 8 characters with uppercase, lowercase, and number</p>
+                        <p className="text-xs text-warm-400 mt-1.5">At least 8 characters with uppercase, lowercase, number, and special character</p>
                       </div>
                     </div>
 

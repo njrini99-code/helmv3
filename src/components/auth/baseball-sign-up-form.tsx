@@ -18,7 +18,7 @@ function getSignupErrorMessage(error: string): string {
     return 'Please enter a valid email address.';
   }
   if (lower.includes('weak password') || lower.includes('password')) {
-    return 'Password does not meet the requirements. Please use at least 8 characters.';
+    return 'Password does not meet the requirements. Use at least 8 characters with uppercase, lowercase, number, and special character.';
   }
   if (lower.includes('network') || lower.includes('fetch')) {
     return 'Unable to reach the server. Please check your internet connection and try again.';
@@ -66,15 +66,6 @@ export function BaseballSignUpForm() {
         setIsLoading(false);
         return;
       }
-
-      // CRITICAL: After signup, the session cookies are set but the Next.js
-      // router cache doesn't know about them. We must call router.refresh()
-      // FIRST to force a server-side revalidation that reads the new cookies,
-      // THEN navigate to the destination page.
-      router.refresh();
-
-      // Wait for cookies to propagate and cache to invalidate
-      await new Promise(resolve => setTimeout(resolve, 150));
 
       // After signup, user always needs onboarding first.
       sessionStorage.removeItem('baseball_signup_returnTo');

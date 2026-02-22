@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { checkRateLimit, formatTimeRemaining } from '@/lib/auth/rate-limit';
+import { checkRateLimit, formatTimeRemaining } from '@/lib/auth/supabase-rate-limit';
 
 // Whitelist of allowed redirect paths to prevent open redirect attacks
 const ALLOWED_REDIRECTS = [
@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
   const userAgent = request.headers.get('user-agent') || 'unknown';
 
   // Rate limit OAuth callbacks to prevent abuse (10 per hour per IP)
-  const rateLimit = checkRateLimit(`oauth_callback:ip:${ip}`, {
+  const rateLimit = await checkRateLimit(`oauth_callback:ip:${ip}`, {
     maxAttempts: 10,
     windowMs: 60 * 60 * 1000, // 1 hour
   });
@@ -133,21 +133,12 @@ export async function GET(request: NextRequest) {
       // Determine sport: check for golf profiles, otherwise default to baseball
       let sport = userSport || 'baseball';
 
-      // If no sport in metadata, check if user has golf profiles
+      // If no sport in metadata, check if user has golf profiles (parallel)
       if (!userSport) {
-        const { data: golfCoachCheck } = await supabase
-          .from('golf_coaches')
-          .select('id')
-          .eq('user_id', data.user.id)
-          .limit(1)
-          .single();
-
-        const { data: golfPlayerCheck } = await supabase
-          .from('golf_players')
-          .select('id')
-          .eq('user_id', data.user.id)
-          .limit(1)
-          .single();
+        const [{ data: golfCoachCheck }, { data: golfPlayerCheck }] = await Promise.all([
+          supabase.from('golf_coaches').select('id').eq('user_id', data.user.id).limit(1).single(),
+          supabase.from('golf_players').select('id').eq('user_id', data.user.id).limit(1).single(),
+        ]);
 
         if (golfCoachCheck || golfPlayerCheck) {
           sport = 'golf';
@@ -160,19 +151,12 @@ export async function GET(request: NextRequest) {
         fromMetadata: !!userSport
       });
 
-      // Check for GOLF profiles first if sport is golf
+      // Check for GOLF profiles first if sport is golf (parallel)
       if (sport === 'golf') {
-        const { data: golfCoach } = await supabase
-          .from('golf_coaches')
-          .select('id, onboarding_completed')
-          .eq('user_id', data.user.id)
-          .single();
-
-        const { data: golfPlayer } = await supabase
-          .from('golf_players')
-          .select('id, onboarding_completed')
-          .eq('user_id', data.user.id)
-          .single();
+        const [{ data: golfCoach }, { data: golfPlayer }] = await Promise.all([
+          supabase.from('golf_coaches').select('id, onboarding_completed').eq('user_id', data.user.id).single(),
+          supabase.from('golf_players').select('id, onboarding_completed').eq('user_id', data.user.id).single(),
+        ]);
 
         if (golfCoach) {
           // If onboarded and there's a specific golf destination (e.g. join link), honor it
@@ -197,18 +181,11 @@ export async function GET(request: NextRequest) {
         return NextResponse.redirect(new URL('/golf/player', requestUrl.origin));
       }
 
-      // Check for BASEBALL profiles
-      const { data: coach } = await supabase
-        .from('baseball_coaches')
-        .select('id, onboarding_completed')
-        .eq('user_id', data.user.id)
-        .single();
-
-      const { data: player } = await supabase
-        .from('baseball_players')
-        .select('id, onboarding_completed')
-        .eq('user_id', data.user.id)
-        .single();
+      // Check for BASEBALL profiles (parallel)
+      const [{ data: coach }, { data: player }] = await Promise.all([
+        supabase.from('baseball_coaches').select('id, onboarding_completed').eq('user_id', data.user.id).single(),
+        supabase.from('baseball_players').select('id, onboarding_completed').eq('user_id', data.user.id).single(),
+      ]);
 
       // Determine redirect based on profile status
       if (coach) {

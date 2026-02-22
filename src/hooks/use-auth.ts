@@ -23,20 +23,19 @@ export function useAuth() {
         return;
       }
 
-      const { data: userData } = await supabase.from('users').select('*').eq('id', authUser.id).single();
+      // Fetch user record and both profiles in parallel to avoid waterfall
+      const [{ data: userData }, { data: coachData }, { data: playerData }] = await Promise.all([
+        supabase.from('users').select('*').eq('id', authUser.id).single(),
+        supabase.from('baseball_coaches').select('*, organization:organizations(id, name)').eq('user_id', authUser.id).maybeSingle(),
+        supabase.from('baseball_players').select('*').eq('user_id', authUser.id).maybeSingle(),
+      ]);
 
       if (!isMounted.current) return;
 
       if (userData) {
         setUser(userData);
-
-        if (userData.role === 'coach') {
-          const { data: coachData } = await supabase.from('baseball_coaches').select('*, organization:organizations(id, name)').eq('user_id', authUser.id).single();
-          if (isMounted.current) setCoach(coachData);
-        } else if (userData.role === 'player') {
-          const { data: playerData } = await supabase.from('baseball_players').select('*').eq('user_id', authUser.id).single();
-          if (isMounted.current) setPlayer(playerData);
-        }
+        if (coachData) setCoach(coachData);
+        if (playerData) setPlayer(playerData);
       }
 
       if (isMounted.current) setLoading(false);
