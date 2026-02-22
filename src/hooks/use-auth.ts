@@ -8,7 +8,11 @@ import type { Player, CoachWithOrganization } from '@/lib/types';
 
 export function useAuth() {
   const router = useRouter();
-  const supabase = createClient();
+  // useRef prevents createClient() from being called on every render.
+  // Without this, supabase is a new object each render → fetchUser useCallback
+  // recreates each render → onAuthStateChange resubscribes each render → flicker/loop.
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
   const isMounted = useRef(true);
   const { user, coach, player, loading, coachMode, setUser, setCoach, setPlayer, setLoading, setCoachMode, clear } = useAuthStore();
 
