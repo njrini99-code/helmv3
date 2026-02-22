@@ -12,7 +12,8 @@ export function createClient() {
     {
       global: {
         fetch: (url: RequestInfo | URL, options: RequestInit = {}) => {
-          const signal = options.signal ?? AbortSignal.timeout(15_000);
+          // 10s HTTP abort — DB statement_timeout is 8s, so DB error bubbles up first
+          const signal = options.signal ?? AbortSignal.timeout(10_000);
           return fetch(url, { ...options, signal });
         },
       },
