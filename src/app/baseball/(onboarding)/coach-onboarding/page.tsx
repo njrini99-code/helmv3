@@ -20,7 +20,7 @@ import { Check } from 'lucide-react';
 
 // ─── Types & Constants ──────────────────────────────────────────────────────
 
-type Step = 'role' | 'program' | 'account' | 'plan' | 'complete';
+type Step = 'type' | 'program' | 'account' | 'plan' | 'complete';
 
 const STEPS_CONFIG = [
   { id: 'program' as const, label: 'Program', Icon: IconBuilding },
@@ -29,13 +29,16 @@ const STEPS_CONFIG = [
   { id: 'complete' as const, label: 'Done', Icon: IconCheck },
 ];
 
-const TEAM_LEVELS = [
-  { value: 'college' as const, label: 'College' },
-  { value: 'high-school' as const, label: 'High School' },
-  { value: 'showcase' as const, label: 'Showcase' },
-];
+const COACH_TYPES = [
+  { value: 'college' as const, label: 'College Coach', desc: 'NCAA D1, D2, D3, or NAIA program', emoji: '🏟️' },
+  { value: 'juco' as const, label: 'JUCO Coach', desc: 'Junior college / community college', emoji: '🎓' },
+  { value: 'high_school' as const, label: 'High School Coach', desc: 'High school varsity or JV program', emoji: '🏫' },
+  { value: 'showcase' as const, label: 'Showcase Coach', desc: 'Travel ball or showcase organization', emoji: '⚾' },
+] as const;
 
-const DIVISIONS = ['D1', 'D2', 'D3', 'JUCO', 'NAIA'];
+type CoachType = 'college' | 'juco' | 'high_school' | 'showcase';
+
+const DIVISIONS = ['D1', 'D2', 'D3', 'NAIA'];
 
 const STORAGE_KEY = 'baseballhelm_coach_onboarding';
 
@@ -225,14 +228,16 @@ export default function BaseballCoachOnboarding() {
   const router = useRouter();
   const supabase = createClient();
 
-  const [step, setStep] = useState<Step>('role');
+  const [step, setStep] = useState<Step>('type');
   const [direction, setDirection] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showComparison, setShowComparison] = useState(false);
 
+  // Coach type
+  const [coachType, setCoachType] = useState<CoachType | ''>('');
+
   // Program data
-  const [teamLevel, setTeamLevel] = useState<'college' | 'high-school' | 'showcase' | ''>('');
   const [division, setDivision] = useState('');
   const [schoolName, setSchoolName] = useState('');
   const [city, setCity] = useState('');
@@ -255,7 +260,7 @@ export default function BaseballCoachOnboarding() {
       if (stored) {
         const parsed = JSON.parse(stored);
         if (parsed.step) setStep(parsed.step);
-        if (parsed.teamLevel) setTeamLevel(parsed.teamLevel);
+        if (parsed.coachType) setCoachType(parsed.coachType);
         if (parsed.division) setDivision(parsed.division);
         if (parsed.schoolName) setSchoolName(parsed.schoolName);
         if (parsed.city) setCity(parsed.city);
@@ -273,12 +278,12 @@ export default function BaseballCoachOnboarding() {
   const persistState = useCallback(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        step, teamLevel, division, schoolName, city, state, fullName, title, email,
+        step, coachType, division, schoolName, city, state, fullName, title, email,
       }));
     } catch {
       // Ignore storage errors
     }
-  }, [step, teamLevel, division, schoolName, city, state, fullName, title, email]);
+  }, [step, coachType, division, schoolName, city, state, fullName, title, email]);
 
   useEffect(() => {
     persistState();
@@ -298,14 +303,6 @@ export default function BaseballCoachOnboarding() {
   function goBack(to: Step) {
     setDirection(-1);
     setStep(to);
-  }
-
-  function handleRoleSelect(role: 'coach' | 'player') {
-    if (role === 'player') {
-      router.push('/baseball/player');
-    } else {
-      goForward('program');
-    }
   }
 
   // ─── Create Coach Records ─────────────────────────────────────────────
@@ -384,7 +381,8 @@ export default function BaseballCoachOnboarding() {
       sessionStorage.removeItem('baseball_signup_returnTo');
       router.push(storedReturnTo);
     } else {
-      router.push('/baseball/dashboard');
+      const dashboardPath = `/baseball/coach/${coachType.replace('_', '-')}`;
+      router.push(dashboardPath);
     }
     router.refresh();
   }
@@ -397,10 +395,7 @@ export default function BaseballCoachOnboarding() {
     setError('');
 
     try {
-      let coachType: 'college' | 'juco' | 'high_school' | 'showcase' = 'college';
-      if (teamLevel === 'high-school') coachType = 'high_school';
-      else if (teamLevel === 'showcase') coachType = 'showcase';
-      else if (division === 'JUCO') coachType = 'juco';
+      const finalCoachType = coachType as CoachType;
 
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: email.trim(),
@@ -409,7 +404,7 @@ export default function BaseballCoachOnboarding() {
           data: {
             role: 'coach',
             sport: 'baseball',
-            coach_type: coachType,
+            coach_type: finalCoachType,
             first_name: fullName.split(' ')[0] || '',
             last_name: fullName.split(' ').slice(1).join(' ') || '',
           },
@@ -438,12 +433,12 @@ export default function BaseballCoachOnboarding() {
 
             if (existingCoach) {
               clearStorage();
-              router.push('/baseball/dashboard');
+              router.push(`/baseball/coach/${finalCoachType.replace('_', '-')}`);
               router.refresh();
               return;
             }
 
-            await createCoachRecords(signInData.user.id, signInData.user.email || email, coachType);
+            await createCoachRecords(signInData.user.id, signInData.user.email || email, finalCoachType);
             return;
           }
         }
@@ -469,7 +464,7 @@ export default function BaseballCoachOnboarding() {
         return;
       }
 
-      await createCoachRecords(authData.user.id, authData.user.email || email, coachType);
+      await createCoachRecords(authData.user.id, authData.user.email || email, finalCoachType);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unexpected error occurred.');
       setLoading(false);
@@ -484,7 +479,8 @@ export default function BaseballCoachOnboarding() {
 
   function handleGoToDashboard() {
     router.refresh();
-    setTimeout(() => router.push('/baseball/dashboard'), 150);
+    const dashboardPath = coachType ? `/baseball/coach/${coachType.replace('_', '-')}` : '/baseball/dashboard';
+    setTimeout(() => router.push(dashboardPath), 150);
   }
 
   // ─── Render ─────────────────────────────────────────────────────────────
@@ -523,8 +519,8 @@ export default function BaseballCoachOnboarding() {
             </div>
           </m.div>
 
-          {/* Step Indicator - only after role selection */}
-          {step !== 'role' && (
+          {/* Step Indicator - only after type selection */}
+          {step !== 'type' && (
             <m.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -535,10 +531,10 @@ export default function BaseballCoachOnboarding() {
           )}
 
           <AnimatePresence mode="wait" custom={direction}>
-            {/* ─── Pre-Step: Role Selection ───────────────────────────── */}
-            {step === 'role' && (
+            {/* ─── Pre-Step: Coach Type Selection ─────────────────────── */}
+            {step === 'type' && (
               <m.div
-                key="role"
+                key="type"
                 custom={direction}
                 variants={slideVariants}
                 initial="initial"
@@ -549,45 +545,32 @@ export default function BaseballCoachOnboarding() {
                 <m.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-5">
                   <m.div variants={staggerItem} className="text-center">
                     <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-warm-900">
-                      Sign up as
+                      What type of coach are you?
                     </h1>
                     <p className="text-warm-500 mt-2 text-sm sm:text-base">
-                      Choose your role to get started
+                      This determines your dashboard experience
                     </p>
                   </m.div>
 
                   <m.div variants={staggerItem} className="space-y-3">
-                    <button
-                      onClick={() => handleRoleSelect('coach')}
-                      className="w-full auth-glass-card rounded-2xl p-5 text-left hover:bg-white/90 transition-all group"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
-                          🎓
+                    {COACH_TYPES.map((opt) => (
+                      <button
+                        key={opt.value}
+                        onClick={() => { setCoachType(opt.value); goForward('program'); }}
+                        className="w-full auth-glass-card rounded-2xl p-5 text-left hover:bg-white/90 transition-all group"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                            {opt.emoji}
+                          </div>
+                          <div>
+                            <p className="text-lg font-semibold text-warm-900">{opt.label}</p>
+                            <p className="text-sm text-warm-500">{opt.desc}</p>
+                          </div>
+                          <IconArrowRight size={16} className="ml-auto text-warm-400 group-hover:text-warm-600 transition-colors" />
                         </div>
-                        <div>
-                          <p className="text-lg font-semibold text-warm-900">Coach</p>
-                          <p className="text-sm text-warm-500">Manage your program and recruit players</p>
-                        </div>
-                        <IconArrowRight size={16} className="ml-auto text-warm-400 group-hover:text-warm-600 transition-colors" />
-                      </div>
-                    </button>
-
-                    <button
-                      onClick={() => handleRoleSelect('player')}
-                      className="w-full auth-glass-card rounded-2xl p-5 text-left hover:bg-white/90 transition-all group"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
-                          ⚾
-                        </div>
-                        <div>
-                          <p className="text-lg font-semibold text-warm-900">Player</p>
-                          <p className="text-sm text-warm-500">Build your profile and connect with coaches</p>
-                        </div>
-                        <IconArrowRight size={16} className="ml-auto text-warm-400 group-hover:text-warm-600 transition-colors" />
-                      </div>
-                    </button>
+                      </button>
+                    ))}
                   </m.div>
                 </m.div>
               </m.div>
@@ -607,7 +590,7 @@ export default function BaseballCoachOnboarding() {
                 <m.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-5">
                   <m.div variants={staggerItem}>
                     <button
-                      onClick={() => goBack('role')}
+                      onClick={() => goBack('type')}
                       className="flex items-center gap-1.5 text-sm font-medium text-warm-600 hover:text-warm-800 transition-colors min-h-[44px] px-2 -ml-2 rounded-lg active:bg-warm-100"
                     >
                       <IconArrowLeft size={16} />
@@ -626,33 +609,7 @@ export default function BaseballCoachOnboarding() {
 
                   <m.div variants={staggerItem} className="auth-glass-card rounded-3xl p-6 sm:p-8">
                     <div className="space-y-5">
-                      <div>
-                        <p className="text-label font-semibold text-warm-400 uppercase tracking-wider mb-3">
-                          Team Level
-                        </p>
-                        <div className="grid grid-cols-3 gap-2">
-                          {TEAM_LEVELS.map((level) => (
-                            <button
-                              key={level.value}
-                              type="button"
-                              onClick={() => {
-                                setTeamLevel(level.value);
-                                if (level.value !== 'college') setDivision('');
-                              }}
-                              className={cn(
-                                'px-3 py-2.5 rounded-xl text-sm font-medium transition-all border',
-                                teamLevel === level.value
-                                  ? 'bg-primary-600 text-white border-primary-600 shadow-sm'
-                                  : 'bg-white/50 text-warm-700 border-warm-200 hover:border-primary-300 hover:bg-white/80'
-                              )}
-                            >
-                              {level.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {teamLevel === 'college' && (
+                      {coachType === 'college' && (
                         <NativeSelect
                           label="Division"
                           value={division}
@@ -700,7 +657,7 @@ export default function BaseballCoachOnboarding() {
                     <div className="mt-8">
                       <Button
                         onClick={() => goForward('account')}
-                        disabled={!teamLevel || !schoolName.trim()}
+                        disabled={!schoolName.trim()}
                         className="w-full bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
                         size="lg"
                       >
