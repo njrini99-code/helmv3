@@ -106,14 +106,16 @@ export default function SignupPage() {
             transition={{ delay: 0.2, duration: 0.5 }}
           >
             <div className="relative">
-              <div className="absolute inset-0 bg-helm-amber-500/30 rounded-2xl blur-xl scale-150" />
-              <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-helm-amber-500 to-helm-amber-600 flex items-center justify-center mb-3 sm:mb-4 shadow-lg overflow-hidden">
+              <div className="absolute inset-0 bg-helm-amber-500/30 rounded-full blur-xl scale-150" />
+              <div className="relative w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center mb-3 sm:mb-4">
                 <Image
                   src="/helm-baseball-logo.png"
-                  alt="BaseballHelm"
+                  alt="BaseballHelm Logo"
                   width={56}
                   height={56}
-                  className="w-full h-full object-cover"
+                  className="w-12 h-12 sm:w-14 sm:h-14 object-contain"
+                  priority
+                  unoptimized
                 />
               </div>
             </div>

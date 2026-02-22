@@ -303,13 +303,13 @@ export default function BaseballPlayerOnboarding() {
         >
           <div className="relative">
             <div className="absolute inset-0 bg-helm-amber-500/25 rounded-full blur-xl scale-150" />
-            <div className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-xl overflow-hidden">
+            <div className="relative w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center">
               <Image
                 src="/helm-baseball-logo.png"
-                alt="BaseballHelm"
+                alt="BaseballHelm Logo"
                 width={48}
                 height={48}
-                className="w-full h-full object-cover"
+                className="w-10 h-10 sm:w-12 sm:h-12 object-contain"
                 priority
                 unoptimized
               />
