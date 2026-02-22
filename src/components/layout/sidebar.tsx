@@ -60,6 +60,7 @@ const coachRecruitingNav = [
 const hsCoachTeamNav = [
   { name: 'Dashboard', href: '/baseball/dashboard/team/high-school', icon: IconHome },
   { name: 'Roster', href: '/baseball/dashboard/roster', icon: IconUsers },
+  { name: 'Stats', href: '/baseball/dashboard/stats', icon: IconChartBar },
   { name: 'Videos', href: '/baseball/dashboard/videos', icon: IconVideo },
   { name: 'Dev Plans', href: '/baseball/dashboard/dev-plans', icon: IconNote },
   { name: 'College Interest', href: '/baseball/dashboard/college-interest', icon: IconEye },
@@ -75,6 +76,7 @@ const hsCoachTeamNav = [
 const jucoTeamNav = [
   { name: 'Dashboard', href: '/baseball/dashboard/team', icon: IconHome },
   { name: 'Roster', href: '/baseball/dashboard/roster', icon: IconUsers },
+  { name: 'Stats', href: '/baseball/dashboard/stats', icon: IconChartBar },
   { name: 'Videos', href: '/baseball/dashboard/videos', icon: IconVideo },
   { name: 'Dev Plans', href: '/baseball/dashboard/dev-plans', icon: IconNote },
   { name: 'Academics', href: '/baseball/dashboard/academics', icon: IconGraduationCap },
@@ -98,6 +100,7 @@ const showcaseOrgNav = [
 // Showcase Coach - Team-specific navigation (shown when team selected)
 const showcaseTeamNav = [
   { name: 'Roster', href: '/baseball/dashboard/roster', icon: IconUsers },
+  { name: 'Stats', href: '/baseball/dashboard/stats', icon: IconChartBar },
   { name: 'Videos', href: '/baseball/dashboard/videos', icon: IconVideo },
   { name: 'Dev Plans', href: '/baseball/dashboard/dev-plans', icon: IconNote },
   { name: 'Calendar', href: '/baseball/dashboard/calendar', icon: IconCalendar },
