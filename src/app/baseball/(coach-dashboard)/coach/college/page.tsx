@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { Header } from '@/components/layout/header';
-import { PageLoading } from '@/components/ui/loading';
 import {
   IconChart,
   IconChevronRight,
@@ -99,7 +98,7 @@ function BentoStatCard({
 }
 
 export default function CollegeCoachDashboard() {
-  const { coach, loading: authLoading } = useAuth();
+  const { coach } = useAuth();
 
   const {
     watchlist,
@@ -112,8 +111,6 @@ export default function CollegeCoachDashboard() {
 
   const { searches: savedSearches } = useSavedSearches();
   const { stateCounts, loading: stateCountsLoading } = usePlayersByState(coach?.id, coach?.coach_type);
-
-  if (authLoading) return <PageLoading />;
 
   return (
     <>

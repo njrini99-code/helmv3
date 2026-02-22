@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { useAuthStore } from '@/stores/auth-store';
 
 type Role = 'coach' | 'player';
 
@@ -21,19 +22,66 @@ type AuthResult = {
 
 /**
  * Shared auth check for all baseball dashboard layouts.
- * Single getUser() + parallel profile queries — eliminates redundant auth checks.
  *
- * @param requiredRole - If set, only authorizes users with this specific role.
- *                       If null, authorizes any authenticated user with a completed profile.
+ * Fast-path: reads Zustand auth store (persisted to localStorage) for instant
+ * auth on repeat visits — no Supabase round-trip needed, no layout flash.
+ * Background verification still confirms session validity.
+ *
+ * Full check: only runs on first visit (empty store) or on session expiry.
  */
 export function useBaseballAuth(requiredRole: Role | null = null): AuthResult {
   const router = useRouter();
   const supabaseRef = useRef(createClient());
-  const [loading, setLoading] = useState(true);
-  const [authorized, setAuthorized] = useState(false);
-  const [role, setRole] = useState<Role | null>(null);
+
+  // Read current store state imperatively — safe at render time since Zustand
+  // persist rehydrates synchronously from localStorage before first render.
+  const { user: storeUser, coach: storeCoach, player: storePlayer } = useAuthStore.getState();
+
+  // Derive initial auth state from persisted store data (runs once at mount)
+  const getInitialFromStore = (): { authorized: boolean; role: Role | null } => {
+    if (!storeUser) return { authorized: false, role: null };
+
+    const resolvedRole: Role | null = storeCoach
+      ? 'coach'
+      : storePlayer
+        ? 'player'
+        : (storeUser.role === 'coach' || storeUser.role === 'player')
+          ? (storeUser.role as Role)
+          : null;
+
+    if (!resolvedRole) return { authorized: false, role: null };
+    if (requiredRole && resolvedRole !== requiredRole) return { authorized: false, role: null };
+
+    if (resolvedRole === 'coach' && (!storeCoach || !storeCoach.onboarding_completed)) {
+      return { authorized: false, role: null };
+    }
+    if (resolvedRole === 'player' && (!storePlayer || !(storePlayer as { onboarding_completed?: boolean }).onboarding_completed)) {
+      return { authorized: false, role: null };
+    }
+
+    return { authorized: true, role: resolvedRole };
+  };
+
+  const initial = getInitialFromStore();
+
+  const [loading, setLoading] = useState(!initial.authorized);
+  const [authorized, setAuthorized] = useState(initial.authorized);
+  const [role, setRole] = useState<Role | null>(initial.role);
 
   useEffect(() => {
+    // Fast-path: store had valid auth — verify session in background (non-blocking)
+    if (initial.authorized) {
+      void supabaseRef.current.auth.getUser().then(({ data: { user } }) => {
+        if (!user) {
+          // Session expired — clear store and redirect
+          useAuthStore.getState().clear();
+          router.push('/baseball/login');
+        }
+      });
+      return;
+    }
+
+    // Full check: store was empty or invalid — do Supabase round-trip
     async function checkAuth() {
       const supabase = supabaseRef.current;
       const { data: { user } } = await supabase.auth.getUser();
@@ -89,13 +137,13 @@ export function useBaseballAuth(requiredRole: Role | null = null): AuthResult {
         }
       }
 
-      setRole(resolvedRole);
+      setRole(resolvedRole as Role);
       setAuthorized(true);
       setLoading(false);
     }
 
     checkAuth();
-  }, [router, requiredRole]);
+  }, [router, requiredRole]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return { loading, authorized, role };
 }

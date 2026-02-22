@@ -58,7 +58,7 @@ interface DevPlanProgress {
 }
 
 export default function HSCoachDashboardPage() {
-  const { coach, loading: authLoading } = useAuth();
+  const { coach } = useAuth();
   const [loading, setLoading] = useState(true);
   const [, setTeamId] = useState<string | null>(null);
 
@@ -88,7 +88,7 @@ export default function HSCoachDashboardPage() {
     const { data: staffData } = await supabase
       .from('baseball_team_coach_staff')
       .select('team_id')
-      .eq('coach_id', coach.id)
+      .eq('coach_id', coach!.id)
       .single();
 
     if (!staffData?.team_id) {
@@ -173,7 +173,7 @@ export default function HSCoachDashboardPage() {
         player_id, status,
         player:baseball_players!inner(first_name, last_name)
       `)
-      .eq('coach_id', coach.id)
+      .eq('coach_id', coach!.id)
       .in('status', ['active', 'in_progress']);
 
     if (devPlans) {
@@ -196,7 +196,7 @@ export default function HSCoachDashboardPage() {
     setLoading(false);
   }
 
-  if (authLoading || loading) {
+  if (loading) {
     return <PageLoading />;
   }
 

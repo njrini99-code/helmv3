@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
@@ -190,13 +191,23 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
     }
     if (user?.role === 'coach') {
       if (coach?.coach_type === 'college') {
-        return coachRecruitingNav;
+        // Point Dashboard directly to the college coach page — avoids redirect bounce
+        return coachRecruitingNav.map(item =>
+          item.href === '/baseball/dashboard' ? { ...item, href: '/baseball/coach/college' } : item
+        );
       } else if (coach?.coach_type === 'juco') {
-        return currentMode === 'recruiting' ? coachRecruitingNav : jucoTeamNav;
+        if (currentMode === 'recruiting') {
+          return coachRecruitingNav.map(item =>
+            item.href === '/baseball/dashboard' ? { ...item, href: '/baseball/coach/juco' } : item
+          );
+        }
+        return jucoTeamNav;
       } else if (coach?.coach_type === 'showcase') {
         return showcaseOrgNav;
       } else if (coach?.coach_type === 'high_school') {
-        return hsCoachTeamNav;
+        return hsCoachTeamNav.map(item =>
+          item.href === '/baseball/dashboard/team/high-school' ? { ...item, href: '/baseball/coach/high-school' } : item
+        );
       } else {
         return hsCoachTeamNav;
       }
@@ -295,28 +306,48 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
           className="flex items-center gap-3"
           onClick={handleNavClick}
         >
-          <div className="relative h-9 flex items-center">
+          <div className="relative h-10 flex items-center">
             {/* Icon version (shown when collapsed) */}
             <div
+              aria-hidden={!isCollapsed}
               className={cn(
-                'w-9 h-9 rounded-[10px] bg-primary-600 flex items-center justify-center',
-                'shadow-sm transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+                'w-10 h-10 flex items-center justify-center flex-shrink-0',
+                'transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
                 isCollapsed ? 'opacity-100 scale-100' : 'opacity-0 scale-75 absolute'
               )}
             >
-              <span className="text-white font-bold text-lg">H</span>
+              <Image
+                src="/helm-baseball-logo-cropped.png"
+                alt="BaseballHelm"
+                width={166}
+                height={160}
+                className="w-10 h-10 object-contain"
+                priority
+                unoptimized
+              />
             </div>
             {/* Full logo + text (shown when expanded) */}
             <div
+              aria-hidden={isCollapsed}
               className={cn(
-                'flex items-center gap-3 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+                'flex items-center gap-2 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
                 isCollapsed ? 'opacity-0 scale-75 absolute' : 'opacity-100 scale-100'
               )}
             >
-              <div className="w-9 h-9 rounded-[10px] bg-primary-600 flex items-center justify-center">
-                <span className="text-white font-bold text-lg">H</span>
+              <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
+                <Image
+                  src="/helm-baseball-logo-cropped.png"
+                  alt=""
+                  width={166}
+                  height={160}
+                  className="w-10 h-10 object-contain"
+                  priority
+                  unoptimized
+                />
               </div>
-              <span className="text-white font-bold text-base">BaseballHelm</span>
+              <span className="text-lg font-bold leading-none tracking-tight text-white">
+                Baseball<span className="text-primary-400">Helm</span>
+              </span>
             </div>
           </div>
         </Link>

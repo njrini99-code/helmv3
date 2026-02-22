@@ -34,7 +34,7 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       coach: null,
       player: null,
-      loading: true,
+      loading: false,
       coachMode: 'recruiting',
       setUser: (user) => set({ user }),
       setCoach: (coach) => set({ coach }),
