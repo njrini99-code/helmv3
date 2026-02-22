@@ -24,11 +24,12 @@ export function HoverCard({ children, className, glowColor = 'rgba(34, 197, 94, 
 
   return (
     <motion.div
-      className={cn('relative overflow-hidden', className)}
+      className={cn('relative overflow-hidden touch-manipulation', className)}
       onMouseMove={handleMouseMove}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       whileHover={{ y: -2, scale: 1.01 }}
+      whileTap={{ scale: 0.98 }}
       transition={{ type: 'spring', stiffness: 400, damping: 25 }}
     >
       {/* Glow effect following cursor */}

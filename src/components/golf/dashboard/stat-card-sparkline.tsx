@@ -68,6 +68,7 @@ export const StatCardSparkline = memo(function StatCardSparkline({
                 href && 'cursor-pointer'
             )}
             whileHover={{ y: -3 }}
+            whileTap={href ? { y: -1, scale: 0.99 } : undefined}
             transition={{ type: 'spring', stiffness: 400, damping: 25 }}
         >
             <div className="relative flex items-start justify-between gap-2">

@@ -376,11 +376,8 @@ export default function BaseballCoachOnboarding() {
         coach_type: coachType,
         organization_id: org.id,
         full_name: resolvedName,
-        coach_title: title,
-        school_name: schoolName,
-        school_city: city || null,
-        school_state: state || null,
-        program_division: division || null,
+        email: userEmail,
+        title: title || null,
         onboarding_completed: true,
       });
 
@@ -396,8 +393,7 @@ export default function BaseballCoachOnboarding() {
       : coachType === 'high_school' ? 'high_school'
       : 'showcase';
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any)
+    await supabase
       .from('baseball_teams')
       .insert({
         name: `${schoolName} Baseball`,

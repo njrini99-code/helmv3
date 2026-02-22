@@ -11,12 +11,11 @@ import {
     IconSparkles,
     IconSettings,
     IconTarget,
-    IconMenu,
 } from '@/components/icons';
 import dynamic from 'next/dynamic';
 import { cn } from '@/lib/utils';
 import { ShineEffect } from '@/components/ui/shine-effect';
-import { useSidebar } from '@/contexts/sidebar-context';
+import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
 import { PlayerFocusAreas } from '@/components/golf/coachhelm/insights';
 
 const TrendChart = dynamic(() => import('./TrendChart').then(mod => ({ default: mod.TrendChart })), {
@@ -133,7 +132,6 @@ interface PlayerDashboardProps {
 
 export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
     const { player, team, stats, recentRounds } = data;
-    const { toggleMobile } = useSidebar();
 
     const greeting = useMemo(() => {
         const hour = new Date().getHours();
@@ -164,18 +162,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
             )}>
                 <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-4">
                     <div className="flex items-center gap-3">
-                        <button
-                            onClick={toggleMobile}
-                            className={cn(
-                                'lg:hidden p-2.5 -ml-2 rounded-xl touch-manipulation',
-                                'text-warm-500 hover:text-warm-700 hover:bg-warm-100/80',
-                                'transition-colors duration-150 active:scale-95',
-                                'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
-                            )}
-                            aria-label="Open navigation menu"
-                        >
-                            <IconMenu size={22} />
-                        </button>
+                        <MobileMenuButton />
                         <div className="flex-1 min-w-0">
                             <h1 className="text-lg md:text-xl font-bold tracking-tight text-warm-900 truncate">
                                 {greeting}, {player.first_name}

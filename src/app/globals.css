@@ -536,6 +536,11 @@
     box-shadow: var(--glass-shadow-lg);
   }
 
+  /* Modal overlay — standardized across all modals/dialogs/drawers */
+  .overlay-blur {
+    @apply fixed inset-0 bg-black/40 backdrop-blur-sm;
+  }
+
   /* Mesh gradient backgrounds */
   .mesh-bg {
     @apply bg-warm-50;

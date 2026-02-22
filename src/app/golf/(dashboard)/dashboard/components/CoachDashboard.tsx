@@ -12,14 +12,13 @@ import {
     IconPlus,
     IconCopy,
     IconCheck,
-    IconMenu,
     IconClock,
     IconChevronDown,
     IconGolf,
     IconTarget,
 } from '@/components/icons';
+import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
 import { cn } from '@/lib/utils';
-import { useSidebar } from '@/contexts/sidebar-context';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
@@ -281,7 +280,6 @@ interface CoachDashboardProps {
 
 export function CoachDashboard({ data, enhancedData }: CoachDashboardProps) {
     const { coach, team, stats, recentRounds, topPlayers, teamScoringTrend } = data;
-    const { toggleMobile } = useSidebar();
     const [dateRange, setDateRange] = useState<DateRange>('all');
 
     const greeting = useMemo(() => {
@@ -329,18 +327,7 @@ export function CoachDashboard({ data, enhancedData }: CoachDashboardProps) {
                 <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-4">
                     <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-3 min-w-0">
-                            <button
-                                onClick={toggleMobile}
-                                className={cn(
-                                    'lg:hidden p-2.5 -ml-2 rounded-xl touch-manipulation',
-                                    'text-warm-500 hover:text-warm-700 hover:bg-warm-100/80',
-                                    'transition-colors duration-150 active:scale-95',
-                                    'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
-                                )}
-                                aria-label="Open navigation menu"
-                            >
-                                <IconMenu size={22} />
-                            </button>
+                            <MobileMenuButton />
                             <div className="min-w-0">
                                 <h1 className="text-lg md:text-xl font-bold tracking-tight text-warm-900 truncate">
                                     {greeting}, {firstName}
