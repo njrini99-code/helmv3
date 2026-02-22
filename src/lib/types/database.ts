@@ -9127,14 +9127,22 @@ export type Database = {
       mark_task_reminder_sent: { Args: { p_task_id: string }; Returns: boolean }
       recalculate_round_strokes_gained: {
         Args: { p_round_id: string }
+        Returns: undefined
+      }
+      sg_estimate_from_holes: {
+        Args: { p_round_id: string }
         Returns: {
           sg_approach: number
           sg_around_green: number
+          sg_off_tee: number
           sg_putting: number
-          sg_tee: number
-          sg_total: number
         }[]
       }
+      sg_expected_strokes: {
+        Args: { p_distance_yards: number; p_lie: string }
+        Returns: number
+      }
+      sg_normalize_lie: { Args: { p_lie: string }; Returns: string }
       update_player_stats_strokes_gained: {
         Args: { p_player_id: string }
         Returns: undefined
