@@ -578,6 +578,7 @@ export async function completeAnnouncementTask(
     if (error) return { success: false, error: 'Failed to complete task' };
 
     revalidatePath('/golf/dashboard/announcements');
+    updateTag(CACHE_TAGS.DASHBOARD);
     return { success: true };
 
   } catch (error) {
@@ -625,6 +626,7 @@ export async function deleteAnnouncement(
     if (error) return { success: false, error: 'Failed to delete announcement' };
 
     revalidatePath('/golf/dashboard/announcements');
+    updateTag(CACHE_TAGS.DASHBOARD);
     return { success: true };
 
   } catch (error) {

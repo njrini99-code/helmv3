@@ -1167,6 +1167,9 @@ export async function deleteGolfRound(roundId: string): Promise<ActionResult> {
     revalidatePath('/golf/dashboard');
     revalidatePath('/golf/dashboard/rounds');
     revalidatePath('/golf/dashboard/stats');
+    updateTag(CACHE_TAGS.DASHBOARD);
+    updateTag(CACHE_TAGS.ROUNDS);
+    updateTag(CACHE_TAGS.STATS);
 
     // Invalidate stats cache when round is deleted
     await invalidateOnRoundComplete(round.player_id, roundId);
@@ -1235,6 +1238,8 @@ export async function verifyRound(roundId: string): Promise<ActionResult<void>> 
     revalidatePath('/golf/dashboard');
     revalidatePath('/golf/dashboard/rounds');
     revalidatePath(`/golf/dashboard/rounds/${roundId}`);
+    updateTag(CACHE_TAGS.DASHBOARD);
+    updateTag(CACHE_TAGS.ROUNDS);
 
     return { success: true, data: undefined };
 
@@ -1376,6 +1381,8 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
 
     revalidatePath('/golf/dashboard');
     revalidatePath('/golf/dashboard/calendar');
+    updateTag(CACHE_TAGS.DASHBOARD);
+    updateTag(CACHE_TAGS.CALENDAR);
 
     return { success: true, data: { eventId: event.id } };
 
@@ -1548,6 +1555,8 @@ export async function updateGolfEvent(
     }
 
     revalidatePath('/golf/dashboard/calendar');
+    updateTag(CACHE_TAGS.DASHBOARD);
+    updateTag(CACHE_TAGS.CALENDAR);
     return { success: true };
 
   } catch (err) {
@@ -1636,6 +1645,8 @@ export async function deleteGolfEvent(
     }
 
     revalidatePath('/golf/dashboard/calendar');
+    updateTag(CACHE_TAGS.DASHBOARD);
+    updateTag(CACHE_TAGS.CALENDAR);
     return { success: true };
 
   } catch {
@@ -1724,6 +1735,7 @@ export async function createGolfQualifier(data: GolfQualifierInput): Promise<Act
 
     revalidatePath('/golf/dashboard');
     revalidatePath('/golf/dashboard/qualifiers');
+    updateTag(CACHE_TAGS.DASHBOARD);
 
     return { success: true, data: { qualifierId: qualifier.id } };
 
@@ -1782,6 +1794,7 @@ export async function updateQualifierStatus(
     }
 
     revalidatePath('/golf/dashboard/qualifiers');
+    updateTag(CACHE_TAGS.DASHBOARD);
 
     return { success: true, data: undefined };
 
@@ -1849,6 +1862,7 @@ export async function createAnnouncement(data: {
     }
 
     revalidatePath('/golf/dashboard/announcements');
+    updateTag(CACHE_TAGS.DASHBOARD);
 
     return { success: true, data: { announcementId: announcement.id } };
 
@@ -1966,6 +1980,8 @@ export async function updatePlayerStatus(
     }
 
     revalidatePath('/golf/dashboard/roster');
+    updateTag(CACHE_TAGS.DASHBOARD);
+    updateTag(CACHE_TAGS.ROSTER);
     return { success: true };
 
   } catch (err) {
@@ -2011,6 +2027,8 @@ export async function respondToEvent(
     await updateRSVP(eventId, player.id, status, supabase);
 
     revalidatePath('/golf/dashboard/calendar');
+    updateTag(CACHE_TAGS.DASHBOARD);
+    updateTag(CACHE_TAGS.CALENDAR);
     return { success: true, data: undefined };
 
   } catch {
@@ -2413,6 +2431,7 @@ export async function addCoachBlockedTime(
     }
 
     revalidatePath('/golf/dashboard/calendar');
+    updateTag(CACHE_TAGS.CALENDAR);
 
     return { success: true, data: { id: blockedTime.id } };
 
@@ -2471,6 +2490,7 @@ export async function deleteCoachBlockedTime(id: string): Promise<ActionResult<v
     }
 
     revalidatePath('/golf/dashboard/calendar');
+    updateTag(CACHE_TAGS.CALENDAR);
 
     return { success: true, data: undefined };
 
@@ -2540,6 +2560,7 @@ export async function updateCoachBlockedTime(
     }
 
     revalidatePath('/golf/dashboard/calendar');
+    updateTag(CACHE_TAGS.CALENDAR);
 
     return { success: true, data: undefined };
 
@@ -2884,6 +2905,9 @@ export async function savePartialRound(
     }
 
     revalidatePath('/golf/dashboard/rounds');
+    updateTag(CACHE_TAGS.DASHBOARD);
+    updateTag(CACHE_TAGS.ROUNDS);
+    updateTag(CACHE_TAGS.STATS);
 
     return { success: true, data: { roundId } };
 
@@ -3047,6 +3071,7 @@ export async function deleteInProgressRound(roundId: string): Promise<ActionResu
     }
 
     revalidatePath('/golf/dashboard/rounds');
+    updateTag(CACHE_TAGS.ROUNDS);
 
     return { success: true, data: undefined };
 
@@ -3862,6 +3887,7 @@ export async function deleteShot(shotId: string): Promise<ActionResult<void>> {
     // Revalidate relevant paths
     revalidatePath('/golf/dashboard/rounds');
     revalidatePath(`/golf/dashboard/rounds/${shot.round_id}`);
+    updateTag(CACHE_TAGS.ROUNDS);
 
     return { success: true, data: undefined };
 
@@ -3982,6 +4008,7 @@ export async function updateShot(
     // Revalidate relevant paths
     revalidatePath('/golf/dashboard/rounds');
     revalidatePath(`/golf/dashboard/rounds/${shot.round_id}`);
+    updateTag(CACHE_TAGS.ROUNDS);
 
     return { success: true, data: undefined };
 
@@ -4716,6 +4743,8 @@ export async function seedTestShotData(): Promise<ActionResult<{ shotsCreated: n
     }
 
     revalidatePath('/golf/dashboard');
+    updateTag(CACHE_TAGS.DASHBOARD);
+    updateTag(CACHE_TAGS.ROUNDS);
 
     return {
       success: true,

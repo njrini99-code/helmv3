@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { createAdminClient } from '@/lib/supabase/admin';
 import { headers } from 'next/headers';
 
 // ============================================
@@ -180,11 +179,9 @@ export async function POST(request: NextRequest) {
     // Sanitize
     const sanitized = sanitizePayload(body);
     
-    // Insert via admin client (service role — admin_events may not have RLS for inserts)
-    const adminDb = createAdminClient();
-
+    // Insert using authenticated user's client (RLS applies)
     type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
-    const { data, error } = await adminDb
+    const { data, error } = await supabase
       .from('admin_events')
       .insert({
         event_type: sanitized.eventType,

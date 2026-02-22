@@ -247,6 +247,8 @@ export async function reinstateEvent(eventId: string): Promise<ActionResult> {
     }
 
     revalidatePath('/golf/dashboard/calendar');
+    updateTag(CACHE_TAGS.DASHBOARD);
+    updateTag(CACHE_TAGS.CALENDAR);
     return { success: true };
   } catch (error) {
     console.error('[reinstateEvent Error]', error);
@@ -367,6 +369,8 @@ export async function createDraftEvent(eventData: {
     }
 
     revalidatePath('/golf/dashboard/calendar');
+    updateTag(CACHE_TAGS.DASHBOARD);
+    updateTag(CACHE_TAGS.CALENDAR);
     return { success: true, data: { eventId: event.id } };
   } catch (error) {
     console.error('[createDraftEvent Error]', error);

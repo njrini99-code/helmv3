@@ -218,6 +218,7 @@ export async function uncompleteTask(taskId: string): Promise<ActionResult> {
     }
 
     revalidatePath('/golf/dashboard/tasks');
+    updateTag(CACHE_TAGS.DASHBOARD);
     return { success: true };
   } catch (error) {
     console.error('[uncompleteTask Error]', error);
@@ -466,6 +467,7 @@ export async function createTask(
     }
 
     revalidatePath('/golf/dashboard/tasks');
+    updateTag(CACHE_TAGS.DASHBOARD);
     return { success: true, data: { taskId: task.id } };
   } catch (error) {
     console.error('[createTask Error]', error);
@@ -538,6 +540,7 @@ export async function deleteTask(taskId: string): Promise<ActionResult> {
     }
 
     revalidatePath('/golf/dashboard/tasks');
+    updateTag(CACHE_TAGS.DASHBOARD);
     return { success: true };
   } catch (error) {
     console.error('[deleteTask Error]', error);
@@ -1080,6 +1083,7 @@ export async function createTaskFromTemplate(
     }
 
     revalidatePath('/golf/dashboard/tasks');
+    updateTag(CACHE_TAGS.DASHBOARD);
     return { success: true, data: { taskId: task.id } };
   } catch (error) {
     console.error('[createTaskFromTemplate Error]', error);

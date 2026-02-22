@@ -34,6 +34,7 @@ import { useTeamStore } from '@/stores/team-store';
 import { createClient } from '@/lib/supabase/client';
 import { getFullName, formatRelativeTime } from '@/lib/utils';
 import { JucoTeamDashboard } from './JucoTeamDashboard';
+import { JucoPlayerDashboard } from './JucoPlayerDashboard';
 
 // ============================================================================
 // TYPES
@@ -988,6 +989,17 @@ export default function TeamDashboardClient() {
   // PLAYER DASHBOARD
   // ============================================================================
 
+  // Use premium dashboard for JUCO players with recruiting activated
+  if (player?.player_type === 'juco' && player?.recruiting_activated) {
+    return (
+      <JucoPlayerDashboard
+        playerName={getFullName(player.first_name, player.last_name)}
+        playerId={player.id}
+      />
+    );
+  }
+
+  // Existing dashboard for other player types
   return (
     <>
       <Header
