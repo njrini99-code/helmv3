@@ -82,8 +82,57 @@ export default async function CommandCenterPage() {
     .eq('organization_id', coach.organization_id)
     .single() as { data: { id: string; name: string; team_type: string; invite_code: string | null } | null; error: unknown };
 
-  // If no team exists, show create team prompt
+  // College coaches are recruiting-only — they don't manage a team roster.
+  // Show a recruiting-focused command center instead of the team management view.
   if (teamError || !team) {
+    if (coach.coach_type === 'college') {
+      return (
+        <div className="min-h-screen bg-[#FFFEFA]">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
+            <div className="mb-8">
+              <h1 className="text-2xl font-semibold text-slate-900">Command Center</h1>
+              <p className="text-slate-500 mt-1">Your recruiting operations hub</p>
+            </div>
+
+            {/* Quick-action cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+              {[
+                { label: 'Discover Players', href: '/baseball/dashboard/discover', desc: 'Browse the recruiting database', color: 'bg-primary-50 border-primary-200' },
+                { label: 'Pipeline', href: '/baseball/dashboard/pipeline', desc: 'Track your recruits by stage', color: 'bg-emerald-50 border-emerald-200' },
+                { label: 'Send Message', href: '/baseball/dashboard/messages', desc: 'Reach out to prospects', color: 'bg-blue-50 border-blue-200' },
+              ].map((card) => (
+                <a
+                  key={card.label}
+                  href={card.href}
+                  className={`block rounded-xl border p-5 ${card.color} hover:shadow-sm transition-shadow`}
+                >
+                  <p className="font-semibold text-slate-800">{card.label}</p>
+                  <p className="text-sm text-slate-500 mt-1">{card.desc}</p>
+                </a>
+              ))}
+            </div>
+
+            {/* Program profile prompt */}
+            <div className="glass-standard rounded-2xl p-8 text-center">
+              <h2 className="text-xl font-semibold text-slate-900 mb-3">
+                Complete Your Program Profile
+              </h2>
+              <p className="text-slate-500 mb-6 max-w-md mx-auto">
+                Help recruits find you. Add your program details, division, conference, and recruiting philosophy.
+              </p>
+              <a
+                href="/baseball/dashboard/program"
+                className="inline-flex items-center px-6 py-3 bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white rounded-lg font-medium transition-colors"
+              >
+                Set Up Program Profile
+              </a>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Non-college coaches (juco in team mode, HS, showcase) need to create a team
     return (
       <div className="min-h-screen bg-[#FFFEFA]">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12">
