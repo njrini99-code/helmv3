@@ -9,10 +9,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
  * This avoids scattering as-any casts across the codebase.
  * The eslint-disable is intentional and contained to this single utility.
  */
-export function fromUntyped(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  client: SupabaseClient<any>,
-  table: string
-) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function fromUntyped(client: SupabaseClient<any>, table: string): ReturnType<SupabaseClient<any>['from']> {
   return client.from(table);
 }

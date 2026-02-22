@@ -13,7 +13,7 @@ export default function JucoCoachDashboardPage() {
     <JucoTeamDashboard
       coachName={coach.full_name || 'Coach'}
       coachType={coach.coach_type || 'juco'}
-      organizationName={coach.school_name || undefined}
+      organizationName={coach.organization?.name || undefined}
     />
   );
 }

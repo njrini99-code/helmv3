@@ -7,7 +7,6 @@ import {
   IconChart,
   IconChevronRight,
   IconTarget,
-  IconStar,
   IconArrowRight,
   IconEye,
   IconActivity,

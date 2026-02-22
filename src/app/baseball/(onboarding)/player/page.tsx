@@ -269,7 +269,7 @@ export default function BaseballPlayerOnboarding() {
           pitch_velo: pitchVelo ? parseFloat(pitchVelo) : null,
           exit_velo: exitVelo ? parseFloat(exitVelo) : null,
           sixty_time: sixtyTime ? parseFloat(sixtyTime) : null,
-          player_type: playerType || null,
+          player_type: playerType || undefined,
           onboarding_completed: true,
           profile_completion_percent: completionScore,
         })
