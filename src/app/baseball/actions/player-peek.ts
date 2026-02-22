@@ -118,7 +118,6 @@ export async function getPlayerPeekData(playerId: string): Promise<{
           player_id: playerId,
           coach_id: coach.id,
           engagement_type: 'profile_view',
-          engagement_date: new Date().toISOString(),
           is_anonymous: false,
           metadata: { source: 'peek_panel' },
         });

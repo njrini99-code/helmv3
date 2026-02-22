@@ -157,15 +157,15 @@ export async function getCoachDashboardData(
       .select('id', { count: 'exact', head: true })
       .eq('coach_id', coachId)
       .eq('engagement_type', 'profile_view')
-      .gte('engagement_date', weekAgo.toISOString()),
+      .gte('created_at', weekAgo.toISOString()),
     // Profile views last week
     supabase
       .from('baseball_player_engagement_events')
       .select('id', { count: 'exact', head: true })
       .eq('coach_id', coachId)
       .eq('engagement_type', 'profile_view')
-      .gte('engagement_date', twoWeeksAgo.toISOString())
-      .lt('engagement_date', weekAgo.toISOString()),
+      .gte('created_at', twoWeeksAgo.toISOString())
+      .lt('created_at', weekAgo.toISOString()),
     // Unread messages (only if user has conversations)
     convIds.length > 0
       ? supabase
@@ -269,15 +269,15 @@ export async function getPlayerDashboardData(
       .select('id', { count: 'exact', head: true })
       .eq('player_id', playerId)
       .eq('engagement_type', 'profile_view')
-      .gte('engagement_date', weekAgo.toISOString()),
+      .gte('created_at', weekAgo.toISOString()),
     // Profile views last week
     supabase
       .from('baseball_player_engagement_events')
       .select('id', { count: 'exact', head: true })
       .eq('player_id', playerId)
       .eq('engagement_type', 'profile_view')
-      .gte('engagement_date', twoWeeksAgo.toISOString())
-      .lt('engagement_date', weekAgo.toISOString()),
+      .gte('created_at', twoWeeksAgo.toISOString())
+      .lt('created_at', weekAgo.toISOString()),
     supabase
       .from('baseball_watchlists')
       .select('id', { count: 'exact', head: true })

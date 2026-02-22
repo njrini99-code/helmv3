@@ -77,14 +77,14 @@ async function verifyTeamAccess(
   coachId: string,
   teamId: string
 ): Promise<boolean> {
+  // head_coach_id column does not exist on baseball_teams — check via team_coach_staff only
   const { data: team } = await supabase
     .from('baseball_teams')
     .select('id')
     .eq('id', teamId)
-    .or(`head_coach_id.eq.${coachId}`)
     .single();
 
-  if (team) return true;
+  if (!team) return false;
 
   // Check if assistant coach
   const { data: staffMember } = await supabase

@@ -67,7 +67,6 @@ export async function addToWatchlist(coachId: string, playerId: string) {
       player_id: playerId,
       coach_id: coachId,
       engagement_type: 'watchlist_add',
-      engagement_date: new Date().toISOString(),
       is_anonymous: false,
       metadata: { source: 'discover' },
     });
@@ -304,7 +303,6 @@ export async function toggleWatchlistPlayer(playerId: string): Promise<{
           player_id: playerId,
           coach_id: coach.id,
           engagement_type: 'watchlist_remove',
-          engagement_date: new Date().toISOString(),
           is_anonymous: false,
           metadata: { source: 'toggle_action' },
         });
@@ -336,7 +334,6 @@ export async function toggleWatchlistPlayer(playerId: string): Promise<{
           player_id: playerId,
           coach_id: coach.id,
           engagement_type: 'watchlist_add',
-          engagement_date: new Date().toISOString(),
           is_anonymous: false,
           metadata: { source: 'player_profile' },
         });

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/stores/auth-store';
 
@@ -8,7 +8,9 @@ export function useUnreadCount() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const { user } = useAuthStore();
-  const supabase = createClient();
+  // useRef prevents new client instance on every render (was causing infinite refetch loop)
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
 
   const fetchUnreadCount = useCallback(async () => {
     if (!user) {

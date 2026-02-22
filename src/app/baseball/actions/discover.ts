@@ -69,11 +69,13 @@ async function getCoachRosterPlayerIds(
 
   if (!coachId) return excludedIds;
 
-  // Single query to get all teams the coach manages
-  const { data: coachTeams } = await supabase
-    .from('baseball_teams')
-    .select('id')
-    .eq('head_coach_id', coachId);
+  // head_coach_id does not exist on baseball_teams — get teams via team_coach_staff
+  const { data: staffEntries } = await supabase
+    .from('baseball_team_coach_staff')
+    .select('team_id')
+    .eq('coach_id', coachId);
+
+  const coachTeams = staffEntries?.map((e) => ({ id: e.team_id })) ?? [];
 
   const teamIds = coachTeams?.map((t) => t.id) || [];
 

@@ -123,16 +123,7 @@ async function getCoachTeamId(
   coachId: string,
   organizationId: string | null
 ): Promise<string | null> {
-  // First check if coach is head coach of a team
-  const { data: headCoachTeam } = await supabase
-    .from('baseball_teams')
-    .select('id')
-    .eq('head_coach_id', coachId)
-    .single();
-
-  if (headCoachTeam) return headCoachTeam.id;
-
-  // Check staff membership
+  // Check staff membership (head_coach_id column does not exist on baseball_teams — use team_coach_staff)
   const { data: staffTeam } = await supabase
     .from('baseball_team_coach_staff')
     .select('team_id')

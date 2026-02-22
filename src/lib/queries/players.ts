@@ -194,7 +194,7 @@ export async function getPlayerEngagement(
     `
     )
     .eq('player_id', playerId)
-    .order('engagement_date', { ascending: false })
+    .order('created_at', { ascending: false })
     .limit(limit);
 
   if (error) {

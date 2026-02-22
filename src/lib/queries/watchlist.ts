@@ -105,7 +105,6 @@ export async function addToWatchlist(
       player_id: playerId,
       coach_id: coachId,
       engagement_type: 'watchlist_add',
-      engagement_date: new Date().toISOString(),
       metadata: { stage },
     });
 
@@ -136,7 +135,6 @@ export async function removeFromWatchlist(coachId: string, playerId: string) {
       player_id: playerId,
       coach_id: coachId,
       engagement_type: 'watchlist_remove',
-      engagement_date: new Date().toISOString(),
     });
 
   return true;

@@ -32,7 +32,7 @@ export async function trackProfileView(playerId: string) {
     .eq('player_id', playerId)
     .eq('coach_id', coach.id)
     .eq('engagement_type', 'profile_view')
-    .gte('engagement_date', twentyFourHoursAgo)
+    .gte('created_at', twentyFourHoursAgo)
     .maybeSingle();
 
   if (recentView) {
@@ -47,7 +47,6 @@ export async function trackProfileView(playerId: string) {
       player_id: playerId,
       coach_id: coach.id,
       engagement_type: 'profile_view',
-      engagement_date: new Date().toISOString(),
       is_anonymous: false,
       metadata: { source: 'player_detail' },
     });
@@ -83,7 +82,6 @@ export async function trackContactClick(playerId: string, contactType: 'email' |
       player_id: playerId,
       coach_id: coach.id,
       engagement_type: 'contact_click',
-      engagement_date: new Date().toISOString(),
       is_anonymous: false,
       metadata: { contact_type: contactType },
     });
