@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { getSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { BaseballCalendarWrapper } from '@/components/baseball/calendar/BaseballCalendarWrapper';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
@@ -12,45 +13,31 @@ export const metadata: Metadata = {
 export default async function BaseballCalendarPage() {
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/baseball/login');
+  // Single cached auth fetch — role + profiles already resolved
+  const session = await getSessionProfile();
+  if (!session) redirect('/baseball/login');
 
-  const { data: userData } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', user.id)
-    .single();
-
-  const userRole = userData?.role;
-  const isCoach = userRole === 'coach';
+  const isCoach = session.role === 'coach';
 
   let teamId: string | null = null;
   let events: CalendarEvent[] = [];
   let teamMembers: { id: string; first_name: string; last_name: string; avatar_url?: string }[] = [];
 
-  if (isCoach) {
-    // Get coach and their team
-    const { data: coach } = await supabase
-      .from('baseball_coaches')
-      .select('id, organization_id')
-      .eq('user_id', user.id)
+  if (isCoach && session.coach?.organization_id) {
+    // Coach org_id already in session — just need the team lookup
+    const { data: team } = await supabase
+      .from('baseball_teams')
+      .select('id')
+      .eq('organization_id', session.coach.organization_id)
       .single();
 
-    if (coach?.organization_id) {
-      const { data: team } = await supabase
-        .from('baseball_teams')
-        .select('id')
-        .eq('organization_id', coach.organization_id)
-        .single();
-
-      teamId = team?.id || null;
-    }
-  } else {
+    teamId = team?.id || null;
+  } else if (!isCoach) {
     // Get player's team
     const { data: teamMember } = await supabase
       .from('baseball_team_members')
       .select('team_id')
-      .eq('player_id', user.id)
+      .eq('player_id', session.userId)
       .single();
 
     teamId = teamMember?.team_id || null;

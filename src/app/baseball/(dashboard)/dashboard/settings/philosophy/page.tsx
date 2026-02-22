@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { getSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { PhilosophySettingsClient } from '@/components/baseball/settings/PhilosophySettingsClient';
 import type { BaseballCoachPhilosophy } from '@/lib/types';
@@ -6,22 +7,12 @@ import type { BaseballCoachPhilosophy } from '@/lib/types';
 export default async function PhilosophySettingsPage() {
   const supabase = await createClient();
 
-  // Get authenticated user
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (userError || !user) {
-    redirect('/baseball/login');
-  }
+  // Single cached auth fetch — coach profile already resolved
+  const session = await getSessionProfile();
+  if (!session) redirect('/baseball/login');
 
-  // Get coach profile
-  const { data: coach, error: coachError } = await supabase
-    .from('baseball_coaches')
-    .select('id, coach_type, organization_id, full_name')
-    .eq('user_id', user.id)
-    .single();
-
-  if (coachError || !coach) {
-    redirect('/baseball/coach');
-  }
+  const coach = session.coach;
+  if (!coach) redirect('/baseball/coach');
 
   // Only college and JUCO coaches have access
   if (coach.coach_type !== 'college' && coach.coach_type !== 'juco') {

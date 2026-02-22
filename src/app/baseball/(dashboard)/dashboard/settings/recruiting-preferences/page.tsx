@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/server';
+import { getSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { RecruitingPreferencesClient } from './recruiting-preferences-client';
 import type { CoachRecruitingPhilosophy, RecruitingMetricWeights, RecruitingMinimumStandards } from '@/lib/types';
@@ -13,21 +14,12 @@ export const metadata = {
 async function getCoachAndPhilosophy() {
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    redirect('/baseball/login');
-  }
+  // Single cached auth fetch — coach profile already resolved
+  const session = await getSessionProfile();
+  if (!session) redirect('/baseball/login');
 
-  // Get coach record
-  const { data: coach, error: coachError } = await supabase
-    .from('baseball_coaches')
-    .select('id, coach_type, full_name')
-    .eq('user_id', user.id)
-    .single();
-
-  if (coachError || !coach) {
-    redirect('/baseball/login');
-  }
+  const coach = session.coach;
+  if (!coach) redirect('/baseball/login');
 
   // Only college and JUCO coaches can use recruiting
   if (coach.coach_type !== 'college' && coach.coach_type !== 'juco') {

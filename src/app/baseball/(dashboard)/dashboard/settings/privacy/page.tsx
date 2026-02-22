@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { getSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { PrivacySettingsForm } from '@/components/player/settings/PrivacySettingsForm';
 
@@ -10,19 +11,12 @@ export const metadata = {
 export default async function PrivacySettingsPage() {
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/baseball/login');
+  // Single cached auth fetch — player profile already resolved
+  const session = await getSessionProfile();
+  if (!session) redirect('/baseball/login');
 
-  // Get player record
-  const { data: player } = await supabase
-    .from('baseball_players')
-    .select('id')
-    .eq('user_id', user.id)
-    .single();
-
-  if (!player) {
-    redirect('/baseball/dashboard');
-  }
+  const player = session.player;
+  if (!player) redirect('/baseball/dashboard');
 
   // Get existing privacy settings
   const { data: settings } = await supabase
