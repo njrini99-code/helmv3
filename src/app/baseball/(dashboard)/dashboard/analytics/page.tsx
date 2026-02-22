@@ -3,8 +3,9 @@
 import { Header } from '@/components/layout/header';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { PageLoading } from '@/components/ui/loading';
-import { IconEye, IconStar, IconVideo, IconMessage, IconTrendingUp, IconCalendar } from '@/components/icons';
+import { IconEye, IconStar, IconVideo, IconMessage, IconTrendingUp, IconCalendar, IconChart } from '@/components/icons';
 import { useAnalytics } from '@/hooks/use-analytics';
+import { useAuthStore } from '@/stores/auth-store';
 import dynamic from 'next/dynamic';
 
 const LineChart = dynamic(() => import('recharts').then((mod) => mod.LineChart), { ssr: false });
@@ -17,28 +18,52 @@ const CartesianGrid = dynamic(() => import('recharts').then((mod) => mod.Cartesi
 
 export default function AnalyticsPage() {
   const { data, loading } = useAnalytics();
+  const { coach } = useAuthStore();
+  const isCoach = !!coach;
 
   if (loading) {
     return (
       <>
-        <Header title="Analytics" subtitle="Track your recruiting activity" />
+        <Header title="Analytics" subtitle={isCoach ? 'Track your recruiting activity' : 'Track your profile performance'} />
         <PageLoading />
       </>
     );
   }
 
-  if (!data) {
+  // Coaches see recruiting analytics (coming soon / Command Center redirect)
+  // The useAnalytics hook is player-facing; coach analytics live in Command Center.
+  if (isCoach || !data) {
     return (
       <>
-        <Header title="Analytics" subtitle="Track your recruiting activity" />
+        <Header
+          title="Analytics"
+          subtitle={isCoach ? 'Track your recruiting activity' : 'Track your profile performance'}
+        />
         <div className="p-8">
           <Card variant="glass">
             <CardContent className="p-12 text-center">
-              <IconEye size={48} className="mx-auto text-slate-300 mb-4" />
-              <h3 className="text-lg font-semibold tracking-tight text-slate-900 mb-2">No Analytics Data</h3>
-              <p className="text-sm leading-relaxed text-slate-500">
-                Analytics data will appear once coaches start viewing your profile.
-              </p>
+              {isCoach ? (
+                <>
+                  <IconChart size={48} className="mx-auto text-slate-300 mb-4" />
+                  <h3 className="text-lg font-semibold tracking-tight text-slate-900 mb-2">Recruiting Analytics</h3>
+                  <p className="text-sm leading-relaxed text-slate-500 max-w-sm mx-auto">
+                    Your outreach metrics, pipeline conversion rates, and engagement trends are available in{' '}
+                    <a href="/baseball/dashboard/command-center" className="text-primary-600 hover:underline font-medium">
+                      Command Center
+                    </a>
+                    .
+                  </p>
+                </>
+              ) : (
+                <>
+                  <IconEye size={48} className="mx-auto text-slate-300 mb-4" />
+                  <h3 className="text-lg font-semibold tracking-tight text-slate-900 mb-2">No Analytics Data Yet</h3>
+                  <p className="text-sm leading-relaxed text-slate-500">
+                    Analytics will appear once coaches start viewing your profile.
+                    Make sure recruiting is activated to get discovered.
+                  </p>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>

@@ -249,12 +249,46 @@ export async function signupAndCompleteCoachOnboarding(data: {
       return { success: false, error: `Please wait ${seconds} seconds before trying again.` };
     }
 
-    // Handle duplicate email
+    // Handle duplicate email — fall back to completing onboarding for the existing user.
+    // This handles the race condition where checkAuth() hasn't resolved yet on the client,
+    // so signupAndCompleteCoachOnboarding() is called for an already-authenticated email.
+    // Also handles users who started onboarding but abandoned before their coach record was created.
     if (authError.message.includes('already registered') || authError.message.includes('already exists')
       || authError.status === 422 || (authError as { code?: string }).code === 'user_already_exists') {
+      const admin = createAdminClient();
+
+      // Look up the existing user in our public.users table (fast, indexed on email)
+      const { data: dbUser } = await admin
+        .from('users')
+        .select('id')
+        .eq('email', normalizedEmail)
+        .maybeSingle();
+
+      if (dbUser?.id) {
+        const { data: { user: existingUser } } = await admin.auth.admin.getUserById(dbUser.id);
+        if (existingUser) {
+          console.info('[Onboarding] Email already registered — completing onboarding for existing user:', existingUser.id);
+          return completeCoachOnboarding(
+            {
+              coachType,
+              schoolName,
+              division: data.division,
+              city: data.city,
+              state: data.state,
+              fullName,
+              title: data.title,
+            },
+            existingUser
+          );
+        }
+      }
+
+      // User exists in Supabase Auth but not in our public.users table yet.
+      // This can happen if they abandoned onboarding before the first DB write.
+      // Guide them to sign in so their session cookie is set, then they can complete onboarding.
       return {
         success: false,
-        error: 'An account with this email already exists. Please sign in instead.',
+        error: 'An account with this email already exists. Please sign in to continue your setup.',
       };
     }
 

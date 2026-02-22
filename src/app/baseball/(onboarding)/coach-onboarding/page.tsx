@@ -248,6 +248,9 @@ export default function BaseballCoachOnboarding() {
   const [showComparison, setShowComparison] = useState(false);
 
   // Auth state - tracks if user is already signed up
+  // authChecked: true once checkAuth() resolves. Plan buttons are disabled until this is true
+  // to prevent race conditions where handleSubmit() runs before existingUser is set.
+  const [authChecked, setAuthChecked] = useState(false);
   const [existingUser, setExistingUser] = useState<{ id: string; email: string; fullName: string } | null>(null);
 
   // Coach type
@@ -283,6 +286,8 @@ export default function BaseballCoachOnboarding() {
         // If user restored to the account step from localStorage but is already authenticated, skip forward
         setStep((prev) => prev === 'account' ? 'plan' : prev);
       }
+      // Mark auth check complete — plan buttons are gated on this to prevent race conditions
+      setAuthChecked(true);
     }
     checkAuth();
   }, []);
@@ -414,7 +419,11 @@ export default function BaseballCoachOnboarding() {
   }
 
   function handlePlanSelectAndSubmit(selectedPlan: 'free' | 'elite') {
-    if (loading) return;
+    // Guard: don't allow submission until checkAuth() has resolved.
+    // Without this, a user who submits quickly could hit handleSubmit() before
+    // existingUser is set, causing signupAndCompleteCoachOnboarding() to be called
+    // for an already-authenticated email → "already registered" error → coach record never created.
+    if (loading || !authChecked) return;
     setPlan(selectedPlan);
     goForward('complete');
     handleSubmit();
@@ -743,10 +752,11 @@ export default function BaseballCoachOnboarding() {
                   <m.div variants={staggerItem} className="grid sm:grid-cols-2 gap-4">
                     <button
                       onClick={() => handlePlanSelectAndSubmit('free')}
-                      disabled={loading}
+                      disabled={loading || !authChecked}
                       className={cn(
                         'auth-glass-card rounded-2xl p-6 text-left transition-all hover:bg-white/90',
-                        plan === 'free' && 'ring-2 ring-primary-500'
+                        plan === 'free' && 'ring-2 ring-primary-500',
+                        !authChecked && 'opacity-60 cursor-wait'
                       )}
                     >
                       <h3 className="text-lg font-bold text-warm-900 mb-1">Free</h3>
@@ -763,10 +773,11 @@ export default function BaseballCoachOnboarding() {
 
                     <button
                       onClick={() => handlePlanSelectAndSubmit('elite')}
-                      disabled={loading}
+                      disabled={loading || !authChecked}
                       className={cn(
                         'auth-glass-card rounded-2xl p-6 text-left transition-all hover:bg-white/90 relative',
-                        plan === 'elite' ? 'ring-2 ring-primary-500' : 'ring-1 ring-primary-200'
+                        plan === 'elite' ? 'ring-2 ring-primary-500' : 'ring-1 ring-primary-200',
+                        !authChecked && 'opacity-60 cursor-wait'
                       )}
                     >
                       <div className="absolute -top-2.5 left-4">
