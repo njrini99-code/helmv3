@@ -149,7 +149,7 @@ export default async function BaseballCalendarPage() {
 
   return (
     <div
-      className="h-[calc(100vh-64px-5.5rem-env(safe-area-inset-bottom))] md:h-[calc(100vh-64px)] flex flex-col"
+      className="h-[calc(100vh-5.5rem-env(safe-area-inset-bottom))] md:h-screen flex flex-col"
       style={{
         background: 'linear-gradient(180deg, #FFFEFA 0%, #FDF9F0 33%, #FAF5EB 66%, #F5F0E6 100%)',
       }}
@@ -175,8 +175,9 @@ export default async function BaseballCalendarPage() {
         </div>
       )}
 
-      {/* Calendar */}
-      <div className="flex-1 p-4 md:p-6 pt-2 md:pt-2 min-h-0">
+      {/* Calendar — overflow-hidden is required so PremiumCalendarClient's h-full resolves correctly.
+          Golf's main is overflow-y-auto (which anchors heights); baseball's is not, so we add it here. */}
+      <div className="flex-1 p-4 md:p-6 pt-2 md:pt-2 min-h-0 overflow-hidden">
         <BaseballCalendarWrapper
           initialEvents={events}
           teamMembers={teamMembers}
