@@ -22,6 +22,9 @@ interface CreateEventInput {
   rsvpDeadline?: string | null;
   attendeeIds?: string[];
   requiresRsvp?: boolean;
+  // Game/scrimmage fields — auto-creates a baseball_game record when eventType is 'game' or 'scrimmage'
+  opponentName?: string | null;
+  homeAway?: 'home' | 'away' | 'neutral' | null;
 }
 
 interface UpdateEventInput {
@@ -139,6 +142,22 @@ export async function createBaseballEvent(input: CreateEventInput): Promise<Acti
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any).from('baseball_event_attendance').insert(attendanceRecords);
+  }
+
+  // Auto-create a baseball_game record when event type is game/scrimmage
+  if (data && (input.eventType === 'game' || input.eventType === 'scrimmage')) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any).from('baseball_games').insert({
+      team_id: coachTeam.teamId,
+      event_id: data.id,
+      game_date: input.startDate,
+      game_type: input.eventType,
+      opponent_name: input.opponentName ?? null,
+      location: input.location ?? null,
+      home_away: input.homeAway ?? null,
+      created_by: coachTeam.coachId,
+      status: 'scheduled',
+    });
   }
 
   revalidatePath(CALENDAR_PATH);

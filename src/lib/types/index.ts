@@ -1060,3 +1060,224 @@ export const RECRUITING_METRIC_DESCRIPTIONS: Record<keyof RecruitingMetricWeight
   arm_strength: 'How much you value throwing arm strength',
 };
 
+
+
+// =====================================================================
+// BASEBALL BOX SCORE TYPES
+// =====================================================================
+
+export type BaseballGameType = 'game' | 'scrimmage';
+export type BaseballGameStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled' | 'postponed';
+export type BaseballPitchingResult = 'W' | 'L' | 'S' | 'H' | 'BS' | 'ND';
+export type BaseballHomeAway = 'home' | 'away' | 'neutral';
+
+export interface BaseballGame {
+  id: string;
+  team_id: string;
+  event_id: string | null;
+  game_date: string;
+  game_type: BaseballGameType;
+  opponent_name: string | null;
+  location: string | null;
+  home_away: BaseballHomeAway | null;
+  our_score: number | null;
+  opponent_score: number | null;
+  innings_played: number;
+  status: BaseballGameStatus;
+  notes: string | null;
+  weather: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+  // Joined
+  batting?: BaseballBoxScoreBatting[];
+  pitching?: BaseballBoxScorePitching[];
+  // Derived counts (from query)
+  batting_count?: number;
+  pitching_count?: number;
+}
+
+export interface BaseballBoxScoreBatting {
+  id: string;
+  game_id: string;
+  player_id: string;
+  team_id: string;
+  ab: number;
+  r: number;
+  h: number;
+  doubles: number;
+  triples: number;
+  hr: number;
+  rbi: number;
+  bb: number;
+  k: number;
+  sb: number;
+  cs: number;
+  hbp: number;
+  sac: number;
+  sf: number;
+  lob: number;
+  batting_order: number | null;
+  avg: number | null;
+  obp: number | null;
+  slg: number | null;
+  ops: number | null;
+  created_at: string;
+  // Joined
+  player?: {
+    first_name: string | null;
+    last_name: string | null;
+    avatar_url: string | null;
+    primary_position: string | null;
+  };
+}
+
+export interface BaseballBoxScorePitching {
+  id: string;
+  game_id: string;
+  player_id: string;
+  team_id: string;
+  ip: number;
+  h: number;
+  r: number;
+  er: number;
+  bb: number;
+  k: number;
+  hr: number;
+  pitch_count: number | null;
+  strikes: number | null;
+  result: BaseballPitchingResult | null;
+  era: number | null;
+  whip: number | null;
+  k9: number | null;
+  bb9: number | null;
+  created_at: string;
+  // Joined
+  player?: {
+    first_name: string | null;
+    last_name: string | null;
+    avatar_url: string | null;
+    primary_position: string | null;
+  };
+}
+
+export interface BaseballPlayerSeasonStats {
+  id: string;
+  player_id: string;
+  team_id: string;
+  season_year: number;
+  // Batting totals
+  g: number;
+  ab: number;
+  r: number;
+  h: number;
+  doubles: number;
+  triples: number;
+  hr: number;
+  rbi: number;
+  bb: number;
+  k: number;
+  sb: number;
+  cs: number;
+  hbp: number;
+  sac: number;
+  sf: number;
+  // Batting rates
+  avg: number | null;
+  obp: number | null;
+  slg: number | null;
+  ops: number | null;
+  // Pitching totals
+  g_p: number;
+  gs: number;
+  w: number;
+  l: number;
+  sv: number;
+  ip: number;
+  h_allowed: number;
+  r_allowed: number;
+  er: number;
+  bb_allowed: number;
+  k_thrown: number;
+  hr_allowed: number;
+  // Pitching rates
+  era: number | null;
+  whip: number | null;
+  k9: number | null;
+  bb9: number | null;
+  last_updated: string;
+  // Joined
+  player?: {
+    first_name: string | null;
+    last_name: string | null;
+    primary_position: string | null;
+    jersey_number?: string | null;
+  };
+}
+
+export interface BaseballBoxScoreUpload {
+  id: string;
+  team_id: string;
+  game_id: string | null;
+  coach_id: string;
+  filename: string;
+  upload_type: 'csv' | 'pdf' | 'manual';
+  raw_content: string | null;
+  parsed_data: unknown | null;
+  status: 'pending' | 'processing' | 'review_needed' | 'completed' | 'failed';
+  matched_players: Array<{ csvName: string; playerId: string; confidence: number; playerName: string }>;
+  unmatched_players: Array<{ csvName: string }>;
+  error_message: string | null;
+  created_at: string;
+}
+
+export interface BoxScoreBattingInput {
+  player_id: string;
+  player_name?: string; // For display
+  batting_order?: number;
+  ab: number;
+  r: number;
+  h: number;
+  doubles: number;
+  triples: number;
+  hr: number;
+  rbi: number;
+  bb: number;
+  k: number;
+  sb: number;
+  cs: number;
+  hbp: number;
+  sac: number;
+  sf: number;
+  lob: number;
+}
+
+export interface BoxScorePitchingInput {
+  player_id: string;
+  player_name?: string; // For display
+  ip: number;
+  h: number;
+  r: number;
+  er: number;
+  bb: number;
+  k: number;
+  hr: number;
+  pitch_count?: number;
+  strikes?: number;
+  result?: BaseballPitchingResult;
+}
+
+export interface CreateGameInput {
+  game_date: string;
+  game_type: BaseballGameType;
+  opponent_name?: string;
+  location?: string;
+  home_away?: BaseballHomeAway;
+  innings_played?: number;
+  notes?: string;
+  weather?: string;
+  event_id?: string; // Link to existing calendar event
+  // If provided, also creates a calendar event
+  create_calendar_event?: boolean;
+  event_time?: string;
+}

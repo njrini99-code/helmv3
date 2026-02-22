@@ -1,0 +1,205 @@
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
+import { GameCard } from './GameCard';
+import { getTeamGames, deleteGame } from '@/app/baseball/actions/games';
+import type { BaseballGame, BaseballGameType } from '@/lib/types';
+import { IconPlus, IconRefresh } from '@/components/icons';
+import { Button } from '@/components/ui/button';
+
+interface GamesListProps {
+  teamId: string;
+  title?: string;
+  showAddButton?: boolean;
+  limit?: number;
+}
+
+type TabFilter = 'all' | 'game' | 'scrimmage';
+
+const SEASON_YEARS = (() => {
+  const current = new Date().getFullYear();
+  return [current, current - 1, current - 2];
+})();
+
+export function GamesList({ teamId, title = 'Games & Scrimmages', showAddButton = true, limit }: GamesListProps) {
+  const [games, setGames] = useState<BaseballGame[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TabFilter>('all');
+  const [seasonYear, setSeasonYear] = useState(new Date().getFullYear());
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const fetchGames = useCallback(
+    async (isRefresh = false) => {
+      if (isRefresh) setRefreshing(true);
+      else setLoading(true);
+      setError(null);
+
+      const result = await getTeamGames(teamId, {
+        gameType: activeTab === 'all' ? undefined : (activeTab as BaseballGameType),
+        seasonYear,
+        limit,
+      });
+
+      if (result.success) {
+        setGames(result.data ?? []);
+      } else {
+        setError(result.error ?? 'Failed to load games');
+      }
+      setLoading(false);
+      setRefreshing(false);
+    },
+    [teamId, activeTab, seasonYear, limit]
+  );
+
+  useEffect(() => {
+    fetchGames();
+  }, [fetchGames]);
+
+  async function handleDelete(gameId: string) {
+    if (!confirm('Delete this game and all its stats? This cannot be undone.')) return;
+    setDeletingId(gameId);
+    const result = await deleteGame(gameId);
+    if (result.success) {
+      setGames((prev) => prev.filter((g) => g.id !== gameId));
+    } else {
+      alert(result.error ?? 'Failed to delete game');
+    }
+    setDeletingId(null);
+  }
+
+  const completedGames = games.filter((g) => g.status === 'completed');
+  const wins = completedGames.filter(
+    (g) => g.our_score != null && g.opponent_score != null && g.our_score > g.opponent_score
+  ).length;
+  const losses = completedGames.length - wins;
+
+  return (
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-slate-900">{title}</h2>
+          {completedGames.length > 0 && (
+            <p className="text-sm text-slate-500 mt-0.5">
+              {completedGames.length} played · {wins}W {losses}L
+            </p>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* Season selector */}
+          <select
+            value={seasonYear}
+            onChange={(e) => setSeasonYear(Number(e.target.value))}
+            className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white/70 text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+            {SEASON_YEARS.map((y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            ))}
+          </select>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => fetchGames(true)}
+            disabled={refreshing}
+            className="h-8 w-8 p-0"
+          >
+            <IconRefresh size={16} className={refreshing ? 'animate-spin' : ''} />
+          </Button>
+
+          {showAddButton && (
+            <Link
+              href="/baseball/dashboard/stats/games/new"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <IconPlus size={16} />
+              Add Game
+            </Link>
+          )}
+        </div>
+      </div>
+
+      {/* Type filter tabs */}
+      <div className="flex gap-1 p-1 bg-slate-100 rounded-xl w-fit">
+        {(['all', 'game', 'scrimmage'] as TabFilter[]).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-all capitalize ${
+              activeTab === tab
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            {tab === 'all' ? 'All' : tab === 'scrimmage' ? 'Scrimmages' : 'Games'}
+          </button>
+        ))}
+      </div>
+
+      {/* Content */}
+      {loading ? (
+        <div className="space-y-3">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-28 bg-slate-100 rounded-2xl animate-pulse" />
+          ))}
+        </div>
+      ) : error ? (
+        <div className="bg-red-50 border border-red-100 rounded-2xl p-5 text-center">
+          <p className="text-sm text-red-600">{error}</p>
+          <button
+            onClick={() => fetchGames()}
+            className="mt-3 text-sm text-red-600 underline"
+          >
+            Retry
+          </button>
+        </div>
+      ) : games.length === 0 ? (
+        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-10 text-center">
+          <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+            <IconPlus size={24} className="text-slate-400" />
+          </div>
+          <h3 className="text-base font-semibold text-slate-900 mb-1">No games yet</h3>
+          <p className="text-sm text-slate-500 mb-5">
+            Add your first game to start tracking stats.
+          </p>
+          {showAddButton && (
+            <Link
+              href="/baseball/dashboard/stats/games/new"
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-xl transition-colors"
+            >
+              <IconPlus size={16} />
+              Add First Game
+            </Link>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {games.map((game) => (
+            <div key={game.id} className="relative">
+              <GameCard game={game} teamId={teamId} />
+              {deletingId === game.id && (
+                <div className="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+                  <span className="text-sm text-slate-500">Deleting...</span>
+                </div>
+              )}
+              {/* Delete action - accessible via right-click context or small button */}
+              <button
+                onClick={() => handleDelete(game.id)}
+                className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition-all text-xs hidden"
+                aria-label="Delete game"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

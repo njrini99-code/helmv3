@@ -23,6 +23,7 @@ import {
   TrendChart,
   SessionHistory,
 } from '@/components/baseball/player-stats';
+import { MySeasonStats } from '@/components/baseball/season-stats/MySeasonStats';
 import { getMyStats, getMyAggregates } from '@/app/baseball/actions/stats';
 import type { BaseballPlayerStats, BaseballPlayerAggregates } from '@/lib/types';
 
@@ -170,6 +171,11 @@ export function MyStatsClient() {
             <IconRefresh size={16} className={refreshing ? 'animate-spin' : ''} />
             {refreshing ? 'Refreshing...' : 'Refresh'}
           </Button>
+        </div>
+
+        {/* Season Stats from Box Scores (new system) */}
+        <div className="mb-6">
+          <MySeasonStats />
         </div>
 
         {/* Quick Stats Summary */}

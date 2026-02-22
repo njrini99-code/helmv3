@@ -182,16 +182,32 @@ export function parseCSV(content: string): CSVRow[] {
  * Map CSV headers to our stat fields
  */
 export const HEADER_MAPPINGS: Record<string, string[]> = {
-  player_name: ['player', 'name', 'player_name', 'athlete', 'batter', 'hitter'],
+  player_name: ['player', 'name', 'player_name', 'athlete', 'batter', 'hitter', 'pitcher'],
   at_bats: ['ab', 'at_bats', 'atbats', 'at_bat'],
+  runs: ['r', 'runs', 'run'],
   hits: ['h', 'hits', 'hit'],
   doubles: ['2b', 'doubles', 'double'],
   triples: ['3b', 'triples', 'triple'],
   home_runs: ['hr', 'home_runs', 'homeruns', 'homers'],
   rbis: ['rbi', 'rbis', 'runs_batted_in'],
   walks: ['bb', 'walks', 'walk', 'base_on_balls'],
-  strikeouts: ['so', 'k', 'strikeouts', 'strikeout'],
+  strikeouts: ['so', 'k', 'strikeouts', 'strikeout', 'so'],
   stolen_bases: ['sb', 'stolen_bases', 'steals'],
+  caught_stealing: ['cs', 'caught_stealing', 'caught'],
+  hit_by_pitch: ['hbp', 'hit_by_pitch', 'hitbypitch', 'hbp'],
+  sacrifice_bunts: ['sac', 'sacrifice_bunts', 'sacrificebunts', 'sacbunt'],
+  sacrifice_flies: ['sf', 'sacrifice_flies', 'sacrificeflies', 'sacfly'],
+  left_on_base: ['lob', 'left_on_base', 'leftonbase'],
+  batting_order: ['order', 'batting_order', 'bat_order', 'lineup'],
+  // Pitching
+  innings_pitched: ['ip', 'innings_pitched', 'inningspitched', 'innings'],
+  hits_allowed: ['h', 'hits_allowed', 'ha', 'hits'],
+  runs_allowed: ['r', 'runs_allowed', 'ra', 'runs'],
+  earned_runs: ['er', 'earned_runs', 'earnedruns'],
+  home_runs_allowed: ['hr', 'home_runs_allowed', 'hra', 'hrs_allowed'],
+  pitch_count: ['pc', 'pitch_count', 'pitches', 'pitchcount'],
+  result: ['result', 'dec', 'decision', 'w_l'],
+  // Metrics
   exit_velocity: ['ev', 'exit_velocity', 'exit_velo', 'exit_speed'],
   launch_angle: ['la', 'launch_angle', 'launch'],
 };
