@@ -1,22 +1,56 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import Image from 'next/image';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { BaseballSignInForm } from '@/components/auth/baseball-sign-in-form';
-import Image from 'next/image';
+import { createClient } from '@/lib/supabase/client';
 
 function LoginContent() {
   const searchParams = useSearchParams();
-  const successMessage = searchParams.get('message');
+  const router = useRouter();
+  // Use predefined message codes to prevent content injection via query params
+  const LOGIN_MESSAGES: Record<string, string> = {
+    session_expired: 'Session expired. Please sign in again.',
+    password_reset: 'Password reset successfully. Please sign in with your new password.',
+    account_created: 'Account created successfully. Please sign in.',
+    signed_out: 'You have been signed out.',
+  };
+  const messageKey = searchParams.get('message');
+  const successMessage = messageKey ? LOGIN_MESSAGES[messageKey] ?? null : null;
+  const returnTo = searchParams.get('returnTo');
+  const signupHref = returnTo ? `/baseball/signup?returnTo=${encodeURIComponent(returnTo)}` : '/baseball/signup';
+
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const supabase = createClient();
+
+  useEffect(() => {
+    async function checkAuth() {
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsLoggedIn(!!user);
+      setCheckingAuth(false);
+    }
+    checkAuth();
+  }, [supabase, supabase.auth]);
+
+  async function handleSignOut() {
+    setIsLoggingOut(true);
+    await supabase.auth.signOut();
+    setIsLoggedIn(false);
+    setIsLoggingOut(false);
+    router.refresh();
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative p-4 sm:p-6 bg-auth-baseball">
+    <div className="min-h-dvh flex items-center justify-center relative p-4 sm:p-6 bg-auth-baseball">
       {/* Skip to main content link for keyboard navigation */}
       <a
         href="#login-form"
-        className="sr-only focus:not-sr-only focus:absolute focus:z-[60] focus:top-4 focus:left-4 bg-primary-600 text-white px-4 py-2 rounded-lg font-medium shadow-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-[60] focus:top-[max(1rem,env(safe-area-inset-top))] focus:left-4 bg-primary-600 text-white px-4 py-2 rounded-lg font-medium shadow-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
       >
         Skip to login form
       </a>
@@ -54,7 +88,7 @@ function LoginContent() {
         />
         {/* Small accent orb - top left */}
         <motion.div
-          className="auth-orb auth-orb-3 w-[200px] h-[200px] top-20 left-[10%] bg-gradient-to-br from-helm-amber-400/25 to-helm-amber-400/20 motion-reduce:animate-none"
+          className="auth-orb auth-orb-3 w-[200px] h-[200px] top-20 left-[10%] bg-gradient-to-br from-helm-amber-300/25 to-helm-amber-400/20 motion-reduce:animate-none"
           animate={{
             x: [0, 20, 0],
             y: [0, -15, 0],
@@ -149,13 +183,42 @@ function LoginContent() {
             </motion.div>
           )}
 
-          {/* Form */}
+          {/* Form or Already Logged In */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.5 }}
           >
-            <BaseballSignInForm />
+            {checkingAuth ? (
+              <div className="flex justify-center py-8">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-helm-amber-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                  <span className="w-2 h-2 rounded-full bg-helm-amber-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                  <span className="w-2 h-2 rounded-full bg-helm-amber-600 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+                </span>
+              </div>
+            ) : isLoggedIn ? (
+              <div className="space-y-4">
+                <div className="bg-helm-amber-400/10 border border-helm-amber-400/30 text-helm-amber-600 px-4 py-3 rounded-xl text-sm text-center">
+                  You&apos;re already signed in
+                </div>
+                <button
+                  onClick={() => router.push(returnTo || '/baseball/dashboard')}
+                  className="w-full py-3 bg-primary-600 text-white font-medium text-sm rounded-[10px] shadow-sm transition-all duration-200 hover:bg-primary-700 hover:shadow-md"
+                >
+                  {returnTo ? 'Continue' : 'Continue to Dashboard'}
+                </button>
+                <button
+                  onClick={handleSignOut}
+                  disabled={isLoggingOut}
+                  className="w-full py-3 bg-warm-100 text-warm-700 font-medium text-sm rounded-[10px] transition-all duration-200 hover:bg-warm-200 disabled:opacity-50"
+                >
+                  {isLoggingOut ? 'Signing out...' : 'Sign out & use a different account'}
+                </button>
+              </div>
+            ) : (
+              <BaseballSignInForm />
+            )}
           </motion.div>
         </motion.div>
 
@@ -165,31 +228,42 @@ function LoginContent() {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6, duration: 0.5 }}
         >
-          <p className="text-center mt-6 text-warm-600 text-sm">
-            Don&apos;t have an account?{' '}
-            <Link
-              href="/baseball/signup"
-              className="text-helm-amber-600 font-semibold hover:text-helm-amber-500 transition-colors"
-            >
-              Sign up
-            </Link>
-          </p>
+          {!isLoggedIn && !checkingAuth && (
+            <p className="text-center mt-6 text-warm-600 text-sm">
+              Don&apos;t have an account?{' '}
+              <Link
+                href={signupHref}
+                className="text-helm-amber-600 font-semibold hover:text-helm-amber-500 transition-colors"
+              >
+                Sign up
+              </Link>
+            </p>
+          )}
 
           <p className="text-center mt-4 text-warm-500 text-sm">
-            <Link href="/" className="hover:text-warm-700 transition-colors">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1 hover:text-warm-700 transition-colors px-3 py-3 -my-3 min-h-[44px] rounded-lg active:bg-warm-100/50"
+            >
               ← Back to HelmLabs
             </Link>
           </p>
 
-          <p className="text-center mt-3 text-warm-400 text-xs">
-            <Link href="/privacy" className="hover:text-warm-600 transition-colors">
+          <div className="flex items-center justify-center gap-2 mt-3">
+            <Link
+              href="/privacy"
+              className="text-warm-400 hover:text-warm-600 transition-colors text-xs px-3 py-3 -my-3 min-h-[44px] flex items-center rounded-lg active:bg-warm-100/50"
+            >
               Privacy
             </Link>
-            <span className="mx-2">·</span>
-            <Link href="/terms" className="hover:text-warm-600 transition-colors">
+            <span className="text-warm-300" aria-hidden="true">·</span>
+            <Link
+              href="/terms"
+              className="text-warm-400 hover:text-warm-600 transition-colors text-xs px-3 py-3 -my-3 min-h-[44px] flex items-center rounded-lg active:bg-warm-100/50"
+            >
               Terms
             </Link>
-          </p>
+          </div>
         </motion.div>
       </div>
     </div>
@@ -200,8 +274,12 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-warm-900 flex items-center justify-center">
-          <div className="animate-spin h-8 w-8 border-2 border-white border-t-transparent rounded-full" />
+        <div className="min-h-dvh bg-warm-900 flex items-center justify-center">
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+            <span className="w-2 h-2 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+            <span className="w-2 h-2 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+          </span>
         </div>
       }
     >

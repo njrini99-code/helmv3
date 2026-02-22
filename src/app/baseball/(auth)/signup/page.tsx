@@ -1,21 +1,38 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { BaseballSignUpForm } from '@/components/auth/baseball-sign-up-form';
-import Image from 'next/image';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
 
+// Component to render sign-in link with returnTo param preserved
+function SignInLink() {
+  const searchParams = useSearchParams();
+  const returnTo = searchParams.get('returnTo');
+  const loginHref = returnTo ? `/baseball/login?returnTo=${encodeURIComponent(returnTo)}` : '/baseball/login';
+
+  return (
+    <Link
+      href={loginHref}
+      className="text-helm-amber-600 font-semibold hover:text-helm-amber-500 transition-colors"
+    >
+      Sign in
+    </Link>
+  );
+}
+
 export default function SignupPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center relative p-4 sm:p-6 bg-auth-baseball">
+    <div className="min-h-dvh flex items-center justify-center relative p-4 sm:p-6 bg-auth-baseball">
       {/* Skip to main content link for keyboard navigation */}
       <a
         href="#signup-form"
-        className="sr-only focus:not-sr-only focus:absolute focus:z-[60] focus:top-4 focus:left-4 bg-primary-600 text-white px-4 py-2 rounded-lg font-medium shadow-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-[60] focus:top-[max(1rem,env(safe-area-inset-top))] focus:left-4 bg-primary-600 text-white px-4 py-2 rounded-lg font-medium shadow-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
       >
         Skip to signup form
       </a>
@@ -53,7 +70,7 @@ export default function SignupPage() {
         />
         {/* Small accent orb - top left (hidden on very small screens) */}
         <motion.div
-          className="auth-orb auth-orb-3 hidden sm:block w-[200px] h-[200px] top-20 left-[10%] bg-gradient-to-br from-helm-amber-400/25 to-helm-amber-400/20 motion-reduce:animate-none"
+          className="auth-orb auth-orb-3 hidden sm:block w-[200px] h-[200px] top-20 left-[10%] bg-gradient-to-br from-helm-amber-300/25 to-helm-amber-400/20 motion-reduce:animate-none"
           animate={{
             x: [0, 20, 0],
             y: [0, -15, 0],
@@ -160,7 +177,7 @@ export default function SignupPage() {
           </motion.div>
         </motion.div>
 
-        {/* Footer links */}
+        {/* Footer links with stagger animation */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -168,29 +185,35 @@ export default function SignupPage() {
         >
           <p className="text-center mt-5 sm:mt-6 text-warm-600 text-sm">
             Already have an account?{' '}
-            <Link
-              href="/baseball/login"
-              className="text-helm-amber-600 font-semibold hover:text-helm-amber-500 transition-colors"
-            >
-              Sign in
-            </Link>
+            <Suspense fallback={<Link href="/baseball/login" className="text-helm-amber-600 font-semibold hover:text-helm-amber-500 transition-colors">Sign in</Link>}>
+              <SignInLink />
+            </Suspense>
           </p>
 
           <p className="text-center mt-3 sm:mt-4 text-warm-500 text-sm">
-            <Link href="/" className="hover:text-warm-700 transition-colors">
-              &#8592; Back to HelmLabs
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1 hover:text-warm-700 transition-colors px-3 py-3 -my-3 min-h-[44px] rounded-lg active:bg-warm-100/50"
+            >
+              ← Back to HelmLabs
             </Link>
           </p>
 
-          <p className="text-center mt-2 sm:mt-3 text-warm-400 text-xs">
-            <Link href="/privacy" className="hover:text-warm-600 transition-colors">
+          <div className="flex items-center justify-center gap-2 mt-2 sm:mt-3">
+            <Link
+              href="/privacy"
+              className="text-warm-400 hover:text-warm-600 transition-colors text-xs px-3 py-3 -my-3 min-h-[44px] flex items-center rounded-lg active:bg-warm-100/50"
+            >
               Privacy
             </Link>
-            <span className="mx-2">·</span>
-            <Link href="/terms" className="hover:text-warm-600 transition-colors">
+            <span className="text-warm-300" aria-hidden="true">·</span>
+            <Link
+              href="/terms"
+              className="text-warm-400 hover:text-warm-600 transition-colors text-xs px-3 py-3 -my-3 min-h-[44px] flex items-center rounded-lg active:bg-warm-100/50"
+            >
               Terms
             </Link>
-          </p>
+          </div>
         </motion.div>
       </div>
     </div>

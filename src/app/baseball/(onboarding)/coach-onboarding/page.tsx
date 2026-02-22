@@ -15,6 +15,9 @@ import {
   IconCheck,
   IconUser,
   IconBuilding,
+  IconGraduationCap,
+  IconSchool,
+  IconBaseball,
 } from '@/components/icons';
 import { Check } from 'lucide-react';
 
@@ -22,18 +25,24 @@ import { Check } from 'lucide-react';
 
 type Step = 'type' | 'program' | 'account' | 'plan' | 'complete';
 
-const STEPS_CONFIG = [
+const STEPS_CONFIG_FULL = [
   { id: 'program' as const, label: 'Program', Icon: IconBuilding },
   { id: 'account' as const, label: 'Account', Icon: IconUser },
   { id: 'plan' as const, label: 'Plan', Icon: IconCheck },
   { id: 'complete' as const, label: 'Done', Icon: IconCheck },
 ];
 
+const STEPS_CONFIG_AUTH = [
+  { id: 'program' as const, label: 'Program', Icon: IconBuilding },
+  { id: 'plan' as const, label: 'Plan', Icon: IconCheck },
+  { id: 'complete' as const, label: 'Done', Icon: IconCheck },
+];
+
 const COACH_TYPES = [
-  { value: 'college' as const, label: 'College Coach', desc: 'NCAA D1, D2, D3, or NAIA program', emoji: '🏟️' },
-  { value: 'juco' as const, label: 'JUCO Coach', desc: 'Junior college / community college', emoji: '🎓' },
-  { value: 'high_school' as const, label: 'High School Coach', desc: 'High school varsity or JV program', emoji: '🏫' },
-  { value: 'showcase' as const, label: 'Showcase Coach', desc: 'Travel ball or showcase organization', emoji: '⚾' },
+  { value: 'college' as const, label: 'College Coach', desc: 'NCAA D1, D2, D3, or NAIA program', Icon: IconBuilding },
+  { value: 'juco' as const, label: 'JUCO Coach', desc: 'Junior college / community college', Icon: IconGraduationCap },
+  { value: 'high_school' as const, label: 'High School Coach', desc: 'High school varsity or JV program', Icon: IconSchool },
+  { value: 'showcase' as const, label: 'Showcase Coach', desc: 'Travel ball or showcase organization', Icon: IconBaseball },
 ] as const;
 
 type CoachType = 'college' | 'juco' | 'high_school' | 'showcase';
@@ -72,12 +81,12 @@ const staggerItem = {
 
 // ─── Step Indicator ─────────────────────────────────────────────────────────
 
-function StepIndicator({ currentStep }: { currentStep: Step }) {
-  const currentIndex = STEPS_CONFIG.findIndex((s) => s.id === currentStep);
+function StepIndicator({ currentStep, steps }: { currentStep: Step; steps: typeof STEPS_CONFIG_FULL }) {
+  const currentIndex = steps.findIndex((s) => s.id === currentStep);
 
   return (
     <nav aria-label="Onboarding progress" className="flex items-center justify-center gap-0 mb-8 sm:mb-10">
-      {STEPS_CONFIG.map((step, index) => {
+      {steps.map((step, index) => {
         const isCompleted = index < currentIndex;
         const isCurrent = index === currentIndex;
 
@@ -234,6 +243,9 @@ export default function BaseballCoachOnboarding() {
   const [error, setError] = useState('');
   const [showComparison, setShowComparison] = useState(false);
 
+  // Auth state - tracks if user is already signed up
+  const [existingUser, setExistingUser] = useState<{ id: string; email: string; fullName: string } | null>(null);
+
   // Coach type
   const [coachType, setCoachType] = useState<CoachType | ''>('');
 
@@ -243,7 +255,7 @@ export default function BaseballCoachOnboarding() {
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
 
-  // Account data
+  // Account data (only used when user is NOT already authenticated)
   const [fullName, setFullName] = useState('');
   const [title, setTitle] = useState('');
   const [email, setEmail] = useState('');
@@ -251,6 +263,26 @@ export default function BaseballCoachOnboarding() {
 
   // Plan data
   const [plan, setPlan] = useState<'free' | 'elite' | ''>('');
+
+  // ─── Detect Existing Auth Session ─────────────────────────────────────
+
+  useEffect(() => {
+    async function checkAuth() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const meta = user.user_metadata || {};
+        const name = [meta.first_name, meta.last_name].filter(Boolean).join(' ') || '';
+        setExistingUser({ id: user.id, email: user.email || '', fullName: name });
+        // Pre-fill form fields from auth metadata
+        if (name) setFullName(name);
+        if (user.email) setEmail(user.email);
+        // If user restored to the account step from localStorage but is already authenticated, skip forward
+        setStep((prev) => prev === 'account' ? 'plan' : prev);
+      }
+    }
+    checkAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ─── LocalStorage Persistence ─────────────────────────────────────────
 
@@ -335,13 +367,15 @@ export default function BaseballCoachOnboarding() {
       return;
     }
 
+    const resolvedName = fullName || existingUser?.fullName || '';
+
     const { error: coachError } = await supabase
       .from('baseball_coaches')
       .insert({
         user_id: userId,
         coach_type: coachType,
         organization_id: org.id,
-        full_name: fullName,
+        full_name: resolvedName,
         coach_title: title,
         school_name: schoolName,
         school_city: city || null,
@@ -397,6 +431,13 @@ export default function BaseballCoachOnboarding() {
     try {
       const finalCoachType = coachType as CoachType;
 
+      // If user is already authenticated (came from signup page), use existing session
+      if (existingUser) {
+        await createCoachRecords(existingUser.id, existingUser.email, finalCoachType);
+        return;
+      }
+
+      // Otherwise, create a new account (direct onboarding flow without prior signup)
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: email.trim(),
         password,
@@ -526,7 +567,7 @@ export default function BaseballCoachOnboarding() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              <StepIndicator currentStep={step} />
+              <StepIndicator currentStep={step} steps={existingUser ? STEPS_CONFIG_AUTH : STEPS_CONFIG_FULL} />
             </m.div>
           )}
 
@@ -560,8 +601,8 @@ export default function BaseballCoachOnboarding() {
                         className="w-full auth-glass-card rounded-2xl p-5 text-left hover:bg-white/90 transition-all group"
                       >
                         <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
-                            {opt.emoji}
+                          <div className="w-12 h-12 rounded-xl bg-primary-50 border border-primary-100 flex items-center justify-center group-hover:scale-110 group-hover:bg-primary-100 transition-all">
+                            <opt.Icon size={24} className="text-primary-600" />
                           </div>
                           <div>
                             <p className="text-lg font-semibold text-warm-900">{opt.label}</p>
@@ -622,6 +663,17 @@ export default function BaseballCoachOnboarding() {
                         </NativeSelect>
                       )}
 
+                      {/* Coaching title - shown here when user is already authenticated (skips Account step) */}
+                      {existingUser && (
+                        <Input
+                          label="Coaching Title"
+                          value={title}
+                          onChange={(e) => setTitle(e.target.value)}
+                          placeholder="Head Coach"
+                          required
+                        />
+                      )}
+
                       <Input
                         label="School / Organization"
                         value={schoolName}
@@ -656,8 +708,8 @@ export default function BaseballCoachOnboarding() {
 
                     <div className="mt-8">
                       <Button
-                        onClick={() => goForward('account')}
-                        disabled={!schoolName.trim()}
+                        onClick={() => goForward(existingUser ? 'plan' : 'account')}
+                        disabled={!schoolName.trim() || (!!existingUser && !title.trim())}
                         className="w-full bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
                         size="lg"
                       >
@@ -670,8 +722,8 @@ export default function BaseballCoachOnboarding() {
               </m.div>
             )}
 
-            {/* ─── Step 2: Account ────────────────────────────────────── */}
-            {step === 'account' && (
+            {/* ─── Step 2: Account (only shown if user is NOT already authenticated) ── */}
+            {step === 'account' && !existingUser && (
               <m.div
                 key="account"
                 custom={direction}
@@ -769,7 +821,7 @@ export default function BaseballCoachOnboarding() {
                 <m.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-5">
                   <m.div variants={staggerItem}>
                     <button
-                      onClick={() => goBack('account')}
+                      onClick={() => goBack(existingUser ? 'program' : 'account')}
                       className="flex items-center gap-1.5 text-sm font-medium text-warm-600 hover:text-warm-800 transition-colors min-h-[44px] px-2 -ml-2 rounded-lg active:bg-warm-100"
                     >
                       <IconArrowLeft size={16} />

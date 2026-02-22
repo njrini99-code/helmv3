@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
+import { signupAction } from '@/app/baseball/actions/auth';
 import { Users, GraduationCap, AlertCircle } from 'lucide-react';
 import { PasswordStrengthIndicator } from '@/components/auth/password-strength-indicator';
 
-type Role = 'player' | 'coach' | null;
+type Role = 'player' | 'coach';
 
 function getSignupErrorMessage(error: string): string {
   const lower = error.toLowerCase();
@@ -31,8 +31,7 @@ function getSignupErrorMessage(error: string): string {
 
 export function BaseballSignUpForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const [role, setRole] = useState<Role>(null);
+  const [role, setRole] = useState<Role>('player');
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -42,23 +41,8 @@ export function BaseballSignUpForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Get returnTo from URL params (e.g., /baseball/signup?returnTo=/baseball/join/ABC123)
-  const returnTo = searchParams.get('returnTo');
-
-  // Store returnTo in sessionStorage so it persists through signup and onboarding
-  useEffect(() => {
-    if (returnTo) {
-      sessionStorage.setItem('baseball_signup_returnTo', returnTo);
-    }
-  }, [returnTo]);
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-
-    if (!role) {
-      setError('Please select whether you are a player or coach');
-      return;
-    }
 
     if (formData.password.length < 8) {
       setError('Password must be at least 8 characters');
@@ -69,22 +53,19 @@ export function BaseballSignUpForm() {
     setError(null);
 
     try {
-      const supabase = createClient();
+      const result = await signupAction(
+        formData.email,
+        formData.password,
+        role,
+        formData.firstName,
+        formData.lastName
+      );
 
-      const { error: signupError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            role: role,
-            sport: 'baseball',
-            first_name: formData.firstName,
-            last_name: formData.lastName,
-          },
-        },
-      });
-
-      if (signupError) throw signupError;
+      if (!result.success) {
+        setError(getSignupErrorMessage(result.error || 'Signup failed'));
+        setIsLoading(false);
+        return;
+      }
 
       // CRITICAL: After signup, the session cookies are set but the Next.js
       // router cache doesn't know about them. We must call router.refresh()
@@ -93,96 +74,23 @@ export function BaseballSignUpForm() {
       router.refresh();
 
       // Wait for cookies to propagate and cache to invalidate
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 150));
 
-      // Redirect to appropriate onboarding
-      if (role === 'player') {
-        router.push('/baseball/player');
-      } else {
-        router.push('/baseball/coach-onboarding');
-      }
+      // After signup, user always needs onboarding first.
+      sessionStorage.removeItem('baseball_signup_returnTo');
+
+      const onboardingPath = result.redirectTo || (role === 'coach' ? '/baseball/coach-onboarding' : '/baseball/player');
+      router.push(onboardingPath);
     } catch (err) {
       setError(getSignupErrorMessage(err instanceof Error ? err.message : 'Signup failed'));
-    } finally {
       setIsLoading(false);
     }
+    // Note: We don't set isLoading to false on success because
+    // we're navigating away and want to keep the loading state
   }
 
-  // Role selection view
-  if (!role) {
-    return (
-      <div className="space-y-5">
-        <p className="text-center text-warm-700 font-medium mb-4">I am a...</p>
-
-        <button
-          onClick={() => setRole('player')}
-          type="button"
-          aria-label="Sign up as a player"
-          className="
-            w-full p-5
-            border-2 border-warm-200
-            rounded-[12px]
-            hover:border-primary-600 hover:bg-primary-50/50
-            transition-all duration-200
-            flex items-center gap-4
-            group
-          "
-        >
-          <div className="p-3 bg-primary-100 rounded-[10px] group-hover:bg-primary-200 transition-colors">
-            <GraduationCap className="w-7 h-7 text-primary-600" />
-          </div>
-          <div className="text-left flex-1">
-            <h3 className="font-semibold text-base text-warm-900">Player</h3>
-            <p className="text-sm text-warm-500 mt-0.5">
-              High school, JUCO, or showcase player
-            </p>
-          </div>
-        </button>
-
-        <button
-          onClick={() => setRole('coach')}
-          type="button"
-          aria-label="Sign up as a coach"
-          className="
-            w-full p-5
-            border-2 border-warm-200
-            rounded-[12px]
-            hover:border-primary-600 hover:bg-primary-50/50
-            transition-all duration-200
-            flex items-center gap-4
-            group
-          "
-        >
-          <div className="p-3 bg-primary-100 rounded-[10px] group-hover:bg-primary-200 transition-colors">
-            <Users className="w-7 h-7 text-primary-600" />
-          </div>
-          <div className="text-left flex-1">
-            <h3 className="font-semibold text-base text-warm-900">Coach</h3>
-            <p className="text-sm text-warm-500 mt-0.5">
-              College, high school, JUCO, or showcase coach
-            </p>
-          </div>
-        </button>
-      </div>
-    );
-  }
-
-  // Sign up form view
   return (
     <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-      {/* Back button */}
-      <button
-        type="button"
-        onClick={() => {
-          setRole(null);
-          setError(null);
-        }}
-        className="text-sm text-warm-500 hover:text-warm-700 flex items-center gap-1 transition-colors"
-        aria-label="Go back to change role selection"
-      >
-        &#8592; Change role ({role})
-      </button>
-
       {error && (
         <div
           className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-[10px] flex items-start gap-2.5"
@@ -202,6 +110,50 @@ export function BaseballSignUpForm() {
           </div>
         </div>
       )}
+
+      {/* Role Selection */}
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-medium text-warm-700">I am a...</legend>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => setRole('player')}
+            aria-pressed={role === 'player'}
+            className={`
+              p-4 rounded-[10px] border-2 transition-all
+              flex flex-col items-center gap-2
+              ${role === 'player'
+                ? 'border-primary-600 bg-primary-50'
+                : 'border-warm-200 bg-white hover:border-warm-300'
+              }
+            `}
+          >
+            <GraduationCap className={`w-6 h-6 ${role === 'player' ? 'text-primary-600' : 'text-warm-400'}`} />
+            <span className={`text-sm font-medium ${role === 'player' ? 'text-primary-600' : 'text-warm-700'}`}>
+              Player
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setRole('coach')}
+            aria-pressed={role === 'coach'}
+            className={`
+              p-4 rounded-[10px] border-2 transition-all
+              flex flex-col items-center gap-2
+              ${role === 'coach'
+                ? 'border-primary-600 bg-primary-50'
+                : 'border-warm-200 bg-white hover:border-warm-300'
+              }
+            `}
+          >
+            <Users className={`w-6 h-6 ${role === 'coach' ? 'text-primary-600' : 'text-warm-400'}`} />
+            <span className={`text-sm font-medium ${role === 'coach' ? 'text-primary-600' : 'text-warm-700'}`}>
+              Coach
+            </span>
+          </button>
+        </div>
+      </fieldset>
 
       {/* Name fields - side by side */}
       <div className="grid grid-cols-2 gap-4">

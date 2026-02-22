@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { loginAction } from '@/app/baseball/actions/auth';
-import { createClient } from '@/lib/supabase/client';
 import { Input } from '@/components/ui/input';
 import { AlertCircle } from 'lucide-react';
 
@@ -30,14 +29,10 @@ export function BaseballSignInForm() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [checkingAuth, setCheckingAuth] = useState(true);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const supabase = createClient();
 
-  // Get returnTo from URL params (e.g., /baseball/login?returnTo=/baseball/dashboard/team)
+  // Get returnTo from URL params (e.g., /baseball/login?returnTo=/baseball/join/ABC123)
   const returnTo = searchParams.get('returnTo');
 
   // Store returnTo in sessionStorage so it persists through login
@@ -46,54 +41,6 @@ export function BaseballSignInForm() {
       sessionStorage.setItem('baseball_login_returnTo', returnTo);
     }
   }, [returnTo]);
-
-  useEffect(() => {
-    async function checkAuth() {
-      const { data: { user } } = await supabase.auth.getUser();
-      setIsLoggedIn(!!user);
-      setCheckingAuth(false);
-    }
-    checkAuth();
-  }, [supabase.auth]);
-
-  async function handleSignOut() {
-    setIsLoggingOut(true);
-    await supabase.auth.signOut();
-    setIsLoggedIn(false);
-    setIsLoggingOut(false);
-    router.refresh();
-  }
-
-  if (checkingAuth) {
-    return (
-      <div className="flex justify-center py-8">
-        <div className="animate-spin h-6 w-6 border-2 border-primary-600 border-t-transparent rounded-full" />
-      </div>
-    );
-  }
-
-  if (isLoggedIn) {
-    return (
-      <div className="space-y-4">
-        <div className="bg-helm-amber-400/10 border border-helm-amber-400/30 text-helm-amber-600 px-4 py-3 rounded-xl text-sm text-center">
-          You&apos;re already signed in
-        </div>
-        <button
-          onClick={() => router.push(returnTo || '/baseball/dashboard')}
-          className="w-full py-3 bg-primary-600 text-white font-medium text-sm rounded-[10px] shadow-sm transition-all duration-200 hover:bg-primary-700 hover:shadow-md"
-        >
-          {returnTo ? 'Continue' : 'Continue to Dashboard'}
-        </button>
-        <button
-          onClick={handleSignOut}
-          disabled={isLoggingOut}
-          className="w-full py-3 bg-warm-100 text-warm-700 font-medium text-sm rounded-[10px] transition-all duration-200 hover:bg-warm-200 disabled:opacity-50"
-        >
-          {isLoggingOut ? 'Signing out...' : 'Sign out & use a different account'}
-        </button>
-      </div>
-    );
-  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -109,25 +56,31 @@ export function BaseballSignInForm() {
         return;
       }
 
-      // Refresh first to ensure session cookies are recognized
+      // CRITICAL: After login, refresh first to ensure the session cookies
+      // are recognized by the Next.js router cache before navigating.
       router.refresh();
+
+      // Wait for cookies to propagate and cache to invalidate
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      // Check for stored returnTo URL
+      // Check for stored returnTo URL (from invite link flow)
       const storedReturnTo = sessionStorage.getItem('baseball_login_returnTo');
 
-      // Validate returnTo to prevent open redirect attacks
+      // Validate returnTo to prevent open redirect attacks.
+      // Only allow relative paths starting with /baseball/ or /golf/
       const isValidReturnTo = (path: string): boolean => {
         return (path.startsWith('/baseball/') || path.startsWith('/golf/')) && !path.includes('//');
       };
 
-      // Only use returnTo if the user is fully onboarded (redirectTo = dashboard)
+      // Only use returnTo if the user is fully onboarded (redirectTo = dashboard).
+      // If they still need onboarding, send them there first.
       const needsOnboarding = result.redirectTo === '/baseball/coach-onboarding' || result.redirectTo === '/baseball/player';
 
       if (storedReturnTo && !needsOnboarding && isValidReturnTo(storedReturnTo)) {
         sessionStorage.removeItem('baseball_login_returnTo');
         router.push(storedReturnTo);
       } else {
+        // Clear stale returnTo if present — onboarding takes priority
         if (storedReturnTo) sessionStorage.removeItem('baseball_login_returnTo');
         router.push(result.redirectTo || '/baseball/dashboard');
       }
@@ -135,6 +88,8 @@ export function BaseballSignInForm() {
       setError('An unexpected error occurred. Please try again.');
       setIsLoading(false);
     }
+    // Note: We don't set isLoading to false on success because
+    // we're navigating away and want to keep the loading state
   }
 
   return (
@@ -164,7 +119,6 @@ export function BaseballSignInForm() {
           required
           autoFocus
           autoComplete="email"
-          aria-describedby={error ? 'signin-error' : undefined}
           className="
             w-full px-4 py-3
             bg-white
