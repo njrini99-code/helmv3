@@ -1,11 +1,13 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { randomBytes } from 'crypto';
 import { checkRateLimit, RATE_LIMITS, formatTimeRemaining } from '@/lib/auth/supabase-rate-limit';
 import { validatePassword } from '@/lib/auth/password-validation';
+import type { User } from '@supabase/supabase-js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -33,21 +35,37 @@ function sanitizeString(input: string, maxLength = 255): string {
 
 // ─── Complete Coach Onboarding (authenticated users) ────────────────────────
 
-export async function completeCoachOnboarding(data: {
-  coachType: string;
-  schoolName: string;
-  division?: string;
-  city?: string;
-  state?: string;
-  fullName: string;
-  title?: string;
-}): Promise<OnboardingResult> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+export async function completeCoachOnboarding(
+  data: {
+    coachType: string;
+    schoolName: string;
+    division?: string;
+    city?: string;
+    state?: string;
+    fullName: string;
+    title?: string;
+  },
+  // Optional: pass pre-verified user from signupAndCompleteCoachOnboarding
+  // to avoid a redundant getUser() round-trip
+  _preVerifiedUser?: User
+): Promise<OnboardingResult> {
+  // Verify identity via the SSR client (reads session cookies)
+  // Use pre-verified user if provided (from signUp in the same server action)
+  let user: User | null = _preVerifiedUser ?? null;
+
+  if (!user) {
+    const supabase = await createClient();
+    const { data: { user: sessionUser } } = await supabase.auth.getUser();
+    user = sessionUser;
+  }
 
   if (!user) {
     return { success: false, error: 'You must be signed in to complete onboarding.' };
   }
+
+  // All DB writes use the admin client (service role) so RLS never blocks onboarding.
+  // Identity is already verified above via getUser() — this is intentional.
+  const admin = createAdminClient();
 
   // Validate inputs
   const coachType = data.coachType as CoachType;
@@ -67,7 +85,7 @@ export async function completeCoachOnboarding(data: {
   const state = data.state ? sanitizeString(data.state, 2) : null;
 
   // Check if coach profile already exists
-  const { data: existingCoach } = await supabase
+  const { data: existingCoach } = await admin
     .from('baseball_coaches')
     .select('id')
     .eq('user_id', user.id)
@@ -81,8 +99,8 @@ export async function completeCoachOnboarding(data: {
     };
   }
 
-  // Upsert user record
-  const { error: userError } = await supabase
+  // Upsert user record (ensure role is set correctly)
+  const { error: userError } = await admin
     .from('users')
     .upsert({ id: user.id, email: user.email || '', role: 'coach' }, { onConflict: 'id' });
 
@@ -92,12 +110,11 @@ export async function completeCoachOnboarding(data: {
   }
 
   // Create organization
-  const orgType = coachType;
-  const { data: org, error: orgError } = await supabase
+  const { data: org, error: orgError } = await admin
     .from('organizations')
     .insert({
       name: schoolName,
-      type: orgType,
+      type: coachType,
       division,
       location_city: city,
       location_state: state,
@@ -111,7 +128,7 @@ export async function completeCoachOnboarding(data: {
   }
 
   // Create coach profile
-  const { error: coachError } = await supabase
+  const { error: coachError } = await admin
     .from('baseball_coaches')
     .insert({
       user_id: user.id,
@@ -128,9 +145,9 @@ export async function completeCoachOnboarding(data: {
     return { success: false, error: 'Unable to create your profile. Please try again.' };
   }
 
-  // Create team with cryptographically secure join code
+  // Create team
   const joinCode = generateJoinCode();
-  await supabase
+  const { error: teamError } = await admin
     .from('baseball_teams')
     .insert({
       name: `${schoolName} Baseball`,
@@ -139,6 +156,11 @@ export async function completeCoachOnboarding(data: {
       join_code: joinCode,
       created_by: user.id,
     });
+
+  if (teamError) {
+    // Non-fatal — log but don't block onboarding
+    console.error('[Onboarding] Failed to create team (non-fatal):', teamError);
+  }
 
   revalidatePath('/baseball');
 
@@ -250,16 +272,19 @@ export async function signupAndCompleteCoachOnboarding(data: {
     ip,
   });
 
-  // Now complete onboarding (user is authenticated via the signUp call)
-  return completeCoachOnboarding({
-    coachType,
-    schoolName,
-    division: data.division,
-    city: data.city,
-    state: data.state,
-    fullName,
-    title: data.title,
-  });
+  // Pass the pre-verified user directly — no second getUser() round-trip needed
+  return completeCoachOnboarding(
+    {
+      coachType,
+      schoolName,
+      division: data.division,
+      city: data.city,
+      state: data.state,
+      fullName,
+      title: data.title,
+    },
+    authData.user
+  );
 }
 
 // ─── Complete Signup (for OAuth users who need role selection) ───────────────
@@ -269,6 +294,7 @@ export async function completeBaseballSignup(data: {
   coachType?: string;
   playerType?: string;
 }): Promise<OnboardingResult> {
+  // Verify identity via SSR client
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -281,10 +307,13 @@ export async function completeBaseballSignup(data: {
     return { success: false, error: 'Email is required.' };
   }
 
+  // Use admin client for all writes — bypasses RLS safely since user is verified above
+  const admin = createAdminClient();
+
   // Check for existing profiles
   const [coachCheck, playerCheck] = await Promise.all([
-    supabase.from('baseball_coaches').select('id').eq('user_id', user.id).maybeSingle(),
-    supabase.from('baseball_players').select('id').eq('user_id', user.id).maybeSingle(),
+    admin.from('baseball_coaches').select('id').eq('user_id', user.id).maybeSingle(),
+    admin.from('baseball_players').select('id').eq('user_id', user.id).maybeSingle(),
   ]);
 
   if (coachCheck.data) {
@@ -295,7 +324,7 @@ export async function completeBaseballSignup(data: {
   }
 
   // Upsert user record
-  await supabase
+  await admin
     .from('users')
     .upsert({ id: user.id, email: userEmail, role: data.role }, { onConflict: 'id' });
 
@@ -305,7 +334,7 @@ export async function completeBaseballSignup(data: {
       return { success: false, error: 'Please select a valid coach type.' };
     }
 
-    const { error: coachError } = await supabase.from('baseball_coaches').insert({
+    const { error: coachError } = await admin.from('baseball_coaches').insert({
       user_id: user.id,
       coach_type: coachType,
       full_name: user.user_metadata?.full_name || userEmail.split('@')[0] || 'Coach',
@@ -329,7 +358,7 @@ export async function completeBaseballSignup(data: {
     const fullName = user.user_metadata?.full_name || userEmail.split('@')[0] || 'Player';
     const [firstName, ...lastParts] = fullName.split(' ');
 
-    const { error: playerError } = await supabase.from('baseball_players').insert({
+    const { error: playerError } = await admin.from('baseball_players').insert({
       user_id: user.id,
       player_type: playerType,
       first_name: firstName,
