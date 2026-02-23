@@ -142,12 +142,12 @@ export async function sendMessage({
           type: 'message' as const,
           title: 'New Message',
           body: notificationBody,
-          read: false,
+          data: { conversation_id: validatedData.conversation_id },
           created_at: new Date().toISOString(),
         }));
 
-        await supabase
-          .from('notifications')
+        await (supabase as any)
+          .from('baseball_notifications')
           .insert(notifications);
       }
     }
