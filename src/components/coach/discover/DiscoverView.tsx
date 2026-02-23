@@ -36,6 +36,7 @@ interface DiscoverPlayer extends Player {
 interface DiscoverTeam extends Organization {
   player_count?: number;
   recruiting_active_count?: number;
+  head_coach_name?: string | null;
   top_prospects?: Array<{
     id: string;
     first_name: string | null;
@@ -229,6 +230,7 @@ export function DiscoverView({
         primaryColor: t.primary_color || undefined,
         playerCount: t.player_count || 0,
         recruitingActiveCount: t.recruiting_active_count || 0,
+        headCoachName: t.head_coach_name || null,
         topProspects: t.top_prospects?.map((p) => ({
           id: p.id,
           name: `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim() || 'Unknown',

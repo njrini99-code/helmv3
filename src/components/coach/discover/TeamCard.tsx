@@ -12,6 +12,7 @@ import {
   IconChevronRight,
   IconEye,
   IconSparkles,
+  IconUser,
 } from '@/components/icons';
 
 export interface TeamCardData {
@@ -24,6 +25,7 @@ export interface TeamCardData {
   primaryColor?: string;
   playerCount: number;
   recruitingActiveCount: number;
+  headCoachName?: string | null;
   topProspects?: Array<{
     id: string;
     name: string;
@@ -160,6 +162,12 @@ export const TeamCard = memo(function TeamCard({
                 {team.city}, {team.state}
               </span>
             </div>
+            {team.headCoachName && (
+              <div className="flex items-center gap-1 mt-0.5 text-xs text-slate-500">
+                <IconUser size={12} className="flex-shrink-0" />
+                <span className="truncate">{team.headCoachName}</span>
+              </div>
+            )}
           </div>
         </div>
 

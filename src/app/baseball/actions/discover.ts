@@ -31,6 +31,7 @@ export interface DiscoverFilters {
 export interface DiscoverTeam extends Organization {
   player_count?: number;
   recruiting_active_count?: number;
+  head_coach_name?: string | null;
   top_prospects?: Array<{
     id: string;
     first_name: string | null;
@@ -249,7 +250,7 @@ export async function getDiscoverTeams(
   }
 
   // Execute query
-  const { data: orgs, count, error } = await query
+  const { data: orgs, error } = await query
     .order('name', { ascending: true })
     .range(offset, offset + perPage - 1);
 
@@ -264,6 +265,9 @@ export async function getDiscoverTeams(
 
   // Get all org IDs
   const allOrgIds = orgs.map((o) => o.id);
+
+  // Map orgId → head coach name (primary coach with a name, required for discoverability)
+  const headCoachByOrg: Record<string, string> = {};
 
   // Count players per org (using Set to track unique player IDs per org)
   const playerIdsByOrg: Record<string, Set<string>> = {};
@@ -327,16 +331,39 @@ export async function getDiscoverTeams(
         }
       });
 
-      // Get team members with player data
-      const { data: teamMembers } = await supabase
-        .from('baseball_team_members')
-        .select(`
-          team_id,
-          baseball_players!inner(
-            id, first_name, last_name, primary_position, grad_year, avatar_url, pitch_velo, recruiting_activated
-          )
-        `)
-        .in('team_id', teamIds);
+      // Fetch primary coaches for these teams (parallel with member fetch)
+      const [{ data: teamMembers }, { data: primaryCoachRows }] = await Promise.all([
+        supabase
+          .from('baseball_team_members')
+          .select(`
+            team_id,
+            baseball_players!inner(
+              id, first_name, last_name, primary_position, grad_year, avatar_url, pitch_velo, recruiting_activated
+            )
+          `)
+          .in('team_id', teamIds),
+        supabase
+          .from('baseball_team_coach_staff')
+          .select(`
+            team_id,
+            baseball_coaches!inner(first_name, last_name)
+          `)
+          .eq('is_primary', true)
+          .in('team_id', teamIds),
+      ]);
+
+      // Map orgId → primary head coach name
+      if (primaryCoachRows) {
+        primaryCoachRows.forEach((row) => {
+          const orgId = teamToOrgMap[row.team_id];
+          const coach = row.baseball_coaches as unknown as { first_name: string | null; last_name: string | null } | null;
+          if (!orgId || !coach) return;
+          const name = `${coach.first_name ?? ''} ${coach.last_name ?? ''}`.trim();
+          if (name && !headCoachByOrg[orgId]) {
+            headCoachByOrg[orgId] = name;
+          }
+        });
+      }
 
       if (teamMembers) {
         teamMembers.forEach((tm) => {
@@ -391,21 +418,24 @@ export async function getDiscoverTeams(
     }
   });
 
-  // Combine data
-  const teams: DiscoverTeam[] = orgs.map((org) => ({
-    ...org,
-    player_count: countByOrg[org.id] || 0,
-    recruiting_active_count: recruitingByOrg[org.id] || 0,
-    top_prospects: prospectsByOrg[org.id] || [],
-  }));
+  // Combine data — only include orgs with a named primary head coach
+  const teams: DiscoverTeam[] = orgs
+    .map((org) => ({
+      ...org,
+      player_count: countByOrg[org.id] || 0,
+      recruiting_active_count: recruitingByOrg[org.id] || 0,
+      head_coach_name: headCoachByOrg[org.id] ?? null,
+      top_prospects: prospectsByOrg[org.id] || [],
+    }))
+    .filter((org) => Boolean(org.head_coach_name));
 
-  // Sort by player count (teams with more recruiting-active players first)
+  // Sort by recruiting-active count (most active prospects first)
   teams.sort((a, b) => (b.recruiting_active_count || 0) - (a.recruiting_active_count || 0));
 
   return {
     teams,
-    count: count || 0,
-    pages: Math.ceil((count || 0) / perPage),
+    count: teams.length,
+    pages: Math.ceil(teams.length / perPage),
   };
 }
 
