@@ -176,76 +176,149 @@ function shouldSendEmail(
 // PREMIUM EMAIL TEMPLATE SYSTEM
 // ============================================================================
 
+// Exact Helm brand tokens from tailwind.config.ts
 const BRAND = {
-  green:      '#16A34A',
-  greenDark:  '#15803D',
-  greenLight: '#DCFCE7',
-  dark:       '#1C1917',
-  cream:      '#FFFEFA',
-  warmGray:   '#78716C',
-  border:     '#E7E5E0',
-  textPrimary:'#1C1917',
-  textMuted:  '#78716C',
-  white:      '#FFFFFF',
+  // Primary green scale
+  green:        '#16A34A',  // primary-600
+  greenDark:    '#15803D',  // primary-700
+  greenDeep:    '#166534',  // primary-800
+  greenLight:   '#DCFCE7',  // primary-100
+  greenXLight:  '#F0FDF4',  // primary-50
+
+  // Warm neutral scale
+  dark:         '#1C1917',  // warm-900 — headers, primary text
+  darkMid:      '#292524',  // warm-800
+  warm700:      '#44403C',  // warm-700
+  warm600:      '#57534E',  // warm-600
+  muted:        '#78716C',  // warm-500
+  warm400:      '#A8A29E',  // warm-400
+  border:       '#E7E5E4',  // warm-200
+  subtle:       '#F5F5F4',  // warm-100
+  offWhite:     '#FAFAF9',  // warm-50
+
+  // Base
+  cream:        '#FFFEFA',  // cream default
+  white:        '#FFFFFF',
 };
 
+// ============================================================================
+// SVG ICON LIBRARY  (inline, email-safe, 20×20 viewBox)
+// ============================================================================
+
+const ICONS: Record<string, string> = {
+  message: `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 4.5A1.5 1.5 0 0 1 3.5 3h13A1.5 1.5 0 0 1 18 4.5v8A1.5 1.5 0 0 1 16.5 14H11l-3.5 3v-3H3.5A1.5 1.5 0 0 1 2 12.5v-8Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M6 7.5h8M6 10.5h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+
+  announcement: `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 7.5h1.5m0 0V13a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-1.5M4.5 7.5H16a1 1 0 0 0 0-2H4.5a1 1 0 0 0 0 2Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 5.5v9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="15" cy="15.5" r="1" fill="currentColor"/></svg>`,
+
+  flag: `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 3v14M5 3h10l-2.5 4L15 11H5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+
+  calendar: `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2.5" y="4" width="15" height="13.5" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M2.5 8.5h15M7 2.5V5.5M13 2.5V5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="7" cy="12" r="1" fill="currentColor"/><circle cx="10" cy="12" r="1" fill="currentColor"/><circle cx="13" cy="12" r="1" fill="currentColor"/></svg>`,
+
+  bookmark: `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 3h10a1 1 0 0 1 1 1v13l-6-4-6 4V4a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>`,
+
+  chart: `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 14.5l4.5-5 3.5 3 4-5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 17h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+
+  eye: `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 10s3-6 8-6 8 6 8 6-3 6-8 6-8-6-8-6Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.5"/></svg>`,
+
+  bell: `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 2a6 6 0 0 1 6 6v3l1.5 2.5H2.5L4 11V8a6 6 0 0 1 6-6Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 15.5a2 2 0 0 0 4 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+};
+
+/** Renders an icon in a circle on dark bg for use in the body */
+function iconCircle(iconKey: string, size = 48): string {
+  const svg = ICONS[iconKey] ?? ICONS['bell']!;
+  return `
+    <table cellpadding="0" cellspacing="0" border="0" style="margin-bottom:24px;">
+      <tr>
+        <td style="width:${size}px;height:${size}px;background-color:${BRAND.greenXLight};border:1px solid ${BRAND.greenLight};border-radius:12px;text-align:center;vertical-align:middle;">
+          <div style="display:inline-block;color:${BRAND.green};width:20px;height:20px;margin-top:${Math.floor((size - 20) / 2) - 1}px;">
+            ${svg.replace('currentColor', BRAND.green)}
+          </div>
+        </td>
+      </tr>
+    </table>`;
+}
+
+/** Small icon for the header pill (white, 16×16) */
+function headerPillIcon(iconKey: string): string {
+  const svg = ICONS[iconKey] ?? ICONS['bell']!;
+  return svg
+    .replace(/width="20"/g, 'width="14"')
+    .replace(/height="20"/g, 'height="14"')
+    .replace(/viewBox="0 0 20 20"/g, 'viewBox="0 0 20 20"')
+    .replace(/currentColor/g, 'rgba(255,255,255,0.85)');
+}
+
 /**
- * Shared layout shell — dark header, cream body, clean footer.
- * All templates render inside this shell.
+ * Shared premium layout shell.
+ * Dark warm header · cream body · subtle footer
  */
 function emailShell(opts: {
   previewText: string;
   headerLabel: string;
-  headerIcon: string;
+  headerIconKey: string;
+  iconKey: string;
   title: string;
   body: string;
   cta: { label: string; url: string };
   footerNote?: string;
 }): string {
-  const { previewText, headerLabel, headerIcon, title, body, cta, footerNote } = opts;
+  const { previewText, headerLabel, headerIconKey, iconKey, title, body, cta, footerNote } = opts;
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
   <meta name="color-scheme" content="light" />
   <title>${title}</title>
   <!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->
   <style>
-    @media only screen and (max-width: 600px) {
-      .email-container { width: 100% !important; }
-      .email-body { padding: 24px 20px !important; }
-      .email-header { padding: 24px 20px !important; }
-      .cta-button { display: block !important; text-align: center !important; }
+    @media only screen and (max-width:620px){
+      .wrap{width:100%!important;padding:0 12px!important;}
+      .card{border-radius:12px!important;}
+      .body-pad{padding:28px 24px!important;}
+      .head-pad{padding:22px 24px!important;}
+      .foot-pad{padding:16px 24px!important;}
+      .cta-btn{display:block!important;text-align:center!important;}
     }
   </style>
 </head>
-<body style="margin:0;padding:0;background-color:#F5F4F0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+<body style="margin:0;padding:0;background-color:${BRAND.subtle};-webkit-text-size-adjust:100%;" bgcolor="${BRAND.subtle}">
 
-  <!-- Preview text (hidden) -->
-  <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">${previewText}&nbsp;&#8203;&nbsp;&#65279;&nbsp;&#65279;&nbsp;&#65279;&nbsp;&#65279;</div>
+  <!-- Preheader -->
+  <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;color:${BRAND.subtle};">${previewText}&#8203;&#65279;&#65279;&#65279;&#65279;&#65279;&#65279;</div>
 
-  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#F5F4F0;padding:32px 16px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
     <tr>
-      <td align="center">
-        <table class="email-container" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
+      <td align="center" style="padding:32px 16px;">
+        <table role="presentation" class="wrap" width="580" cellpadding="0" cellspacing="0" border="0" style="max-width:580px;width:100%;">
 
-          <!-- ── HEADER ── -->
+          <!-- ═══ GREEN ACCENT BAR ═══ -->
           <tr>
-            <td class="email-header" style="background-color:${BRAND.dark};border-radius:12px 12px 0 0;padding:28px 40px;">
-              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+            <td style="height:4px;background:linear-gradient(90deg,${BRAND.green} 0%,${BRAND.greenDark} 100%);border-radius:12px 12px 0 0;line-height:4px;font-size:4px;">&nbsp;</td>
+          </tr>
+
+          <!-- ═══ HEADER ═══ -->
+          <tr>
+            <td class="head-pad" style="background-color:${BRAND.dark};padding:24px 36px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td>
-                    <!-- Wordmark -->
-                    <a href="${baseUrl}" style="text-decoration:none;">
-                      <span style="font-size:20px;font-weight:700;letter-spacing:-0.5px;color:${BRAND.white};">Helm</span><span style="font-size:20px;font-weight:700;letter-spacing:-0.5px;color:${BRAND.green};">.</span>
+                  <td valign="middle">
+                    <a href="${baseUrl}" style="text-decoration:none;display:inline-block;">
+                      <span style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:21px;font-weight:700;letter-spacing:-0.6px;color:${BRAND.white};">Helm</span><span style="font-size:21px;font-weight:700;letter-spacing:-0.6px;color:${BRAND.green};">.</span>
                     </a>
                   </td>
-                  <td align="right">
-                    <span style="display:inline-block;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:500;color:rgba(255,255,255,0.7);letter-spacing:0.3px;">
-                      ${headerIcon}&nbsp; ${headerLabel}
+                  <td valign="middle" align="right">
+                    <span style="display:inline-block;vertical-align:middle;">
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="display:inline-table;">
+                        <tr>
+                          <td style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.10);border-radius:20px;padding:5px 12px 5px 10px;white-space:nowrap;">
+                            <span style="display:inline-block;vertical-align:middle;margin-right:6px;line-height:0;">${headerPillIcon(headerIconKey)}</span>
+                            <span style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;font-weight:500;color:rgba(255,255,255,0.65);letter-spacing:0.3px;vertical-align:middle;">${headerLabel}</span>
+                          </td>
+                        </tr>
+                      </table>
                     </span>
                   </td>
                 </tr>
@@ -253,23 +326,25 @@ function emailShell(opts: {
             </td>
           </tr>
 
-          <!-- ── BODY ── -->
+          <!-- ═══ BODY ═══ -->
           <tr>
-            <td class="email-body" style="background-color:${BRAND.cream};padding:40px 40px 32px;border-left:1px solid ${BRAND.border};border-right:1px solid ${BRAND.border};">
+            <td class="body-pad" style="background-color:${BRAND.cream};padding:36px 36px 28px;border-left:1px solid ${BRAND.border};border-right:1px solid ${BRAND.border};">
+
+              ${iconCircle(iconKey)}
 
               <!-- Title -->
-              <h1 style="margin:0 0 16px;font-size:24px;font-weight:700;line-height:1.25;letter-spacing:-0.5px;color:${BRAND.textPrimary};">${title}</h1>
+              <h1 style="margin:0 0 12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:22px;font-weight:700;line-height:1.25;letter-spacing:-0.5px;color:${BRAND.dark};">${title}</h1>
 
-              <!-- Dynamic body content -->
+              <!-- Body -->
               ${body}
 
-              <!-- CTA button -->
-              <table cellpadding="0" cellspacing="0" border="0" style="margin-top:32px;">
+              <!-- CTA -->
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:28px;">
                 <tr>
-                  <td>
-                    <a href="${cta.url}" class="cta-button"
-                       style="display:inline-block;padding:14px 28px;background-color:${BRAND.green};color:${BRAND.white};text-decoration:none;font-size:15px;font-weight:600;border-radius:8px;letter-spacing:-0.1px;line-height:1;">
-                      ${cta.label} &rarr;
+                  <td style="border-radius:8px;background:linear-gradient(135deg,${BRAND.green} 0%,${BRAND.greenDark} 100%);">
+                    <a href="${cta.url}" class="cta-btn"
+                       style="display:inline-block;padding:13px 26px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;font-weight:600;color:${BRAND.white};text-decoration:none;letter-spacing:0.1px;line-height:1.4;white-space:nowrap;">
+                      ${cta.label}&nbsp;&nbsp;&rarr;
                     </a>
                   </td>
                 </tr>
@@ -278,22 +353,25 @@ function emailShell(opts: {
             </td>
           </tr>
 
-          <!-- ── FOOTER ── -->
+          <!-- ═══ DIVIDER ═══ -->
           <tr>
-            <td style="background-color:${BRAND.white};border:1px solid ${BRAND.border};border-top:none;border-radius:0 0 12px 12px;padding:20px 40px;">
-              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+            <td style="height:1px;background-color:${BRAND.border};line-height:1px;font-size:1px;">&nbsp;</td>
+          </tr>
+
+          <!-- ═══ FOOTER ═══ -->
+          <tr>
+            <td class="foot-pad" style="background-color:${BRAND.white};padding:18px 36px;border-radius:0 0 12px 12px;border:1px solid ${BRAND.border};border-top:none;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td>
-                    <p style="margin:0;font-size:12px;color:${BRAND.textMuted};line-height:1.5;">
+                    <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;line-height:1.6;color:${BRAND.muted};">
                       ${footerNote ?? 'You\'re receiving this because you\'re part of a Helm Sports team.'}
-                      &nbsp;·&nbsp;
-                      <a href="${baseUrl}/golf/dashboard/settings" style="color:${BRAND.textMuted};text-decoration:underline;">Manage notifications</a>
+                      &nbsp;&middot;&nbsp;
+                      <a href="${baseUrl}/golf/dashboard/settings" style="color:${BRAND.muted};text-decoration:underline;">Manage preferences</a>
                     </p>
                   </td>
-                  <td align="right" style="white-space:nowrap;">
-                    <p style="margin:0;font-size:12px;color:${BRAND.textMuted};">
-                      <a href="${baseUrl}" style="color:${BRAND.textMuted};text-decoration:none;font-weight:500;">helmsportslabs.com</a>
-                    </p>
+                  <td align="right" style="white-space:nowrap;padding-left:16px;">
+                    <a href="${baseUrl}" style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:12px;color:${BRAND.warm400};text-decoration:none;font-weight:500;">helmsportslabs.com</a>
                   </td>
                 </tr>
               </table>
@@ -313,10 +391,10 @@ function detailRow(label: string, value: string): string {
   return `
     <tr>
       <td style="padding:10px 16px;border-bottom:1px solid ${BRAND.border};">
-        <span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:${BRAND.textMuted};">${label}</span>
+        <span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:${BRAND.muted};">${label}</span>
       </td>
       <td style="padding:10px 16px;border-bottom:1px solid ${BRAND.border};text-align:right;">
-        <span style="font-size:14px;font-weight:500;color:${BRAND.textPrimary};">${value}</span>
+        <span style="font-size:14px;font-weight:500;color:${BRAND.dark};">${value}</span>
       </td>
     </tr>`;
 }
@@ -336,7 +414,7 @@ function quoteBlock(text: string): string {
     <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0;">
       <tr>
         <td style="border-left:3px solid ${BRAND.green};padding:12px 20px;background:${BRAND.greenLight};border-radius:0 8px 8px 0;">
-          <p style="margin:0;font-size:15px;line-height:1.6;color:${BRAND.textPrimary};font-style:italic;">"${text}"</p>
+          <p style="margin:0;font-size:15px;line-height:1.6;color:${BRAND.dark};font-style:italic;">"${text}"</p>
         </td>
       </tr>
     </table>`;
@@ -376,11 +454,12 @@ function generateEmailTemplate(
         html: emailShell({
           previewText: `${senderName}: ${preview}`,
           headerLabel: 'New Message',
-          headerIcon: '💬',
+          headerIconKey: '💬',
+          iconKey: 'message',
           title: `Message from ${senderName}`,
           body: `
-            <p style="margin:0 0 8px;font-size:15px;color:${BRAND.textMuted};line-height:1.5;">
-              You have a new direct message from <strong style="color:${BRAND.textPrimary};">${senderName}</strong>.
+            <p style="margin:0 0 8px;font-size:15px;color:${BRAND.muted};line-height:1.5;">
+              You have a new direct message from <strong style="color:${BRAND.dark};">${senderName}</strong>.
             </p>
             ${quoteBlock(preview + (preview.length >= 200 ? '…' : ''))}
           `,
@@ -406,20 +485,21 @@ function generateEmailTemplate(
         html: emailShell({
           previewText: `${coachName}: ${preview}`,
           headerLabel: 'Team Announcement',
-          headerIcon: '📢',
+          headerIconKey: '📢',
+          iconKey: 'announcement',
           title,
           body: `
             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
               <tr>
                 <td>
-                  <span style="font-size:14px;color:${BRAND.textMuted};">From&nbsp;</span>
-                  <span style="font-size:14px;font-weight:600;color:${BRAND.textPrimary};">${coachName}</span>
+                  <span style="font-size:14px;color:${BRAND.muted};">From&nbsp;</span>
+                  <span style="font-size:14px;font-weight:600;color:${BRAND.dark};">${coachName}</span>
                   <span style="margin-left:10px;">${badge(urg.label, urg.color, urg.bg)}</span>
                 </td>
               </tr>
             </table>
             <div style="background:${BRAND.white};border:1px solid ${BRAND.border};border-radius:8px;padding:20px 24px;margin-bottom:8px;">
-              <p style="margin:0;font-size:15px;line-height:1.7;color:${BRAND.textPrimary};">${content}</p>
+              <p style="margin:0;font-size:15px;line-height:1.7;color:${BRAND.dark};">${content}</p>
             </div>
           `,
           cta: { label: 'View Announcement', url: announcementUrl },
@@ -440,10 +520,11 @@ function generateEmailTemplate(
         html: emailShell({
           previewText: `A new qualifier has been posted — ${qualifierName}`,
           headerLabel: 'Qualifier',
-          headerIcon: '⛳',
+          headerIconKey: '⛳',
+          iconKey: 'flag',
           title: qualifierName,
           body: `
-            <p style="margin:0 0 16px;font-size:15px;color:${BRAND.textMuted};line-height:1.5;">
+            <p style="margin:0 0 16px;font-size:15px;color:${BRAND.muted};line-height:1.5;">
               A new qualifier has been posted. Review the details and prepare your rounds.
             </p>
             ${detailTable(
@@ -469,10 +550,11 @@ function generateEmailTemplate(
         html: emailShell({
           previewText: `Please RSVP for ${eventName} — ${eventDate}`,
           headerLabel: 'RSVP Reminder',
-          headerIcon: '📅',
+          headerIconKey: '📅',
+          iconKey: 'calendar',
           title: `RSVP for ${eventName}`,
           body: `
-            <p style="margin:0 0 16px;font-size:15px;color:${BRAND.textMuted};line-height:1.5;">
+            <p style="margin:0 0 16px;font-size:15px;color:${BRAND.muted};line-height:1.5;">
               Your coach needs a headcount. Please confirm your attendance.
             </p>
             ${detailTable(
@@ -498,12 +580,13 @@ function generateEmailTemplate(
         html: emailShell({
           previewText: `${coachName} from ${schoolName} is watching your profile`,
           headerLabel: 'Watchlist',
-          headerIcon: '🎯',
+          headerIconKey: '🎯',
+          iconKey: 'bookmark',
           title: 'You\'re on a coach\'s watchlist',
           body: `
-            <p style="margin:0 0 16px;font-size:15px;color:${BRAND.textMuted};line-height:1.5;">
-              <strong style="color:${BRAND.textPrimary};">${coachName}</strong> from
-              <strong style="color:${BRAND.textPrimary};">${schoolName}</strong> added you to their recruiting watchlist.
+            <p style="margin:0 0 16px;font-size:15px;color:${BRAND.muted};line-height:1.5;">
+              <strong style="color:${BRAND.dark};">${coachName}</strong> from
+              <strong style="color:${BRAND.dark};">${schoolName}</strong> added you to their recruiting watchlist.
               This means they're actively tracking your progress.
             </p>
             <div style="background:${BRAND.greenLight};border:1px solid #BBF7D0;border-radius:8px;padding:16px 20px;margin:20px 0;">
@@ -540,19 +623,20 @@ function generateEmailTemplate(
         html: emailShell({
           previewText: `${schoolName} updated your recruiting status to ${stage.label}`,
           headerLabel: 'Recruiting Update',
-          headerIcon: '🏫',
+          headerIconKey: '🏫',
+          iconKey: 'chart',
           title: `Status update from ${schoolName}`,
           body: `
             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
               <tr>
                 <td>
-                  <span style="font-size:14px;color:${BRAND.textMuted};">New status&nbsp;&nbsp;</span>
+                  <span style="font-size:14px;color:${BRAND.muted};">New status&nbsp;&nbsp;</span>
                   ${badge(stage.label, stage.color, stage.bg)}
                 </td>
               </tr>
             </table>
             <div style="background:${BRAND.white};border:1px solid ${BRAND.border};border-radius:8px;padding:16px 20px;margin-bottom:8px;">
-              <p style="margin:0;font-size:15px;line-height:1.6;color:${BRAND.textPrimary};">${stage.desc}</p>
+              <p style="margin:0;font-size:15px;line-height:1.6;color:${BRAND.dark};">${stage.desc}</p>
             </div>
           `,
           cta: { label: 'View Your Journey', url: journeyUrl },
@@ -572,16 +656,17 @@ function generateEmailTemplate(
         html: emailShell({
           previewText: `${viewerInfo} just checked out your BaseballHelm profile`,
           headerLabel: 'Profile View',
-          headerIcon: '👀',
+          headerIconKey: '👀',
+          iconKey: 'eye',
           title: 'Your profile was viewed',
           body: `
-            <p style="margin:0 0 16px;font-size:15px;color:${BRAND.textMuted};line-height:1.5;">
-              <strong style="color:${BRAND.textPrimary};">${viewerInfo}</strong> just viewed your profile.
+            <p style="margin:0 0 16px;font-size:15px;color:${BRAND.muted};line-height:1.5;">
+              <strong style="color:${BRAND.dark};">${viewerInfo}</strong> just viewed your profile.
               This is a signal of interest — make sure your profile is complete and up to date.
             </p>
             <div style="background:${BRAND.white};border:1px solid ${BRAND.border};border-radius:8px;padding:16px 20px;margin-bottom:8px;">
-              <p style="margin:0;font-size:14px;line-height:1.6;color:${BRAND.textMuted};">
-                💡 <strong style="color:${BRAND.textPrimary};">Tip:</strong> Profiles with a highlight video get 3× more coach messages. Add yours now.
+              <p style="margin:0;font-size:14px;line-height:1.6;color:${BRAND.muted};">
+                💡 <strong style="color:${BRAND.dark};">Tip:</strong> Profiles with a highlight video get 3× more coach messages. Add yours now.
               </p>
             </div>
           `,
@@ -599,9 +684,10 @@ function generateEmailTemplate(
         html: emailShell({
           previewText: 'You have a new notification from Helm Sports',
           headerLabel: 'Notification',
-          headerIcon: '🔔',
+          headerIconKey: '🔔',
+          iconKey: 'bell',
           title: 'You have a new notification',
-          body: `<p style="margin:0;font-size:15px;color:${BRAND.textMuted};line-height:1.5;">Log in to Helm to see the latest updates from your team.</p>`,
+          body: `<p style="margin:0;font-size:15px;color:${BRAND.muted};line-height:1.5;">Log in to Helm to see the latest updates from your team.</p>`,
           cta: { label: 'Open Helm', url: process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com' },
         }),
         text: 'You have a new notification from Helm Sports. Log in to see updates.',
