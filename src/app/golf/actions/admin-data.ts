@@ -766,7 +766,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     // Shot data quality
     adminDb.from('golf_shots').select('id', { count: 'exact', head: true }).not('distance_to_hole_before', 'is', null),
     adminDb.from('golf_shots').select('id', { count: 'exact', head: true }).not('lie_before', 'is', null),
-    adminDb.from('golf_shots').select('id', { count: 'exact', head: true }).not('club', 'is', null),
+    adminDb.from('golf_shots').select('id', { count: 'exact', head: true }).not('club_used', 'is', null),
     // Unique reviewed rounds
     adminDb.from('golf_round_reviews').select('round_id'),
     // Rounds with insights
@@ -2053,7 +2053,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   // ============================================
   type AnalyticsEvent = { event_type: string; page_path: string | null; feature_name: string | null; session_id: string | null; user_id: string | null; created_at: string; duration_ms: number | null };
   type CoachInsightRow = { coach_id: string; created_at: string };
-  type CoachReviewRow = { coach_id: string | null; round_id: string; created_at: string; golf_rounds: { player_id: string; created_at: string } | null };
+  type CoachReviewRow = { published_by: string | null; round_id: string; created_at: string; golf_rounds: { player_id: string; created_at: string } | null };
 
   type PlayerInsightRow = { player_id: string; insights_generated: number | null };
   type TeamSeasonRow = { id: string; season: string | null };
@@ -2075,7 +2075,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     // Coach intelligence: insights viewed per coach
     adminDb.from('golf_coach_insights').select('coach_id, created_at') as unknown as { data: CoachInsightRow[] | null; error: unknown },
     // Coach intelligence: round reviews per coach (with timing)
-    adminDb.from('golf_round_reviews').select('coach_id, round_id, created_at, golf_rounds(player_id, created_at)') as unknown as { data: CoachReviewRow[] | null; error: unknown },
+    adminDb.from('golf_round_reviews').select('published_by, round_id, created_at, golf_rounds(player_id, created_at)') as unknown as { data: CoachReviewRow[] | null; error: unknown },
     // For cohort retention + benchmarks: all rounds with player + date
     adminDb.from('golf_rounds').select('player_id, created_at, team_id').order('created_at', { ascending: false }),
     // NEW: Insights per player (for userActivity team member detail)
@@ -2228,16 +2228,16 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   const coachReviewCounts = new Map<string, number>();
   const coachResponseTimes = new Map<string, number[]>();
   for (const cr of coachReviewsData) {
-    if (!cr.coach_id) continue;
-    coachReviewCounts.set(cr.coach_id, (coachReviewCounts.get(cr.coach_id) ?? 0) + 1);
+    if (!cr.published_by) continue;
+    coachReviewCounts.set(cr.published_by, (coachReviewCounts.get(cr.published_by) ?? 0) + 1);
     // Calculate response time: review created_at - round created_at
     const round = cr.golf_rounds as { player_id: string; created_at: string } | null;
     if (round?.created_at && cr.created_at) {
       const diffHours = (new Date(cr.created_at).getTime() - new Date(round.created_at).getTime()) / 3600000;
       if (diffHours >= 0 && diffHours < 720) { // cap at 30 days
-        const times = coachResponseTimes.get(cr.coach_id) ?? [];
+        const times = coachResponseTimes.get(cr.published_by) ?? [];
         times.push(diffHours);
-        coachResponseTimes.set(cr.coach_id, times);
+        coachResponseTimes.set(cr.published_by, times);
       }
     }
   }
