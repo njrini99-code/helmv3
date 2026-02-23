@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { sanitizeDbError } from '@/lib/db-error';
 import { revalidatePath } from 'next/cache';
 import {
   parseCSV,
@@ -146,7 +147,7 @@ export async function createGame(
     .select()
     .single();
 
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: sanitizeDbError(error, 'games') };
 
   revalidateStatsPaths();
   return { success: true, data: game as BaseballGame };
@@ -193,7 +194,7 @@ export async function updateGame(
     .update(updateData)
     .eq('id', gameId);
 
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: sanitizeDbError(error, 'games') };
 
   revalidateStatsPaths();
   return { success: true };
@@ -217,7 +218,7 @@ export async function deleteGame(gameId: string): Promise<{ success: boolean; er
 
   const { error } = await (supabase as any).from('baseball_games').delete().eq('id', gameId);
 
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: sanitizeDbError(error, 'games') };
 
   revalidateStatsPaths();
   return { success: true };
@@ -272,7 +273,7 @@ export async function getTeamGames(
 
   const { data, error } = await query;
 
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: sanitizeDbError(error, 'games') };
 
   // Attach counts
   type GameRow = Record<string, unknown> & { batting?: unknown[]; pitching?: unknown[] };
@@ -442,7 +443,7 @@ export async function saveBoxScoreBatting(
 
   const { error } = await (supabase as any).from('baseball_box_score_batting').insert(rows);
 
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: sanitizeDbError(error, 'games') };
 
   return { success: true };
 }
@@ -493,7 +494,7 @@ export async function saveBoxScorePitching(
 
   const { error } = await (supabase as any).from('baseball_box_score_pitching').insert(rows);
 
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: sanitizeDbError(error, 'games') };
 
   return { success: true };
 }
@@ -528,7 +529,7 @@ export async function markGameCompleted(
     })
     .eq('id', gameId);
 
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: sanitizeDbError(error, 'games') };
 
   // Recalculate season stats for all players who appeared in this game
   const { data: battingPlayers } = await (supabase as any)
@@ -915,7 +916,7 @@ export async function getTeamSeasonStats(
     .eq('team_id', teamId)
     .eq('season_year', year);
 
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: sanitizeDbError(error, 'games') };
 
   return { success: true, data: data as BaseballPlayerSeasonStats[] };
 }
@@ -1008,7 +1009,7 @@ export async function getMySeasonStats(
     .eq('season_year', year)
     .maybeSingle();
 
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: sanitizeDbError(error, 'games') };
 
   return { success: true, data: data as BaseballPlayerSeasonStats | undefined };
 }
@@ -1032,7 +1033,7 @@ export async function recalculateAllSeasonStats(
     p_season_year: year,
   });
 
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: sanitizeDbError(error, 'games') };
 
   revalidateStatsPaths();
   return { success: true };

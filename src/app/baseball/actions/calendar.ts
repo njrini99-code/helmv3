@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { sanitizeDbError } from '@/lib/db-error';
 import { revalidatePath } from 'next/cache';
 
 // ============================================================================
@@ -130,7 +131,7 @@ export async function createBaseballEvent(input: CreateEventInput): Promise<Acti
     .select()
     .single();
 
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: sanitizeDbError(error, 'calendar') };
 
   // If attendeeIds provided and RSVP required, create pending attendance records
   if (input.requiresRsvp && input.attendeeIds && input.attendeeIds.length > 0 && data) {
@@ -208,7 +209,7 @@ export async function updateBaseballEvent(eventId: string, input: UpdateEventInp
     if (error.code === 'PGRST116') {
       return { success: false, error: 'Event not found or you do not have permission to update it' };
     }
-    return { success: false, error: error.message };
+    return { success: false, error: sanitizeDbError(error, 'calendar') };
   }
 
   revalidatePath(CALENDAR_PATH);
@@ -235,7 +236,7 @@ export async function deleteBaseballEvent(eventId: string): Promise<ActionResult
     .eq('id', eventId)
     .eq('created_by', coach.id);
 
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: sanitizeDbError(error, 'calendar') };
   if (count === 0) return { success: false, error: 'Event not found or you do not have permission to delete it' };
 
   revalidatePath(CALENDAR_PATH);
@@ -273,7 +274,7 @@ export async function rsvpToBaseballEvent(
     .select()
     .single();
 
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: sanitizeDbError(error, 'calendar') };
 
   revalidatePath(CALENDAR_PATH);
   return { success: true, data };
@@ -310,7 +311,7 @@ export async function getBaseballEventAttendance(eventId: string): Promise<Actio
     .eq('event_id', eventId)
     .order('responded_at', { ascending: true });
 
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: sanitizeDbError(error, 'calendar') };
 
   return { success: true, data };
 }
@@ -350,7 +351,7 @@ export async function checkInBaseballPlayer(
     .select()
     .single();
 
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: sanitizeDbError(error, 'calendar') };
 
   revalidatePath(CALENDAR_PATH);
   return { success: true, data };
@@ -382,7 +383,7 @@ export async function uncheckInBaseballPlayer(
     .select()
     .single();
 
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: sanitizeDbError(error, 'calendar') };
 
   revalidatePath(CALENDAR_PATH);
   return { success: true, data };
@@ -414,7 +415,7 @@ export async function getTeamEvents(teamId: string): Promise<ActionResult> {
     .eq('team_id', teamId)
     .order('start_time', { ascending: true });
 
-  if (error) return { success: false, error: error.message };
+  if (error) return { success: false, error: sanitizeDbError(error, 'calendar') };
 
   // Compute attendance counts per event
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

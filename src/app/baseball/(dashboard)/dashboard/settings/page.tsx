@@ -9,6 +9,7 @@ import { PageLoading } from '@/components/ui/loading';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/components/ui/toast';
 import { createClient } from '@/lib/supabase/client';
+import { sanitizeAuthError } from '@/lib/db-error';
 import { IconChevronRight, IconShield, IconBuilding, IconBell, IconMail } from '@/components/icons';
 import Link from 'next/link';
 
@@ -34,7 +35,7 @@ export default function SettingsPage() {
     setNewPassword(password);
     if (password.length === 0) {
       setPasswordStrength(null);
-    } else if (password.length < 6) {
+    } else if (password.length < 8) {
       setPasswordStrength('weak');
     } else if (password.length < 10 || !/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
       setPasswordStrength('medium');
@@ -55,8 +56,8 @@ export default function SettingsPage() {
     }
 
     // Validate password length
-    if (newPassword.length < 6) {
-      showToast('Password must be at least 6 characters', 'error');
+    if (newPassword.length < 8) {
+      showToast('Password must be at least 8 characters', 'error');
       return;
     }
 
@@ -72,7 +73,7 @@ export default function SettingsPage() {
       });
 
       if (error) {
-        showToast(error.message || 'Failed to update password', 'error');
+        showToast(sanitizeAuthError(error, 'updatePassword'), 'error');
         return;
       }
 

@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { sanitizeDbError } from '@/lib/db-error';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import {
@@ -66,7 +67,7 @@ export async function updatePlayerPrivacySettings(playerId: string, settings: Pl
       });
 
     if (error) {
-      throw new Error(`Failed to update settings: ${error.message}`);
+      throw new Error('Failed to update settings. Please try again.');
     }
 
     revalidatePath('/baseball/dashboard/settings');
@@ -219,7 +220,7 @@ export async function getOrganizationSettings(
       .single();
 
     if (error && error.code !== 'PGRST116') { // PGRST116 = not found
-      return { data: null, error: error.message };
+      return { data: null, error: sanitizeDbError(error, 'profile-settings') };
     }
 
     // Return settings or defaults
@@ -358,7 +359,7 @@ export async function getNotificationPreferences(): Promise<{
       .single();
 
     if (error) {
-      return { data: null, error: error.message };
+      return { data: null, error: sanitizeDbError(error, 'profile-settings') };
     }
 
     // Default preferences

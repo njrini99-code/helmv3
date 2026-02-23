@@ -48,7 +48,7 @@ export async function loginAction(
   }
 
   // Check rate limits
-  const emailRateLimit = checkRateLimit(
+  const emailRateLimit = await checkRateLimit(
     `login:email:${normalizedEmail}`,
     RATE_LIMITS.LOGIN
   );
@@ -61,7 +61,7 @@ export async function loginAction(
     };
   }
 
-  const ipRateLimit = checkRateLimit(`login:ip:${ip}`, RATE_LIMITS.LOGIN);
+  const ipRateLimit = await checkRateLimit(`login:ip:${ip}`, RATE_LIMITS.LOGIN);
 
   if (!ipRateLimit.allowed) {
     const remaining = formatTimeRemaining(ipRateLimit.resetAt - Date.now());
@@ -210,7 +210,7 @@ export async function signupAction(
   const ip = headersList.get('x-forwarded-for') || headersList.get('x-real-ip') || 'unknown';
 
   // Check rate limit
-  const rateLimit = checkRateLimit(`signup:ip:${ip}`, RATE_LIMITS.SIGNUP);
+  const rateLimit = await checkRateLimit(`signup:ip:${ip}`, RATE_LIMITS.SIGNUP);
 
   if (!rateLimit.allowed) {
     const remaining = formatTimeRemaining(rateLimit.resetAt - Date.now());
@@ -311,7 +311,7 @@ export async function requestPasswordResetAction(
   const normalizedEmail = email.toLowerCase().trim();
 
   // Check rate limit
-  const rateLimit = checkRateLimit(
+  const rateLimit = await checkRateLimit(
     `password-reset:email:${normalizedEmail}`,
     RATE_LIMITS.PASSWORD_RESET
   );

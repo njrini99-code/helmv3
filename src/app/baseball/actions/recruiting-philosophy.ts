@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { sanitizeDbError } from '@/lib/db-error';
 import { revalidatePath } from 'next/cache';
 import type {
   CoachRecruitingPhilosophy,
@@ -57,7 +58,7 @@ export async function getRecruitingPhilosophy(): Promise<{
 
   if (error && error.code !== 'PGRST116') {
     // PGRST116 = no rows found, which is OK
-    return { data: null, error: error.message };
+    return { data: null, error: sanitizeDbError(error, 'recruiting-philosophy') };
   }
 
   return { data: data as CoachRecruitingPhilosophy | null, error: null };
@@ -258,7 +259,7 @@ export async function getPlayerPercentiles(
     .in('player_id', playerIds);
 
   if (error) {
-    return { data: [], error: error.message };
+    return { data: [], error: sanitizeDbError(error, 'recruiting-philosophy') };
   }
 
   return { data: data as PlayerPercentiles[], error: null };
@@ -279,7 +280,7 @@ export async function getPlayerPercentile(
     .single();
 
   if (error && error.code !== 'PGRST116') {
-    return { data: null, error: error.message };
+    return { data: null, error: sanitizeDbError(error, 'recruiting-philosophy') };
   }
 
   return { data: data as PlayerPercentiles | null, error: null };
@@ -310,7 +311,7 @@ export async function recalculatePercentiles(
   });
 
   if (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: sanitizeDbError(error, 'recruiting-philosophy') };
   }
 
   return { success: true, error: null };
