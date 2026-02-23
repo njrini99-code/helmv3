@@ -1289,7 +1289,6 @@ export default function TeamDashboardClient() {
                           >
                             <div className="w-20 h-12 bg-slate-200 rounded-lg shrink-0 flex items-center justify-center overflow-hidden">
                               {video.thumbnail_url ? (
-                                // eslint-disable-next-line @next/next/no-img-element
                                 <img
                                   src={video.thumbnail_url}
                                   alt={video.title}
