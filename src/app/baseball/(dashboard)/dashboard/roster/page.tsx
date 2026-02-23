@@ -88,17 +88,41 @@ export default function RosterPage() {
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [viewMode, setViewMode] = useState<ViewMode>('expanded');
 
+  // Resolved team ID: prefer store, fall back to first team in org
+  const [resolvedTeamId, setResolvedTeamId] = useState<string | null>(selectedTeamId);
+
   useEffect(() => {
     if (selectedTeamId) {
+      setResolvedTeamId(selectedTeamId);
+      return;
+    }
+    // Store not populated yet — wait for auth, then do direct lookup via org
+    if (authLoading) return;
+    if (!coach?.organization_id) { setLoading(false); return; }
+
+    const supabase = createClient();
+    supabase
+      .from('baseball_teams')
+      .select('id')
+      .eq('organization_id', coach.organization_id)
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.id) setResolvedTeamId(data.id);
+        else setLoading(false);
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTeamId, authLoading, coach?.organization_id]);
+
+  useEffect(() => {
+    if (resolvedTeamId) {
       fetchRosterWithAggregates();
-    } else {
-      setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedTeamId]);
+  }, [resolvedTeamId]);
 
   async function fetchRosterWithAggregates() {
-    if (!selectedTeamId) return;
+    if (!resolvedTeamId) return;
 
     setLoading(true);
     const supabase = createClient();
@@ -125,7 +149,7 @@ export default function RosterPage() {
           recruiting_activated
         )
       `)
-      .eq('team_id', selectedTeamId)
+      .eq('team_id', resolvedTeamId)
       .order('joined_at', { ascending: false });
 
     if (rosterError) {
@@ -142,7 +166,7 @@ export default function RosterPage() {
     const { data: aggregatesData, error: aggError } = await (supabase as any)
       .from('baseball_player_aggregates')
       .select('*')
-      .eq('team_id', selectedTeamId) as { data: BaseballPlayerAggregates[] | null; error: unknown };
+      .eq('team_id', resolvedTeamId) as { data: BaseballPlayerAggregates[] | null; error: unknown };
 
     if (!aggError && aggregatesData) {
       const aggMap: Record<string, BaseballPlayerAggregates> = {};
@@ -757,7 +781,7 @@ export default function RosterPage() {
               avatar_url: m.player.avatar_url,
             }))}
             onSave={async (lineup, name) => {
-              if (!selectedTeamId) {
+              if (!resolvedTeamId) {
                 showToast('No team selected', 'error');
                 return;
               }
@@ -778,7 +802,7 @@ export default function RosterPage() {
               setSavingLineup(true);
               try {
                 await saveLineup({
-                  teamId: selectedTeamId,
+                  teamId: resolvedTeamId,
                   name: name || 'Untitled Lineup',
                   positions,
                 });
@@ -797,9 +821,9 @@ export default function RosterPage() {
       </div>
 
       {/* Invite Modal */}
-      {showInviteModal && selectedTeamId && coach?.id && (
+      {showInviteModal && resolvedTeamId && coach?.id && (
         <InviteModal
-          teamId={selectedTeamId}
+          teamId={resolvedTeamId}
           teamName={selectedTeam?.name || 'Your Team'}
           coachId={coach.id}
           onClose={() => setShowInviteModal(false)}
