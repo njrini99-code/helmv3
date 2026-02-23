@@ -319,7 +319,10 @@ const golfRoundSchema = z.object({
   teesPlayed: z.string().max(50).optional(),
   courseId: z.string().uuid().optional(),
   roundType: z.enum(['practice', 'tournament', 'qualifier']),
-  roundDate: z.string(),
+  roundDate: z.string().refine(d => {
+    const date = new Date(d);
+    return !isNaN(date.getTime()) && date <= new Date();
+  }, 'Round date cannot be in the future'),
   holes: z.array(holeSchema).min(1).max(18),
 });
 
@@ -370,7 +373,10 @@ const golfRoundComprehensiveSchema = z.object({
   teesPlayed: z.string().max(50).optional(),
   courseId: z.string().uuid().optional(),
   roundType: z.enum(['practice', 'tournament', 'qualifier']),
-  roundDate: z.string(),
+  roundDate: z.string().refine(d => {
+    const date = new Date(d);
+    return !isNaN(date.getTime()) && date <= new Date();
+  }, 'Round date cannot be in the future'),
   holes: z.array(comprehensiveHoleSchema).min(1).max(18),
   qualifierId: z.string().uuid().optional(),
   qualifierRoundNumber: z.number().int().min(1).optional(),
@@ -818,6 +824,8 @@ export async function submitGolfRoundComprehensive(
       .select('id, hole_number');
 
     if (holesError) {
+      // Rollback: delete the orphaned round to prevent ghost completed rounds with no holes
+      await supabase.from('golf_rounds').delete().eq('id', round.id).eq('player_id', player.id);
       return { success: false, error: 'Failed to save hole data. Please try again.' };
     }
 
@@ -883,13 +891,14 @@ export async function submitGolfRoundComprehensive(
             
             if (!shotId) continue;
 
-            // Save putt details if this is a putt with miss tags
-            if (shot.shotType === 'putting' && shot.puttMissTags && shot.puttMissTags.length > 0) {
+            // Save putt details for ALL putts (makes and misses)
+            // Previously only saved misses with miss tags — this skewed conversion rate analysis
+            if (shot.shotType === 'putting') {
               puttDetails.push({
                 shot_id: shotId,
-                miss_tags: shot.puttMissTags,
+                miss_tags: shot.puttMissTags || [],
                 break_direction: shot.puttBreak || null,
-                distance_feet: shot.puttDistanceFeet || null,
+                distance_feet: shot.puttDistanceFeet ?? derivePuttDistanceFeet(shot),
                 made: shot.result === 'hole',
               });
             }
@@ -951,12 +960,16 @@ export async function submitGolfRoundComprehensive(
     if (data.qualifierId) {
       revalidatePath('/golf/dashboard/qualifiers');
       revalidatePath(`/golf/dashboard/qualifiers/${data.qualifierId}`);
-      updateQualifierEntryStats(supabase, data.qualifierId, player.id).catch(() => {});
+      updateQualifierEntryStats(supabase, data.qualifierId, player.id).catch((err) => {
+        console.error('[Golf] Failed to update qualifier stats after round:', data.qualifierId, err);
+      });
     }
 
     // Fire-and-forget: invalidate stats cache for dashboard updates
     // Round is already saved — no need to block the response
-    invalidateOnRoundComplete(player.id, round.id).catch(() => {});
+    invalidateOnRoundComplete(player.id, round.id).catch((err) => {
+      console.error('[Golf] Failed to invalidate stats cache after round:', player.id, err);
+    });
 
     // Fire-and-forget: trigger CoachHelm insight generation for this player
     triggerPlayerInsightsAfterRound(player.id).catch(() => {});
@@ -1018,7 +1031,13 @@ export async function submitGolfRound(data: GolfRoundInput): Promise<ActionResul
   const totalPutts = validatedData.holes.reduce((sum, h) => sum + (h.putts || 0), 0);
   const fairwaysHit = validatedData.holes.filter(h => h.fairwayHit).length;
   const fairwaysTotal = validatedData.holes.filter(h => h.par > 3).length;
-  const greensInReg = validatedData.holes.filter(h => h.greenInRegulation).length;
+  // Sanity-check client-supplied GIR: require that shots-to-green (score - putts) <= (par - 2)
+  // This prevents inflated GIR without shot data (legacy path has no individual shots)
+  const greensInReg = validatedData.holes.filter(h => {
+    if (!h.greenInRegulation) return false;
+    const shotsToGreen = h.score - (h.putts ?? 2); // assume 2 putts if not provided
+    return shotsToGreen <= h.par - 2 && shotsToGreen >= 1;
+  }).length;
 
   // Convert frontend round type to database format
   const roundTypeDb = roundTypeToDb(validatedData.roundType);

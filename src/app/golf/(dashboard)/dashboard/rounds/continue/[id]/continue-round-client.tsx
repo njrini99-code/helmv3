@@ -9,6 +9,7 @@ import { deleteOfflineRound } from '@/lib/offline/indexed-db';
 import { SaveRoundModal } from '@/components/golf/SaveRoundModal';
 import { useOfflineSync } from '@/hooks/golf/use-offline-sync';
 import { OfflineIndicator } from '@/components/golf/OfflineIndicator';
+import { useToast } from '@/components/ui/toast';
 
 interface Hole {
   number: number;
@@ -51,6 +52,7 @@ export default function ContinueRoundClient({
   initialShotNumber = 1,
 }: ContinueRoundClientProps) {
   const router = useRouter();
+  const { showToast } = useToast();
 
   // IndexedDB-based offline sync for shot-level persistence
   const [offlineSyncState, offlineSyncActions] = useOfflineSync({
@@ -189,6 +191,11 @@ export default function ContinueRoundClient({
       const result = await submitGolfRoundComprehensive(roundData, roundId);
       if (!result.success) {
         throw new Error(result.error);
+      }
+
+      // Warn if shot-level data failed to save (round + hole stats are safe)
+      if (result.data.shotsSaved === false) {
+        showToast('Round saved — shot details could not be saved. Score and stats are recorded, but club analytics may be incomplete.', 'warning');
       }
 
       // Clean up IndexedDB draft data for this round

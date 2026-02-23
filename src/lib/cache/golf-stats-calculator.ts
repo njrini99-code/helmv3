@@ -305,17 +305,19 @@ export async function invalidateOnRoundComplete(playerId: string, roundId: strin
   // but we call it explicitly to ensure SG is calculated for manual updates
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any).rpc('recalculate_round_strokes_gained', { p_round_id: roundId });
-  } catch {
-    // Function may not exist yet if migration hasn't run - that's okay
+    const { error: sgRoundError } = await (supabase as any).rpc('recalculate_round_strokes_gained', { p_round_id: roundId });
+    if (sgRoundError) console.error('[Stats] recalculate_round_strokes_gained failed:', roundId, sgRoundError);
+  } catch (e) {
+    console.error('[Stats] recalculate_round_strokes_gained threw:', roundId, e);
   }
 
   // 3. Update player stats cache with aggregated SG values
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any).rpc('update_player_stats_strokes_gained', { p_player_id: playerId });
-  } catch {
-    // Function may not exist yet if migration hasn't run - that's okay
+    const { error: sgPlayerError } = await (supabase as any).rpc('update_player_stats_strokes_gained', { p_player_id: playerId });
+    if (sgPlayerError) console.error('[Stats] update_player_stats_strokes_gained failed:', playerId, sgPlayerError);
+  } catch (e) {
+    console.error('[Stats] update_player_stats_strokes_gained threw:', playerId, e);
   }
 
 }

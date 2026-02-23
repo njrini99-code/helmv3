@@ -27,6 +27,7 @@ import { HoleConfigurationForm } from '@/components/golf/HoleConfigurationForm';
 
 import { SaveRoundModal } from '@/components/golf/SaveRoundModal';
 import { ResumeDraftModal } from '@/components/golf/ResumeDraftModal';
+import { useToast } from '@/components/ui/toast';
 // DraftIndicator removed - was too noisy
 import type { HoleConfig } from '@/lib/types/golf-course';
 import { useAutoSaveRound, type RoundDraftData } from '@/hooks/golf/use-auto-save-round';
@@ -53,6 +54,7 @@ interface RoundSetupForm {
 
 export default function NewRoundClient() {
   const router = useRouter();
+  const { showToast } = useToast();
 
   // Hide mobile bottom nav for entire round flow (setup → holes → tracking → submit)
   const { hide: hideMobileNav, show: showMobileNav } = useMobileNav();
@@ -617,6 +619,11 @@ export default function NewRoundClient() {
       const result = await submitGolfRoundComprehensive(roundData);
       if (!result.success) {
         throw new Error(result.error);
+      }
+
+      // Warn if shot-level data failed to save (round + hole stats are safe)
+      if (result.data.shotsSaved === false) {
+        showToast('Round saved — shot details could not be saved. Score and stats are recorded, but club analytics may be incomplete.', 'warning');
       }
 
       // Clear draft after successful submission
