@@ -58,11 +58,13 @@ export function ProgramRoster({ organizationId, organizationType, coachType }: P
   // - JUCO coaches: can only view HS org rosters
   // ============================================================
   const canViewRoster = (() => {
-    if (!coachType) return true; // Fallback to show if no coach type
+    if (!coachType) return true; // Fallback when coach type unknown
     if (coachType === 'college') {
-      return ['high_school', 'showcase'].includes(organizationType);
+      // College coaches recruit from HS, showcase, and JUCO programs
+      return ['high_school', 'showcase', 'juco'].includes(organizationType);
     }
     if (coachType === 'juco') {
+      // JUCO coaches recruit only HS players
       return organizationType === 'high_school';
     }
     return false;
@@ -87,7 +89,7 @@ export function ProgramRoster({ organizationId, organizationType, coachType }: P
         </h3>
         <p className="text-sm text-slate-500 max-w-sm mx-auto">
           {coachType === 'juco'
-            ? 'JUCO coaches can only view high school program rosters.'
+            ? 'JUCO coaches can view high school program rosters only.'
             : 'You do not have access to view this program\'s roster.'}
         </p>
       </Card>

@@ -335,7 +335,7 @@ export function TeamPeekPanel({ teamId, onClose }: TeamPeekPanelProps) {
               variant="secondary"
               className="w-full"
               onClick={() => {
-                router.push(`/baseball/dashboard/messages/new?team=${team.id}`);
+                router.push(`/baseball/dashboard/messages?new=1`);
                 onClose();
               }}
             >

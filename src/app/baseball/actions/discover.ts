@@ -194,7 +194,14 @@ export async function getDiscoverPlayers(
       { count: 'exact' }
     )
     .eq('recruiting_activated', true)
-    .neq('player_type', 'college'); // Exclude college players from discover
+    .neq('player_type', 'college'); // College players are never recruitable
+
+  // Coach-type visibility rules:
+  // - JUCO coaches: can only recruit HS/showcase players (not JUCO players)
+  // - College coaches: can recruit HS, showcase, AND JUCO players
+  if (filters.coachType === 'juco') {
+    query = query.in('player_type', ['high_school', 'showcase'] as const);
+  }
 
   // CORE RULE: only players assigned to a discoverable team (HS/showcase/JUCO)
   if (discoverablePlayerIds && discoverablePlayerIds.length > 0) {
@@ -277,11 +284,19 @@ export async function getDiscoverTeams(
   const page = filters.page || 1;
   const offset = (page - 1) * perPage;
 
+  // Discoverable org types by coach type:
+  // - college: can recruit from HS, showcase, AND JUCO programs
+  // - juco: can only recruit from HS programs (not showcase/JUCO)
+  const discoverableOrgTypes: readonly ('high_school' | 'showcase' | 'juco')[] =
+    filters.coachType === 'juco'
+      ? ['high_school']
+      : ['high_school', 'showcase', 'juco'];
+
   // Build base query for organizations
   let query = supabase
     .from('organizations')
     .select('*', { count: 'exact' })
-    .in('type', ['high_school', 'showcase', 'juco']);
+    .in('type', discoverableOrgTypes);
 
   // Apply filters
   if (filters.teamType) {

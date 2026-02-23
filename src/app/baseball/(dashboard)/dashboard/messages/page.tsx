@@ -17,6 +17,7 @@ import { getParticipantDetails } from '@/lib/types/messages';
 function MessagesContent() {
   const searchParams = useSearchParams();
   const conversationIdParam = searchParams.get('conversation');
+  const openNewParam = searchParams.get('new');
   const { showToast } = useToast();
 
   const { user } = useAuthStore();
@@ -35,6 +36,13 @@ function MessagesContent() {
       setMobileShowChat(true);
     }
   }, [conversationIdParam]);
+
+  // Auto-open new message modal when ?new=1 is in URL
+  useEffect(() => {
+    if (openNewParam === '1') {
+      setShowNewMessageModal(true);
+    }
+  }, [openNewParam]);
 
   // Auto-select first conversation on desktop
   useEffect(() => {
