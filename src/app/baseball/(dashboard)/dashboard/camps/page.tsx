@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Header } from '@/components/layout/header';
 import { Card, CardContent } from '@/components/ui/card';
@@ -200,7 +200,8 @@ export default function CampsPage() {
   const [editingCamp, setEditingCamp] = useState<Camp | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const supabase = createClient();
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
 
   const isCoach = user?.role === 'coach';
   const isPlayer = user?.role === 'player';
@@ -253,7 +254,6 @@ export default function CampsPage() {
     }
 
     fetchCamps();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- supabase client is created fresh each render but is functionally stable
   }, [coach, player, isCoach, isPlayer]);
 
   const handleRegister = async (campId: string) => {

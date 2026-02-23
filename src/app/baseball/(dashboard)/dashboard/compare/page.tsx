@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState, useEffect } from 'react';
+import { Suspense, useState, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/header';
 import { Card, CardContent } from '@/components/ui/card';
@@ -24,7 +24,8 @@ function CompareContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Player[]>([]);
   const [searching, setSearching] = useState(false);
-  const supabase = createClient();
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
 
   // Get player IDs from URL
   const playerIds = searchParams.get('players')?.split(',').filter(Boolean) || [];
@@ -55,7 +56,6 @@ function CompareContent() {
     }
 
     fetchPlayers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- playerIds is derived from searchParams (in deps); supabase client is functionally stable
   }, [searchParams]);
 
   const MAX_PLAYERS = 4;

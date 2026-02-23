@@ -11,7 +11,7 @@ import {
   MinimumStandards,
 } from '@/components/baseball/recruiting-philosophy';
 import { saveRecruitingPhilosophy } from '@/app/baseball/actions/recruiting-philosophy';
-import { Check, Loader2, Save, MapPin, GraduationCap } from 'lucide-react';
+import { IconCheck, IconSave, IconMapPin, IconGraduationCap } from '@/components/icons';
 
 interface RecruitingPreferencesClientProps {
   coachId: string;
@@ -160,7 +160,7 @@ export function RecruitingPreferencesClient({
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-primary-600" />
+                <IconMapPin size={20} className="text-primary-600" />
                 Geographic Preferences
               </h3>
               <p className="text-sm text-slate-500 mt-1">
@@ -213,7 +213,7 @@ export function RecruitingPreferencesClient({
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
-                <GraduationCap className="w-5 h-5 text-primary-600" />
+                <IconGraduationCap size={20} className="text-primary-600" />
                 Target Graduation Years
               </h3>
               <p className="text-sm text-slate-500 mt-1">
@@ -262,7 +262,7 @@ export function RecruitingPreferencesClient({
             <div className="text-sm text-slate-600">
               {saved ? (
                 <span className="text-primary-600 flex items-center gap-1">
-                  <Check className="w-4 h-4" />
+                  <IconCheck size={16} />
                   Preferences saved!
                 </span>
               ) : error ? (
@@ -282,17 +282,8 @@ export function RecruitingPreferencesClient({
                   : 'bg-primary-500 hover:bg-primary-600 text-white shadow-sm'
               )}
             >
-              {isPending ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4" />
-                  Save Preferences
-                </>
-              )}
+              <IconSave size={16} />
+              {isPending ? 'Saving...' : 'Save Preferences'}
             </button>
           </div>
         </div>

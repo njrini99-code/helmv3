@@ -147,13 +147,29 @@ export async function getDiscoverPlayers(
   filters: DiscoverFilters
 ): Promise<DiscoverPlayersResult> {
   const supabase = await createClient();
+
+  // SECURITY: Derive coach identity and type from authenticated session — ignore client-supplied values
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { players: [], count: 0, pages: 0 };
+
+  const { data: coachProfile } = await supabase
+    .from('baseball_coaches')
+    .select('id, coach_type')
+    .eq('user_id', user.id)
+    .single();
+
+  if (!coachProfile) return { players: [], count: 0, pages: 0 };
+
+  const serverCoachId = coachProfile.id as string;
+  const serverCoachType = coachProfile.coach_type as CoachType;
+
   const perPage = filters.perPage || 24;
   const page = filters.page || 1;
   const offset = (page - 1) * perPage;
 
   // Run pre-queries in parallel: coach's own roster to exclude + all discoverable team player IDs
   const [coachRosterIds, discoverablePlayerIds] = await Promise.all([
-    getCoachRosterPlayerIds(supabase, filters.coachId),
+    getCoachRosterPlayerIds(supabase, serverCoachId),
     getDiscoverableTeamPlayerIds(supabase),
   ]);
 
@@ -196,10 +212,10 @@ export async function getDiscoverPlayers(
     .eq('recruiting_activated', true)
     .neq('player_type', 'college'); // College players are never recruitable
 
-  // Coach-type visibility rules:
+  // Coach-type visibility rules (server-derived — not client-supplied):
   // - JUCO coaches: can only recruit HS/showcase players (not JUCO players)
   // - College coaches: can recruit HS, showcase, AND JUCO players
-  if (filters.coachType === 'juco') {
+  if (serverCoachType === 'juco') {
     query = query.in('player_type', ['high_school', 'showcase'] as const);
   }
 
@@ -280,15 +296,30 @@ export async function getDiscoverTeams(
   filters: DiscoverFilters
 ): Promise<DiscoverTeamsResult> {
   const supabase = await createClient();
+
+  // SECURITY: Derive coach type from authenticated session — ignore client-supplied coachType
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { teams: [], count: 0, pages: 0 };
+
+  const { data: coachProfile } = await supabase
+    .from('baseball_coaches')
+    .select('id, coach_type')
+    .eq('user_id', user.id)
+    .single();
+
+  if (!coachProfile) return { teams: [], count: 0, pages: 0 };
+
+  const serverCoachType = coachProfile.coach_type as CoachType;
+
   const perPage = filters.perPage || 24;
   const page = filters.page || 1;
   const offset = (page - 1) * perPage;
 
-  // Discoverable org types by coach type:
+  // Discoverable org types by coach type (server-derived — not client-supplied):
   // - college: can recruit from HS, showcase, AND JUCO programs
   // - juco: can only recruit from HS programs (not showcase/JUCO)
   const discoverableOrgTypes: readonly ('high_school' | 'showcase' | 'juco')[] =
-    filters.coachType === 'juco'
+    serverCoachType === 'juco'
       ? ['high_school']
       : ['high_school', 'showcase', 'juco'];
 

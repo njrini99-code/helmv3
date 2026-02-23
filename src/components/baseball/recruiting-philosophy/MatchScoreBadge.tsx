@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { getMatchScoreTier, formatMatchScore } from '@/lib/recruiting/match-calculator';
 import type { MatchScoreBreakdown } from '@/lib/types';
 import { RECRUITING_METRIC_LABELS } from '@/lib/types';
-import { ChevronDown, Target, AlertCircle } from 'lucide-react';
+import { IconChevronDown, IconTarget, IconAlertCircle } from '@/components/icons';
 
 interface MatchScoreBadgeProps {
   score: number;
@@ -61,10 +61,10 @@ export function MatchScoreBadge({
           className
         )}
       >
-        <Target className={cn('flex-shrink-0', size === 'sm' ? 'w-3 h-3' : 'w-4 h-4')} />
+        <IconTarget size={size === 'sm' ? 12 : 16} className="flex-shrink-0" />
         <span className="tabular-nums">{formatMatchScore(score)}</span>
         {!meetsStandards && (
-          <AlertCircle className={cn('flex-shrink-0', size === 'sm' ? 'w-3 h-3' : 'w-4 h-4')} />
+          <IconAlertCircle size={size === "sm" ? 12 : 16} className="flex-shrink-0" />
         )}
       </div>
     );
@@ -83,13 +83,11 @@ export function MatchScoreBadge({
           !meetsStandards && 'opacity-80'
         )}
       >
-        <Target className="w-4 h-4" />
+        <IconTarget size={16} />
         <span className="tabular-nums">{formatMatchScore(score)}</span>
         <span className="text-xs font-normal opacity-75">{tier.label}</span>
         {breakdown && (
-          <ChevronDown
-            className={cn('w-4 h-4 transition-transform', isExpanded && 'rotate-180')}
-          />
+          <IconChevronDown size={16} className={cn("transition-transform", isExpanded && "rotate-180")} />
         )}
       </button>
 
@@ -137,7 +135,7 @@ export function MatchScoreBadge({
           {!meetsStandards && (
             <div className="px-3 py-2 bg-amber-50 border-t border-amber-100">
               <p className="text-xs text-amber-700 flex items-center gap-1.5">
-                <AlertCircle className="w-3.5 h-3.5" />
+                <IconAlertCircle size={14} />
                 Below minimum standards
               </p>
             </div>

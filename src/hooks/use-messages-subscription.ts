@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { Message } from '@/lib/types';
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
@@ -23,7 +23,8 @@ export function useMessagesSubscription({
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  const supabase = createClient();
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
 
   // Load initial messages
   useEffect(() => {
@@ -159,7 +160,7 @@ export function useMessagesSubscription({
     return () => {
       channel.unsubscribe();
     };
-  }, [conversationId, onNewMessage, onUpdateMessage, onDeleteMessage, supabase]);
+  }, [conversationId, onNewMessage, onUpdateMessage, onDeleteMessage]);
 
   // Send a new message
   const sendMessage = async (

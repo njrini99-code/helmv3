@@ -31,8 +31,7 @@ import {
 } from '@/app/baseball/actions/watchlist';
 import Link from 'next/link';
 import type { PipelineStage, Player } from '@/lib/types';
-
-const stages: PipelineStage[] = ['watchlist', 'high_priority', 'offer_extended', 'committed', 'uninterested'];
+import { PIPELINE_STAGES } from '@/lib/recruiting/stages';
 
 const gradYearOptions = [
   { value: '', label: 'All Years' },
@@ -43,21 +42,11 @@ const gradYearOptions = [
   { value: '2029', label: '2029' },
 ];
 
-const statusOptions = [
-  { value: 'watchlist', label: 'Watching' },
-  { value: 'high_priority', label: 'High Priority' },
-  { value: 'offer_extended', label: 'Offer Extended' },
-  { value: 'committed', label: 'Committed' },
-  { value: 'uninterested', label: 'Not Interested' }
-];
+const statusOptions = PIPELINE_STAGES.map((s) => ({ value: s.id, label: s.label }));
 
 const filterTabs = [
   { value: 'all', label: 'All' },
-  { value: 'watchlist', label: 'Watching' },
-  { value: 'high_priority', label: 'High Priority' },
-  { value: 'offer_extended', label: 'Offers' },
-  { value: 'committed', label: 'Committed' },
-  { value: 'uninterested', label: 'Not Interested' }
+  ...PIPELINE_STAGES.map((s) => ({ value: s.id, label: s.label })),
 ];
 
 type ViewMode = 'pipeline' | 'list' | 'position';
@@ -566,12 +555,12 @@ export default function PipelinePage() {
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
-            <div className="flex lg:grid lg:grid-cols-5 gap-4 overflow-x-auto pb-4 -mx-6 px-6 lg:mx-0 lg:px-0 lg:overflow-visible snap-x snap-mandatory lg:snap-none scroll-smooth">
-              {stages.map((stage) => (
+            <div className="flex lg:grid lg:grid-cols-7 gap-4 overflow-x-auto pb-4 -mx-6 px-6 lg:mx-0 lg:px-0 lg:overflow-visible snap-x snap-mandatory lg:snap-none scroll-smooth">
+              {PIPELINE_STAGES.map((s) => (
                 <PipelineColumn
-                  key={stage}
-                  stage={stage}
-                  items={filteredByGradYear.filter((w) => w.pipeline_stage === stage)}
+                  key={s.id}
+                  stage={s.id}
+                  items={filteredByGradYear.filter((w) => w.pipeline_stage === s.id)}
                 />
               ))}
             </div>

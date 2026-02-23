@@ -111,12 +111,28 @@ export async function updateGoalProgress(
 ): Promise<void> {
   const supabase = await createClient();
 
-  // Fetch current plan
+  // SECURITY: Verify the authenticated user is the player who owns this plan
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { data: playerProfile } = await supabase
+    .from('baseball_players')
+    .select('id')
+    .eq('user_id', user.id)
+    .single();
+
+  if (!playerProfile) throw new Error('Player profile not found');
+
+  // Fetch current plan — include player_id for ownership check
   const { data: plan, error: fetchError } = await supabase
     .from('baseball_developmental_plans')
-    .select('goals')
+    .select('goals, player_id')
     .eq('id', planId)
     .single();
+
+  if (!fetchError && plan && plan.player_id !== playerProfile.id) {
+    throw new Error('You do not have permission to update this plan');
+  }
 
   if (fetchError) {
     console.error('Error fetching plan:', fetchError);
@@ -164,7 +180,7 @@ export async function updateGoalProgress(
 }
 
 /**
- * Mark a goal as complete
+ * Mark a goal as complete (coach-only operation)
  */
 export async function completeGoal(
   planId: string,
@@ -172,12 +188,28 @@ export async function completeGoal(
 ): Promise<void> {
   const supabase = await createClient();
 
-  // Fetch current plan
+  // SECURITY: Require authenticated coach for completing goals
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { data: coachProfile } = await supabase
+    .from('baseball_coaches')
+    .select('id')
+    .eq('user_id', user.id)
+    .single();
+
+  if (!coachProfile) throw new Error('Coach profile not found');
+
+  // Fetch current plan — include coach_id for ownership check
   const { data: plan, error: fetchError } = await supabase
     .from('baseball_developmental_plans')
-    .select('goals')
+    .select('goals, coach_id')
     .eq('id', planId)
     .single();
+
+  if (!fetchError && plan && plan.coach_id !== coachProfile.id) {
+    throw new Error('You do not have permission to modify this plan');
+  }
 
   if (fetchError) {
     console.error('Error fetching plan:', fetchError);
@@ -224,7 +256,7 @@ export async function completeGoal(
 }
 
 /**
- * Unmark a goal as complete (set back to in progress)
+ * Unmark a goal as complete — set back to in progress (coach-only operation)
  */
 export async function uncompleteGoal(
   planId: string,
@@ -232,12 +264,28 @@ export async function uncompleteGoal(
 ): Promise<void> {
   const supabase = await createClient();
 
-  // Fetch current plan
+  // SECURITY: Require authenticated coach for uncompleting goals
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
+  const { data: coachProfile } = await supabase
+    .from('baseball_coaches')
+    .select('id')
+    .eq('user_id', user.id)
+    .single();
+
+  if (!coachProfile) throw new Error('Coach profile not found');
+
+  // Fetch current plan — include coach_id for ownership check
   const { data: plan, error: fetchError } = await supabase
     .from('baseball_developmental_plans')
-    .select('goals')
+    .select('goals, coach_id')
     .eq('id', planId)
     .single();
+
+  if (!fetchError && plan && plan.coach_id !== coachProfile.id) {
+    throw new Error('You do not have permission to modify this plan');
+  }
 
   if (fetchError) {
     console.error('Error fetching plan:', fetchError);

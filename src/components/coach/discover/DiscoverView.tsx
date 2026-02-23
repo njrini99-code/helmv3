@@ -20,6 +20,7 @@ import {
   IconChevronLeft,
   IconChevronRight,
 } from '@/components/icons';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useDiscoverPreferences } from '@/hooks/use-local-storage';
 import {
   addToWatchlist,
@@ -593,11 +594,9 @@ export function DiscoverView({
               )}>
                 {/* Fetching indicator */}
                 {playersFetching && (
-                  <div className="flex items-center justify-center py-2 mb-4">
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-primary-50 text-primary-700 rounded-full text-sm font-medium">
-                      <div className="w-4 h-4 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />
-                      Updating results...
-                    </div>
+                  <div className="space-y-3 mb-4">
+                    <Skeleton className="h-5 w-1/3" />
+                    <Skeleton className="h-5 w-1/2" />
                   </div>
                 )}
                 <PlayerCardGrid
@@ -635,11 +634,9 @@ export function DiscoverView({
             )}>
               {/* Fetching indicator */}
               {teamsFetching && (
-                <div className="flex items-center justify-center py-2 mb-4">
-                  <div className="flex items-center gap-2 px-3 py-1.5 bg-primary-50 text-primary-700 rounded-full text-sm font-medium">
-                    <div className="w-4 h-4 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />
-                    Updating results...
-                  </div>
+                <div className="space-y-3 mb-4">
+                  <Skeleton className="h-5 w-1/3" />
+                  <Skeleton className="h-5 w-1/2" />
                 </div>
               )}
               <TeamCardGrid

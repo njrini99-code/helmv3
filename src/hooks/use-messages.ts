@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/stores/auth-store';
 import { sendMessage as sendMessageAction, markMessagesAsRead } from '@/app/baseball/actions/messages';
@@ -10,7 +10,8 @@ import type { ConversationWithMeta } from '@/lib/types/messages';
 export function useMessages(conversationId: string) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
 
   const fetchMessages = useCallback(async () => {
     if (!conversationId) {
@@ -31,7 +32,7 @@ export function useMessages(conversationId: string) {
 
     // Mark messages as read
     markMessagesAsRead(conversationId);
-  }, [conversationId, supabase]);
+  }, [conversationId]);
 
   useEffect(() => {
     fetchMessages();
@@ -56,7 +57,7 @@ export function useMessages(conversationId: string) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [conversationId, fetchMessages, supabase]);
+  }, [conversationId, fetchMessages]);
 
   const sendMessage = async (content: string) => {
     try {
@@ -75,7 +76,8 @@ export function useConversations() {
   const [conversations, setConversations] = useState<ConversationWithMeta[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuthStore();
-  const supabase = createClient();
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
 
   const fetchConversations = useCallback(async () => {
     if (!user) {
@@ -225,7 +227,7 @@ export function useConversations() {
 
     setConversations(transformedConversations as unknown as ConversationWithMeta[]);
     setLoading(false);
-  }, [user, supabase]);
+  }, [user]);
 
   useEffect(() => {
     fetchConversations();
@@ -252,7 +254,7 @@ export function useConversations() {
       };
     }
     return undefined;
-  }, [user, fetchConversations, supabase]);
+  }, [user, fetchConversations]);
 
   return { conversations, loading, refetch: fetchConversations };
 }

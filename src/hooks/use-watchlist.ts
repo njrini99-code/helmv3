@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/stores/auth-store';
 import { toast } from '@/components/ui/toast';
@@ -10,9 +10,8 @@ export function useWatchlist() {
   const [watchlist, setWatchlist] = useState<WatchlistWithPlayer[]>([]);
   const [loading, setLoading] = useState(true);
   const { coach } = useAuthStore();
-  // Memoize supabase client — without this, createClient() creates a new object each render,
-  // which ends up in useCallback deps and causes an infinite refetch loop.
-  const supabase = useMemo(() => createClient(), []);
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
 
   const fetchWatchlist = useCallback(async () => {
     if (!coach) {
@@ -47,7 +46,7 @@ export function useWatchlist() {
     } finally {
       setLoading(false);
     }
-  }, [coach, supabase]);
+  }, [coach]);
 
   useEffect(() => {
     fetchWatchlist();

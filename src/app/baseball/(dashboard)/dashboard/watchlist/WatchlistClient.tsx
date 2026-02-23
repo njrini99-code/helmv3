@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/header';
 import { Button } from '@/components/ui/button';
@@ -76,8 +76,8 @@ export function WatchlistClient() {
   const { showToast } = useToast();
   const { coach } = useAuth();
   const { watchlist, loading, refetch } = useWatchlist();
-  // Memoize so supabase is a stable reference in useCallback deps (prevents infinite refetch loops)
-  const supabase = useMemo(() => createClient(), []);
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');

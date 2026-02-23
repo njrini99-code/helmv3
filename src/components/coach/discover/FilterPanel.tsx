@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { useSavedSearches } from '@/hooks/use-dashboard';
 import type { Player } from '@/lib/types';
 import { IconUsers, IconBuilding, IconBookmark, IconTrash, IconChevronDown, IconChevronUp } from '@/components/icons';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const POSITIONS = ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'DH', 'UTIL'];
 const GRAD_YEARS = [2025, 2026, 2027, 2028, 2029];
@@ -619,9 +620,9 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
       </AnimatePresence>
 
       {isPending && (
-        <div className="mt-4 flex items-center justify-center gap-2 text-sm text-slate-500">
-          <div className="animate-spin h-4 w-4 border-2 border-slate-900 border-t-transparent rounded-full" />
-          <span>Updating...</span>
+        <div className="mt-4 space-y-2">
+          <Skeleton className="h-4 w-3/4" />
+          <Skeleton className="h-4 w-1/2" />
         </div>
       )}
     </div>

@@ -13,7 +13,8 @@ import {
   IconRuler,
   IconActivity,
   IconTarget,
-  IconGraduationCap
+  IconGraduationCap,
+  IconX,
 } from '@/components/icons';
 import { getFullName, formatHeight } from '@/lib/utils';
 import type { Player } from '@/lib/types';
@@ -76,7 +77,7 @@ export function PlayerPeekPanel({ playerId, onClose }: PlayerPeekPanelProps) {
       .from('baseball_coaches')
       .select('id')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     if (!coach) return;
 
@@ -86,7 +87,7 @@ export function PlayerPeekPanel({ playerId, onClose }: PlayerPeekPanelProps) {
       .select('id')
       .eq('coach_id', coach.id)
       .eq('player_id', id)
-      .single();
+      .maybeSingle();
 
     setIsInWatchlist(!!data);
   };
@@ -151,6 +152,17 @@ export function PlayerPeekPanel({ playerId, onClose }: PlayerPeekPanelProps) {
         </div>
       ) : player ? (
         <div className="p-6 space-y-6">
+          {/* Close button */}
+          <div className="flex justify-end -mb-2">
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 active:bg-slate-200 transition-colors"
+              aria-label="Close panel"
+            >
+              <IconX size={18} />
+            </button>
+          </div>
+
           {/* Header */}
           <div className="flex items-start gap-4">
             <Avatar
