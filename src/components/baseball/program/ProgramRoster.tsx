@@ -26,7 +26,20 @@ type RosterPlayer = Pick<
   | 'exit_velo'
   | 'city'
   | 'state'
+  | 'player_type'
 >;
+
+/**
+ * Roster visibility rules:
+ * - JUCO players: always visible (recruiting is free — no subscription gate)
+ * - HS / Showcase players: only visible when recruiting_activated = true (subscription)
+ * - College players: never shown (not recruitable)
+ */
+function isRosterVisible(player: Pick<RosterPlayer, 'player_type' | 'recruiting_activated'>): boolean {
+  if (player.player_type === 'juco') return true;
+  if (player.player_type === 'college') return false;
+  return player.recruiting_activated === true;
+}
 
 interface ProgramRosterProps {
   organizationId: string;
@@ -87,21 +100,20 @@ export function ProgramRoster({ organizationId, organizationType, coachType }: P
 
     const playerMap = new Map<string, RosterPlayer>();
 
-    // Method 1: For high school teams, query via high_school_org_id
+    // Method 1: For high school orgs, also query via high_school_org_id
     if (organizationType === 'high_school') {
       const { data: playersData, error } = await supabase
         .from('baseball_players')
-        .select('id, first_name, last_name, primary_position, grad_year, avatar_url, recruiting_activated, pitch_velo, exit_velo, city, state')
+        .select('id, first_name, last_name, primary_position, grad_year, avatar_url, recruiting_activated, pitch_velo, exit_velo, city, state, player_type')
         .eq('high_school_org_id', organizationId)
-        .eq('recruiting_activated', true);
+        .neq('player_type', 'college'); // never show college players
 
       if (error) {
         console.error('Error fetching players via high_school_org_id:', error);
       }
 
-      // Add players from direct high_school_org_id link
       (playersData || []).forEach((p) => {
-        if (!playerMap.has(p.id)) {
+        if (!playerMap.has(p.id) && isRosterVisible(p)) {
           playerMap.set(p.id, p as RosterPlayer);
         }
       });
@@ -120,7 +132,7 @@ export function ProgramRoster({ organizationId, organizationType, coachType }: P
         .from('baseball_team_members')
         .select(`
           player:baseball_players!baseball_team_members_player_id_fkey(
-            id, first_name, last_name, primary_position, grad_year, avatar_url, recruiting_activated, pitch_velo, exit_velo, city, state
+            id, first_name, last_name, primary_position, grad_year, avatar_url, recruiting_activated, pitch_velo, exit_velo, city, state, player_type
           )
         `)
         .in('team_id', teamIds);
@@ -130,10 +142,9 @@ export function ProgramRoster({ organizationId, organizationType, coachType }: P
       }
 
       if (teamMembers) {
-        // Extract unique players with recruiting activated
         teamMembers.forEach((tm) => {
           const player = tm.player as RosterPlayer | null;
-          if (player && player.id && player.recruiting_activated && !playerMap.has(player.id)) {
+          if (player && player.id && !playerMap.has(player.id) && isRosterVisible(player)) {
             playerMap.set(player.id, player);
           }
         });
@@ -172,16 +183,19 @@ export function ProgramRoster({ organizationId, organizationType, coachType }: P
   }
 
   if (players.length === 0) {
+    const isJuco = organizationType === 'juco';
     return (
       <Card className="p-8 text-center">
         <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center">
           <IconUsers size={28} className="text-slate-400" />
         </div>
         <h3 className="text-lg font-semibold text-slate-900 mb-2">
-          No recruiting-active players
+          {isJuco ? 'No players on roster' : 'No recruiting-active players'}
         </h3>
         <p className="text-sm text-slate-500 max-w-sm mx-auto">
-          Players on this team haven&apos;t activated their recruiting profiles yet.
+          {isJuco
+            ? 'This JUCO program has no players on their roster yet.'
+            : 'Players on this team haven\'t activated their recruiting profiles yet.'}
         </p>
       </Card>
     );
@@ -205,7 +219,8 @@ export function ProgramRoster({ organizationId, organizationType, coachType }: P
       <div className="flex items-center gap-2 text-sm text-slate-600">
         <IconSparkles size={16} className="text-primary-500" />
         <span>
-          <span className="font-semibold text-primary-600">{players.length}</span> recruiting-active players
+          <span className="font-semibold text-primary-600">{players.length}</span>{' '}
+          {organizationType === 'juco' ? 'players on roster' : 'recruiting-active players'}
         </span>
       </div>
 
@@ -233,9 +248,11 @@ export function ProgramRoster({ organizationId, organizationType, coachType }: P
                       <p className="font-semibold text-slate-900 truncate">
                         {player.first_name} {player.last_name}
                       </p>
-                      <Badge variant="success" className="text-micro">
-                        Active
-                      </Badge>
+                      {player.player_type === 'juco' ? (
+                        <Badge variant="secondary" className="text-micro">JUCO</Badge>
+                      ) : (
+                        <Badge variant="success" className="text-micro">Recruiting</Badge>
+                      )}
                     </div>
                     <p className="text-sm text-slate-500">
                       {player.primary_position || 'Position TBD'} • {player.city}, {player.state}

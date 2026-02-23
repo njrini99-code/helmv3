@@ -79,48 +79,83 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
     notFound();
   }
 
-  // Default settings (tables don't exist yet)
   const showDescription = true;
 
-  // Empty arrays for features not yet implemented
-  // These will be populated when organization_staff, organization_facilities,
-  // and program_commitments tables are created
-  type OrganizationStaff = {
+  // Fetch real coaching staff via baseball_team_coach_staff → baseball_coaches
+  type CoachStaffMember = {
     id: string;
     name: string;
     title: string;
     bio: string | null;
     headshot_url: string | null;
     email: string | null;
-    phone: string | null;
-    display_order: number;
-    is_public: boolean;
+    is_primary: boolean;
   };
+
+  const staff: CoachStaffMember[] = [];
+
+  // Get teams for this org, then fetch coach staff
+  const { data: orgTeams } = await supabase
+    .from('baseball_teams')
+    .select('id, name')
+    .eq('organization_id', id);
+
+  if (orgTeams && orgTeams.length > 0) {
+    const teamIds = orgTeams.map((t) => t.id);
+    const { data: staffRows } = await supabase
+      .from('baseball_team_coach_staff')
+      .select(`
+        is_primary,
+        role,
+        baseball_coaches!inner(
+          id,
+          first_name,
+          last_name,
+          email,
+          bio,
+          avatar_url
+        )
+      `)
+      .in('team_id', teamIds);
+
+    if (staffRows) {
+      const seen = new Set<string>();
+      // Sort: primary coaches first
+      const sorted = [...staffRows].sort((a, b) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0));
+      sorted.forEach((row) => {
+        const c = row.baseball_coaches as unknown as {
+          id: string;
+          first_name: string | null;
+          last_name: string | null;
+          email: string | null;
+          bio: string | null;
+          avatar_url: string | null;
+        } | null;
+        if (!c || seen.has(c.id)) return;
+        seen.add(c.id);
+        staff.push({
+          id: c.id,
+          name: `${c.first_name ?? ''} ${c.last_name ?? ''}`.trim() || 'Coach',
+          title: row.is_primary ? 'Head Coach' : (row.role ?? 'Assistant Coach'),
+          bio: c.bio,
+          headshot_url: c.avatar_url,
+          email: c.email,
+          is_primary: row.is_primary ?? false,
+        });
+      });
+    }
+  }
 
   type OrganizationFacility = {
-    id: string;
-    name: string;
-    facility_type: string | null;
-    description: string | null;
-    capacity: number | null;
-    image_url: string | null;
-    display_order: number;
+    id: string; name: string; facility_type: string | null;
+    description: string | null; capacity: number | null;
+    image_url: string | null; display_order: number;
   };
-
   type ProgramCommitment = {
-    id: string;
-    player_name: string;
-    position: string;
-    grad_year: number;
-    high_school: string;
-    city: string;
-    state: string;
-    commitment_date: string;
-    is_signed: boolean;
-    is_public?: boolean;
+    id: string; player_name: string; position: string; grad_year: number;
+    high_school: string; city: string; state: string;
+    commitment_date: string; is_signed: boolean;
   };
-
-  const staff: OrganizationStaff[] = [];
   const facilities: OrganizationFacility[] = [];
   const commitments: ProgramCommitment[] = [];
 
@@ -212,7 +247,7 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
                       </div>
                       <div className="p-6 bg-slate-50">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {staff.map((member: OrganizationStaff) => (
+                          {staff.map((member: CoachStaffMember) => (
                             <div
                               key={member.id}
                               className="bg-white rounded-lg border border-slate-200 p-4"
@@ -261,7 +296,7 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
                       </div>
                       <div className="p-6 bg-slate-50">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {facilities.map((facility: OrganizationFacility) => (
+                          {facilities.map((facility) => (
                             <div
                               key={facility.id}
                               className="bg-white rounded-lg border border-slate-200 overflow-hidden"
@@ -315,7 +350,7 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
                       </div>
                       <div className="p-6 bg-white">
                         <div className="divide-y divide-slate-200">
-                          {commitments.slice(0, 10).map((commit: ProgramCommitment) => (
+                          {commitments.slice(0, 10).map((commit) => (
                             <div key={commit.id} className="py-3 first:pt-0 last:pb-0">
                               <div className="flex items-center justify-between">
                                 <div>
