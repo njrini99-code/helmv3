@@ -769,6 +769,24 @@ export function PlayerProfileClient({
         {activeTab === 'stats' && (
           <div className="space-y-5">
 
+            {/* Season stats banner — links to box score stats page */}
+            <Link
+              href={`/baseball/dashboard/players/${player.id}/stats`}
+              className="flex items-center justify-between bg-primary-50 border border-primary-100 rounded-2xl px-5 py-3.5 hover:bg-primary-100 transition-colors group"
+            >
+              <div>
+                <p className="text-xs font-semibold text-primary-700 uppercase tracking-wide mb-0.5">
+                  Season Stats (Box Score)
+                </p>
+                <p className="text-xs text-primary-600">
+                  AVG · OBP · SLG · OPS · ERA · WHIP · game log
+                </p>
+              </div>
+              <span className="text-primary-600 text-sm font-medium group-hover:translate-x-1 transition-transform">
+                View →
+              </span>
+            </Link>
+
             {/* Filter toggle */}
             <div className="flex items-center gap-2">
               <div className="flex bg-white/70 backdrop-blur-sm border border-white/30 rounded-xl p-1 gap-1 shadow-sm">
