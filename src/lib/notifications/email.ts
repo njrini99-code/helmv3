@@ -445,64 +445,63 @@ function generateEmailTemplate(
 
     // ── NEW MESSAGE ───────────────────────────────────────────────────────────
     case 'new_message': {
-      const preview = String(data.preview || '').slice(0, 200);
+      const preview    = String(data.preview || '').slice(0, 200);
       const senderName = String(data.senderName || 'Someone');
       const messageUrl = String(data.messageUrl || '#');
-
       return {
         subject: `New message from ${senderName}`,
         html: emailShell({
           previewText: `${senderName}: ${preview}`,
-          headerLabel: 'New Message',
-          headerIconKey: '💬',
+          headerLabel: 'Direct Message',
+          headerIconKey: 'message',
           iconKey: 'message',
           title: `Message from ${senderName}`,
           body: `
-            <p style="margin:0 0 8px;font-size:15px;color:${BRAND.muted};line-height:1.5;">
-              You have a new direct message from <strong style="color:${BRAND.dark};">${senderName}</strong>.
+            <p style="margin:0 0 4px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:${BRAND.muted};">
+              <strong style="color:${BRAND.dark};">${senderName}</strong> sent you a message.
             </p>
-            ${quoteBlock(preview + (preview.length >= 200 ? '…' : ''))}
+            ${quoteBlock(preview + (preview.length >= 200 ? '\u2026' : ''))}
+            <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;color:${BRAND.muted};line-height:1.5;">Reply directly in Helm to keep the conversation going.</p>
           `,
-          cta: { label: 'Reply in Helm', url: messageUrl },
+          cta: { label: 'Open Conversation', url: messageUrl },
           footerNote: 'You received this because someone sent you a message on Helm.',
         }),
-        text: `New message from ${senderName}: "${preview}". Reply at: ${messageUrl}`,
+        text: `New message from ${senderName}: "${preview}"\n\nReply at: ${messageUrl}`,
       };
     }
 
     // ── TEAM ANNOUNCEMENT ─────────────────────────────────────────────────────
     case 'team_announcement': {
-      const title = String(data.title || 'Team Announcement');
-      const content = String(data.content || '');
-      const coachName = String(data.coachName || 'Your Coach');
+      const title           = String(data.title || 'Team Announcement');
+      const content         = String(data.content || '');
+      const coachName       = String(data.coachName || 'Your Coach');
       const announcementUrl = String(data.announcementUrl || '#');
-      const urgency = String(data.urgency || 'normal');
-      const urg = URGENCY[urgency] ?? URGENCY['normal']!;
-      const preview = content.replace(/<[^>]*>/g, '').slice(0, 160);
-
+      const urgency         = String(data.urgency || 'normal');
+      const urg             = URGENCY[urgency] ?? URGENCY['normal']!;
+      const preview         = content.replace(/<[^>]*>/g, '').slice(0, 160);
       return {
-        subject: `📢 ${title}`,
+        subject: `Team Announcement: ${title}`,
         html: emailShell({
           previewText: `${coachName}: ${preview}`,
           headerLabel: 'Team Announcement',
-          headerIconKey: '📢',
+          headerIconKey: 'announcement',
           iconKey: 'announcement',
           title,
           body: `
-            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
               <tr>
                 <td>
-                  <span style="font-size:14px;color:${BRAND.muted};">From&nbsp;</span>
-                  <span style="font-size:14px;font-weight:600;color:${BRAND.dark};">${coachName}</span>
+                  <span style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;color:${BRAND.muted};">From&nbsp;&nbsp;</span>
+                  <span style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;color:${BRAND.dark};">${coachName}</span>
                   <span style="margin-left:10px;">${badge(urg.label, urg.color, urg.bg)}</span>
                 </td>
               </tr>
             </table>
-            <div style="background:${BRAND.white};border:1px solid ${BRAND.border};border-radius:8px;padding:20px 24px;margin-bottom:8px;">
-              <p style="margin:0;font-size:15px;line-height:1.7;color:${BRAND.dark};">${content}</p>
+            <div style="background:${BRAND.white};border:1px solid ${BRAND.border};border-radius:10px;padding:20px 22px;">
+              <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.75;color:${BRAND.darkMid};">${content}</p>
             </div>
           `,
-          cta: { label: 'View Announcement', url: announcementUrl },
+          cta: { label: 'View Full Announcement', url: announcementUrl },
         }),
         text: `Team Announcement from ${coachName}: ${title}\n\n${preview}\n\nView at: ${announcementUrl}`,
       };
@@ -511,30 +510,27 @@ function generateEmailTemplate(
     // ── QUALIFIER CREATED ─────────────────────────────────────────────────────
     case 'qualifier_created': {
       const qualifierName = String(data.qualifierName || 'New Qualifier');
-      const startDate = String(data.startDate || '');
-      const numRounds = String(data.numRounds || '');
-      const qualifierUrl = String(data.qualifierUrl || '#');
-
+      const startDate     = String(data.startDate || '');
+      const numRounds     = String(data.numRounds || '');
+      const qualifierUrl  = String(data.qualifierUrl || '#');
       return {
-        subject: `⛳ New Qualifier: ${qualifierName}`,
+        subject: `New Qualifier: ${qualifierName}`,
         html: emailShell({
-          previewText: `A new qualifier has been posted — ${qualifierName}`,
+          previewText: `A new qualifier has been posted \u2014 ${qualifierName}`,
           headerLabel: 'Qualifier',
-          headerIconKey: '⛳',
+          headerIconKey: 'flag',
           iconKey: 'flag',
           title: qualifierName,
           body: `
-            <p style="margin:0 0 16px;font-size:15px;color:${BRAND.muted};line-height:1.5;">
-              A new qualifier has been posted. Review the details and prepare your rounds.
-            </p>
+            <p style="margin:0 0 20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:${BRAND.muted};">A new qualifier has been posted. Review the details and prepare your rounds.</p>
             ${detailTable(
               detailRow('Start Date', startDate) +
-              detailRow('Number of Rounds', `${numRounds} round${Number(numRounds) !== 1 ? 's' : ''}`)
+              detailRow('Rounds', `${numRounds} round${Number(numRounds) !== 1 ? 's' : ''}`)
             )}
           `,
           cta: { label: 'View Qualifier', url: qualifierUrl },
         }),
-        text: `New qualifier: ${qualifierName}\nStart: ${startDate} · ${numRounds} rounds\n\nView at: ${qualifierUrl}`,
+        text: `New qualifier: ${qualifierName}\nStart: ${startDate} \u00b7 ${numRounds} rounds\n\nView at: ${qualifierUrl}`,
       };
     }
 
@@ -542,101 +538,91 @@ function generateEmailTemplate(
     case 'event_rsvp_reminder': {
       const eventName = String(data.eventName || 'Upcoming Event');
       const eventDate = String(data.eventDate || '');
-      const location  = String(data.location || '');
-      const eventUrl  = String(data.eventUrl || '#');
-
+      const location  = String(data.location  || '');
+      const eventUrl  = String(data.eventUrl  || '#');
       return {
-        subject: `📅 RSVP needed: ${eventName}`,
+        subject: `RSVP needed: ${eventName}`,
         html: emailShell({
-          previewText: `Please RSVP for ${eventName} — ${eventDate}`,
+          previewText: `Please confirm your attendance for ${eventName} \u2014 ${eventDate}`,
           headerLabel: 'RSVP Reminder',
-          headerIconKey: '📅',
+          headerIconKey: 'calendar',
           iconKey: 'calendar',
           title: `RSVP for ${eventName}`,
           body: `
-            <p style="margin:0 0 16px;font-size:15px;color:${BRAND.muted};line-height:1.5;">
-              Your coach needs a headcount. Please confirm your attendance.
-            </p>
+            <p style="margin:0 0 20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:${BRAND.muted};">Your coach is collecting RSVPs for this event. Please confirm whether you\u2019ll be attending.</p>
             ${detailTable(
               detailRow('Date', eventDate) +
               (location ? detailRow('Location', location) : '')
             )}
           `,
           cta: { label: 'RSVP Now', url: eventUrl },
-          footerNote: 'You received this because you are on a team that has an upcoming event.',
+          footerNote: 'You received this because you have an upcoming team event on Helm.',
         }),
-        text: `RSVP reminder for ${eventName}\nDate: ${eventDate}${location ? `\nLocation: ${location}` : ''}\n\nRSVP at: ${eventUrl}`,
+        text: `RSVP reminder: ${eventName}\nDate: ${eventDate}${location ? `\nLocation: ${location}` : ''}\n\nRSVP at: ${eventUrl}`,
       };
     }
 
-    // ── WATCHLIST ADD (Baseball) ───────────────────────────────────────────────
+    // ── WATCHLIST ADD ─────────────────────────────────────────────────────────
     case 'watchlist_add': {
-      const coachName  = String(data.coachName || 'A coach');
+      const coachName  = String(data.coachName  || 'A coach');
       const schoolName = String(data.schoolName || 'a school');
       const profileUrl = String(data.profileUrl || '#');
-
       return {
-        subject: `🎯 ${coachName} added you to their watchlist`,
+        subject: `${coachName} added you to their watchlist`,
         html: emailShell({
           previewText: `${coachName} from ${schoolName} is watching your profile`,
           headerLabel: 'Watchlist',
-          headerIconKey: '🎯',
+          headerIconKey: 'bookmark',
           iconKey: 'bookmark',
-          title: 'You\'re on a coach\'s watchlist',
+          title: "You're on a coach\u2019s watchlist",
           body: `
-            <p style="margin:0 0 16px;font-size:15px;color:${BRAND.muted};line-height:1.5;">
-              <strong style="color:${BRAND.dark};">${coachName}</strong> from
-              <strong style="color:${BRAND.dark};">${schoolName}</strong> added you to their recruiting watchlist.
-              This means they're actively tracking your progress.
+            <p style="margin:0 0 20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:${BRAND.muted};">
+              <strong style="color:${BRAND.dark};">${coachName}</strong> from <strong style="color:${BRAND.dark};">${schoolName}</strong> added you to their recruiting watchlist.
             </p>
-            <div style="background:${BRAND.greenLight};border:1px solid #BBF7D0;border-radius:8px;padding:16px 20px;margin:20px 0;">
-              <p style="margin:0;font-size:14px;color:#166534;line-height:1.5;">
-                <strong>What this means:</strong> Coaches watchlist players they're seriously considering. Keep your profile up to date and stay active.
-              </p>
+            <div style="background:${BRAND.greenXLight};border:1px solid ${BRAND.greenLight};border-radius:10px;padding:16px 20px;">
+              <p style="margin:0 0 6px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;color:${BRAND.green};">What this means</p>
+              <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.6;color:${BRAND.greenDeep};">Coaches watchlist players they\u2019re seriously considering. Keep your profile complete and stay active.</p>
             </div>
           `,
           cta: { label: 'View Your Profile', url: profileUrl },
-          footerNote: 'You received this because a coach viewed and saved your BaseballHelm profile.',
+          footerNote: 'You received this because a coach saved your BaseballHelm profile.',
         }),
-        text: `${coachName} from ${schoolName} added you to their watchlist. View your profile: ${profileUrl}`,
+        text: `${coachName} from ${schoolName} added you to their watchlist.\n\nView your profile: ${profileUrl}`,
       };
     }
 
-    // ── PIPELINE STAGE CHANGE (Baseball) ─────────────────────────────────────
+    // ── PIPELINE STAGE CHANGE ─────────────────────────────────────────────────
     case 'pipeline_stage_change': {
       const schoolName = String(data.schoolName || 'A school');
-      const newStage   = String(data.newStage || '');
+      const newStage   = String(data.newStage   || '');
       const journeyUrl = String(data.journeyUrl || '#');
-
-      const stageLabels: Record<string, { label: string; color: string; bg: string; desc: string }> = {
-        high_priority:    { label: 'High Priority',     color: '#B45309', bg: '#FEF3C7', desc: 'They\'ve moved you to high priority — this is a strong signal of serious interest.' },
-        offer_extended:   { label: 'Offer Extended 🎉', color: '#166534', bg: '#DCFCE7', desc: 'Congratulations — a formal offer has been extended to you.' },
-        committed:        { label: 'Committed',         color: '#1D4ED8', bg: '#EFF6FF', desc: 'You\'re committed. A big step forward in your journey.' },
-        uninterested:     { label: 'Not Proceeding',    color: '#78716C', bg: '#F5F4F0', desc: 'The program has decided not to proceed at this time.' },
-        watchlist:        { label: 'Watchlist',         color: '#6D28D9', bg: '#EDE9FE', desc: 'You\'ve been added to their watchlist for continued monitoring.' },
+      const stageLabels: Record<string, { label: string; color: string; bg: string; border: string; desc: string }> = {
+        high_priority:  { label: 'High Priority',  color: '#92400E', bg: '#FFFBEB', border: '#FDE68A', desc: "They've moved you to high priority \u2014 a strong signal of serious interest." },
+        offer_extended: { label: 'Offer Extended', color: BRAND.greenDeep, bg: BRAND.greenXLight, border: BRAND.greenLight, desc: 'Congratulations \u2014 a formal offer has been extended to you.' },
+        committed:      { label: 'Committed',      color: '#1E3A8A', bg: '#EFF6FF', border: '#BFDBFE', desc: "You're committed. A significant milestone in your journey." },
+        uninterested:   { label: 'Not Proceeding', color: BRAND.warm600, bg: BRAND.subtle, border: BRAND.border, desc: 'The program has decided not to proceed at this time.' },
+        watchlist:      { label: 'Watchlist',      color: '#5B21B6', bg: '#F5F3FF', border: '#DDD6FE', desc: "You've been added to their watchlist for continued monitoring." },
       };
-
-      const stage = stageLabels[newStage] ?? { label: newStage, color: BRAND.green, bg: BRAND.greenLight, desc: 'Your recruiting status has been updated.' };
-
+      const stage = stageLabels[newStage] ?? { label: newStage, color: BRAND.green, bg: BRAND.greenXLight, border: BRAND.greenLight, desc: 'Your recruiting status has been updated.' };
       return {
         subject: `Update from ${schoolName}: ${stage.label}`,
         html: emailShell({
-          previewText: `${schoolName} updated your recruiting status to ${stage.label}`,
+          previewText: `${schoolName} updated your recruiting status`,
           headerLabel: 'Recruiting Update',
-          headerIconKey: '🏫',
+          headerIconKey: 'chart',
           iconKey: 'chart',
           title: `Status update from ${schoolName}`,
           body: `
-            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
               <tr>
                 <td>
-                  <span style="font-size:14px;color:${BRAND.muted};">New status&nbsp;&nbsp;</span>
+                  <span style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;color:${BRAND.muted};">New status&nbsp;&nbsp;</span>
                   ${badge(stage.label, stage.color, stage.bg)}
                 </td>
               </tr>
             </table>
-            <div style="background:${BRAND.white};border:1px solid ${BRAND.border};border-radius:8px;padding:16px 20px;margin-bottom:8px;">
-              <p style="margin:0;font-size:15px;line-height:1.6;color:${BRAND.dark};">${stage.desc}</p>
+            <div style="background:${stage.bg};border:1px solid ${stage.border};border-radius:10px;padding:16px 20px;">
+              <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:${stage.color};">${stage.desc}</p>
             </div>
           `,
           cta: { label: 'View Your Journey', url: journeyUrl },
@@ -646,34 +632,31 @@ function generateEmailTemplate(
       };
     }
 
-    // ── PROFILE VIEW (Baseball) ───────────────────────────────────────────────
+    // ── PROFILE VIEW ──────────────────────────────────────────────────────────
     case 'profile_view': {
       const viewerInfo = String(data.viewerInfo || 'A coach');
       const profileUrl = String(data.profileUrl || '#');
-
       return {
-        subject: `👀 ${viewerInfo} viewed your profile`,
+        subject: `${viewerInfo} viewed your profile`,
         html: emailShell({
           previewText: `${viewerInfo} just checked out your BaseballHelm profile`,
           headerLabel: 'Profile View',
-          headerIconKey: '👀',
+          headerIconKey: 'eye',
           iconKey: 'eye',
           title: 'Your profile was viewed',
           body: `
-            <p style="margin:0 0 16px;font-size:15px;color:${BRAND.muted};line-height:1.5;">
-              <strong style="color:${BRAND.dark};">${viewerInfo}</strong> just viewed your profile.
-              This is a signal of interest — make sure your profile is complete and up to date.
+            <p style="margin:0 0 20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:${BRAND.muted};">
+              <strong style="color:${BRAND.dark};">${viewerInfo}</strong> viewed your recruiting profile. This is a signal of interest \u2014 make sure your profile is complete.
             </p>
-            <div style="background:${BRAND.white};border:1px solid ${BRAND.border};border-radius:8px;padding:16px 20px;margin-bottom:8px;">
-              <p style="margin:0;font-size:14px;line-height:1.6;color:${BRAND.muted};">
-                💡 <strong style="color:${BRAND.dark};">Tip:</strong> Profiles with a highlight video get 3× more coach messages. Add yours now.
-              </p>
+            <div style="background:${BRAND.white};border:1px solid ${BRAND.border};border-radius:10px;padding:16px 20px;">
+              <p style="margin:0 0 4px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;color:${BRAND.green};">Pro tip</p>
+              <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.6;color:${BRAND.muted};">Profiles with a highlight video get significantly more coach messages. Add yours to stand out.</p>
             </div>
           `,
           cta: { label: 'Update Your Profile', url: profileUrl },
           footerNote: 'You received this because a coach viewed your BaseballHelm profile.',
         }),
-        text: `${viewerInfo} viewed your profile. Review and update it at: ${profileUrl}`,
+        text: `${viewerInfo} viewed your profile.\n\nUpdate it at: ${profileUrl}`,
       };
     }
 
@@ -684,16 +667,17 @@ function generateEmailTemplate(
         html: emailShell({
           previewText: 'You have a new notification from Helm Sports',
           headerLabel: 'Notification',
-          headerIconKey: '🔔',
+          headerIconKey: 'bell',
           iconKey: 'bell',
           title: 'You have a new notification',
-          body: `<p style="margin:0;font-size:15px;color:${BRAND.muted};line-height:1.5;">Log in to Helm to see the latest updates from your team.</p>`,
+          body: `<p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:${BRAND.muted};">Log in to Helm to see the latest updates from your team.</p>`,
           cta: { label: 'Open Helm', url: process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com' },
         }),
         text: 'You have a new notification from Helm Sports. Log in to see updates.',
       };
   }
 }
+
 
 /**
  * Send an email notification
