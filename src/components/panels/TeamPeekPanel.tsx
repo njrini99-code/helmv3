@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { cn } from '@/lib/utils';
 import { PeekPanelRoot } from './PeekPanelRoot';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -15,185 +16,199 @@ import {
   IconChevronRight,
   IconMail,
   IconBuilding,
+  IconUser,
 } from '@/components/icons';
-import type { Organization, Player } from '@/lib/types';
+import type { Organization } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 
-interface TeamWithDetails extends Organization {
-  players?: TeamPlayer[];
-  player_count?: number;
-  recruiting_active_count?: number;
+// ─── Types ─────────────────────────────────────────────────────────────────────
+
+interface CoachStaff {
+  id: string;
+  name: string;
+  title: string;
+  avatarUrl: string | null;
+  email: string | null;
+  isPrimary: boolean;
 }
 
-type TeamPlayer = Pick<
-  Player,
-  | 'id'
-  | 'first_name'
-  | 'last_name'
-  | 'primary_position'
-  | 'grad_year'
-  | 'avatar_url'
-  | 'recruiting_activated'
-  | 'pitch_velo'
-  | 'exit_velo'
->;
+interface RosterPlayer {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+  primaryPosition: string | null;
+  gradYear: number | null;
+  avatarUrl: string | null;
+  pitchVelo: number | null;
+  exitVelo: number | null;
+  recruitingActivated: boolean;
+  playerType: string | null;
+}
+
+interface TeamWithDetails extends Organization {
+  playerCount: number;
+  recruitingActiveCount: number;
+}
 
 interface TeamPeekPanelProps {
   teamId: string | null;
   onClose: () => void;
 }
 
+// ─── Visibility rule ───────────────────────────────────────────────────────────
+// JUCO: always visible (free). HS/showcase: only if recruiting_activated. College: never.
+function isRosterVisible(player: Pick<RosterPlayer, 'playerType' | 'recruitingActivated'>): boolean {
+  if (player.playerType === 'juco') return true;
+  if (player.playerType === 'college') return false;
+  return player.recruitingActivated === true;
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
+type TabId = 'details' | 'roster';
+
 const TYPE_LABELS: Record<string, string> = {
   high_school: 'High School',
   showcase: 'Showcase',
   travel_ball: 'Travel Ball',
-  college: 'College',
   juco: 'JUCO',
-};
-
-const TYPE_BADGE_VARIANTS: Record<string, 'primary' | 'success' | 'secondary' | 'warning'> = {
-  high_school: 'primary',
-  showcase: 'secondary',
-  travel_ball: 'warning',
-  college: 'success',
-  juco: 'success',
 };
 
 export function TeamPeekPanel({ teamId, onClose }: TeamPeekPanelProps) {
   const router = useRouter();
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
+
+  const [tab, setTab] = useState<TabId>('details');
   const [team, setTeam] = useState<TeamWithDetails | null>(null);
-  const [topPlayers, setTopPlayers] = useState<TeamPlayer[]>([]);
+  const [staff, setStaff] = useState<CoachStaff[]>([]);
+  const [roster, setRoster] = useState<RosterPlayer[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (teamId) {
-      fetchTeam(teamId);
+      setTab('details');
+      fetchAll(teamId);
     } else {
       setTeam(null);
-      setTopPlayers([]);
+      setStaff([]);
+      setRoster([]);
     }
-  }, [teamId]);
+  }, [teamId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const fetchTeam = async (id: string) => {
+  const fetchAll = async (id: string) => {
     setLoading(true);
-    const supabase = createClient();
+    try {
+      // Step 1: org data
+      const { data: orgData, error: orgError } = await supabase
+        .from('organizations')
+        .select('*')
+        .eq('id', id)
+        .single();
 
-    // Fetch organization details
-    const { data: orgData, error: orgError } = await supabase
-      .from('organizations')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (orgError) {
-      console.error('Error fetching team:', orgError);
-      toast.error('Failed to load team details');
-      setLoading(false);
-      return;
-    }
-
-    // Use a Map to deduplicate players from multiple sources
-    const playerMap = new Map<string, TeamPlayer>();
-
-    // Method 1: For high school teams, query via high_school_org_id
-    if (orgData.type === 'high_school') {
-      const { data: playersData, error: playersError } = await supabase
-        .from('baseball_players')
-        .select('id, first_name, last_name, primary_position, grad_year, avatar_url, recruiting_activated, pitch_velo, exit_velo')
-        .eq('high_school_org_id', id);
-
-      if (playersError) {
-        console.error('Error fetching players via high_school_org_id:', playersError);
+      if (orgError || !orgData) {
+        toast.error('Failed to load team profile');
+        setLoading(false);
+        return;
       }
 
-      // Add players from direct high_school_org_id link
-      (playersData || []).forEach((p) => {
-        if (!playerMap.has(p.id)) {
-          playerMap.set(p.id, p as TeamPlayer);
-        }
-      });
-    }
+      // Step 2: teams for this org
+      const { data: orgTeams } = await supabase
+        .from('baseball_teams')
+        .select('id')
+        .eq('organization_id', id);
 
-    // Method 2: Query via team_members → teams → organizations (for ALL org types)
-    // First get teams for this organization
-    const { data: teamsData } = await supabase
-      .from('baseball_teams')
-      .select('id')
-      .eq('organization_id', id);
+      const teamIds = orgTeams?.map((t) => t.id) ?? [];
 
-    if (teamsData && teamsData.length > 0) {
-      const teamIds = teamsData.map((t) => t.id);
+      // Step 3: coaching staff + roster in parallel
+      const [staffResult, rosterResult] = await Promise.all([
+        teamIds.length > 0
+          ? supabase
+              .from('baseball_team_coach_staff')
+              .select('is_primary, role, baseball_coaches!inner(id, first_name, last_name, email, avatar_url)')
+              .in('team_id', teamIds)
+          : Promise.resolve({ data: null }),
+        teamIds.length > 0
+          ? supabase
+              .from('baseball_team_members')
+              .select('player:baseball_players!baseball_team_members_player_id_fkey(id, first_name, last_name, primary_position, grad_year, avatar_url, recruiting_activated, pitch_velo, exit_velo, player_type)')
+              .in('team_id', teamIds)
+          : Promise.resolve({ data: null }),
+      ]);
 
-      // Get team members with player data
-      const { data: teamMembers, error: tmError } = await supabase
-        .from('baseball_team_members')
-        .select(`
-          player:baseball_players!baseball_team_members_player_id_fkey(
-            id, first_name, last_name, primary_position, grad_year, avatar_url, recruiting_activated, pitch_velo, exit_velo
-          )
-        `)
-        .in('team_id', teamIds);
-
-      if (tmError) {
-        console.error('Error fetching team members:', tmError);
-      }
-
-      if (teamMembers) {
-        // Add players from team_members (deduplicates automatically via Map)
-        teamMembers.forEach((tm) => {
-          const player = tm.player as TeamPlayer | null;
-          if (player && player.id && !playerMap.has(player.id)) {
-            playerMap.set(player.id, player);
-          }
+      // Process coaching staff — deduplicate across teams
+      const seenCoaches = new Set<string>();
+      const staffList: CoachStaff[] = [];
+      const rawStaff = (staffResult.data ?? []) as Array<{
+        is_primary: boolean;
+        role: string | null;
+        baseball_coaches: unknown;
+      }>;
+      const sortedStaff = [...rawStaff].sort((a, b) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0));
+      sortedStaff.forEach((row) => {
+        const c = row.baseball_coaches as { id: string; first_name: string | null; last_name: string | null; email: string | null; avatar_url: string | null } | null;
+        if (!c || seenCoaches.has(c.id)) return;
+        seenCoaches.add(c.id);
+        staffList.push({
+          id: c.id,
+          name: `${c.first_name ?? ''} ${c.last_name ?? ''}`.trim() || 'Coach',
+          title: row.is_primary ? 'Head Coach' : (row.role ?? 'Assistant Coach'),
+          avatarUrl: c.avatar_url,
+          email: c.email,
+          isPrimary: row.is_primary ?? false,
         });
-      }
+      });
+
+      // Process roster — deduplicate + apply visibility rules
+      const seenPlayers = new Set<string>();
+      const rosterList: RosterPlayer[] = [];
+      const rawMembers = (rosterResult.data ?? []) as Array<{ player: unknown }>;
+      rawMembers.forEach((tm) => {
+        const p = tm.player as {
+          id: string;
+          first_name: string | null;
+          last_name: string | null;
+          primary_position: string | null;
+          grad_year: number | null;
+          avatar_url: string | null;
+          pitch_velo: number | null;
+          exit_velo: number | null;
+          recruiting_activated: boolean;
+          player_type: string | null;
+        } | null;
+        if (!p || seenPlayers.has(p.id)) return;
+        const player: RosterPlayer = {
+          id: p.id,
+          firstName: p.first_name,
+          lastName: p.last_name,
+          primaryPosition: p.primary_position,
+          gradYear: p.grad_year,
+          avatarUrl: p.avatar_url,
+          pitchVelo: p.pitch_velo,
+          exitVelo: p.exit_velo,
+          recruitingActivated: p.recruiting_activated ?? false,
+          playerType: p.player_type,
+        };
+        if (!isRosterVisible(player)) return;
+        seenPlayers.add(p.id);
+        rosterList.push(player);
+      });
+      rosterList.sort((a, b) => (a.gradYear ?? 9999) - (b.gradYear ?? 9999));
+
+      setTeam({
+        ...orgData,
+        playerCount: rosterList.length,
+        recruitingActiveCount: rosterList.filter((p) => p.recruitingActivated).length,
+      });
+      setStaff(staffList);
+      setRoster(rosterList);
+    } catch (err) {
+      console.error('Error fetching team profile:', err);
+      toast.error('Failed to load team profile');
+    } finally {
+      setLoading(false);
     }
-
-    // Convert to array, sort by pitch_velo, and limit
-    let allPlayers = Array.from(playerMap.values());
-    allPlayers.sort((a, b) => (b.pitch_velo || 0) - (a.pitch_velo || 0));
-    allPlayers = allPlayers.slice(0, 20);
-
-    const recruitingActive = allPlayers.filter(p => p.recruiting_activated);
-
-    setTeam({
-      ...orgData,
-      player_count: allPlayers.length,
-      recruiting_active_count: recruitingActive.length,
-    });
-
-    // Get top players (recruiting active with best stats)
-    const topProspects = recruitingActive.slice(0, 5);
-    setTopPlayers(topProspects);
-
-    setLoading(false);
-  };
-
-  const handleViewProfile = () => {
-    if (team) {
-      router.push(`/baseball/program/${team.id}`);
-      onClose();
-    }
-  };
-
-  const handleViewRoster = () => {
-    if (team) {
-      router.push(`/baseball/program/${team.id}/roster`);
-      onClose();
-    }
-  };
-
-  const handleContactCoach = () => {
-    if (team) {
-      router.push(`/baseball/dashboard/messages/new?team=${team.id}`);
-      onClose();
-    }
-  };
-
-  const handleViewPlayer = (playerId: string) => {
-    router.push(`/baseball/player/${playerId}`);
-    onClose();
   };
 
   if (!teamId) return null;
@@ -201,199 +216,323 @@ export function TeamPeekPanel({ teamId, onClose }: TeamPeekPanelProps) {
   return (
     <PeekPanelRoot isOpen={!!teamId} onClose={onClose} width="lg">
       {loading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin h-8 w-8 border-2 border-primary-600 border-t-transparent rounded-full" />
-        </div>
+        <TeamPeekSkeleton />
       ) : team ? (
-        <div className="p-6 space-y-6">
-          {/* Header */}
-          <div className="flex items-start gap-4">
-            {/* Team Logo */}
-            <div
-              className="flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden border border-slate-200 bg-slate-50 flex items-center justify-center"
-              style={{
-                backgroundColor: team.primary_color ? `${team.primary_color}15` : undefined,
-                borderColor: team.primary_color ? `${team.primary_color}30` : undefined,
-              }}
-            >
-              {team.logo_url ? (
-                <Image
-                  src={team.logo_url}
-                  alt={team.name || 'Team'}
-                  width={64}
-                  height={64}
-                  className="object-contain"
-                />
-              ) : (
-                <IconBuilding
-                  size={28}
-                  className="text-slate-400"
-                  style={{ color: team.primary_color || undefined }}
-                />
-              )}
-            </div>
-
-            <div className="flex-1">
-              <h2 className="text-xl font-semibold text-slate-900">
-                {team.name || 'Unknown Team'}
-              </h2>
-              <div className="flex items-center gap-1.5 mt-1 text-sm text-slate-500">
-                <IconMapPin size={14} />
-                <span>
-                  {team.location_city}, {team.location_state}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 mt-2">
-                <Badge variant={TYPE_BADGE_VARIANTS[team.type || 'high_school'] || 'secondary'}>
-                  {TYPE_LABELS[team.type || 'high_school']}
-                </Badge>
-                {team.division && (
-                  <Badge variant="secondary">{team.division}</Badge>
+        <div className="flex flex-col h-full">
+          {/* ── Header ────────────────────────────────────────────────── */}
+          <div className="px-6 pt-6 pb-4 border-b border-slate-100 flex-shrink-0">
+            <div className="flex items-start gap-4">
+              {/* Logo */}
+              <div
+                className="flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden border border-slate-200 bg-slate-50 flex items-center justify-center"
+                style={{
+                  backgroundColor: team.primary_color ? `${team.primary_color}15` : undefined,
+                  borderColor: team.primary_color ? `${team.primary_color}30` : undefined,
+                }}
+              >
+                {team.logo_url ? (
+                  <Image src={team.logo_url} alt={team.name || 'Team'} width={64} height={64} className="object-contain" />
+                ) : (
+                  <IconBuilding size={28} className="text-slate-400" style={{ color: team.primary_color || undefined }} />
                 )}
               </div>
+
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg font-semibold text-slate-900 leading-tight truncate">
+                  {team.name || 'Unknown Team'}
+                </h2>
+                <div className="flex items-center gap-1.5 mt-1 text-sm text-slate-500">
+                  <IconMapPin size={13} className="flex-shrink-0" />
+                  <span className="truncate">{team.location_city}, {team.location_state}</span>
+                </div>
+                <div className="flex items-center gap-2 mt-2 flex-wrap">
+                  <Badge variant="primary">{TYPE_LABELS[team.type ?? 'high_school'] ?? team.type}</Badge>
+                  {team.division && <Badge variant="secondary">{team.division}</Badge>}
+                </div>
+              </div>
+            </div>
+
+            {/* Quick stats */}
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <div className="flex items-center gap-2 bg-slate-50 rounded-xl px-3 py-2">
+                <IconUsers size={15} className="text-slate-400 flex-shrink-0" />
+                <div>
+                  <p className="text-xs text-slate-500">Roster</p>
+                  <p className="text-sm font-semibold text-slate-900">{team.playerCount}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 bg-primary-50 rounded-xl px-3 py-2">
+                <IconSparkles size={15} className="text-primary-500 flex-shrink-0" />
+                <div>
+                  <p className="text-xs text-slate-500">Recruiting</p>
+                  <p className="text-sm font-semibold text-primary-600">{team.recruitingActiveCount}</p>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 gap-3">
-            <StatCard
-              icon={<IconUsers size={18} className="text-slate-500" />}
-              label="Total Players"
-              value={team.player_count?.toString() || '0'}
-            />
-            <StatCard
-              icon={<IconSparkles size={18} className="text-primary-500" />}
-              label="Recruiting Active"
-              value={team.recruiting_active_count?.toString() || '0'}
-              highlight
-            />
+          {/* ── Tabs ──────────────────────────────────────────────────── */}
+          <div className="flex gap-1 px-6 pt-4 pb-0 flex-shrink-0">
+            {(['details', 'roster'] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={cn(
+                  'flex-1 py-2 text-sm font-medium rounded-lg transition-all capitalize',
+                  tab === t
+                    ? 'bg-slate-900 text-white shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+                )}
+              >
+                {t === 'details' ? 'Details' : `Roster (${roster.length})`}
+              </button>
+            ))}
           </div>
 
-          {/* About */}
-          {team.description && (
-            <div>
-              <h3 className="text-sm font-semibold text-slate-900 mb-2">About</h3>
-              <p className="text-sm leading-relaxed text-slate-600 line-clamp-4">
-                {team.description}
-              </p>
-            </div>
-          )}
+          {/* ── Tab Content ───────────────────────────────────────────── */}
+          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-5">
+            {tab === 'details' && (
+              <DetailsTab team={team} staff={staff} />
+            )}
+            {tab === 'roster' && (
+              <RosterTab
+                roster={roster}
+                orgType={team.type}
+                onPlayerClick={(playerId) => {
+                  router.push(`/baseball/player/${playerId}`);
+                  onClose();
+                }}
+              />
+            )}
+          </div>
 
-          {/* Top Prospects */}
-          {topPlayers.length > 0 && (
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-slate-900">
-                  Top Prospects
-                </h3>
-                <button
-                  onClick={handleViewRoster}
-                  className="text-xs font-medium text-primary-600 hover:text-primary-700 transition-colors"
-                >
-                  View all →
-                </button>
-              </div>
-              <div className="space-y-2">
-                {topPlayers.map((player) => (
-                  <button
-                    key={player.id}
-                    onClick={() => handleViewPlayer(player.id)}
-                    className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 active:bg-slate-100 transition-colors text-left"
-                  >
-                    <Avatar
-                      name={`${player.first_name} ${player.last_name}`}
-                      src={player.avatar_url}
-                      size="sm"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-900 truncate">
-                        {(player.first_name || 'Unknown')} {player.last_name || ''}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        {player.primary_position || '—'} • Class of {player.grad_year || '—'}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs">
-                      {player.pitch_velo && (
-                        <span className="text-slate-600">
-                          {player.pitch_velo} mph
-                        </span>
-                      )}
-                      <IconChevronRight size={14} className="text-slate-400" />
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Empty state for no prospects */}
-          {topPlayers.length === 0 && (
-            <div className="text-center py-6 bg-slate-50 rounded-xl">
-              <IconUsers size={24} className="mx-auto text-slate-400 mb-2" />
-              <p className="text-sm text-slate-500">
-                No recruiting-active players yet
-              </p>
-            </div>
-          )}
-
-          {/* Action Buttons */}
-          <div className="flex flex-col gap-3 pt-4 border-t border-slate-200">
+          {/* ── Footer Actions ────────────────────────────────────────── */}
+          <div className="px-6 py-4 border-t border-slate-100 flex-shrink-0 space-y-2">
             <Button
               variant="primary"
-              onClick={handleViewRoster}
               className="w-full"
+              onClick={() => {
+                router.push(`/baseball/program/${team.id}`);
+                onClose();
+              }}
             >
-              <IconUsers size={16} className="mr-2" />
-              View Full Roster
-              <IconChevronRight size={14} className="ml-auto" />
+              <IconExternalLink size={15} className="mr-2" />
+              Full Program Profile
             </Button>
-            <div className="grid grid-cols-2 gap-3">
-              <Button
-                variant="secondary"
-                onClick={handleViewProfile}
-              >
-                <IconExternalLink size={16} className="mr-2" />
-                Program Profile
-              </Button>
-              <Button
-                variant="secondary"
-                onClick={handleContactCoach}
-              >
-                <IconMail size={16} className="mr-2" />
-                Contact Coach
-              </Button>
-            </div>
+            <Button
+              variant="secondary"
+              className="w-full"
+              onClick={() => {
+                router.push(`/baseball/dashboard/messages/new?team=${team.id}`);
+                onClose();
+              }}
+            >
+              <IconMail size={15} className="mr-2" />
+              Contact Coach
+            </Button>
           </div>
         </div>
       ) : (
-        <div className="flex items-center justify-center h-64">
-          <p className="text-slate-500">Team not found</p>
+        <div className="flex items-center justify-center h-64 text-slate-500 text-sm">
+          Team not found
         </div>
       )}
     </PeekPanelRoot>
   );
 }
 
-function StatCard({
-  icon,
-  label,
-  value,
-  highlight,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  highlight?: boolean;
-}) {
+// ─── Details Tab ──────────────────────────────────────────────────────────────
+
+function DetailsTab({ team, staff }: { team: TeamWithDetails; staff: CoachStaff[] }) {
   return (
-    <div className={`flex items-center gap-3 px-4 py-3 rounded-xl ${highlight ? 'bg-primary-50' : 'bg-slate-50'}`}>
-      <div className="flex-shrink-0">{icon}</div>
-      <div className="flex-1">
-        <p className="text-xs text-slate-500">{label}</p>
-        <p className={`text-lg font-semibold ${highlight ? 'text-primary-600' : 'text-slate-900'}`}>
-          {value}
+    <>
+      {/* Description */}
+      {team.description && (
+        <div>
+          <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">About</h3>
+          <p className="text-sm leading-relaxed text-slate-600">{team.description}</p>
+        </div>
+      )}
+
+      {/* Coaching Staff */}
+      <div>
+        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Coaching Staff</h3>
+        {staff.length === 0 ? (
+          <div className="flex items-center gap-3 py-4 text-sm text-slate-400">
+            <IconUser size={18} className="text-slate-300" />
+            <span>No coaching staff listed</span>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {staff.map((coach) => (
+              <div
+                key={coach.id}
+                className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100"
+              >
+                <Avatar name={coach.name} src={coach.avatarUrl} size="sm" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-900 truncate">{coach.name}</p>
+                  <p className="text-xs text-slate-500">{coach.title}</p>
+                </div>
+                {coach.isPrimary && (
+                  <span className="flex-shrink-0 text-xs font-medium text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full border border-primary-100">
+                    Head
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Quick facts */}
+      {(team.conference || team.website_url) && (
+        <div>
+          <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Program Info</h3>
+          <div className="space-y-2 text-sm">
+            {team.conference && (
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500">Conference</span>
+                <span className="font-medium text-slate-900">{team.conference}</span>
+              </div>
+            )}
+            {team.website_url && (
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500">Website</span>
+                <a
+                  href={team.website_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-primary-600 hover:underline truncate max-w-[160px]"
+                >
+                  Visit →
+                </a>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+// ─── Roster Tab ───────────────────────────────────────────────────────────────
+
+function RosterTab({
+  roster,
+  orgType,
+  onPlayerClick,
+}: {
+  roster: RosterPlayer[];
+  orgType: string | null | undefined;
+  onPlayerClick: (id: string) => void;
+}) {
+  if (roster.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center mb-3">
+          <IconUsers size={22} className="text-slate-400" />
+        </div>
+        <p className="text-sm font-medium text-slate-600">
+          {orgType === 'juco' ? 'No players on roster yet' : 'No recruiting-active players yet'}
         </p>
+        {orgType !== 'juco' && (
+          <p className="text-xs text-slate-400 mt-1 max-w-[220px]">
+            Players appear here when they activate their recruiting profile
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  // Group by grad year
+  const byYear = roster.reduce<Record<string, RosterPlayer[]>>((acc, p) => {
+    const year = p.gradYear?.toString() ?? 'Unknown';
+    (acc[year] ??= []).push(p);
+    return acc;
+  }, {});
+  const years = Object.keys(byYear).sort((a, b) => Number(a) - Number(b));
+
+  return (
+    <div className="space-y-5">
+      {years.map((year) => (
+        <div key={year}>
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">
+            Class of {year}
+          </p>
+          <div className="space-y-1.5">
+            {(byYear[year] ?? []).map((player) => (
+              <button
+                key={player.id}
+                onClick={() => onPlayerClick(player.id)}
+                className="w-full flex items-center gap-3 p-3 rounded-xl bg-slate-50 hover:bg-white hover:shadow-md hover:border-primary-100 border border-transparent transition-all text-left group"
+              >
+                <Avatar
+                  name={`${player.firstName ?? ''} ${player.lastName ?? ''}`}
+                  src={player.avatarUrl}
+                  size="sm"
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-900 truncate">
+                    {player.firstName} {player.lastName}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    {player.primaryPosition ?? '—'}
+                    {player.pitchVelo ? ` · ${player.pitchVelo} mph` : ''}
+                    {player.exitVelo ? ` · ${player.exitVelo} exit` : ''}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {player.playerType === 'juco' ? (
+                    <span className="text-xs text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded font-medium">JUCO</span>
+                  ) : (
+                    <span className="text-xs text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded font-medium">Active</span>
+                  )}
+                  <IconChevronRight size={14} className="text-slate-300 group-hover:text-primary-400 transition-colors" />
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
+
+function TeamPeekSkeleton() {
+  return (
+    <div className="p-6 space-y-5 animate-pulse">
+      {/* Header */}
+      <div className="flex items-start gap-4">
+        <div className="w-16 h-16 rounded-xl bg-slate-200 flex-shrink-0" />
+        <div className="flex-1 space-y-2">
+          <div className="h-5 bg-slate-200 rounded w-3/4" />
+          <div className="h-3 bg-slate-100 rounded w-1/2" />
+          <div className="h-5 bg-slate-100 rounded w-20" />
+        </div>
+      </div>
+      {/* Stats */}
+      <div className="grid grid-cols-2 gap-2">
+        <div className="h-12 bg-slate-100 rounded-xl" />
+        <div className="h-12 bg-slate-100 rounded-xl" />
+      </div>
+      {/* Tabs */}
+      <div className="h-9 bg-slate-100 rounded-lg" />
+      {/* Content */}
+      <div className="space-y-2">
+        <div className="h-4 bg-slate-100 rounded w-1/4" />
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50">
+            <div className="w-8 h-8 rounded-full bg-slate-200" />
+            <div className="flex-1 space-y-1.5">
+              <div className="h-3 bg-slate-200 rounded w-1/2" />
+              <div className="h-2.5 bg-slate-100 rounded w-1/3" />
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

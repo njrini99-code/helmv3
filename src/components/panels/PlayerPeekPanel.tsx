@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useEffect, useTransition, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { PeekPanelRoot } from './PeekPanelRoot';
 import { Avatar } from '@/components/ui/avatar';
@@ -28,6 +28,9 @@ interface PlayerPeekPanelProps {
 
 export function PlayerPeekPanel({ playerId, onClose }: PlayerPeekPanelProps) {
   const router = useRouter();
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
+
   const [player, setPlayer] = useState<Player | null>(null);
   const [loading, setLoading] = useState(false);
   const [isInWatchlist, setIsInWatchlist] = useState(false);
@@ -40,11 +43,10 @@ export function PlayerPeekPanel({ playerId, onClose }: PlayerPeekPanelProps) {
     } else {
       setPlayer(null);
     }
-  }, [playerId]);
+  }, [playerId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchPlayer = async (id: string) => {
     setLoading(true);
-    const supabase = createClient();
 
     const { data, error } = await supabase
       .from('baseball_players')
@@ -66,8 +68,6 @@ export function PlayerPeekPanel({ playerId, onClose }: PlayerPeekPanelProps) {
   };
 
   const checkWatchlistStatus = async (id: string) => {
-    const supabase = createClient();
-    
     // Get current coach
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -127,8 +127,27 @@ export function PlayerPeekPanel({ playerId, onClose }: PlayerPeekPanelProps) {
   return (
     <PeekPanelRoot isOpen={!!playerId} onClose={onClose} width="lg">
       {loading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin h-8 w-8 border-2 border-primary-600 border-t-transparent rounded-full" />
+        <div className="p-6 space-y-5 animate-pulse">
+          <div className="flex items-start gap-4">
+            <div className="w-16 h-16 rounded-full bg-slate-200 flex-shrink-0" />
+            <div className="flex-1 space-y-2">
+              <div className="h-5 bg-slate-200 rounded w-2/3" />
+              <div className="h-3 bg-slate-100 rounded w-1/2" />
+              <div className="flex gap-2">
+                <div className="h-5 bg-slate-100 rounded w-16" />
+                <div className="h-5 bg-slate-100 rounded w-20" />
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {[1,2,3,4].map((i) => <div key={i} className="h-14 bg-slate-100 rounded-lg" />)}
+          </div>
+          <div className="space-y-2">
+            <div className="h-3 bg-slate-100 rounded w-1/4" />
+            <div className="h-3 bg-slate-100 rounded w-full" />
+            <div className="h-3 bg-slate-100 rounded w-5/6" />
+          </div>
+          <div className="h-10 bg-slate-200 rounded-lg" />
         </div>
       ) : player ? (
         <div className="p-6 space-y-6">
@@ -240,10 +259,7 @@ export function PlayerPeekPanel({ playerId, onClose }: PlayerPeekPanelProps) {
               className="w-full"
             >
               {isPending ? (
-                <>
-                  <div className="animate-spin h-4 w-4 border-2 border-primary-600 border-t-transparent rounded-full mr-2" />
-                  Updating...
-                </>
+                <>Updating...</>
               ) : isInWatchlist ? (
                 <>
                   <IconStarFilled size={16} className="mr-2 text-primary-600" />

@@ -17,7 +17,7 @@ export function ProgramTabs({ overviewContent, rosterContent, coachType: _coachT
   const [activeTab, setActiveTab] = useState<TabType>('overview');
 
   const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
-    { id: 'overview', label: 'Overview', icon: <IconBuilding size={16} /> },
+    { id: 'overview', label: 'Details', icon: <IconBuilding size={16} /> },
     { id: 'roster', label: 'Roster', icon: <IconUsers size={16} /> },
   ];
 
