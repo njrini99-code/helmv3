@@ -60,6 +60,45 @@ interface DiscoverTeamsResult {
 }
 
 /**
+ * Get all player IDs who are assigned to a discoverable team (HS / showcase / JUCO org).
+ * Players with no team assignment are not surfaced in Discover — basic business rule.
+ * Returns null only on DB error (caller should treat as "no filter" fallback).
+ */
+async function getDiscoverableTeamPlayerIds(
+  supabase: Awaited<ReturnType<typeof createClient>>
+): Promise<string[] | null> {
+  // Step 1: discoverable org IDs
+  const { data: orgs, error: orgErr } = await supabase
+    .from('organizations')
+    .select('id')
+    .in('type', ['high_school', 'showcase', 'juco']);
+
+  if (orgErr || !orgs?.length) return [];
+
+  const orgIds = orgs.map((o) => o.id);
+
+  // Step 2: teams belonging to those orgs
+  const { data: teams, error: teamErr } = await supabase
+    .from('baseball_teams')
+    .select('id')
+    .in('organization_id', orgIds);
+
+  if (teamErr || !teams?.length) return [];
+
+  const teamIds = teams.map((t) => t.id);
+
+  // Step 3: members of those teams → unique player IDs
+  const { data: members, error: memberErr } = await supabase
+    .from('baseball_team_members')
+    .select('player_id')
+    .in('team_id', teamIds);
+
+  if (memberErr) return null;
+
+  return [...new Set((members ?? []).map((m) => m.player_id).filter(Boolean))];
+}
+
+/**
  * Get player IDs on the coach's own team (to exclude from discover - they see them in roster)
  */
 async function getCoachRosterPlayerIds(
@@ -112,8 +151,16 @@ export async function getDiscoverPlayers(
   const page = filters.page || 1;
   const offset = (page - 1) * perPage;
 
-  // Get coach's roster player IDs to exclude (single query)
-  const coachRosterIds = await getCoachRosterPlayerIds(supabase, filters.coachId);
+  // Run pre-queries in parallel: coach's own roster to exclude + all discoverable team player IDs
+  const [coachRosterIds, discoverablePlayerIds] = await Promise.all([
+    getCoachRosterPlayerIds(supabase, filters.coachId),
+    getDiscoverableTeamPlayerIds(supabase),
+  ]);
+
+  // If no players are on any discoverable team, return early
+  if (discoverablePlayerIds !== null && discoverablePlayerIds.length === 0) {
+    return { players: [], count: 0, pages: 0 };
+  }
 
   // Build optimized query with DB-level filtering and pagination
   let query = supabase
@@ -145,6 +192,11 @@ export async function getDiscoverPlayers(
     )
     .eq('recruiting_activated', true)
     .neq('player_type', 'college'); // Exclude college players from discover
+
+  // CORE RULE: only players assigned to a discoverable team (HS/showcase/JUCO)
+  if (discoverablePlayerIds && discoverablePlayerIds.length > 0) {
+    query = query.in('id', discoverablePlayerIds);
+  }
 
   // Apply filters at DB level
   if (filters.gradYear) {
@@ -491,16 +543,28 @@ export async function getStateCounts(
   const supabase = await createClient();
 
   if (mode === 'players') {
-    // Get coach's roster to exclude
-    const coachRosterIds = await getCoachRosterPlayerIds(supabase, coachId);
+    // Run pre-queries in parallel
+    const [coachRosterIds, discoverablePlayerIds] = await Promise.all([
+      getCoachRosterPlayerIds(supabase, coachId),
+      getDiscoverableTeamPlayerIds(supabase),
+    ]);
 
-    // Query players with recruiting activated, excluding college players
-    const { data } = await supabase
+    if (discoverablePlayerIds !== null && discoverablePlayerIds.length === 0) {
+      return {};
+    }
+
+    let stateQuery = supabase
       .from('baseball_players')
       .select('id, state')
       .eq('recruiting_activated', true)
       .neq('player_type', 'college')
       .not('state', 'is', null);
+
+    if (discoverablePlayerIds && discoverablePlayerIds.length > 0) {
+      stateQuery = stateQuery.in('id', discoverablePlayerIds);
+    }
+
+    const { data } = await stateQuery;
 
     const counts: Record<string, number> = {};
     data?.forEach((p) => {
