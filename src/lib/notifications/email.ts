@@ -172,136 +172,439 @@ function shouldSendEmail(
   }
 }
 
+// ============================================================================
+// PREMIUM EMAIL TEMPLATE SYSTEM
+// ============================================================================
+
+const BRAND = {
+  green:      '#16A34A',
+  greenDark:  '#15803D',
+  greenLight: '#DCFCE7',
+  dark:       '#1C1917',
+  cream:      '#FFFEFA',
+  warmGray:   '#78716C',
+  border:     '#E7E5E0',
+  textPrimary:'#1C1917',
+  textMuted:  '#78716C',
+  white:      '#FFFFFF',
+};
+
 /**
- * Generate email template based on notification type
+ * Shared layout shell — dark header, cream body, clean footer.
+ * All templates render inside this shell.
+ */
+function emailShell(opts: {
+  previewText: string;
+  headerLabel: string;
+  headerIcon: string;
+  title: string;
+  body: string;
+  cta: { label: string; url: string };
+  footerNote?: string;
+}): string {
+  const { previewText, headerLabel, headerIcon, title, body, cta, footerNote } = opts;
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light" />
+  <title>${title}</title>
+  <!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->
+  <style>
+    @media only screen and (max-width: 600px) {
+      .email-container { width: 100% !important; }
+      .email-body { padding: 24px 20px !important; }
+      .email-header { padding: 24px 20px !important; }
+      .cta-button { display: block !important; text-align: center !important; }
+    }
+  </style>
+</head>
+<body style="margin:0;padding:0;background-color:#F5F4F0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+
+  <!-- Preview text (hidden) -->
+  <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">${previewText}&nbsp;&#8203;&nbsp;&#65279;&nbsp;&#65279;&nbsp;&#65279;&nbsp;&#65279;</div>
+
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#F5F4F0;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table class="email-container" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
+
+          <!-- ── HEADER ── -->
+          <tr>
+            <td class="email-header" style="background-color:${BRAND.dark};border-radius:12px 12px 0 0;padding:28px 40px;">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td>
+                    <!-- Wordmark -->
+                    <a href="${baseUrl}" style="text-decoration:none;">
+                      <span style="font-size:20px;font-weight:700;letter-spacing:-0.5px;color:${BRAND.white};">Helm</span><span style="font-size:20px;font-weight:700;letter-spacing:-0.5px;color:${BRAND.green};">.</span>
+                    </a>
+                  </td>
+                  <td align="right">
+                    <span style="display:inline-block;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:500;color:rgba(255,255,255,0.7);letter-spacing:0.3px;">
+                      ${headerIcon}&nbsp; ${headerLabel}
+                    </span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- ── BODY ── -->
+          <tr>
+            <td class="email-body" style="background-color:${BRAND.cream};padding:40px 40px 32px;border-left:1px solid ${BRAND.border};border-right:1px solid ${BRAND.border};">
+
+              <!-- Title -->
+              <h1 style="margin:0 0 16px;font-size:24px;font-weight:700;line-height:1.25;letter-spacing:-0.5px;color:${BRAND.textPrimary};">${title}</h1>
+
+              <!-- Dynamic body content -->
+              ${body}
+
+              <!-- CTA button -->
+              <table cellpadding="0" cellspacing="0" border="0" style="margin-top:32px;">
+                <tr>
+                  <td>
+                    <a href="${cta.url}" class="cta-button"
+                       style="display:inline-block;padding:14px 28px;background-color:${BRAND.green};color:${BRAND.white};text-decoration:none;font-size:15px;font-weight:600;border-radius:8px;letter-spacing:-0.1px;line-height:1;">
+                      ${cta.label} &rarr;
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+
+          <!-- ── FOOTER ── -->
+          <tr>
+            <td style="background-color:${BRAND.white};border:1px solid ${BRAND.border};border-top:none;border-radius:0 0 12px 12px;padding:20px 40px;">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td>
+                    <p style="margin:0;font-size:12px;color:${BRAND.textMuted};line-height:1.5;">
+                      ${footerNote ?? 'You\'re receiving this because you\'re part of a Helm Sports team.'}
+                      &nbsp;·&nbsp;
+                      <a href="${baseUrl}/golf/dashboard/settings" style="color:${BRAND.textMuted};text-decoration:underline;">Manage notifications</a>
+                    </p>
+                  </td>
+                  <td align="right" style="white-space:nowrap;">
+                    <p style="margin:0;font-size:12px;color:${BRAND.textMuted};">
+                      <a href="${baseUrl}" style="color:${BRAND.textMuted};text-decoration:none;font-weight:500;">helmsportslabs.com</a>
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+/** Renders a key-value detail row used in several templates */
+function detailRow(label: string, value: string): string {
+  return `
+    <tr>
+      <td style="padding:10px 16px;border-bottom:1px solid ${BRAND.border};">
+        <span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:${BRAND.textMuted};">${label}</span>
+      </td>
+      <td style="padding:10px 16px;border-bottom:1px solid ${BRAND.border};text-align:right;">
+        <span style="font-size:14px;font-weight:500;color:${BRAND.textPrimary};">${value}</span>
+      </td>
+    </tr>`;
+}
+
+/** Wraps detail rows in a table */
+function detailTable(rows: string): string {
+  return `
+    <table width="100%" cellpadding="0" cellspacing="0" border="0"
+           style="border:1px solid ${BRAND.border};border-radius:8px;overflow:hidden;margin:20px 0;border-collapse:collapse;">
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+/** Quote block for message previews */
+function quoteBlock(text: string): string {
+  return `
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0;">
+      <tr>
+        <td style="border-left:3px solid ${BRAND.green};padding:12px 20px;background:${BRAND.greenLight};border-radius:0 8px 8px 0;">
+          <p style="margin:0;font-size:15px;line-height:1.6;color:${BRAND.textPrimary};font-style:italic;">"${text}"</p>
+        </td>
+      </tr>
+    </table>`;
+}
+
+/** Badge pill (for urgency, stage labels, etc.) */
+function badge(text: string, color: string, bg: string): string {
+  return `<span style="display:inline-block;padding:3px 10px;background:${bg};color:${color};border-radius:12px;font-size:12px;font-weight:600;letter-spacing:0.2px;">${text}</span>`;
+}
+
+// ── Urgency config ────────────────────────────────────────────────────────────
+const URGENCY: Record<string, { label: string; color: string; bg: string }> = {
+  low:    { label: 'Low Priority',    color: '#78716C', bg: '#F5F4F0' },
+  normal: { label: 'Normal',          color: '#1D4ED8', bg: '#EFF6FF' },
+  high:   { label: 'High Priority',   color: '#B45309', bg: '#FEF3C7' },
+  urgent: { label: 'Urgent',          color: '#DC2626', bg: '#FEF2F2' },
+};
+
+/**
+ * Generate premium email template based on notification type
  */
 function generateEmailTemplate(
   type: NotificationType,
   data: Record<string, unknown>
 ): EmailTemplate {
+
   switch (type) {
-    case 'new_message':
+
+    // ── NEW MESSAGE ───────────────────────────────────────────────────────────
+    case 'new_message': {
+      const preview = String(data.preview || '').slice(0, 200);
+      const senderName = String(data.senderName || 'Someone');
+      const messageUrl = String(data.messageUrl || '#');
+
       return {
-        subject: `New message from ${data.senderName}`,
-        html: `
-          <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #16A34A;">New Message</h2>
-            <p>You have a new message from <strong>${data.senderName}</strong>.</p>
-            <p style="padding: 16px; background: #f8fafc; border-radius: 8px; color: #475569;">
-              "${String(data.preview || '').slice(0, 200)}${String(data.preview || '').length > 200 ? '...' : ''}"
+        subject: `New message from ${senderName}`,
+        html: emailShell({
+          previewText: `${senderName}: ${preview}`,
+          headerLabel: 'New Message',
+          headerIcon: '💬',
+          title: `Message from ${senderName}`,
+          body: `
+            <p style="margin:0 0 8px;font-size:15px;color:${BRAND.textMuted};line-height:1.5;">
+              You have a new direct message from <strong style="color:${BRAND.textPrimary};">${senderName}</strong>.
             </p>
-            <a href="${data.messageUrl}" style="display: inline-block; padding: 12px 24px; background: #16A34A; color: white; text-decoration: none; border-radius: 8px; margin-top: 16px;">
-              View Message
-            </a>
-          </div>
-        `,
-        text: `New message from ${data.senderName}: "${data.preview}". View at: ${data.messageUrl}`,
+            ${quoteBlock(preview + (preview.length >= 200 ? '…' : ''))}
+          `,
+          cta: { label: 'Reply in Helm', url: messageUrl },
+          footerNote: 'You received this because someone sent you a message on Helm.',
+        }),
+        text: `New message from ${senderName}: "${preview}". Reply at: ${messageUrl}`,
       };
+    }
 
-    case 'watchlist_add':
-      return {
-        subject: `${data.coachName} added you to their watchlist`,
-        html: `
-          <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #16A34A;">You're on a Watchlist!</h2>
-            <p><strong>${data.coachName}</strong> from <strong>${data.schoolName}</strong> added you to their recruiting watchlist.</p>
-            <p style="color: #475569;">This means they're interested in learning more about you.</p>
-            <a href="${data.profileUrl}" style="display: inline-block; padding: 12px 24px; background: #16A34A; color: white; text-decoration: none; border-radius: 8px; margin-top: 16px;">
-              View Your Profile
-            </a>
-          </div>
-        `,
-        text: `${data.coachName} from ${data.schoolName} added you to their watchlist. View your profile: ${data.profileUrl}`,
-      };
+    // ── TEAM ANNOUNCEMENT ─────────────────────────────────────────────────────
+    case 'team_announcement': {
+      const title = String(data.title || 'Team Announcement');
+      const content = String(data.content || '');
+      const coachName = String(data.coachName || 'Your Coach');
+      const announcementUrl = String(data.announcementUrl || '#');
+      const urgency = String(data.urgency || 'normal');
+      const urg = URGENCY[urgency] ?? URGENCY['normal']!;
+      const preview = content.replace(/<[^>]*>/g, '').slice(0, 160);
 
-    case 'pipeline_stage_change':
       return {
-        subject: `Your recruiting status updated with ${data.schoolName}`,
-        html: `
-          <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #16A34A;">Recruiting Status Update</h2>
-            <p>Your status with <strong>${data.schoolName}</strong> has been updated to: <strong>${data.newStage}</strong></p>
-            <a href="${data.journeyUrl}" style="display: inline-block; padding: 12px 24px; background: #16A34A; color: white; text-decoration: none; border-radius: 8px; margin-top: 16px;">
-              View Your Journey
-            </a>
-          </div>
-        `,
-        text: `Your recruiting status with ${data.schoolName} updated to ${data.newStage}. View your journey: ${data.journeyUrl}`,
-      };
-
-    case 'profile_view':
-      return {
-        subject: `${data.viewerInfo} viewed your profile`,
-        html: `
-          <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #16A34A;">Profile View</h2>
-            <p><strong>${data.viewerInfo}</strong> viewed your profile.</p>
-            <p style="color: #475569;">Make sure your profile is up to date to make a great impression.</p>
-            <a href="${data.profileUrl}" style="display: inline-block; padding: 12px 24px; background: #16A34A; color: white; text-decoration: none; border-radius: 8px; margin-top: 16px;">
-              Review Your Profile
-            </a>
-          </div>
-        `,
-        text: `${data.viewerInfo} viewed your profile. Review it at: ${data.profileUrl}`,
-      };
-
-    case 'team_announcement':
-      return {
-        subject: `Team Announcement: ${data.title}`,
-        html: `
-          <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #16A34A;">${data.title}</h2>
-            <p>From: <strong>${data.coachName}</strong></p>
-            <div style="padding: 16px; background: #f8fafc; border-radius: 8px; color: #475569;">
-              ${data.content}
+        subject: `📢 ${title}`,
+        html: emailShell({
+          previewText: `${coachName}: ${preview}`,
+          headerLabel: 'Team Announcement',
+          headerIcon: '📢',
+          title,
+          body: `
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
+              <tr>
+                <td>
+                  <span style="font-size:14px;color:${BRAND.textMuted};">From&nbsp;</span>
+                  <span style="font-size:14px;font-weight:600;color:${BRAND.textPrimary};">${coachName}</span>
+                  <span style="margin-left:10px;">${badge(urg.label, urg.color, urg.bg)}</span>
+                </td>
+              </tr>
+            </table>
+            <div style="background:${BRAND.white};border:1px solid ${BRAND.border};border-radius:8px;padding:20px 24px;margin-bottom:8px;">
+              <p style="margin:0;font-size:15px;line-height:1.7;color:${BRAND.textPrimary};">${content}</p>
             </div>
-            <a href="${data.announcementUrl}" style="display: inline-block; padding: 12px 24px; background: #16A34A; color: white; text-decoration: none; border-radius: 8px; margin-top: 16px;">
-              View Full Announcement
-            </a>
-          </div>
-        `,
-        text: `Team Announcement from ${data.coachName}: ${data.title}. ${data.content}`,
+          `,
+          cta: { label: 'View Announcement', url: announcementUrl },
+        }),
+        text: `Team Announcement from ${coachName}: ${title}\n\n${preview}\n\nView at: ${announcementUrl}`,
       };
+    }
 
-    case 'qualifier_created':
+    // ── QUALIFIER CREATED ─────────────────────────────────────────────────────
+    case 'qualifier_created': {
+      const qualifierName = String(data.qualifierName || 'New Qualifier');
+      const startDate = String(data.startDate || '');
+      const numRounds = String(data.numRounds || '');
+      const qualifierUrl = String(data.qualifierUrl || '#');
+
       return {
-        subject: `New Qualifier: ${data.qualifierName}`,
-        html: `
-          <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #16A34A;">New Qualifier Created</h2>
-            <p>A new qualifier has been created: <strong>${data.qualifierName}</strong></p>
-            <p>Start Date: ${data.startDate}</p>
-            <p>Rounds: ${data.numRounds}</p>
-            <a href="${data.qualifierUrl}" style="display: inline-block; padding: 12px 24px; background: #16A34A; color: white; text-decoration: none; border-radius: 8px; margin-top: 16px;">
-              View Qualifier
-            </a>
-          </div>
-        `,
-        text: `New qualifier: ${data.qualifierName} starting ${data.startDate}. View at: ${data.qualifierUrl}`,
+        subject: `⛳ New Qualifier: ${qualifierName}`,
+        html: emailShell({
+          previewText: `A new qualifier has been posted — ${qualifierName}`,
+          headerLabel: 'Qualifier',
+          headerIcon: '⛳',
+          title: qualifierName,
+          body: `
+            <p style="margin:0 0 16px;font-size:15px;color:${BRAND.textMuted};line-height:1.5;">
+              A new qualifier has been posted. Review the details and prepare your rounds.
+            </p>
+            ${detailTable(
+              detailRow('Start Date', startDate) +
+              detailRow('Number of Rounds', `${numRounds} round${Number(numRounds) !== 1 ? 's' : ''}`)
+            )}
+          `,
+          cta: { label: 'View Qualifier', url: qualifierUrl },
+        }),
+        text: `New qualifier: ${qualifierName}\nStart: ${startDate} · ${numRounds} rounds\n\nView at: ${qualifierUrl}`,
       };
+    }
 
-    case 'event_rsvp_reminder':
+    // ── EVENT RSVP REMINDER ───────────────────────────────────────────────────
+    case 'event_rsvp_reminder': {
+      const eventName = String(data.eventName || 'Upcoming Event');
+      const eventDate = String(data.eventDate || '');
+      const location  = String(data.location || '');
+      const eventUrl  = String(data.eventUrl || '#');
+
       return {
-        subject: `Reminder: RSVP for ${data.eventName}`,
-        html: `
-          <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #16A34A;">RSVP Reminder</h2>
-            <p>Don't forget to RSVP for: <strong>${data.eventName}</strong></p>
-            <p>Date: ${data.eventDate}</p>
-            <p>Location: ${data.location}</p>
-            <a href="${data.eventUrl}" style="display: inline-block; padding: 12px 24px; background: #16A34A; color: white; text-decoration: none; border-radius: 8px; margin-top: 16px;">
-              RSVP Now
-            </a>
-          </div>
-        `,
-        text: `Reminder to RSVP for ${data.eventName} on ${data.eventDate}. RSVP at: ${data.eventUrl}`,
+        subject: `📅 RSVP needed: ${eventName}`,
+        html: emailShell({
+          previewText: `Please RSVP for ${eventName} — ${eventDate}`,
+          headerLabel: 'RSVP Reminder',
+          headerIcon: '📅',
+          title: `RSVP for ${eventName}`,
+          body: `
+            <p style="margin:0 0 16px;font-size:15px;color:${BRAND.textMuted};line-height:1.5;">
+              Your coach needs a headcount. Please confirm your attendance.
+            </p>
+            ${detailTable(
+              detailRow('Date', eventDate) +
+              (location ? detailRow('Location', location) : '')
+            )}
+          `,
+          cta: { label: 'RSVP Now', url: eventUrl },
+          footerNote: 'You received this because you are on a team that has an upcoming event.',
+        }),
+        text: `RSVP reminder for ${eventName}\nDate: ${eventDate}${location ? `\nLocation: ${location}` : ''}\n\nRSVP at: ${eventUrl}`,
+      };
+    }
+
+    // ── WATCHLIST ADD (Baseball) ───────────────────────────────────────────────
+    case 'watchlist_add': {
+      const coachName  = String(data.coachName || 'A coach');
+      const schoolName = String(data.schoolName || 'a school');
+      const profileUrl = String(data.profileUrl || '#');
+
+      return {
+        subject: `🎯 ${coachName} added you to their watchlist`,
+        html: emailShell({
+          previewText: `${coachName} from ${schoolName} is watching your profile`,
+          headerLabel: 'Watchlist',
+          headerIcon: '🎯',
+          title: 'You\'re on a coach\'s watchlist',
+          body: `
+            <p style="margin:0 0 16px;font-size:15px;color:${BRAND.textMuted};line-height:1.5;">
+              <strong style="color:${BRAND.textPrimary};">${coachName}</strong> from
+              <strong style="color:${BRAND.textPrimary};">${schoolName}</strong> added you to their recruiting watchlist.
+              This means they're actively tracking your progress.
+            </p>
+            <div style="background:${BRAND.greenLight};border:1px solid #BBF7D0;border-radius:8px;padding:16px 20px;margin:20px 0;">
+              <p style="margin:0;font-size:14px;color:#166534;line-height:1.5;">
+                <strong>What this means:</strong> Coaches watchlist players they're seriously considering. Keep your profile up to date and stay active.
+              </p>
+            </div>
+          `,
+          cta: { label: 'View Your Profile', url: profileUrl },
+          footerNote: 'You received this because a coach viewed and saved your BaseballHelm profile.',
+        }),
+        text: `${coachName} from ${schoolName} added you to their watchlist. View your profile: ${profileUrl}`,
+      };
+    }
+
+    // ── PIPELINE STAGE CHANGE (Baseball) ─────────────────────────────────────
+    case 'pipeline_stage_change': {
+      const schoolName = String(data.schoolName || 'A school');
+      const newStage   = String(data.newStage || '');
+      const journeyUrl = String(data.journeyUrl || '#');
+
+      const stageLabels: Record<string, { label: string; color: string; bg: string; desc: string }> = {
+        high_priority:    { label: 'High Priority',     color: '#B45309', bg: '#FEF3C7', desc: 'They\'ve moved you to high priority — this is a strong signal of serious interest.' },
+        offer_extended:   { label: 'Offer Extended 🎉', color: '#166534', bg: '#DCFCE7', desc: 'Congratulations — a formal offer has been extended to you.' },
+        committed:        { label: 'Committed',         color: '#1D4ED8', bg: '#EFF6FF', desc: 'You\'re committed. A big step forward in your journey.' },
+        uninterested:     { label: 'Not Proceeding',    color: '#78716C', bg: '#F5F4F0', desc: 'The program has decided not to proceed at this time.' },
+        watchlist:        { label: 'Watchlist',         color: '#6D28D9', bg: '#EDE9FE', desc: 'You\'ve been added to their watchlist for continued monitoring.' },
       };
 
+      const stage = stageLabels[newStage] ?? { label: newStage, color: BRAND.green, bg: BRAND.greenLight, desc: 'Your recruiting status has been updated.' };
+
+      return {
+        subject: `Update from ${schoolName}: ${stage.label}`,
+        html: emailShell({
+          previewText: `${schoolName} updated your recruiting status to ${stage.label}`,
+          headerLabel: 'Recruiting Update',
+          headerIcon: '🏫',
+          title: `Status update from ${schoolName}`,
+          body: `
+            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
+              <tr>
+                <td>
+                  <span style="font-size:14px;color:${BRAND.textMuted};">New status&nbsp;&nbsp;</span>
+                  ${badge(stage.label, stage.color, stage.bg)}
+                </td>
+              </tr>
+            </table>
+            <div style="background:${BRAND.white};border:1px solid ${BRAND.border};border-radius:8px;padding:16px 20px;margin-bottom:8px;">
+              <p style="margin:0;font-size:15px;line-height:1.6;color:${BRAND.textPrimary};">${stage.desc}</p>
+            </div>
+          `,
+          cta: { label: 'View Your Journey', url: journeyUrl },
+          footerNote: 'You received this because a coach updated your status on BaseballHelm.',
+        }),
+        text: `${schoolName} updated your recruiting status to: ${stage.label}.\n${stage.desc}\n\nView your journey: ${journeyUrl}`,
+      };
+    }
+
+    // ── PROFILE VIEW (Baseball) ───────────────────────────────────────────────
+    case 'profile_view': {
+      const viewerInfo = String(data.viewerInfo || 'A coach');
+      const profileUrl = String(data.profileUrl || '#');
+
+      return {
+        subject: `👀 ${viewerInfo} viewed your profile`,
+        html: emailShell({
+          previewText: `${viewerInfo} just checked out your BaseballHelm profile`,
+          headerLabel: 'Profile View',
+          headerIcon: '👀',
+          title: 'Your profile was viewed',
+          body: `
+            <p style="margin:0 0 16px;font-size:15px;color:${BRAND.textMuted};line-height:1.5;">
+              <strong style="color:${BRAND.textPrimary};">${viewerInfo}</strong> just viewed your profile.
+              This is a signal of interest — make sure your profile is complete and up to date.
+            </p>
+            <div style="background:${BRAND.white};border:1px solid ${BRAND.border};border-radius:8px;padding:16px 20px;margin-bottom:8px;">
+              <p style="margin:0;font-size:14px;line-height:1.6;color:${BRAND.textMuted};">
+                💡 <strong style="color:${BRAND.textPrimary};">Tip:</strong> Profiles with a highlight video get 3× more coach messages. Add yours now.
+              </p>
+            </div>
+          `,
+          cta: { label: 'Update Your Profile', url: profileUrl },
+          footerNote: 'You received this because a coach viewed your BaseballHelm profile.',
+        }),
+        text: `${viewerInfo} viewed your profile. Review and update it at: ${profileUrl}`,
+      };
+    }
+
+    // ── DEFAULT ───────────────────────────────────────────────────────────────
     default:
       return {
-        subject: 'Notification from Helm',
-        html: `<p>You have a new notification.</p>`,
-        text: 'You have a new notification from Helm.',
+        subject: 'New notification from Helm',
+        html: emailShell({
+          previewText: 'You have a new notification from Helm Sports',
+          headerLabel: 'Notification',
+          headerIcon: '🔔',
+          title: 'You have a new notification',
+          body: `<p style="margin:0;font-size:15px;color:${BRAND.textMuted};line-height:1.5;">Log in to Helm to see the latest updates from your team.</p>`,
+          cta: { label: 'Open Helm', url: process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com' },
+        }),
+        text: 'You have a new notification from Helm Sports. Log in to see updates.',
       };
   }
 }
