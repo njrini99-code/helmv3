@@ -11,6 +11,7 @@ import {
   sanitizeHtml
 } from '@/lib/validation/server-action-validator';
 import { MessageSchemas } from '@/lib/validation/action-schemas';
+import { notifyNewMessage } from '@/lib/notifications';
 
 type Sport = 'baseball' | 'golf';
 
@@ -372,7 +373,61 @@ export async function markBaseballMessagesAsRead(conversationId: string) {
 
 // Golf-specific exports (maintain existing function signatures)
 export async function sendGolfMessage(conversationId: string, content: string) {
-  return sendMessage({ conversationId, content, sport: 'golf', createNotifications: false });
+  const result = await sendMessage({ conversationId, content, sport: 'golf', createNotifications: false });
+
+  if (result.success) {
+    // Send email notifications to other participants (fire-and-forget)
+    try {
+      const supabase = await createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+        // Get other participants' user IDs
+        const { data: otherParticipants } = await (supabase as any)
+          .from('golf_conversation_participants')
+          .select('user_id')
+          .eq('conversation_id', conversationId)
+          .neq('user_id', user.id) as { data: { user_id: string }[] | null };
+
+        if (otherParticipants && otherParticipants.length > 0) {
+          // Get sender name (try coach profile first, then player)
+          const [{ data: senderCoach }, { data: senderPlayer }] = await Promise.all([
+            supabase.from('golf_coaches').select('full_name').eq('user_id', user.id).maybeSingle(),
+            supabase.from('golf_players').select('first_name, last_name').eq('user_id', user.id).maybeSingle(),
+          ]);
+          const { data: senderUser } = await supabase.from('users').select('email').eq('id', user.id).single();
+
+          const senderName = senderCoach?.full_name
+            || (senderPlayer ? `${senderPlayer.first_name || ''} ${senderPlayer.last_name || ''}`.trim() : '')
+            || senderUser?.email
+            || 'Someone';
+          const preview = content.length > 80 ? content.substring(0, 80) + '…' : content;
+
+          // Get recipient emails
+          const recipientUserIds = otherParticipants.map(p => p.user_id);
+          const { data: recipientProfiles } = await supabase
+            .from('users')
+            .select('id, email')
+            .in('id', recipientUserIds);
+
+          if (recipientProfiles) {
+            await Promise.allSettled(
+              recipientProfiles.map(r =>
+                r.email
+                  ? notifyNewMessage(r.id, r.email, senderName, preview, conversationId)
+                  : Promise.resolve()
+              )
+            );
+          }
+        }
+      }
+    } catch (notifErr) {
+      // Never block message delivery on notification failure
+      console.error('[sendGolfMessage] Notification error (non-fatal):', notifErr);
+    }
+  }
+
+  return result;
 }
 
 export async function createGolfConversation(participantUserIds: string[], teamId?: string) {

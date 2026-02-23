@@ -348,7 +348,8 @@ export async function sendEmailNotification(
         user_id: recipientId,
         type: dbType,
         title: template.subject,
-        data: data as unknown as Record<string, never>,
+        body: template.text,
+        metadata: data as unknown as Record<string, never>,
         read: false,
       });
     }

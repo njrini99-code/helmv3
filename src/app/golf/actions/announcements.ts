@@ -16,6 +16,7 @@ import { revalidatePath, updateTag } from 'next/cache';
 import { CACHE_TAGS } from '@/lib/cache/tags';
 import { z } from 'zod';
 import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
+import { notifyTeamAnnouncement } from '@/lib/notifications';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { GolfAnnouncementMeta, GolfAnnouncementEnriched } from '@/lib/types/golf';
 
@@ -203,6 +204,49 @@ export async function createEnrichedAnnouncement(input: {
           .from('golf_task_assignments' as any) // eslint-disable-line @typescript-eslint/no-explicit-any
           .insert(assignments)) as unknown as { error: { message?: string } | null };
       }
+    }
+
+    // 5. Send email notifications to target players (fire-and-forget)
+    try {
+      const { data: coachProfile } = await supabase
+        .from('golf_coaches')
+        .select('full_name')
+        .eq('id', coach.id)
+        .single();
+
+      const coachName = coachProfile?.full_name?.trim() || 'Your Coach';
+
+      if (targetPlayerIds.length > 0) {
+        // Get user_ids for target players
+        const { data: playerRows } = await supabase
+          .from('golf_players')
+          .select('user_id')
+          .in('id', targetPlayerIds);
+
+        if (playerRows && playerRows.length > 0) {
+          const userIds = playerRows.map(p => p.user_id);
+
+          // Get emails for those users
+          const { data: userRows } = await supabase
+            .from('users')
+            .select('id, email')
+            .in('id', userIds);
+
+          if (userRows) {
+            // Non-blocking: notify all players in parallel
+            await Promise.allSettled(
+              userRows.map(u =>
+                u.email
+                  ? notifyTeamAnnouncement(u.id, u.email, validated.title, validated.body, coachName, announcementId)
+                  : Promise.resolve()
+              )
+            );
+          }
+        }
+      }
+    } catch (notifErr) {
+      // Never block announcement creation on notification failure
+      console.error('[createAnnouncement] Notification error (non-fatal):', notifErr);
     }
 
     revalidatePath('/golf/dashboard/announcements');
