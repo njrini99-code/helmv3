@@ -16,6 +16,7 @@ import {
 } from '@/lib/auth/ownership';
 import { roundTypeToDb } from '@/lib/golf/round-type-utils';
 import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
+import { notifyQualifierCreated } from '@/lib/notifications';
 import type { RSVPStatus } from '@/lib/calendar/rsvp';
 import { invalidateOnRoundComplete } from '@/lib/cache/golf-stats-calculator';
 import { triggerPlayerInsightsAfterRound } from '@/app/golf/actions/insights';
@@ -1749,6 +1750,40 @@ export async function createGolfQualifier(data: GolfQualifierInput): Promise<Act
 
       if (entriesError) {
         return { success: false, error: 'Failed to add players to qualifier. Please try again.' };
+      }
+    }
+
+    // Notify registered players (fire-and-forget)
+    if (validatedData.playerIds.length > 0) {
+      try {
+        const { data: playerRows } = await supabase
+          .from('golf_players')
+          .select('user_id')
+          .in('id', validatedData.playerIds);
+
+        if (playerRows?.length) {
+          const userIds = playerRows.map(p => p.user_id);
+          const { data: userRows } = await supabase
+            .from('users')
+            .select('id, email')
+            .in('id', userIds);
+
+          if (userRows) {
+            const formattedDate = validatedData.startDate
+              ? new Date(validatedData.startDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+              : validatedData.startDate;
+
+            await Promise.allSettled(
+              userRows.map(u =>
+                u.email
+                  ? notifyQualifierCreated(u.id, u.email, validatedData.name, formattedDate, 1, qualifier.id)
+                  : Promise.resolve()
+              )
+            );
+          }
+        }
+      } catch (notifErr) {
+        console.error('[createGolfQualifier] Notification error (non-fatal):', notifErr);
       }
     }
 

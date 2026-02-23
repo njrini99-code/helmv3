@@ -165,6 +165,7 @@ function shouldSendEmail(
     case 'task_reminder':
     case 'task_assigned':
     case 'task_completed':
+    case 'dev_plan_assigned':
       return prefs.email_task_reminders;
 
     default:
@@ -667,6 +668,82 @@ function generateEmailTemplate(
           footerNote: 'You received this because a coach viewed your BaseballHelm profile.',
         }),
         text: `${viewerInfo} viewed your profile.\n\nUpdate it at: ${profileUrl}`,
+      };
+    }
+
+    // ── TASK ASSIGNED ─────────────────────────────────────────────────────────
+    case 'task_assigned': {
+      const taskTitle       = String(data.taskTitle || 'New Task');
+      const taskDescription = String(data.taskDescription || '');
+      const dueDate         = String(data.dueDate || '');
+      const coachName       = String(data.coachName || 'Your Coach');
+      const taskUrl         = String(data.taskUrl || '#');
+      return {
+        subject: `New task assigned: ${taskTitle}`,
+        html: emailShell({
+          previewText: `${coachName} assigned you a task — ${taskTitle}`,
+          headerLabel: 'Task Assigned',
+          headerIconKey: 'flag',
+          iconKey: 'flag',
+          greeting: String(data._greeting || ''),
+          title: taskTitle,
+          body: `
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
+              <tr>
+                <td>
+                  <span style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;color:${BRAND.muted};">Assigned by&nbsp;&nbsp;</span>
+                  <span style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;color:${BRAND.dark};">${coachName}</span>
+                </td>
+              </tr>
+            </table>
+            ${taskDescription ? `
+            <div style="background:${BRAND.white};border:1px solid ${BRAND.border};border-radius:10px;padding:16px 20px;margin-bottom:20px;">
+              <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.7;color:${BRAND.darkMid};">${taskDescription}</p>
+            </div>` : ''}
+            ${dueDate ? detailTable(detailRow('Due Date', dueDate)) : ''}
+          `,
+          cta: { label: 'View Task', url: taskUrl },
+        }),
+        text: `New task from ${coachName}: ${taskTitle}${taskDescription ? `\n\n${taskDescription}` : ''}${dueDate ? `\nDue: ${dueDate}` : ''}\n\nView at: ${taskUrl}`,
+      };
+    }
+
+    // ── DEV PLAN ASSIGNED ─────────────────────────────────────────────────────
+    case 'dev_plan_assigned': {
+      const planTitle = String(data.planTitle || 'Development Plan');
+      const areaType  = String(data.areaType || '');
+      const coachName = String(data.coachName || 'Your Coach');
+      const planUrl   = String(data.planUrl || '#');
+      const areaLabel = areaType
+        ? areaType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+        : '';
+      return {
+        subject: `New development plan: ${planTitle}`,
+        html: emailShell({
+          previewText: `${coachName} created a development plan for you — ${planTitle}`,
+          headerLabel: 'Development Plan',
+          headerIconKey: 'chart',
+          iconKey: 'chart',
+          greeting: String(data._greeting || ''),
+          title: planTitle,
+          body: `
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:20px;">
+              <tr>
+                <td>
+                  <span style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;color:${BRAND.muted};">From&nbsp;&nbsp;</span>
+                  <span style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;color:${BRAND.dark};">${coachName}</span>
+                  ${areaLabel ? `<span style="margin-left:10px;">${badge(areaLabel, BRAND.green, BRAND.greenXLight)}</span>` : ''}
+                </td>
+              </tr>
+            </table>
+            <div style="background:${BRAND.greenXLight};border:1px solid ${BRAND.greenLight};border-radius:10px;padding:16px 20px;">
+              <p style="margin:0 0 6px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;color:${BRAND.green};">Your coach has created a plan for your development</p>
+              <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.6;color:${BRAND.greenDeep};">Review the goals, drills, and targets your coach has set. Track your progress from your dashboard.</p>
+            </div>
+          `,
+          cta: { label: 'View Development Plan', url: planUrl },
+        }),
+        text: `New development plan from ${coachName}: ${planTitle}${areaLabel ? ` (${areaLabel})` : ''}\n\nView at: ${planUrl}`,
       };
     }
 

@@ -125,6 +125,49 @@ export async function notifyQualifierCreated(
 }
 
 /**
+ * Notify golf player when a task is assigned to them
+ */
+export async function notifyTaskAssigned(
+  recipientId: string,
+  recipientEmail: string,
+  taskTitle: string,
+  taskDescription: string | null,
+  dueDate: string | null,
+  coachName: string,
+  taskId: string
+) {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
+
+  return sendEmailNotification('task_assigned', recipientId, recipientEmail, {
+    taskTitle,
+    taskDescription: taskDescription || '',
+    dueDate: dueDate || '',
+    coachName,
+    taskUrl: `${baseUrl}/golf/dashboard/tasks?task=${taskId}`,
+  });
+}
+
+/**
+ * Notify golf player when a development plan / focus area is assigned
+ */
+export async function notifyDevPlanAssigned(
+  recipientId: string,
+  recipientEmail: string,
+  planTitle: string,
+  areaType: string,
+  coachName: string
+) {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
+
+  return sendEmailNotification('dev_plan_assigned', recipientId, recipientEmail, {
+    planTitle,
+    areaType,
+    coachName,
+    planUrl: `${baseUrl}/golf/dashboard/my-development`,
+  });
+}
+
+/**
  * Send RSVP reminder for an event
  */
 export async function notifyEventRSVPReminder(

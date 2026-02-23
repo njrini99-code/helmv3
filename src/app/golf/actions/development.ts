@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { notifyDevPlanAssigned } from '@/lib/notifications';
 import { revalidatePath } from 'next/cache';
 
 // ============================================================================
@@ -57,7 +58,7 @@ export async function createFocusArea(
   // Verify user is a coach and has access to this player
   const { data: coach, error: coachError } = await supabase
     .from('golf_coaches')
-    .select('id, organization_id')
+    .select('id, organization_id, full_name')
     .eq('user_id', user.id)
     .single();
 
@@ -103,6 +104,35 @@ export async function createFocusArea(
   if (error) {
     console.error('Failed to create focus area:', error);
     return { success: false, error: 'Failed to create focus area. Please try again.' };
+  }
+
+  // Notify the player (fire-and-forget)
+  try {
+    const { data: playerRow } = await supabase
+      .from('golf_players')
+      .select('user_id')
+      .eq('id', data.player_id)
+      .single();
+
+    if (playerRow?.user_id) {
+      const { data: userRow } = await supabase
+        .from('users')
+        .select('email')
+        .eq('id', playerRow.user_id)
+        .single();
+
+      if (userRow?.email) {
+        await notifyDevPlanAssigned(
+          playerRow.user_id,
+          userRow.email,
+          data.title,
+          data.area_type,
+          coach.full_name?.trim() || 'Your Coach'
+        );
+      }
+    }
+  } catch (notifErr) {
+    console.error('[createFocusArea] Notification error (non-fatal):', notifErr);
   }
 
   revalidatePath('/golf/dashboard/development');

@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { notifyProfileView } from '@/lib/notifications';
 
 export interface PlayerPeekData {
   id: string;
@@ -89,9 +90,9 @@ export async function getPlayerPeekData(playerId: string): Promise<{
     // Get coach data and watchlist status
     const { data: coach } = await supabase
       .from('baseball_coaches')
-      .select('id')
+      .select('id, full_name, organization_id')
       .eq('user_id', user.id)
-      .single();
+      .single() as { data: { id: string; full_name: string | null; organization_id: string | null } | null };
 
     let isOnWatchlist = false;
     let watchlistId: string | null = null;
@@ -121,6 +122,35 @@ export async function getPlayerPeekData(playerId: string): Promise<{
           is_anonymous: false,
           metadata: { source: 'peek_panel' },
         });
+
+      // Notify the player of the profile view (fire-and-forget)
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: playerRow } = await supabase.from('baseball_players' as any)
+          .select('user_id').eq('id', playerId).single() as { data: { user_id: string } | null };
+
+        if (playerRow?.user_id) {
+          const { data: userRow } = await supabase.from('users')
+            .select('email').eq('id', playerRow.user_id).single();
+
+          let schoolName = 'a program';
+          if (coach.organization_id) {
+            const { data: org } = await supabase.from('organizations')
+              .select('name').eq('id', coach.organization_id).single();
+            if (org?.name) schoolName = org.name;
+          }
+
+          const viewerInfo = coach.full_name?.trim()
+            ? `${coach.full_name} from ${schoolName}`
+            : `A coach from ${schoolName}`;
+
+          if (userRow?.email) {
+            await notifyProfileView(playerRow.user_id, userRow.email, viewerInfo);
+          }
+        }
+      } catch (notifErr) {
+        console.error('[playerPeek] Notification error (non-fatal):', notifErr);
+      }
     }
 
     return {

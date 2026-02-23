@@ -11,6 +11,7 @@ import {
   formatSafeErrorResponse,
   logSecurityEvent
 } from '@/lib/validation/server-action-validator';
+import { notifyWatchlistAdd, notifyPipelineStageChange } from '@/lib/notifications';
 import { WatchlistSchemas } from '@/lib/validation/action-schemas';
 
 export async function addToWatchlist(coachId: string, playerId: string) {
@@ -74,6 +75,40 @@ export async function addToWatchlist(coachId: string, playerId: string) {
   revalidatePath('/baseball/dashboard/discover');
   revalidatePath('/baseball/dashboard/watchlist');
   revalidatePath('/baseball/dashboard/pipeline');
+
+
+  // Notify the player (fire-and-forget)
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: playerRow } = await supabase.from('baseball_players' as any)
+      .select('user_id').eq('id', playerId).single() as { data: { user_id: string } | null };
+
+    if (playerRow?.user_id) {
+      const { data: userRow } = await supabase.from('users')
+        .select('email').eq('id', playerRow.user_id).single();
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: coachRow } = await supabase.from('baseball_coaches' as any)
+        .select('full_name, organization_id').eq('id', coachId).single() as
+        { data: { full_name: string; organization_id: string | null } | null };
+
+      let schoolName = 'a program';
+      if (coachRow?.organization_id) {
+        const { data: org } = await supabase.from('organizations')
+          .select('name').eq('id', coachRow.organization_id).single();
+        if (org?.name) schoolName = org.name;
+      }
+
+      if (userRow?.email) {
+        await notifyWatchlistAdd(
+          playerRow.user_id, userRow.email,
+          coachRow?.full_name?.trim() || 'A coach', schoolName
+        );
+      }
+    }
+  } catch (notifErr) {
+    console.error('[addToWatchlist] Notification error (non-fatal):', notifErr);
+  }
 
   return { success: true };
 }
@@ -151,6 +186,42 @@ export async function updateWatchlistStatus(
     if (error) {
       console.error('[Security] Watchlist update failed:', { watchlistId, coachId: coach.id, error: error.message });
       return { success: false, error: 'Failed to update status' };
+    }
+
+
+    // Notify the player of their status change (fire-and-forget)
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: watchlistRow } = await supabase.from('baseball_watchlists' as any)
+        .select('player_id').eq('id', validatedData.watchlist_id).single() as
+        { data: { player_id: string } | null };
+
+      if (watchlistRow?.player_id) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: playerRow } = await supabase.from('baseball_players' as any)
+          .select('user_id').eq('id', watchlistRow.player_id).single() as
+          { data: { user_id: string } | null };
+
+        if (playerRow?.user_id) {
+          const { data: userRow } = await supabase.from('users')
+            .select('email').eq('id', playerRow.user_id).single();
+
+          let schoolName = 'a program';
+          if (coach.organization_id) {
+            const { data: org } = await supabase.from('organizations')
+              .select('name').eq('id', coach.organization_id).single();
+            if (org?.name) schoolName = org.name;
+          }
+
+          if (userRow?.email) {
+            await notifyPipelineStageChange(
+              playerRow.user_id, userRow.email, schoolName, validatedData.status
+            );
+          }
+        }
+      }
+    } catch (notifErr) {
+      console.error('[updateWatchlistStatus] Notification error (non-fatal):', notifErr);
     }
 
     revalidatePath('/baseball/dashboard/watchlist');

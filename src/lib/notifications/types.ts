@@ -19,7 +19,8 @@ export type NotificationType =
   // Task notifications
   | 'task_reminder'
   | 'task_assigned'
-  | 'task_completed';
+  | 'task_completed'
+  | 'dev_plan_assigned';
 
 export interface NotificationPreferences {
   // Email preferences

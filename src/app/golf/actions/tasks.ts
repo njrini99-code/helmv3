@@ -13,6 +13,7 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath, updateTag } from 'next/cache';
 import { CACHE_TAGS } from '@/lib/cache/tags';
 import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
+import { notifyTaskAssigned } from '@/lib/notifications';
 
 // ============================================================================
 // TYPES
@@ -403,7 +404,7 @@ export async function createTask(
     // Verify user is a coach
     const { data: coach } = await supabase
       .from('golf_coaches')
-      .select('id, organization_id')
+      .select('id, organization_id, full_name')
       .eq('user_id', user.id)
       .single();
 
@@ -463,6 +464,38 @@ export async function createTask(
       if (assignError) {
         console.error('[createTask Assignment Error]', assignError);
         // Task was created but assignments failed - still return success with warning
+      }
+
+      // Notify assigned players (fire-and-forget)
+      try {
+        const coachName = coach.full_name?.trim() || 'Your Coach';
+        const formattedDue = dueDate
+          ? new Date(dueDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+          : null;
+
+        const { data: playerRows } = await supabase
+          .from('golf_players')
+          .select('user_id')
+          .in('id', assignToPlayerIds);
+
+        if (playerRows?.length) {
+          const { data: userRows } = await supabase
+            .from('users')
+            .select('id, email')
+            .in('id', playerRows.map(p => p.user_id));
+
+          if (userRows) {
+            await Promise.allSettled(
+              userRows.map(u =>
+                u.email
+                  ? notifyTaskAssigned(u.id, u.email, title, description || null, formattedDue, coachName, task.id)
+                  : Promise.resolve()
+              )
+            );
+          }
+        }
+      } catch (notifErr) {
+        console.error('[createTask] Notification error (non-fatal):', notifErr);
       }
     }
 
