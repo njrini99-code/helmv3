@@ -412,7 +412,7 @@ export async function processTeamInvitation(inviteCode: string, playerId: string
           team_type
         )
       `)
-      .eq('invite_code', validatedData.invite_code)
+      .eq('code', validatedData.invite_code)
       .single();
 
     if (inviteError || !invitation) {
@@ -518,13 +518,13 @@ export async function generateTeamInviteCode(teamId: string): Promise<TeamInvite
   }
 
   // Verify the team exists and belongs to this coach's organization
-  // Note: invite_code column added via migration - types will be regenerated
-  type TeamWithInviteCode = { id: string; name: string; organization_id: string | null; invite_code: string | null };
+  // Note: join_code column on baseball_teams - types will be regenerated
+  type TeamWithJoinCode = { id: string; name: string; organization_id: string | null; join_code: string | null };
   const { data: team, error: teamError } = await supabase
     .from('baseball_teams')
-    .select('id, name, organization_id, invite_code')
+    .select('id, name, organization_id, join_code')
     .eq('id', teamId)
-    .single() as { data: TeamWithInviteCode | null; error: unknown };
+    .single() as { data: TeamWithJoinCode | null; error: unknown };
 
   if (teamError || !team) {
     return { success: false, error: 'Team not found' };
@@ -535,12 +535,12 @@ export async function generateTeamInviteCode(teamId: string): Promise<TeamInvite
   }
 
   // If invite code already exists, return it
-  if (team.invite_code) {
+  if (team.join_code) {
     return {
       success: true,
       data: {
-        inviteCode: team.invite_code,
-        inviteLink: `/baseball/join/${team.invite_code}`,
+        inviteCode: team.join_code,
+        inviteLink: `/baseball/join/${team.join_code}`,
         teamName: team.name,
       },
     };
@@ -551,7 +551,7 @@ export async function generateTeamInviteCode(teamId: string): Promise<TeamInvite
 
   const { error: updateError } = await supabase
     .from('baseball_teams')
-    .update({ invite_code: inviteCode } as Record<string, unknown>)
+    .update({ join_code: inviteCode } as Record<string, unknown>)
     .eq('id', teamId);
 
   if (updateError) {
@@ -616,7 +616,7 @@ export async function regenerateTeamInviteCode(teamId: string): Promise<TeamInvi
 
   const { error: updateError } = await supabase
     .from('baseball_teams')
-    .update({ invite_code: inviteCode } as Record<string, unknown>)
+    .update({ join_code: inviteCode } as Record<string, unknown>)
     .eq('id', teamId);
 
   if (updateError) {
@@ -670,13 +670,13 @@ export async function getCoachTeamForManagement() {
   }
 
   // Get team for this organization
-  // Note: invite_code column added via migration - types will be regenerated
-  type TeamFullWithInvite = { id: string; name: string; team_type: string; invite_code: string | null; organization_id: string | null };
+  // Note: join_code column on baseball_teams - types will be regenerated
+  type TeamFullWithJoinCode = { id: string; name: string; team_type: string; join_code: string | null; organization_id: string | null };
   const { data: team, error: teamError } = await supabase
     .from('baseball_teams')
-    .select('id, name, team_type, invite_code, organization_id')
+    .select('id, name, team_type, join_code, organization_id')
     .eq('organization_id', coach.organization_id)
-    .single() as { data: TeamFullWithInvite | null; error: unknown };
+    .single() as { data: TeamFullWithJoinCode | null; error: unknown };
 
   if (teamError || !team) {
     // Try to find or create a team
@@ -689,7 +689,7 @@ export async function getCoachTeamForManagement() {
       id: team.id,
       name: team.name,
       teamType: team.team_type,
-      inviteCode: team.invite_code,
+      inviteCode: team.join_code,
       organizationId: team.organization_id,
     },
   };
@@ -703,12 +703,12 @@ export async function joinTeamByCode(inviteCode: string, playerId: string) {
   const supabase = await createClient();
 
   // Find team by invite code
-  // Note: invite_code column added via migration - types will be regenerated
+  // Note: join_code column on baseball_teams - types will be regenerated
   type TeamByCode = { id: string; name: string; team_type: string };
   const { data: team, error: teamError } = await supabase
     .from('baseball_teams')
     .select('id, name, team_type')
-    .eq('invite_code' as 'id', inviteCode)
+    .eq('join_code' as 'id', inviteCode)
     .single() as { data: TeamByCode | null; error: unknown };
 
   if (teamError || !team) {

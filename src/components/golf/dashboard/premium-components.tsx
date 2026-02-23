@@ -332,6 +332,7 @@ export function SectionHeader({
 // ============================================================================
 
 interface RoundRowProps {
+    id?: string;
     playerName?: string;
     courseName: string;
     score: number;
@@ -341,6 +342,7 @@ interface RoundRowProps {
 }
 
 export function RoundRow({
+    id,
     playerName,
     courseName,
     score,
@@ -353,10 +355,10 @@ export function RoundRow({
         ? `${playerName} scored ${score} (${toParLabel}) at ${courseName}`
         : `Score ${score} (${toParLabel}) at ${courseName}`;
 
-    return (
+    const content = (
         <m.div
-            role="button"
-            tabIndex={0}
+            role={id ? undefined : "button"}
+            tabIndex={id ? undefined : 0}
             aria-label={accessibleLabel}
             className="group flex items-center gap-4 px-4 py-4 hover:bg-white/30 rounded-lg transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
             whileHover={{ x: 4 }}
@@ -400,6 +402,11 @@ export function RoundRow({
             </div>
         </m.div>
     );
+
+    if (id) {
+        return <Link href={`/golf/dashboard/rounds/${id}`} prefetch={false}>{content}</Link>;
+    }
+    return content;
 }
 
 // ============================================================================

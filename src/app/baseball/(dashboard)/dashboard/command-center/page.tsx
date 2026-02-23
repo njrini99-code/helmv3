@@ -75,12 +75,12 @@ export default async function CommandCenterPage() {
   }
 
   // Get team for this organization
-  // Note: invite_code column added via migration - types will be regenerated
+  // Note: join_code column on baseball_teams - types will be regenerated
   const { data: team, error: teamError } = await supabase
     .from('baseball_teams')
-    .select('id, name, team_type, invite_code')
+    .select('id, name, team_type, join_code')
     .eq('organization_id', coach.organization_id)
-    .single() as { data: { id: string; name: string; team_type: string; invite_code: string | null } | null; error: unknown };
+    .single() as { data: { id: string; name: string; team_type: string; join_code: string | null } | null; error: unknown };
 
   // No team found — college coaches still get the full CommandCenterClient
   // (with empty roster/stats and a setup banner). Non-college coaches get a create-team prompt.
@@ -218,7 +218,7 @@ export default async function CommandCenterPage() {
         id: team.id,
         name: team.name,
         teamType: team.team_type,
-        inviteCode: team.invite_code,
+        inviteCode: team.join_code,
       }}
       // Cast to expected type - the local type has the same shape
       players={players as unknown as import('@/lib/types').BaseballRosterPlayer[]}

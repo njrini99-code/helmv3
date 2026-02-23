@@ -282,11 +282,12 @@ export function CoachDashboard({ data, enhancedData }: CoachDashboardProps) {
     const { coach, team, stats, recentRounds, topPlayers, teamScoringTrend } = data;
     const [dateRange, setDateRange] = useState<DateRange>('all');
 
-    const greeting = useMemo(() => {
+    // Defer time-dependent values to client to avoid hydration mismatch
+    // (server timezone differs from browser timezone)
+    const [greeting, setGreeting] = useState('');
+    useEffect(() => {
         const hour = new Date().getHours();
-        if (hour < 12) return 'Good morning';
-        if (hour < 17) return 'Good afternoon';
-        return 'Good evening';
+        setGreeting(hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening');
     }, []);
 
     const firstName = coach.full_name?.split(' ')[0] || 'Coach';
@@ -312,8 +313,9 @@ export function CoachDashboard({ data, enhancedData }: CoachDashboardProps) {
 
     const hasTrendData = teamScoringTrend && teamScoringTrend.length >= 2;
 
-    const todayStr = useMemo(() => {
-        return new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    const [todayStr, setTodayStr] = useState('');
+    useEffect(() => {
+        setTodayStr(new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }));
     }, []);
 
     return (

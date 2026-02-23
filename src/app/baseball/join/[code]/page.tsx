@@ -79,7 +79,7 @@ export default async function JoinTeamPage({ params }: PageProps) {
     .eq('code', code)
     .single() as { data: InvitationWithTeam | null };
 
-  // 2. If not found, check direct invite_code on baseball_teams
+  // 2. If not found, check direct join_code on baseball_teams
   type TeamWithInviteCode = {
     id: string;
     name: string;
@@ -117,7 +117,7 @@ export default async function JoinTeamPage({ params }: PageProps) {
           logo_url
         )
       `)
-      .eq('invite_code' as 'id', code)
+      .eq('join_code' as 'id', code)
       .single() as { data: TeamWithInviteCode | null };
 
     team = directTeam;

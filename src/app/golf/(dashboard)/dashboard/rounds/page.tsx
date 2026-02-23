@@ -148,30 +148,15 @@ export default async function RoundsPage() {
     const teamPlayerIds = teamMembers?.map(tm => tm.player_id) || [];
 
     if (teamPlayerIds.length > 0) {
-      const [
-        { data: completedData },
-        { data: inProgressData }
-      ] = await Promise.all([
-        supabase
-          .from('golf_rounds')
-          .select(playerSelectFields)
-          .in('player_id', teamPlayerIds)
-          .eq('status', 'completed')
-          .order('round_date', { ascending: false })
-          .limit(50),
-        supabase
-          .from('golf_rounds')
-          .select(inProgressSelectFields)
-          .in('player_id', teamPlayerIds)
-          .eq('status', 'in_progress')
-          .order('updated_at', { ascending: false })
-      ]);
+      const { data: completedData } = await supabase
+        .from('golf_rounds')
+        .select(playerSelectFields)
+        .in('player_id', teamPlayerIds)
+        .eq('status', 'completed')
+        .order('round_date', { ascending: false })
+        .limit(50);
 
       rounds = (completedData ?? []).map(r => ({
-        ...r,
-        player: r.player && !('error' in r.player) ? r.player : null
-      })) as RoundWithPlayer[];
-      inProgressRounds = (inProgressData ?? []).map(r => ({
         ...r,
         player: r.player && !('error' in r.player) ? r.player : null
       })) as RoundWithPlayer[];

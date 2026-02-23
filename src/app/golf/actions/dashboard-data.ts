@@ -635,11 +635,12 @@ export async function getPlayerDashboardData(
     const { start: todayStart, end: todayEnd } = getTodayRange(playerTeamTimezone);
     const today = new Date().toISOString().split('T')[0] ?? '';
 
-    // ── Parallel batch: team, rounds, handicap, today events, tasks, announcements ──
+    // ── Parallel batch: team, rounds, handicap, stats cache, today events, tasks, announcements ──
     const [
         teamResult,
         roundsResult,
         playerDetailResult,
+        statsCacheResult,
         todayEventsResult,
         pendingTasksResult,
         announcementsResult,
@@ -656,6 +657,11 @@ export async function getPlayerDashboardData(
             .order('round_date', { ascending: false })
             .limit(50),
         supabase.from('golf_players').select('handicap').eq('id', playerId).single(),
+        supabase
+            .from('golf_player_stats_cache')
+            .select('sg_total_per_round, sg_tee_per_round, sg_approach_per_round, sg_around_green_per_round, sg_putting_per_round, scrambling_percentage')
+            .eq('player_id', playerId)
+            .maybeSingle(),
         // Today's events
         teamId
             ? supabase
@@ -693,6 +699,14 @@ export async function getPlayerDashboardData(
     const team = teamResult.data;
     const rounds = roundsResult.data || [];
     const playerHandicap = playerDetailResult.data?.handicap ?? null;
+    const statsCache = statsCacheResult.data as {
+        sg_total_per_round: number | null;
+        sg_tee_per_round: number | null;
+        sg_approach_per_round: number | null;
+        sg_around_green_per_round: number | null;
+        sg_putting_per_round: number | null;
+        scrambling_percentage: number | null;
+    } | null;
 
     // Fetch player's own RSVP for today's events
     const todayEventsRaw = todayEventsResult.data || [];
@@ -791,13 +805,13 @@ export async function getPlayerDashboardData(
         }
     }
 
-    // Strokes gained — stub (would require shot-level computation, return nulls for now)
+    // Strokes gained — pull per-round averages from stats cache
     const strokesGained: StrokesGainedSnapshot = {
-        sg_total: null,
-        sg_off_tee: null,
-        sg_approach: null,
-        sg_around_green: null,
-        sg_putting: null,
+        sg_total: statsCache?.sg_total_per_round != null ? Number(Number(statsCache.sg_total_per_round).toFixed(2)) : null,
+        sg_off_tee: statsCache?.sg_tee_per_round != null ? Number(Number(statsCache.sg_tee_per_round).toFixed(2)) : null,
+        sg_approach: statsCache?.sg_approach_per_round != null ? Number(Number(statsCache.sg_approach_per_round).toFixed(2)) : null,
+        sg_around_green: statsCache?.sg_around_green_per_round != null ? Number(Number(statsCache.sg_around_green_per_round).toFixed(2)) : null,
+        sg_putting: statsCache?.sg_putting_per_round != null ? Number(Number(statsCache.sg_putting_per_round).toFixed(2)) : null,
     };
 
     return {
@@ -837,7 +851,7 @@ export async function getPlayerDashboardData(
         },
         secondaryStats: {
             firPct,
-            scramblingPct: null, // Would require shot-level data
+            scramblingPct: statsCache?.scrambling_percentage != null ? Number(Number(statsCache.scrambling_percentage).toFixed(1)) : null,
             birdiesPerRound,
             bestRound,
         },

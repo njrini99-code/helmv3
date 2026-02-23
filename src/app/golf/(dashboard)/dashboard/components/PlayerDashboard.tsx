@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { m } from 'framer-motion';
 import {
@@ -133,11 +133,15 @@ interface PlayerDashboardProps {
 export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
     const { player, team, stats, recentRounds } = data;
 
-    const greeting = useMemo(() => {
+    // Defer time-dependent values to client to avoid hydration mismatch
+    // (server timezone differs from browser timezone)
+    const [greeting, setGreeting] = useState('');
+    const [todayStr, setTodayStr] = useState('');
+
+    useEffect(() => {
         const hour = new Date().getHours();
-        if (hour < 12) return 'Good morning';
-        if (hour < 17) return 'Good afternoon';
-        return 'Good evening';
+        setGreeting(hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening');
+        setTodayStr(new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }));
     }, []);
 
     const chartData = useMemo(() => {
@@ -147,10 +151,6 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
             value: r.total_score
         }));
     }, [recentRounds]);
-
-    const todayStr = useMemo(() => {
-        return new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-    }, []);
 
     return (
         <div className="min-h-full bg-transparent">
@@ -369,6 +369,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                                     {recentRounds.map((round) => (
                                         <RoundRow
                                             key={round.id}
+                                            id={round.id}
                                             courseName={round.course_name}
                                             score={round.total_score}
                                             toPar={round.total_to_par}
