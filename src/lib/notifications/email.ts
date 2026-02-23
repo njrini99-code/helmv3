@@ -260,9 +260,10 @@ function emailShell(opts: {
   title: string;
   body: string;
   cta: { label: string; url: string };
+  greeting?: string;
   footerNote?: string;
 }): string {
-  const { previewText, headerLabel, headerIconKey, iconKey, title, body, cta, footerNote } = opts;
+  const { previewText, headerLabel, headerIconKey, iconKey, title, body, cta, greeting, footerNote } = opts;
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
 
   return `<!DOCTYPE html>
@@ -329,6 +330,8 @@ function emailShell(opts: {
           <!-- ═══ BODY ═══ -->
           <tr>
             <td class="body-pad" style="background-color:${BRAND.cream};padding:36px 36px 28px;border-left:1px solid ${BRAND.border};border-right:1px solid ${BRAND.border};">
+
+              ${greeting ? `<p style="margin:0 0 24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;font-weight:500;color:${BRAND.muted};">${greeting}</p>` : ''}
 
               ${iconCircle(iconKey)}
 
@@ -463,6 +466,7 @@ function generateEmailTemplate(
             ${quoteBlock(preview + (preview.length >= 200 ? '\u2026' : ''))}
             <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;color:${BRAND.muted};line-height:1.5;">Reply directly in Helm to keep the conversation going.</p>
           `,
+          greeting: String(data._greeting || ''),
           cta: { label: 'Open Conversation', url: messageUrl },
           footerNote: 'You received this because someone sent you a message on Helm.',
         }),
@@ -501,6 +505,7 @@ function generateEmailTemplate(
               <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.75;color:${BRAND.darkMid};">${content}</p>
             </div>
           `,
+          greeting: String(data._greeting || ''),
           cta: { label: 'View Full Announcement', url: announcementUrl },
         }),
         text: `Team Announcement from ${coachName}: ${title}\n\n${preview}\n\nView at: ${announcementUrl}`,
@@ -528,6 +533,7 @@ function generateEmailTemplate(
               detailRow('Rounds', `${numRounds} round${Number(numRounds) !== 1 ? 's' : ''}`)
             )}
           `,
+          greeting: String(data._greeting || ''),
           cta: { label: 'View Qualifier', url: qualifierUrl },
         }),
         text: `New qualifier: ${qualifierName}\nStart: ${startDate} \u00b7 ${numRounds} rounds\n\nView at: ${qualifierUrl}`,
@@ -555,6 +561,7 @@ function generateEmailTemplate(
               (location ? detailRow('Location', location) : '')
             )}
           `,
+          greeting: String(data._greeting || ''),
           cta: { label: 'RSVP Now', url: eventUrl },
           footerNote: 'You received this because you have an upcoming team event on Helm.',
         }),
@@ -584,6 +591,7 @@ function generateEmailTemplate(
               <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.6;color:${BRAND.greenDeep};">Coaches watchlist players they\u2019re seriously considering. Keep your profile complete and stay active.</p>
             </div>
           `,
+          greeting: String(data._greeting || ''),
           cta: { label: 'View Your Profile', url: profileUrl },
           footerNote: 'You received this because a coach saved your BaseballHelm profile.',
         }),
@@ -625,6 +633,7 @@ function generateEmailTemplate(
               <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:${stage.color};">${stage.desc}</p>
             </div>
           `,
+          greeting: String(data._greeting || ''),
           cta: { label: 'View Your Journey', url: journeyUrl },
           footerNote: 'You received this because a coach updated your status on BaseballHelm.',
         }),
@@ -653,6 +662,7 @@ function generateEmailTemplate(
               <p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.6;color:${BRAND.muted};">Profiles with a highlight video get significantly more coach messages. Add yours to stand out.</p>
             </div>
           `,
+          greeting: String(data._greeting || ''),
           cta: { label: 'Update Your Profile', url: profileUrl },
           footerNote: 'You received this because a coach viewed your BaseballHelm profile.',
         }),
@@ -671,6 +681,7 @@ function generateEmailTemplate(
           iconKey: 'bell',
           title: 'You have a new notification',
           body: `<p style="margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:${BRAND.muted};">Log in to Helm to see the latest updates from your team.</p>`,
+          greeting: String(data._greeting || ''),
           cta: { label: 'Open Helm', url: process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com' },
         }),
         text: 'You have a new notification from Helm Sports. Log in to see updates.',
@@ -678,6 +689,61 @@ function generateEmailTemplate(
   }
 }
 
+
+/**
+ * Resolve a personalized greeting for the recipient.
+ * Checks all four profile tables in priority order.
+ *   Players  → "Hi Nick,"
+ *   Coaches  → "Hi Coach Smith,"  (last word of full_name used as last name)
+ */
+async function getRecipientGreeting(userId: string): Promise<string> {
+  try {
+    const supabase = await createClient();
+
+    // 1. Golf player → first name
+    const { data: golfPlayer } = await supabase
+      .from('golf_players')
+      .select('first_name')
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (golfPlayer?.first_name) return `Hi ${golfPlayer.first_name},`;
+
+    // 2. Golf coach → last name from full_name
+    const { data: golfCoach } = await supabase
+      .from('golf_coaches')
+      .select('full_name')
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (golfCoach?.full_name) {
+      const lastName = golfCoach.full_name.trim().split(' ').pop() ?? golfCoach.full_name;
+      return `Hi Coach ${lastName},`;
+    }
+
+    // 3. Baseball player → first name
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: bbPlayer } = await (supabase as any)
+      .from('baseball_players')
+      .select('first_name')
+      .eq('user_id', userId)
+      .maybeSingle() as { data: { first_name: string | null } | null };
+    if (bbPlayer?.first_name) return `Hi ${bbPlayer.first_name},`;
+
+    // 4. Baseball coach → last name from full_name
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: bbCoach } = await (supabase as any)
+      .from('baseball_coaches')
+      .select('full_name')
+      .eq('user_id', userId)
+      .maybeSingle() as { data: { full_name: string | null } | null };
+    if (bbCoach?.full_name) {
+      const lastName = bbCoach.full_name.trim().split(' ').pop() ?? bbCoach.full_name;
+      return `Hi Coach ${lastName},`;
+    }
+  } catch {
+    // Non-critical — fall through to default
+  }
+  return 'Hi there,';
+}
 
 /**
  * Send an email notification
@@ -701,8 +767,12 @@ export async function sendEmailNotification(
       return { success: false, error: 'Email service not configured' };
     }
 
+    // Resolve personalized greeting and inject into data
+    const greeting = await getRecipientGreeting(recipientId);
+    const enrichedData = { ...data, _greeting: greeting };
+
     // Generate email content
-    const template = generateEmailTemplate(type, data);
+    const template = generateEmailTemplate(type, enrichedData);
 
     // Send email
     await resend.emails.send({
