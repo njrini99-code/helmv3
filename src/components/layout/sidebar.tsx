@@ -46,7 +46,6 @@ import { useSidebar } from '@/contexts/sidebar-context';
 const coachRecruitingNav = [
   { name: 'Dashboard', href: '/baseball/dashboard', icon: IconHome },
   { name: 'Command Center', href: '/baseball/dashboard/command-center', icon: IconLayers },
-  { name: 'Upload Stats', href: '/baseball/dashboard/stats/upload', icon: IconChart },
   { name: 'Discover', href: '/baseball/dashboard/discover', icon: IconSearch },
   { name: 'Pipeline', href: '/baseball/dashboard/pipeline', icon: IconStar },
   { name: 'Watchlist', href: '/baseball/dashboard/watchlist', icon: IconBookmark },

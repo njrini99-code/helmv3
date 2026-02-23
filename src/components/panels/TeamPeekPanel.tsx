@@ -17,6 +17,7 @@ import {
   IconMail,
   IconBuilding,
   IconUser,
+  IconX,
 } from '@/components/icons';
 import type { Organization } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
@@ -221,6 +222,16 @@ export function TeamPeekPanel({ teamId, onClose }: TeamPeekPanelProps) {
         <div className="flex flex-col h-full">
           {/* ── Header ────────────────────────────────────────────────── */}
           <div className="px-6 pt-6 pb-4 border-b border-slate-100 flex-shrink-0">
+            {/* Close button */}
+            <div className="flex justify-end mb-3">
+              <button
+                onClick={onClose}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 active:bg-slate-200 transition-colors"
+                aria-label="Close panel"
+              >
+                <IconX size={18} />
+              </button>
+            </div>
             <div className="flex items-start gap-4">
               {/* Logo */}
               <div

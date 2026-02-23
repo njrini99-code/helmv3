@@ -91,10 +91,10 @@ interface DiscoverViewProps {
 }
 
 const SORT_OPTIONS = [
-  { value: 'best_match', label: 'Best Match' },
-  { value: 'updated', label: 'Recently Updated' },
+  { value: 'updated', label: 'Recently Active' },
   { value: 'velo_desc', label: 'Velocity (High → Low)' },
   { value: 'velo_asc', label: 'Velocity (Low → High)' },
+  { value: 'exit_velo_desc', label: 'Exit Velo (High → Low)' },
   { value: 'gpa_desc', label: 'GPA (High → Low)' },
   { value: 'grad_year_asc', label: 'Grad Year (Earliest)' },
   { value: 'grad_year_desc', label: 'Grad Year (Latest)' },
@@ -183,9 +183,9 @@ export function DiscoverView({
   const sortedPlayers = useMemo(() => {
     const sorted = [...transformedPlayers];
     switch (sortBy) {
-      case 'best_match':
+      case 'exit_velo_desc':
         return sorted.sort(
-          (a, b) => (b.matchScore ?? 50) - (a.matchScore ?? 50)
+          (a, b) => (b.stats?.exitVelo || 0) - (a.stats?.exitVelo || 0)
         );
       case 'velo_desc':
         return sorted.sort(
