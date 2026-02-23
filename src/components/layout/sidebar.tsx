@@ -71,6 +71,18 @@ const hsCoachTeamNav = [
   { name: 'Travel', href: '/baseball/dashboard/travel', icon: IconAirplane },
 ];
 
+// College Coach - Team Mode
+const collegeTeamNav = [
+  { name: 'Dashboard', href: '/baseball/dashboard/team', icon: IconHome },
+  { name: 'Roster', href: '/baseball/dashboard/roster', icon: IconUsers },
+  { name: 'Stats', href: '/baseball/dashboard/stats', icon: IconChartBar },
+  { name: 'Videos', href: '/baseball/dashboard/videos', icon: IconVideo },
+  { name: 'Dev Plans', href: '/baseball/dashboard/dev-plans', icon: IconNote },
+  { name: 'Calendar', href: '/baseball/dashboard/calendar', icon: IconCalendar },
+  { name: 'Messages', href: '/baseball/dashboard/messages', icon: IconMessage, badge: true },
+  { name: 'Announcements', href: '/baseball/dashboard/announcements', icon: IconBell },
+];
+
 // JUCO Coach - Team Mode (includes Academics)
 const jucoTeamNav = [
   { name: 'Dashboard', href: '/baseball/dashboard/team', icon: IconHome },
@@ -180,7 +192,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
 
   // Determine if user should see mode toggle
   const showModeToggle =
-    (coach?.coach_type === 'juco') ||
+    (coach?.coach_type === 'juco' || coach?.coach_type === 'college') ||
     (player && player.recruiting_activated && player.player_type !== 'college');
 
   // Use persisted coach mode from Zustand store
@@ -193,6 +205,9 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
     }
     if (user?.role === 'coach') {
       if (coach?.coach_type === 'college') {
+        if (currentMode === 'team') {
+          return collegeTeamNav;
+        }
         // Point Dashboard directly to the college coach page — avoids redirect bounce
         return coachRecruitingNav.map(item =>
           item.href === '/baseball/dashboard' ? { ...item, href: '/baseball/coach/college' } : item
