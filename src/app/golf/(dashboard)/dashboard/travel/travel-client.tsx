@@ -37,7 +37,7 @@ interface TravelItinerary {
   id: string;
   event_name: string;
   destination: string;
-  transportation_type: 'bus' | 'van' | 'fly' | 'carpool';
+  transportation_type: 'bus' | 'van' | 'flight' | 'carpool';
   departure_date: string;
   departure_time: string | null;
   departure_location: string | null;
@@ -114,7 +114,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
 
   const getTransportIcon = (type: TransportationType) => {
     switch (type) {
-      case 'fly':
+      case 'flight':
         return '✈️';
       case 'bus':
         return '🚌';
@@ -775,7 +775,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                 >
                   <option value="bus">Bus</option>
                   <option value="van">Van</option>
-                  <option value="fly">Flight</option>
+                  <option value="flight">Flight</option>
                   <option value="carpool">Carpool</option>
                 </select>
               </div>

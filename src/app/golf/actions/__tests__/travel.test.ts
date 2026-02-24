@@ -89,7 +89,7 @@ describe('travel server actions', () => {
       team_id: '550e8400-e29b-41d4-a716-446655440000',
       event_name: 'SEC Championship',
       destination: 'Kiawah Island',
-      transportation_type: 'fly',
+      transportation_type: 'flight',
       departure_date: '2026-03-15',
       created_by: '550e8400-e29b-41d4-a716-446655440001',
     };
@@ -109,7 +109,7 @@ describe('travel server actions', () => {
         team_id: 'not-a-uuid',
         event_name: '',
         destination: '',
-        transportation_type: 'fly',
+        transportation_type: 'flight',
         departure_date: '2026-03-15',
         created_by: 'not-a-uuid',
       } as CreateTravelItineraryInput;

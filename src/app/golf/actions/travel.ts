@@ -10,7 +10,7 @@ import { formatSafeErrorResponse } from '@/lib/validation/server-action-validato
 // ============================================================================
 
 const uuidSchema = z.string().uuid();
-const transportationTypeSchema = z.enum(['bus', 'van', 'fly', 'carpool']);
+const transportationTypeSchema = z.enum(['bus', 'van', 'flight', 'carpool']);
 
 const createTravelItinerarySchema = z.object({
   team_id: z.string().uuid(),
@@ -69,7 +69,7 @@ export interface CreateTravelItineraryInput {
   event_id?: string;
   event_name: string;
   destination: string;
-  transportation_type: 'bus' | 'van' | 'fly' | 'carpool';
+  transportation_type: 'bus' | 'van' | 'flight' | 'carpool';
   departure_date: string;
   departure_time?: string;
   departure_location?: string;
@@ -93,7 +93,7 @@ export interface UpdateTravelItineraryInput {
   id: string;
   event_name?: string;
   destination?: string;
-  transportation_type?: 'bus' | 'van' | 'fly' | 'carpool';
+  transportation_type?: 'bus' | 'van' | 'flight' | 'carpool';
   departure_date?: string;
   departure_time?: string;
   departure_location?: string;
@@ -157,7 +157,7 @@ export async function createGolfTravelItinerary(input: CreateTravelItineraryInpu
         uniform_requirements: emptyToNull(validatedData.uniform_requirements),
         gear_list: validatedData.gear_list ? validatedData.gear_list.split(',').map((s: string) => s.trim()).filter(Boolean) : null,
         notes: emptyToNull(validatedData.notes),
-        created_by: user.id,
+        created_by: validatedData.created_by,
       })
       .select()
       .single();

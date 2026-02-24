@@ -66,7 +66,7 @@ export default async function GolfTravelPage() {
     id: item.id,
     event_name: item.event_name || '',
     destination: item.destination || '',
-    transportation_type: (item.transportation_type as 'bus' | 'van' | 'fly' | 'carpool') || 'bus',
+    transportation_type: (item.transportation_type as 'bus' | 'van' | 'flight' | 'carpool') || 'bus',
     departure_date: item.departure_date || '',
     departure_time: item.departure_time,
     departure_location: item.departure_location,
