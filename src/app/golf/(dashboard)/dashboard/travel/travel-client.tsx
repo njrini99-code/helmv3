@@ -19,6 +19,8 @@ import {
   IconMenu,
 } from '@/components/icons';
 import { useSidebar } from '@/contexts/sidebar-context';
+import { useNotificationBadges } from '@/contexts/notification-badge-context';
+import { markTravelSeen } from '@/app/golf/actions/player-notifications';
 import {
   createGolfTravelItinerary,
   updateGolfTravelItinerary,
@@ -71,6 +73,7 @@ type TabType = 'details' | 'expenses';
 export function TravelClient({ itineraries: initialItineraries, coachId, teamId, isCoach }: TravelClientProps) {
   const { toggleMobile } = useSidebar();
   const router = useRouter();
+  const badges = useNotificationBadges();
   const [itineraries, setItineraries] = useState(initialItineraries);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -80,6 +83,14 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
   // Selected itinerary for expense tracking
   const [selectedItinerary, setSelectedItinerary] = useState<TravelItinerary | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('details');
+
+  // Mark travel as seen for players on mount
+  useEffect(() => {
+    if (!isCoach) {
+      markTravelSeen().then(() => badges.refetch());
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isCoach]);
 
   // Expense state
   const [expenses, setExpenses] = useState<TravelExpense[]>([]);

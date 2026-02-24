@@ -27,6 +27,7 @@ export interface PlayerNotificationCounts {
   unreadAnnouncements: number;
   pendingTasks: number;
   unreadMessages: number;
+  unseenTravel: number;
   unseenAnnouncements: GolfAnnouncementMeta[];
   lastSeenAt: string | null;
 }
@@ -59,13 +60,13 @@ export async function getPlayerNotificationCounts(
       tasksResult,
       conversationsResult,
     ] = await Promise.all([
-      // 1. Get notification state (last_announcements_seen_at)
+      // 1. Get notification state (last_announcements_seen_at, last_travel_seen_at)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (supabase as any)
         .from('golf_player_notification_state')
-        .select('last_announcements_seen_at')
+        .select('last_announcements_seen_at, last_travel_seen_at')
         .eq('player_id', playerId)
-        .maybeSingle() as Promise<{ data: { last_announcements_seen_at: string } | null; error: unknown }>,
+        .maybeSingle() as Promise<{ data: { last_announcements_seen_at: string; last_travel_seen_at: string } | null; error: unknown }>,
 
       // 2. Get all team announcements (published, last 30 days)
       supabase
@@ -180,12 +181,27 @@ export async function getPlayerNotificationCounts(
       unreadMessages = counts.reduce((sum, c) => sum + c, 0);
     }
 
+    // Count unseen travel itineraries
+    const lastTravelSeenAt = notifStateResult.data?.last_travel_seen_at || null;
+    let unseenTravel = 0;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const travelQuery = (supabase as any)
+      .from('golf_travel_itineraries')
+      .select('id', { count: 'exact', head: true })
+      .eq('team_id', teamId);
+    if (lastTravelSeenAt) {
+      travelQuery.gt('created_at', lastTravelSeenAt);
+    }
+    const travelResult = await travelQuery as { count: number | null };
+    unseenTravel = travelResult.count || 0;
+
     return {
       success: true,
       data: {
         unreadAnnouncements,
         pendingTasks: tasksResult.count || 0,
         unreadMessages,
+        unseenTravel,
         unseenAnnouncements,
         lastSeenAt,
       },
@@ -236,6 +252,48 @@ export async function markAnnouncementsSeen(): Promise<ActionResult> {
     return { success: true };
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : 'Failed to mark announcements seen' };
+  }
+}
+
+// ============================================================================
+// MARK TRAVEL SEEN
+// ============================================================================
+
+/**
+ * Updates last_travel_seen_at to now, clearing the travel badge for this player.
+ */
+export async function markTravelSeen(): Promise<ActionResult> {
+  try {
+    const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Not authenticated' };
+
+    const { data: player } = await supabase
+      .from('golf_players')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (!player) return { success: false, error: 'Player not found' };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from('golf_player_notification_state')
+      .upsert(
+        {
+          player_id: player.id,
+          last_travel_seen_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'player_id' }
+      );
+
+    if (error) return { success: false, error: 'Failed to update notification state' };
+
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : 'Failed to mark travel seen' };
   }
 }
 

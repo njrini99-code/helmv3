@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useSidebar } from '@/contexts/sidebar-context';
+import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import {
   IconMenu,
   IconAirplane,
@@ -657,6 +658,7 @@ function OverviewSection({
 
 export function PlayerHub({ trips, tasks, events, announcements, playerName, onCompleteTask, onRSVP }: PlayerHubProps) {
   const { toggleMobile } = useSidebar();
+  const badges = useNotificationBadges();
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [selectedTrip, setSelectedTrip] = useState<TripData | null>(null);
 
@@ -796,6 +798,31 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
                   >
                     View
                   </button>
+                </m.div>
+              )}
+
+              {/* New travel itinerary alert */}
+              {badges.travel > 0 && (
+                <m.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl bg-blue-50 border border-blue-100"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                    <IconAirplane size={16} className="text-blue-500" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-blue-800">
+                      {badges.travel} new travel itinerar{badges.travel !== 1 ? 'ies' : 'y'} posted
+                    </p>
+                    <p className="text-xs text-blue-600">Check your upcoming trip details</p>
+                  </div>
+                  <a
+                    href="/golf/dashboard/travel"
+                    className="text-xs font-medium text-blue-700 hover:text-blue-800 px-2 py-1 rounded-md hover:bg-blue-100 transition-colors flex-shrink-0"
+                  >
+                    View
+                  </a>
                 </m.div>
               )}
 

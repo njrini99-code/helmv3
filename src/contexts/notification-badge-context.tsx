@@ -13,6 +13,7 @@ interface NotificationBadges {
   announcements: number;
   tasks: number;
   messages: number;
+  travel: number;
   total: number;
   unseenAnnouncements: GolfAnnouncementMeta[];
   hasUnseenAnnouncements: boolean;
@@ -24,6 +25,7 @@ const EMPTY_BADGES: NotificationBadges = {
   announcements: 0,
   tasks: 0,
   messages: 0,
+  travel: 0,
   total: 0,
   unseenAnnouncements: [],
   hasUnseenAnnouncements: false,
@@ -50,6 +52,7 @@ export function NotificationBadgeProvider({ children }: { children: React.ReactN
   const [announcements, setAnnouncements] = useState(0);
   const [tasks, setTasks] = useState(0);
   const [messages, setMessages] = useState(0);
+  const [travel, setTravel] = useState(0);
   const [unseenAnnouncements, setUnseenAnnouncements] = useState<GolfAnnouncementMeta[]>([]);
   const isVisibleRef = useRef(true);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -67,6 +70,7 @@ export function NotificationBadgeProvider({ children }: { children: React.ReactN
         setAnnouncements(result.data.unreadAnnouncements);
         setTasks(result.data.pendingTasks);
         setMessages(result.data.unreadMessages);
+        setTravel(result.data.unseenTravel ?? 0);
         setUnseenAnnouncements(result.data.unseenAnnouncements);
       }
     } catch {
@@ -112,13 +116,14 @@ export function NotificationBadgeProvider({ children }: { children: React.ReactN
       announcements,
       tasks,
       messages,
-      total: announcements + tasks + messages,
+      travel,
+      total: announcements + tasks + messages + travel,
       unseenAnnouncements,
       hasUnseenAnnouncements: unseenAnnouncements.length > 0,
       markAnnouncementsSeen: handleMarkSeen,
       refetch: fetchCounts,
     };
-  }, [isPlayer, announcements, tasks, messages, unseenAnnouncements, handleMarkSeen, fetchCounts]);
+  }, [isPlayer, announcements, tasks, messages, travel, unseenAnnouncements, handleMarkSeen, fetchCounts]);
 
   return (
     <NotificationBadgeContext.Provider value={value}>

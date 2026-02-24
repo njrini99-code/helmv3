@@ -74,6 +74,7 @@ const playerNavItems: NavItem[] = [
 const playerSecondaryNav: NavItem[] = [
   { name: 'Roster', href: '/golf/dashboard/roster', icon: IconUsers },
   { name: 'Team Info', href: '/golf/dashboard/team', icon: IconHome },
+  { name: 'Travel', href: '/golf/dashboard/travel', icon: IconAirplane },
   { name: 'Tasks', href: '/golf/dashboard/tasks', icon: IconClipboardList },
   { name: 'Announcements', href: '/golf/dashboard/announcements', icon: IconBell },
 ];
@@ -109,9 +110,10 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
     return items.map(item => {
       if (item.name === 'Tasks' && badges.tasks > 0) return { ...item, badge: badges.tasks };
       if (item.name === 'Announcements' && badges.announcements > 0) return { ...item, badge: badges.announcements };
+      if (item.name === 'Travel' && badges.travel > 0) return { ...item, badge: badges.travel };
       return item;
     });
-  }, [userRole, badges.tasks, badges.announcements]);
+  }, [userRole, badges.tasks, badges.announcements, badges.travel]);
 
   // For mobile, always show expanded
   const isCollapsed = isMobile ? false : collapsed;
