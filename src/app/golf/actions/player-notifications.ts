@@ -185,12 +185,12 @@ export async function getPlayerNotificationCounts(
     const lastTravelSeenAt = notifStateResult.data?.last_travel_seen_at || null;
     let unseenTravel = 0;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const travelQuery = (supabase as any)
+    let travelQuery = (supabase as any)
       .from('golf_travel_itineraries')
       .select('id', { count: 'exact', head: true })
       .eq('team_id', teamId);
     if (lastTravelSeenAt) {
-      travelQuery.gt('created_at', lastTravelSeenAt);
+      travelQuery = travelQuery.gt('created_at', lastTravelSeenAt);
     }
     const travelResult = await travelQuery as { count: number | null };
     unseenTravel = travelResult.count || 0;

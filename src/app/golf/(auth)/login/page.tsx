@@ -7,6 +7,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { GolfSignInForm } from '@/components/auth/golf-sign-in-form';
 import { createClient } from '@/lib/supabase/client';
+import { isNativeApp } from '@/lib/utils/capacitor';
 
 function LoginContent() {
   const searchParams = useSearchParams();
@@ -27,6 +28,7 @@ function LoginContent() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const isNative = isNativeApp();
   const supabase = createClient();
 
   useEffect(() => {
@@ -260,14 +262,16 @@ function LoginContent() {
             </p>
           )}
 
-          <p className="text-center mt-4 text-warm-500 text-sm">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1 hover:text-warm-700 transition-colors px-3 py-3 -my-3 min-h-[44px] rounded-lg active:bg-warm-100/50"
-            >
-              ← Back to HelmLabs
-            </Link>
-          </p>
+          {!isNative && (
+            <p className="text-center mt-4 text-warm-500 text-sm">
+              <Link
+                href="/"
+                className="inline-flex items-center gap-1 hover:text-warm-700 transition-colors px-3 py-3 -my-3 min-h-[44px] rounded-lg active:bg-warm-100/50"
+              >
+                ← Back to HelmLabs
+              </Link>
+            </p>
+          )}
 
           <div className="flex items-center justify-center gap-2 mt-3">
             <Link

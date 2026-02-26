@@ -26,5 +26,5 @@
       "port": 0
     }
   ],
-  "autoVerify": true
+  "autoVerify": false
 }

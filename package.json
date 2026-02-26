@@ -30,6 +30,10 @@
     "node": ">=20.16.0"
   },
   "dependencies": {
+    "@capacitor/cli": "^8.1.0",
+    "@capacitor/core": "^8.1.0",
+    "@capacitor/ios": "^8.1.0",
+    "@capacitor/keyboard": "^8.0.1",
     "@datadog/browser-logs": "^6.25.3",
     "@datadog/browser-rum": "^6.25.3",
     "@dnd-kit/core": "^6.3.1",

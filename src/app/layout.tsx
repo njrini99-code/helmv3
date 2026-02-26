@@ -7,6 +7,7 @@ import { DatadogProvider } from '@/components/providers/DatadogProvider';
 import { Analytics } from '@vercel/analytics/next';
 import { AdminErrorHandler } from '@/components/providers/AdminErrorHandler';
 import { ChunkLoadErrorHandler } from '@/components/providers/ChunkLoadErrorHandler';
+import { CapacitorProvider } from '@/components/providers/CapacitorProvider';
 
 const playfair = Playfair_Display({
   subsets: ['latin'],
@@ -97,6 +98,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Analytics />
         <AdminErrorHandler />
         <ChunkLoadErrorHandler />
+        <CapacitorProvider />
       </body>
     </html>
   );

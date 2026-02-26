@@ -8,8 +8,10 @@ import { motion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { AlertCircle, ShieldCheck } from 'lucide-react';
 import { PasswordStrengthIndicator } from '@/components/auth/password-strength-indicator';
+import { isNativeApp } from '@/lib/utils/capacitor';
 
 export default function ResetPasswordPage() {
+  const isNative = isNativeApp();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
@@ -299,14 +301,16 @@ export default function ResetPasswordPage() {
             </Link>
           </p>
 
-          <p className="text-center mt-3 sm:mt-4 text-warm-500 text-sm">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1 hover:text-warm-700 transition-colors px-3 py-3 -my-3 min-h-[44px] rounded-lg active:bg-warm-100/50"
-            >
-              ← Back to HelmLabs
-            </Link>
-          </p>
+          {!isNative && (
+            <p className="text-center mt-3 sm:mt-4 text-warm-500 text-sm">
+              <Link
+                href="/"
+                className="inline-flex items-center gap-1 hover:text-warm-700 transition-colors px-3 py-3 -my-3 min-h-[44px] rounded-lg active:bg-warm-100/50"
+              >
+                ← Back to HelmLabs
+              </Link>
+            </p>
+          )}
         </motion.div>
       </div>
     </div>

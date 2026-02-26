@@ -9,8 +9,8 @@ export const metadata: Metadata = {
   description: 'Track tournament travel, manage logistics, and coordinate team itineraries for your golf program.',
 };
 
-// Cache travel info for 5 minutes (travel plans don't change frequently)
-export const revalidate = 300;
+// Auth-dependent page — must render per-request so each user sees their own data
+export const dynamic = 'force-dynamic';
 
 export default async function GolfTravelPage() {
   const supabase = await createClient();
@@ -33,7 +33,7 @@ export default async function GolfTravelPage() {
       ? supabase.from('golf_teams').select('id').eq('organization_id', coach.organization_id).maybeSingle()
       : Promise.resolve({ data: null }),
     player?.id
-      ? supabase.from('golf_team_members').select('team_id').eq('player_id', player.id).maybeSingle()
+      ? supabase.from('golf_team_members').select('team_id').eq('player_id', player.id).eq('status', 'active').maybeSingle()
       : Promise.resolve({ data: null }),
   ]);
 

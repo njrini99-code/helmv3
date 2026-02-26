@@ -6,8 +6,10 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { AlertCircle, CheckCircle2, Mail } from 'lucide-react';
+import { isNativeApp } from '@/lib/utils/capacitor';
 
 export default function ForgotPasswordPage() {
+  const isNative = isNativeApp();
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -289,14 +291,16 @@ export default function ForgotPasswordPage() {
             </p>
           )}
 
-          <p className="text-center mt-3 sm:mt-4 text-warm-500 text-sm">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1 hover:text-warm-700 transition-colors px-3 py-3 -my-3 min-h-[44px] rounded-lg active:bg-warm-100/50"
-            >
-              ← Back to HelmLabs
-            </Link>
-          </p>
+          {!isNative && (
+            <p className="text-center mt-3 sm:mt-4 text-warm-500 text-sm">
+              <Link
+                href="/"
+                className="inline-flex items-center gap-1 hover:text-warm-700 transition-colors px-3 py-3 -my-3 min-h-[44px] rounded-lg active:bg-warm-100/50"
+              >
+                ← Back to HelmLabs
+              </Link>
+            </p>
+          )}
         </motion.div>
       </div>
     </div>

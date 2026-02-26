@@ -158,6 +158,7 @@ const nextConfig = {
               img-src 'self' data: https: blob:;
               font-src 'self' data: https://fonts.gstatic.com;
               connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.sentry.io https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://cdnjs.cloudflare.com ws://localhost:* wss://localhost:* ws://127.0.0.1:* wss://127.0.0.1:*;
+              media-src 'self' data:;
               worker-src 'self' blob:;
               frame-src 'self' https://*.supabase.co blob: data:;
               frame-ancestors 'none';

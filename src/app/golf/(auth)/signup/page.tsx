@@ -6,6 +6,7 @@ import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { GolfSignUpForm } from '@/components/auth/golf-sign-up-form';
+import { isNativeApp } from '@/lib/utils/capacitor';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -27,6 +28,7 @@ function SignInLink() {
 }
 
 export default function SignupPage() {
+  const isNative = isNativeApp();
   return (
     <div className="min-h-dvh flex items-center justify-center relative p-4 sm:p-6 bg-auth-golf">
       {/* Skip to main content link for keyboard navigation */}
@@ -190,14 +192,16 @@ export default function SignupPage() {
             </Suspense>
           </p>
 
-          <p className="text-center mt-3 sm:mt-4 text-warm-500 text-sm">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1 hover:text-warm-700 transition-colors px-3 py-3 -my-3 min-h-[44px] rounded-lg active:bg-warm-100/50"
-            >
-              ← Back to HelmLabs
-            </Link>
-          </p>
+          {!isNative && (
+            <p className="text-center mt-3 sm:mt-4 text-warm-500 text-sm">
+              <Link
+                href="/"
+                className="inline-flex items-center gap-1 hover:text-warm-700 transition-colors px-3 py-3 -my-3 min-h-[44px] rounded-lg active:bg-warm-100/50"
+              >
+                ← Back to HelmLabs
+              </Link>
+            </p>
+          )}
 
           <div className="flex items-center justify-center gap-2 mt-2 sm:mt-3">
             <Link

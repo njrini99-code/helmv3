@@ -17,6 +17,7 @@ export function useAuth() {
   const { user, coach, player, loading, coachMode, setUser, setCoach, setPlayer, setLoading, setCoachMode, clear } = useAuthStore();
 
   const fetchUser = useCallback(async () => {
+    setLoading(true);
     try {
       const { data: { user: authUser } } = await supabase.auth.getUser();
 
