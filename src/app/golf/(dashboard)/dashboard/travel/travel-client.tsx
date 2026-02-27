@@ -264,6 +264,11 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
       setShowModal(false);
       router.refresh();
     } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.toLowerCase().includes('server action') && msg.toLowerCase().includes('not found')) {
+        window.location.reload();
+        return;
+      }
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setSaving(false);
@@ -273,16 +278,25 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this travel itinerary?')) return;
 
-    const result = await deleteGolfTravelItinerary(id);
+    try {
+      const result = await deleteGolfTravelItinerary(id);
 
-    if (result.success) {
-      setItineraries((prev) => prev.filter((i) => i.id !== id));
-      if (selectedItinerary?.id === id) {
-        setSelectedItinerary(null);
+      if (result.success) {
+        setItineraries((prev) => prev.filter((i) => i.id !== id));
+        if (selectedItinerary?.id === id) {
+          setSelectedItinerary(null);
+        }
+        router.refresh();
+      } else {
+        alert(result.error || 'Failed to delete itinerary');
       }
-      router.refresh();
-    } else {
-      alert(result.error || 'Failed to delete itinerary');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.toLowerCase().includes('server action') && msg.toLowerCase().includes('not found')) {
+        window.location.reload();
+        return;
+      }
+      alert('An error occurred. Please try again.');
     }
   };
 

@@ -5,16 +5,21 @@ import { useEffect } from 'react';
 const RELOAD_KEY = 'chunk-error-reload';
 
 /**
- * Handles stale deployment chunk load errors.
+ * Handles stale deployment errors globally.
  *
- * When a new deployment goes live, users with cached HTML still reference
- * old JS chunk hashes that no longer exist on the CDN. This causes:
- *   - "Loading chunk XXXX failed"
- *   - "Cannot read properties of undefined (reading 'call')"
+ * When a new deployment goes live, users with cached HTML/JS encounter:
  *
- * This component catches those errors globally and triggers a single hard
- * reload to fetch the fresh deployment manifest. A sessionStorage flag
- * prevents infinite reload loops.
+ * 1. **Chunk load errors** — old JS chunk hashes no longer exist on the CDN:
+ *    - "Loading chunk XXXX failed"
+ *    - "Cannot read properties of undefined (reading 'call')"
+ *
+ * 2. **Stale server action errors** — old server action IDs no longer exist:
+ *    - "Server Action was not found on the server" (UnrecognizedActionError)
+ *    - Manifests as "cannot connect to the server" to the user
+ *
+ * This component catches both globally and triggers a single hard reload
+ * to fetch the fresh deployment. A sessionStorage flag prevents infinite
+ * reload loops.
  */
 export function ChunkLoadErrorHandler() {
   useEffect(() => {
@@ -30,6 +35,19 @@ export function ChunkLoadErrorHandler() {
       );
     }
 
+    function isStaleServerActionError(message: string): boolean {
+      const lower = message.toLowerCase();
+      return (
+        lower.includes('server action') &&
+        (lower.includes('not found on the server') ||
+          lower.includes('was not found'))
+      );
+    }
+
+    function isStaleDeploymentError(message: string): boolean {
+      return isChunkLoadError(message) || isStaleServerActionError(message);
+    }
+
     function handleReload() {
       // Only auto-reload once per session to prevent loops
       const hasReloaded = sessionStorage.getItem(RELOAD_KEY);
@@ -40,7 +58,7 @@ export function ChunkLoadErrorHandler() {
     }
 
     function onError(event: ErrorEvent) {
-      if (isChunkLoadError(event.message || '')) {
+      if (isStaleDeploymentError(event.message || '')) {
         event.preventDefault();
         handleReload();
       }
@@ -49,7 +67,7 @@ export function ChunkLoadErrorHandler() {
     function onUnhandledRejection(event: PromiseRejectionEvent) {
       const message =
         event.reason?.message || event.reason?.toString() || '';
-      if (isChunkLoadError(message)) {
+      if (isStaleDeploymentError(message)) {
         event.preventDefault();
         handleReload();
       }

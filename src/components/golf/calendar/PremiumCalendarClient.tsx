@@ -439,6 +439,14 @@ export function PremiumCalendarClient({
       setIsEventModalOpen(false);
       setSelectedEvent(null);
       router.refresh();
+    } catch (err) {
+      // Stale deployment: server action IDs changed after a new deploy
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.toLowerCase().includes('server action') && msg.toLowerCase().includes('not found')) {
+        window.location.reload();
+        return;
+      }
+      throw err;
     } finally {
       setIsSavingEvent(false);
     }
@@ -456,6 +464,13 @@ export function PremiumCalendarClient({
       setIsEventModalOpen(false);
       setSelectedEvent(null);
       router.refresh();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.toLowerCase().includes('server action') && msg.toLowerCase().includes('not found')) {
+        window.location.reload();
+        return;
+      }
+      throw err;
     } finally {
       setIsSavingEvent(false);
     }
@@ -849,6 +864,13 @@ export function PremiumCalendarClient({
             setSelectedEvent(null);
             setInitialEventType(undefined);
             router.refresh();
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            if (msg.toLowerCase().includes('server action') && msg.toLowerCase().includes('not found')) {
+              window.location.reload();
+              return;
+            }
+            throw err;
           } finally {
             setIsSavingEvent(false);
           }
@@ -864,6 +886,13 @@ export function PremiumCalendarClient({
             setSelectedEvent(null);
             setInitialEventType(undefined);
             router.refresh();
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            if (msg.toLowerCase().includes('server action') && msg.toLowerCase().includes('not found')) {
+              window.location.reload();
+              return;
+            }
+            throw err;
           } finally {
             setIsSavingEvent(false);
           }
