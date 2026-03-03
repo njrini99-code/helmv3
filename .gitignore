@@ -54,3 +54,4 @@ next-shadcn-dashboard-starter/
 .taskmaster/tasks.backup.json
 .vercel
 .env*.local
+.playwright-mcp/

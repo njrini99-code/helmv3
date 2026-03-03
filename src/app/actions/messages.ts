@@ -179,15 +179,11 @@ export async function createConversation({
   sport = 'baseball',
   teamId,
 }: CreateConversationOptions) {
-  console.log('[createConversation] Called with:', { participantUserIds, sport, teamId });
-
   const supabase = await createClient();
 
   // Get current user
   const { data: { user } } = await supabase.auth.getUser();
-  console.log('[createConversation] Current user:', user?.id);
   if (!user) {
-    console.error('[createConversation] No authenticated user');
     throw new Error('Unauthorized');
   }
 
@@ -216,14 +212,12 @@ export async function createConversation({
 
       if (sharedConversations && sharedConversations.length > 0 && sharedConversations[0]) {
         // Found existing conversation
-        console.log('[createConversation] Found existing conversation:', sharedConversations[0].conversation_id);
         return { conversationId: sharedConversations[0].conversation_id };
       }
     }
   }
 
   // Create new conversation
-  console.log('[createConversation] Creating new conversation...');
   const conversationsTable = sport === 'golf' ? 'golf_conversations' : 'baseball_conversations';
 
   // Build insert data - golf requires team_id
@@ -242,16 +236,11 @@ export async function createConversation({
     insertData.team_id = teamId;
   }
 
-  console.log('[createConversation] Insert data:', insertData);
-  console.log('[createConversation] Table:', conversationsTable);
-
   const { data: newConversation, error: convError } = await supabase
     .from(conversationsTable as any)
     .insert(insertData)
     .select('id')
     .single() as { data: { id: string } | null; error: SupabaseError | null };
-
-  console.log('[createConversation] Insert result:', { newConversation, convError });
 
   if (convError || !newConversation) {
     console.error('[createConversation] Conversation create error:', {
@@ -267,7 +256,6 @@ export async function createConversation({
   }
 
   const conversationId = newConversation.id;
-  console.log('[createConversation] Conversation created with id:', conversationId);
 
   // Add all participants (including current user)
   const allParticipantIds = [...new Set([user.id, ...participantUserIds].filter(Boolean))];
@@ -276,8 +264,6 @@ export async function createConversation({
     user_id: userId,
     joined_at: new Date().toISOString(),
   }));
-
-  console.log('[createConversation] Adding participants:', participantInserts);
 
   const { error: participantsError } = await supabase
     .from(participantsTable as any)
@@ -295,7 +281,6 @@ export async function createConversation({
     throw new Error(`Failed to add participants: ${participantsError.message}`);
   }
 
-  console.log('[createConversation] Success! Returning conversationId:', conversationId);
   revalidatePath(`/${sport}/dashboard/messages`);
 
   return { conversationId };

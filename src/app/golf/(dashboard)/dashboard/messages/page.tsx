@@ -143,22 +143,13 @@ export default function GolfMessagesPage() {
 
   // Handle new conversation creation
   const handleNewConversation = async (userId: string) => {
-    console.log('[MessagesPage] handleNewConversation called', {
-      userId,
-      teamId,
-      userRole,
-    });
     try {
-      console.log('[MessagesPage] Calling createGolfConversation...', { participantUserIds: [userId], teamId });
       const result = await createGolfConversation([userId], teamId || undefined);
-      console.log('[MessagesPage] createGolfConversation result:', result);
       if (result.conversationId) {
-        console.log('[MessagesPage] Conversation created, refetching...');
         await refetch();
         handleSelectConversation(result.conversationId);
         showToast('Conversation started', 'success');
       } else if ('error' in result) {
-        console.error('[MessagesPage] createGolfConversation returned error:', result.error);
         showToast(String(result.error) || 'Failed to start conversation', 'error');
       }
     } catch (err) {

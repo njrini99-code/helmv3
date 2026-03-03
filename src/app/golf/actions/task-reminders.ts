@@ -384,7 +384,7 @@ async function sendInAppNotification(task: GolfTask): Promise<void> {
  */
 async function sendEmailNotification(task: GolfTask): Promise<void> {
   if (!RESEND_API_KEY) {
-    console.log('[TaskReminders] Email skipped: RESEND_API_KEY not configured');
+    console.warn('[TaskReminders] Email skipped: RESEND_API_KEY not configured');
     return;
   }
 
@@ -402,7 +402,6 @@ async function sendEmailNotification(task: GolfTask): Promise<void> {
 
   const fullTask = taskWithUsers as TaskWithUsers | null;
   if (!fullTask) {
-    console.log('[TaskReminders] Email skipped: Could not fetch task details');
     return;
   }
 
@@ -416,7 +415,6 @@ async function sendEmailNotification(task: GolfTask): Promise<void> {
   }
 
   if (recipients.length === 0) {
-    console.log('[TaskReminders] Email skipped: No recipients found');
     return;
   }
 
@@ -485,7 +483,6 @@ async function sendEmailNotification(task: GolfTask): Promise<void> {
         throw new Error(`Email send failed: ${errorText}`);
       }
 
-      console.log(`[TaskReminders] Email sent successfully to ${email}`);
     } catch (err) {
       console.error(`[TaskReminders] Error sending email to ${email}:`, err);
       throw err;
@@ -527,7 +524,6 @@ function escapeHtml(text: string): string {
 async function sendPushNotification(task: GolfTask): Promise<void> {
   // Check if VAPID keys are configured
   if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
-    console.log('[TaskReminders] Push notification skipped: VAPID keys not configured');
     return;
   }
 
@@ -541,7 +537,6 @@ async function sendPushNotification(task: GolfTask): Promise<void> {
   }
 
   if (userIds.length === 0) {
-    console.log('[TaskReminders] Push notification skipped: No recipients');
     return;
   }
 
@@ -565,8 +560,7 @@ async function sendPushNotification(task: GolfTask): Promise<void> {
     if (error) {
       // Table might not exist yet
       if (error.code === '42P01') {
-        console.log('[TaskReminders] Push notification skipped: push_subscriptions table does not exist');
-        console.log('[TaskReminders] To enable push notifications, run migration to create push_subscriptions table');
+        // push_subscriptions table not yet created — push notifications not enabled
         return;
       }
       throw error;
@@ -574,12 +568,11 @@ async function sendPushNotification(task: GolfTask): Promise<void> {
 
     subscriptions = (data as typeof subscriptions) || [];
   } catch (err) {
-    console.log('[TaskReminders] Push notification skipped: Could not fetch subscriptions', err);
+    console.error('[TaskReminders] Could not fetch push subscriptions:', err);
     return;
   }
 
   if (subscriptions.length === 0) {
-    console.log('[TaskReminders] Push notification skipped: No push subscriptions found for users');
     return;
   }
 
@@ -615,7 +608,6 @@ async function sendPushNotification(task: GolfTask): Promise<void> {
 
       if (pushResult.success) {
         sentCount++;
-        console.log(`[TaskReminders] Push sent to subscription ${subscription.id}`);
       } else {
         failedCount++;
         console.error(`[TaskReminders] Push failed for subscription ${subscription.id}:`, pushResult.error);
@@ -624,7 +616,6 @@ async function sendPushNotification(task: GolfTask): Promise<void> {
         if (pushResult.statusCode === 404 || pushResult.statusCode === 410) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           await (supabase as any).from('push_subscriptions').delete().eq('id', subscription.id);
-          console.log(`[TaskReminders] Removed expired subscription ${subscription.id}`);
         }
       }
     } catch (err) {
@@ -633,7 +624,9 @@ async function sendPushNotification(task: GolfTask): Promise<void> {
     }
   }
 
-  console.log(`[TaskReminders] Push notifications: ${sentCount} sent, ${failedCount} failed`);
+  if (failedCount > 0) {
+    console.warn(`[TaskReminders] Push notifications: ${sentCount} sent, ${failedCount} failed`);
+  }
 }
 
 /**
@@ -674,9 +667,7 @@ async function sendWebPush(
       return { success: true };
     }
 
-    // Fallback: If web-push is not installed, log and return
-    console.log('[TaskReminders] web-push package not installed. Install it with: npm install web-push');
-    console.log('[TaskReminders] Would send push to:', subscription.endpoint);
+    // Fallback: If web-push is not installed, push notifications are unavailable
     return { success: false, error: 'web-push package not installed' };
   } catch (err) {
     const error = err as { statusCode?: number; message?: string };

@@ -11,7 +11,8 @@ const RELOAD_KEY = 'chunk-error-reload';
  *
  * 1. **Chunk load errors** — old JS chunk hashes no longer exist on the CDN:
  *    - "Loading chunk XXXX failed"
- *    - "Cannot read properties of undefined (reading 'call')"
+ *    - Chrome: "Cannot read properties of undefined (reading 'call')"
+ *    - Safari: "undefined is not an object (evaluating 'f[e].call')"
  *
  * 2. **Stale server action errors** — old server action IDs no longer exist:
  *    - "Server Action was not found on the server" (UnrecognizedActionError)
@@ -30,8 +31,12 @@ export function ChunkLoadErrorHandler() {
         lower.includes('loading css chunk') ||
         lower.includes('chunkloaderror') ||
         // Webpack module call failure from missing chunk
+        // Chrome: "Cannot read properties of undefined (reading 'call')"
         (lower.includes("cannot read properties of undefined") &&
-          lower.includes("'call'"))
+          lower.includes("'call'")) ||
+        // Safari: "undefined is not an object (evaluating 'f[e].call')"
+        (lower.includes("undefined is not an object") &&
+          lower.includes(".call"))
       );
     }
 

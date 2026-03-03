@@ -101,10 +101,8 @@ export default function NewRoundClient() {
           onSyncStart: () => {
             // Store handles this via its own registered callbacks
           },
-          onSyncComplete: (result) => {
-            if (result.syncedRounds > 0 || result.syncedHoles > 0 || result.syncedShots > 0) {
-              console.log(`[NewRound] Synced ${result.syncedRounds + result.syncedHoles + result.syncedShots} items`);
-            }
+          onSyncComplete: (_result) => {
+            // Offline data synced successfully
           },
           onSyncError: (error) => {
             console.error('[NewRound] Sync error:', error.message);

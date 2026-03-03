@@ -58,10 +58,8 @@ export default function ContinueRoundClient({
   const [offlineSyncState, offlineSyncActions] = useOfflineSync({
     autoSyncInterval: 30000,
     syncOnReconnect: true,
-    onSyncComplete: (success, count) => {
-      if (success && count > 0) {
-        console.log(`Synced ${count} items from offline storage`);
-      }
+    onSyncComplete: (_success, _count) => {
+      // Offline data synced successfully
     },
   });
 
