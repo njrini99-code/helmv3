@@ -2,7 +2,17 @@
 
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { X, Mail, Send, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import {
+  X,
+  Mail,
+  Send,
+  AlertCircle,
+  CheckCircle2,
+  Loader2,
+  ExternalLink,
+  Copy,
+  Check,
+} from 'lucide-react';
 import type { Coach } from '../crm-config';
 
 interface BulkEmailModalProps {
@@ -11,16 +21,78 @@ interface BulkEmailModalProps {
   onSuccess: () => void;
 }
 
+type SendMode = 'gmail' | 'helm';
+
 export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalProps) {
+  const [mode, setMode] = useState<SendMode>('gmail');
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const coachesWithEmail = coaches.filter(c => c.email);
   const coachesWithoutEmail = coaches.filter(c => !c.email);
+  const bccList = coachesWithEmail.map(c => c.email!).join(',');
 
-  const handleSend = async () => {
+  // ── Open in Gmail with BCC ──
+  const openInGmail = () => {
+    const params = new URLSearchParams();
+    params.set('view', 'cm');
+    params.set('fs', '1');
+    params.set('bcc', bccList);
+    if (subject.trim()) params.set('su', subject.trim());
+    if (body.trim()) params.set('body', body.trim());
+
+    window.open(`https://mail.google.com/mail/?${params.toString()}`, '_blank');
+
+    // Log the bulk contact in CRM for each coach
+    logBulkContact();
+  };
+
+  // ── Copy BCC list to clipboard ──
+  const copyBccList = async () => {
+    try {
+      await navigator.clipboard.writeText(bccList);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback
+      const textarea = document.createElement('textarea');
+      textarea.value = bccList;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  // ── Log bulk contact (fire-and-forget for Gmail mode) ──
+  const logBulkContact = async () => {
+    try {
+      await fetch('/api/admin/crm/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipients: coachesWithEmail.map(c => ({
+            id: c.id,
+            email: c.email!,
+            name: c.name,
+          })),
+          subject: subject.trim() || '(Sent via Gmail)',
+          logOnly: true,
+        }),
+      });
+      onSuccess();
+    } catch {
+      // Silent — don't block the Gmail open
+    }
+  };
+
+  // ── Send via Helm (Resend — individual branded emails) ──
+  const handleSendViaHelm = async () => {
     if (!subject.trim() || !body.trim() || coachesWithEmail.length === 0) return;
 
     setSending(true);
@@ -46,7 +118,10 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
       if (!res.ok) {
         setResult({ success: false, message: data.error || 'Failed to send emails' });
       } else {
-        setResult({ success: true, message: `Successfully sent ${data.sent} email${data.sent !== 1 ? 's' : ''}${data.failed > 0 ? ` (${data.failed} failed)` : ''}` });
+        setResult({
+          success: true,
+          message: `Successfully sent ${data.sent} email${data.sent !== 1 ? 's' : ''}${data.failed > 0 ? ` (${data.failed} failed)` : ''}`,
+        });
         setTimeout(() => {
           onSuccess();
           onClose();
@@ -66,9 +141,10 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
 
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="w-full max-w-2xl bg-[#FFFEF8] rounded-2xl shadow-2xl border border-warm-200/60 overflow-hidden"
-          onClick={e => e.stopPropagation()}>
-
+        <div
+          className="w-full max-w-2xl bg-[#FFFEF8] rounded-2xl shadow-2xl border border-warm-200/60 overflow-hidden"
+          onClick={e => e.stopPropagation()}
+        >
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100 bg-white">
             <div className="flex items-center gap-3">
@@ -76,100 +152,264 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
                 <Mail size={18} className="text-blue-600" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-warm-900">Send Email</h2>
+                <h2 className="text-lg font-bold text-warm-900">Email Coaches</h2>
                 <p className="text-xs text-warm-500">
-                  From admin@helmsportslabs.com to {coachesWithEmail.length} recipient{coachesWithEmail.length !== 1 ? 's' : ''}
+                  {coachesWithEmail.length} recipient{coachesWithEmail.length !== 1 ? 's' : ''} selected
                 </p>
               </div>
             </div>
-            <button onClick={onClose} className="p-2 rounded-xl hover:bg-warm-50 text-warm-400 hover:text-warm-600 transition-colors">
+            <button
+              onClick={onClose}
+              className="p-2 rounded-xl hover:bg-warm-50 text-warm-400 hover:text-warm-600 transition-colors"
+            >
               <X size={18} />
             </button>
           </div>
 
-          {/* Recipient Summary */}
-          <div className="px-6 py-3 border-b border-warm-100/50 bg-warm-50/30">
+          {/* Mode Tabs */}
+          <div className="px-6 pt-4 pb-0">
+            <div className="flex gap-1 p-1 bg-warm-100/50 rounded-xl">
+              <button
+                onClick={() => { setMode('gmail'); setResult(null); }}
+                className={cn(
+                  'flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all',
+                  mode === 'gmail'
+                    ? 'bg-white text-warm-900 shadow-sm'
+                    : 'text-warm-500 hover:text-warm-700'
+                )}
+              >
+                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none">
+                  <path d="M22 6L12 13L2 6V4L12 11L22 4V6Z" fill="#EA4335"/>
+                  <path d="M2 6L2 18H6V10L12 14L18 10V18H22V6L12 13L2 6Z" fill="#4285F4"/>
+                  <rect x="2" y="16" width="4" height="2" fill="#34A853"/>
+                  <rect x="18" y="16" width="4" height="2" fill="#FBBC05"/>
+                </svg>
+                Open in Gmail (BCC)
+              </button>
+              <button
+                onClick={() => { setMode('helm'); setResult(null); }}
+                className={cn(
+                  'flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all',
+                  mode === 'helm'
+                    ? 'bg-white text-warm-900 shadow-sm'
+                    : 'text-warm-500 hover:text-warm-700'
+                )}
+              >
+                <div className="w-4 h-4 rounded bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center">
+                  <span className="text-white text-[8px] font-bold leading-none">H</span>
+                </div>
+                Send from Helm
+              </button>
+            </div>
+          </div>
+
+          {/* Recipient Summary + BCC Copy */}
+          <div className="px-6 py-3 border-b border-warm-100/50">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-semibold text-warm-500 uppercase tracking-wider">
+                {mode === 'gmail' ? 'BCC Recipients' : 'Recipients'}
+              </span>
+              <button
+                onClick={copyBccList}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-warm-100/50 hover:bg-warm-100 text-warm-600 transition-colors"
+              >
+                {copied ? (
+                  <>
+                    <Check size={12} className="text-primary-600" />
+                    <span className="text-primary-600">Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy size={12} />
+                    Copy email list
+                  </>
+                )}
+              </button>
+            </div>
             <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto">
               {coachesWithEmail.map(c => (
-                <span key={c.id} className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium">
+                <span
+                  key={c.id}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium"
+                >
                   {c.name}
+                  <span className="text-blue-400 ml-0.5">{c.email}</span>
                 </span>
               ))}
             </div>
             {coachesWithoutEmail.length > 0 && (
               <div className="flex items-center gap-1.5 mt-2 text-xs text-amber-600">
                 <AlertCircle size={12} />
-                <span>{coachesWithoutEmail.length} coach{coachesWithoutEmail.length !== 1 ? 'es' : ''} skipped (no email): {coachesWithoutEmail.map(c => c.name).join(', ')}</span>
+                <span>
+                  {coachesWithoutEmail.length} coach{coachesWithoutEmail.length !== 1 ? 'es' : ''}{' '}
+                  skipped (no email): {coachesWithoutEmail.map(c => c.name).join(', ')}
+                </span>
               </div>
             )}
           </div>
 
-          {/* Form */}
-          <div className="px-6 py-4 space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1.5">Subject</label>
-              <input
-                type="text"
-                value={subject}
-                onChange={e => setSubject(e.target.value)}
-                placeholder="Email subject line..."
-                className="w-full px-4 py-2.5 border border-warm-200/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white/70"
-                autoFocus
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1.5">Message</label>
-              <textarea
-                value={body}
-                onChange={e => setBody(e.target.value)}
-                placeholder="Write your email message here...&#10;&#10;You can use {name} to personalize with the coach's name."
-                rows={8}
-                className="w-full px-4 py-3 border border-warm-200/50 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white/70 leading-relaxed"
-              />
-              <p className="text-xs text-warm-400 mt-1">
-                Use <code className="px-1 py-0.5 bg-warm-100 rounded text-warm-600">{'{name}'}</code> to insert each coach&apos;s name
-              </p>
-            </div>
-
-            {/* Result */}
-            {result && (
-              <div className={cn(
-                'flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium',
-                result.success ? 'bg-primary-50 text-primary-700 border border-primary-200/50' : 'bg-red-50 text-red-700 border border-red-200/50'
-              )}>
-                {result.success ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
-                {result.message}
+          {/* ── Gmail Mode ── */}
+          {mode === 'gmail' && (
+            <>
+              <div className="px-6 py-4 space-y-4">
+                <div className="px-4 py-3 rounded-xl bg-blue-50/50 border border-blue-100">
+                  <p className="text-sm text-blue-800">
+                    Opens Gmail compose with all {coachesWithEmail.length} email{coachesWithEmail.length !== 1 ? 's' : ''} in the{' '}
+                    <strong>BCC field</strong> — recipients won&apos;t see each other&apos;s addresses.
+                    Make sure you&apos;re signed into <strong>admin@helmsportslabs.com</strong> in Gmail.
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1.5">
+                    Subject <span className="text-warm-400 normal-case font-normal">(optional — edit in Gmail)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={subject}
+                    onChange={e => setSubject(e.target.value)}
+                    placeholder="Pre-fill subject line..."
+                    className="w-full px-4 py-2.5 border border-warm-200/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white/70"
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1.5">
+                    Message <span className="text-warm-400 normal-case font-normal">(optional — edit in Gmail)</span>
+                  </label>
+                  <textarea
+                    value={body}
+                    onChange={e => setBody(e.target.value)}
+                    placeholder="Pre-fill message body (you can edit everything in Gmail)..."
+                    rows={5}
+                    className="w-full px-4 py-3 border border-warm-200/50 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white/70 leading-relaxed"
+                  />
+                </div>
               </div>
-            )}
-          </div>
 
-          {/* Footer */}
-          <div className="flex items-center justify-between px-6 py-4 border-t border-warm-100 bg-white">
-            <button onClick={onClose} className="px-4 py-2 text-sm text-warm-600 hover:text-warm-800 font-medium transition-colors">
-              Cancel
-            </button>
-            <button
-              onClick={handleSend}
-              disabled={sending || !subject.trim() || !body.trim() || coachesWithEmail.length === 0}
-              className={cn(
-                'flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm',
-                'bg-primary-600 text-white hover:bg-primary-700',
-                'disabled:opacity-50 disabled:cursor-not-allowed'
-              )}
-            >
-              {sending ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                <>
-                  <Send size={16} />
-                  Send to {coachesWithEmail.length} Coach{coachesWithEmail.length !== 1 ? 'es' : ''}
-                </>
-              )}
-            </button>
-          </div>
+              {/* Gmail Footer */}
+              <div className="flex items-center justify-between px-6 py-4 border-t border-warm-100 bg-white">
+                <button
+                  onClick={onClose}
+                  className="px-4 py-2 text-sm text-warm-600 hover:text-warm-800 font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={openInGmail}
+                  disabled={coachesWithEmail.length === 0}
+                  className={cn(
+                    'flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm',
+                    'bg-blue-600 text-white hover:bg-blue-700',
+                    'disabled:opacity-50 disabled:cursor-not-allowed'
+                  )}
+                >
+                  <ExternalLink size={16} />
+                  Open in Gmail ({coachesWithEmail.length} BCC)
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* ── Helm Mode (Resend — individual branded emails) ── */}
+          {mode === 'helm' && (
+            <>
+              <div className="px-6 py-4 space-y-4">
+                <div className="px-4 py-3 rounded-xl bg-primary-50/50 border border-primary-100">
+                  <p className="text-sm text-primary-800">
+                    Sends individual branded emails from <strong>admin@helmsportslabs.com</strong> via
+                    Helm. Each coach gets their own email — use{' '}
+                    <code className="px-1 py-0.5 bg-primary-100 rounded text-primary-700 text-xs">
+                      {'{name}'}
+                    </code>{' '}
+                    to personalize. Auto-logs in the CRM contact history.
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1.5">
+                    Subject <span className="text-red-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={subject}
+                    onChange={e => setSubject(e.target.value)}
+                    placeholder="Email subject line..."
+                    className="w-full px-4 py-2.5 border border-warm-200/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white/70"
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1.5">
+                    Message <span className="text-red-400">*</span>
+                  </label>
+                  <textarea
+                    value={body}
+                    onChange={e => setBody(e.target.value)}
+                    placeholder={
+                      'Hi {name},\n\nWrite your email message here...\n\nBest,\nHelm Sports Labs'
+                    }
+                    rows={8}
+                    className="w-full px-4 py-3 border border-warm-200/50 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white/70 leading-relaxed"
+                  />
+                  <p className="text-xs text-warm-400 mt-1">
+                    Use{' '}
+                    <code className="px-1 py-0.5 bg-warm-100 rounded text-warm-600">
+                      {'{name}'}
+                    </code>{' '}
+                    to insert each coach&apos;s name
+                  </p>
+                </div>
+
+                {/* Result */}
+                {result && (
+                  <div
+                    className={cn(
+                      'flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium',
+                      result.success
+                        ? 'bg-primary-50 text-primary-700 border border-primary-200/50'
+                        : 'bg-red-50 text-red-700 border border-red-200/50'
+                    )}
+                  >
+                    {result.success ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+                    {result.message}
+                  </div>
+                )}
+              </div>
+
+              {/* Helm Footer */}
+              <div className="flex items-center justify-between px-6 py-4 border-t border-warm-100 bg-white">
+                <button
+                  onClick={onClose}
+                  className="px-4 py-2 text-sm text-warm-600 hover:text-warm-800 font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSendViaHelm}
+                  disabled={
+                    sending || !subject.trim() || !body.trim() || coachesWithEmail.length === 0
+                  }
+                  className={cn(
+                    'flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm',
+                    'bg-primary-600 text-white hover:bg-primary-700',
+                    'disabled:opacity-50 disabled:cursor-not-allowed'
+                  )}
+                >
+                  {sending ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Send size={16} />
+                      Send to {coachesWithEmail.length} Coach
+                      {coachesWithEmail.length !== 1 ? 'es' : ''}
+                    </>
+                  )}
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </>

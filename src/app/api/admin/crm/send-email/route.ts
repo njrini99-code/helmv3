@@ -10,7 +10,8 @@ interface Recipient {
 interface SendEmailRequest {
   recipients: Recipient[];
   subject: string;
-  body: string;
+  body?: string;
+  logOnly?: boolean;
 }
 
 export async function POST(request: Request) {
@@ -33,14 +34,41 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { recipients, subject, body } = (await request.json()) as SendEmailRequest;
+    const { recipients, subject, body, logOnly } = (await request.json()) as SendEmailRequest;
 
-    if (!recipients?.length || !subject?.trim() || !body?.trim()) {
-      return NextResponse.json({ error: 'Missing required fields: recipients, subject, body' }, { status: 400 });
+    if (!recipients?.length || !subject?.trim()) {
+      return NextResponse.json({ error: 'Missing required fields: recipients, subject' }, { status: 400 });
     }
 
     if (recipients.length > 100) {
       return NextResponse.json({ error: 'Maximum 100 recipients per batch' }, { status: 400 });
+    }
+
+    // ── Log-only mode (used when sending via Gmail — just record the contact) ──
+    if (logOnly) {
+      const now = new Date().toISOString();
+      for (const recipient of recipients) {
+        try {
+          await supabase.from('crm_contact_log').insert({
+            coach_id: recipient.id,
+            contact_type: 'email',
+            notes: `Sent via Gmail (BCC): "${subject}"`,
+            created_by: user.id,
+          });
+          await supabase.from('crm_coaches').update({
+            last_contacted_at: now,
+            updated_at: now,
+          }).eq('id', recipient.id);
+        } catch {
+          // Continue logging others even if one fails
+        }
+      }
+      return NextResponse.json({ logged: recipients.length });
+    }
+
+    // ── Send mode (individual branded emails via Resend) ──
+    if (!body?.trim()) {
+      return NextResponse.json({ error: 'Message body is required for sending' }, { status: 400 });
     }
 
     const apiKey = process.env.RESEND_API_KEY;
@@ -51,7 +79,6 @@ export async function POST(request: Request) {
     let sent = 0;
     let failed = 0;
 
-    // Send emails individually for personalization
     for (const recipient of recipients) {
       try {
         const personalizedBody = body.replace(/\{name\}/g, recipient.name);
@@ -72,14 +99,12 @@ export async function POST(request: Request) {
 
         if (res.ok) {
           sent++;
-          // Log the contact in CRM
           await supabase.from('crm_contact_log').insert({
             coach_id: recipient.id,
             contact_type: 'email',
             notes: `Bulk email: "${subject}"`,
             created_by: user.id,
           });
-          // Update last_contacted_at
           await supabase.from('crm_coaches').update({
             last_contacted_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
