@@ -26,6 +26,7 @@ import {
   FileVideoIcon,
   FileSpreadsheetIcon,
 } from 'lucide-react';
+import { openExternalUrl } from '@/lib/utils/capacitor';
 
 interface DocumentPreviewProps {
   golfDocument?: GolfDocument | null;
@@ -129,7 +130,7 @@ export function DocumentPreview({
 
   const handleOpenExternal = useCallback(() => {
     if (previewUrl) {
-      window.open(previewUrl, '_blank');
+      openExternalUrl(previewUrl);
     }
   }, [previewUrl]);
 

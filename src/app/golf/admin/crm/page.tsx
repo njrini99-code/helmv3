@@ -38,6 +38,7 @@ import { AddCoachModal } from './components/AddCoachModal';
 import { CoachDetailPanel } from './components/CoachDetailPanel';
 import { ImportModal } from './components/ImportModal';
 import { BulkActionsBar } from './components/BulkActionsBar';
+import { BulkEmailModal } from './components/BulkEmailModal';
 import { FAB } from './components/FAB';
 import { QuickActionsPanel } from './components/QuickActionsPanel';
 import { ScheduleEventModal } from './components/ScheduleEventModal';
@@ -99,6 +100,8 @@ export default function CRMPage() {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<CRMEvent | null>(null);
   const [editingEvent, setEditingEvent] = useState<CRMEvent | null>(null);
+  const [showBulkEmailModal, setShowBulkEmailModal] = useState(false);
+  const [bulkEmailCoaches, setBulkEmailCoaches] = useState<Coach[]>([]);
 
   const supabase = createClient();
 
@@ -235,6 +238,15 @@ export default function CRMPage() {
   const handleBulkAction = async (action: string, value?: unknown) => {
     const ids = Array.from(selectedIds);
     if (ids.length === 0) return;
+
+    if (action === 'email') {
+      const selected = [...coaches, ...allCoaches]
+        .filter((c, i, arr) => ids.includes(c.id) && arr.findIndex(x => x.id === c.id) === i);
+      setBulkEmailCoaches(selected);
+      setShowBulkEmailModal(true);
+      return;
+    }
+
     try {
       if (action === 'status') await bulkUpdateCoaches(ids, { status: value as CoachStatus });
       else if (action === 'priority') await bulkUpdateCoaches(ids, { priority: value as number });
@@ -649,6 +661,13 @@ export default function CRMPage() {
         <ImportModal
           onClose={() => setShowImportModal(false)}
           onSuccess={() => { setShowImportModal(false); refreshData(); }}
+        />
+      )}
+      {showBulkEmailModal && bulkEmailCoaches.length > 0 && (
+        <BulkEmailModal
+          coaches={bulkEmailCoaches}
+          onClose={() => { setShowBulkEmailModal(false); setBulkEmailCoaches([]); }}
+          onSuccess={() => { setSelectedIds(new Set()); refreshData(); }}
         />
       )}
     </div>

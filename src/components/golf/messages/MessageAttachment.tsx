@@ -21,6 +21,7 @@ import {
   isPreviewable,
   type AttachmentFileType,
 } from '@/lib/storage/attachments';
+import { openExternalUrl } from '@/lib/utils/capacitor';
 
 export interface MessageAttachmentData {
   id: string;
@@ -447,7 +448,7 @@ function DocumentAttachment({
   className,
 }: DocumentAttachmentProps) {
   const handleDownload = () => {
-    window.open(url, '_blank');
+    openExternalUrl(url);
   };
 
   return (

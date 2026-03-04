@@ -111,6 +111,19 @@ export default function ContinueRoundClient({
     }
   };
 
+  const handleHoleStatsUpdate = useCallback((holeIndex: number, holeStats: HoleStats) => {
+    setHoles(prev => {
+      const updated = [...prev];
+      updated[holeIndex] = { ...updated[holeIndex]!, score: holeStats.score };
+      return updated;
+    });
+    setCompletedHoleStats(prev => {
+      const updated = [...prev];
+      updated[holeIndex] = holeStats;
+      return updated;
+    });
+  }, []);
+
   const handleSaveShot = (shot: ShotRecord) => {
     if (completedHoleStats[currentHoleIndex]) {
       return;
@@ -126,6 +139,13 @@ export default function ContinueRoundClient({
    * Auto-save handler for shot tracking - persists to IndexedDB when offline
    */
   const handleAutoSave = useCallback(async (shots: ShotRecord[], holeIndex: number) => {
+    // Sync parent's in-progress shots so hole navigation stays consistent after edits/deletes
+    setInProgressShotsByHole(prev => {
+      const existing = prev[holeIndex];
+      if (existing && existing.length === shots.length && existing === shots) return prev;
+      return { ...prev, [holeIndex]: shots };
+    });
+
     // Save to IndexedDB for offline redundancy
     if (offlineSyncState.isIndexedDBReady) {
       try {
@@ -367,6 +387,7 @@ export default function ContinueRoundClient({
         holes={holes}
         currentHoleIndex={currentHoleIndex}
         onHoleComplete={handleHoleComplete}
+        onHoleStatsUpdate={handleHoleStatsUpdate}
         onSaveShot={handleSaveShot}
         onExit={() => setShowExitModal(true)}
         onNavigateToHole={(holeIndex) => setCurrentHoleIndex(holeIndex)}

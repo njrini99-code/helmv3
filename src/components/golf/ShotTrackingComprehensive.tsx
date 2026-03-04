@@ -77,6 +77,7 @@ interface ShotTrackingProps {
   holes: Hole[];
   currentHoleIndex: number;
   onHoleComplete: (holeIndex: number, stats: HoleStats) => void;
+  onHoleStatsUpdate?: (holeIndex: number, stats: HoleStats) => void;
   onSaveShot?: (shot: ShotRecord) => void;
   onExit?: () => void;
   onNavigateToHole?: (holeIndex: number) => void;
@@ -173,6 +174,7 @@ export default function ShotTrackingComprehensive({
   holes,
   currentHoleIndex,
   onHoleComplete,
+  onHoleStatsUpdate,
   onSaveShot,
   onExit,
   onNavigateToHole,
@@ -212,9 +214,9 @@ export default function ShotTrackingComprehensive({
   const getInitialDistance = (): number => {
     if (initialShots.length > 0) {
       const lastShot = initialShots[initialShots.length - 1];
-      if (lastShot?.distanceToHoleAfter) {
-        const parsed = typeof lastShot.distanceToHoleAfter === 'string' 
-          ? parseFloat(lastShot.distanceToHoleAfter) 
+      if (lastShot != null && lastShot.distanceToHoleAfter != null) {
+        const parsed = typeof lastShot.distanceToHoleAfter === 'string'
+          ? parseFloat(lastShot.distanceToHoleAfter)
           : lastShot.distanceToHoleAfter;
         return isNaN(parsed) ? (currentHole?.yardage ?? 0) : parsed;
       }
@@ -315,8 +317,8 @@ export default function ShotTrackingComprehensive({
       else if (lastShot?.result === 'rough') initialLie = 'rough';
       else if (lastShot?.result === 'sand') initialLie = 'sand';
       else if (lastShot?.result === 'fairway') initialLie = 'fairway';
-      // getInitialDistance
-      if (lastShot?.distanceToHoleAfter) {
+      // getInitialDistance (use != null to allow 0 as valid value)
+      if (lastShot != null && lastShot.distanceToHoleAfter != null) {
         const parsed = typeof lastShot.distanceToHoleAfter === 'string'
           ? parseFloat(lastShot.distanceToHoleAfter)
           : lastShot.distanceToHoleAfter;
@@ -352,10 +354,17 @@ export default function ShotTrackingComprehensive({
   // AUTO-SAVE EFFECT
   // ============================================================================
 
-  // Debounced auto-save: triggers after shots change, with configurable interval
+  // Use refs to always have fresh values in the save timeout without re-creating it
+  const onAutoSaveRef = useRef(onAutoSave);
+  onAutoSaveRef.current = onAutoSave;
+  const shotHistoryRef = useRef(shotHistory);
+  shotHistoryRef.current = shotHistory;
+  const currentHoleIndexRef = useRef(currentHoleIndex);
+  currentHoleIndexRef.current = currentHoleIndex;
+
+  // Single unified auto-save effect: quick save (3s) after shot changes, periodic backup at longer interval
   useEffect(() => {
-    // Don't auto-save if no callback provided or no shots recorded
-    if (!onAutoSave || shotHistory.length === 0) {
+    if (!onAutoSaveRef.current || shotHistory.length === 0) {
       return;
     }
 
@@ -366,6 +375,7 @@ export default function ShotTrackingComprehensive({
         t: s.shotType,
         r: s.result,
         d: s.distanceToHoleAfter,
+        db: s.distanceToHoleBefore,
       }))
     );
 
@@ -379,12 +389,28 @@ export default function ShotTrackingComprehensive({
       clearTimeout(autoSaveTimeoutRef.current);
     }
 
-    // Set up debounced save
+    // Quick debounce (3s) for immediate feedback after shot changes
+    // Uses refs to always get fresh callback + state, avoiding stale closures
     autoSaveTimeoutRef.current = setTimeout(async () => {
+      // Re-check fingerprint at fire time (may have changed during debounce)
+      const freshFingerprint = JSON.stringify(
+        shotHistoryRef.current.map(s => ({
+          n: s.shotNumber,
+          t: s.shotType,
+          r: s.result,
+          d: s.distanceToHoleAfter,
+          db: s.distanceToHoleBefore,
+        }))
+      );
+
+      if (freshFingerprint === lastSavedShotsRef.current) {
+        return;
+      }
+
       try {
         setAutoSaveStatus('saving');
-        await onAutoSave(shotHistory, currentHoleIndex);
-        lastSavedShotsRef.current = currentShotsFingerprint;
+        await onAutoSaveRef.current?.(shotHistoryRef.current, currentHoleIndexRef.current);
+        lastSavedShotsRef.current = freshFingerprint;
         setAutoSaveStatus('saved');
 
         // Reset to idle after 2 seconds
@@ -400,7 +426,7 @@ export default function ShotTrackingComprehensive({
           setAutoSaveStatus('idle');
         }, 3000);
       }
-    }, autoSaveInterval);
+    }, 3000);
 
     // Cleanup timeout on unmount or dependency change
     return () => {
@@ -408,59 +434,7 @@ export default function ShotTrackingComprehensive({
         clearTimeout(autoSaveTimeoutRef.current);
       }
     };
-  }, [shotHistory, currentHoleIndex, onAutoSave, autoSaveInterval]);
-
-  // Also trigger immediate save on shot entry (debounced by 3 seconds for responsiveness)
-  useEffect(() => {
-    if (!onAutoSave || shotHistory.length === 0) {
-      return;
-    }
-
-    // Clear any existing long-interval timeout since we're doing immediate save
-    if (autoSaveTimeoutRef.current) {
-      clearTimeout(autoSaveTimeoutRef.current);
-    }
-
-    // Quick debounce for immediate feedback after shot entry
-    const quickSaveTimeout = setTimeout(async () => {
-      const currentShotsFingerprint = JSON.stringify(
-        shotHistory.map(s => ({
-          n: s.shotNumber,
-          t: s.shotType,
-          r: s.result,
-          d: s.distanceToHoleAfter,
-        }))
-      );
-
-      // Don't save if nothing changed
-      if (currentShotsFingerprint === lastSavedShotsRef.current) {
-        return;
-      }
-
-      try {
-        setAutoSaveStatus('saving');
-        await onAutoSave(shotHistory, currentHoleIndex);
-        lastSavedShotsRef.current = currentShotsFingerprint;
-        setAutoSaveStatus('saved');
-
-        setTimeout(() => {
-          setAutoSaveStatus('idle');
-        }, 2000);
-      } catch (error) {
-        console.error('Auto-save failed:', error);
-        setAutoSaveStatus('error');
-
-        setTimeout(() => {
-          setAutoSaveStatus('idle');
-        }, 3000);
-      }
-    }, 3000); // 3 second debounce after each shot
-
-    return () => {
-      clearTimeout(quickSaveTimeout);
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentionally only watches shot count to debounce, full deps in primary autosave effect above
-  }, [shotHistory.length]);
+  }, [shotHistory, currentHoleIndex]);
 
   // ============================================================================
   // DERIVED VALUES
@@ -583,7 +557,10 @@ export default function ShotTrackingComprehensive({
 
   const confirmPenalty = () => {
     if (!penaltyType) return;
-    
+
+    // Prevent adding penalty to an already-completed hole
+    if (shotHistory.some(s => s.result === 'hole')) return;
+
     const penaltyShot: ShotRecord = {
       shotNumber: currentShot,
       shotType: 'penalty',
@@ -710,16 +687,21 @@ export default function ShotTrackingComprehensive({
         }
       }
 
-      // Update local state
-      setShotHistory(prev =>
-        prev.map(s => s.shotNumber === editingShot.shotNumber ? updatedShot : s)
+      // Compute updated history once for reuse
+      const updatedHistory = shotHistory.map(s =>
+        s.shotNumber === editingShot.shotNumber ? updatedShot : s
       );
 
-      // Trigger auto-save if available
+      // Update local state
+      setShotHistory(updatedHistory);
+
+      // Recalculate parent stats if hole is still complete
+      recalculateCompletedHole(updatedHistory);
+
+      // Trigger auto-save — note: the parent's completedHoleStats in the auto-save closure
+      // won't reflect the recalculation until next render (React batching), but the shot data
+      // itself is always correct. The periodic auto-save picks up fresh state on re-render.
       if (onAutoSave) {
-        const updatedHistory = shotHistory.map(s =>
-          s.shotNumber === editingShot.shotNumber ? updatedShot : s
-        );
         await onAutoSave(updatedHistory, currentHoleIndex);
       }
 
@@ -750,28 +732,26 @@ export default function ShotTrackingComprehensive({
         }
       }
 
-      // Remove from local state and resequence shot numbers
+      // Compute new history eagerly (fixes stale closure in currentShot check)
       const deletedShotNumber = editingShot.shotNumber;
-      setShotHistory(prev => {
-        const filtered = prev.filter(s => s.shotNumber !== deletedShotNumber);
-        // Resequence shot numbers
-        return filtered.map((s, idx) => ({
-          ...s,
-          shotNumber: idx + 1,
-        }));
-      });
+      const newHistory = shotHistory
+        .filter(s => s.shotNumber !== deletedShotNumber)
+        .map((s, idx) => ({ ...s, shotNumber: idx + 1 }));
 
-      // Update current shot number if needed
-      if (currentShot > shotHistory.length) {
-        setCurrentShot(Math.max(1, shotHistory.length));
-      }
+      // Update local state
+      setShotHistory(newHistory);
 
-      // Trigger auto-save if available
+      // Always set currentShot to point past the last recorded shot.
+      // newHistory.length + 1 avoids duplicate shotNumbers when the final 'hole' shot is deleted
+      // and the player needs to resume entering shots.
+      setCurrentShot(newHistory.length + 1);
+
+      // Recalculate parent stats if hole is still complete
+      recalculateCompletedHole(newHistory);
+
+      // Trigger auto-save
       if (onAutoSave) {
-        const updatedHistory = shotHistory
-          .filter(s => s.shotNumber !== deletedShotNumber)
-          .map((s, idx) => ({ ...s, shotNumber: idx + 1 }));
-        await onAutoSave(updatedHistory, currentHoleIndex);
+        await onAutoSave(newHistory, currentHoleIndex);
       }
 
       handleCloseEditModal();
@@ -785,6 +765,9 @@ export default function ShotTrackingComprehensive({
 
   const handleNextShot = () => {
     if (!resultOfShot) return;
+
+    // Prevent adding shots to an already-completed hole
+    if (shotHistory.some(s => s.result === 'hole')) return;
 
     // Calculate distances
     let distanceAfter: number;
@@ -900,8 +883,8 @@ export default function ShotTrackingComprehensive({
   // ============================================================================
   // HOLE COMPLETION - COMPREHENSIVE STATS CALCULATION
   // ============================================================================
-  
-  const completeHole = (shots: ShotRecord[]) => {
+
+  const calculateHoleStats = (shots: ShotRecord[], hole: Hole): HoleStats => {
     const nonPenaltyShots = shots.filter(s => !s.isPenalty);
     const score = shots.length;
     const putts = shots.filter(s => s.shotType === 'putting').length;
@@ -915,7 +898,7 @@ export default function ShotTrackingComprehensive({
     let driveMissDirection: string | null = null;
     let driverUsed: boolean | null = null;
 
-    if (currentHole.par >= 4) {
+    if (hole.par >= 4) {
       const teeShot = shots.find(s => s.shotType === 'tee' && !s.isPenalty);
       if (teeShot) {
         fairwayHit = teeShot.result === 'fairway';
@@ -937,7 +920,7 @@ export default function ShotTrackingComprehensive({
 
     // Find the approach shot (the shot that hit the green, or last shot before green)
     const greenShotIndex = nonPenaltyShots.findIndex(s => s.result === 'green' || s.result === 'hole');
-    if (greenShotIndex > 0 || (greenShotIndex === 0 && currentHole.par === 3)) {
+    if (greenShotIndex > 0 || (greenShotIndex === 0 && hole.par === 3)) {
       const approachShot = nonPenaltyShots[greenShotIndex];
       if (approachShot && approachShot.shotType !== 'putting') {
         // Approach distance (in yards)
@@ -945,7 +928,7 @@ export default function ShotTrackingComprehensive({
           ? Math.round(approachShot.distanceToHoleBefore / 3)
           : approachShot.distanceToHoleBefore;
         approachLie = approachShot.lieBefore;
-        
+
         // Approach proximity (distance after, in feet)
         if (approachShot.result === 'green') {
           approachProximity = approachShot.distanceUnitAfter === 'yards'
@@ -959,7 +942,7 @@ export default function ShotTrackingComprehensive({
     // -------------------------------------------------------------------------
     // GREEN IN REGULATION
     // -------------------------------------------------------------------------
-    const shotsToGreen = currentHole.par - 2; // Par 4 = 2 shots, Par 5 = 3 shots, Par 3 = 1 shot
+    const shotsToGreen = hole.par - 2; // Par 4 = 2 shots, Par 5 = 3 shots, Par 3 = 1 shot
     const shotsTakenToGreen = shots.findIndex(s => s.result === 'green' || s.result === 'hole');
     const greenInRegulation = shotsTakenToGreen !== -1 && (shotsTakenToGreen + 1) <= shotsToGreen;
 
@@ -967,27 +950,27 @@ export default function ShotTrackingComprehensive({
     // SCRAMBLING (missed GIR but still made par or better)
     // -------------------------------------------------------------------------
     const scrambleAttempt = !greenInRegulation && shotsTakenToGreen !== -1;
-    const scrambleMade = scrambleAttempt && score <= currentHole.par;
+    const scrambleMade = scrambleAttempt && score <= hole.par;
 
     // -------------------------------------------------------------------------
     // SAND SAVE (in bunker around green, got up and down)
     // -------------------------------------------------------------------------
     let sandSaveAttempt = false;
     let sandSaveMade = false;
-    
+
     // Find if there was a shot from sand near the green
-    const sandShots = nonPenaltyShots.filter(s => 
-      s.lieBefore === 'sand' && 
+    const sandShots = nonPenaltyShots.filter(s =>
+      s.lieBefore === 'sand' &&
       (s.shotType === 'around_green' || (s.distanceUnitBefore === 'yards' && s.distanceToHoleBefore <= 50))
     );
-    
+
     if (sandShots.length > 0) {
       sandSaveAttempt = true;
       // Sand save made if from that point, finished in par or better
       const sandShotIndex = nonPenaltyShots.findIndex(s => s === sandShots[0]);
       const shotsAfterSand = nonPenaltyShots.length - sandShotIndex;
       // Up and down from sand = 2 shots (chip + putt) or 1 shot (hole out)
-      sandSaveMade = shotsAfterSand <= 2 && score <= currentHole.par;
+      sandSaveMade = shotsAfterSand <= 2 && score <= hole.par;
     }
 
     // -------------------------------------------------------------------------
@@ -1002,15 +985,15 @@ export default function ShotTrackingComprehensive({
     const puttingShots = nonPenaltyShots.filter(s => s.shotType === 'putting');
     if (puttingShots.length > 0) {
       const firstPutt = puttingShots[0]!;
-      
+
       // First putt distance (in feet)
       firstPuttDistance = firstPutt.distanceUnitBefore === 'yards'
         ? firstPutt.distanceToHoleBefore * 3
         : firstPutt.distanceToHoleBefore;
-      
+
       firstPuttBreak = firstPutt.puttBreak || null;
       firstPuttSlope = firstPutt.puttSlope || null;
-      
+
       // If first putt missed, record leave distance and miss direction
       if (firstPutt.result !== 'hole' && puttingShots.length > 1) {
         firstPuttLeave = firstPutt.distanceUnitAfter === 'yards'
@@ -1037,10 +1020,10 @@ export default function ShotTrackingComprehensive({
     // -------------------------------------------------------------------------
     // BUILD FINAL STATS OBJECT
     // -------------------------------------------------------------------------
-    const holeStats: HoleStats = {
-      holeNumber: currentHole.number,
-      par: currentHole.par,
-      yardage: currentHole.yardage,
+    return {
+      holeNumber: hole.number,
+      par: hole.par,
+      yardage: hole.yardage,
       score,
       putts,
       fairwayHit,
@@ -1066,8 +1049,20 @@ export default function ShotTrackingComprehensive({
       holedOutType,
       shots,
     };
+  };
 
+  const completeHole = (shots: ShotRecord[]) => {
+    const holeStats = calculateHoleStats(shots, currentHole);
     onHoleComplete(currentHoleIndex, holeStats);
+  };
+
+  const recalculateCompletedHole = (updatedShots: ShotRecord[]) => {
+    const isStillComplete = updatedShots.length > 0 &&
+      updatedShots[updatedShots.length - 1]?.result === 'hole';
+    if (isStillComplete && onHoleStatsUpdate) {
+      const holeStats = calculateHoleStats(updatedShots, currentHole);
+      onHoleStatsUpdate(currentHoleIndex, holeStats);
+    }
   };
 
   const handleResultSelect = (result: string) => {

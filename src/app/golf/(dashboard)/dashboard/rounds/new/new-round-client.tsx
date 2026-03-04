@@ -374,6 +374,10 @@ export default function NewRoundClient() {
         setHoles(draftData.holes);
         setCompletedHoleStats(draftData.completedHoleStats);
         setCurrentHoleIndex(draftData.currentHoleIndex);
+        // Restore in-progress shots so distance-to-hole resumes correctly
+        if (draftData.inProgressShots) {
+          setInProgressShotsByHole(draftData.inProgressShots);
+        }
         if (draftData.selectedQualifierId) {
           setSelectedQualifierId(draftData.selectedQualifierId);
         }
@@ -419,7 +423,7 @@ export default function NewRoundClient() {
       return;
     }
 
-    // Schedule save with debounce
+    // Schedule save with debounce (include in-progress shots so tab kills don't lose mid-hole data)
     const draftData: RoundDraftData = {
       step,
       setupData,
@@ -428,9 +432,10 @@ export default function NewRoundClient() {
       currentHoleIndex,
       selectedQualifierId,
       selectedRoundNumber,
+      inProgressShots: inProgressShotsByHole,
     };
     scheduleSave(draftData);
-  }, [step, setupData, holes, completedHoleStats, currentHoleIndex, selectedQualifierId, selectedRoundNumber, scheduleSave, isCheckingForDraft]);
+  }, [step, setupData, holes, completedHoleStats, currentHoleIndex, selectedQualifierId, selectedRoundNumber, inProgressShotsByHole, scheduleSave, isCheckingForDraft]);
 
 
   const handleSetupSubmit = async (e: React.FormEvent) => {
@@ -548,6 +553,19 @@ export default function NewRoundClient() {
     }
   };
 
+  const handleHoleStatsUpdate = useCallback((holeIndex: number, holeStats: HoleStats) => {
+    setHoles(prev => {
+      const updated = [...prev];
+      updated[holeIndex] = { ...updated[holeIndex]!, score: holeStats.score };
+      return updated;
+    });
+    setCompletedHoleStats(prev => {
+      const updated = [...prev];
+      updated[holeIndex] = holeStats;
+      return updated;
+    });
+  }, []);
+
   const handleSaveShot = (shot: ShotRecord) => {
     if (completedHoleStats[currentHoleIndex]) {
       return;
@@ -567,7 +585,15 @@ export default function NewRoundClient() {
    * between ShotRecord and OfflineShot interfaces. The database auto-save still
    * works and will sync when back online.
    */
-  const handleAutoSave = useCallback(async (_shots: ShotRecord[], holeIndex: number) => {
+  const handleAutoSave = useCallback(async (shots: ShotRecord[], holeIndex: number) => {
+    // Also update parent's in-progress shots so navigation between holes stays in sync
+    setInProgressShotsByHole(prev => {
+      // Only update if shots actually changed (avoid unnecessary re-renders)
+      const existing = prev[holeIndex];
+      if (existing && existing.length === shots.length && existing === shots) return prev;
+      return { ...prev, [holeIndex]: shots };
+    });
+
     // Trigger the regular auto-save to database (works when online)
     const draftDataForDb: RoundDraftData = {
       step,
@@ -577,6 +603,7 @@ export default function NewRoundClient() {
       currentHoleIndex: holeIndex,
       selectedQualifierId,
       selectedRoundNumber,
+      inProgressShots: { [holeIndex]: shots },
     };
     scheduleSave(draftDataForDb);
 
@@ -1487,6 +1514,7 @@ export default function NewRoundClient() {
         holes={holes}
         currentHoleIndex={currentHoleIndex}
         onHoleComplete={handleHoleComplete}
+        onHoleStatsUpdate={handleHoleStatsUpdate}
         onSaveShot={handleSaveShot}
         onExit={() => setShowExitModal(true)}
         onNavigateToHole={(holeIndex) => setCurrentHoleIndex(holeIndex)}

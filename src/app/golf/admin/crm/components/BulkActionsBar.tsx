@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { ArrowRight, Star, Trash2, X, ChevronUp } from 'lucide-react';
+import { ArrowRight, Mail, Star, Trash2, X, ChevronUp } from 'lucide-react';
 import type { CoachStatus } from '../crm-config';
 
 interface BulkActionsBarProps {
@@ -62,6 +62,14 @@ export function BulkActionsBar({
           </div>
         )}
       </div>
+
+      {/* Email */}
+      <button
+        onClick={() => onAction('email')}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-white/10 transition-colors"
+      >
+        <Mail size={14} /> Email
+      </button>
 
       {/* Star */}
       <button

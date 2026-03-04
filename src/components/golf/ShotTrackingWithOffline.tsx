@@ -46,6 +46,7 @@ interface ShotTrackingWithOfflineProps {
   holes: Hole[];
   currentHoleIndex: number;
   onHoleComplete: (holeIndex: number, stats: HoleStats) => void;
+  onHoleStatsUpdate?: (holeIndex: number, stats: HoleStats) => void;
   onSaveShot?: (shot: ShotRecord) => void;
   onExit?: () => void;
   onNavigateToHole?: (holeIndex: number) => void;
@@ -72,6 +73,7 @@ export default function ShotTrackingWithOffline({
   holes,
   currentHoleIndex,
   onHoleComplete,
+  onHoleStatsUpdate,
   onSaveShot,
   onExit,
   onNavigateToHole,
@@ -378,6 +380,7 @@ export default function ShotTrackingWithOffline({
         holes={holes}
         currentHoleIndex={currentHoleIndex}
         onHoleComplete={handleHoleComplete}
+        onHoleStatsUpdate={onHoleStatsUpdate}
         onSaveShot={handleSaveShot}
         onExit={handleExit}
         onNavigateToHole={onNavigateToHole}

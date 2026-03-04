@@ -1,4 +1,5 @@
 import { Keyboard } from '@capacitor/keyboard';
+import { Browser } from '@capacitor/browser';
 
 /**
  * Detect if the app is running inside a Capacitor native shell (iOS/Android).
@@ -20,4 +21,21 @@ export async function initCapacitor(): Promise<void> {
   } catch {
     // Keyboard plugin not available on this platform
   }
+}
+
+/**
+ * Open a URL in the appropriate browser.
+ * In native apps, opens in-app via SFSafariViewController (iOS).
+ * On web, opens in a new tab.
+ */
+export async function openExternalUrl(url: string): Promise<void> {
+  if (isNativeApp()) {
+    try {
+      await Browser.open({ url });
+      return;
+    } catch {
+      // Fall through to web behavior
+    }
+  }
+  window.open(url, '_blank');
 }

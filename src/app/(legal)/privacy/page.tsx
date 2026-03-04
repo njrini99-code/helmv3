@@ -22,7 +22,7 @@ export default function PrivacyPage() {
 
         <div className="space-y-10 text-slate-700 leading-relaxed">
           <section className="space-y-3">
-            <p className="text-sm text-slate-500">Last updated: January 1, 2025</p>
+            <p className="text-sm text-slate-500">Last updated: March 1, 2026</p>
             <p>
               This Privacy Policy explains how Helm Sports Labs collects, uses, and protects your
               information when you use our websites, products, and services (collectively, the

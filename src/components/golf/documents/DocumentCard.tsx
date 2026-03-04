@@ -68,6 +68,7 @@ import {
   ExternalLinkIcon,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { openExternalUrl } from '@/lib/utils/capacitor';
 
 interface DocumentCardProps {
   document: GolfDocument;
@@ -213,7 +214,7 @@ export function DocumentCard({
                   <DropdownItem icon={DownloadIcon} onClick={handleDownload}>
                     Download
                   </DropdownItem>
-                  <DropdownItem icon={ExternalLinkIcon} onClick={() => window.open(document.file_url, '_blank')}>
+                  <DropdownItem icon={ExternalLinkIcon} onClick={() => openExternalUrl(document.file_url)}>
                     Open in Browser
                   </DropdownItem>
 

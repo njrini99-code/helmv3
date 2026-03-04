@@ -68,6 +68,16 @@ export function CoachDetailPanel({
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesValue, setNotesValue] = useState(coach.notes || '');
 
+  // Editable contact info
+  const [editingContact, setEditingContact] = useState(false);
+  const [contactForm, setContactForm] = useState({
+    name: coach.name,
+    title: coach.title || '',
+    email: coach.email || '',
+    phone: coach.phone || '',
+    school: coach.school,
+  });
+
   const [showContactForm, setShowContactForm] = useState(false);
   const [newContact, setNewContact] = useState({
     type: 'email' as typeof CONTACT_TYPES[number]['value'],
@@ -94,11 +104,34 @@ export function CoachDetailPanel({
   }, [supabase, coach.id]);
 
   useEffect(() => { const t = setTimeout(() => setIsVisible(true), 10); return () => clearTimeout(t); }, []);
-  useEffect(() => { fetchLogs(); setNotesValue(coach.notes || ''); setFollowUpDate(coach.next_follow_up_at?.split('T')[0] || ''); }, [coach.id, coach.notes, coach.next_follow_up_at, fetchLogs]);
+  useEffect(() => {
+    fetchLogs();
+    setNotesValue(coach.notes || '');
+    setFollowUpDate(coach.next_follow_up_at?.split('T')[0] || '');
+    setContactForm({ name: coach.name, title: coach.title || '', email: coach.email || '', phone: coach.phone || '', school: coach.school });
+    setEditingContact(false);
+  }, [coach.id, coach.name, coach.title, coach.email, coach.phone, coach.school, coach.notes, coach.next_follow_up_at, fetchLogs]);
 
   const handleClose = () => { setIsVisible(false); setTimeout(onClose, 200); };
 
   const saveNotes = () => { onUpdate({ notes: notesValue || null }); setEditingNotes(false); };
+
+  const saveContactInfo = () => {
+    if (!contactForm.name.trim() || !contactForm.school.trim()) return;
+    onUpdate({
+      name: contactForm.name.trim(),
+      title: contactForm.title.trim() || null,
+      email: contactForm.email.trim() || null,
+      phone: contactForm.phone.trim() || null,
+      school: contactForm.school.trim(),
+    });
+    setEditingContact(false);
+  };
+
+  const cancelEditContact = () => {
+    setContactForm({ name: coach.name, title: coach.title || '', email: coach.email || '', phone: coach.phone || '', school: coach.school });
+    setEditingContact(false);
+  };
 
   const submitContact = async () => {
     setSubmitting(true);
@@ -156,34 +189,63 @@ export function CoachDetailPanel({
         <div className="bg-white border-b border-warm-100 p-5 flex-shrink-0">
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <button
-                  onClick={() => onUpdate({ is_starred: !coach.is_starred })}
-                  className="hover:scale-110 transition-transform"
-                >
-                  <Star size={18} className={cn(coach.is_starred ? 'fill-amber-400 text-amber-400' : 'text-warm-300 hover:text-warm-400')} />
-                </button>
-                <h2 className="text-xl font-bold text-warm-900 truncate">{coach.name}</h2>
-                {coach.priority > 0 && (
-                  <span className={cn('text-micro font-bold px-1.5 py-0.5 rounded', priorityConfig[coach.priority]?.bgColor, priorityConfig[coach.priority]?.color)}>
-                    {priorityConfig[coach.priority]?.iconLabel} {priorityConfig[coach.priority]?.label}
-                  </span>
-                )}
-              </div>
-              <p className="text-warm-500 text-sm">{coach.title || 'Coach'}</p>
-              <p className="text-warm-900 font-medium mt-1">{coach.school}</p>
-              <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-warm-500 text-sm">{coach.conference}</span>
-                <span className="text-warm-300">&middot;</span>
-                <span className={cn('px-1.5 py-0.5 rounded text-micro font-bold',
-                  coach.division === 'D2' ? 'bg-blue-100 text-blue-700' : 'bg-primary-100 text-primary-700')}>
-                  {coach.division}
-                </span>
-              </div>
+              {editingContact ? (
+                <div className="space-y-2">
+                  <input type="text" value={contactForm.name} onChange={e => setContactForm({ ...contactForm, name: e.target.value })}
+                    placeholder="Name *" className="w-full px-3 py-1.5 border border-warm-200/50 rounded-xl text-sm font-bold text-warm-900 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white/50" />
+                  <input type="text" value={contactForm.title} onChange={e => setContactForm({ ...contactForm, title: e.target.value })}
+                    placeholder="Title (e.g. Head Coach)" className="w-full px-3 py-1.5 border border-warm-200/50 rounded-xl text-sm text-warm-600 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white/50" />
+                  <input type="text" value={contactForm.school} onChange={e => setContactForm({ ...contactForm, school: e.target.value })}
+                    placeholder="School *" className="w-full px-3 py-1.5 border border-warm-200/50 rounded-xl text-sm font-medium text-warm-900 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white/50" />
+                  <div className="flex gap-2 pt-1">
+                    <button onClick={saveContactInfo} disabled={!contactForm.name.trim() || !contactForm.school.trim()}
+                      className="px-3 py-1.5 bg-primary-600 text-white rounded-xl text-xs font-semibold hover:bg-primary-700 transition-colors disabled:opacity-50 shadow-sm">
+                      Save
+                    </button>
+                    <button onClick={cancelEditContact} className="px-3 py-1.5 text-xs text-warm-600 hover:text-warm-800">Cancel</button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 mb-1">
+                    <button
+                      onClick={() => onUpdate({ is_starred: !coach.is_starred })}
+                      className="hover:scale-110 transition-transform"
+                    >
+                      <Star size={18} className={cn(coach.is_starred ? 'fill-amber-400 text-amber-400' : 'text-warm-300 hover:text-warm-400')} />
+                    </button>
+                    <h2 className="text-xl font-bold text-warm-900 truncate">{coach.name}</h2>
+                    {coach.priority > 0 && (
+                      <span className={cn('text-micro font-bold px-1.5 py-0.5 rounded', priorityConfig[coach.priority]?.bgColor, priorityConfig[coach.priority]?.color)}>
+                        {priorityConfig[coach.priority]?.iconLabel} {priorityConfig[coach.priority]?.label}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-warm-500 text-sm">{coach.title || 'Coach'}</p>
+                  <p className="text-warm-900 font-medium mt-1">{coach.school}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-warm-500 text-sm">{coach.conference}</span>
+                    <span className="text-warm-300">&middot;</span>
+                    <span className={cn('px-1.5 py-0.5 rounded text-micro font-bold',
+                      coach.division === 'D2' ? 'bg-blue-100 text-blue-700' : 'bg-primary-100 text-primary-700')}>
+                      {coach.division}
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
-            <button onClick={handleClose} className="p-2 rounded-xl hover:bg-warm-50 active:bg-warm-100 transition-colors text-warm-400 hover:text-warm-600">
-              <X size={18} />
-            </button>
+            <div className="flex items-center gap-1">
+              {!editingContact && (
+                <button onClick={() => setEditingContact(true)}
+                  className="p-2 rounded-xl hover:bg-warm-50 active:bg-warm-100 transition-colors text-warm-400 hover:text-warm-600"
+                  title="Edit contact info">
+                  <Pencil size={14} />
+                </button>
+              )}
+              <button onClick={handleClose} className="p-2 rounded-xl hover:bg-warm-50 active:bg-warm-100 transition-colors text-warm-400 hover:text-warm-600">
+                <X size={18} />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -205,16 +267,41 @@ export function CoachDetailPanel({
               </select>
             </div>
           </div>
-          <div className="flex items-center gap-2 px-5 pb-3">
-            {coach.email && (
-              <a href={`mailto:${coach.email}`} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-medium transition-colors">
-                <Mail size={12} /> {coach.email}
-              </a>
-            )}
-            {coach.phone && (
-              <a href={`tel:${coach.phone}`} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary-50 text-primary-700 hover:bg-primary-100 text-xs font-medium transition-colors">
-                <Phone size={12} /> {coach.phone}
-              </a>
+          <div className="flex items-center gap-2 px-5 pb-3 flex-wrap">
+            {editingContact ? (
+              <>
+                <div className="flex items-center gap-1.5 flex-1 min-w-[200px]">
+                  <Mail size={12} className="text-blue-500 flex-shrink-0" />
+                  <input type="email" value={contactForm.email} onChange={e => setContactForm({ ...contactForm, email: e.target.value })}
+                    placeholder="Email address" className="flex-1 px-2 py-1 border border-warm-200/50 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white/50" />
+                </div>
+                <div className="flex items-center gap-1.5 flex-1 min-w-[160px]">
+                  <Phone size={12} className="text-primary-500 flex-shrink-0" />
+                  <input type="tel" value={contactForm.phone} onChange={e => setContactForm({ ...contactForm, phone: e.target.value })}
+                    placeholder="Phone number" className="flex-1 px-2 py-1 border border-warm-200/50 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white/50" />
+                </div>
+              </>
+            ) : (
+              <>
+                {coach.email ? (
+                  <a href={`mailto:${coach.email}`} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-medium transition-colors">
+                    <Mail size={12} /> {coach.email}
+                  </a>
+                ) : (
+                  <button onClick={() => setEditingContact(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-dashed border-warm-300 text-xs text-warm-400 hover:border-warm-400 hover:text-warm-500 transition-colors">
+                    <Mail size={12} /> Add email
+                  </button>
+                )}
+                {coach.phone ? (
+                  <a href={`tel:${coach.phone}`} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary-50 text-primary-700 hover:bg-primary-100 text-xs font-medium transition-colors">
+                    <Phone size={12} /> {coach.phone}
+                  </a>
+                ) : (
+                  <button onClick={() => setEditingContact(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-dashed border-warm-300 text-xs text-warm-400 hover:border-warm-400 hover:text-warm-500 transition-colors">
+                    <Phone size={12} /> Add phone
+                  </button>
+                )}
+              </>
             )}
           </div>
         </div>

@@ -24,6 +24,7 @@ interface RoundEntryModeToggleProps {
   currentHoleIndex: number;
   completedHoleStats: HoleStats[];
   onHoleComplete: (holeIndex: number, stats: HoleStats) => void;
+  onHoleStatsUpdate?: (holeIndex: number, stats: HoleStats) => void;
   onNavigateToHole: (holeIndex: number) => void;
   onExit: () => void;
   onSaveShot?: (shot: ShotRecord) => void;
@@ -50,6 +51,7 @@ export default function RoundEntryModeToggle({
   currentHoleIndex,
   completedHoleStats,
   onHoleComplete,
+  onHoleStatsUpdate,
   onNavigateToHole,
   onExit,
   onSaveShot,
@@ -122,6 +124,7 @@ export default function RoundEntryModeToggle({
         holes={holes}
         currentHoleIndex={currentHoleIndex}
         onHoleComplete={onHoleComplete}
+        onHoleStatsUpdate={onHoleStatsUpdate}
         onSaveShot={onSaveShot}
         onExit={onExit}
         onNavigateToHole={onNavigateToHole}

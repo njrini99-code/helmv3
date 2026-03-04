@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { saveRoundDraft, loadRoundDraft, clearRoundDraft } from '@/app/golf/actions/round-drafts';
-import type { HoleStats } from '@/components/golf/ShotTrackingComprehensive';
+import type { HoleStats, ShotRecord } from '@/components/golf/ShotTrackingComprehensive';
 
 // Types
 interface RoundSetupForm {
@@ -31,6 +31,8 @@ export interface RoundDraftData {
   currentHoleIndex: number;
   selectedQualifierId?: string | null;
   selectedRoundNumber?: number | null;
+  /** In-progress shots keyed by hole index, so mid-hole data survives tab kills */
+  inProgressShots?: Record<number, ShotRecord[]>;
 }
 
 export interface SaveStatus {
@@ -85,6 +87,8 @@ export function useAutoSaveRound(
   const lastDataRef = useRef<RoundDraftData | null>(null);
   const pendingSaveRef = useRef<RoundDraftData | null>(null);
   const isMountedRef = useRef(true);
+  // Use ref for lastSaved to avoid recreating performSave on every successful save
+  const lastSavedRef = useRef<Date | null>(null);
 
   // Track online/offline status
   useEffect(() => {
@@ -188,7 +192,7 @@ export function useAutoSaveRound(
       pendingSaveRef.current = data;
       setSaveStatus({
         status: 'offline',
-        lastSaved: saveStatus.lastSaved,
+        lastSaved: lastSavedRef.current,
         error: 'Saving offline - will sync when connected',
       });
       return;
@@ -208,9 +212,11 @@ export function useAutoSaveRound(
         }
 
         pendingSaveRef.current = null;
+        const now = new Date();
+        lastSavedRef.current = now;
         setSaveStatus({
           status: 'saved',
-          lastSaved: new Date(),
+          lastSaved: now,
           error: null,
         });
 
@@ -225,7 +231,7 @@ export function useAutoSaveRound(
       } else {
         setSaveStatus({
           status: 'error',
-          lastSaved: saveStatus.lastSaved,
+          lastSaved: lastSavedRef.current,
           error: result.error,
         });
       }
@@ -234,11 +240,13 @@ export function useAutoSaveRound(
 
       setSaveStatus({
         status: 'error',
-        lastSaved: saveStatus.lastSaved,
+        lastSaved: lastSavedRef.current,
         error: error instanceof Error ? error.message : 'Failed to save draft',
       });
     }
-  }, [currentRoundId, isOnline, saveToLocalStorage, saveStatus.lastSaved]);
+    // Note: lastSavedRef is used instead of saveStatus.lastSaved to prevent
+    // an infinite save cycle (save → lastSaved changes → performSave recreated → scheduleSave recreated → save again)
+  }, [currentRoundId, isOnline, saveToLocalStorage]);
 
   /**
    * Schedule a save with debounce
