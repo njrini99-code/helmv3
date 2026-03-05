@@ -3279,19 +3279,18 @@ export async function getPlayerQualifiers(): Promise<ActionResult<PlayerQualifie
     const { data: entries, error: entriesError } = await supabase
       .from('golf_qualifier_entries')
       .select(`
+        rounds_completed,
+        total_score,
+        total_to_par,
         qualifier_id,
         qualifier:golf_qualifiers(
           id,
           name,
           description,
           course_name,
-          location,
-          num_rounds,
-          holes_per_round,
           start_date,
           end_date,
-          status,
-          show_live_leaderboard
+          status
         )
       `)
       .eq('player_id', player.id);
@@ -3318,7 +3317,21 @@ export async function getPlayerQualifiers(): Promise<ActionResult<PlayerQualifie
     }> | null;
 
     // Build result with progress info
-    type QualifierEntry = { qualifier_id: string; qualifier: { id: string; name: string; description: string | null; course_name: string | null; location: string | null; num_rounds: number; holes_per_round: number; start_date: string; end_date: string | null; status: string; show_live_leaderboard: boolean | null } | null };
+    type QualifierEntry = {
+      qualifier_id: string;
+      rounds_completed: number | null;
+      total_score: number | null;
+      total_to_par: number | null;
+      qualifier: {
+        id: string;
+        name: string;
+        description: string | null;
+        course_name: string | null;
+        start_date: string;
+        end_date: string | null;
+        status: string;
+      } | null;
+    };
     const qualifiers: PlayerQualifierInfo[] = (entries as unknown as QualifierEntry[])
       .filter((e) => e.qualifier && typeof e.qualifier === 'object' && !('error' in e.qualifier))
       .map((entry) => {
@@ -3327,13 +3340,9 @@ export async function getPlayerQualifiers(): Promise<ActionResult<PlayerQualifie
           name: string;
           description: string | null;
           course_name: string | null;
-          location: string | null;
-          num_rounds: number;
-          holes_per_round: number;
           start_date: string;
           end_date: string | null;
           status: string;
-          show_live_leaderboard: boolean | null;
         };
 
         // Get rounds for this qualifier
@@ -3345,23 +3354,29 @@ export async function getPlayerQualifiers(): Promise<ActionResult<PlayerQualifie
 
         const totalScore = qualifierRounds.reduce((sum, r) => sum + (r.total_score || 0), 0);
         const totalToPar = qualifierRounds.reduce((sum, r) => sum + (r.score_to_par || 0), 0);
+        const roundsCompleted = qualifierRounds.length > 0
+          ? qualifierRounds.length
+          : (entry.rounds_completed ?? 0);
+        const inferredNumRounds = q.status === 'completed'
+          ? Math.max(roundsCompleted, 1)
+          : Math.max(roundsCompleted + 1, 1);
 
         return {
           id: q.id,
           name: q.name,
           description: q.description,
           courseName: q.course_name,
-          location: q.location,
-          numRounds: q.num_rounds,
-          holesPerRound: q.holes_per_round,
+          location: null,
+          numRounds: inferredNumRounds,
+          holesPerRound: 18,
           startDate: q.start_date,
           endDate: q.end_date,
           status: (q.status || 'upcoming') as 'upcoming' | 'in_progress' | 'completed',
-          showLiveLeaderboard: q.show_live_leaderboard ?? true,
-          roundsCompleted: qualifierRounds.length,
+          showLiveLeaderboard: true,
+          roundsCompleted,
           completedRoundNumbers,
-          totalScore: qualifierRounds.length > 0 ? totalScore : null,
-          totalToPar: qualifierRounds.length > 0 ? totalToPar : null,
+          totalScore: qualifierRounds.length > 0 ? totalScore : (entry.total_score ?? null),
+          totalToPar: qualifierRounds.length > 0 ? totalToPar : (entry.total_to_par ?? null),
         };
       });
 

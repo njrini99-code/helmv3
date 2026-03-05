@@ -118,6 +118,21 @@ export interface SummaryStatsResponse {
   rounds: RoundSummary[];
 }
 
+type DetailedStatsRoundRow = {
+  id: string;
+  round_date: string;
+  course_name: string | null;
+  round_type: string | null;
+  total_score: number | null;
+  score_to_par: number | null;
+  holes_played?: number | null;
+  total_fairways_hit?: number | null;
+  total_fairways?: number | null;
+  total_gir?: number | null;
+  total_gir_possible?: number | null;
+  total_putts?: number | null;
+};
+
 // ============================================================================
 // FILTER HELPERS
 // ============================================================================
@@ -204,6 +219,125 @@ function applyPresetLimit<T>(rounds: T[], filter?: StatsFilter): T[] {
     default:
       return rounds;
   }
+}
+
+function serializeDetailedStats(stats: GolfStats): GolfStats {
+  // Server actions cannot serialize NaN/Infinity reliably. Converting through
+  // JSON normalizes those edge cases to null and keeps the payload stable.
+  return JSON.parse(JSON.stringify(stats)) as GolfStats;
+}
+
+function buildFallbackDetailedStats(roundsData: DetailedStatsRoundRow[]): GolfStats {
+  const fallback = calculateStatsFromShots([], [], []);
+
+  if (roundsData.length === 0) {
+    return fallback;
+  }
+
+  const completedRounds = roundsData.filter(
+    (round): round is DetailedStatsRoundRow & { total_score: number } => round.total_score !== null
+  );
+
+  fallback.roundsPlayed = completedRounds.length;
+  fallback.holesPlayed = completedRounds.reduce((sum, round) => sum + (round.holes_played ?? 18), 0);
+
+  if (completedRounds.length > 0) {
+    const totalStrokes = completedRounds.reduce((sum, round) => sum + round.total_score, 0);
+    const totalHoles = completedRounds.reduce((sum, round) => sum + (round.holes_played ?? 18), 0);
+    const normalizedScores = completedRounds.map((round) => {
+      const holesPlayed = round.holes_played ?? 18;
+      return Math.round(round.total_score * (18 / holesPlayed));
+    });
+
+    fallback.scoringAverage = totalHoles > 0
+      ? Math.round((totalStrokes / totalHoles) * 18 * 100) / 100
+      : null;
+    fallback.bestRound = normalizedScores.length > 0 ? Math.min(...normalizedScores) : null;
+    fallback.worstRound = normalizedScores.length > 0 ? Math.max(...normalizedScores) : null;
+  }
+
+  const roundsWithToPar = roundsData.filter(
+    (round): round is DetailedStatsRoundRow & { score_to_par: number } => round.score_to_par !== null
+  );
+  if (roundsWithToPar.length > 0) {
+    const totalToPar = roundsWithToPar.reduce((sum, round) => sum + round.score_to_par, 0);
+    fallback.avgScoreToPar = Math.round((totalToPar / roundsWithToPar.length) * 100) / 100;
+  }
+
+  const roundTypeBuckets = {
+    practice: [] as number[],
+    qualifier: [] as number[],
+    tournament: [] as number[],
+  };
+
+  for (const round of completedRounds) {
+    const normalizedType = round.round_type ? roundTypeFromDb(round.round_type) : null;
+    if (!normalizedType) continue;
+
+    const holesPlayed = round.holes_played ?? 18;
+    const normalizedScore = Math.round(round.total_score * (18 / holesPlayed) * 100) / 100;
+
+    if (normalizedType === 'practice') roundTypeBuckets.practice.push(normalizedScore);
+    if (normalizedType === 'qualifier') roundTypeBuckets.qualifier.push(normalizedScore);
+    if (normalizedType === 'tournament') roundTypeBuckets.tournament.push(normalizedScore);
+  }
+
+  fallback.practiceRounds = roundTypeBuckets.practice.length;
+  fallback.qualifyingRounds = roundTypeBuckets.qualifier.length;
+  fallback.tournamentRounds = roundTypeBuckets.tournament.length;
+  fallback.practiceScoringAvg = roundTypeBuckets.practice.length > 0
+    ? Math.round((roundTypeBuckets.practice.reduce((sum, score) => sum + score, 0) / roundTypeBuckets.practice.length) * 100) / 100
+    : null;
+  fallback.qualifyingScoringAvg = roundTypeBuckets.qualifier.length > 0
+    ? Math.round((roundTypeBuckets.qualifier.reduce((sum, score) => sum + score, 0) / roundTypeBuckets.qualifier.length) * 100) / 100
+    : null;
+  fallback.tournamentScoringAvg = roundTypeBuckets.tournament.length > 0
+    ? Math.round((roundTypeBuckets.tournament.reduce((sum, score) => sum + score, 0) / roundTypeBuckets.tournament.length) * 100) / 100
+    : null;
+
+  let totalFairwaysHit = 0;
+  let totalFairways = 0;
+  let totalGir = 0;
+  let totalGirPossible = 0;
+  let totalPutts = 0;
+  let totalPuttHoles = 0;
+
+  for (const round of roundsData) {
+    if (round.total_fairways_hit !== null && round.total_fairways !== null) {
+      totalFairwaysHit += round.total_fairways_hit;
+      totalFairways += round.total_fairways;
+    }
+
+    if (round.total_gir !== null && round.total_gir_possible !== null) {
+      totalGir += round.total_gir;
+      totalGirPossible += round.total_gir_possible;
+    }
+
+    if (round.total_putts !== null) {
+      totalPutts += round.total_putts;
+      totalPuttHoles += round.holes_played ?? 18;
+    }
+  }
+
+  fallback.fairwaysHit = totalFairwaysHit;
+  fallback.fairwayOpportunities = totalFairways;
+  fallback.fairwayPercentage = totalFairways > 0
+    ? Math.round((totalFairwaysHit / totalFairways) * 1000) / 10
+    : null;
+  fallback.girTotal = totalGir;
+  fallback.girOpportunities = totalGirPossible;
+  fallback.girPercentage = totalGirPossible > 0
+    ? Math.round((totalGir / totalGirPossible) * 1000) / 10
+    : null;
+  fallback.totalPutts = totalPutts;
+  fallback.puttsPerRound = totalPuttHoles > 0
+    ? Math.round((totalPutts / totalPuttHoles) * 18 * 100) / 100
+    : null;
+  fallback.puttsPerHole = fallback.holesPlayed > 0
+    ? Math.round((totalPutts / fallback.holesPlayed) * 100) / 100
+    : null;
+
+  return fallback;
 }
 
 // ============================================================================
@@ -430,7 +564,13 @@ export async function getDetailedStats(
       course_name,
       round_type,
       total_score,
-      score_to_par
+      score_to_par,
+      holes_played,
+      total_fairways_hit,
+      total_fairways,
+      total_gir,
+      total_gir_possible,
+      total_putts
     `)
     .eq('player_id', playerId)
     .eq('status', 'completed');
@@ -449,7 +589,10 @@ export async function getDetailedStats(
 
   query = query.order('round_date', { ascending: false });
 
-  const { data: fetchedRounds } = await query;
+  const { data: fetchedRounds, error: roundsError } = await query;
+  if (roundsError) {
+    throw roundsError;
+  }
 
   // Apply preset limits
   const roundsData = applyPresetLimit(fetchedRounds || [], filter);
@@ -463,101 +606,129 @@ export async function getDetailedStats(
     ? [roundId]
     : roundsData.map(r => r.id);
 
-  // Fetch holes
-  const { data: holesData } = await supabase
-    .from('golf_holes')
-    .select('id, round_id, hole_number, par')
-    .in('round_id', roundIds);
+  try {
+    const [{ data: holesData, error: holesError }, { data: shotsData, error: shotsError }] = await Promise.all([
+      supabase
+        .from('golf_holes')
+        .select('id, round_id, hole_number, par')
+        .in('round_id', roundIds),
+      supabase
+        .from('golf_shots')
+        .select(`
+          id,
+          round_id,
+          hole_id,
+          hole_number,
+          shot_number,
+          shot_type,
+          club_used,
+          club_type,
+          lie_before,
+          lie_after,
+          distance_to_hole_before,
+          distance_unit_before,
+          result,
+          distance_to_hole_after,
+          distance_unit_after,
+          shot_distance,
+          miss_direction,
+          putt_break,
+          putt_distance_feet,
+          putt_slope,
+          putt_made,
+          is_penalty,
+          penalty_type,
+          putt_details(miss_tags, break_direction, estimated_break_inches, distance_feet, made),
+          approach_miss_details(miss_direction, lie_type, distance_from_green_yards)
+        `)
+        .in('round_id', roundIds)
+        .order('hole_number')
+        .order('shot_number'),
+    ]);
 
-  // Fetch ALL shots with detail tables (the expensive query)
-  // Include putt_details and approach_miss_details for complete stats calculation
-  const { data: shotsData } = await supabase
-    .from('golf_shots')
-    .select(`
-      *,
-      putt_details(miss_tags, break_direction, estimated_break_inches, distance_feet, made),
-      approach_miss_details(miss_direction, lie_type, distance_from_green_yards)
-    `)
-    .in('round_id', roundIds)
-    .order('hole_number')
-    .order('shot_number');
-
-  // Transform data
-  const filteredRoundsData = roundId && roundId !== 'overall'
-    ? roundsData.filter(r => r.id === roundId)
-    : roundsData;
-
-  const roundsInfo: RoundInfo[] = filteredRoundsData.map(r => ({
-    id: r.id,
-    round_date: r.round_date,
-    course_name: r.course_name || 'Unknown Course',
-    round_type: r.round_type ? roundTypeFromDb(r.round_type) : null,
-  }));
-
-  const holesInfo: HoleInfo[] = (holesData || []).map(h => ({
-    id: h.id,
-    round_id: h.round_id,
-    hole_number: h.hole_number,
-    par: h.par,
-    yardage: 0,
-  }));
-
-  // Map all shots - don't filter out shots with missing distances as they're still
-  // needed for GIR calculation (shots with result='green') and scoring.
-  // The calculator handles null distances gracefully.
-  const shots: RawShot[] = (shotsData || []).map(s => {
-    // Calculate shot_distance from before/after if both are available
-    let shotDistance = s.shot_distance;
-    if (shotDistance === null && s.distance_to_hole_before !== null && s.distance_to_hole_after !== null) {
-      const beforeYards = s.distance_unit_before === 'feet'
-        ? s.distance_to_hole_before / 3
-        : s.distance_to_hole_before;
-      const afterYards = s.distance_unit_after === 'feet'
-        ? s.distance_to_hole_after / 3
-        : s.distance_to_hole_after;
-      shotDistance = Math.max(0, Math.round(beforeYards - afterYards));
+    if (holesError) {
+      throw holesError;
+    }
+    if (shotsError) {
+      throw shotsError;
     }
 
-    // Extract detail table data (Supabase returns arrays for 1:1 relations, take first item)
-    const puttDetails = Array.isArray(s.putt_details) ? s.putt_details[0] : s.putt_details;
-    const approachMissDetails = Array.isArray(s.approach_miss_details) ? s.approach_miss_details[0] : s.approach_miss_details;
+    // Transform data
+    const filteredRoundsData = roundId && roundId !== 'overall'
+      ? roundsData.filter(r => r.id === roundId)
+      : roundsData;
 
-    return {
-      id: s.id,
-      round_id: s.round_id,
-      hole_id: s.hole_id,
-      hole_number: s.hole_number,
-      shot_number: s.shot_number,
-      shot_type: s.shot_type as 'tee' | 'approach' | 'around_green' | 'putting' | 'penalty',
-      club_used: s.club_used,
-      club_type: s.club_type as 'driver' | 'non_driver' | 'putter',
-      lie_before: s.lie_before as 'tee' | 'fairway' | 'rough' | 'sand' | 'green' | 'other',
-      lie_after: s.lie_after as 'tee' | 'fairway' | 'rough' | 'sand' | 'green' | 'other' | null,
-      distance_to_hole_before: s.distance_to_hole_before,
-      distance_unit_before: s.distance_unit_before as 'yards' | 'feet',
-      result: s.result as 'fairway' | 'rough' | 'sand' | 'green' | 'hole' | 'other' | 'penalty',
-      distance_to_hole_after: s.distance_to_hole_after,
-      distance_unit_after: s.distance_unit_after as 'yards' | 'feet',
-      shot_distance: shotDistance,
-      miss_direction: s.miss_direction,
-      putt_break: s.putt_break,
-      putt_distance_feet: s.putt_distance_feet,
-      putt_slope: s.putt_slope,
-      putt_made: s.putt_made,
-      is_penalty: s.is_penalty ?? false,
-      penalty_type: s.penalty_type,
-      // Extended putt detail fields
-      putt_miss_tags: puttDetails?.miss_tags ?? null,
-      putt_break_direction: puttDetails?.break_direction ?? null,
-      putt_estimated_break_inches: puttDetails?.estimated_break_inches ?? null,
-      // Extended approach miss detail fields
-      approach_miss_direction: approachMissDetails?.miss_direction ?? null,
-      approach_miss_lie_type: approachMissDetails?.lie_type ?? null,
-      approach_miss_distance_from_green: approachMissDetails?.distance_from_green_yards ?? null,
-    };
-  });
+    const roundsInfo: RoundInfo[] = filteredRoundsData.map(r => ({
+      id: r.id,
+      round_date: r.round_date,
+      course_name: r.course_name || 'Unknown Course',
+      round_type: r.round_type ? roundTypeFromDb(r.round_type) : null,
+    }));
 
-  return calculateStatsFromShots(shots, holesInfo, roundsInfo);
+    const holesInfo: HoleInfo[] = (holesData || []).map(h => ({
+      id: h.id,
+      round_id: h.round_id,
+      hole_number: h.hole_number,
+      par: h.par,
+      yardage: 0,
+    }));
+
+    // Map all shots - don't filter out shots with missing distances as they're still
+    // needed for GIR calculation (shots with result='green') and scoring.
+    // The calculator handles null distances gracefully.
+    const shots: RawShot[] = (shotsData || []).map(s => {
+      let shotDistance = s.shot_distance;
+      if (shotDistance === null && s.distance_to_hole_before !== null && s.distance_to_hole_after !== null) {
+        const beforeYards = s.distance_unit_before === 'feet'
+          ? s.distance_to_hole_before / 3
+          : s.distance_to_hole_before;
+        const afterYards = s.distance_unit_after === 'feet'
+          ? s.distance_to_hole_after / 3
+          : s.distance_to_hole_after;
+        shotDistance = Math.max(0, Math.round(beforeYards - afterYards));
+      }
+
+      const puttDetails = Array.isArray(s.putt_details) ? s.putt_details[0] : s.putt_details;
+      const approachMissDetails = Array.isArray(s.approach_miss_details) ? s.approach_miss_details[0] : s.approach_miss_details;
+
+      return {
+        id: s.id,
+        round_id: s.round_id,
+        hole_id: s.hole_id,
+        hole_number: s.hole_number,
+        shot_number: s.shot_number,
+        shot_type: s.shot_type as 'tee' | 'approach' | 'around_green' | 'putting' | 'penalty',
+        club_used: s.club_used,
+        club_type: s.club_type as 'driver' | 'non_driver' | 'putter',
+        lie_before: s.lie_before as 'tee' | 'fairway' | 'rough' | 'sand' | 'green' | 'other',
+        lie_after: s.lie_after as 'tee' | 'fairway' | 'rough' | 'sand' | 'green' | 'other' | null,
+        distance_to_hole_before: s.distance_to_hole_before,
+        distance_unit_before: s.distance_unit_before as 'yards' | 'feet',
+        result: s.result as 'fairway' | 'rough' | 'sand' | 'green' | 'hole' | 'other' | 'penalty',
+        distance_to_hole_after: s.distance_to_hole_after,
+        distance_unit_after: s.distance_unit_after as 'yards' | 'feet',
+        shot_distance: shotDistance,
+        miss_direction: s.miss_direction,
+        putt_break: s.putt_break,
+        putt_distance_feet: s.putt_distance_feet,
+        putt_slope: s.putt_slope,
+        putt_made: s.putt_made,
+        is_penalty: s.is_penalty ?? false,
+        penalty_type: s.penalty_type,
+        putt_miss_tags: puttDetails?.miss_tags ?? null,
+        putt_break_direction: puttDetails?.break_direction ?? null,
+        putt_estimated_break_inches: puttDetails?.estimated_break_inches ?? null,
+        approach_miss_direction: approachMissDetails?.miss_direction ?? null,
+        approach_miss_lie_type: approachMissDetails?.lie_type ?? null,
+        approach_miss_distance_from_green: approachMissDetails?.distance_from_green_yards ?? null,
+      };
+    });
+
+    return serializeDetailedStats(calculateStatsFromShots(shots, holesInfo, roundsInfo));
+  } catch (error) {
+    console.error('[Stats] Falling back to round-level stats:', error);
+    return serializeDetailedStats(buildFallbackDetailedStats(roundsData));
+  }
 }
 
 // ============================================================================

@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useCallback } from 'react';
+import { memo, useRef, useState, useCallback } from 'react';
 import { PuttMissTagSelector } from './putt-miss-tag-selector';
 import { ApproachMissSelector } from './approach-miss-selector';
 import { calculateShotDistanceWithDirection, calculateHoleStats } from '@/lib/utils/shot-helpers';
@@ -34,6 +34,235 @@ interface ShotTrackingProps {
   onAutoSave?: (shots: ShotRecord[], currentHoleIndex: number) => Promise<void>;
   autoSaveInterval?: number; // in milliseconds, default 30000 (30s)
 }
+
+interface ScorecardHeaderProps {
+  holes: Hole[];
+  currentHoleIndex: number;
+  currentHoleNumber: number;
+  autoSaveStatus: 'idle' | 'saving' | 'saved' | 'error';
+  onExit?: () => void;
+  onNavigateToHole?: (holeIndex: number) => void;
+}
+
+interface ShotPillsBarProps {
+  currentShot: number;
+  recordedShotCount: number;
+  selectedShotNumber: number | null;
+  onSelectShot: (shotNumber: number) => void;
+}
+
+function scrollElementIntoView(element: Element | null) {
+  element?.scrollIntoView({
+    behavior: 'auto',
+    block: 'nearest',
+    inline: 'center',
+  });
+}
+
+function scrollHoleIntoView(holeNumber: number) {
+  scrollElementIntoView(document.getElementById(`hole-${holeNumber}`));
+}
+
+const ScorecardHeader = memo(function ScorecardHeader({
+  holes,
+  currentHoleIndex,
+  currentHoleNumber,
+  autoSaveStatus,
+  onExit,
+  onNavigateToHole,
+}: ScorecardHeaderProps) {
+  const is9Hole = holes.length <= 9;
+  const front9 = holes.slice(0, 9);
+  const back9 = is9Hole ? [] : holes.slice(9);
+  const front9Score = front9.reduce((sum, hole) => sum + (hole.score || 0), 0);
+  const back9Score = back9.reduce((sum, hole) => sum + (hole.score || 0), 0);
+  const front9HasScores = front9.some((hole) => hole.score !== null);
+  const back9HasScores = back9.some((hole) => hole.score !== null);
+  const totalPar = holes.reduce((sum, hole) => sum + hole.par, 0);
+
+  const renderHoleButton = (hole: Hole, holeIndex: number) => {
+    const isCurrent = holeIndex === currentHoleIndex;
+    const hasScore = hole.score !== null;
+    const scoreToPar = hasScore ? (hole.score || 0) - hole.par : 0;
+    const canNavigate = onNavigateToHole && (hasScore || holeIndex < currentHoleIndex);
+
+    const scoreColor = (() => {
+      if (isCurrent) return 'text-white';
+      if (!hasScore) return 'text-warm-500';
+      if (scoreToPar <= -2) return 'text-blue-400';
+      if (scoreToPar === -1) return 'text-primary-400';
+      if (scoreToPar === 0) return 'text-white';
+      if (scoreToPar === 1) return 'text-amber-400';
+      return 'text-red-400';
+    })();
+
+    return (
+      <button
+        key={hole.number}
+        id={`hole-${hole.number}`}
+        aria-label={`Hole ${hole.number}, Par ${hole.par}, ${hole.yardage} yards${hasScore ? `, Score: ${hole.score}` : ', not yet played'}${isCurrent ? ' (current hole)' : ''}${canNavigate && !isCurrent ? ', click to edit' : ''}`}
+        onClick={() => canNavigate && onNavigateToHole?.(holeIndex)}
+        disabled={!canNavigate}
+        className={`min-w-[75px] py-3 px-2 text-center border-r border-warm-600 transition-colors ${
+          isCurrent
+            ? 'bg-primary-600'
+            : hasScore
+              ? canNavigate ? 'bg-warm-700/50 hover:bg-warm-700 cursor-pointer' : 'bg-warm-700/50 cursor-default'
+              : canNavigate
+                ? 'hover:bg-warm-700 cursor-pointer'
+                : 'cursor-default'
+        }`}
+      >
+        <div className={`text-xs font-semibold ${isCurrent ? 'text-white' : 'text-warm-300'}`}>Hole {hole.number}</div>
+        <div className={`text-xs ${isCurrent ? 'text-primary-100' : 'text-warm-400'}`}>Par {hole.par}</div>
+        <div className={`text-xs ${isCurrent ? 'text-primary-100' : 'text-warm-500'}`}>{hole.yardage} yds</div>
+        <div className={`mt-1 text-lg font-bold ${scoreColor}`}>
+          {hasScore ? hole.score : '-'}
+        </div>
+        {hasScore && !isCurrent && (
+          <div className="text-[10px] text-primary-400 mt-0.5">
+            <svg className="w-3 h-3 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+        )}
+        {canNavigate && !isCurrent && !hasScore && (
+          <div className="text-xs text-warm-400 mt-0.5">✎ Edit</div>
+        )}
+      </button>
+    );
+  };
+
+  return (
+    <div className="bg-[#1e293b] sticky top-0 z-50">
+      <div className="lg:hidden flex justify-between items-center px-4 py-2 border-b border-warm-600">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => scrollHoleIntoView(Math.max(1, currentHoleNumber - 1))}
+            disabled={currentHoleIndex === 0}
+            className="px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-30 disabled:cursor-not-allowed transition-opacity uppercase tracking-wide"
+          >
+            ← Prev
+          </button>
+          {onExit && (
+            <button
+              onClick={onExit}
+              className="px-3 py-1.5 text-xs font-semibold bg-rose-500 hover:bg-rose-600 text-white rounded transition-colors uppercase tracking-wide"
+            >
+              Exit
+            </button>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {autoSaveStatus !== 'idle' && (
+            <span className={`flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded transition-colors ${
+              autoSaveStatus === 'saving' ? 'text-amber-300 bg-amber-900/30' :
+              autoSaveStatus === 'saved' ? 'text-primary-300 bg-primary-900/30' :
+              'text-red-300 bg-red-900/30'
+            }`}>
+              {autoSaveStatus === 'saving' && (
+                <span className="flex items-center gap-0.5">
+                  <span className="w-1 h-1 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                  <span className="w-1 h-1 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                  <span className="w-1 h-1 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+                </span>
+              )}
+              {autoSaveStatus === 'saved' && (
+                <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+              {autoSaveStatus === 'error' && '!'}
+            </span>
+          )}
+          <span className="text-xs font-bold text-primary-400 uppercase tracking-wide">
+            Hole {currentHoleNumber} of {holes.length}
+          </span>
+        </div>
+        <button
+          onClick={() => scrollHoleIntoView(Math.min(holes.length, currentHoleNumber + 1))}
+          disabled={currentHoleIndex === holes.length - 1}
+          className="px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-30 disabled:cursor-not-allowed transition-opacity uppercase tracking-wide"
+        >
+          Next →
+        </button>
+      </div>
+
+      <div className="scroll-x-fade overscroll-x-contain touch-pan-x" style={{ WebkitOverflowScrolling: 'touch' }}>
+        <div className="inline-flex min-w-full">
+          {front9.map((hole, index) => renderHoleButton(hole, index))}
+          <div className="min-w-[75px] py-3 px-2 text-center bg-[#334155] border-r-2 border-warm-500">
+            <div className="text-xs font-semibold text-amber-400">{is9Hole ? 'TOTAL' : 'OUT'}</div>
+            <div className="text-xs text-warm-400">Par {front9.reduce((sum, hole) => sum + hole.par, 0)}</div>
+            <div className="text-xs text-warm-500">{front9.reduce((sum, hole) => sum + hole.yardage, 0)}</div>
+            <div className="mt-1 text-lg font-bold text-amber-400">{front9HasScores ? front9Score : '-'}</div>
+          </div>
+          {!is9Hole && back9.map((hole, index) => renderHoleButton(hole, index + 9))}
+          {!is9Hole && (
+            <div className="min-w-[75px] py-3 px-2 text-center bg-[#334155] border-r-2 border-warm-500">
+              <div className="text-xs font-semibold text-amber-400">IN</div>
+              <div className="text-xs text-warm-400">Par {back9.reduce((sum, hole) => sum + hole.par, 0)}</div>
+              <div className="text-xs text-warm-500">{back9.reduce((sum, hole) => sum + hole.yardage, 0)}</div>
+              <div className="mt-1 text-lg font-bold text-amber-400">{back9HasScores ? back9Score : '-'}</div>
+            </div>
+          )}
+          {!is9Hole && (
+            <div className="min-w-[85px] py-3 px-2 text-center bg-[#0f172a]">
+              <div className="text-xs font-semibold text-white">TOTAL</div>
+              <div className="text-xs text-warm-400">Par {totalPar}</div>
+              <div className="text-xs text-warm-500">{holes.reduce((sum, hole) => sum + hole.yardage, 0)}</div>
+              <div className="mt-1 text-lg font-bold text-white">{(front9HasScores || back9HasScores) ? front9Score + back9Score : '-'}</div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+});
+
+const ShotPillsBar = memo(function ShotPillsBar({
+  currentShot,
+  recordedShotCount,
+  selectedShotNumber,
+  onSelectShot,
+}: ShotPillsBarProps) {
+  return (
+    <div className="sticky top-[105px] lg:top-[81px] z-40 bg-white py-4 -mt-4 -mx-6 px-6 shadow-sm shadow-primary-950/5 border-b border-warm-100">
+      <div className="flex items-center gap-3">
+        <span className="text-xs font-semibold text-warm-500 uppercase tracking-wider shrink-0">Shot</span>
+        <div className="flex-1 overflow-x-auto overscroll-x-contain touch-pan-x scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <div className="flex min-w-max items-center gap-2 pr-1">
+            {Array.from({ length: Math.max(6, currentShot + 1) }, (_, i) => i + 1).map((num) => {
+              const isActive = num === currentShot;
+              const isCompleted = num < currentShot;
+              const isFuture = num > currentShot;
+              const isRecorded = num <= recordedShotCount;
+              const isSelected = selectedShotNumber === num;
+
+              return (
+                <button
+                  key={num}
+                  type="button"
+                  disabled={!isRecorded}
+                  onClick={() => isRecorded && onSelectShot(num)}
+                  className={`min-w-[44px] h-10 px-3 rounded-lg flex items-center justify-center text-sm font-semibold transition-colors
+                    ${isActive ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10 ring-1 ring-primary-950/5' : ''}
+                    ${isCompleted ? 'bg-primary-50 text-primary-700 ring-1 ring-primary-200' : ''}
+                    ${isFuture ? 'bg-warm-50 text-warm-400 ring-1 ring-warm-200' : ''}
+                    ${isSelected ? 'ring-2 ring-primary-500' : ''}
+                    ${isRecorded ? 'cursor-pointer' : 'cursor-default'}`}
+                  aria-label={isRecorded ? `View shot ${num}` : `Shot ${num} not recorded`}
+                >
+                  {num}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+});
 
 // ============================================================================
 // COMPONENT
@@ -134,15 +363,6 @@ export default function ShotTrackingComprehensive({
       setPendingNavHoleIndex(null);
     }
   }, [pendingNavHoleIndex, onNavigateToHole]);
-
-  // Early return for invalid hole data - must be after all hooks
-  if (!currentHole) {
-    return (
-      <div className="min-h-full flex items-center justify-center">
-        <p className="text-lg text-warm-600">Invalid hole data</p>
-      </div>
-    );
-  }
 
   const completeHole = (shots: ShotRecord[]) => {
     const holeStats = calculateHoleStats(shots, currentHole);
@@ -317,6 +537,25 @@ export default function ShotTrackingComprehensive({
     });
   };
 
+  const handleSelectShot = useCallback((shotNumber: number) => {
+    dispatch({ type: 'SELECT_SHOT', payload: shotNumber });
+    scrollElementIntoView(shotHistoryRefs.current[shotNumber]);
+
+    const shot = shotHistory.find((entry) => entry.shotNumber === shotNumber);
+    if (shot) {
+      handleEditShot(shot);
+    }
+  }, [dispatch, shotHistory, handleEditShot]);
+
+  // Early return for invalid hole data - must be after all hooks
+  if (!currentHole) {
+    return (
+      <div className="min-h-full flex items-center justify-center">
+        <p className="text-lg text-warm-600">Invalid hole data</p>
+      </div>
+    );
+  }
+
   // Helper for edit modal form data updates
   const updateEditForm = (updates: Partial<EditFormData>) => {
     if (editFormData) {
@@ -331,12 +570,6 @@ export default function ShotTrackingComprehensive({
   const isHoleComplete = shotHistory.length > 0 && shotHistory[shotHistory.length - 1]?.result === 'hole';
   const nextUnplayedIdx = holes.findIndex(h => h.score === null);
   const showBackToCurrentHole = isHoleComplete && !!onNavigateToHole && nextUnplayedIdx >= 0 && nextUnplayedIdx !== currentHoleIndex;
-  const is9Hole = holes.length <= 9;
-  const front9Score = holes.slice(0, 9).reduce((sum, h) => sum + (h.score || 0), 0);
-  const back9Score = is9Hole ? 0 : holes.slice(9).reduce((sum, h) => sum + (h.score || 0), 0);
-  const front9HasScores = holes.slice(0, 9).some(h => h.score !== null);
-  const back9HasScores = is9Hole ? false : holes.slice(9).some(h => h.score !== null);
-  const totalPar = holes.reduce((sum, h) => sum + h.par, 0);
 
   // For sidebar visualization
   const parsedAfterDistance = parseFloat(distanceAfterShot);
@@ -412,238 +645,25 @@ export default function ShotTrackingComprehensive({
         </div>
       )}
 
-      {/* SCORECARD - Dark header */}
-      <div className="bg-[#1e293b] sticky top-0 z-50">
-        {/* Mobile Navigation */}
-        <div className="lg:hidden flex justify-between items-center px-4 py-2 border-b border-warm-600">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => {
-                const element = document.getElementById(`hole-${Math.max(1, currentHole.number - 1)}`);
-                element?.scrollIntoView({ behavior: 'smooth', inline: 'center' });
-              }}
-              disabled={currentHoleIndex === 0}
-              className="px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-30 disabled:cursor-not-allowed transition-opacity uppercase tracking-wide">
-              ← Prev
-            </button>
-            {onExit && (
-              <button
-                onClick={onExit}
-                className="px-3 py-1.5 text-xs font-semibold bg-rose-500 hover:bg-rose-600 text-white rounded transition-colors uppercase tracking-wide">
-                Exit
-              </button>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {/* Mobile auto-save indicator */}
-            {onAutoSave && autoSaveStatus !== 'idle' && (
-              <span className={`flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded transition-all ${
-                autoSaveStatus === 'saving' ? 'text-amber-300 bg-amber-900/30' :
-                autoSaveStatus === 'saved' ? 'text-primary-300 bg-primary-900/30' :
-                'text-red-300 bg-red-900/30'
-              }`}>
-                {autoSaveStatus === 'saving' && (
-                  <span className="flex items-center gap-0.5">
-                    <span className="w-1 h-1 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '0ms' }} />
-                    <span className="w-1 h-1 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '150ms' }} />
-                    <span className="w-1 h-1 rounded-full bg-current skeleton-shimmer" style={{ animationDelay: '300ms' }} />
-                  </span>
-                )}
-                {autoSaveStatus === 'saved' && (
-                  <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                )}
-                {autoSaveStatus === 'error' && '!'}
-              </span>
-            )}
-            <span className="text-xs font-bold text-primary-400 uppercase tracking-wide">
-              Hole {currentHole.number} of {holes.length}
-            </span>
-          </div>
-          <button
-            onClick={() => {
-              const element = document.getElementById(`hole-${Math.min(holes.length, currentHole.number + 1)}`);
-              element?.scrollIntoView({ behavior: 'smooth', inline: 'center' });
-            }}
-            disabled={currentHoleIndex === holes.length - 1}
-            className="px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-30 disabled:cursor-not-allowed transition-opacity uppercase tracking-wide">
-            Next →
-          </button>
-        </div>
-
-        <div className="overflow-x-auto">
-          <div className="inline-flex min-w-full">
-            {/* Front 9 */}
-            {holes.slice(0, 9).map((hole, idx) => {
-              const isCurrent = idx === currentHoleIndex;
-              const hasScore = hole.score !== null;
-              const scoreToPar = hasScore ? (hole.score || 0) - hole.par : 0;
-              const canNavigate = onNavigateToHole && (hasScore || idx < currentHoleIndex);
-              const getScoreColor = () => {
-                if (isCurrent) return 'text-white';
-                if (!hasScore) return 'text-warm-500';
-                if (scoreToPar <= -2) return 'text-blue-400'; // Eagle or better
-                if (scoreToPar === -1) return 'text-primary-400'; // Birdie
-                if (scoreToPar === 0) return 'text-white'; // Par
-                if (scoreToPar === 1) return 'text-amber-400'; // Bogey
-                return 'text-red-400'; // Double+
-              };
-              return (
-                <button
-                  key={hole.number}
-                  id={`hole-${hole.number}`}
-                  aria-label={`Hole ${hole.number}, Par ${hole.par}, ${hole.yardage} yards${hasScore ? `, Score: ${hole.score}` : ', not yet played'}${isCurrent ? ' (current hole)' : ''}${canNavigate && !isCurrent ? ', click to edit' : ''}`}
-                  onClick={() => canNavigate && handleNavigateToHole(idx)}
-                  disabled={!canNavigate}
-                  className={`min-w-[75px] py-3 px-2 text-center border-r border-warm-600 transition-all ${
-                    isCurrent
-                      ? 'bg-primary-600'
-                      : hasScore
-                        ? canNavigate ? 'bg-warm-700/50 hover:bg-warm-700 cursor-pointer' : 'bg-warm-700/50 cursor-default'
-                        : canNavigate
-                          ? 'hover:bg-warm-700 cursor-pointer'
-                          : 'cursor-default'
-                  }`}
-                >
-                  <div className={`text-xs font-semibold ${isCurrent ? 'text-white' : 'text-warm-300'}`}>Hole {hole.number}</div>
-                  <div className={`text-xs ${isCurrent ? 'text-primary-100' : 'text-warm-400'}`}>Par {hole.par}</div>
-                  <div className={`text-xs ${isCurrent ? 'text-primary-100' : 'text-warm-500'}`}>{hole.yardage} yds</div>
-                  <div className={`mt-1 text-lg font-bold ${getScoreColor()}`}>
-                    {hasScore ? hole.score : '-'}
-                  </div>
-                  {hasScore && !isCurrent && (
-                    <div className="text-[10px] text-primary-400 mt-0.5">
-                      <svg className="w-3 h-3 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
-                    </div>
-                  )}
-                  {canNavigate && !isCurrent && !hasScore && (
-                    <div className="text-xs text-warm-400 mt-0.5">✎ Edit</div>
-                  )}
-                </button>
-              );
-            })}
-            {/* OUT (or TOTAL for 9-hole) */}
-            <div className="min-w-[75px] py-3 px-2 text-center bg-[#334155] border-r-2 border-warm-500">
-              <div className="text-xs font-semibold text-amber-400">{is9Hole ? 'TOTAL' : 'OUT'}</div>
-              <div className="text-xs text-warm-400">Par {holes.slice(0, 9).reduce((s, h) => s + h.par, 0)}</div>
-              <div className="text-xs text-warm-500">{holes.slice(0, 9).reduce((s, h) => s + h.yardage, 0)}</div>
-              <div className="mt-1 text-lg font-bold text-amber-400">{front9HasScores ? front9Score : '-'}</div>
-            </div>
-            {/* Back 9 — only for 18-hole rounds */}
-            {!is9Hole && holes.slice(9).map((hole, idx) => {
-              const actualIdx = idx + 9;
-              const isCurrent = actualIdx === currentHoleIndex;
-              const hasScore = hole.score !== null;
-              const scoreToPar = hasScore ? (hole.score || 0) - hole.par : 0;
-              const canNavigate = onNavigateToHole && (hasScore || actualIdx < currentHoleIndex);
-              const getScoreColor = () => {
-                if (isCurrent) return 'text-white';
-                if (!hasScore) return 'text-warm-500';
-                if (scoreToPar <= -2) return 'text-blue-400'; // Eagle or better
-                if (scoreToPar === -1) return 'text-primary-400'; // Birdie
-                if (scoreToPar === 0) return 'text-white'; // Par
-                if (scoreToPar === 1) return 'text-amber-400'; // Bogey
-                return 'text-red-400'; // Double+
-              };
-              return (
-                <button
-                  key={hole.number}
-                  id={`hole-${hole.number}`}
-                  aria-label={`Hole ${hole.number}, Par ${hole.par}, ${hole.yardage} yards${hasScore ? `, Score: ${hole.score}` : ', not yet played'}${isCurrent ? ' (current hole)' : ''}${canNavigate && !isCurrent ? ', click to edit' : ''}`}
-                  onClick={() => canNavigate && handleNavigateToHole(actualIdx)}
-                  disabled={!canNavigate}
-                  className={`min-w-[75px] py-3 px-2 text-center border-r border-warm-600 transition-all ${
-                    isCurrent
-                      ? 'bg-primary-600'
-                      : hasScore
-                        ? canNavigate ? 'bg-warm-700/50 hover:bg-warm-700 cursor-pointer' : 'bg-warm-700/50 cursor-default'
-                        : canNavigate
-                          ? 'hover:bg-warm-700 cursor-pointer'
-                          : 'cursor-default'
-                  }`}
-                >
-                  <div className={`text-xs font-semibold ${isCurrent ? 'text-white' : 'text-warm-300'}`}>Hole {hole.number}</div>
-                  <div className={`text-xs ${isCurrent ? 'text-primary-100' : 'text-warm-400'}`}>Par {hole.par}</div>
-                  <div className={`text-xs ${isCurrent ? 'text-primary-100' : 'text-warm-500'}`}>{hole.yardage} yds</div>
-                  <div className={`mt-1 text-lg font-bold ${getScoreColor()}`}>
-                    {hasScore ? hole.score : '-'}
-                  </div>
-                  {hasScore && !isCurrent && (
-                    <div className="text-[10px] text-primary-400 mt-0.5">
-                      <svg className="w-3 h-3 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
-                    </div>
-                  )}
-                  {canNavigate && !isCurrent && !hasScore && (
-                    <div className="text-xs text-warm-400 mt-0.5">✎ Edit</div>
-                  )}
-                </button>
-              );
-            })}
-            {/* IN — only for 18-hole rounds */}
-            {!is9Hole && (
-              <div className="min-w-[75px] py-3 px-2 text-center bg-[#334155] border-r-2 border-warm-500">
-                <div className="text-xs font-semibold text-amber-400">IN</div>
-                <div className="text-xs text-warm-400">Par {holes.slice(9).reduce((s, h) => s + h.par, 0)}</div>
-                <div className="text-xs text-warm-500">{holes.slice(9).reduce((s, h) => s + h.yardage, 0)}</div>
-                <div className="mt-1 text-lg font-bold text-amber-400">{back9HasScores ? back9Score : '-'}</div>
-              </div>
-            )}
-            {/* TOTAL — only show separate total for 18-hole rounds (9-hole already shows total in OUT) */}
-            {!is9Hole && (
-              <div className="min-w-[85px] py-3 px-2 text-center bg-[#0f172a]">
-                <div className="text-xs font-semibold text-white">TOTAL</div>
-                <div className="text-xs text-warm-400">Par {totalPar}</div>
-                <div className="text-xs text-warm-500">{holes.reduce((s, h) => s + h.yardage, 0)}</div>
-                <div className="mt-1 text-lg font-bold text-white">{(front9HasScores || back9HasScores) ? front9Score + back9Score : '-'}</div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+      <ScorecardHeader
+        holes={holes}
+        currentHoleIndex={currentHoleIndex}
+        currentHoleNumber={currentHole.number}
+        autoSaveStatus={autoSaveStatus}
+        onExit={onExit}
+        onNavigateToHole={onNavigateToHole ? handleNavigateToHole : undefined}
+      />
 
       {/* MAIN CONTENT */}
       <div className="flex">
         <div className="flex-1 max-w-5xl mx-auto p-6 space-y-5">
 
-          {/* Shot Pills - Sticky - Dynamic */}
-          <div className="sticky top-[105px] lg:top-[81px] z-40 bg-white py-4 -mt-4 -mx-6 px-6 flex items-center gap-2 shadow-sm shadow-primary-950/5 border-b border-warm-100">
-            <span className="text-xs font-semibold text-warm-500 uppercase tracking-wider mr-2">Shot</span>
-            {Array.from({ length: Math.max(6, currentShot + 1) }, (_, i) => i + 1).map(num => {
-              const isActive = num === currentShot;
-              const isCompleted = num < currentShot;
-              const isFuture = num > currentShot;
-              const isRecorded = num <= shotHistory.length;
-              const isSelected = selectedShotNumber === num;
-
-              return (
-                <button
-                  key={num}
-                  type="button"
-                  disabled={!isRecorded}
-                  onClick={() => {
-                    if (!isRecorded) return;
-                    dispatch({ type: 'SELECT_SHOT', payload: num });
-                    shotHistoryRefs.current[num]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    // Open the edit modal for the selected shot
-                    const shot = shotHistory.find(s => s.shotNumber === num);
-                    if (shot) {
-                      handleEditShot(shot);
-                    }
-                  }}
-                  className={`flex-1 min-w-[44px] h-10 rounded-lg flex items-center justify-center text-sm font-semibold transition-all
-                    ${isActive ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10 ring-1 ring-primary-950/5' : ''}
-                    ${isCompleted ? 'bg-primary-50 text-primary-700 ring-1 ring-primary-200' : ''}
-                    ${isFuture ? 'bg-warm-50 text-warm-400 ring-1 ring-warm-200' : ''}
-                    ${isSelected ? 'ring-2 ring-primary-500' : ''}
-                    ${isRecorded ? 'cursor-pointer' : 'cursor-default'}`}
-                  aria-label={isRecorded ? `View shot ${num}` : `Shot ${num} not recorded`}
-                >
-                  {num}
-                </button>
-              );
-            })}
-          </div>
+          <ShotPillsBar
+            currentShot={currentShot}
+            recordedShotCount={shotHistory.length}
+            selectedShotNumber={selectedShotNumber}
+            onSelectShot={handleSelectShot}
+          />
 
           {/* Hole Header */}
           <div className="bg-gradient-to-br from-primary-600 to-primary-700 rounded-lg p-6 text-white shadow-sm shadow-primary-950/10 ring-1 ring-primary-950/5">
@@ -1344,7 +1364,11 @@ export default function ShotTrackingComprehensive({
             {shotHistory.length > 0 && (
               <div className="mt-3 pt-3 border-t border-warm-200">
                 <p className="text-[9px] font-bold text-warm-400 uppercase tracking-wider mb-2">Shots</p>
-                <div className="space-y-1 max-h-24 overflow-y-auto">
+                <div
+                  className="space-y-1 max-h-24 overflow-y-auto overscroll-contain touch-pan-y"
+                  style={{ WebkitOverflowScrolling: 'touch' }}
+                  data-scroll-container
+                >
                   {shotHistory.map((shot, idx) => {
                     const isSelected = selectedShotNumber === shot.shotNumber;
                     return (
@@ -1469,7 +1493,12 @@ export default function ShotTrackingComprehensive({
           aria-modal="true"
           aria-label={`Edit shot ${editingShot.shotNumber}`}
         >
-          <div className="glass-prominent rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="glass-prominent rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto overscroll-contain touch-pan-y shadow-2xl"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+            data-scroll-container
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Modal Header */}
             <div className="sticky top-0 bg-white/90 backdrop-blur-md border-b border-warm-200/60 px-6 py-4 rounded-t-2xl">
               <div className="flex items-center justify-between">
