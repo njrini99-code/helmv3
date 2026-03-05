@@ -17,9 +17,10 @@ const config: CapacitorConfig = {
     webContentsDebuggingEnabled: false,
   },
   plugins: {
-    Keyboard: {
-      resizeOnFullScreen: true,
-    },
+    Keyboard: { resizeOnFullScreen: true },
+    PushNotifications: { presentationOptions: ["badge", "sound", "alert"] },
+    SplashScreen: { launchAutoHide: false, showSpinner: false },
+    StatusBar: { style: 'LIGHT' },
   },
 };
 

@@ -28,6 +28,8 @@ export interface RoundDraftData {
   selectedRoundNumber?: number | null;
   /** In-progress shots keyed by hole index, so mid-hole data survives tab kills */
   inProgressShots?: Record<number, ShotRecord[]>;
+  /** Number of holes in the round (9 or 18). Defaults to 18 if not present (backwards compat). */
+  holesPerRound?: 9 | 18;
 }
 
 export interface SaveStatus {
@@ -45,8 +47,6 @@ interface UseAutoSaveRoundOptions {
 
 const DEFAULT_INTERVAL = 30000; // 30 seconds
 const DEBOUNCE_DELAY = 2000; // 2 seconds debounce for rapid changes
-// Note: OFFLINE_RETRY_DELAY is reserved for future offline retry logic
-void (5000); // 5 seconds retry when offline
 const LOCAL_STORAGE_KEY = 'golf_round_draft_backup';
 
 /**

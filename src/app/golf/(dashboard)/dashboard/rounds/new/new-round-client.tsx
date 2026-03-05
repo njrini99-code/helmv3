@@ -18,16 +18,15 @@ import {
   type SavedCourse,
   type SavedCourseHoleConfig
 } from '@/app/golf/actions/golf';
-import { checkForDraft, clearRoundDraft } from '@/app/golf/actions/round-drafts';
 import { useConnectionStatus } from '@/hooks/golf/use-connection-status';
 import { useOfflineSyncStore, useOfflineSyncStatus } from '@/stores/offline-sync-store';
 import { getSyncEngine } from '@/lib/offline/sync-engine';
 import { OfflineWarningBanner } from '@/components/golf';
-import { IconBookmark, IconCheck, IconChartBar, IconMapPin, IconPlus, IconTrophy } from '@/components/icons';
+import { IconBookmark, IconCheck, IconChartBar, IconFlag, IconMapPin, IconPlus, IconTrophy, IconWarning } from '@/components/icons';
+import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
 import { HoleConfigurationForm } from '@/components/golf/HoleConfigurationForm';
 
 import { SaveRoundModal } from '@/components/golf/SaveRoundModal';
-import { ResumeDraftModal } from '@/components/golf/ResumeDraftModal';
 import { useToast } from '@/components/ui/toast';
 // DraftIndicator removed - was too noisy
 import type { HoleConfig } from '@/lib/types/golf-course';
@@ -62,18 +61,7 @@ export default function NewRoundClient() {
   // Auto-save hook with database persistence
   const {
     scheduleSave,
-     
-    saveNow: _saveNow, // Available for manual save if needed
-    loadDraft,
     clearDraft,
-     
-    saveStatus: _saveStatus, // Draft indicator removed
-     
-    isOnline: _isOnline, // Using connectionStatus.isOnline instead
-     
-    roundId: _draftRoundId, // Reserved for future offline storage integration
-     
-    getTimeSinceLastSave: _getTimeSinceLastSave, // Draft indicator removed
   } = useAutoSaveRound(null);
 
   // New connection status hook
@@ -179,23 +167,26 @@ export default function NewRoundClient() {
   const [savedRoundId, setSavedRoundId] = useState<string | null>(null);
   const [inProgressShotsByHole, setInProgressShotsByHole] = useState<Record<number, ShotRecord[]>>({});
   const [holesPerRound, setHolesPerRound] = useState<9 | 18>(18);
+  const currentHoleIndexRef = useRef(currentHoleIndex);
+  currentHoleIndexRef.current = currentHoleIndex;
   const isSubmittingRef = useRef(false);
   const serverSaveInProgressRef = useRef(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const pendingServerSaveRef = useRef<{ shots: ShotRecord[]; holeIndex: number; roundData?: any } | null>(null);
   const consecutiveSaveFailuresRef = useRef(0);
   const savedRoundIdRef = useRef<string | null>(null);
   const [isStartingRound, setIsStartingRound] = useState(false);
+  const [pendingFinalStats, setPendingFinalStats] = useState<HoleStats[] | null>(null);
+  const [showFinishConfirm, setShowFinishConfirm] = useState(false);
+  const [showBackToSetupModal, setShowBackToSetupModal] = useState(false);
 
-  // Resume draft modal state
-  const [showResumeDraftModal, setShowResumeDraftModal] = useState(false);
-  const [existingDraftInfo, setExistingDraftInfo] = useState<{
-    roundId: string;
-    courseName: string | null;
-    holesCompleted: number;
-    totalHoles: number;
-    lastAutoSave: string | null;
-    roundDate: string;
-  } | null>(null);
-  const [isCheckingForDraft, setIsCheckingForDraft] = useState(true);
+  // Ref to track the furthest hole the player has naturally progressed to.
+  // Used to navigate back correctly after re-editing a completed hole (#21).
+  const activeProgressHoleRef = useRef(0);
+
+  // Ref for stale closure prevention in async auto-save (#20)
+  const inProgressShotsByHoleRef = useRef(inProgressShotsByHole);
+  inProgressShotsByHoleRef.current = inProgressShotsByHole;
 
   // Qualifier state
   const [qualifiers, setQualifiers] = useState<PlayerQualifierInfo[]>([]);
@@ -213,6 +204,7 @@ export default function NewRoundClient() {
   const [preloadedHoleConfigs, setPreloadedHoleConfigs] = useState<SavedCourseHoleConfig[] | null>(null);
   const [saveCourseChecked, setSaveCourseChecked] = useState(false);
   const [courseSearchQuery, setCourseSearchQuery] = useState('');
+  const [nineSelection, setNineSelection] = useState<'front' | 'back'>('front');
 
   // Fetch qualifiers when round type changes to 'qualifier'
   useEffect(() => {
@@ -341,71 +333,9 @@ export default function NewRoundClient() {
     }
   };
 
-  // Check for existing draft on mount
-  useEffect(() => {
-    async function checkDraft() {
-      try {
-        const result = await checkForDraft();
-        if (result.success && result.data.hasDraft && result.data.draftInfo) {
-          setExistingDraftInfo(result.data.draftInfo);
-          setShowResumeDraftModal(true);
-        }
-      } catch (err) {
-        console.error('[GolfHelm] Failed to check for existing draft:', err);
-      } finally {
-        setIsCheckingForDraft(false);
-      }
-    }
-    checkDraft();
-  }, []);
-
-  // Handle resume draft
-  const handleResumeDraft = useCallback(async () => {
-    if (!existingDraftInfo) return;
-
-    try {
-      const result = await loadDraft();
-      if (result.data && result.source) {
-        const draftData = result.data;
-        // Restore state from draft
-        setStep(draftData.step === 'submitting' ? 'tracking' : draftData.step);
-        setSetupData(draftData.setupData);
-        setHoles(draftData.holes);
-        setCompletedHoleStats(draftData.completedHoleStats);
-        setCurrentHoleIndex(draftData.currentHoleIndex);
-        // Restore in-progress shots so distance-to-hole resumes correctly
-        if (draftData.inProgressShots) {
-          setInProgressShotsByHole(draftData.inProgressShots);
-        }
-        if (draftData.selectedQualifierId) {
-          setSelectedQualifierId(draftData.selectedQualifierId);
-        }
-        if (draftData.selectedRoundNumber) {
-          setSelectedRoundNumber(draftData.selectedRoundNumber);
-        }
-      }
-    } catch (err) {
-      console.error('[GolfHelm] Failed to load draft, user will start fresh:', err);
-    } finally {
-      setShowResumeDraftModal(false);
-    }
-  }, [existingDraftInfo, loadDraft]);
-
-  // Handle start fresh (delete draft)
-  const handleStartFresh = useCallback(async () => {
-    if (existingDraftInfo) {
-      try {
-        await clearRoundDraft(existingDraftInfo.roundId);
-      } catch (err) {
-        console.error('[GolfHelm] Failed to clear existing draft:', err);
-      }
-    }
-    await clearDraft();
-    setExistingDraftInfo(null);
-    setShowResumeDraftModal(false);
-  }, [existingDraftInfo, clearDraft]);
-
   // Auto-save draft whenever state changes (30-second intervals via hook)
+  // Only for setup/holes steps — during tracking, savePartialRound handles persistence
+  // to avoid dual saves that can create separate round records (race condition).
   useEffect(() => {
     // Don't save if we haven't started (still on setup with no data)
     if (step === 'setup' && !setupData.courseName) {
@@ -417,8 +347,8 @@ export default function NewRoundClient() {
       return;
     }
 
-    // Don't save while checking for existing draft
-    if (isCheckingForDraft) {
+    // During tracking, savePartialRound handles persistence — skip draft save
+    if (step === 'tracking') {
       return;
     }
 
@@ -432,9 +362,10 @@ export default function NewRoundClient() {
       selectedQualifierId,
       selectedRoundNumber,
       inProgressShots: inProgressShotsByHole,
+      holesPerRound,
     };
     scheduleSave(draftData);
-  }, [step, setupData, holes, completedHoleStats, currentHoleIndex, selectedQualifierId, selectedRoundNumber, inProgressShotsByHole, scheduleSave, isCheckingForDraft]);
+  }, [step, setupData, holes, completedHoleStats, currentHoleIndex, selectedQualifierId, selectedRoundNumber, inProgressShotsByHole, holesPerRound, scheduleSave]);
 
 
   const handleSetupSubmit = async (e: React.FormEvent) => {
@@ -463,21 +394,46 @@ export default function NewRoundClient() {
       }
     }
 
+    // Validate courseRating and courseSlope ranges (must match server Zod schema in golf.ts)
+    if (setupData.courseRating) {
+      const rating = parseFloat(setupData.courseRating);
+      if (isNaN(rating) || rating < 60 || rating > 80) {
+        setError('Course rating must be between 60.0 and 80.0');
+        setIsStartingRound(false);
+        return;
+      }
+    }
+    if (setupData.courseSlope) {
+      const slope = parseInt(setupData.courseSlope);
+      if (isNaN(slope) || slope < 55 || slope > 155) {
+        setError('Course slope must be between 55 and 155');
+        setIsStartingRound(false);
+        return;
+      }
+    }
+
     // If using a saved course with hole configs, skip the hole configuration step
     if (preloadedHoleConfigs && preloadedHoleConfigs.length > 0) {
       // Slice to match selected hole count (e.g. user picks 9 on a saved 18-hole course)
-      const configs = preloadedHoleConfigs.slice(0, holesPerRound);
-      const initialHoles: Hole[] = configs.map((h) => ({
-        number: h.holeNumber,
+      let configs: SavedCourseHoleConfig[];
+      if (holesPerRound === 9 && preloadedHoleConfigs.length >= 18 && nineSelection === 'back') {
+        configs = preloadedHoleConfigs.slice(9, 18);
+      } else {
+        configs = preloadedHoleConfigs.slice(0, holesPerRound);
+      }
+      const initialHoles: Hole[] = configs.map((h, idx) => ({
+        number: idx + 1, // Renumber 1-9 regardless of front/back
         par: h.par,
         yardage: h.yardage,
         score: null,
       }));
       setHoles(initialHoles);
       setCompletedHoleStats([]);
+      setIsStartingRound(false);
       setStep('tracking');
     } else {
       // Go to hole configuration step for new courses
+      setIsStartingRound(false);
       setStep('holes');
     }
   };
@@ -564,6 +520,9 @@ export default function NewRoundClient() {
   }, [completedHoleStats, currentHoleIndex, inProgressShotsByHole, holes, setupData, selectedQualifierId]);
 
   const handleHoleComplete = async (holeIndex: number, holeStats: HoleStats) => {
+    // Detect re-edit: hole already had completed stats before this call
+    const isReEdit = !!completedHoleStats[holeIndex]?.score;
+
     // Update holes with score
     const updatedHoles = [...holes];
     updatedHoles[holeIndex] = {
@@ -589,43 +548,84 @@ export default function NewRoundClient() {
       return next;
     });
 
-    // Move to next hole or finish
-    if (holeIndex < holes.length - 1) {
-      // Fire-and-forget: persist completed hole data to database (non-blocking)
-      void (async () => {
-        if (serverSaveInProgressRef.current) return;
-        serverSaveInProgressRef.current = true;
-        try {
-          const result = await savePartialRound(
-            buildPartialRoundData(updatedStats, holeIndex + 1, inProgressAfter),
-            savedRoundIdRef.current ?? undefined
-          );
-          if (result.success) {
-            consecutiveSaveFailuresRef.current = 0;
-            if (!savedRoundIdRef.current) {
-              savedRoundIdRef.current = result.data.roundId;
-              setSavedRoundId(result.data.roundId);
-            }
-          } else {
-            consecutiveSaveFailuresRef.current++;
-            if (consecutiveSaveFailuresRef.current >= 2) {
-              showToast('Auto-save is having trouble. Your draft is saved locally, but server sync may be delayed.', 'warning');
-            }
+    // Fire-and-forget: persist completed hole data to database (non-blocking)
+    // Uses the same queue pattern as handleAutoSave to avoid silently dropping saves
+    void (async () => {
+      const nextHole = isReEdit ? activeProgressHoleRef.current : Math.min(holeIndex + 1, holes.length - 1);
+      const saveData = buildPartialRoundData(updatedStats, nextHole, inProgressAfter);
+
+      if (serverSaveInProgressRef.current) {
+        // Queue — will be picked up when current save completes
+        pendingServerSaveRef.current = { shots: [], holeIndex: -1, roundData: saveData };
+        return;
+      }
+      serverSaveInProgressRef.current = true;
+      try {
+        const result = await savePartialRound(
+          saveData,
+          savedRoundIdRef.current ?? undefined
+        );
+        if (result.success) {
+          consecutiveSaveFailuresRef.current = 0;
+          if (!savedRoundIdRef.current) {
+            savedRoundIdRef.current = result.data.roundId;
+            setSavedRoundId(result.data.roundId);
           }
-        } catch {
+        } else {
           consecutiveSaveFailuresRef.current++;
           if (consecutiveSaveFailuresRef.current >= 2) {
             showToast('Auto-save is having trouble. Your draft is saved locally, but server sync may be delayed.', 'warning');
           }
-        } finally {
-          serverSaveInProgressRef.current = false;
         }
-      })();
+      } catch {
+        consecutiveSaveFailuresRef.current++;
+        if (consecutiveSaveFailuresRef.current >= 2) {
+          showToast('Auto-save is having trouble. Your draft is saved locally, but server sync may be delayed.', 'warning');
+        }
+      } finally {
+        serverSaveInProgressRef.current = false;
+        // If a newer save was queued while we were saving, execute it now
+        const pending = pendingServerSaveRef.current;
+        if (pending) {
+          pendingServerSaveRef.current = null;
+          if (pending.roundData) {
+            // Queued from handleHoleComplete — save the pre-built round data
+            void (async () => {
+              serverSaveInProgressRef.current = true;
+              try {
+                const r = await savePartialRound(pending.roundData!, savedRoundIdRef.current ?? undefined);
+                if (r.success) {
+                  consecutiveSaveFailuresRef.current = 0;
+                  if (!savedRoundIdRef.current) {
+                    savedRoundIdRef.current = r.data.roundId;
+                    setSavedRoundId(r.data.roundId);
+                  }
+                }
+              } catch { /* non-critical */ } finally {
+                serverSaveInProgressRef.current = false;
+              }
+            })();
+          } else if (pending.holeIndex >= 0) {
+            // Queued from handleAutoSave — re-trigger via executeServerSave path
+            // (handled by handleAutoSave's own finally block)
+          }
+        }
+      }
+    })();
 
-      setCurrentHoleIndex(holeIndex + 1);
+    // Navigate after completion
+    if (isReEdit) {
+      // Re-editing a previously completed hole — return to the active frontier
+      setCurrentHoleIndex(activeProgressHoleRef.current);
+    } else if (holeIndex < holes.length - 1) {
+      // Normal progression — advance to next hole
+      const nextHole = holeIndex + 1;
+      setCurrentHoleIndex(nextHole);
+      activeProgressHoleRef.current = nextHole;
     } else {
-      // All holes complete, submit round
-      await handleRoundSubmit(updatedStats);
+      // Last hole completed for the first time — show finish confirmation
+      setPendingFinalStats(updatedStats);
+      setShowFinishConfirm(true);
     }
   };
 
@@ -649,6 +649,13 @@ export default function NewRoundClient() {
 
     setInProgressShotsByHole((prev) => {
       const existing = prev[currentHoleIndex] ?? [];
+      // Prevent duplicate shots when navigating back to an uncompleted hole
+      const duplicateIndex = existing.findIndex(s => s.shotNumber === shot.shotNumber);
+      if (duplicateIndex >= 0) {
+        const updated = [...existing];
+        updated[duplicateIndex] = shot;
+        return { ...prev, [currentHoleIndex]: updated };
+      }
       return { ...prev, [currentHoleIndex]: [...existing, shot] };
     });
   };
@@ -670,39 +677,43 @@ export default function NewRoundClient() {
       return { ...prev, [holeIndex]: shots };
     });
 
-    // Trigger the regular auto-save to database (works when online)
-    const draftDataForDb: RoundDraftData = {
-      step,
-      setupData,
-      holes,
-      completedHoleStats,
-      currentHoleIndex: holeIndex,
-      selectedQualifierId,
-      selectedRoundNumber,
-      inProgressShots: { [holeIndex]: shots },
-    };
-    scheduleSave(draftDataForDb);
+    // Note: draft auto-save (scheduleSave) is intentionally NOT called here.
+    // During tracking, savePartialRound below handles server persistence to avoid
+    // dual saves that create separate round records (race condition fix).
 
     // Update pending counts in case there are any offline items
     await useOfflineSyncStore.getState().updatePendingCount();
 
     // Background save proper shot/hole data to database (non-blocking)
     if (navigator.onLine) {
-      void (async () => {
-        if (serverSaveInProgressRef.current) return;
-        serverSaveInProgressRef.current = true;
-        try {
-          const result = await savePartialRound(
-            buildPartialRoundData(),
-            savedRoundIdRef.current ?? undefined
-          );
-          if (result.success) {
-            consecutiveSaveFailuresRef.current = 0;
-            if (!savedRoundIdRef.current) {
-              savedRoundIdRef.current = result.data.roundId;
-              setSavedRoundId(result.data.roundId);
+      if (serverSaveInProgressRef.current) {
+        // Queue this save — it will execute after the current one completes
+        pendingServerSaveRef.current = { shots, holeIndex };
+      } else {
+        const executeServerSave = async (saveShots: ShotRecord[], saveHoleIndex: number) => {
+          serverSaveInProgressRef.current = true;
+          try {
+            const mergedInProgress = { ...inProgressShotsByHoleRef.current, [saveHoleIndex]: saveShots };
+            const result = await savePartialRound(
+              buildPartialRoundData(undefined, saveHoleIndex, mergedInProgress),
+              savedRoundIdRef.current ?? undefined
+            );
+            if (result.success) {
+              consecutiveSaveFailuresRef.current = 0;
+              if (!savedRoundIdRef.current) {
+                savedRoundIdRef.current = result.data.roundId;
+                setSavedRoundId(result.data.roundId);
+              }
+            } else {
+              consecutiveSaveFailuresRef.current++;
+              if (consecutiveSaveFailuresRef.current >= 2) {
+                showToast(
+                  'Auto-save is having trouble. Your draft is saved locally, but server sync may be delayed.',
+                  'warning'
+                );
+              }
             }
-          } else {
+          } catch {
             consecutiveSaveFailuresRef.current++;
             if (consecutiveSaveFailuresRef.current >= 2) {
               showToast(
@@ -710,29 +721,22 @@ export default function NewRoundClient() {
                 'warning'
               );
             }
+          } finally {
+            serverSaveInProgressRef.current = false;
+            // If a newer save was queued while we were saving, execute it now
+            const pending = pendingServerSaveRef.current;
+            if (pending) {
+              pendingServerSaveRef.current = null;
+              void executeServerSave(pending.shots, pending.holeIndex);
+            }
           }
-        } catch {
-          consecutiveSaveFailuresRef.current++;
-          if (consecutiveSaveFailuresRef.current >= 2) {
-            showToast(
-              'Auto-save is having trouble. Your draft is saved locally, but server sync may be delayed.',
-              'warning'
-            );
-          }
-        } finally {
-          serverSaveInProgressRef.current = false;
-        }
-      })();
+        };
+        void executeServerSave(shots, holeIndex);
+      }
     }
   }, [
-    step,
-    setupData,
-    holes,
-    completedHoleStats,
-    selectedQualifierId,
-    selectedRoundNumber,
-    scheduleSave,
     buildPartialRoundData,
+    showToast,
   ]);
 
   const handleRoundSubmit = async (allHoleStats: HoleStats[]) => {
@@ -1363,6 +1367,34 @@ export default function NewRoundClient() {
                         18 Holes
                       </button>
                     </div>
+
+                    {/* Front/Back Nine selector — shown when 9 holes on an 18-hole saved course */}
+                    {holesPerRound === 9 && preloadedHoleConfigs && preloadedHoleConfigs.length >= 18 && (
+                      <div className="flex items-center rounded-lg bg-warm-100/80 p-1 w-fit mt-2">
+                        <button
+                          type="button"
+                          onClick={() => setNineSelection('front')}
+                          className={`px-5 py-2 rounded-md text-sm font-semibold transition-all ${
+                            nineSelection === 'front'
+                              ? 'bg-white text-warm-900 shadow-sm'
+                              : 'text-warm-500 hover:text-warm-700'
+                          }`}
+                        >
+                          Front 9
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setNineSelection('back')}
+                          className={`px-5 py-2 rounded-md text-sm font-semibold transition-all ${
+                            nineSelection === 'back'
+                              ? 'bg-white text-warm-900 shadow-sm'
+                              : 'text-warm-500 hover:text-warm-700'
+                          }`}
+                        >
+                          Back 9
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1548,8 +1580,8 @@ export default function NewRoundClient() {
   // SUBMITTING STEP
   // ============================================================================
   if (step === 'submitting') {
-    const totalScore = completedHoleStats.reduce((sum, h) => sum + h.score, 0);
-    const totalPar = completedHoleStats.reduce((sum, h) => sum + h.par, 0);
+    const totalScore = completedHoleStats.reduce((sum, h) => sum + (h?.score ?? 0), 0);
+    const totalPar = completedHoleStats.reduce((sum, h) => sum + (h?.par ?? 0), 0);
     const toPar = totalScore - totalPar;
 
     return (
@@ -1627,23 +1659,27 @@ export default function NewRoundClient() {
 
       {/* Draft Auto-Save Indicator removed - was too noisy */}
 
-      {/* Back to Setup - shown when no holes have been completed */}
-      {completedHoleStats.filter(s => s?.score != null).length === 0 && (
-        <div className="fixed top-4 left-4 z-40">
-          <button
-            onClick={() => {
+      {/* Back to Setup - always available during tracking */}
+      <div className="fixed top-4 left-4 z-40">
+        <button
+          onClick={() => {
+            const hasCompletedHoles = completedHoleStats.some(s => s?.score != null);
+            if (hasCompletedHoles) {
+              setShowBackToSetupModal(true);
+            } else {
               setStep(preloadedHoleConfigs ? 'setup' : 'holes');
               setCurrentHoleIndex(0);
-            }}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/90 backdrop-blur-sm border border-warm-200 text-sm font-medium text-warm-600 hover:bg-white transition-colors shadow-sm"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Back
-          </button>
-        </div>
-      )}
+              activeProgressHoleRef.current = 0;
+            }
+          }}
+          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/90 backdrop-blur-sm border border-warm-200 text-sm font-medium text-warm-600 hover:bg-white transition-colors shadow-sm"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Back
+        </button>
+      </div>
 
       {/* Save Round Modal */}
       <SaveRoundModal
@@ -1655,16 +1691,245 @@ export default function NewRoundClient() {
         totalHoles={holes.length}
       />
 
-      {/* Resume Draft Modal */}
-      {showResumeDraftModal && existingDraftInfo && (
-        <ResumeDraftModal
-          isOpen={showResumeDraftModal}
-          onClose={() => setShowResumeDraftModal(false)}
-          onResume={handleResumeDraft}
-          onStartFresh={handleStartFresh}
-          draftInfo={existingDraftInfo}
-        />
+      {/* Back to Setup Confirmation Modal */}
+      {showBackToSetupModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm" onClick={() => setShowBackToSetupModal(false)} />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="back-setup-title"
+            className="relative glass-prominent rounded-2xl shadow-2xl max-w-sm w-full p-6"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+                <IconWarning size={20} className="text-amber-600" />
+              </div>
+              <div>
+                <h3 id="back-setup-title" className="text-base font-semibold text-warm-900">Go back to setup?</h3>
+                <p className="text-sm text-warm-500 mt-0.5">Your progress and shot data will be lost.</p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowBackToSetupModal(false)}
+                className="flex-1 py-3 rounded-xl bg-warm-100 text-warm-700 font-medium hover:bg-warm-200 active:bg-warm-300 transition-colors min-h-[44px]"
+              >
+                Keep Playing
+              </button>
+              <button
+                onClick={() => {
+                  setShowBackToSetupModal(false);
+                  setCompletedHoleStats([]);
+                  setInProgressShotsByHole({});
+                  setCurrentHoleIndex(0);
+                  activeProgressHoleRef.current = 0;
+                  setSavedRoundId(null);
+                  savedRoundIdRef.current = null;
+                  setStep(preloadedHoleConfigs ? 'setup' : 'holes');
+                }}
+                className="flex-1 py-3 rounded-xl bg-red-500 text-white font-medium hover:bg-red-600 active:bg-red-700 transition-colors min-h-[44px]"
+              >
+                Reset & Go Back
+              </button>
+            </div>
+          </div>
+        </div>
       )}
+
+      {/* Finish Round — Premium Round Summary */}
+      <LazyMotion features={domAnimation}>
+        <AnimatePresence>
+          {showFinishConfirm && pendingFinalStats && (() => {
+            const fs = pendingFinalStats;
+            const totalScore = fs.reduce((sum, h) => sum + (h?.score ?? 0), 0);
+            const totalPar = fs.reduce((sum, h) => sum + (h?.par ?? 0), 0);
+            const toPar = totalScore - totalPar;
+            const totalPutts = fs.reduce((sum, h) => sum + (h?.putts ?? 0), 0);
+            const fairwaysHit = fs.filter(h => h?.fairwayHit === true).length;
+            const fairwayEligible = fs.filter(h => h?.fairwayHit !== null).length;
+            const girCount = fs.filter(h => h?.greenInRegulation === true).length;
+            const colCount = Math.min(fs.length, 9);
+
+            const ScoreCell = ({ h }: { h: HoleStats }) => {
+              const diff = (h?.score ?? 0) - (h?.par ?? 0);
+              const cls = diff <= -2 ? 'text-primary-700 bg-primary-100 font-bold'
+                : diff === -1 ? 'text-primary-600 bg-primary-50/70 font-semibold'
+                : diff === 0 ? 'text-warm-700 bg-white font-medium'
+                : diff === 1 ? 'text-amber-700 bg-amber-50/70 font-semibold'
+                : 'text-red-600 bg-red-50/70 font-bold';
+              return (
+                <div className={`text-center py-1.5 ${cls}`}>
+                  <span className="text-xs">{h?.score}</span>
+                </div>
+              );
+            };
+
+            const toParLabel = toPar === 0 ? 'E' : `${toPar > 0 ? '+' : ''}${toPar}`;
+
+            return (
+              <m.div
+                key="round-summary-overlay"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              >
+                <div className="fixed inset-0 bg-warm-900/60 backdrop-blur-md" onClick={() => setShowFinishConfirm(false)} />
+                <m.div
+                  initial={{ opacity: 0, scale: 0.92, y: 12 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 8 }}
+                  transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                  className="relative glass-prominent rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+                >
+                  {/* Celebration Header */}
+                  <div className="relative overflow-hidden rounded-t-2xl bg-gradient-to-br from-primary-600 via-primary-500 to-primary-700 px-6 pt-6 pb-5 text-center">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.15),transparent_60%)]" />
+                    <m.div
+                      initial={{ opacity: 0, scale: 0.5 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.15, duration: 0.4, type: 'spring', stiffness: 200, damping: 15 }}
+                      className="relative"
+                    >
+                      <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center mx-auto mb-3">
+                        <IconFlag size={24} className="text-white" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-white/90 mb-1">Round Complete</h3>
+                      <div className="flex items-baseline justify-center gap-2">
+                        <m.span
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.25, duration: 0.3 }}
+                          className="text-5xl font-bold text-white tabular-nums"
+                        >
+                          {totalScore}
+                        </m.span>
+                        <m.span
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: 0.35 }}
+                          className={`text-lg font-semibold ${toPar === 0 ? 'text-white/70' : toPar < 0 ? 'text-primary-100' : 'text-red-200'}`}
+                        >
+                          ({toParLabel})
+                        </m.span>
+                      </div>
+                      <p className="text-sm text-white/70 mt-1">{setupData.courseName}</p>
+                    </m.div>
+                  </div>
+
+                  <div className="p-6">
+                    {/* Key Stats */}
+                    <m.div
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2, duration: 0.3 }}
+                      className="grid grid-cols-3 gap-3 mb-5"
+                    >
+                      <div className="text-center p-3 rounded-xl bg-warm-50/80 border border-warm-100">
+                        <p className="text-xl font-bold text-warm-900 tabular-nums">{totalPutts}</p>
+                        <p className="text-xs text-warm-500 font-medium">Putts</p>
+                      </div>
+                      <div className="text-center p-3 rounded-xl bg-warm-50/80 border border-warm-100">
+                        <p className="text-xl font-bold text-warm-900 tabular-nums">{fairwaysHit}/{fairwayEligible}</p>
+                        <p className="text-xs text-warm-500 font-medium">Fairways</p>
+                      </div>
+                      <div className="text-center p-3 rounded-xl bg-warm-50/80 border border-warm-100">
+                        <p className="text-xl font-bold text-warm-900 tabular-nums">{girCount}/{fs.length}</p>
+                        <p className="text-xs text-warm-500 font-medium">GIR</p>
+                      </div>
+                    </m.div>
+
+                    {/* Mini Scorecard */}
+                    <m.div
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3, duration: 0.3 }}
+                      className="mb-6"
+                    >
+                      <p className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-2">Scorecard</p>
+                      <div className="rounded-xl border border-warm-200/60 overflow-hidden">
+                        {/* Front 9 (or all 9 for 9-hole round) */}
+                        <div className="grid gap-px bg-warm-200/60" style={{ gridTemplateColumns: `repeat(${colCount}, 1fr)` }}>
+                          {fs.slice(0, 9).map((_, i) => (
+                            <div key={`h${i}`} className="bg-warm-50 text-center py-1">
+                              <span className="text-[10px] font-medium text-warm-400">{i + 1}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="grid gap-px bg-warm-200/60" style={{ gridTemplateColumns: `repeat(${colCount}, 1fr)` }}>
+                          {fs.slice(0, 9).map((h, i) => (
+                            <div key={`p${i}`} className="bg-white text-center py-1">
+                              <span className="text-[10px] text-warm-400">{h?.par}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="grid gap-px bg-warm-200/60" style={{ gridTemplateColumns: `repeat(${colCount}, 1fr)` }}>
+                          {fs.slice(0, 9).map((h, i) => (
+                            <ScoreCell key={`s${i}`} h={h} />
+                          ))}
+                        </div>
+
+                        {/* Back 9 */}
+                        {fs.length > 9 && (
+                          <>
+                            <div className="h-px bg-warm-300/40" />
+                            <div className="grid gap-px bg-warm-200/60" style={{ gridTemplateColumns: 'repeat(9, 1fr)' }}>
+                              {fs.slice(9, 18).map((_, i) => (
+                                <div key={`h2${i}`} className="bg-warm-50 text-center py-1">
+                                  <span className="text-[10px] font-medium text-warm-400">{i + 10}</span>
+                                </div>
+                              ))}
+                            </div>
+                            <div className="grid gap-px bg-warm-200/60" style={{ gridTemplateColumns: 'repeat(9, 1fr)' }}>
+                              {fs.slice(9, 18).map((h, i) => (
+                                <div key={`p2${i}`} className="bg-white text-center py-1">
+                                  <span className="text-[10px] text-warm-400">{h?.par}</span>
+                                </div>
+                              ))}
+                            </div>
+                            <div className="grid gap-px bg-warm-200/60" style={{ gridTemplateColumns: 'repeat(9, 1fr)' }}>
+                              {fs.slice(9, 18).map((h, i) => (
+                                <ScoreCell key={`s2${i}`} h={h} />
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </m.div>
+
+                    {/* Action Buttons */}
+                    <m.div
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.4, duration: 0.3 }}
+                      className="flex gap-3"
+                    >
+                      <button
+                        onClick={() => setShowFinishConfirm(false)}
+                        className="flex-1 py-3 rounded-xl bg-warm-100 text-warm-700 font-medium hover:bg-warm-200 active:bg-warm-300 transition-colors"
+                      >
+                        Review Holes
+                      </button>
+                      <button
+                        onClick={async () => {
+                          setShowFinishConfirm(false);
+                          await handleRoundSubmit(pendingFinalStats);
+                        }}
+                        className="flex-1 py-3 rounded-xl bg-primary-600 text-white font-medium hover:bg-primary-700 active:bg-primary-800 transition-colors shadow-sm shadow-primary-950/10"
+                      >
+                        Submit Round
+                      </button>
+                    </m.div>
+                  </div>
+                </m.div>
+              </m.div>
+            );
+          })()}
+        </AnimatePresence>
+      </LazyMotion>
+
     </>
   );
 }

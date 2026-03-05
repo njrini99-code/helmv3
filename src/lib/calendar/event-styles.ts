@@ -251,22 +251,27 @@ export function calculateEventHeight(start: string, end: string | null): number 
  * Based on start time relative to calendar start hour (6 AM)
  */
 export function calculateEventTop(timeString: string, startHour: number = 6): number {
+  if (!timeString) return 0;
+
   let hour: number;
   let minutes: number;
 
   // Handle time-only strings (HH:MM:SS or HH:MM)
   if (timeString && !timeString.includes('T') && !timeString.includes(' ')) {
+    // Check if it's a date-only string (YYYY-MM-DD) — treat as midnight / return 0
+    if (/^\d{4}-\d{2}-\d{2}$/.test(timeString)) return 0;
     const parts = timeString.split(':').map(Number);
     hour = parts[0] ?? 0;
     minutes = parts[1] ?? 0;
   } else {
     // Handle full datetime strings
     const date = new Date(timeString);
+    if (isNaN(date.getTime())) return 0;
     hour = date.getHours();
     minutes = date.getMinutes();
   }
 
   const hoursFromStart = hour - startHour;
   const minuteOffset = (minutes / 60) * 64;
-  return hoursFromStart * 64 + minuteOffset;
+  return Math.max(0, hoursFromStart * 64 + minuteOffset);
 }

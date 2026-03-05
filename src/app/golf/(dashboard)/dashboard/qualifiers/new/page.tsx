@@ -22,7 +22,7 @@ export default async function NewQualifierPage() {
     .from('users')
     .select('role')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
   if (userData?.role !== 'coach') {
     redirect('/golf/dashboard/qualifiers');
@@ -33,7 +33,7 @@ export default async function NewQualifierPage() {
     .from('golf_coaches')
     .select('organization_id')
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
   let players: Array<{ id: string; first_name: string; last_name: string }> = [];
 

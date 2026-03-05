@@ -35,7 +35,7 @@ export default async function IntelligenceDashboardPage() {
     .from('golf_coaches')
     .select('id, organization_id')
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
   const coach = coachData as { id: string; organization_id: string | null } | null;
 
@@ -45,7 +45,7 @@ export default async function IntelligenceDashboardPage() {
       .from('golf_players')
       .select('id')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     if (player) {
       redirect('/golf/dashboard/coachhelm');

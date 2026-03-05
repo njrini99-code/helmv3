@@ -193,6 +193,7 @@ export function HoleConfigurationForm({
             <div className="px-2 py-2 border-l border-warm-100 flex items-center justify-center">
               <input
                 type="number"
+                inputMode="numeric"
                 value={hole.yardage}
                 onChange={(e) => updateHole(hole.holeNumber, 'yardage', parseInt(e.target.value) || 0)}
                 className="w-20 px-3 py-2 text-center text-sm font-medium border border-warm-200

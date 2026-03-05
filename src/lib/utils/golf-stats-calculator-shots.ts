@@ -347,11 +347,12 @@ export function normalizeToFeet(distance: number | null | undefined, unit: strin
 /** @internal - exported for testing */
 export function normalizeShotType(shotType: string | null | undefined): string | null {
   if (!shotType) return shotType ?? null;
-  if (shotType === 'putt') return 'putting';
-  if (shotType === 'drive') return 'tee';
-  if (shotType === 'chip' || shotType === 'pitch') return 'around_green';
-  if (shotType === 'iron') return 'approach';
-  return shotType;
+  const lower = shotType.toLowerCase();
+  if (lower === 'putt') return 'putting';
+  if (lower === 'drive') return 'tee';
+  if (lower === 'chip' || lower === 'pitch') return 'around_green';
+  if (lower === 'iron') return 'approach';
+  return lower;
 }
 
 /**
@@ -649,7 +650,7 @@ export function calculateHoleStatsFromShots(shots: RawShot[], par: number): Calc
 
   // Tee shot analysis
   const teeShot = normalizedShots.find(s => s.shot_type === 'tee');
-  const fairwayHit = teeShot ? teeShot.result === 'fairway' : null;
+  const fairwayHit = par < 4 ? null : (teeShot ? teeShot.result === 'fairway' : null);
   const usedDriver = teeShot ? teeShot.club_type === 'driver' : null;
   // shot_distance is already stored in yards, no conversion needed
   const drivingDistance = teeShot?.shot_distance ?? null;
@@ -699,12 +700,17 @@ export function calculateHoleStatsFromShots(shots: RawShot[], par: number): Calc
   const rawLie = approachShot ? approachShot.lie_before : null;
   const approachLie = rawLie === 'tee' ? 'fairway' : rawLie;
 
-  // Approach proximity - how close to the hole the ball landed
-  // This is ONLY meaningful if the approach landed on the green
-  // Use shotToGreen for this (the actual green-landing shot)
-  const approachProximity = shotToGreen && shotToGreen.distance_to_hole_after !== null
-    ? normalizeToFeet(shotToGreen.distance_to_hole_after, shotToGreen.distance_unit_after)
-    : null;
+  // Approach proximity - how close to the hole the approach shot left the ball.
+  // When GIR is achieved, use shotToGreen (the shot that actually landed on the green).
+  // When GIR is NOT achieved, use the identified approachShot (the GIR attempt) -
+  // this avoids picking up the subsequent chip/pitch shot's proximity instead.
+  const approachProximity = greenInRegulation
+    ? (shotToGreen && shotToGreen.distance_to_hole_after !== null
+      ? normalizeToFeet(shotToGreen.distance_to_hole_after, shotToGreen.distance_unit_after)
+      : null)
+    : (approachShot && approachShot.distance_to_hole_after !== null
+      ? normalizeToFeet(approachShot.distance_to_hole_after, approachShot.distance_unit_after)
+      : null);
 
   // Approach miss direction - when NOT GIR, get the miss direction from the approach shot
   // Use the identified approach shot (the GIR attempt), not searching for any missed shot

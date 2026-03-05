@@ -42,7 +42,9 @@ export function useGolfMessages(conversationId: string) {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastTypingBroadcastRef = useRef<number>(0);
-  const supabase = createClient();
+  const supabaseRef = useRef(createClient());
+  const channelRef = useRef<ReturnType<typeof supabaseRef.current.channel> | null>(null);
+  const supabase = supabaseRef.current;
 
   // Get current user ID on mount
   useEffect(() => {
@@ -57,7 +59,8 @@ export function useGolfMessages(conversationId: string) {
     return () => {
       mounted = false;
     };
-  }, [supabase.auth]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Fetch other participant's last_read_at for read receipts
   const fetchOtherParticipantReadStatus = useCallback(async () => {
@@ -74,7 +77,8 @@ export function useGolfMessages(conversationId: string) {
         setOtherParticipantLastReadAt(otherParticipant.last_read_at);
       }
     }
-  }, [conversationId, currentUserId, supabase]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversationId, currentUserId]);
 
   const fetchMessages = useCallback(async () => {
     if (!conversationId) {
@@ -86,8 +90,9 @@ export function useGolfMessages(conversationId: string) {
     // Fetch most recent 200 messages (descending for limit), then reverse for display order
     const { data } = await supabase
       .from('golf_messages')
-      .select('id, conversation_id, sender_id, content, read, created_at')
+      .select('id, conversation_id, sender_id, content, read, created_at, is_deleted, edited_at')
       .eq('conversation_id', conversationId)
+      .eq('is_deleted', false)
       .order('created_at', { ascending: false })
       .limit(200);
 
@@ -99,7 +104,8 @@ export function useGolfMessages(conversationId: string) {
 
     // Fetch read receipt status
     fetchOtherParticipantReadStatus();
-  }, [conversationId, fetchOtherParticipantReadStatus, supabase]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversationId, fetchOtherParticipantReadStatus]);
 
   // Compute read status for messages when otherParticipantLastReadAt changes
   useEffect(() => {
@@ -123,8 +129,9 @@ export function useGolfMessages(conversationId: string) {
     fetchMessages();
 
     // Set up real-time subscription for messages and typing
-    const channel = supabase
-      .channel(`golf-conversation:${conversationId}`)
+    const channel = supabase.channel(`golf-conversation:${conversationId}`);
+    channelRef.current = channel;
+    channel
       .on(
         'postgres_changes',
         {
@@ -155,7 +162,7 @@ export function useGolfMessages(conversationId: string) {
           }
         }
       )
-      // Listen for message updates
+      // Listen for message updates (edits and soft-deletes)
       .on(
         'postgres_changes',
         {
@@ -166,13 +173,18 @@ export function useGolfMessages(conversationId: string) {
         },
         (payload) => {
           const updatedMessage = payload.new as MessageWithReadStatus;
-          setMessages(prev =>
-            prev.map(msg =>
+          setMessages(prev => {
+            // If message was soft-deleted, remove from local state
+            if (updatedMessage.is_deleted) {
+              return prev.filter(msg => msg.id !== updatedMessage.id);
+            }
+            // Otherwise update content and edited_at
+            return prev.map(msg =>
               msg.id === updatedMessage.id
-                ? { ...msg, content: updatedMessage.content }
+                ? { ...msg, content: updatedMessage.content, edited_at: updatedMessage.edited_at }
                 : msg
-            )
-          );
+            );
+          });
         }
       )
       // Listen for read receipt updates (when other participant reads messages)
@@ -216,28 +228,29 @@ export function useGolfMessages(conversationId: string) {
 
     return () => {
       supabase.removeChannel(channel);
+      channelRef.current = null;
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
     };
-  }, [conversationId, fetchMessages, currentUserId, supabase]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversationId, fetchMessages, currentUserId]);
 
-  // Function to broadcast typing status (debounced to avoid spam)
+  // Function to broadcast typing status (throttled to avoid spam)
   const sendTypingStatus = useCallback((isTyping: boolean) => {
-    if (!conversationId || !currentUserId) return;
+    if (!conversationId || !currentUserId || !channelRef.current) return;
 
     const now = Date.now();
     // Throttle typing broadcasts to once every 500ms
     if (isTyping && now - lastTypingBroadcastRef.current < 500) return;
     lastTypingBroadcastRef.current = now;
 
-    const channel = supabase.channel(`golf-conversation:${conversationId}`);
-    channel.send({
+    channelRef.current.send({
       type: 'broadcast',
       event: 'typing',
       payload: { userId: currentUserId, isTyping },
     });
-  }, [conversationId, currentUserId, supabase]);
+  }, [conversationId, currentUserId]);
 
   const sendMessage = async (content: string) => {
     // Clear typing indicator when sending
@@ -295,15 +308,21 @@ export function useGolfMessages(conversationId: string) {
     return true;
   };
 
-  // Delete a message
+  // Delete a message (optimistic removal)
   const removeMessage = async (messageId: string) => {
+    // Optimistically remove from local state
+    setMessages(prev => prev.filter(msg => msg.id !== messageId));
+
     const result = await deleteGolfMessage(messageId);
 
     if (result && 'error' in result && result.error) {
+      // Rollback: re-fetch messages on failure
+      fetchMessages();
       throw new Error(result.error);
     }
 
     if (!result || !result.success) {
+      fetchMessages();
       throw new Error('Failed to delete message');
     }
 
@@ -327,8 +346,10 @@ export function useGolfConversations() {
   const [conversations, setConversations] = useState<GolfConversationWithMeta[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
-  const supabase = createClient();
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
   const conversationIdsRef = useRef<Set<string>>(new Set());
+  const fetchDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   // Get the current user on mount
   useEffect(() => {
@@ -339,7 +360,8 @@ export function useGolfConversations() {
       }
     };
     getUser();
-  }, [supabase.auth]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const fetchConversations = useCallback(async () => {
     if (!userId) {
@@ -610,7 +632,7 @@ export function useGolfConversations() {
 
         if (coach) {
           otherParticipant = {
-            id: coach.id,
+            id: otherUserId, // Use user_id for consistent comparison (conversations use user IDs)
             name: coach.full_name || 'Coach',
             subtitle: coach.title || 'Golf Coach',
             avatar: coach.avatar_url,
@@ -618,7 +640,7 @@ export function useGolfConversations() {
           };
         } else if (player) {
           otherParticipant = {
-            id: player.id,
+            id: otherUserId, // Use user_id for consistent comparison (conversations use user IDs)
             name: [player.first_name, player.last_name].filter(Boolean).join(' ') || 'Player',
             subtitle: player.graduation_year ? `Class of ${player.graduation_year}` : 'Golf Player',
             avatar: player.avatar_url,
@@ -655,7 +677,8 @@ export function useGolfConversations() {
     setConversations(transformedConversations);
     conversationIdsRef.current = new Set(transformedConversations.map(c => c.id));
     setLoading(false);
-  }, [userId, supabase]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
 
   // Fetch conversations when userId is set
   useEffect(() => {
@@ -671,6 +694,16 @@ export function useGolfConversations() {
   useEffect(() => {
     if (!userId) return;
 
+    // Debounced refetch to batch rapid realtime updates
+    const debouncedFetch = () => {
+      if (fetchDebounceRef.current) {
+        clearTimeout(fetchDebounceRef.current);
+      }
+      fetchDebounceRef.current = setTimeout(() => {
+        fetchConversations();
+      }, 300);
+    };
+
     const channel = supabase
       .channel(`golf-conversations:${userId}`)
       .on(
@@ -682,8 +715,7 @@ export function useGolfConversations() {
           filter: `user_id=eq.${userId}`,
         },
         () => {
-          // Debounce by using a small timeout to batch multiple updates
-          fetchConversations();
+          debouncedFetch();
         }
       )
       .on(
@@ -695,9 +727,8 @@ export function useGolfConversations() {
         },
         (payload) => {
           // Only refetch if this conversation involves the current user
-          // Use ref to avoid stale closure and async side effects in state updater
           if (conversationIdsRef.current.has(payload.new.id as string)) {
-            fetchConversations();
+            debouncedFetch();
           }
         }
       )
@@ -705,8 +736,12 @@ export function useGolfConversations() {
 
     return () => {
       supabase.removeChannel(channel);
+      if (fetchDebounceRef.current) {
+        clearTimeout(fetchDebounceRef.current);
+      }
     };
-  }, [userId, fetchConversations, supabase]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, fetchConversations]);
 
   return { conversations, loading, refetch: fetchConversations };
 }

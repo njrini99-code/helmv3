@@ -85,6 +85,7 @@ function DayCellContent({
                 start_time: event.start_time,
                 end_time: event.end_time,
                 location: event.location,
+                all_day: event.all_day,
                 recurring: event.recurring,
               }}
               compact={true}
@@ -175,7 +176,14 @@ export function MonthView({ month, events, onDateClick, onEventClick, isDraggabl
   const days: Date[] = [];
   const current = new Date(startDate);
 
-  while (days.length < 42) {
+  // Dynamically calculate 35 vs 42 days — only use 6 rows if last day of month needs it
+  const lastDay = new Date(month.getFullYear(), month.getMonth() + 1, 0);
+  const lastDayOfGrid = new Date(startDate);
+  lastDayOfGrid.setDate(lastDayOfGrid.getDate() + 34); // 35 days = 5 rows
+  const needsSixRows = lastDay > lastDayOfGrid;
+  const totalDays = needsSixRows ? 42 : 35;
+
+  while (days.length < totalDays) {
     days.push(new Date(current));
     current.setDate(current.getDate() + 1);
   }

@@ -117,7 +117,7 @@ export default async function TeamSettingsPage() {
     .from('golf_teams')
     .select('id, name, season, created_at, organization_id')
     .eq('id', teamMember.team_id)
-    .single();
+    .maybeSingle();
 
   if (!team) {
     redirect('/golf/dashboard');

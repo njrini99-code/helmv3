@@ -1,7 +1,7 @@
 import { useCallback, useRef } from 'react';
 import type { ShotRecord, HoleStats, RoundHole } from '@/lib/types/golf';
 import { updateShot, deleteShot, type ShotUpdateData } from '@/app/golf/actions/golf';
-import { deriveLieAfterFromResult, calculateShotDistanceWithDirection } from '@/lib/utils/shot-helpers';
+import { deriveLieAfter, calculateShotDistanceWithDirection } from '@/lib/utils/shot-helpers';
 import type { ShotTrackingState, ShotAction, EditFormData } from './use-shot-state-machine';
 
 interface UseEditShotModalParams {
@@ -126,7 +126,7 @@ export function useEditShotModal({
           putt_slope: editFormData.puttSlope,
           putt_distance_feet: isPuttingShot ? puttDistanceFeet ?? null : null,
           putt_made: isPuttingShot ? editFormData.result === 'hole' : null,
-          lie_after: deriveLieAfterFromResult(editFormData.result),
+          lie_after: deriveLieAfter(updatedShot),
           is_penalty: editFormData.isPenalty,
           penalty_type: editFormData.isPenalty ? editFormData.penaltyType : null,
           putt_miss_tags: isPuttingShot ? editFormData.puttMissTags : null,
@@ -147,29 +147,39 @@ export function useEditShotModal({
           ? updatedShot : s
       );
 
-      // Cascade distance changes to next shot
+      // Cascade distance changes to downstream shots
       const editedIdx = updatedHistory.findIndex(s =>
         editingShot.id ? s.id === editingShot.id : s.shotNumber === editingShot.shotNumber
       );
       if (editedIdx >= 0 && editedIdx < updatedHistory.length - 1) {
-        const nextShot = updatedHistory[editedIdx + 1]!;
-        const newAfter = updatedShot.distanceToHoleAfter;
-        const newAfterUnit = updatedShot.distanceUnitAfter;
-        if (nextShot.distanceToHoleBefore !== newAfter || nextShot.distanceUnitBefore !== newAfterUnit) {
-          updatedHistory = [...updatedHistory];
-          updatedHistory[editedIdx + 1] = {
-            ...nextShot,
-            distanceToHoleBefore: newAfter,
-            distanceUnitBefore: newAfterUnit,
-          };
-        }
+        updatedHistory = [...updatedHistory];
 
-        // Persist cascade to DB (fire-and-forget)
-        if (nextShot.id) {
-          updateShot(nextShot.id, {
-            distance_to_hole_before: newAfter,
-            distance_unit_before: newAfterUnit,
-          }).catch((err) => { console.warn('[ShotTracking] Cascade distance update failed:', err); });
+        // Walk through all downstream shots and cascade distanceToHoleBefore
+        // Each shot's distanceToHoleBefore should match the previous shot's distanceToHoleAfter
+        for (let i = editedIdx + 1; i < updatedHistory.length; i++) {
+          const prevShot = updatedHistory[i - 1]!;
+          const currentShot = updatedHistory[i]!;
+          const expectedBefore = prevShot.distanceToHoleAfter;
+          const expectedUnit = prevShot.distanceUnitAfter;
+
+          if (currentShot.distanceToHoleBefore !== expectedBefore || currentShot.distanceUnitBefore !== expectedUnit) {
+            updatedHistory[i] = {
+              ...currentShot,
+              distanceToHoleBefore: expectedBefore,
+              distanceUnitBefore: expectedUnit,
+            };
+
+            // Persist cascade to DB (fire-and-forget)
+            if (currentShot.id) {
+              updateShot(currentShot.id, {
+                distance_to_hole_before: expectedBefore,
+                distance_unit_before: expectedUnit,
+              }).catch((err) => { console.warn('[ShotTracking] Cascade distance update failed:', err); });
+            }
+          } else {
+            // Once we find a shot that already matches, downstream shots are consistent
+            break;
+          }
         }
       }
 

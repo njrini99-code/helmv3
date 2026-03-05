@@ -10,6 +10,7 @@ import { usePresence } from '@/hooks/use-presence';
 import { useAppearancePreferences } from '@/hooks/golf/use-appearance-preferences';
 import { MobileBottomNav } from '@/components/golf/MobileBottomNav';
 import { KeyboardShortcutHint } from '@/components/golf/KeyboardShortcutHint';
+import { NotificationCenter } from '@/components/golf/calendar/NotificationCenter';
 import { MobileNavProvider } from '@/contexts/mobile-nav-context';
 import { GolfUserProvider, type GolfUserData } from '@/contexts/golf-user-context';
 import { NotificationBadgeProvider } from '@/contexts/notification-badge-context';
@@ -184,6 +185,11 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
           {children}
         </div>
       </main>
+
+      {/* Global Notification Bell — top-right of viewport */}
+      <div className="fixed top-[max(0.75rem,env(safe-area-inset-top))] right-4 z-[35] hidden lg:block">
+        <NotificationCenter />
+      </div>
 
       {/* Mobile Bottom Navigation */}
       <MobileBottomNav isCoach={isCoach} />

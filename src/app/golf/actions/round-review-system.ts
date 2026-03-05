@@ -14,6 +14,10 @@ import { revalidatePath } from 'next/cache';
 import { generateRoundReview as generateAIRoundReview } from '@/app/golf/actions/insights';
 import type { Json } from '@/lib/types/database';
 
+// UUID format validation
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isValidUuid(id: string): boolean { return UUID_REGEX.test(id); }
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -488,7 +492,7 @@ function determineGrade(
   girPct: number,
   fairwayPct: number | null,
   putts: number,
-  playerAvgs?: { avgScore: number; avgPutts: number; avgGirPct: number; avgFairwayPct: number } | null
+  playerAvgs?: { avgScore: number; avgScoreToPar: number; avgPutts: number; avgGirPct: number; avgFairwayPct: number } | null
 ): OverallGrade {
   let score = 0;
   let factors = 0;
@@ -508,7 +512,7 @@ function determineGrade(
 
   if (playerAvgs) {
     // Player-relative grading: compare to their own history
-    const avgScoreToPar = playerAvgs.avgScore - 72; // approximate course par
+    const avgScoreToPar = playerAvgs.avgScoreToPar;
     const scoreVal = relativeGrade(scoreToPar, avgScoreToPar, 'lower');
     score += scoreVal * 2;
     factors += 2;
@@ -561,7 +565,7 @@ function determineGrade(
 function generateReviewContent(
   round: RoundData,
   holes: HoleBreakdown[],
-  playerAvgs: { avgScore: number; avgPutts: number; avgGirPct: number; avgFairwayPct: number } | null
+  playerAvgs: { avgScore: number; avgScoreToPar: number; avgPutts: number; avgGirPct: number; avgFairwayPct: number } | null
 ): RoundReviewContent {
   const highlights: RoundReviewHighlight[] = [];
   const areasForImprovement: RoundReviewImprovementArea[] = [];
@@ -980,6 +984,75 @@ function generateReviewContent(
 }
 
 // ============================================================================
+// OWNERSHIP VERIFICATION HELPER
+// ============================================================================
+
+/**
+ * Verify the current user has access to a review's player data.
+ * Returns the user and player info if authorized, or an error.
+ * Access is granted if the user IS the player, or is a coach on the player's team.
+ */
+async function verifyReviewAccess(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  playerId: string,
+  role: 'player' | 'player_or_coach'
+): Promise<{ authorized: boolean; userId?: string; playerId?: string; error?: string }> {
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { authorized: false, error: 'Not authenticated' };
+  }
+
+  // Check if user is the player
+  const { data: playerRecord } = await supabase
+    .from('golf_players')
+    .select('id')
+    .eq('id', playerId)
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (playerRecord) {
+    return { authorized: true, userId: user.id, playerId: playerRecord.id };
+  }
+
+  // For player-only actions, deny here
+  if (role === 'player') {
+    return { authorized: false, error: 'Not authorized - you do not own this review' };
+  }
+
+  // Check if user is a coach with access to this player via organization -> team -> membership
+  const { data: coach } = await supabase
+    .from('golf_coaches')
+    .select('id, organization_id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (coach?.organization_id) {
+    const { data: team } = await supabase
+      .from('golf_teams')
+      .select('id')
+      .eq('organization_id', coach.organization_id)
+      .limit(1)
+      .maybeSingle();
+
+    if (team) {
+      const { data: teamMember } = await supabase
+        .from('golf_team_members')
+        .select('id')
+        .eq('team_id', team.id)
+        .eq('player_id', playerId)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      if (teamMember) {
+        return { authorized: true, userId: user.id, playerId };
+      }
+    }
+  }
+
+  return { authorized: false, error: 'Not authorized to access this review' };
+}
+
+// ============================================================================
 // SERVER ACTIONS
 // ============================================================================
 
@@ -988,6 +1061,7 @@ export async function getRoundReview(roundId: string): Promise<{
   review?: RoundReviewWithRound;
   error?: string;
 }> {
+  if (!isValidUuid(roundId)) return { success: false, error: 'Invalid round ID format' };
   const supabase = await createClient();
 
   try {
@@ -1010,6 +1084,12 @@ export async function getRoundReview(roundId: string): Promise<{
     }
 
     if (!existingReview) {
+      return { success: true, review: undefined };
+    }
+
+    // Verify the current user owns this review or is a coach on the player's team
+    const access = await verifyReviewAccess(supabase, existingReview.player_id, 'player_or_coach');
+    if (!access.authorized) {
       return { success: true, review: undefined };
     }
 
@@ -1098,7 +1178,7 @@ export async function generateAndStoreRoundReview(
 
     const { data: playerRounds } = await supabase
       .from('golf_rounds')
-      .select('total_score, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways')
+      .select('total_score, score_to_par, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways')
       .eq('player_id', playerId)
       .eq('status', 'completed')
       .not('total_score', 'is', null)
@@ -1110,6 +1190,10 @@ export async function generateAndStoreRoundReview(
     if (playerRounds && playerRounds.length >= 3) {
       const valid = playerRounds.filter(r => r.total_score !== null);
       const avgScore = valid.reduce((s, r) => s + (r.total_score ?? 0), 0) / valid.length;
+      const stpRounds = valid.filter(r => r.score_to_par !== null);
+      const avgScoreToPar = stpRounds.length > 0
+        ? stpRounds.reduce((s, r) => s + (r.score_to_par ?? 0), 0) / stpRounds.length
+        : avgScore - 72;
       const puttRounds = valid.filter(r => r.total_putts !== null);
       const avgPutts = puttRounds.length > 0 ? puttRounds.reduce((s, r) => s + (r.total_putts ?? 0), 0) / puttRounds.length : 32;
       const girRounds = valid.filter(r => r.total_gir !== null && r.total_gir_possible);
@@ -1120,7 +1204,7 @@ export async function generateAndStoreRoundReview(
       const avgFairwayPct = fwRounds.length > 0
         ? fwRounds.reduce((s, r) => s + ((r.total_fairways_hit ?? 0) / (r.total_fairways ?? 14)) * 100, 0) / fwRounds.length
         : 50;
-      playerAvgs = { avgScore, avgPutts, avgGirPct, avgFairwayPct };
+      playerAvgs = { avgScore, avgScoreToPar, avgPutts, avgGirPct, avgFairwayPct };
     }
 
     const reviewContent = generateReviewContent(roundData, holeBreakdowns, playerAvgs);
@@ -1262,8 +1346,26 @@ export async function shareRoundReviewWithCoach(reviewId: string): Promise<{
   success: boolean;
   error?: string;
 }> {
+  if (!isValidUuid(reviewId)) return { success: false, error: 'Invalid review ID format' };
   const supabase = await createClient();
   try {
+    // Fetch the review to verify ownership
+    const { data: review, error: fetchError } = await supabase
+      .from('golf_round_reviews')
+      .select('player_id')
+      .eq('id', reviewId)
+      .single();
+
+    if (fetchError || !review) {
+      return { success: false, error: 'Review not found' };
+    }
+
+    // Verify the current user is the player who owns this review
+    const access = await verifyReviewAccess(supabase, review.player_id, 'player');
+    if (!access.authorized) {
+      return { success: false, error: 'Not authorized to share this review' };
+    }
+
     const { error } = await supabase
       .from('golf_round_reviews')
       .update({ shared_with_coach: true, shared_at: new Date().toISOString() })
@@ -1281,15 +1383,21 @@ export async function getStatAverages(
   teamId?: string
 ): Promise<{
   success: boolean;
-  playerAvg?: { avgScore: number; avgPutts: number; avgGirPct: number; avgFairwayPct: number };
-  teamAvg?: { avgScore: number; avgPutts: number; avgGirPct: number; avgFairwayPct: number };
+  playerAvg?: { avgScore: number; avgScoreToPar: number; avgPutts: number; avgGirPct: number; avgFairwayPct: number };
+  teamAvg?: { avgScore: number; avgScoreToPar: number; avgPutts: number; avgGirPct: number; avgFairwayPct: number };
   error?: string;
 }> {
   const supabase = await createClient();
   try {
+    // Verify the current user owns this player record or is a coach on their team
+    const access = await verifyReviewAccess(supabase, playerId, 'player_or_coach');
+    if (!access.authorized) {
+      return { success: false, error: access.error || 'Not authorized' };
+    }
+
     const { data: playerRounds, error: playerError } = await supabase
       .from('golf_rounds')
-      .select('total_score, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways')
+      .select('total_score, score_to_par, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways')
       .eq('player_id', playerId)
       .eq('status', 'completed')
       .not('total_score', 'is', null)
@@ -1302,6 +1410,10 @@ export async function getStatAverages(
     if (playerRounds && playerRounds.length >= 3) {
       const valid = playerRounds.filter(r => r.total_score !== null);
       const avgScore = valid.reduce((s, r) => s + (r.total_score ?? 0), 0) / valid.length;
+      const stpRounds = valid.filter(r => r.score_to_par !== null);
+      const avgScoreToPar = stpRounds.length > 0
+        ? stpRounds.reduce((s, r) => s + (r.score_to_par ?? 0), 0) / stpRounds.length
+        : avgScore - 72;
       const puttRounds = valid.filter(r => r.total_putts !== null);
       const avgPutts = puttRounds.length > 0 ? puttRounds.reduce((s, r) => s + (r.total_putts ?? 0), 0) / puttRounds.length : 32;
       const girRounds = valid.filter(r => r.total_gir !== null && r.total_gir_possible);
@@ -1312,7 +1424,7 @@ export async function getStatAverages(
       const avgFairwayPct = fwRounds.length > 0
         ? fwRounds.reduce((s, r) => s + ((r.total_fairways_hit ?? 0) / (r.total_fairways ?? 14)) * 100, 0) / fwRounds.length
         : 50;
-      playerAvg = { avgScore, avgPutts, avgGirPct, avgFairwayPct };
+      playerAvg = { avgScore, avgScoreToPar, avgPutts, avgGirPct, avgFairwayPct };
     }
 
     let teamAvg = undefined;
@@ -1326,7 +1438,7 @@ export async function getStatAverages(
         const playerIds = teamMembers.map(m => m.player_id);
         const { data: teamRounds } = await supabase
           .from('golf_rounds')
-          .select('total_score, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways')
+          .select('total_score, score_to_par, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways')
           .in('player_id', playerIds)
           .eq('status', 'completed')
           .not('total_score', 'is', null)
@@ -1336,6 +1448,10 @@ export async function getStatAverages(
         if (teamRounds && teamRounds.length >= 5) {
           const valid = teamRounds.filter(r => r.total_score !== null);
           const avgScore = valid.reduce((s, r) => s + (r.total_score ?? 0), 0) / valid.length;
+          const teamStpRounds = valid.filter(r => r.score_to_par !== null);
+          const avgScoreToPar = teamStpRounds.length > 0
+            ? teamStpRounds.reduce((s, r) => s + (r.score_to_par ?? 0), 0) / teamStpRounds.length
+            : avgScore - 72;
           const puttRounds = valid.filter(r => r.total_putts !== null);
           const avgPutts = puttRounds.length > 0 ? puttRounds.reduce((s, r) => s + (r.total_putts ?? 0), 0) / puttRounds.length : 32;
           const girRounds = valid.filter(r => r.total_gir !== null && r.total_gir_possible);
@@ -1346,7 +1462,7 @@ export async function getStatAverages(
           const avgFairwayPct = fwRounds.length > 0
             ? fwRounds.reduce((s, r) => s + ((r.total_fairways_hit ?? 0) / (r.total_fairways ?? 14)) * 100, 0) / fwRounds.length
             : 50;
-          teamAvg = { avgScore, avgPutts, avgGirPct, avgFairwayPct };
+          teamAvg = { avgScore, avgScoreToPar, avgPutts, avgGirPct, avgFairwayPct };
         }
       }
     }

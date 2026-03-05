@@ -72,7 +72,7 @@ export default async function MyDevelopmentPage() {
     .from('golf_players')
     .select('id, first_name, last_name')
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
   if (!player) {
     redirect('/golf/dashboard');

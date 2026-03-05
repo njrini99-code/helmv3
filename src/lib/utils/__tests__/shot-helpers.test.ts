@@ -87,9 +87,9 @@ describe('deriveLieAfter', () => {
     expect(deriveLieAfter(shot)).toBe('sand');
   });
 
-  it('normalizes hazard approach miss to rough', () => {
+  it('normalizes hazard approach miss to other', () => {
     const shot = { ...baseShot, result: 'rough' as const, approachMissLieType: 'hazard' as const };
-    expect(deriveLieAfter(shot)).toBe('rough');
+    expect(deriveLieAfter(shot)).toBe('other');
   });
 
   it('passes through fairway approach miss', () => {
@@ -152,12 +152,14 @@ describe('calculateShotDistanceWithDirection', () => {
   });
 
   // SHORT_LEFT/SHORT_RIGHT
-  it('calculates SHORT_LEFT: before - after', () => {
-    expect(calculateShotDistanceWithDirection(400, 50, 'short_left')).toBe(350);
+  it('calculates SHORT_LEFT: before - round(after * 0.7)', () => {
+    // 400 - round(50 * 0.7) = 400 - 35 = 365
+    expect(calculateShotDistanceWithDirection(400, 50, 'short_left')).toBe(365);
   });
 
-  it('calculates SHORT_RIGHT: before - after', () => {
-    expect(calculateShotDistanceWithDirection(400, 50, 'short_right')).toBe(350);
+  it('calculates SHORT_RIGHT: before - round(after * 0.7)', () => {
+    // 400 - round(50 * 0.7) = 400 - 35 = 365
+    expect(calculateShotDistanceWithDirection(400, 50, 'short_right')).toBe(365);
   });
 
   // LONG_LEFT/LONG_RIGHT (diagonal: before + after * 0.7)
@@ -167,6 +169,18 @@ describe('calculateShotDistanceWithDirection', () => {
 
   it('calculates LONG_RIGHT: before + round(after * 0.7)', () => {
     expect(calculateShotDistanceWithDirection(150, 20, 'long_right')).toBe(150 + Math.round(20 * 0.7));
+  });
+
+  // Short diagonal clamping to zero
+  it('clamps SHORT_LEFT to 0 when result would be negative', () => {
+    // 10 - round(50 * 0.7) = 10 - 35 = -25 -> clamped to 0
+    expect(calculateShotDistanceWithDirection(10, 50, 'short_left')).toBe(0);
+  });
+
+  // Short diagonal with floating point
+  it('short_right with floating point after', () => {
+    // 150 - round(20.5 * 0.7) = 150 - round(14.35) = 150 - 14 = 136
+    expect(calculateShotDistanceWithDirection(150, 20.5, 'short_right')).toBe(136);
   });
 
   // Case insensitivity

@@ -24,7 +24,7 @@ export default async function GolfAnnouncementsPage() {
 
   // Role + profiles in parallel
   const [userRoleResult, coachResult, playerResult] = await Promise.all([
-    supabase.from('users').select('role').eq('id', user.id).single(),
+    supabase.from('users').select('role').eq('id', user.id).maybeSingle(),
     supabase.from('golf_coaches').select('id, organization_id').eq('user_id', user.id).maybeSingle(),
     supabase.from('golf_players').select('id').eq('user_id', user.id).maybeSingle(),
   ]);

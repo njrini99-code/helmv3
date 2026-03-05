@@ -53,7 +53,7 @@ export default async function InsightsPage({ searchParams }: InsightsPageProps) 
     .from('golf_coaches')
     .select('id, organization_id')
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
   if (!coach) {
     redirect('/golf/dashboard?message=Insights+is+a+coach-only+feature');

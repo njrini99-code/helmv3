@@ -125,19 +125,19 @@ export default async function PlayerCoachHelmPage() {
   }
 
   // Get player record - this is a player-only page
-  const { data: player, error: playerError } = await supabase
+  const { data: player } = await supabase
     .from('golf_players')
     .select('id, first_name, last_name')
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
-  if (playerError || !player) {
+  if (!player) {
     // Check if user is a coach
     const { data: coach } = await supabase
       .from('golf_coaches')
       .select('id')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     if (coach) {
       // User is a coach, not a player

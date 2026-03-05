@@ -27,13 +27,13 @@ export default async function CoachHelmAnalyticsPage() {
   }
 
   // Get coach record
-  const { data: coach, error: coachError } = await supabase
+  const { data: coach } = await supabase
     .from('golf_coaches')
     .select('id, organization_id')
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
-  if (coachError || !coach) {
+  if (!coach) {
     redirect('/golf/dashboard');
   }
 

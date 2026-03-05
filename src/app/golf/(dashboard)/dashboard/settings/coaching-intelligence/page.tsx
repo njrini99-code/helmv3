@@ -44,7 +44,7 @@ export default function CoachingIntelligenceSettingsPage() {
                 .from('golf_coaches')
                 .select('id')
                 .eq('user_id', user.id)
-                .single();
+                .maybeSingle();
 
             if (coach) {
                 setCoachId(coach.id);

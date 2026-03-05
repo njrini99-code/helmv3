@@ -42,7 +42,7 @@ const config: Config = {
           300: '#86efac',
           400: '#4ade80',
           500: '#22c55e',
-          600: '#16A34A',  // PRIMARY BRAND COLOR
+          600: '#15803D',  // PRIMARY BRAND COLOR (WCAG AA compliant)
           700: '#15803D',
           800: '#166534',
           900: '#14532d',
@@ -72,7 +72,7 @@ const config: Config = {
         },
 
         // SEMANTIC COLORS
-        success: '#16A34A',  // Same as primary
+        success: '#15803D',  // Same as primary
         warning: '#F59E0B',  // Amber
         danger: '#DC2626',   // Red
         info: '#3B82F6',     // Blue

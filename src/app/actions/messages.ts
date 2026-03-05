@@ -12,6 +12,7 @@ import {
 } from '@/lib/validation/server-action-validator';
 import { MessageSchemas } from '@/lib/validation/action-schemas';
 import { notifyNewMessage } from '@/lib/notifications';
+import { sendPushNotification } from '@/lib/notifications/push';
 
 type Sport = 'baseball' | 'golf';
 
@@ -396,13 +397,37 @@ export async function sendGolfMessage(conversationId: string, content: string) {
             .in('id', recipientUserIds);
 
           if (recipientProfiles) {
+            // Email notifications
             await Promise.allSettled(
               recipientProfiles.map(r =>
                 r.email
-                  ? notifyNewMessage(r.id, r.email, senderName, preview, conversationId)
+                  ? notifyNewMessage(r.id, r.email, senderName, preview, conversationId, 'golf')
                   : Promise.resolve()
               )
             );
+
+            // Push notifications
+            await Promise.allSettled(
+              recipientProfiles.map(r =>
+                sendPushNotification('new_message', r.id, {
+                  senderName,
+                  preview,
+                })
+              )
+            );
+
+            // In-app notifications (golf_calendar_notifications)
+            const inAppNotifs = recipientProfiles.map(r => ({
+              user_id: r.id,
+              notification_type: 'message',
+              title: `Message from ${senderName}`,
+              message: preview,
+              action_url: `/golf/dashboard/messages`,
+            }));
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            await (supabase as any)
+              .from('golf_calendar_notifications')
+              .insert(inAppNotifs);
           }
         }
       }
@@ -917,12 +942,15 @@ export async function searchGolfMessages(
 
     // Search messages using ilike for case-insensitive partial matching
     // Only within conversations the user is a participant of
-    const searchPattern = `%${trimmedQuery}%`;
+    // Escape SQL wildcards in user input
+    const escapedQuery = trimmedQuery.replace(/%/g, '\\%').replace(/_/g, '\\_');
+    const searchPattern = `%${escapedQuery}%`;
 
     let messagesQuery = supabase
       .from('golf_messages')
       .select('id, conversation_id, sender_id, content, created_at')
       .in('conversation_id', conversationIds)
+      .eq('is_deleted', false)
       .ilike('content', searchPattern)
       .order('created_at', { ascending: false })
       .limit(50);
@@ -941,6 +969,7 @@ export async function searchGolfMessages(
           .from('golf_messages')
           .select('id, conversation_id, sender_id, content, created_at')
           .in('conversation_id', teamConvIds)
+          .eq('is_deleted', false)
           .ilike('content', searchPattern)
           .order('created_at', { ascending: false })
           .limit(50);

@@ -3899,6 +3899,53 @@ export type Database = {
         }
         Relationships: []
       }
+      device_tokens: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          device_name: string | null
+          failed_count: number | null
+          id: string
+          last_push_at: string | null
+          platform: string
+          token: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          device_name?: string | null
+          failed_count?: number | null
+          id?: string
+          last_push_at?: string | null
+          platform: string
+          token: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          device_name?: string | null
+          failed_count?: number | null
+          id?: string
+          last_push_at?: string | null
+          platform?: string
+          token?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_tokens_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       error_logs: {
         Row: {
           context: Json | null
@@ -4440,7 +4487,7 @@ export type Database = {
         Row: {
           action_url: string | null
           created_at: string | null
-          event_id: string
+          event_id: string | null
           id: string
           message: string | null
           notification_type: string
@@ -4452,7 +4499,7 @@ export type Database = {
         Insert: {
           action_url?: string | null
           created_at?: string | null
-          event_id: string
+          event_id?: string | null
           id?: string
           message?: string | null
           notification_type: string
@@ -4464,7 +4511,7 @@ export type Database = {
         Update: {
           action_url?: string | null
           created_at?: string | null
-          event_id?: string
+          event_id?: string | null
           id?: string
           message?: string | null
           notification_type?: string
@@ -5661,6 +5708,7 @@ export type Database = {
           sand_save: boolean | null
           score: number | null
           up_and_down: boolean | null
+          yardage: number | null
         }
         Insert: {
           created_at?: string | null
@@ -5676,6 +5724,7 @@ export type Database = {
           sand_save?: boolean | null
           score?: number | null
           up_and_down?: boolean | null
+          yardage?: number | null
         }
         Update: {
           created_at?: string | null
@@ -5691,6 +5740,7 @@ export type Database = {
           sand_save?: boolean | null
           score?: number | null
           up_and_down?: boolean | null
+          yardage?: number | null
         }
         Relationships: [
           {
@@ -7703,6 +7753,7 @@ export type Database = {
           sentiment_score: number | null
           shared_at: string | null
           shared_with_coach: boolean | null
+          shared_with_player: boolean | null
           status: string | null
           summary: string | null
           updated_at: string | null
@@ -7743,6 +7794,7 @@ export type Database = {
           sentiment_score?: number | null
           shared_at?: string | null
           shared_with_coach?: boolean | null
+          shared_with_player?: boolean | null
           status?: string | null
           summary?: string | null
           updated_at?: string | null
@@ -7783,6 +7835,7 @@ export type Database = {
           sentiment_score?: number | null
           shared_at?: string | null
           shared_with_coach?: boolean | null
+          shared_with_player?: boolean | null
           status?: string | null
           summary?: string | null
           updated_at?: string | null
@@ -7949,6 +8002,7 @@ export type Database = {
           course_state: string | null
           created_at: string | null
           current_hole: number | null
+          draft_data: Json | null
           front_nine: number | null
           holes_played: number | null
           id: string
@@ -7986,6 +8040,7 @@ export type Database = {
           course_state?: string | null
           created_at?: string | null
           current_hole?: number | null
+          draft_data?: Json | null
           front_nine?: number | null
           holes_played?: number | null
           id?: string
@@ -8023,6 +8078,7 @@ export type Database = {
           course_state?: string | null
           created_at?: string | null
           current_hole?: number | null
+          draft_data?: Json | null
           front_nine?: number | null
           holes_played?: number | null
           id?: string
@@ -9723,6 +9779,15 @@ export type Database = {
       recalculate_team_baseball_season_stats: {
         Args: { p_season_year?: number; p_team_id: string }
         Returns: undefined
+      }
+      save_partial_round_atomic: {
+        Args: {
+          p_holes: Json
+          p_round_data: Json
+          p_round_id: string
+          p_shots: Json
+        }
+        Returns: Json
       }
       sg_estimate_from_holes: {
         Args: { p_round_id: string }

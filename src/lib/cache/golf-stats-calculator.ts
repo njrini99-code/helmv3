@@ -300,7 +300,10 @@ export async function invalidateOnRoundComplete(playerId: string, roundId: strin
   // 1. Invalidate the Redis layer
   await invalidateGolf.playerStats(playerId);
 
-  // 2. Trigger strokes gained recalculation for the round (if function exists)
+  // 2. Mark DB cache as stale so getStatsFromCache() knows to refresh
+  await markStatsStale(playerId);
+
+  // 3. Trigger strokes gained recalculation for the round (if function exists)
   // The database trigger should handle this automatically when status='completed',
   // but we call it explicitly to ensure SG is calculated for manual updates
   try {
@@ -311,7 +314,7 @@ export async function invalidateOnRoundComplete(playerId: string, roundId: strin
     console.error('[Stats] recalculate_round_strokes_gained threw:', roundId, e);
   }
 
-  // 3. Update player stats cache with aggregated SG values
+  // 4. Update player stats cache with aggregated SG values
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: sgPlayerError } = await (supabase as any).rpc('update_player_stats_strokes_gained', { p_player_id: playerId });
@@ -320,6 +323,13 @@ export async function invalidateOnRoundComplete(playerId: string, roundId: strin
     console.error('[Stats] update_player_stats_strokes_gained threw:', playerId, e);
   }
 
+  // 5. Trigger full stats recalculation and await it
+  // This ensures the cache is rebuilt with new round data before any subsequent reads
+  try {
+    await refreshStatsCache(playerId);
+  } catch (err) {
+    console.error('[Stats] refreshStatsCache failed:', playerId, err);
+  }
 }
 
 // ============================================================================
@@ -422,20 +432,20 @@ export async function getTeamTopPlayers(
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function transformToSummary(row: any): PlayerStatsSummary {
   return {
-    scoringAverage: row.scoring_average,
-    roundsPlayed: row.rounds_played || 0,
-    bestRound: row.best_round,
-    worstRound: row.worst_round,
-    last5Average: row.last_5_average,
-    last10Average: row.last_10_average,
-    improvementTrend: row.improvement_trend,
+    scoringAverage: row.scoring_average ?? null,
+    roundsPlayed: row.rounds_played ?? 0,
+    bestRound: row.best_round ?? null,
+    worstRound: row.worst_round ?? null,
+    last5Average: row.last_5_average ?? null,
+    last10Average: row.last_10_average ?? null,
+    improvementTrend: row.improvement_trend ?? null,
     trendDirection: row.trend_direction || 'stable',
-    girPercentage: row.gir_percentage,
-    fairwayPercentage: row.driving_accuracy_percentage,
-    puttsPerRound: row.putts_per_round,
-    scramblingPercentage: row.scrambling_percentage,
-    isStale: row.is_stale || false,
-    lastUpdated: row.updated_at,
+    girPercentage: row.gir_percentage ?? null,
+    fairwayPercentage: row.driving_accuracy_percentage ?? null,
+    puttsPerRound: row.putts_per_round ?? null,
+    scramblingPercentage: row.scrambling_percentage ?? null,
+    isStale: row.is_stale ?? false,
+    lastUpdated: row.updated_at ?? null,
   };
 }
 
@@ -444,56 +454,56 @@ function transformToPlayerStatsCache(row: any): PlayerStatsCache {
   return {
     id: row.id,
     playerId: row.player_id,
-    scoringAverage: row.scoring_average,
-    scoringAverageVsPar: row.scoring_average_vs_par,
-    roundsPlayed: row.rounds_played || 0,
-    bestRound: row.best_round,
-    worstRound: row.worst_round,
-    par3Average: row.par3_average,
-    par4Average: row.par4_average,
-    par5Average: row.par5_average,
-    eagles: row.eagles || 0,
-    birdies: row.birdies || 0,
-    pars: row.pars || 0,
-    bogeys: row.bogeys || 0,
-    doubleBogeys: row.double_bogeys || 0,
-    triplePlus: row.triple_plus || 0,
-    strokesGainedTotal: row.strokes_gained_total,
-    strokesGainedTee: row.strokes_gained_tee,
-    strokesGainedApproach: row.strokes_gained_approach,
-    strokesGainedAroundGreen: row.strokes_gained_around_green,
-    strokesGainedPutting: row.strokes_gained_putting,
-    drivingAccuracyPercentage: row.driving_accuracy_percentage,
-    fairwaysHit: row.fairways_hit || 0,
-    fairwaysTotal: row.fairways_total || 0,
-    drivingDistanceAverage: row.driving_distance_average,
-    girPercentage: row.gir_percentage,
-    greensHit: row.greens_hit || 0,
-    greensTotal: row.greens_total || 0,
-    approachProximityAverage: row.approach_proximity_average,
-    scramblingPercentage: row.scrambling_percentage,
-    scramblesConverted: row.scrambles_converted || 0,
-    scrambleAttempts: row.scramble_attempts || 0,
-    sandSavePercentage: row.sand_save_percentage,
-    sandSaves: row.sand_saves || 0,
-    sandAttempts: row.sand_attempts || 0,
-    puttsPerRound: row.putts_per_round,
-    puttsPerGir: row.putts_per_gir,
-    onePuttPercentage: row.one_putt_percentage,
-    threePuttPercentage: row.three_putt_percentage,
-    totalPutts: row.total_putts || 0,
-    last5Average: row.last_5_average,
-    last10Average: row.last_10_average,
-    improvementTrend: row.improvement_trend,
-    trendDirection: row.trend_direction,
-    roundsThisSeason: row.rounds_this_season || 0,
-    penaltyStrokesPerRound: row.penalty_strokes_per_round,
-    totalPenalties: row.total_penalties || 0,
-    lastRoundDate: row.last_round_date,
-    roundsInCalculation: row.rounds_in_calculation || 0,
-    calculationPeriodStart: row.calculation_period_start,
-    calculationPeriodEnd: row.calculation_period_end,
-    isStale: row.is_stale || false,
+    scoringAverage: row.scoring_average ?? null,
+    scoringAverageVsPar: row.scoring_average_vs_par ?? null,
+    roundsPlayed: row.rounds_played ?? 0,
+    bestRound: row.best_round ?? null,
+    worstRound: row.worst_round ?? null,
+    par3Average: row.par3_average ?? null,
+    par4Average: row.par4_average ?? null,
+    par5Average: row.par5_average ?? null,
+    eagles: row.eagles ?? 0,
+    birdies: row.birdies ?? 0,
+    pars: row.pars ?? 0,
+    bogeys: row.bogeys ?? 0,
+    doubleBogeys: row.double_bogeys ?? 0,
+    triplePlus: row.triple_plus ?? 0,
+    strokesGainedTotal: row.strokes_gained_total ?? null,
+    strokesGainedTee: row.strokes_gained_tee ?? null,
+    strokesGainedApproach: row.strokes_gained_approach ?? null,
+    strokesGainedAroundGreen: row.strokes_gained_around_green ?? null,
+    strokesGainedPutting: row.strokes_gained_putting ?? null,
+    drivingAccuracyPercentage: row.driving_accuracy_percentage ?? null,
+    fairwaysHit: row.fairways_hit ?? 0,
+    fairwaysTotal: row.fairways_total ?? 0,
+    drivingDistanceAverage: row.driving_distance_average ?? null,
+    girPercentage: row.gir_percentage ?? null,
+    greensHit: row.greens_hit ?? 0,
+    greensTotal: row.greens_total ?? 0,
+    approachProximityAverage: row.approach_proximity_average ?? null,
+    scramblingPercentage: row.scrambling_percentage ?? null,
+    scramblesConverted: row.scrambles_converted ?? 0,
+    scrambleAttempts: row.scramble_attempts ?? 0,
+    sandSavePercentage: row.sand_save_percentage ?? null,
+    sandSaves: row.sand_saves ?? 0,
+    sandAttempts: row.sand_attempts ?? 0,
+    puttsPerRound: row.putts_per_round ?? null,
+    puttsPerGir: row.putts_per_gir ?? null,
+    onePuttPercentage: row.one_putt_percentage ?? null,
+    threePuttPercentage: row.three_putt_percentage ?? null,
+    totalPutts: row.total_putts ?? 0,
+    last5Average: row.last_5_average ?? null,
+    last10Average: row.last_10_average ?? null,
+    improvementTrend: row.improvement_trend ?? null,
+    trendDirection: row.trend_direction ?? null,
+    roundsThisSeason: row.rounds_this_season ?? 0,
+    penaltyStrokesPerRound: row.penalty_strokes_per_round ?? null,
+    totalPenalties: row.total_penalties ?? 0,
+    lastRoundDate: row.last_round_date ?? null,
+    roundsInCalculation: row.rounds_in_calculation ?? 0,
+    calculationPeriodStart: row.calculation_period_start ?? null,
+    calculationPeriodEnd: row.calculation_period_end ?? null,
+    isStale: row.is_stale ?? false,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

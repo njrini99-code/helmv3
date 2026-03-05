@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useLocalStorage } from './use-local-storage';
+import { triggerHaptic as triggerHapticUtil } from '@/lib/utils/capacitor';
 
 interface MobileDetectionResult {
   isMobile: boolean;
@@ -33,8 +34,12 @@ const MOBILE_UI_PREF_KEY = 'helm-prefer-mobile-ui';
  * ```
  */
 export function useMobileDetection(): MobileDetectionResult {
-  const [screenWidth, setScreenWidth] = useState(0);
-  const [screenHeight, setScreenHeight] = useState(0);
+  const [screenWidth, setScreenWidth] = useState(
+    typeof window !== 'undefined' ? window.innerWidth : 768
+  );
+  const [screenHeight, setScreenHeight] = useState(
+    typeof window !== 'undefined' ? window.innerHeight : 1024
+  );
   const [isTouch, setIsTouch] = useState(false);
   const [preferMobileUIStored, setPreferMobileUIStored] = useLocalStorage<boolean | null>(
     MOBILE_UI_PREF_KEY,
@@ -115,6 +120,7 @@ export function useIsMobile(): boolean {
 
 /**
  * Hook for handling safe area insets (notches, home indicators)
+ * Uses CSS custom properties set by the viewport-fit=cover meta tag
  */
 export function useSafeAreaInsets() {
   const [insets, setInsets] = useState({
@@ -128,45 +134,43 @@ export function useSafeAreaInsets() {
     if (typeof window === 'undefined') return;
 
     const computeInsets = () => {
-      const style = getComputedStyle(document.documentElement);
+      // Create a temporary element to measure env() values
+      const el = document.createElement('div');
+      el.style.position = 'fixed';
+      el.style.visibility = 'hidden';
+      el.style.top = 'env(safe-area-inset-top, 0px)';
+      el.style.right = 'env(safe-area-inset-right, 0px)';
+      el.style.bottom = 'env(safe-area-inset-bottom, 0px)';
+      el.style.left = 'env(safe-area-inset-left, 0px)';
+      document.body.appendChild(el);
+
+      const computed = getComputedStyle(el);
       setInsets({
-        top: parseInt(style.getPropertyValue('env(safe-area-inset-top)') || '0', 10),
-        right: parseInt(style.getPropertyValue('env(safe-area-inset-right)') || '0', 10),
-        bottom: parseInt(style.getPropertyValue('env(safe-area-inset-bottom)') || '0', 10),
-        left: parseInt(style.getPropertyValue('env(safe-area-inset-left)') || '0', 10),
+        top: parseInt(computed.top || '0', 10),
+        right: parseInt(computed.right || '0', 10),
+        bottom: parseInt(computed.bottom || '0', 10),
+        left: parseInt(computed.left || '0', 10),
       });
+
+      document.body.removeChild(el);
     };
 
     computeInsets();
-    window.addEventListener('resize', computeInsets);
-    return () => window.removeEventListener('resize', computeInsets);
+    window.addEventListener('orientationchange', computeInsets);
+    return () => window.removeEventListener('orientationchange', computeInsets);
   }, []);
 
   return insets;
 }
 
 /**
- * Hook for triggering haptic feedback (vibration)
+ * Hook for triggering haptic feedback
+ * Uses Capacitor Haptics on native, falls back silently on web
  */
 export function useHapticFeedback() {
-  const triggerHaptic = useCallback((pattern: 'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'error' = 'light') => {
-    if (typeof window === 'undefined' || !navigator.vibrate) return;
-
-    const patterns: Record<string, number | number[]> = {
-      light: 10,
-      medium: 25,
-      heavy: 50,
-      success: [10, 50, 10],
-      warning: [25, 50, 25],
-      error: [50, 100, 50, 100, 50],
-    };
-
-    try {
-      navigator.vibrate(patterns[pattern] ?? 10);
-    } catch {
-      // Vibration not supported or blocked
-    }
+  const triggerHapticFeedback = useCallback((pattern: 'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'error' = 'light') => {
+    triggerHapticUtil(pattern);
   }, []);
 
-  return { triggerHaptic };
+  return { triggerHaptic: triggerHapticFeedback };
 }

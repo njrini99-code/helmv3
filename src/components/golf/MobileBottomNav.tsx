@@ -48,7 +48,7 @@ export function MobileBottomNav({ isCoach = true }: MobileBottomNavProps) {
       aria-label="Mobile navigation"
       className={cn(
         'fixed bottom-0 left-0 right-0 z-40 lg:hidden',
-        'bg-white/95 backdrop-blur-xl',
+        'bg-white/95 backdrop-blur-md',
         'border-t border-warm-200/60',
         'shadow-[0_-4px_20px_rgba(0,0,0,0.08)]',
         'will-change-transform',

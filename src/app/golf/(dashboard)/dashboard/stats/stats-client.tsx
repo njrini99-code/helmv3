@@ -35,7 +35,10 @@ import {
   IconTrendingDown,
   IconTarget,
   IconMenu,
+  IconGolf,
+  IconPlus,
 } from '@/components/icons';
+import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { useSidebar } from '@/contexts/sidebar-context';
 import { useGolfUser } from '@/contexts/golf-user-context';
 import { cn } from '@/lib/utils';
@@ -501,7 +504,7 @@ export default function StatsClient({
         .order('last_name'),
       supabase
         .from('golf_rounds')
-        .select('player_id, total_score, round_date')
+        .select('player_id, total_score, round_date, holes_played')
         .in('player_id', playerIds)
         .eq('status', 'completed')
         .not('total_score', 'is', null)
@@ -514,25 +517,36 @@ export default function StatsClient({
     const roundsByPlayer = (allRounds || []).reduce((acc, round) => {
       if (!acc[round.player_id]) acc[round.player_id] = [];
       if (round.total_score !== null) {
+        const hp = round.holes_played ?? 18;
         acc[round.player_id]!.push({
           score: round.total_score,
+          normalizedScore: Math.round(round.total_score * (18 / hp)),
+          holesPlayed: hp,
           date: round.round_date,
         });
       }
       return acc;
-    }, {} as Record<string, { score: number; date: string }[]>);
+    }, {} as Record<string, { score: number; normalizedScore: number; holesPlayed: number; date: string }[]>);
 
-    // Calculate stats for each player including trend
+    // Calculate stats for each player including trend — normalize to 18-hole equivalents
     const playersWithStats = teamPlayers.map(player => {
       const rounds = roundsByPlayer[player.id] || [];
-      const scores = rounds.map(r => r.score);
-      const recentScores = scores.slice(0, 5);
+      const normalizedScores = rounds.map(r => r.normalizedScore);
+      const recentNormalized = normalizedScores.slice(0, 5);
 
-      // Calculate trend based on recent scores
+      // Compute per-hole average then express as 18-hole equivalent
+      let totalStrokes = 0;
+      let totalHoles = 0;
+      for (const r of rounds) {
+        totalStrokes += r.score;
+        totalHoles += r.holesPlayed;
+      }
+
+      // Calculate trend based on normalized recent scores
       let trend: 'up' | 'down' | 'stable' = 'stable';
-      if (recentScores.length >= 3) {
-        const firstHalf = recentScores.slice(Math.floor(recentScores.length / 2));
-        const secondHalf = recentScores.slice(0, Math.floor(recentScores.length / 2));
+      if (recentNormalized.length >= 3) {
+        const firstHalf = recentNormalized.slice(Math.floor(recentNormalized.length / 2));
+        const secondHalf = recentNormalized.slice(0, Math.floor(recentNormalized.length / 2));
         const firstAvg = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
         const secondAvg = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
         // Lower is better in golf
@@ -552,12 +566,12 @@ export default function StatsClient({
       return {
         ...player,
         stats: {
-          rounds_played: scores.length,
-          scoring_average: scores.length > 0
-            ? scores.reduce((a, b) => a + b, 0) / scores.length
+          rounds_played: rounds.length,
+          scoring_average: totalHoles > 0
+            ? (totalStrokes / totalHoles) * 18
             : null,
-          best_round: scores.length > 0 ? Math.min(...scores) : null,
-          recent_scores: recentScores.reverse(), // Oldest to newest for sparkline
+          best_round: normalizedScores.length > 0 ? Math.min(...normalizedScores) : null,
+          recent_scores: recentNormalized.reverse(), // Oldest to newest for sparkline
           trend,
           last_played: lastPlayed,
         }
@@ -1065,24 +1079,79 @@ export default function StatsClient({
         </div>
       ) : (
         /* Empty state when no stats available */
-        <div className="max-w-6xl mx-auto px-4 md:px-6 pt-16 pb-8">
-          <div className="relative glass-standard rounded-2xl p-8 md:p-12 text-center">
-            <ShineEffect />
-            <div className="w-20 h-20 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-5">
-              <IconChart size={36} className="text-warm-300" />
-            </div>
-            <h2 className="text-xl font-semibold text-warm-900 mb-2">No Stats Yet</h2>
-            <p className="text-warm-500 max-w-sm mx-auto mb-6">
-              Complete rounds with shot tracking to see your detailed performance statistics here.
-            </p>
-            <a
-              href="/golf/dashboard/rounds/new"
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-medium transition-colors"
+        <LazyMotion features={domAnimation}>
+          <div className="max-w-6xl mx-auto px-4 md:px-6 pt-16 pb-8">
+            <m.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+              className="relative glass-standard rounded-2xl p-10 md:p-16 text-center overflow-hidden"
             >
-              Start a Round
-            </a>
+              <ShineEffect />
+              <m.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.15, duration: 0.4, ease: 'easeOut' }}
+                className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center mx-auto mb-6"
+              >
+                <IconGolf size={36} className="text-primary-500" />
+              </m.div>
+              <m.h2
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.25, duration: 0.4 }}
+                className="text-2xl font-semibold text-warm-900 mb-3"
+              >
+                Your Stats Dashboard
+              </m.h2>
+              <m.p
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.35, duration: 0.4 }}
+                className="text-warm-500 max-w-md mx-auto mb-8 leading-relaxed"
+              >
+                Play your first round to unlock detailed performance analytics. Track your scoring trends, strokes gained, and identify areas to improve.
+              </m.p>
+
+              {/* Feature preview cards */}
+              <m.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4, duration: 0.4 }}
+                className="grid grid-cols-3 gap-3 max-w-sm mx-auto mb-8"
+              >
+                <div className="p-3 rounded-xl bg-warm-50/80 border border-warm-100">
+                  <IconChart size={18} className="text-warm-300 mx-auto mb-1.5" />
+                  <p className="text-[11px] font-medium text-warm-400">Scoring Trends</p>
+                </div>
+                <div className="p-3 rounded-xl bg-warm-50/80 border border-warm-100">
+                  <IconTarget size={18} className="text-warm-300 mx-auto mb-1.5" />
+                  <p className="text-[11px] font-medium text-warm-400">Strokes Gained</p>
+                </div>
+                <div className="p-3 rounded-xl bg-warm-50/80 border border-warm-100">
+                  <IconTrendingUp size={18} className="text-warm-300 mx-auto mb-1.5" />
+                  <p className="text-[11px] font-medium text-warm-400">Progress</p>
+                </div>
+              </m.div>
+
+              {userRole === 'player' && (
+                <m.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5, duration: 0.4 }}
+                >
+                  <a
+                    href="/golf/dashboard/rounds/new"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white rounded-xl font-medium shadow-sm hover:shadow-md transition-all duration-200 min-h-[44px]"
+                  >
+                    <IconPlus size={16} />
+                    Start Your First Round
+                  </a>
+                </m.div>
+              )}
+            </m.div>
           </div>
-        </div>
+        </LazyMotion>
       )}
 
       {/* Recent Rounds Section */}

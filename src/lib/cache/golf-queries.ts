@@ -69,7 +69,7 @@ export async function getCachedRoster(teamId: string) {
  */
 export async function getCachedPlayerStats(playerId: string) {
   return cached(
-    golfCache.playerStats.key(playerId),
+    `golf:player:${playerId}:rounds-summary`,
     async () => {
       const supabase = await createClient();
       const { data, error } = await supabase
@@ -80,6 +80,7 @@ export async function getCachedPlayerStats(playerId: string) {
           total_score,
           total_putts,
           round_type,
+          holes_played,
           course:golf_courses(name)
         `)
         .eq('player_id', playerId)
@@ -88,22 +89,38 @@ export async function getCachedPlayerStats(playerId: string) {
         .limit(20);
       if (error) throw error;
 
-      // Calculate aggregates
+      // Calculate aggregates with 9-hole normalization
       if (!data || data.length === 0) {
         return { rounds: [], stats: null };
       }
 
       const validScores = data.filter((r) => r.total_score != null);
+      // Compute per-hole average then express as 18-hole equivalent
+      let totalStrokes = 0;
+      let totalHoles = 0;
+      let totalPutts = 0;
+      let totalPuttsHoles = 0;
+      const normalizedScores: number[] = [];
+      for (const r of validScores) {
+        const hp = r.holes_played ?? 18;
+        totalStrokes += r.total_score || 0;
+        totalHoles += hp;
+        normalizedScores.push(Math.round((r.total_score || 0) * (18 / hp)));
+        if (r.total_putts != null) {
+          totalPutts += r.total_putts;
+          totalPuttsHoles += hp;
+        }
+      }
       const stats = {
         totalRounds: data.length,
-        avgScore: validScores.length > 0
-          ? Math.round(validScores.reduce((acc, r) => acc + (r.total_score || 0), 0) / validScores.length * 10) / 10
+        avgScore: totalHoles > 0
+          ? Math.round((totalStrokes / totalHoles) * 18 * 10) / 10
           : null,
-        avgPutts: validScores.length > 0
-          ? Math.round(validScores.reduce((acc, r) => acc + (r.total_putts || 0), 0) / validScores.length * 10) / 10
+        avgPutts: totalPuttsHoles > 0
+          ? Math.round((totalPutts / totalPuttsHoles) * 18 * 10) / 10
           : null,
-        bestScore: validScores.length > 0
-          ? Math.min(...validScores.map((r) => r.total_score || 999))
+        bestScore: normalizedScores.length > 0
+          ? Math.min(...normalizedScores)
           : null,
       };
 

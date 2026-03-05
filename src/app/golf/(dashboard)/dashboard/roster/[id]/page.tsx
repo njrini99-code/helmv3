@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     .from('golf_players')
     .select('first_name, last_name')
     .eq('id', id)
-    .single();
+    .maybeSingle();
 
   if (!player) {
     return { title: 'Player Not Found | Helm Golf' };
@@ -97,14 +97,14 @@ export default async function PlayerProfilePage({ params }: PageProps) {
     .from('golf_coaches')
     .select('id, organization_id')
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
   if (!coach) {
     redirect('/golf/login');
   }
 
   // Get the player with team membership verification
-  const { data: player, error: playerError } = await supabase
+  const { data: player } = await supabase
     .from('golf_players')
     .select(`
       id,
@@ -120,9 +120,9 @@ export default async function PlayerProfilePage({ params }: PageProps) {
       created_at
     `)
     .eq('id', id)
-    .single();
+    .maybeSingle();
 
-  if (playerError || !player) {
+  if (!player) {
     notFound();
   }
 
@@ -147,7 +147,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
     .select('status')
     .eq('team_id', teamId)
     .eq('player_id', id)
-    .single();
+    .maybeSingle();
 
   if (!membership) {
     notFound();

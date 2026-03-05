@@ -45,12 +45,15 @@ export interface ShotTrackingState {
   distanceAfterUnit: 'yards' | 'feet';
   // Auto-save
   autoSaveStatus: 'idle' | 'saving' | 'saved' | 'error';
+  pendingSaveCount: number;
+  autoSaveRetryAttempt: number;
   // Penalty modal
   showPenaltyModal: boolean;
   penaltyType: string | null;
   // Undo
   showUndoConfirm: boolean;
   undoSaving: boolean;
+  undoError: string | null;
   // Edit modal
   editingShot: ShotRecord | null;
   showEditModal: boolean;
@@ -83,6 +86,9 @@ export type ShotAction =
   | { type: 'SET_DISTANCE_AFTER_UNIT'; payload: 'yards' | 'feet' }
   // Auto-save
   | { type: 'SET_AUTO_SAVE_STATUS'; payload: 'idle' | 'saving' | 'saved' | 'error' }
+  | { type: 'AUTO_SAVE_RETRY_SCHEDULED'; payload: number }
+  | { type: 'AUTO_SAVE_RESET' }
+  | { type: 'INCREMENT_PENDING_SAVE' }
   // Penalty
   | { type: 'SHOW_PENALTY_MODAL' }
   | { type: 'SET_PENALTY_TYPE'; payload: string | null }
@@ -93,7 +99,7 @@ export type ShotAction =
   | { type: 'HIDE_UNDO_CONFIRM' }
   | { type: 'UNDO_START' }
   | { type: 'UNDO_COMPLETE'; payload: { newHistory: ShotRecord[] } }
-  | { type: 'UNDO_FAIL' }
+  | { type: 'UNDO_FAIL'; payload?: string }
   // Edit modal
   | { type: 'OPEN_EDIT_MODAL'; payload: { shot: ShotRecord; formData: EditFormData } }
   | { type: 'CLOSE_EDIT_MODAL' }
@@ -115,20 +121,26 @@ export type ShotAction =
 // HELPER: compute restored state from history
 // ============================================================================
 
+/** Clamp distanceToHole to a minimum sensible value to prevent 0/NaN/negative causing division-by-zero or broken UI */
+function safeDistanceToHole(value: number): number {
+  if (!Number.isFinite(value) || value <= 0) return 1;
+  return value;
+}
+
 /** @internal - exported for testing */
 export function computeRestoredState(history: ShotRecord[], holeYardage: number): Pick<ShotTrackingState, 'distanceToHole' | 'distanceUnit' | 'currentLie' | 'distanceAfterUnit'> {
   if (history.length > 0) {
     const lastShot = history[history.length - 1]!;
     const restoredLie = lieFromShotResult(lastShot);
     return {
-      distanceToHole: lastShot.distanceToHoleAfter,
+      distanceToHole: safeDistanceToHole(lastShot.distanceToHoleAfter),
       distanceUnit: lastShot.distanceUnitAfter,
       currentLie: restoredLie,
       distanceAfterUnit: restoredLie === 'green' ? 'feet' : 'yards',
     };
   }
   return {
-    distanceToHole: holeYardage,
+    distanceToHole: safeDistanceToHole(holeYardage),
     distanceUnit: 'yards',
     currentLie: 'tee',
     distanceAfterUnit: 'yards',
@@ -178,7 +190,7 @@ export function shotReducer(state: ShotTrackingState, action: ShotAction): ShotT
         ...state,
         currentShot: hasSavedShots ? initialShotNumber : 1,
         shotHistory: hasSavedShots ? initialShots : [],
-        distanceToHole: initialDistance,
+        distanceToHole: safeDistanceToHole(initialDistance),
         distanceUnit: initialUnit,
         currentLie: initialLie,
         holeYardage,
@@ -245,6 +257,15 @@ export function shotReducer(state: ShotTrackingState, action: ShotAction): ShotT
     case 'SET_AUTO_SAVE_STATUS':
       return { ...state, autoSaveStatus: action.payload };
 
+    case 'AUTO_SAVE_RETRY_SCHEDULED':
+      return { ...state, autoSaveRetryAttempt: action.payload };
+
+    case 'AUTO_SAVE_RESET':
+      return { ...state, autoSaveRetryAttempt: 0, pendingSaveCount: 0 };
+
+    case 'INCREMENT_PENDING_SAVE':
+      return { ...state, pendingSaveCount: state.pendingSaveCount + 1 };
+
     // Penalty
     case 'SHOW_PENALTY_MODAL':
       return { ...state, showPenaltyModal: true };
@@ -252,24 +273,32 @@ export function shotReducer(state: ShotTrackingState, action: ShotAction): ShotT
     case 'SET_PENALTY_TYPE':
       return { ...state, penaltyType: action.payload };
 
-    case 'CONFIRM_PENALTY':
+    case 'CONFIRM_PENALTY': {
+      const penaltyShot = action.payload;
+      const newLie = lieFromShotResult(penaltyShot);
       return {
         ...state,
-        shotHistory: [...state.shotHistory, action.payload],
+        shotHistory: [...state.shotHistory, penaltyShot],
         currentShot: state.currentShot + 1,
+        currentLie: newLie,
+        distanceToHole: penaltyShot.distanceToHoleAfter,
+        distanceUnit: penaltyShot.distanceUnitAfter,
+        ...CLEAR_INPUT,
+        distanceAfterUnit: newLie === 'green' ? 'feet' : 'yards',
         showPenaltyModal: false,
         penaltyType: null,
       };
+    }
 
     case 'CLOSE_PENALTY_MODAL':
       return { ...state, showPenaltyModal: false, penaltyType: null };
 
     // Undo
     case 'SHOW_UNDO_CONFIRM':
-      return { ...state, showUndoConfirm: true };
+      return { ...state, showUndoConfirm: true, undoError: null };
 
     case 'HIDE_UNDO_CONFIRM':
-      return { ...state, showUndoConfirm: false };
+      return { ...state, showUndoConfirm: false, undoError: null };
 
     case 'UNDO_START':
       return { ...state, undoSaving: true };
@@ -284,12 +313,18 @@ export function shotReducer(state: ShotTrackingState, action: ShotAction): ShotT
         ...restored,
         ...CLEAR_INPUT,
         undoSaving: false,
+        undoError: null,
         showUndoConfirm: false,
       };
     }
 
     case 'UNDO_FAIL':
-      return { ...state, undoSaving: false };
+      return {
+        ...state,
+        undoSaving: false,
+        undoError: action.payload ?? 'Failed to undo shot. Please try again.',
+        showUndoConfirm: true,
+      };
 
     // Edit modal
     case 'OPEN_EDIT_MODAL':
@@ -317,10 +352,15 @@ export function shotReducer(state: ShotTrackingState, action: ShotAction): ShotT
     case 'EDIT_SAVE_START':
       return { ...state, editSaving: true, editError: null };
 
-    case 'EDIT_SAVE_COMPLETE':
+    case 'EDIT_SAVE_COMPLETE': {
+      const { updatedHistory } = action.payload;
+      const restored = computeRestoredState(updatedHistory, state.holeYardage);
       return {
         ...state,
-        shotHistory: action.payload.updatedHistory,
+        shotHistory: updatedHistory,
+        currentShot: updatedHistory.length + 1,
+        ...restored,
+        ...CLEAR_INPUT,
         editSaving: false,
         showEditModal: false,
         editingShot: null,
@@ -328,6 +368,7 @@ export function shotReducer(state: ShotTrackingState, action: ShotAction): ShotT
         editError: null,
         showDeleteConfirm: false,
       };
+    }
 
     case 'EDIT_SAVE_ERROR':
       return { ...state, editError: action.payload, editSaving: false };
@@ -365,6 +406,8 @@ export function shotReducer(state: ShotTrackingState, action: ShotAction): ShotT
       const { result, isTeeShot, isPutting, isApproachOrAroundGreen } = action.payload;
       const newState: Partial<ShotTrackingState> = {
         resultOfShot: result as ShotRecord['result'],
+        // Clear stale distance when result changes so old value doesn't persist
+        distanceAfterShot: '',
       };
 
       if (result === 'hole' || result === 'green') {
@@ -452,10 +495,13 @@ function computeInitialState(
     distanceAfterShot: '',
     distanceAfterUnit: initialLie === 'green' ? 'feet' : 'yards',
     autoSaveStatus: 'idle',
+    pendingSaveCount: 0,
+    autoSaveRetryAttempt: 0,
     showPenaltyModal: false,
     penaltyType: null,
     showUndoConfirm: false,
     undoSaving: false,
+    undoError: null,
     editingShot: null,
     showEditModal: false,
     showDeleteConfirm: false,
@@ -501,7 +547,10 @@ export function useShotStateMachine({
   const lastSavedShotsRef = useRef<string>('');
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const autoSaveStatusTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const autoSaveRetryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const hydratedHoleIndexRef = useRef<number | null>(null);
+  // Track retry attempt via ref to avoid stale closure in setTimeout callbacks
+  const autoSaveRetryAttemptRef = useRef(0);
 
   // Refs for fresh values in async callbacks
   const onAutoSaveRef = useRef(onAutoSave);
@@ -540,6 +589,14 @@ export function useShotStateMachine({
         await onAutoSaveRef.current?.(shotHistoryRef.current, currentHoleIndexRef.current);
         lastSavedShotsRef.current = freshFingerprint;
         dispatch({ type: 'SET_AUTO_SAVE_STATUS', payload: 'saved' });
+        autoSaveRetryAttemptRef.current = 0;
+        dispatch({ type: 'AUTO_SAVE_RESET' });
+
+        // Clear any pending retry since save succeeded
+        if (autoSaveRetryTimeoutRef.current) {
+          clearTimeout(autoSaveRetryTimeoutRef.current);
+          autoSaveRetryTimeoutRef.current = null;
+        }
 
         if (autoSaveStatusTimeoutRef.current) clearTimeout(autoSaveStatusTimeoutRef.current);
         autoSaveStatusTimeoutRef.current = setTimeout(() => {
@@ -547,16 +604,53 @@ export function useShotStateMachine({
         }, 2000);
       } catch {
         dispatch({ type: 'SET_AUTO_SAVE_STATUS', payload: 'error' });
-        if (autoSaveStatusTimeoutRef.current) clearTimeout(autoSaveStatusTimeoutRef.current);
-        autoSaveStatusTimeoutRef.current = setTimeout(() => {
-          dispatch({ type: 'SET_AUTO_SAVE_STATUS', payload: 'idle' });
-        }, 3000);
+
+        // Schedule retry with exponential backoff (max 3 attempts: 5s, 15s, 30s)
+        const RETRY_DELAYS = [5000, 15000, 30000];
+        const currentAttempt = autoSaveRetryAttemptRef.current;
+        if (currentAttempt < RETRY_DELAYS.length) {
+          const delay = RETRY_DELAYS[currentAttempt]!;
+          autoSaveRetryAttemptRef.current = currentAttempt + 1;
+          dispatch({ type: 'AUTO_SAVE_RETRY_SCHEDULED', payload: currentAttempt + 1 });
+
+          if (autoSaveRetryTimeoutRef.current) clearTimeout(autoSaveRetryTimeoutRef.current);
+          autoSaveRetryTimeoutRef.current = setTimeout(async () => {
+            const retryFingerprint = computeShotFingerprint(shotHistoryRef.current);
+            if (retryFingerprint === lastSavedShotsRef.current) {
+              // Data was saved by another path (e.g. hole complete); clear error
+              dispatch({ type: 'SET_AUTO_SAVE_STATUS', payload: 'idle' });
+              autoSaveRetryAttemptRef.current = 0;
+              dispatch({ type: 'AUTO_SAVE_RESET' });
+              return;
+            }
+
+            try {
+              dispatch({ type: 'SET_AUTO_SAVE_STATUS', payload: 'saving' });
+              await onAutoSaveRef.current?.(shotHistoryRef.current, currentHoleIndexRef.current);
+              lastSavedShotsRef.current = retryFingerprint;
+              dispatch({ type: 'SET_AUTO_SAVE_STATUS', payload: 'saved' });
+              autoSaveRetryAttemptRef.current = 0;
+              dispatch({ type: 'AUTO_SAVE_RESET' });
+
+              if (autoSaveStatusTimeoutRef.current) clearTimeout(autoSaveStatusTimeoutRef.current);
+              autoSaveStatusTimeoutRef.current = setTimeout(() => {
+                dispatch({ type: 'SET_AUTO_SAVE_STATUS', payload: 'idle' });
+              }, 2000);
+            } catch {
+              // Retry failed — keep error status visible (no auto-clear)
+              dispatch({ type: 'SET_AUTO_SAVE_STATUS', payload: 'error' });
+            }
+          }, delay);
+        }
+        // After 3 retries exhausted: error status stays visible permanently
+        // until a new shot triggers a new auto-save cycle that succeeds
       }
     }, autoSaveInterval);
 
     return () => {
       if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
       if (autoSaveStatusTimeoutRef.current) clearTimeout(autoSaveStatusTimeoutRef.current);
+      if (autoSaveRetryTimeoutRef.current) clearTimeout(autoSaveRetryTimeoutRef.current);
     };
   }, [state.shotHistory, currentHoleIndex, autoSaveInterval]);
 

@@ -633,9 +633,8 @@ describe('calculateHoleStatsFromShots', () => {
     });
 
     it('no fairway tracking for par 3', () => {
-      // Par 3 tee shot is treated as approach, fairwayHit comes from tee shot
-      // which is null because it hit green (not fairway)
-      expect(stats.fairwayHit).toBe(false);
+      // Par 3 has no fairway opportunity — fairwayHit should be null, not false
+      expect(stats.fairwayHit).toBeNull();
     });
 
     it('detects GIR (shot 1 hits green, par-2=1)', () => {

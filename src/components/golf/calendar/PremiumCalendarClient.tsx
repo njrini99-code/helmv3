@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
+import { format, startOfWeek as startOfWeekFn, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
+import { createClient } from '@/lib/supabase/client';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { useMobileDetection } from '@/hooks/use-mobile-detection';
 import {
@@ -167,68 +168,83 @@ export function PremiumCalendarClient({
     return handleRsvp(selectedEvent.id, response);
   }, [selectedEvent, handleRsvp]);
 
-  // Fetch player availability when players are selected (multi-select)
+  // Debounce ref for availability fetch
+  const availabilityDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Fetch player availability when players are selected (multi-select) — debounced 300ms
   useEffect(() => {
     if (selectedPlayerIds.length === 0) {
       setMultiPlayerBusyPeriods(new Map());
       return;
     }
 
-    const fetchAllPlayerAvailability = async () => {
-      // Calculate date range based on current view
-      let startDate: Date;
-      let endDate: Date;
+    if (availabilityDebounceRef.current) {
+      clearTimeout(availabilityDebounceRef.current);
+    }
 
-      if (view === 'day') {
-        startDate = currentDate;
-        endDate = currentDate;
-      } else if (view === 'week') {
-        startDate = startOfWeek(currentDate, { weekStartsOn: 0 });
-        endDate = endOfWeek(currentDate, { weekStartsOn: 0 });
-      } else {
-        startDate = startOfMonth(currentDate);
-        endDate = endOfMonth(currentDate);
-      }
+    availabilityDebounceRef.current = setTimeout(() => {
+      const fetchAllPlayerAvailability = async () => {
+        // Calculate date range based on current view
+        let startDate: Date;
+        let endDate: Date;
 
-      // Import and use the action
-      const { getPlayerAvailability } = await import('@/app/golf/actions/golf');
+        if (view === 'day') {
+          startDate = currentDate;
+          endDate = currentDate;
+        } else if (view === 'week') {
+          startDate = startOfWeekFn(currentDate, { weekStartsOn: 0 });
+          endDate = endOfWeek(currentDate, { weekStartsOn: 0 });
+        } else {
+          startDate = startOfMonth(currentDate);
+          endDate = endOfMonth(currentDate);
+        }
 
-      // Fetch availability for all selected players in parallel
-      const results = await Promise.all(
-        selectedPlayerIds.map(async (playerId, index) => {
-          const result = await getPlayerAvailability(
-            playerId,
-            format(startDate, 'yyyy-MM-dd'),
-            format(endDate, 'yyyy-MM-dd')
-          );
+        // Import and use the action
+        const { getPlayerAvailability } = await import('@/app/golf/actions/golf');
 
-          const color = PLAYER_COLORS[index % PLAYER_COLORS.length];
-
-          if (result.success && result.data) {
-            const rawPeriods = result.data as unknown as Array<Record<string, unknown> & { start: string; end: string }>;
-            const periods = rawPeriods.map((p) => ({
-              ...p,
-              start: p.start,
-              end: p.end,
-              type: (p.type as 'event' | 'class' | 'blocked') || 'event',
-              color,
+        // Fetch availability for all selected players in parallel
+        const results = await Promise.all(
+          selectedPlayerIds.map(async (playerId, index) => {
+            const result = await getPlayerAvailability(
               playerId,
-            })) as Array<Record<string, unknown> & { start: string; end: string; color: typeof PLAYER_COLORS[0] }>;
-            return { playerId, periods };
-          }
-          return { playerId, periods: [] as Array<Record<string, unknown> & { start: string; end: string; color: typeof PLAYER_COLORS[0] }> };
-        })
-      );
+              format(startDate, 'yyyy-MM-dd'),
+              format(endDate, 'yyyy-MM-dd')
+            );
 
-      // Build the map of player ID -> busy periods
-      const newMap = new Map<string, Array<Record<string, unknown> & { start: string; end: string; color: typeof PLAYER_COLORS[0] }>>();
-      results.forEach(({ playerId, periods }) => {
-        newMap.set(playerId, periods);
-      });
-      setMultiPlayerBusyPeriods(newMap);
+            const color = PLAYER_COLORS[index % PLAYER_COLORS.length];
+
+            if (result.success && result.data) {
+              const rawPeriods = result.data as unknown as Array<Record<string, unknown> & { start: string; end: string }>;
+              const periods = rawPeriods.map((p) => ({
+                ...p,
+                start: p.start,
+                end: p.end,
+                type: (p.type as 'event' | 'class' | 'blocked') || 'event',
+                color,
+                playerId,
+              })) as Array<Record<string, unknown> & { start: string; end: string; color: typeof PLAYER_COLORS[0] }>;
+              return { playerId, periods };
+            }
+            return { playerId, periods: [] as Array<Record<string, unknown> & { start: string; end: string; color: typeof PLAYER_COLORS[0] }> };
+          })
+        );
+
+        // Build the map of player ID -> busy periods
+        const newMap = new Map<string, Array<Record<string, unknown> & { start: string; end: string; color: typeof PLAYER_COLORS[0] }>>();
+        results.forEach(({ playerId, periods }) => {
+          newMap.set(playerId, periods);
+        });
+        setMultiPlayerBusyPeriods(newMap);
+      };
+
+      fetchAllPlayerAvailability();
+    }, 300);
+
+    return () => {
+      if (availabilityDebounceRef.current) {
+        clearTimeout(availabilityDebounceRef.current);
+      }
     };
-
-    fetchAllPlayerAvailability();
   }, [selectedPlayerIds, currentDate, view]);
 
   // Fetch current user's busy periods (works for both coaches and players)
@@ -249,7 +265,7 @@ export function PremiumCalendarClient({
         startDate = currentDate;
         endDate = currentDate;
       } else if (view === 'week') {
-        startDate = startOfWeek(currentDate, { weekStartsOn: 0 });
+        startDate = startOfWeekFn(currentDate, { weekStartsOn: 0 });
         endDate = endOfWeek(currentDate, { weekStartsOn: 0 });
       } else {
         startDate = startOfMonth(currentDate);
@@ -279,6 +295,33 @@ export function PremiumCalendarClient({
 
     fetchCurrentUserAvailability();
   }, [currentDate, view, selectedPlayerIds, isCoach]);
+
+  // Real-time subscription for calendar events — refresh on any change
+  useEffect(() => {
+    const teamId = initialEvents[0]?.team_id;
+    if (!teamId) return;
+
+    const supabase = createClient();
+    const channel = supabase
+      .channel('calendar-events')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'golf_events',
+          filter: `team_id=eq.${teamId}`,
+        },
+        () => {
+          router.refresh();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [initialEvents, router]);
 
   // Configure drag sensors - require 8px movement before drag starts
   const sensors = useSensors(
@@ -397,8 +440,8 @@ export function PremiumCalendarClient({
           eventType: data.eventType,
           startDate: data.startDate,
           endDate: data.endDate || undefined,
-          startTime: data.startTime || undefined,
-          endTime: data.endTime || undefined,
+          startTime: data.allDay ? undefined : (data.startTime || undefined),
+          endTime: data.allDay ? undefined : (data.endTime || undefined),
           allDay: data.allDay,
           location: data.location || undefined,
           courseName: data.courseName || undefined,
@@ -419,8 +462,8 @@ export function PremiumCalendarClient({
           eventType: data.eventType,
           startDate: data.startDate,
           endDate: data.endDate ?? undefined,
-          startTime: data.startTime ?? undefined,
-          endTime: data.endTime ?? undefined,
+          startTime: data.allDay ? undefined : (data.startTime ?? undefined),
+          endTime: data.allDay ? undefined : (data.endTime ?? undefined),
           allDay: data.allDay,
           location: data.location ?? undefined,
           courseName: data.courseName ?? undefined,
@@ -530,6 +573,7 @@ export function PremiumCalendarClient({
     try {
       const result = await actionHandlers.updateEvent(eventId, {
         startDate: newDate,
+        endDate: newDate,
         startTime: newStartTime,
         endTime: newEndTime,
         timezoneOffset: new Date().getTimezoneOffset(),
@@ -551,14 +595,7 @@ export function PremiumCalendarClient({
     ? initialEvents.find((e) => e.id === activeDragId)
     : null;
 
-  const getWeekStart = (date: Date) => {
-    const d = new Date(date);
-    const day = d.getDay();
-    const diff = d.getDate() - day;
-    return new Date(d.setDate(diff));
-  };
-
-  const weekStart = view === 'week' ? getWeekStart(currentDate) : currentDate;
+  const weekStart = view === 'week' ? startOfWeekFn(currentDate, { weekStartsOn: 0 }) : currentDate;
 
   return (
     <>
@@ -833,8 +870,8 @@ export function PremiumCalendarClient({
                 eventType: data.eventType,
                 startDate: data.startDate,
                 endDate: data.endDate || undefined,
-                startTime: data.startTime || undefined,
-                endTime: data.endTime || undefined,
+                startTime: data.allDay ? undefined : (data.startTime || undefined),
+                endTime: data.allDay ? undefined : (data.endTime || undefined),
                 allDay: data.allDay,
                 location: data.location || undefined,
                 description: data.description || undefined,
@@ -849,8 +886,8 @@ export function PremiumCalendarClient({
                 eventType: data.eventType,
                 startDate: data.startDate,
                 endDate: data.endDate || undefined,
-                startTime: data.startTime || undefined,
-                endTime: data.endTime || undefined,
+                startTime: data.allDay ? undefined : (data.startTime || undefined),
+                endTime: data.allDay ? undefined : (data.endTime || undefined),
                 allDay: data.allDay,
                 location: data.location || undefined,
                 description: data.description || undefined,

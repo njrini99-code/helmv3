@@ -58,20 +58,32 @@ export function useGolfRounds(playerId?: string): UseGolfRoundsResult {
       if (roundsError) throw roundsError;
       setRounds(roundsData as GolfRound[]);
 
-      // Calculate stats
+      // Calculate stats with 9-hole normalization
       if (roundsData && roundsData.length > 0) {
         const roundsPlayed = roundsData.length;
-        type RoundWithScore = { total_score?: number | null };
-        const scores = roundsData.map((r: RoundWithScore) => r.total_score).filter((s): s is number => s !== null && s !== undefined);
-        const scoringAverage = scores.length > 0 ? scores.reduce((a: number, b: number) => a + b, 0) / scores.length : 0;
-        const bestRound = scores.length > 0 ? Math.min(...scores) : 0;
-        const worstRound = scores.length > 0 ? Math.max(...scores) : 0;
+        type RoundWithScore = { total_score?: number | null; holes_played?: number | null };
+        const scoredRounds = (roundsData as RoundWithScore[]).filter(r => r.total_score != null && r.total_score !== undefined);
+
+        // Normalize scoring to 18-hole equivalents using per-hole average
+        let totalStrokes = 0;
+        let totalHolesScored = 0;
+        const normalizedScores: number[] = [];
+        for (const r of scoredRounds) {
+          const hp = r.holes_played ?? 18;
+          totalStrokes += r.total_score!;
+          totalHolesScored += hp;
+          normalizedScores.push(Math.round(r.total_score! * (18 / hp)));
+        }
+        const scoringAverage = totalHolesScored > 0 ? (totalStrokes / totalHolesScored) * 18 : 0;
+        const bestRound = normalizedScores.length > 0 ? Math.min(...normalizedScores) : 0;
+        const worstRound = normalizedScores.length > 0 ? Math.max(...normalizedScores) : 0;
 
         // Calculate score distribution from holes
-        let totalPutts = 0, fairwaysHit = 0, fairwaysTotal = 0, greensInReg = 0, greensTotal = 0;
+        let totalPutts = 0, totalPuttsHoles = 0, fairwaysHit = 0, fairwaysTotal = 0, greensInReg = 0, greensTotal = 0;
 
         type RoundData = {
           holes?: HoleData[];
+          holes_played?: number | null;
           total_putts?: number | null;
           total_fairways_hit?: number | null;
           total_fairways?: number | null;
@@ -86,6 +98,7 @@ export function useGolfRounds(playerId?: string): UseGolfRoundsResult {
           gir?: boolean | null;
         };
         (roundsData as unknown as RoundData[]).forEach((round: RoundData) => {
+          const hp = round.holes_played ?? 18;
           if (round.holes) {
             round.holes.forEach((hole: HoleData) => {
               // Putting
@@ -104,14 +117,18 @@ export function useGolfRounds(playerId?: string): UseGolfRoundsResult {
           }
 
           // Also use round totals if available
-          if (round.total_putts !== null && round.total_putts !== undefined) totalPutts = round.total_putts;
+          if (round.total_putts !== null && round.total_putts !== undefined) {
+            totalPutts = round.total_putts;
+            totalPuttsHoles += hp;
+          }
           if (round.total_fairways_hit !== null && round.total_fairways_hit !== undefined) fairwaysHit = round.total_fairways_hit;
           if (round.total_fairways !== null && round.total_fairways !== undefined) fairwaysTotal = round.total_fairways;
           if (round.total_gir !== null && round.total_gir !== undefined) greensInReg = round.total_gir;
           if (round.total_gir_possible !== null && round.total_gir_possible !== undefined) greensTotal = round.total_gir_possible;
         });
 
-        const puttsPerRound = totalPutts > 0 ? totalPutts / roundsPlayed : 0;
+        // Normalize putts to 18-hole equivalent
+        const puttsPerRound = totalPuttsHoles > 0 ? (totalPutts / totalPuttsHoles) * 18 : 0;
         const fairwayPct = fairwaysTotal > 0 ? (fairwaysHit / fairwaysTotal) * 100 : 0;
         const girPct = greensTotal > 0 ? (greensInReg / greensTotal) * 100 : 0;
 

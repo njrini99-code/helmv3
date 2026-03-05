@@ -1,0 +1,210 @@
+'use server';
+
+import { createClient } from '@/lib/supabase/server';
+import type { NotificationType, NotificationPreferences } from './types';
+import { getUserNotificationPreferences } from './email';
+
+/**
+ * Check if user wants push notifications for a specific type
+ */
+function shouldSendPush(
+  type: NotificationType,
+  prefs: NotificationPreferences
+): boolean {
+  switch (type) {
+    case 'new_message':
+      return prefs.push_messages;
+    case 'team_announcement':
+    case 'qualifier_created':
+    case 'qualifier_updated':
+    case 'event_rsvp_reminder':
+    case 'coachhelm_insight':
+    case 'round_submitted':
+      return prefs.push_events;
+    case 'task_reminder':
+    case 'task_assigned':
+    case 'task_completed':
+    case 'dev_plan_assigned':
+      return prefs.push_task_reminders;
+    default:
+      return true;
+  }
+}
+
+/**
+ * Generate push notification payload based on notification type
+ */
+function generatePushPayload(
+  type: NotificationType,
+  data: Record<string, unknown>
+): { title: string; body: string; data: Record<string, unknown> } {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
+
+  switch (type) {
+    case 'new_message':
+      return {
+        title: `Message from ${data.senderName || 'Someone'}`,
+        body: String(data.preview || '').slice(0, 100),
+        data: { url: `${baseUrl}/golf/dashboard/messages`, type },
+      };
+    case 'team_announcement':
+      return {
+        title: 'Team Announcement',
+        body: String(data.title || ''),
+        data: { url: `${baseUrl}/golf/dashboard/announcements`, type },
+      };
+    case 'task_assigned':
+      return {
+        title: 'New Task Assigned',
+        body: String(data.taskTitle || ''),
+        data: { url: `${baseUrl}/golf/dashboard/tasks`, type },
+      };
+    case 'task_reminder':
+      return {
+        title: 'Task Reminder',
+        body: `"${data.taskTitle}" is due soon`,
+        data: { url: `${baseUrl}/golf/dashboard/tasks`, type },
+      };
+    case 'event_rsvp_reminder':
+      return {
+        title: 'RSVP Reminder',
+        body: `Please RSVP for ${data.eventName || 'an event'}`,
+        data: { url: `${baseUrl}/golf/dashboard/calendar`, type },
+      };
+    case 'qualifier_created':
+      return {
+        title: 'New Qualifier Posted',
+        body: String(data.qualifierName || ''),
+        data: { url: `${baseUrl}/golf/dashboard/qualifiers`, type },
+      };
+    case 'dev_plan_assigned':
+      return {
+        title: 'New Development Plan',
+        body: String(data.planTitle || ''),
+        data: { url: `${baseUrl}/golf/dashboard/my-development`, type },
+      };
+    default:
+      return {
+        title: 'Helm Sports',
+        body: 'You have a new notification',
+        data: { url: baseUrl, type },
+      };
+  }
+}
+
+/**
+ * Send a push notification to a single user via the APNs Edge Function
+ */
+export async function sendPushNotification(
+  type: NotificationType,
+  userId: string,
+  data: Record<string, unknown>
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    // Check user preferences
+    const prefs = await getUserNotificationPreferences(userId);
+    if (!shouldSendPush(type, prefs)) {
+      return { success: true }; // User opted out
+    }
+
+    const supabase = await createClient();
+
+    // Get user's active device tokens
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: tokens, error: tokenError } = await (supabase as any)
+      .from('device_tokens')
+      .select('token, platform')
+      .eq('user_id', userId)
+      .eq('active', true) as { data: Array<{ token: string; platform: string }> | null; error: { message: string } | null };
+
+    if (tokenError || !tokens || tokens.length === 0) {
+      return { success: true }; // No tokens, not an error
+    }
+
+    const payload = generatePushPayload(type, data);
+
+    // Send to each device token via Edge Function
+    for (const deviceToken of tokens) {
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/send-apns-push`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+            },
+            body: JSON.stringify({
+              deviceToken: deviceToken.token,
+              platform: deviceToken.platform,
+              title: payload.title,
+              body: payload.body,
+              data: payload.data,
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`Push failed for token ${deviceToken.token.slice(0, 8)}...:`, errorText);
+
+          // Increment failed count
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: currentToken } = await (supabase as any)
+            .from('device_tokens')
+            .select('failed_count')
+            .eq('token', deviceToken.token)
+            .single() as { data: { failed_count: number } | null };
+
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any)
+            .from('device_tokens')
+            .update({
+              failed_count: (currentToken?.failed_count || 0) + 1,
+            })
+            .eq('token', deviceToken.token);
+        } else {
+          // Update last_push_at
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any)
+            .from('device_tokens')
+            .update({ last_push_at: new Date().toISOString(), failed_count: 0 })
+            .eq('token', deviceToken.token);
+        }
+      } catch (err) {
+        console.error('Push send error:', err);
+      }
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to send push notification:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+/**
+ * Send push notifications to multiple users
+ */
+export async function sendBulkPushNotification(
+  type: NotificationType,
+  userIds: string[],
+  data: Record<string, unknown>
+): Promise<{ sent: number; failed: number }> {
+  let sent = 0;
+  let failed = 0;
+
+  for (const userId of userIds) {
+    const result = await sendPushNotification(type, userId, data);
+    if (result.success) {
+      sent++;
+    } else {
+      failed++;
+    }
+  }
+
+  return { sent, failed };
+}

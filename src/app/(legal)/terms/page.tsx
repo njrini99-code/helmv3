@@ -32,8 +32,15 @@ export default function TermsPage() {
           <section className="space-y-3">
             <h2 className="text-2xl font-semibold text-slate-900">Eligibility</h2>
             <p>
-              You must be at least 13 years old to use the Services. If you are under 18, you must
-              have permission from a parent or guardian.
+              You must be at least 13 years old to use this Service. By creating an account, you
+              represent and warrant that you are at least 13 years old. Users between 13 and 17 years
+              old must have parental or guardian awareness and consent to use this Service.
+            </p>
+            <p>
+              In compliance with the Children&apos;s Online Privacy Protection Act (COPPA), we do not
+              knowingly collect personal information from children under 13. If we discover that a
+              child under 13 has provided personal information, we will promptly delete such
+              information.
             </p>
           </section>
 

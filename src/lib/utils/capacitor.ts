@@ -1,5 +1,10 @@
 import { Keyboard } from '@capacitor/keyboard';
 import { Browser } from '@capacitor/browser';
+import { Haptics, ImpactStyle, NotificationType as HapticNotificationType } from '@capacitor/haptics';
+import { StatusBar, Style as StatusBarStyle } from '@capacitor/status-bar';
+import { SplashScreen } from '@capacitor/splash-screen';
+import { Share } from '@capacitor/share';
+import { Network } from '@capacitor/network';
 
 /**
  * Detect if the app is running inside a Capacitor native shell (iOS/Android).
@@ -38,4 +43,100 @@ export async function openExternalUrl(url: string): Promise<void> {
     }
   }
   window.open(url, '_blank');
+}
+
+/**
+ * Trigger native haptic feedback.
+ * Falls back silently on web.
+ */
+export async function triggerHaptic(style: 'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'error' = 'light'): Promise<void> {
+  if (!isNativeApp()) return;
+  try {
+    if (style === 'success' || style === 'warning' || style === 'error') {
+      const typeMap: Record<string, HapticNotificationType> = {
+        success: HapticNotificationType.Success,
+        warning: HapticNotificationType.Warning,
+        error: HapticNotificationType.Error,
+      };
+      await Haptics.notification({ type: typeMap[style]! });
+    } else {
+      const styleMap: Record<string, ImpactStyle> = {
+        light: ImpactStyle.Light,
+        medium: ImpactStyle.Medium,
+        heavy: ImpactStyle.Heavy,
+      };
+      await Haptics.impact({ style: styleMap[style]! });
+    }
+  } catch {
+    // Haptics not available
+  }
+}
+
+/**
+ * Set the native status bar style.
+ */
+export async function setStatusBarStyle(style: 'light' | 'dark' = 'dark'): Promise<void> {
+  if (!isNativeApp()) return;
+  try {
+    await StatusBar.setStyle({ style: style === 'light' ? StatusBarStyle.Light : StatusBarStyle.Dark });
+  } catch {
+    // StatusBar not available
+  }
+}
+
+/**
+ * Show the native splash screen.
+ */
+export async function showSplashScreen(): Promise<void> {
+  if (!isNativeApp()) return;
+  try {
+    await SplashScreen.show();
+  } catch {
+    // SplashScreen not available
+  }
+}
+
+/**
+ * Hide the native splash screen.
+ */
+export async function hideSplashScreen(): Promise<void> {
+  if (!isNativeApp()) return;
+  try {
+    await SplashScreen.hide();
+  } catch {
+    // SplashScreen not available
+  }
+}
+
+/**
+ * Open the native share sheet.
+ */
+export async function shareContent(title: string, text: string, url?: string): Promise<void> {
+  if (!isNativeApp()) {
+    // Web fallback: use Web Share API if available
+    if (navigator.share) {
+      await navigator.share({ title, text, url });
+    }
+    return;
+  }
+  try {
+    await Share.share({ title, text, url });
+  } catch {
+    // Share cancelled or not available
+  }
+}
+
+/**
+ * Get current network connectivity status.
+ */
+export async function getNetworkStatus(): Promise<{ connected: boolean; connectionType: string }> {
+  if (!isNativeApp()) {
+    return { connected: navigator.onLine, connectionType: 'unknown' };
+  }
+  try {
+    const status = await Network.getStatus();
+    return { connected: status.connected, connectionType: status.connectionType };
+  } catch {
+    return { connected: navigator.onLine, connectionType: 'unknown' };
+  }
 }

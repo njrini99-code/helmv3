@@ -274,7 +274,8 @@ export async function getPlayerQuickSummary(playerId: string): Promise<QuickSumm
       total_fairways_hit,
       total_fairways,
       total_gir,
-      total_gir_possible
+      total_gir_possible,
+      holes_played
     `)
     .eq('player_id', playerId)
     .eq('status', 'completed')
@@ -295,8 +296,20 @@ export async function getPlayerQuickSummary(playerId: string): Promise<QuickSumm
   }
 
   const rounds = roundsData;
-  const totalScores = rounds.map(r => r.total_score).filter((s): s is number => s !== null);
   const toParScores = rounds.map(r => r.score_to_par).filter((s): s is number => s !== null);
+
+  // Normalize scoring to 18-hole equivalents
+  let totalStrokes = 0;
+  let totalHoles = 0;
+  const normalizedScores: number[] = [];
+  for (const r of rounds) {
+    if (r.total_score !== null) {
+      const hp = r.holes_played ?? 18;
+      totalStrokes += r.total_score;
+      totalHoles += hp;
+      normalizedScores.push(Math.round(r.total_score * (18 / hp)));
+    }
+  }
 
   // Calculate fairway and GIR totals
   let totalFairwaysHit = 0;
@@ -319,13 +332,13 @@ export async function getPlayerQuickSummary(playerId: string): Promise<QuickSumm
     success: true,
     data: {
       roundsPlayed: rounds.length,
-      scoringAverage: totalScores.length > 0
-        ? totalScores.reduce((a, b) => a + b, 0) / totalScores.length
+      scoringAverage: totalHoles > 0
+        ? (totalStrokes / totalHoles) * 18
         : null,
       avgScoreToPar: toParScores.length > 0
         ? toParScores.reduce((a, b) => a + b, 0) / toParScores.length
         : null,
-      bestRound: totalScores.length > 0 ? Math.min(...totalScores) : null,
+      bestRound: normalizedScores.length > 0 ? Math.min(...normalizedScores) : null,
       girPercentage: totalGirOpps > 0 ? (totalGir / totalGirOpps) * 100 : null,
       fairwayPercentage: totalFairwayOpps > 0 ? (totalFairwaysHit / totalFairwayOpps) * 100 : null,
     },

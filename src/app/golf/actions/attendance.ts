@@ -18,8 +18,8 @@ import { revalidatePath } from 'next/cache';
 
 export type CheckInMethod = 'manual' | 'qr_code' | 'self';
 
-// golf_event_attendance.status enum: attending, not_attending, maybe, pending, excused, unexcused
-type AttendanceStatus = 'attending' | 'not_attending' | 'maybe' | 'pending' | 'excused' | 'unexcused';
+// golf_event_attendance.status enum matches RSVP: accepted, declined, tentative, pending
+type AttendanceStatus = 'accepted' | 'declined' | 'tentative' | 'pending';
 
 interface ActionResult<T = void> {
   success: boolean;
@@ -78,10 +78,10 @@ export async function checkInPlayer(
       return { success: false, error: 'Not authenticated' };
     }
 
-    // Verify event exists
+    // Verify event exists (golf_events uses start_time, not start_date)
     const { data: event } = await supabase
       .from('golf_events')
-      .select('id, start_date, start_time')
+      .select('id, start_time')
       .eq('id', eventId)
       .maybeSingle();
 
@@ -89,7 +89,7 @@ export async function checkInPlayer(
       return { success: false, error: 'Event not found' };
     }
 
-    // Upsert attendance record - set status to 'attending'
+    // Upsert attendance record - set status to 'accepted' (check-in = accepted)
     // UNIQUE(event_id, player_id) allows upsert
     const { error: upsertError } = await supabase
       .from('golf_event_attendance')
@@ -97,7 +97,7 @@ export async function checkInPlayer(
         {
           event_id: eventId,
           player_id: playerId,
-          status: 'attending' as AttendanceStatus,
+          status: 'accepted' as AttendanceStatus,
           responded_at: new Date().toISOString(),
         },
         { onConflict: 'event_id,player_id' }
@@ -151,7 +151,7 @@ export async function bulkCheckIn(
     const upsertRecords = playerIds.map((playerId) => ({
       event_id: eventId,
       player_id: playerId,
-      status: 'attending' as AttendanceStatus,
+      status: 'accepted' as AttendanceStatus,
       responded_at: now,
     }));
 
@@ -213,13 +213,12 @@ export async function markNoShow(
       return { success: false, error: 'Coach not found' };
     }
 
-    // Update attendance record - mark as unexcused absence (no-show)
-    // golf_event_attendance.status enum: attending, not_attending, maybe, pending, excused, unexcused
-    // 'unexcused' is the closest match for a no-show
+    // Update attendance record - mark as declined (no-show)
+    // golf_event_attendance.status uses RSVP values: accepted, declined, tentative, pending
     const { error: updateError } = await supabase
       .from('golf_event_attendance')
       .update({
-        status: 'unexcused' as AttendanceStatus,
+        status: 'declined' as AttendanceStatus,
         updated_at: new Date().toISOString(),
       })
       .eq('event_id', eventId)

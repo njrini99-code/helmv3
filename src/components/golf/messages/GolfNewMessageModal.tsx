@@ -54,6 +54,9 @@ export function GolfNewMessageModal({
     setLoading(true);
     const supabase = createClient();
 
+    // Escape SQL wildcards in user input to prevent unexpected matches
+    const escapedQuery = query.replace(/%/g, '\\%').replace(/_/g, '\\_');
+
     try {
 
       if (currentUserRole === 'coach') {
@@ -77,7 +80,7 @@ export function GolfNewMessageModal({
           .in('id', playerIds);  // ENFORCED team filter via join table
 
         if (query.trim()) {
-          playerQuery = playerQuery.or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%`);
+          playerQuery = playerQuery.or(`first_name.ilike.%${escapedQuery}%,last_name.ilike.%${escapedQuery}%`);
         }
 
         const { data: players, error } = await playerQuery.limit(20);
@@ -119,7 +122,7 @@ export function GolfNewMessageModal({
             .eq('organization_id', team.organization_id);
 
           if (query.trim()) {
-            coachQuery = coachQuery.ilike('full_name', `%${query}%`);
+            coachQuery = coachQuery.ilike('full_name', `%${escapedQuery}%`);
           }
 
           const { data: coaches } = await coachQuery.limit(10);
@@ -156,7 +159,7 @@ export function GolfNewMessageModal({
           }
 
           if (query.trim()) {
-            playerQuery = playerQuery.or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%`);
+            playerQuery = playerQuery.or(`first_name.ilike.%${escapedQuery}%,last_name.ilike.%${escapedQuery}%`);
           }
 
           const { data: teammates } = await playerQuery.limit(20);

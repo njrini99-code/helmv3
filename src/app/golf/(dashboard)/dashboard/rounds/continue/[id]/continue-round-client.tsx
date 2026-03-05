@@ -77,8 +77,15 @@ export default function ContinueRoundClient({
 
   // Concurrency lock for background server saves
   const serverSaveInProgressRef = useRef(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const pendingServerSaveRef = useRef<{ shots: ShotRecord[]; holeIndex: number; roundData?: any } | null>(null);
   const consecutiveSaveFailuresRef = useRef(0);
   const isSubmittingRef = useRef(false);
+  // Track the furthest hole the player has naturally progressed to (for re-edit navigation)
+  const activeProgressHoleRef = useRef(startHoleIndex);
+  // Ref for stale closure prevention in async saves
+  const inProgressShotsByHoleRef = useRef(inProgressShotsByHole);
+  inProgressShotsByHoleRef.current = inProgressShotsByHole;
 
   /**
    * Build partial round data for server persistence.
@@ -123,6 +130,9 @@ export default function ContinueRoundClient({
   }, [completedHoleStats, currentHoleIndex, inProgressShotsByHole, holes, setupData]);
 
   const handleHoleComplete = async (holeIndex: number, holeStats: HoleStats) => {
+    // Detect re-edit: hole already had completed stats before this call
+    const isReEdit = !!completedHoleStats[holeIndex]?.score;
+
     // Update holes with score
     const updatedHoles = [...holes];
     updatedHoles[holeIndex] = {
@@ -149,14 +159,19 @@ export default function ContinueRoundClient({
     });
 
     // Fire-and-forget: persist completed hole data to database (non-blocking)
+    // Uses queue pattern to avoid silently dropping saves
     void (async () => {
-      if (serverSaveInProgressRef.current) return;
+      const nextHole = isReEdit ? activeProgressHoleRef.current : Math.min(holeIndex + 1, holes.length - 1);
+      const saveData = buildPartialRoundData(updatedStats, nextHole, inProgressAfter);
+
+      if (serverSaveInProgressRef.current) {
+        // Queue — will be picked up when current save completes
+        pendingServerSaveRef.current = { shots: [], holeIndex: -1, roundData: saveData };
+        return;
+      }
       serverSaveInProgressRef.current = true;
       try {
-        const result = await savePartialRound(
-          buildPartialRoundData(updatedStats, holeIndex + 1, inProgressAfter),
-          roundId
-        );
+        const result = await savePartialRound(saveData, roundId);
         if (result.success) {
           consecutiveSaveFailuresRef.current = 0;
         } else {
@@ -172,12 +187,33 @@ export default function ContinueRoundClient({
         }
       } finally {
         serverSaveInProgressRef.current = false;
+        // If a newer save was queued while we were saving, execute it now
+        const pending = pendingServerSaveRef.current;
+        if (pending) {
+          pendingServerSaveRef.current = null;
+          const pendingData = pending.roundData ?? buildPartialRoundData();
+          void (async () => {
+            serverSaveInProgressRef.current = true;
+            try {
+              const r = await savePartialRound(pendingData, roundId);
+              if (r.success) consecutiveSaveFailuresRef.current = 0;
+            } catch { /* non-critical */ } finally {
+              serverSaveInProgressRef.current = false;
+            }
+          })();
+        }
       }
     })();
 
-    // Move to next hole or prompt for finish confirmation
-    if (holeIndex < holes.length - 1) {
-      setCurrentHoleIndex(holeIndex + 1);
+    // Navigate after completion
+    if (isReEdit) {
+      // Re-editing a previously completed hole — return to the active frontier
+      setCurrentHoleIndex(activeProgressHoleRef.current);
+    } else if (holeIndex < holes.length - 1) {
+      // Normal progression — advance to next hole
+      const nextHole = holeIndex + 1;
+      setCurrentHoleIndex(nextHole);
+      activeProgressHoleRef.current = nextHole;
     } else {
       // Last hole - ask for confirmation before submitting
       setPendingFinalStats(updatedStats);
@@ -205,6 +241,13 @@ export default function ContinueRoundClient({
 
     setInProgressShotsByHole((prev) => {
       const existing = prev[currentHoleIndex] ?? [];
+      // Prevent duplicate shots when navigating back to an uncompleted hole
+      const duplicateIndex = existing.findIndex(s => s.shotNumber === shot.shotNumber);
+      if (duplicateIndex >= 0) {
+        const updated = [...existing];
+        updated[duplicateIndex] = shot;
+        return { ...prev, [currentHoleIndex]: updated };
+      }
       return { ...prev, [currentHoleIndex]: [...existing, shot] };
     });
   };
@@ -257,29 +300,58 @@ export default function ContinueRoundClient({
     }
 
     // Background save to database — protects mid-hole shot data
+    // Uses ref-based data to avoid stale closure, plus queue for concurrent saves
     if (offlineSyncState.isOnline) {
-      void (async () => {
-        if (serverSaveInProgressRef.current) return;
-        serverSaveInProgressRef.current = true;
-        try {
-          const result = await savePartialRound(buildPartialRoundData(), roundId);
-          if (result.success) {
-            consecutiveSaveFailuresRef.current = 0;
-          } else {
+      if (serverSaveInProgressRef.current) {
+        // Queue this save — it will execute after the current one completes
+        pendingServerSaveRef.current = { shots, holeIndex };
+      } else {
+        const executeServerSave = async (saveShots: ShotRecord[], saveHoleIndex: number) => {
+          serverSaveInProgressRef.current = true;
+          try {
+            const mergedInProgress = { ...inProgressShotsByHoleRef.current, [saveHoleIndex]: saveShots };
+            const result = await savePartialRound(
+              buildPartialRoundData(undefined, saveHoleIndex, mergedInProgress),
+              roundId
+            );
+            if (result.success) {
+              consecutiveSaveFailuresRef.current = 0;
+            } else {
+              consecutiveSaveFailuresRef.current++;
+              if (consecutiveSaveFailuresRef.current >= 2) {
+                showToast('Auto-save is having trouble. Your data is cached locally.', 'warning');
+              }
+            }
+          } catch {
             consecutiveSaveFailuresRef.current++;
             if (consecutiveSaveFailuresRef.current >= 2) {
               showToast('Auto-save is having trouble. Your data is cached locally.', 'warning');
             }
+          } finally {
+            serverSaveInProgressRef.current = false;
+            // If a newer save was queued while we were saving, execute it now
+            const pending = pendingServerSaveRef.current;
+            if (pending) {
+              pendingServerSaveRef.current = null;
+              if (pending.roundData) {
+                // Queued from handleHoleComplete
+                void (async () => {
+                  serverSaveInProgressRef.current = true;
+                  try {
+                    const r = await savePartialRound(pending.roundData, roundId);
+                    if (r.success) consecutiveSaveFailuresRef.current = 0;
+                  } catch { /* non-critical */ } finally {
+                    serverSaveInProgressRef.current = false;
+                  }
+                })();
+              } else {
+                void executeServerSave(pending.shots, pending.holeIndex);
+              }
+            }
           }
-        } catch {
-          consecutiveSaveFailuresRef.current++;
-          if (consecutiveSaveFailuresRef.current >= 2) {
-            showToast('Auto-save is having trouble. Your data is cached locally.', 'warning');
-          }
-        } finally {
-          serverSaveInProgressRef.current = false;
-        }
-      })();
+        };
+        void executeServerSave(shots, holeIndex);
+      }
     }
   }, [
     offlineSyncState.isIndexedDBReady,
@@ -290,6 +362,7 @@ export default function ContinueRoundClient({
     holes,
     completedHoleStats,
     buildPartialRoundData,
+    showToast,
   ]);
 
   const handleRoundSubmit = async (allHoleStats: HoleStats[]) => {
@@ -361,20 +434,26 @@ export default function ContinueRoundClient({
   const activeShotNumber = activeHoleShots.length > 0 ? activeHoleShots.length + 1 : initialShotNumber;
 
   const handleDeleteRound = async () => {
-    await deleteInProgressRound(roundId);
-
-    setShowExitModal(false);
-
-    // Redirect to rounds page
-    router.push('/golf/dashboard/rounds');
+    try {
+      const result = await deleteInProgressRound(roundId);
+      if (result && 'success' in result && !result.success) {
+        showToast?.('Failed to delete round. Please try again.', 'error');
+        return;
+      }
+      setShowExitModal(false);
+      router.push('/golf/dashboard/rounds');
+    } catch {
+      showToast?.('Failed to delete round. Please try again.', 'error');
+    }
   };
 
   // ============================================================================
   // SUBMITTING STATE
   // ============================================================================
   if (submitting) {
-    const totalScore = completedHoleStats.reduce((sum, h) => sum + h.score, 0);
-    const totalPar = completedHoleStats.reduce((sum, h) => sum + h.par, 0);
+    const definedStats = completedHoleStats.filter((h): h is HoleStats => h != null);
+    const totalScore = definedStats.reduce((sum, h) => sum + h.score, 0);
+    const totalPar = definedStats.reduce((sum, h) => sum + h.par, 0);
     const toPar = totalScore - totalPar;
 
     return (
@@ -433,7 +512,7 @@ export default function ContinueRoundClient({
           </div>
           <div className="text-right">
             <p className="text-xs font-medium text-primary-700">
-              {completedHoleStats.filter(s => s !== undefined).length} of {holes.length} holes
+              {completedHoleStats.filter(s => s != null).length} of {holes.length} holes
             </p>
           </div>
         </div>

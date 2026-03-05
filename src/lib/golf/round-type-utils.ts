@@ -1,18 +1,9 @@
 /**
  * Round Type Conversion Utilities
- * 
- * Frontend uses: 'practice', 'tournament', 'qualifier'
- * Database expects: 'practice', 'qualifier', 'tournament'
+ *
+ * Frontend and database both use: 'practice', 'tournament', 'qualifier'
+ * Legacy database values: 'qualifying' (mapped to 'qualifier')
  */
-
-/**
- * Convert frontend round type to database round type
- * Frontend uses: 'practice', 'tournament', 'qualifier'
- * Database expects: 'practice', 'qualifier', 'tournament'
- */
-export function roundTypeToDb(roundType: 'practice' | 'tournament' | 'qualifier'): 'practice' | 'qualifier' | 'tournament' {
-  return roundType === 'qualifier' ? 'qualifier' : roundType;
-}
 
 /**
  * Convert database round type to frontend round type

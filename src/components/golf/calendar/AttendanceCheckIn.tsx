@@ -102,22 +102,20 @@ export function AttendanceCheckIn({
   }
 
   async function handleMarkAllPresent() {
-    for (const player of players) {
-      if (!player.attendance?.status) {
-        await onMarkAttendance(player.id, 'present');
-      }
-    }
+    const unmarked = players.filter(p => !p.attendance?.status);
+    await Promise.allSettled(
+      unmarked.map(player => onMarkAttendance(player.id, 'present'))
+    );
   }
 
   async function handleMarkAllAbsent() {
-    for (const player of players) {
-      if (!player.attendance?.status) {
-        await onMarkAttendance(player.id, 'absent', {
-          reason: 'Not present at check-in',
-          isExcused: false,
-        });
-      }
-    }
+    const unmarked = players.filter(p => !p.attendance?.status);
+    await Promise.allSettled(
+      unmarked.map(player => onMarkAttendance(player.id, 'absent', {
+        reason: 'Not present at check-in',
+        isExcused: false,
+      }))
+    );
   }
 
   // Group players: unmarked first, then present, then absent

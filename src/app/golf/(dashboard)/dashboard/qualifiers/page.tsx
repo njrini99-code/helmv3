@@ -27,7 +27,7 @@ export default async function GolfQualifiersPage() {
     .from('users')
     .select('role')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
   const userRole = userData?.role;
   const isCoach = userRole === 'coach';
@@ -40,7 +40,7 @@ export default async function GolfQualifiersPage() {
       .from('golf_coaches')
       .select('id, organization_id')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     // Get team_id from organization
     if (coach?.organization_id) {
@@ -56,7 +56,7 @@ export default async function GolfQualifiersPage() {
       .from('golf_players')
       .select('id')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     // Get team_id from team_members
     if (player?.id) {

@@ -123,7 +123,7 @@ export default function GolfSettingsPage() {
           .from('golf_players')
           .select('first_name, last_name, avatar_url, handicap, handicap_index, graduation_year, hometown, state, phone')
           .eq('id', golfUser.playerId)
-          .single(),
+          .maybeSingle(),
         golfUser.teamId
           ? supabase
               .from('golf_teams')
@@ -839,8 +839,8 @@ function PasswordPanel() {
   const [confirmPassword, setConfirmPassword] = useState('');
 
   async function handleSave() {
-    if (newPassword.length < 6) {
-      showToast('Password must be at least 6 characters', 'error');
+    if (newPassword.length < 8) {
+      showToast('Password must be at least 8 characters', 'error');
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -867,7 +867,7 @@ function PasswordPanel() {
     <div className="space-y-3">
       <Input label="New Password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="••••••••" />
       <Input label="Confirm Password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" />
-      <p className="text-xs text-warm-500">At least 6 characters. Use a unique password.</p>
+      <p className="text-xs text-warm-500">At least 8 characters. Use a unique password.</p>
       <SaveBar onSave={handleSave} loading={saving} label="Update Password" />
     </div>
   );
@@ -1011,6 +1011,10 @@ function AppearancePanel() {
 
   return (
     <div className="space-y-5">
+      <div className="flex items-center gap-2.5 px-3.5 py-2.5 bg-primary-50/60 border border-primary-200/40 rounded-xl">
+        <IconSparkles size={14} className="text-primary-400 flex-shrink-0" />
+        <p className="text-xs text-primary-700/70">Dashboard-wide theme support coming soon. Save your preferences now — they&apos;ll apply automatically.</p>
+      </div>
       {/* Density */}
       <div>
         <p className="text-sm font-medium text-warm-700 mb-2">Display Density</p>
@@ -1152,6 +1156,7 @@ function LocationPanel() {
 // ============================================================================
 
 function GolfScoringPanel({ teamId }: { teamId: string }) {
+  const supabase = createClient();
   const { showToast } = useToast();
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -1163,7 +1168,6 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
 
   useEffect(() => {
     (async () => {
-      const supabase = createClient();
       // sg_benchmark_level column was added after type generation
       const { data } = await fromUntyped(supabase, 'golf_team_settings')
         .select('scoring_format, handicap_system, default_tees, timezone, sg_benchmark_level')
@@ -1179,11 +1183,10 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
       }
       setLoaded(true);
     })();
-  }, [teamId]);
+  }, [teamId, supabase]);
 
   async function handleSave() {
     setSaving(true);
-    const supabase = createClient();
     try {
       // Upsert — create if doesn't exist
       // sg_benchmark_level column was added after type generation
@@ -1392,6 +1395,7 @@ function PlayerGolfDetailsPanel({
 // ============================================================================
 
 function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
+  const supabase = createClient();
   const { showToast } = useToast();
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -1407,7 +1411,6 @@ function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
 
   useEffect(() => {
     (async () => {
-      const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
@@ -1415,7 +1418,7 @@ function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
         .from('golf_coaches')
         .select('organization_id')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (!coach?.organization_id) { setLoaded(true); return; }
 
@@ -1423,7 +1426,7 @@ function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
         .from('golf_teams')
         .select('id, name, season, organization_id')
         .eq('organization_id', coach.organization_id)
-        .single();
+        .maybeSingle();
 
       if (team) {
         setTeamId(team.id);
@@ -1437,7 +1440,7 @@ function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
             .from('golf_organizations')
             .select('name, city, state, division, conference')
             .eq('id', team.organization_id)
-            .single();
+            .maybeSingle();
           if (org) {
             setOrgName(org.name || '');
             setCity(org.city || '');
@@ -1449,7 +1452,7 @@ function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
       }
       setLoaded(true);
     })();
-  }, []);
+  }, [supabase]);
 
   async function handleSave() {
     if (!teamId || !teamName.trim()) {
@@ -1458,7 +1461,6 @@ function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
     }
 
     setSaving(true);
-    const supabase = createClient();
     try {
       const { error: teamError } = await supabase
         .from('golf_teams')
@@ -1527,6 +1529,7 @@ function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
 // ============================================================================
 
 function InviteSettingsPanel() {
+  const supabase = createClient();
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -1536,7 +1539,6 @@ function InviteSettingsPanel() {
 
   useEffect(() => {
     (async () => {
-      const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
@@ -1544,7 +1546,7 @@ function InviteSettingsPanel() {
         .from('golf_coaches')
         .select('organization_id')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (!coach?.organization_id) { setLoaded(true); return; }
 
@@ -1552,7 +1554,7 @@ function InviteSettingsPanel() {
         .from('golf_teams')
         .select('id, join_code')
         .eq('organization_id', coach.organization_id)
-        .single();
+        .maybeSingle();
 
       if (team) {
         setTeamId(team.id);
@@ -1560,12 +1562,11 @@ function InviteSettingsPanel() {
       }
       setLoaded(true);
     })();
-  }, []);
+  }, [supabase]);
 
   async function generateNewCode() {
     if (!teamId) return;
     setLoading(true);
-    const supabase = createClient();
     try {
       const newCode = Math.random().toString(36).substring(2, 10).toUpperCase();
       const { error } = await supabase

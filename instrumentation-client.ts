@@ -18,7 +18,7 @@ Sentry.init({
   integrations: typeof window !== 'undefined' ? [
     // Skip replay in dev — it records DOM mutations and adds overhead
     ...(!isDev ? [Sentry.replayIntegration({
-      maskAllText: false,
+      maskAllText: true,
       blockAllMedia: false,
     })] : []),
     Sentry.browserTracingIntegration(),

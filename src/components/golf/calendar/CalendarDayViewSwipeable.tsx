@@ -16,7 +16,6 @@ import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import {
   format,
-  parseISO,
   addDays,
   subDays,
   isToday,
@@ -73,10 +72,10 @@ export function CalendarDayViewSwipeable({
   const scrollRef = useRef<HTMLDivElement>(null);
   const { triggerHaptic } = useHapticFeedback();
 
-  // Filter events for current date
+  // Filter events for current date — use new Date() consistently (handles both ISO and timestamptz)
   const dayEvents = useMemo(() => {
     return events.filter((event) => {
-      const eventDate = parseISO(event.start_date);
+      const eventDate = new Date(event.start_date);
       return isSameDay(eventDate, currentDate);
     }).sort((a, b) => {
       return new Date(a.start_date).getTime() - new Date(b.start_date).getTime();
@@ -430,11 +429,11 @@ export function MobileWeekPicker({
     return result;
   }, []);
 
-  // Count events per day
+  // Count events per day — use new Date() consistently
   const eventCounts = useMemo(() => {
     const counts = new Map<string, number>();
     events.forEach((event) => {
-      const dateKey = format(parseISO(event.start_date), 'yyyy-MM-dd');
+      const dateKey = format(new Date(event.start_date), 'yyyy-MM-dd');
       counts.set(dateKey, (counts.get(dateKey) || 0) + 1);
     });
     return counts;

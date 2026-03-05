@@ -43,6 +43,9 @@ function makeInitialState(overrides: Partial<ShotTrackingState> = {}): ShotTrack
     editSaving: false,
     editError: null,
     selectedShotNumber: null,
+    pendingSaveCount: 0,
+    autoSaveRetryAttempt: 0,
+    undoError: null,
     ...overrides,
   };
 }
@@ -507,6 +510,175 @@ describe('shotReducer', () => {
       const state = makeInitialState({ selectedShotNumber: 3 });
       const next = shotReducer(state, { type: 'SELECT_SHOT', payload: null });
       expect(next.selectedShotNumber).toBeNull();
+    });
+  });
+
+  describe('HANDLE_RESULT_SELECT', () => {
+    it('sets resultOfShot from payload', () => {
+      const next = shotReducer(makeInitialState(), {
+        type: 'HANDLE_RESULT_SELECT',
+        payload: { result: 'fairway', isTeeShot: true, isPutting: false, isApproachOrAroundGreen: false },
+      });
+      expect(next.resultOfShot).toBe('fairway');
+    });
+
+    it('clears miss directions when result is hole', () => {
+      const state = makeInitialState({
+        missDirection: 'left',
+        approachMissDirection: 'short_left',
+        approachMissLieType: 'bunker',
+        puttMissTags: ['low'],
+      });
+      const next = shotReducer(state, {
+        type: 'HANDLE_RESULT_SELECT',
+        payload: { result: 'hole', isTeeShot: false, isPutting: true, isApproachOrAroundGreen: false },
+      });
+      expect(next.resultOfShot).toBe('hole');
+      expect(next.missDirection).toBeNull();
+      expect(next.approachMissDirection).toBeNull();
+      expect(next.approachMissLieType).toBeUndefined();
+      expect(next.puttMissTags).toEqual([]);
+    });
+
+    it('clears miss directions when result is green', () => {
+      const state = makeInitialState({
+        missDirection: 'right',
+        approachMissDirection: 'long_right',
+        puttMissTags: ['short'],
+      });
+      const next = shotReducer(state, {
+        type: 'HANDLE_RESULT_SELECT',
+        payload: { result: 'green', isTeeShot: false, isPutting: false, isApproachOrAroundGreen: true },
+      });
+      expect(next.resultOfShot).toBe('green');
+      expect(next.missDirection).toBeNull();
+      expect(next.approachMissDirection).toBeNull();
+      expect(next.puttMissTags).toEqual([]);
+    });
+
+    it('clears approach and putt miss data for tee shots', () => {
+      const state = makeInitialState({
+        approachMissDirection: 'short',
+        puttMissTags: ['low'],
+      });
+      const next = shotReducer(state, {
+        type: 'HANDLE_RESULT_SELECT',
+        payload: { result: 'rough', isTeeShot: true, isPutting: false, isApproachOrAroundGreen: false },
+      });
+      expect(next.resultOfShot).toBe('rough');
+      expect(next.approachMissDirection).toBeNull();
+      expect(next.approachMissLieType).toBeUndefined();
+      expect(next.puttMissTags).toEqual([]);
+    });
+
+    it('clears tee miss direction and approach miss for putting', () => {
+      const state = makeInitialState({
+        missDirection: 'left',
+        approachMissDirection: 'short_right',
+      });
+      const next = shotReducer(state, {
+        type: 'HANDLE_RESULT_SELECT',
+        payload: { result: 'green', isTeeShot: false, isPutting: true, isApproachOrAroundGreen: false },
+      });
+      // 'green' result clears everything
+      expect(next.missDirection).toBeNull();
+      expect(next.approachMissDirection).toBeNull();
+    });
+
+    it('derives approachMissLieType from result for approach shots', () => {
+      const next = shotReducer(makeInitialState(), {
+        type: 'HANDLE_RESULT_SELECT',
+        payload: { result: 'sand', isTeeShot: false, isPutting: false, isApproachOrAroundGreen: true },
+      });
+      expect(next.approachMissLieType).toBe('bunker');
+      expect(next.missDirection).toBeNull();
+      expect(next.puttMissTags).toEqual([]);
+    });
+
+    it('derives rough lie type for approach miss to rough', () => {
+      const next = shotReducer(makeInitialState(), {
+        type: 'HANDLE_RESULT_SELECT',
+        payload: { result: 'rough', isTeeShot: false, isPutting: false, isApproachOrAroundGreen: true },
+      });
+      expect(next.approachMissLieType).toBe('rough');
+    });
+
+    it('derives fairway lie type for approach miss to fairway', () => {
+      const next = shotReducer(makeInitialState(), {
+        type: 'HANDLE_RESULT_SELECT',
+        payload: { result: 'fairway', isTeeShot: false, isPutting: false, isApproachOrAroundGreen: true },
+      });
+      expect(next.approachMissLieType).toBe('fairway');
+    });
+
+    it('clears distanceAfterShot when result changes', () => {
+      const state = makeInitialState({ distanceAfterShot: '150' });
+      const next = shotReducer(state, {
+        type: 'HANDLE_RESULT_SELECT',
+        payload: { result: 'rough', isTeeShot: true, isPutting: false, isApproachOrAroundGreen: false },
+      });
+      expect(next.distanceAfterShot).toBe('');
+    });
+  });
+
+  describe('CLEAR_INPUT_STATE', () => {
+    it('resets all input fields to defaults', () => {
+      const state = makeInitialState({
+        usedDriver: true,
+        resultOfShot: 'fairway',
+        missDirection: 'left',
+        puttBreak: 'left_to_right',
+        puttSlope: 'uphill',
+        puttMissTags: ['low', 'short'],
+        approachMissDirection: 'short_left',
+        approachMissLieType: 'bunker',
+        distanceAfterShot: '150',
+      });
+      const next = shotReducer(state, { type: 'CLEAR_INPUT_STATE' });
+      expect(next.usedDriver).toBeNull();
+      expect(next.resultOfShot).toBeNull();
+      expect(next.missDirection).toBeNull();
+      expect(next.puttBreak).toBeNull();
+      expect(next.puttSlope).toBeNull();
+      expect(next.puttMissTags).toEqual([]);
+      expect(next.approachMissDirection).toBeNull();
+      expect(next.approachMissLieType).toBeUndefined();
+      expect(next.distanceAfterShot).toBe('');
+    });
+
+    it('preserves shot history and position state', () => {
+      const shots = [makeShotRecord({ shotNumber: 1 }), makeShotRecord({ shotNumber: 2 })];
+      const state = makeInitialState({
+        shotHistory: shots,
+        currentShot: 3,
+        distanceToHole: 150,
+        distanceUnit: 'yards',
+        currentLie: 'fairway',
+        holeYardage: 400,
+        resultOfShot: 'green',
+      });
+      const next = shotReducer(state, { type: 'CLEAR_INPUT_STATE' });
+      expect(next.shotHistory).toEqual(shots);
+      expect(next.currentShot).toBe(3);
+      expect(next.distanceToHole).toBe(150);
+      expect(next.distanceUnit).toBe('yards');
+      expect(next.currentLie).toBe('fairway');
+      expect(next.holeYardage).toBe(400);
+    });
+
+    it('overrides distanceAfterUnit when provided in payload', () => {
+      const state = makeInitialState({ distanceAfterUnit: 'yards' });
+      const next = shotReducer(state, {
+        type: 'CLEAR_INPUT_STATE',
+        payload: { distanceAfterUnit: 'feet' },
+      });
+      expect(next.distanceAfterUnit).toBe('feet');
+    });
+
+    it('preserves existing distanceAfterUnit when no payload', () => {
+      const state = makeInitialState({ distanceAfterUnit: 'feet' });
+      const next = shotReducer(state, { type: 'CLEAR_INPUT_STATE' });
+      expect(next.distanceAfterUnit).toBe('feet');
     });
   });
 });

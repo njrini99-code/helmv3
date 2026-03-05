@@ -1,10 +1,12 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useRef, useState, useCallback } from 'react';
 import { PuttMissTagSelector } from './putt-miss-tag-selector';
 import { ApproachMissSelector } from './approach-miss-selector';
-import { useMobileNav } from '@/contexts/mobile-nav-context';
-import { calculateShotDistanceWithDirection } from '@/lib/utils/shot-helpers';
+import { calculateShotDistanceWithDirection, calculateHoleStats } from '@/lib/utils/shot-helpers';
+import { triggerHaptic } from '@/lib/utils/capacitor';
+// Re-export for any existing callers
+export { calculateHoleStats } from '@/lib/utils/shot-helpers';
 
 // Re-export canonical types for backward compatibility
 export type { ShotRecord, HoleStats, RoundHole } from '@/lib/types/golf';
@@ -17,145 +19,6 @@ import { useEditShotModal } from '@/hooks/golf/use-edit-shot-modal';
 
 // Local alias for the Hole interface used by this component's props
 type Hole = RoundHole;
-
-// ============================================================================
-// HOLE COMPLETION - COMPREHENSIVE STATS CALCULATION
-// ============================================================================
-// Module-level pure function — extracted from component body so hooks can
-// reference a stable identity (avoids re-creating useCallback on every render).
-
-export function calculateHoleStats(shots: ShotRecord[], hole: Hole): HoleStats {
-  const nonPenaltyShots = shots.filter(s => !s.isPenalty);
-  const score = shots.length;
-  const putts = shots.filter(s => s.shotType === 'putting').length;
-  const penalties = shots.filter(s => s.isPenalty).length;
-
-  // DRIVING STATS (Par 4/5 only)
-  let fairwayHit: boolean | null = null;
-  let drivingDistance: number | null = null;
-  let driveMissDirection: string | null = null;
-  let driverUsed: boolean | null = null;
-
-  if (hole.par >= 4) {
-    const teeShot = shots.find(s => s.shotType === 'tee' && !s.isPenalty);
-    if (teeShot) {
-      fairwayHit = teeShot.result === 'fairway';
-      driveMissDirection = teeShot.missDirection || null;
-      driverUsed = teeShot.clubType === 'driver';
-      drivingDistance = teeShot.shotDistance;
-    }
-  }
-
-  // APPROACH STATS
-  let approachDistance: number | null = null;
-  let approachLie: string | null = null;
-  let approachProximity: number | null = null;
-  let approachMissDir: string | null = null;
-
-  const greenShotIndex = nonPenaltyShots.findIndex(s => s.result === 'green' || s.result === 'hole');
-  if (greenShotIndex > 0 || (greenShotIndex === 0 && hole.par === 3)) {
-    const approachShot = nonPenaltyShots[greenShotIndex];
-    if (approachShot && approachShot.shotType !== 'putting') {
-      approachDistance = approachShot.distanceUnitBefore === 'feet'
-        ? Math.round(approachShot.distanceToHoleBefore / 3)
-        : approachShot.distanceToHoleBefore;
-      approachLie = approachShot.lieBefore;
-      if (approachShot.result === 'green') {
-        approachProximity = approachShot.distanceUnitAfter === 'yards'
-          ? approachShot.distanceToHoleAfter * 3
-          : approachShot.distanceToHoleAfter;
-      }
-      approachMissDir = approachShot.missDirection || null;
-    }
-  }
-
-  // GREEN IN REGULATION
-  const shotsToGreen = hole.par - 2;
-  const shotsTakenToGreen = shots.findIndex(s => s.result === 'green' || s.result === 'hole');
-  const greenInRegulation = shotsTakenToGreen !== -1 && (shotsTakenToGreen + 1) <= shotsToGreen;
-
-  // SCRAMBLING
-  const scrambleAttempt = !greenInRegulation && shotsTakenToGreen !== -1;
-  const scrambleMade = scrambleAttempt && score <= hole.par;
-
-  // SAND SAVE
-  let sandSaveAttempt = false;
-  let sandSaveMade = false;
-  const sandShots = nonPenaltyShots.filter(s =>
-    s.lieBefore === 'sand' &&
-    (s.shotType === 'around_green' || (s.distanceUnitBefore === 'yards' && s.distanceToHoleBefore <= 50))
-  );
-  if (sandShots.length > 0) {
-    sandSaveAttempt = true;
-    const sandShotIndex = nonPenaltyShots.findIndex(s => s === sandShots[0]);
-    const shotsAfterSand = nonPenaltyShots.length - sandShotIndex;
-    sandSaveMade = shotsAfterSand <= 2 && score <= hole.par;
-  }
-
-  // PUTTING STATS
-  let firstPuttDistance: number | null = null;
-  let firstPuttLeave: number | null = null;
-  let firstPuttBreak: string | null = null;
-  let firstPuttSlope: string | null = null;
-  let firstPuttMissDirection: string | null = null;
-
-  const puttingShots = nonPenaltyShots.filter(s => s.shotType === 'putting');
-  if (puttingShots.length > 0) {
-    const firstPutt = puttingShots[0]!;
-    firstPuttDistance = firstPutt.distanceUnitBefore === 'yards'
-      ? firstPutt.distanceToHoleBefore * 3
-      : firstPutt.distanceToHoleBefore;
-    firstPuttBreak = firstPutt.puttBreak || null;
-    firstPuttSlope = firstPutt.puttSlope || null;
-    if (firstPutt.result !== 'hole' && puttingShots.length > 1) {
-      firstPuttLeave = firstPutt.distanceUnitAfter === 'yards'
-        ? firstPutt.distanceToHoleAfter * 3
-        : firstPutt.distanceToHoleAfter;
-      firstPuttMissDirection = firstPutt.missDirection || null;
-    }
-  }
-
-  // HOLE OUT STATS
-  let holedOutDistance: number | null = null;
-  let holedOutType: string | null = null;
-  const holeOutShot = nonPenaltyShots.find(s => s.result === 'hole' && s.shotType !== 'putting');
-  if (holeOutShot) {
-    holedOutDistance = holeOutShot.distanceUnitBefore === 'feet'
-      ? holeOutShot.distanceToHoleBefore
-      : holeOutShot.distanceToHoleBefore * 3;
-    holedOutType = holeOutShot.shotType;
-  }
-
-  return {
-    holeNumber: hole.number,
-    par: hole.par,
-    yardage: hole.yardage,
-    score,
-    putts,
-    fairwayHit,
-    greenInRegulation,
-    drivingDistance,
-    usedDriver: driverUsed,
-    driveMissDirection,
-    approachDistance,
-    approachLie,
-    approachProximity,
-    approachMissDirection: approachMissDir,
-    scrambleAttempt,
-    scrambleMade,
-    sandSaveAttempt,
-    sandSaveMade,
-    penaltyStrokes: penalties,
-    firstPuttDistance,
-    firstPuttLeave,
-    firstPuttBreak,
-    firstPuttSlope,
-    firstPuttMissDirection,
-    holedOutDistance,
-    holedOutType,
-    shots,
-  };
-}
 
 interface ShotTrackingProps {
   holes: Hole[];
@@ -189,17 +52,7 @@ export default function ShotTrackingComprehensive({
   onAutoSave,
   autoSaveInterval = 30000, // 30 seconds default
 }: ShotTrackingProps) {
-  const { hide, show } = useMobileNav();
   const currentHole = holes[currentHoleIndex];
-
-  // Hide mobile nav when shot tracking is active
-  useEffect(() => {
-    hide();
-    return () => {
-      // Show nav again when component unmounts
-      show();
-    };
-  }, [hide, show]);
 
   // ============================================================================
   // STATE MACHINE HOOK
@@ -254,6 +107,33 @@ export default function ShotTrackingComprehensive({
   const { handleUndoLastShot } = useUndoManager({
     state, dispatch, currentHole: currentHole as RoundHole, currentHoleIndex, onAutoSave, onHoleStatsUpdate, calculateHoleStats,
   });
+
+  // ============================================================================
+  // UNSAVED INPUT WARNING (Issue #18)
+  // ============================================================================
+  const [pendingNavHoleIndex, setPendingNavHoleIndex] = useState<number | null>(null);
+
+  const hasUnsavedInput = useCallback((): boolean => {
+    // If a result has been selected but not yet recorded, there's unsaved input
+    return !!resultOfShot;
+  }, [resultOfShot]);
+
+  const handleNavigateToHole = useCallback((targetIndex: number) => {
+    if (hasUnsavedInput()) {
+      setPendingNavHoleIndex(targetIndex);
+    } else {
+      void triggerHaptic('medium');
+      onNavigateToHole?.(targetIndex);
+    }
+  }, [hasUnsavedInput, onNavigateToHole]);
+
+  const confirmDiscardAndNavigate = useCallback(() => {
+    if (pendingNavHoleIndex !== null) {
+      void triggerHaptic('medium');
+      onNavigateToHole?.(pendingNavHoleIndex);
+      setPendingNavHoleIndex(null);
+    }
+  }, [pendingNavHoleIndex, onNavigateToHole]);
 
   // Early return for invalid hole data - must be after all hooks
   if (!currentHole) {
@@ -412,6 +292,9 @@ export default function ShotTrackingComprehensive({
     const isHoleComplete = resultOfShot === 'hole';
     dispatch({ type: 'RECORD_SHOT', payload: { shot: shotRecord, isHoleComplete } });
 
+    // Haptic feedback — subtle for shot, celebratory for hole-out
+    void triggerHaptic(isHoleComplete ? 'success' : 'light');
+
     // Build updated history for callbacks that need it immediately
     const updatedHistory = [...shotHistory, shotRecord];
 
@@ -428,9 +311,8 @@ export default function ShotTrackingComprehensive({
       dispatch({ type: 'UPDATE_AFTER_SHOT', payload: { distanceAfter, unitAfter, newLie } });
     }
 
-    // Release concurrency guard after React batches state updates
-    // Use requestAnimationFrame to ensure it happens after the current event loop
-    requestAnimationFrame(() => {
+    // Release concurrency guard after dispatches are batched
+    queueMicrotask(() => {
       isProcessingShotRef.current = false;
     });
   };
@@ -462,7 +344,7 @@ export default function ShotTrackingComprehensive({
   const displayUnit = resultOfShot === 'hole' ? 'feet' : (distanceAfterShot ? distanceAfterUnit : distanceUnit);
 
   // Convert to yards for progress calculation
-  const totalYards = currentHole.yardage;
+  const totalYards = currentHole.yardage || 1;
   const remainingYards = displayUnit === 'feet' ? displayDistance / 3 : displayDistance;
   const progressPercent = Math.max(0, Math.min(100, ((totalYards - remainingYards) / totalYards) * 100));
 
@@ -611,14 +493,17 @@ export default function ShotTrackingComprehensive({
                 <button
                   key={hole.number}
                   id={`hole-${hole.number}`}
-                  onClick={() => canNavigate && onNavigateToHole(idx)}
+                  aria-label={`Hole ${hole.number}, Par ${hole.par}, ${hole.yardage} yards${hasScore ? `, Score: ${hole.score}` : ', not yet played'}${isCurrent ? ' (current hole)' : ''}${canNavigate && !isCurrent ? ', click to edit' : ''}`}
+                  onClick={() => canNavigate && handleNavigateToHole(idx)}
                   disabled={!canNavigate}
                   className={`min-w-[75px] py-3 px-2 text-center border-r border-warm-600 transition-all ${
                     isCurrent
                       ? 'bg-primary-600'
-                      : canNavigate
-                        ? 'hover:bg-warm-700 cursor-pointer'
-                        : 'cursor-default'
+                      : hasScore
+                        ? canNavigate ? 'bg-warm-700/50 hover:bg-warm-700 cursor-pointer' : 'bg-warm-700/50 cursor-default'
+                        : canNavigate
+                          ? 'hover:bg-warm-700 cursor-pointer'
+                          : 'cursor-default'
                   }`}
                 >
                   <div className={`text-xs font-semibold ${isCurrent ? 'text-white' : 'text-warm-300'}`}>Hole {hole.number}</div>
@@ -627,7 +512,12 @@ export default function ShotTrackingComprehensive({
                   <div className={`mt-1 text-lg font-bold ${getScoreColor()}`}>
                     {hasScore ? hole.score : '-'}
                   </div>
-                  {canNavigate && !isCurrent && (
+                  {hasScore && !isCurrent && (
+                    <div className="text-[10px] text-primary-400 mt-0.5">
+                      <svg className="w-3 h-3 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                    </div>
+                  )}
+                  {canNavigate && !isCurrent && !hasScore && (
                     <div className="text-xs text-warm-400 mt-0.5">✎ Edit</div>
                   )}
                 </button>
@@ -660,14 +550,17 @@ export default function ShotTrackingComprehensive({
                 <button
                   key={hole.number}
                   id={`hole-${hole.number}`}
-                  onClick={() => canNavigate && onNavigateToHole(actualIdx)}
+                  aria-label={`Hole ${hole.number}, Par ${hole.par}, ${hole.yardage} yards${hasScore ? `, Score: ${hole.score}` : ', not yet played'}${isCurrent ? ' (current hole)' : ''}${canNavigate && !isCurrent ? ', click to edit' : ''}`}
+                  onClick={() => canNavigate && handleNavigateToHole(actualIdx)}
                   disabled={!canNavigate}
                   className={`min-w-[75px] py-3 px-2 text-center border-r border-warm-600 transition-all ${
                     isCurrent
                       ? 'bg-primary-600'
-                      : canNavigate
-                        ? 'hover:bg-warm-700 cursor-pointer'
-                        : 'cursor-default'
+                      : hasScore
+                        ? canNavigate ? 'bg-warm-700/50 hover:bg-warm-700 cursor-pointer' : 'bg-warm-700/50 cursor-default'
+                        : canNavigate
+                          ? 'hover:bg-warm-700 cursor-pointer'
+                          : 'cursor-default'
                   }`}
                 >
                   <div className={`text-xs font-semibold ${isCurrent ? 'text-white' : 'text-warm-300'}`}>Hole {hole.number}</div>
@@ -676,7 +569,12 @@ export default function ShotTrackingComprehensive({
                   <div className={`mt-1 text-lg font-bold ${getScoreColor()}`}>
                     {hasScore ? hole.score : '-'}
                   </div>
-                  {canNavigate && !isCurrent && (
+                  {hasScore && !isCurrent && (
+                    <div className="text-[10px] text-primary-400 mt-0.5">
+                      <svg className="w-3 h-3 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                    </div>
+                  )}
+                  {canNavigate && !isCurrent && !hasScore && (
                     <div className="text-xs text-warm-400 mt-0.5">✎ Edit</div>
                   )}
                 </button>
@@ -766,15 +664,21 @@ export default function ShotTrackingComprehensive({
               </div>
               <div className="text-right">
                 {isHoleComplete ? (
-                  <>
-                    <p className="text-primary-200 text-xs font-semibold uppercase tracking-wider">Score</p>
-                    <p className="text-4xl font-bold mt-1">
-                      {shotHistory.length}
-                      <span className="text-xl ml-1 font-semibold text-primary-100">
-                        {shotHistory.length - currentHole.par > 0 ? `+${shotHistory.length - currentHole.par}` : shotHistory.length - currentHole.par === 0 ? 'E' : shotHistory.length - currentHole.par}
-                      </span>
-                    </p>
-                  </>
+                  (() => {
+                    const holeScore = calculateHoleStats(shotHistory, currentHole).score;
+                    const toPar = holeScore - currentHole.par;
+                    return (
+                      <>
+                        <p className="text-primary-200 text-xs font-semibold uppercase tracking-wider">Score</p>
+                        <p className="text-4xl font-bold mt-1">
+                          {holeScore}
+                          <span className="text-xl ml-1 font-semibold text-primary-100">
+                            {toPar > 0 ? `+${toPar}` : toPar === 0 ? 'E' : toPar}
+                          </span>
+                        </p>
+                      </>
+                    );
+                  })()
                 ) : (
                   <>
                     <p className="text-primary-200 text-xs font-semibold uppercase tracking-wider">Distance</p>
@@ -906,7 +810,7 @@ export default function ShotTrackingComprehensive({
               {/* Back to current hole button — show when reviewing a past hole and there's an unplayed hole to return to */}
               {showBackToCurrentHole && (
                 <button
-                  onClick={() => onNavigateToHole!(nextUnplayedIdx)}
+                  onClick={() => handleNavigateToHole(nextUnplayedIdx)}
                   className="w-full py-3 rounded-lg font-semibold text-sm text-primary-600 bg-primary-50 ring-1 ring-primary-200 hover:bg-primary-100 hover:ring-primary-300 transition-all"
                 >
                   Back to Current Hole →
@@ -925,8 +829,10 @@ export default function ShotTrackingComprehensive({
                     }}
                   />
                   <p className="text-xs font-bold text-warm-600 uppercase tracking-wider mb-4">Club Off Tee</p>
-                  <div className="inline-flex bg-warm-100 rounded-lg p-1 w-full">
+                  <div className="inline-flex bg-warm-100 rounded-lg p-1 w-full" role="radiogroup" aria-label="Club off tee">
                     <button onClick={() => dispatch({ type: 'SET_DRIVER', payload: true })}
+                      role="radio"
+                      aria-checked={usedDriver === true}
                       className={`flex-1 py-3 rounded-md font-semibold text-sm transition-all ${
                         usedDriver === true
                           ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10'
@@ -934,6 +840,8 @@ export default function ShotTrackingComprehensive({
                       Driver
                     </button>
                     <button onClick={() => dispatch({ type: 'SET_DRIVER', payload: false })}
+                      role="radio"
+                      aria-checked={usedDriver === false}
                       className={`flex-1 py-3 rounded-md font-semibold text-sm transition-all ${
                         usedDriver === false
                           ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10'
@@ -954,9 +862,11 @@ export default function ShotTrackingComprehensive({
                   <p className="text-xs text-warm-600 mb-4">Describe your putt before selecting the result</p>
                   <div className="mb-6">
                     <p className="text-xs font-semibold text-warm-500 uppercase tracking-wide mb-3">Break</p>
-                    <div className="inline-flex bg-white rounded-lg p-1 w-full border border-primary-200">
+                    <div className="inline-flex bg-white rounded-lg p-1 w-full border border-primary-200" role="radiogroup" aria-label="Putt break direction">
                       {[{v: 'left_to_right', l: 'L → R'}, {v: 'straight', l: 'Straight'}, {v: 'right_to_left', l: 'R → L'}, {v: 'multiple', l: 'Multiple'}].map(b => (
                         <button key={b.v} onClick={() => dispatch({ type: 'SET_PUTT_BREAK', payload: b.v as ShotRecord['puttBreak'] })}
+                          role="radio"
+                          aria-checked={puttBreak === b.v}
                           className={`flex-1 py-2.5 rounded-md font-semibold text-sm transition-all ${
                             puttBreak === b.v
                               ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10'
@@ -968,9 +878,11 @@ export default function ShotTrackingComprehensive({
                   </div>
                   <div className="mb-2">
                     <p className="text-xs font-semibold text-warm-500 uppercase tracking-wide mb-3">Slope</p>
-                    <div className="inline-flex bg-white rounded-lg p-1 w-full border border-primary-200">
+                    <div className="inline-flex bg-white rounded-lg p-1 w-full border border-primary-200" role="radiogroup" aria-label="Putt slope">
                       {[{v: 'uphill', l: 'Uphill'}, {v: 'level', l: 'Level'}, {v: 'downhill', l: 'Downhill'}, {v: 'severe', l: 'Severe'}].map(s => (
                         <button key={s.v} onClick={() => dispatch({ type: 'SET_PUTT_SLOPE', payload: s.v as ShotRecord['puttSlope'] })}
+                          role="radio"
+                          aria-checked={puttSlope === s.v}
                           className={`flex-1 py-2.5 rounded-md font-semibold text-sm transition-all ${
                             puttSlope === s.v
                               ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10'
@@ -994,42 +906,55 @@ export default function ShotTrackingComprehensive({
                 <p className="text-xs font-bold text-warm-600 uppercase tracking-wider mb-4">
                   {isPutting ? 'Putt Result' : 'Shot Result'}
                 </p>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label={isPutting ? 'Putt result' : 'Shot result'}>
                   {(() => {
                     const formatLieLabel = (v: string) => v.charAt(0).toUpperCase() + v.slice(1);
+                    // Par 3 first shots are classified as 'approach' (not 'tee') by the state machine,
+                    // so check currentShot === 1 && par === 3 separately to exclude 'fairway'.
+                    const isFirstShotPar3 = currentShot === 1 && currentHole.par === 3;
                     let options: string[];
                     if (isPutting) {
-                      options = ['hole', 'green'];
+                      options = ['hole', 'green', 'rough', 'sand'];
                     } else if (isTeeShot && currentHole.par !== 3) {
                       // Par 4/5: fairway is common, but include green (reachable par 4/5) and hole (ace)
                       options = ['fairway', 'rough', 'sand', 'green', 'hole', 'other'];
-                    } else if (isTeeShot && currentHole.par === 3) {
-                      // Par 3: green is common, include hole for ace
+                    } else if (isTeeShot && currentHole.par === 3 || isFirstShotPar3) {
+                      // Par 3: green is common, include hole for ace — no fairway
                       options = ['green', 'rough', 'sand', 'hole', 'other'];
                     } else {
                       options = ['fairway', 'rough', 'sand', 'green', 'hole', 'other'];
                     }
                     return options.map(r => {
                       // For tee shots: "hole" means ace, "green" on par 4/5 means drive-the-green
-                      const isRareTeeResult = isTeeShot && (r === 'hole' || (r === 'green' && currentHole.par !== 3));
+                      const isRareTeeResult = (isTeeShot || isFirstShotPar3) && (r === 'hole' || (r === 'green' && currentHole.par !== 3));
+                      // For putts: rough/sand are rare (ball rolled off green on severe slopes)
+                      const isRarePuttResult = isPutting && (r === 'rough' || r === 'sand');
+                      const isSubtle = isRareTeeResult || isRarePuttResult;
                       return (
                       <button key={r} onClick={() => handleResultSelect(r)}
+                        role="radio"
+                        aria-checked={resultOfShot === r}
                         className={`py-3 rounded-lg font-semibold text-sm transition-all ${
                           resultOfShot === r
                             ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10 ring-1 ring-primary-700'
-                            : isRareTeeResult
+                            : isSubtle
                               ? 'bg-warm-50/60 text-warm-500 ring-1 ring-warm-200/70 hover:ring-primary-300 hover:bg-warm-100 hover:text-warm-700 active:bg-warm-200'
                               : 'bg-warm-50 text-warm-700 ring-1 ring-warm-200 hover:ring-primary-300 hover:bg-warm-100 active:bg-warm-200'}`}>
                         {formatLieLabel(r)}
-                        {r === 'green' && !isTeeShot && (
+                        {r === 'green' && !isTeeShot && !isPutting && (
                           <span className={`block text-xs font-normal leading-tight ${
                             resultOfShot === r ? 'text-primary-100' : 'text-warm-400'
                           }`}>(putting surface, not fringe)</span>
                         )}
-                        {r === 'hole' && isTeeShot && (
+                        {r === 'hole' && (isTeeShot || isFirstShotPar3) && (
                           <span className={`block text-xs font-normal leading-tight ${
                             resultOfShot === r ? 'text-primary-100' : 'text-warm-400'
                           }`}>(ace!)</span>
+                        )}
+                        {isRarePuttResult && (
+                          <span className={`block text-xs font-normal leading-tight ${
+                            resultOfShot === r ? 'text-primary-100' : 'text-warm-400'
+                          }`}>(rolled off)</span>
                         )}
                       </button>);
                     });
@@ -1050,9 +975,11 @@ export default function ShotTrackingComprehensive({
                   />
                   <p className="text-xs font-bold text-warm-600 uppercase tracking-wider mb-4">Miss Direction</p>
                   {isTeeShot && (
-                    <div className="inline-flex bg-warm-100 rounded-lg p-1 w-full">
+                    <div className="inline-flex bg-warm-100 rounded-lg p-1 w-full" role="radiogroup" aria-label="Miss direction">
                       {['left', 'right'].map(d => (
                         <button key={d} onClick={() => dispatch({ type: 'SET_MISS_DIRECTION', payload: d })}
+                          role="radio"
+                          aria-checked={missDirection === d}
                           className={`flex-1 py-3 rounded-md font-semibold text-sm transition-all flex items-center justify-center gap-2 ${
                             missDirection === d
                               ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10'
@@ -1097,6 +1024,7 @@ export default function ShotTrackingComprehensive({
                       type="number"
                       inputMode="numeric"
                       min="0"
+                      aria-label={isPutting ? 'Leave distance in feet or yards' : 'Distance remaining to hole'}
                       value={distanceAfterShot}
                       onChange={(e) => dispatch({ type: 'SET_DISTANCE_AFTER', payload: e.target.value })}
                       placeholder="Enter distance"
@@ -1162,17 +1090,33 @@ export default function ShotTrackingComprehensive({
                 </div>
               )}
 
+              {/* Max score warning */}
+              {currentShot >= 12 && !isHoleComplete && (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <p className="text-sm font-medium text-amber-900">
+                    {currentShot >= 15
+                      ? 'Maximum recordable score (15) reached. Please hole out or pick up.'
+                      : `Shot ${currentShot} of 15 max — ${15 - currentShot} shot${15 - currentShot !== 1 ? 's' : ''} remaining before the limit.`}
+                  </p>
+                </div>
+              )}
+
               {/* Next Shot Button */}
+              {(() => {
+                const ready = isReadyForNextShot();
+                return (
               <button
                 onClick={handleNextShot}
-                disabled={!isReadyForNextShot()}
+                disabled={!ready}
                 aria-label={resultOfShot === 'hole' ? `Complete hole with score ${currentShot}` : 'Record next shot'}
                 className={`w-full py-4 rounded-lg font-bold text-base transition-all ${
-                  isReadyForNextShot()
+                  ready
                     ? 'bg-primary-600 text-white hover:bg-primary-700 shadow-sm shadow-primary-950/10 ring-1 ring-primary-700'
                     : 'bg-warm-100 text-warm-400 cursor-not-allowed ring-1 ring-warm-200'}`}>
                 {resultOfShot === 'hole' ? `Complete Hole - Score: ${currentShot}` : 'Next Shot →'}
               </button>
+                );
+              })()}
 
               {/* Action Buttons Row */}
               <div className="flex gap-2">
@@ -1180,7 +1124,7 @@ export default function ShotTrackingComprehensive({
                 <button
                   onClick={handleAddPenalty}
                   aria-label="Add penalty stroke"
-                  className="flex-1 py-3 rounded-lg font-semibold text-sm text-red-600 bg-red-50 ring-1 ring-red-200 hover:bg-red-100 hover:ring-red-300 transition-all">
+                  className="flex-1 py-3 rounded-xl font-medium text-sm text-red-600 bg-red-50 hover:bg-red-100 active:bg-red-200 transition-colors min-h-[44px]">
                   + Penalty
                 </button>
 
@@ -1190,7 +1134,7 @@ export default function ShotTrackingComprehensive({
                     onClick={() => dispatch({ type: 'SHOW_UNDO_CONFIRM' })}
                     disabled={undoSaving}
                     aria-label="Undo last shot"
-                    className="flex-1 py-3 rounded-lg font-semibold text-sm text-warm-600 bg-warm-50 ring-1 ring-warm-200 hover:bg-warm-100 hover:ring-warm-300 transition-all disabled:opacity-50">
+                    className="flex-1 py-3 rounded-xl font-medium text-sm text-warm-600 bg-warm-50 hover:bg-warm-100 active:bg-warm-200 transition-colors disabled:opacity-50 min-h-[44px]">
                     {undoSaving ? 'Undoing...' : 'Undo Last'}
                   </button>
                 )}
@@ -1198,7 +1142,7 @@ export default function ShotTrackingComprehensive({
 
               {/* Undo Confirmation */}
               {showUndoConfirm && shotHistory.length > 0 && (
-                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <div className="p-3 bg-amber-50/80 border border-amber-200/60 rounded-xl">
                   <p className="text-sm font-medium text-amber-900 mb-2">
                     Undo shot {shotHistory.length}?
                     <span className="block text-xs text-amber-700 mt-0.5">
@@ -1210,13 +1154,13 @@ export default function ShotTrackingComprehensive({
                   <div className="flex gap-2">
                     <button
                       onClick={() => dispatch({ type: 'HIDE_UNDO_CONFIRM' })}
-                      className="flex-1 py-2 rounded-md font-semibold text-xs text-warm-600 bg-white ring-1 ring-warm-200 hover:bg-warm-50 transition-all">
+                      className="flex-1 py-2.5 rounded-xl font-medium text-xs text-warm-700 bg-white hover:bg-warm-50 active:bg-warm-100 transition-colors min-h-[44px]">
                       Cancel
                     </button>
                     <button
                       onClick={handleUndoLastShot}
                       disabled={undoSaving}
-                      className="flex-1 py-2 rounded-md font-semibold text-xs text-white bg-amber-600 hover:bg-amber-700 ring-1 ring-amber-700 shadow-sm transition-all disabled:opacity-50">
+                      className="flex-1 py-2.5 rounded-xl font-medium text-xs text-white bg-amber-600 hover:bg-amber-700 active:bg-amber-800 shadow-sm transition-colors disabled:opacity-50 min-h-[44px]">
                       {undoSaving ? 'Removing...' : 'Confirm'}
                     </button>
                   </div>
@@ -1242,7 +1186,7 @@ export default function ShotTrackingComprehensive({
             </div>
 
             {/* Overhead Course View - Premium Minimalist Design */}
-            <div className="relative rounded-xl h-56 overflow-hidden shadow-inner">
+            <div className="relative rounded-xl h-56 overflow-hidden shadow-inner" aria-hidden="true">
               {/* Base gradient - deep forest tones */}
               <div
                 className="absolute inset-0"
@@ -1435,6 +1379,46 @@ export default function ShotTrackingComprehensive({
         </div>
       </div>
 
+      {/* Unsaved Input Warning Modal (Issue #18) */}
+      {pendingNavHoleIndex !== null && (
+        <div
+          className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4"
+          onClick={() => setPendingNavHoleIndex(null)}
+          onKeyDown={(e) => { if (e.key === 'Escape') setPendingNavHoleIndex(null); }}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Unsaved shot data"
+        >
+          <div className="glass-prominent rounded-2xl max-w-sm w-full p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-base font-semibold text-warm-900">Unsaved Shot Data</h2>
+                <p className="text-sm text-warm-500 mt-0.5">You have unrecorded shot data that will be lost.</p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setPendingNavHoleIndex(null)}
+                className="flex-1 py-3 rounded-xl font-medium text-sm text-warm-700 bg-warm-100 hover:bg-warm-200 active:bg-warm-300 transition-colors min-h-[44px]"
+              >
+                Stay
+              </button>
+              <button
+                onClick={confirmDiscardAndNavigate}
+                className="flex-1 py-3 rounded-xl font-medium text-sm text-white bg-amber-600 hover:bg-amber-700 active:bg-amber-800 shadow-sm shadow-amber-950/10 transition-colors min-h-[44px]"
+              >
+                Discard & Go
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Penalty Modal */}
       {showPenaltyModal && (
         <div
@@ -1445,14 +1429,14 @@ export default function ShotTrackingComprehensive({
           aria-modal="true"
           aria-label="Add penalty stroke"
         >
-          <div className="bg-white rounded-lg max-w-sm w-full p-6 shadow-xl shadow-warm-950/10 ring-1 ring-warm-200" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-bold text-warm-900 mb-6">Add Penalty Stroke</h2>
+          <div className="glass-prominent rounded-2xl max-w-sm w-full p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold text-warm-900 mb-6">Add Penalty Stroke</h2>
             <div className="space-y-2 mb-6">
               {[{v: 'ob', l: 'Out of Bounds'}, {v: 'water', l: 'Water Hazard'}, {v: 'unplayable', l: 'Unplayable Lie'}, {v: 'lost', l: 'Lost Ball'}].map(p => (
                 <button key={p.v} onClick={() => dispatch({ type: 'SET_PENALTY_TYPE', payload: p.v })}
-                  className={`w-full py-3 px-4 rounded-lg font-semibold text-sm text-left transition-all ${
+                  className={`w-full py-3 px-4 rounded-xl font-medium text-sm text-left transition-all min-h-[44px] ${
                     penaltyType === p.v
-                      ? 'bg-red-600 text-white shadow-sm shadow-red-950/10 ring-1 ring-red-700'
+                      ? 'bg-red-600 text-white shadow-sm shadow-red-950/10'
                       : 'bg-warm-50 text-warm-700 ring-1 ring-warm-200 hover:ring-red-300 hover:bg-red-50'}`}>
                   {p.l}
                 </button>
@@ -1460,14 +1444,14 @@ export default function ShotTrackingComprehensive({
             </div>
             <div className="flex gap-3">
               <button onClick={() => dispatch({ type: 'CLOSE_PENALTY_MODAL' })}
-                className="flex-1 py-3 rounded-lg font-semibold text-sm text-warm-600 bg-warm-100 ring-1 ring-warm-200 hover:bg-warm-200 hover:ring-warm-300 transition-all">
+                className="flex-1 py-3 rounded-xl font-medium text-sm text-warm-700 bg-warm-100 hover:bg-warm-200 active:bg-warm-300 transition-colors min-h-[44px]">
                 Cancel
               </button>
               <button onClick={confirmPenalty} disabled={!penaltyType}
-                className={`flex-1 py-3 rounded-lg font-semibold text-sm transition-all ${
+                className={`flex-1 py-3 rounded-xl font-medium text-sm transition-colors min-h-[44px] ${
                   penaltyType
-                    ? 'bg-red-600 text-white hover:bg-red-700 shadow-sm shadow-red-950/10 ring-1 ring-red-700'
-                    : 'bg-warm-100 text-warm-400 cursor-not-allowed ring-1 ring-warm-200'}`}>
+                    ? 'bg-red-600 text-white hover:bg-red-700 active:bg-red-800 shadow-sm shadow-red-950/10'
+                    : 'bg-warm-100 text-warm-400 cursor-not-allowed'}`}>
                 Add +1 Stroke
               </button>
             </div>
@@ -1485,36 +1469,36 @@ export default function ShotTrackingComprehensive({
           aria-modal="true"
           aria-label={`Edit shot ${editingShot.shotNumber}`}
         >
-          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-xl shadow-warm-950/10 ring-1 ring-warm-200" onClick={(e) => e.stopPropagation()}>
+          <div className="glass-prominent rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
             {/* Modal Header */}
-            <div className="sticky top-0 bg-white border-b border-warm-200 px-6 py-4 rounded-t-2xl">
+            <div className="sticky top-0 bg-white/90 backdrop-blur-md border-b border-warm-200/60 px-6 py-4 rounded-t-2xl">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-bold text-warm-900">
+                <h2 className="text-lg font-semibold text-warm-900">
                   Edit Shot {editingShot.shotNumber}
                 </h2>
                 <button
                   onClick={handleCloseEditModal}
                   aria-label="Close"
-                  className="p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 transition-all"
+                  className="p-2 rounded-xl text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
               {editError && (
-                <div className="mt-3 px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
+                <div className="mt-3 px-3 py-2 bg-red-50/80 border border-red-200/60 rounded-xl">
                   <p className="text-sm text-red-700">{editError}</p>
                 </div>
               )}
             </div>
 
             {/* Modal Body */}
-            <div className="px-6 py-4 space-y-5">
+            <div className="px-6 py-4 pb-6 space-y-5">
               {/* Delete Confirmation */}
               {showDeleteConfirm ? (
                 <div className="space-y-4">
-                  <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="p-4 bg-red-50/80 border border-red-200/60 rounded-xl">
                     <p className="text-sm font-medium text-red-900">Are you sure you want to delete this shot?</p>
                     <p className="text-xs text-red-700 mt-1">This action cannot be undone. Shot numbers will be resequenced.</p>
                   </div>
@@ -1522,14 +1506,14 @@ export default function ShotTrackingComprehensive({
                     <button
                       onClick={() => dispatch({ type: 'HIDE_DELETE_CONFIRM' })}
                       disabled={editSaving}
-                      className="flex-1 py-3 rounded-lg font-semibold text-sm text-warm-600 bg-warm-100 ring-1 ring-warm-200 hover:bg-warm-200 hover:ring-warm-300 transition-all disabled:opacity-50"
+                      className="flex-1 py-3 rounded-xl font-medium text-sm text-warm-700 bg-warm-100 hover:bg-warm-200 active:bg-warm-300 transition-colors disabled:opacity-50 min-h-[44px]"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={handleDeleteShot}
                       disabled={editSaving}
-                      className="flex-1 py-3 rounded-lg font-semibold text-sm bg-red-600 text-white hover:bg-red-700 shadow-sm shadow-red-950/10 ring-1 ring-red-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                      className="flex-1 py-3 rounded-xl font-medium text-sm bg-red-600 text-white hover:bg-red-700 active:bg-red-800 shadow-sm shadow-red-950/10 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 min-h-[44px]"
                     >
                       {editSaving ? (
                         <>
@@ -1549,7 +1533,7 @@ export default function ShotTrackingComprehensive({
               ) : (
                 <>
                   {/* Shot Type Info */}
-                  <div className="flex items-center gap-3 p-3 bg-warm-50 rounded-lg ring-1 ring-warm-200">
+                  <div className="flex items-center gap-3 p-3 bg-warm-50/80 rounded-xl border border-warm-100">
                     <span className="text-xs font-bold text-warm-500 uppercase tracking-wide">Type:</span>
                     <span className="text-sm font-semibold text-warm-700 capitalize">
                       {editingShot.isPenalty ? 'Penalty' : editingShot.shotType.replace('_', ' ')}
@@ -1585,7 +1569,7 @@ export default function ShotTrackingComprehensive({
                           <div className="inline-flex bg-warm-100 rounded-lg p-1 w-full">
                             <button
                               onClick={() => updateEditForm({ clubType: 'driver' })}
-                              className={`flex-1 py-2.5 rounded-md font-semibold text-sm transition-all ${
+                              className={`flex-1 py-3 min-h-[48px] rounded-md font-semibold text-sm transition-all ${
                                 editFormData.clubType === 'driver'
                                   ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10'
                                   : 'text-warm-600 hover:text-warm-900'
@@ -1595,7 +1579,7 @@ export default function ShotTrackingComprehensive({
                             </button>
                             <button
                               onClick={() => updateEditForm({ clubType: 'non_driver' })}
-                              className={`flex-1 py-2.5 rounded-md font-semibold text-sm transition-all ${
+                              className={`flex-1 py-3 min-h-[48px] rounded-md font-semibold text-sm transition-all ${
                                 editFormData.clubType === 'non_driver'
                                   ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10'
                                   : 'text-warm-600 hover:text-warm-900'
@@ -1617,7 +1601,7 @@ export default function ShotTrackingComprehensive({
                             <button
                               key={lie}
                               onClick={() => updateEditForm({ lieBefore: lie })}
-                              className={`py-2.5 rounded-lg font-semibold text-sm transition-all ${
+                              className={`py-3 min-h-[48px] rounded-lg font-semibold text-sm transition-all ${
                                 editFormData.lieBefore === lie
                                   ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10 ring-1 ring-primary-700'
                                   : 'bg-warm-50 text-warm-700 ring-1 ring-warm-200 hover:ring-primary-300'
@@ -1640,6 +1624,7 @@ export default function ShotTrackingComprehensive({
                             type="number"
                             inputMode="numeric"
                             min="0"
+                            aria-label="Distance to hole before shot"
                             value={editFormData.distanceToHoleBefore}
                             onChange={(e) => updateEditForm({ distanceToHoleBefore: e.target.value })}
                             className="flex-1 h-12 px-4 rounded-lg text-lg font-semibold text-warm-900 text-center bg-white border-2 border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 focus:outline-none transition-all"
@@ -1647,7 +1632,7 @@ export default function ShotTrackingComprehensive({
                           <div className="inline-flex bg-warm-100 rounded-lg p-1">
                             <button
                               onClick={() => updateEditForm({ distanceUnitBefore: 'yards' })}
-                              className={`px-3 py-2 rounded-md font-semibold text-xs uppercase transition-all ${
+                              className={`px-3 py-2.5 min-h-[44px] rounded-md font-semibold text-xs uppercase transition-all ${
                                 editFormData.distanceUnitBefore === 'yards'
                                   ? 'bg-primary-600 text-white shadow-sm'
                                   : 'text-warm-600'
@@ -1657,7 +1642,7 @@ export default function ShotTrackingComprehensive({
                             </button>
                             <button
                               onClick={() => updateEditForm({ distanceUnitBefore: 'feet' })}
-                              className={`px-3 py-2 rounded-md font-semibold text-xs uppercase transition-all ${
+                              className={`px-3 py-2.5 min-h-[44px] rounded-md font-semibold text-xs uppercase transition-all ${
                                 editFormData.distanceUnitBefore === 'feet'
                                   ? 'bg-primary-600 text-white shadow-sm'
                                   : 'text-warm-600'
@@ -1707,7 +1692,7 @@ export default function ShotTrackingComprehensive({
                                 }
                                 dispatch({ type: 'SET_EDIT_FORM_DATA', payload: { ...editFormData, ...updates } });
                               }}
-                              className={`py-2.5 rounded-lg font-semibold text-sm transition-all ${
+                              className={`py-3 min-h-[48px] rounded-lg font-semibold text-sm transition-all ${
                                 editFormData.result === r
                                   ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10 ring-1 ring-primary-700'
                                   : 'bg-warm-50 text-warm-700 ring-1 ring-warm-200 hover:ring-primary-300'
@@ -1726,11 +1711,48 @@ export default function ShotTrackingComprehensive({
                       {editFormData.result !== 'hole' && (
                         <div>
                           <p className="text-xs font-bold text-warm-600 uppercase tracking-wider mb-3">Distance After</p>
+                          {/* Quick-select distance presets */}
+                          {editingShot.shotType === 'putting' ? (
+                            <div className="grid grid-cols-6 gap-2 mb-3">
+                              {[3, 5, 10, 15, 20, 30].map((ft) => (
+                                <button
+                                  key={ft}
+                                  type="button"
+                                  onClick={() => updateEditForm({ distanceToHoleAfter: String(ft), distanceUnitAfter: 'feet' })}
+                                  className={`py-2 rounded-lg text-xs font-bold transition-all ${
+                                    editFormData.distanceToHoleAfter === String(ft) && editFormData.distanceUnitAfter === 'feet'
+                                      ? 'bg-primary-600 text-white shadow-sm'
+                                      : 'bg-warm-50 text-warm-700 ring-1 ring-warm-200 hover:ring-primary-300'
+                                  }`}
+                                >
+                                  {ft}ft
+                                </button>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="grid grid-cols-5 gap-2 mb-3">
+                              {[50, 100, 150, 200, 250].map((yds) => (
+                                <button
+                                  key={yds}
+                                  type="button"
+                                  onClick={() => updateEditForm({ distanceToHoleAfter: String(yds), distanceUnitAfter: 'yards' })}
+                                  className={`py-2 rounded-lg text-xs font-bold transition-all ${
+                                    editFormData.distanceToHoleAfter === String(yds) && editFormData.distanceUnitAfter === 'yards'
+                                      ? 'bg-primary-600 text-white shadow-sm'
+                                      : 'bg-warm-50 text-warm-700 ring-1 ring-warm-200 hover:ring-primary-300'
+                                  }`}
+                                >
+                                  {yds}
+                                </button>
+                              ))}
+                            </div>
+                          )}
                           <div className="flex items-center gap-3">
                             <input
                               type="number"
                               inputMode="numeric"
                               min="0"
+                              aria-label="Distance to hole after shot"
                               value={editFormData.distanceToHoleAfter}
                               onChange={(e) => updateEditForm({ distanceToHoleAfter: e.target.value })}
                               className="flex-1 h-12 px-4 rounded-lg text-lg font-semibold text-warm-900 text-center bg-white border-2 border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 focus:outline-none transition-all"
@@ -1738,7 +1760,7 @@ export default function ShotTrackingComprehensive({
                             <div className="inline-flex bg-warm-100 rounded-lg p-1">
                               <button
                                 onClick={() => updateEditForm({ distanceUnitAfter: 'yards' })}
-                                className={`px-3 py-2 rounded-md font-semibold text-xs uppercase transition-all ${
+                                className={`px-3 py-2.5 min-h-[44px] rounded-md font-semibold text-xs uppercase transition-all ${
                                   editFormData.distanceUnitAfter === 'yards'
                                     ? 'bg-primary-600 text-white shadow-sm'
                                     : 'text-warm-600'
@@ -1748,7 +1770,7 @@ export default function ShotTrackingComprehensive({
                               </button>
                               <button
                                 onClick={() => updateEditForm({ distanceUnitAfter: 'feet' })}
-                                className={`px-3 py-2 rounded-md font-semibold text-xs uppercase transition-all ${
+                                className={`px-3 py-2.5 min-h-[44px] rounded-md font-semibold text-xs uppercase transition-all ${
                                   editFormData.distanceUnitAfter === 'feet'
                                     ? 'bg-primary-600 text-white shadow-sm'
                                     : 'text-warm-600'
@@ -1771,7 +1793,7 @@ export default function ShotTrackingComprehensive({
                               <button
                                 key={dir}
                                 onClick={() => updateEditForm({ missDirection: editFormData.missDirection === dir ? null : dir })}
-                                className={`py-2.5 rounded-lg font-semibold text-sm capitalize transition-all ${
+                                className={`py-3 min-h-[48px] rounded-lg font-semibold text-sm capitalize transition-all ${
                                   editFormData.missDirection === dir
                                     ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10 ring-1 ring-primary-700'
                                     : 'bg-warm-50 text-warm-700 ring-1 ring-warm-200 hover:ring-primary-300'
@@ -1803,7 +1825,7 @@ export default function ShotTrackingComprehensive({
                                 <button
                                   key={b.v}
                                   onClick={() => updateEditForm({ puttBreak: b.v as ShotRecord['puttBreak'] })}
-                                  className={`py-2.5 rounded-lg font-semibold text-sm transition-all ${
+                                  className={`py-3 min-h-[48px] rounded-lg font-semibold text-sm transition-all ${
                                     editFormData.puttBreak === b.v
                                       ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10 ring-1 ring-primary-700'
                                       : 'bg-warm-50 text-warm-700 ring-1 ring-warm-200 hover:ring-primary-300'
@@ -1821,7 +1843,7 @@ export default function ShotTrackingComprehensive({
                                 <button
                                   key={s.v}
                                   onClick={() => updateEditForm({ puttSlope: s.v as ShotRecord['puttSlope'] })}
-                                  className={`py-2.5 rounded-lg font-semibold text-sm transition-all ${
+                                  className={`py-3 min-h-[48px] rounded-lg font-semibold text-sm transition-all ${
                                     editFormData.puttSlope === s.v
                                       ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10 ring-1 ring-primary-700'
                                       : 'bg-warm-50 text-warm-700 ring-1 ring-warm-200 hover:ring-primary-300'
@@ -1871,24 +1893,24 @@ export default function ShotTrackingComprehensive({
                   <button
                     onClick={() => dispatch({ type: 'SHOW_DELETE_CONFIRM' })}
                     disabled={editSaving}
-                    className="px-4 py-3 rounded-lg font-semibold text-sm text-red-600 bg-red-50 ring-1 ring-red-200 hover:bg-red-100 hover:ring-red-300 transition-all disabled:opacity-50"
+                    className="px-4 py-3 rounded-xl font-medium text-sm text-red-600 bg-red-50 hover:bg-red-100 active:bg-red-200 transition-colors disabled:opacity-50 min-h-[44px]"
                     aria-label="Delete shot"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
                   </button>
                   <button
                     onClick={handleCloseEditModal}
                     disabled={editSaving}
-                    className="flex-1 py-3 rounded-lg font-semibold text-sm text-warm-600 bg-warm-100 ring-1 ring-warm-200 hover:bg-warm-200 hover:ring-warm-300 transition-all disabled:opacity-50"
+                    className="flex-1 py-3 rounded-xl font-medium text-sm text-warm-700 bg-warm-100 hover:bg-warm-200 active:bg-warm-300 transition-colors disabled:opacity-50 min-h-[44px]"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleSaveEditedShot}
                     disabled={editSaving}
-                    className="flex-1 py-3 rounded-lg font-semibold text-sm bg-primary-600 text-white hover:bg-primary-700 shadow-sm shadow-primary-950/10 ring-1 ring-primary-700 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="flex-1 py-3 rounded-xl font-medium text-sm bg-primary-600 text-white hover:bg-primary-700 active:bg-primary-800 shadow-sm shadow-primary-950/10 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 min-h-[44px]"
                   >
                     {editSaving ? (
                       <>

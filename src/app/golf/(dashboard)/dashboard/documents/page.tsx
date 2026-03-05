@@ -23,13 +23,13 @@ export default async function GolfDocumentsPage() {
     .from('golf_coaches')
     .select('id, organization_id')
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
   const { data: player } = await supabase
     .from('golf_players')
     .select('id')
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
   const isCoach = !!coach;
 

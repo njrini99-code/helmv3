@@ -449,6 +449,7 @@ function CreateFocusAreaModal({
               </label>
               <input
                 type="number"
+                inputMode="numeric"
                 value={targetValue}
                 onChange={(e) => setTargetValue(e.target.value)}
                 placeholder="e.g., 65"

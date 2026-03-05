@@ -136,7 +136,7 @@ export default async function GolfRosterPage() {
       .from('golf_teams')
       .select('name')
       .eq('id', teamMember.team_id)
-      .single();
+      .maybeSingle();
 
     const { data: tmData } = await supabase
       .from('golf_team_members')
@@ -211,7 +211,7 @@ export default async function GolfRosterPage() {
     .from('golf_teams')
     .select('name, join_code')
     .eq('id', teamId)
-    .single();
+    .maybeSingle();
 
   if (teamError) {
     return (
@@ -302,7 +302,7 @@ export default async function GolfRosterPage() {
         const playerIds = players.map(p => p.id);
         const { data: allRounds } = await supabase
           .from('golf_rounds')
-          .select('player_id, total_score')
+          .select('player_id, total_score, holes_played')
           .in('player_id', playerIds)
           .not('total_score', 'is', null);
 
@@ -311,14 +311,24 @@ export default async function GolfRosterPage() {
           if (!acc[round.player_id]) acc[round.player_id] = [];
           acc[round.player_id]!.push(round);
           return acc;
-        }, {} as Record<string, Array<{ player_id: string; total_score: number | null }>>);
+        }, {} as Record<string, Array<{ player_id: string; total_score: number | null; holes_played: number | null }>>);
 
-        // Map players to include stats (no more database queries!)
+        // Map players to include stats — normalize to 18-hole equivalent
         return players.map(player => {
           const rounds = roundsByPlayer[player.id] || [];
           const roundsCount = rounds.length;
-          const avgScore = roundsCount > 0
-            ? rounds.reduce((sum, r) => sum + (r.total_score || 0), 0) / roundsCount
+          // Compute per-hole average then express as 18-hole equivalent
+          let totalStrokes = 0;
+          let totalHoles = 0;
+          for (const r of rounds) {
+            if (r.total_score) {
+              const hp = r.holes_played ?? 18;
+              totalStrokes += r.total_score;
+              totalHoles += hp;
+            }
+          }
+          const avgScore = totalHoles > 0
+            ? (totalStrokes / totalHoles) * 18
             : 0;
 
           return {

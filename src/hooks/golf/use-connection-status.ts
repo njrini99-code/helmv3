@@ -107,6 +107,8 @@ export function useConnectionStatus(options: UseConnectionStatusOptions = {}): C
   const checkIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const previousOnlineRef = useRef<boolean>(status.isOnline);
   const onStatusChangeRef = useRef(onStatusChange);
+  // Use ref for lastOnline to avoid circular dependency in checkConnectivity
+  const lastOnlineRef = useRef<Date | null>(status.lastOnline);
 
   // Keep callback ref updated
   useEffect(() => {
@@ -227,11 +229,14 @@ export function useConnectionStatus(options: UseConnectionStatusOptions = {}): C
     const isSlowConnection = networkInfo.isSlowConnection ||
       (measuredRtt !== null && measuredRtt > slowConnectionThreshold);
 
+    const newLastOnline = isConnected ? new Date() : lastOnlineRef.current;
+    if (isConnected) lastOnlineRef.current = newLastOnline;
+
     const newStatus: ConnectionStatus = {
       isOnline: navigator.onLine,
       isConnected,
       isSlowConnection,
-      lastOnline: isConnected ? new Date() : status.lastOnline,
+      lastOnline: newLastOnline,
       lastCheck: new Date(),
       quality: determineQuality(navigator.onLine, isConnected, finalRtt, networkInfo.effectiveType),
       rtt: finalRtt,
@@ -247,7 +252,7 @@ export function useConnectionStatus(options: UseConnectionStatusOptions = {}): C
       previousOnlineRef.current = newStatus.isConnected;
       onStatusChangeRef.current?.(newStatus);
     }
-  }, [pingUrl, checkTimeout, slowConnectionThreshold, getNetworkInfo, determineQuality, status.lastOnline]);
+  }, [pingUrl, checkTimeout, slowConnectionThreshold, getNetworkInfo, determineQuality]);
 
   /**
    * Handle online event
@@ -267,17 +272,18 @@ export function useConnectionStatus(options: UseConnectionStatusOptions = {}): C
    * Handle offline event
    */
   const handleOffline = useCallback(() => {
-    const newStatus: ConnectionStatus = {
-      ...status,
-      isOnline: false,
-      isConnected: false,
-      quality: 'offline',
-      error: 'Device is offline',
-    };
-
-    setStatus(newStatus);
-    onStatusChangeRef.current?.(newStatus);
-  }, [status]);
+    setStatus(prev => {
+      const newStatus: ConnectionStatus = {
+        ...prev,
+        isOnline: false,
+        isConnected: false,
+        quality: 'offline',
+        error: 'Device is offline',
+      };
+      onStatusChangeRef.current?.(newStatus);
+      return newStatus;
+    });
+  }, []);
 
   /**
    * Handle Network Information API change

@@ -76,19 +76,19 @@ export default async function PatternsPage() {
   }
 
   // Verify user is a coach
-  const { data: coach, error: coachError } = await supabase
+  const { data: coach } = await supabase
     .from('golf_coaches')
     .select('id, organization_id')
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
-  if (coachError || !coach) {
+  if (!coach) {
     // Check if user is a player
     const { data: player } = await supabase
       .from('golf_players')
       .select('id')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     if (player) {
       return <NotCoachState />;

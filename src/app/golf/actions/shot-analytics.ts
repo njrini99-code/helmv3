@@ -368,12 +368,20 @@ export async function getPlayerShotAnalytics(
     const totalDrives = par4And5Holes.length;
     const fairwaysHit = par4And5Holes.filter(h => h.fairway_hit === true).length;
 
-    // Get miss directions from shots (drive shots)
-    const driveShots = shots.filter(s => s.shot_type === 'drive' || s.shot_type === 'tee' || s.shot_number === 1);
+    // Build a lookup of par 4+ holes to exclude par 3 tee shots from drive stats
+    const par4PlusHoleKeys = new Set(
+      par4And5Holes.map(h => `${h.round_id}:${h.hole_number}`)
+    );
+
+    // Get miss directions from shots (drive shots on par 4+ holes only)
+    const driveShots = shots.filter(s =>
+      (s.shot_type === 'drive' || s.shot_type === 'tee' || s.shot_number === 1) &&
+      par4PlusHoleKeys.has(`${s.round_id}:${s.hole_number}`)
+    );
     const leftMisses = driveShots.filter(s => s.miss_direction?.toLowerCase().includes('left')).length;
     const rightMisses = driveShots.filter(s => s.miss_direction?.toLowerCase().includes('right')).length;
 
-    // Get driving distances from shots
+    // Get driving distances from shots (par 4+ only)
     const drivingDistances = driveShots
       .map((shot) => {
         if (shot.shot_distance != null) return shot.shot_distance;
@@ -399,7 +407,8 @@ export async function getPlayerShotAnalytics(
     // ========================================================================
 
     const approachShots = shots.filter(s => s.shot_type === 'approach' || s.shot_type === 'iron');
-    const totalApproaches = Math.max(holes.length, approachShots.length);
+    // Only count holes where GIR was actually evaluated (not null) — incomplete rounds won't inflate the denominator
+    const girEvaluatedHoles = holes.filter(h => h.gir !== null).length;
     const girHoles = holes.filter(h => h.gir === true).length;
 
     // Count miss directions
@@ -425,9 +434,11 @@ export async function getPlayerShotAnalytics(
       .map(s => toFeet(s.distance_to_hole_after, s.distance_unit_after))
       .filter((distance): distance is number => distance != null && distance > 0);
 
+    const totalApproaches = Math.max(girEvaluatedHoles, approachShots.length);
+
     const approachStats: ApproachStats = {
       totalApproaches,
-      girPct: calculatePercentage(girHoles, totalApproaches),
+      girPct: calculatePercentage(girHoles, girEvaluatedHoles),
       missBreakdown: {
         short: calculatePercentage(approachMissCounts.short, totalApproachMisses),
         long: calculatePercentage(approachMissCounts.long, totalApproachMisses),
@@ -775,6 +786,32 @@ export async function getTeamShotAnalytics(
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       return { success: false, error: 'Not authenticated' };
+    }
+
+    // Verify user is a coach of this team (via organization)
+    const { data: coach } = await supabase
+      .from('golf_coaches')
+      .select('id, organization_id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (!coach) {
+      return { success: false, error: 'Not authorized - coach profile required' };
+    }
+
+    if (!coach.organization_id) {
+      return { success: false, error: 'Coach not assigned to an organization' };
+    }
+
+    const { data: team } = await supabase
+      .from('golf_teams')
+      .select('id')
+      .eq('id', teamId)
+      .eq('organization_id', coach.organization_id)
+      .maybeSingle();
+
+    if (!team) {
+      return { success: false, error: 'Not authorized to access this team' };
     }
 
     // Get team members

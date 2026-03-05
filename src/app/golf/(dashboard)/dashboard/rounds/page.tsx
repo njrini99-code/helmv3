@@ -80,13 +80,13 @@ export default async function RoundsPage() {
     .from('golf_coaches')
     .select('id, organization_id')
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
   const { data: player } = await supabase
     .from('golf_players')
     .select('id, first_name, last_name')
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
   const userRole = coach ? 'coach' : player ? 'player' : null;
 
@@ -120,6 +120,7 @@ export default async function RoundsPage() {
     score_to_par,
     total_putts,
     status,
+    holes_played,
     player:golf_players(first_name, last_name, avatar_url)
   `;
 
@@ -185,10 +186,23 @@ export default async function RoundsPage() {
       ...r,
       player: r.player && !('error' in r.player) ? r.player : null
     })) as RoundWithPlayer[];
-    inProgressRounds = (inProgressData ?? []).map(r => ({
+
+    // Filter in-progress rounds to only show those with at least 1 recorded shot
+    const inProgressAll = (inProgressData ?? []).map(r => ({
       ...r,
       player: r.player && !('error' in r.player) ? r.player : null
     })) as RoundWithPlayer[];
+
+    if (inProgressAll.length > 0) {
+      const roundIds = inProgressAll.map(r => r.id);
+      const { data: shotsData } = await supabase
+        .from('golf_shots')
+        .select('round_id')
+        .in('round_id', roundIds);
+
+      const roundIdsWithShots = new Set((shotsData ?? []).map(s => s.round_id));
+      inProgressRounds = inProgressAll.filter(r => roundIdsWithShots.has(r.id));
+    }
   }
 
   // Group rounds by date
@@ -202,30 +216,41 @@ export default async function RoundsPage() {
     return acc;
   }, {} as Record<string, RoundWithPlayer[]>);
 
-  // Calculate round statistics summary
+  // Calculate round statistics summary — normalize 9-hole rounds to 18-hole equivalents
   const roundStats = (() => {
     if (rounds.length === 0) return null;
-    const scores = rounds.map(r => r.total_score).filter((s): s is number => s !== null && s > 0);
+    type RoundWithHoles = typeof rounds[number] & { holes_played?: number | null };
+    const scoredRounds = (rounds as RoundWithHoles[]).filter(r => r.total_score !== null && r.total_score > 0);
     const toParScores = rounds.map(r => r.score_to_par).filter((s): s is number => s !== null);
-    if (scores.length === 0) return null;
+    if (scoredRounds.length === 0) return null;
 
-    const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
-    const best = Math.min(...scores);
+    // Normalize scoring to 18-hole equivalent
+    let totalStrokes = 0;
+    let totalHoles = 0;
+    const normalizedScores: number[] = [];
+    for (const r of scoredRounds) {
+      const hp = r.holes_played ?? 18;
+      totalStrokes += r.total_score!;
+      totalHoles += hp;
+      normalizedScores.push(Math.round(r.total_score! * (18 / hp)));
+    }
+    const avg = totalHoles > 0 ? (totalStrokes / totalHoles) * 18 : 0;
+    const best = Math.min(...normalizedScores);
     const avgToPar = toParScores.length > 0 ? toParScores.reduce((a, b) => a + b, 0) / toParScores.length : null;
     const underParCount = toParScores.filter(s => s < 0).length;
     const underParPct = toParScores.length > 0 ? Math.round((underParCount / toParScores.length) * 100) : 0;
 
-    // Trend: compare last 5 vs previous 5
+    // Trend: compare last 5 vs previous 5 using normalized scores
     let trend: 'improving' | 'declining' | 'stable' | null = null;
-    if (scores.length >= 6) {
-      const recent5 = scores.slice(0, 5).reduce((a, b) => a + b, 0) / 5;
-      const prev5 = scores.slice(5, 10).reduce((a, b) => a + b, 0) / Math.min(5, scores.length - 5);
+    if (normalizedScores.length >= 6) {
+      const recent5 = normalizedScores.slice(0, 5).reduce((a, b) => a + b, 0) / 5;
+      const prev5 = normalizedScores.slice(5, 10).reduce((a, b) => a + b, 0) / Math.min(5, normalizedScores.length - 5);
       if (recent5 < prev5 - 0.5) trend = 'improving';
       else if (recent5 > prev5 + 0.5) trend = 'declining';
       else trend = 'stable';
     }
 
-    return { avg, best, avgToPar, underParPct, totalRounds: scores.length, trend };
+    return { avg, best, avgToPar, underParPct, totalRounds: scoredRounds.length, trend };
   })();
 
   return (

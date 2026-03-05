@@ -15,7 +15,11 @@ let resendClient: any = null;
 
 async function getResendClient() {
   if (!process.env.RESEND_API_KEY) {
-    console.warn('RESEND_API_KEY not configured - emails will not be sent');
+    if (process.env.NODE_ENV === 'production') {
+      console.error('[CRITICAL] RESEND_API_KEY not configured — no emails will be sent in production');
+    } else {
+      console.warn('[Notifications] RESEND_API_KEY not configured — emails disabled');
+    }
     return null;
   }
 
@@ -99,32 +103,6 @@ export async function updateUserNotificationPreferences(
       error: error instanceof Error ? error.message : 'Unknown error',
     };
   }
-}
-
-// Database notification types (from notifications table enum)
-type DbNotificationType =
-  | 'message'
-  | 'profile_view'
-  | 'watchlist_add'
-  | 'video_view'
-  | 'team_invite'
-  | 'team_join_request'
-  | 'team_join_approved'
-  | 'event_reminder'
-  | 'dev_plan_assigned';
-
-/**
- * Map internal NotificationType to database notification type
- * Returns null for types that don't have a database equivalent
- */
-function mapToDbNotificationType(type: NotificationType): DbNotificationType | null {
-  const mapping: Partial<Record<NotificationType, DbNotificationType>> = {
-    'new_message': 'message',
-    'profile_view': 'profile_view',
-    'watchlist_add': 'watchlist_add',
-    'event_rsvp_reminder': 'event_reminder',
-  };
-  return mapping[type] ?? null;
 }
 
 /**
@@ -860,19 +838,9 @@ export async function sendEmailNotification(
       text: template.text,
     });
 
-    // Log notification in database (only if type has a database equivalent)
-    const dbType = mapToDbNotificationType(type);
-    if (dbType) {
-      const supabase = await createClient();
-      await supabase.from('notifications').insert({
-        user_id: recipientId,
-        type: dbType,
-        title: template.subject,
-        body: template.text,
-        metadata: data as unknown as Record<string, never>,
-        read: false,
-      });
-    }
+    // Note: In-app notifications are handled by the golf_calendar_notifications table
+    // (written at the call site in golf.ts, messages.ts, announcements.ts, etc.)
+    // The generic `notifications` table is not read by any golf UI, so we skip it.
 
     return { success: true };
   } catch (error) {

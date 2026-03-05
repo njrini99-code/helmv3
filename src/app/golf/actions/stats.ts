@@ -64,6 +64,12 @@ export async function getPlayerStatsSummaryAction(
         return { success: false, error: 'Player profile not found' };
       }
       targetPlayerId = player.id;
+    } else {
+      // Verify the caller has access to this player's stats
+      const authorized = await verifyPlayerOwnershipOrCoach(supabase, user.id, targetPlayerId);
+      if (!authorized) {
+        return { success: false, error: 'Not authorized to view this player\'s stats' };
+      }
     }
 
     const stats = await getStatsFromCache(targetPlayerId);
@@ -125,6 +131,12 @@ export async function getFullPlayerStatsAction(
         return { success: false, error: 'Player profile not found' };
       }
       targetPlayerId = player.id;
+    } else {
+      // Verify the caller has access to this player's stats
+      const authorized = await verifyPlayerOwnershipOrCoach(supabase, user.id, targetPlayerId);
+      if (!authorized) {
+        return { success: false, error: 'Not authorized to view this player\'s stats' };
+      }
     }
 
     const stats = await getFullPlayerStats(targetPlayerId);
@@ -326,6 +338,55 @@ export async function getTeamTopPlayersAction(
 // ============================================================================
 
 /**
+ * Verify the authenticated user owns this player record or coaches them.
+ * Follows the same pattern as refreshStatsCacheAction.
+ */
+async function verifyPlayerOwnershipOrCoach(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  playerId: string
+): Promise<boolean> {
+  // Check if user IS the player
+  const { data: player } = await supabase
+    .from('golf_players')
+    .select('id')
+    .eq('id', playerId)
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (player) return true;
+
+  // Check if user is a coach with this player on their team
+  const { data: coach } = await supabase
+    .from('golf_coaches')
+    .select('id, organization_id')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (coach?.organization_id) {
+    const { data: team } = await supabase
+      .from('golf_teams')
+      .select('id')
+      .eq('organization_id', coach.organization_id)
+      .maybeSingle();
+
+    if (team) {
+      const { data: membership } = await supabase
+        .from('golf_team_members')
+        .select('id')
+        .eq('team_id', team.id)
+        .eq('player_id', playerId)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      if (membership) return true;
+    }
+  }
+
+  return false;
+}
+
+/**
  * Called after a round is completed/submitted
  * Triggers cache refresh for the player
  */
@@ -334,6 +395,14 @@ export async function onRoundCompleteAction(
   roundId: string
 ): Promise<void> {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // Verify caller owns or coaches this player
+    const authorized = await verifyPlayerOwnershipOrCoach(supabase, user.id, playerId);
+    if (!authorized) return;
+
     await invalidateOnRoundComplete(playerId, roundId);
     revalidatePath('/golf/dashboard');
     revalidatePath('/golf/dashboard/stats');
@@ -348,6 +417,14 @@ export async function onRoundCompleteAction(
  */
 export async function markStatsStaleAction(playerId: string): Promise<void> {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // Verify caller owns or coaches this player
+    const authorized = await verifyPlayerOwnershipOrCoach(supabase, user.id, playerId);
+    if (!authorized) return;
+
     await markStatsStale(playerId);
     revalidatePath('/golf/dashboard');
     revalidatePath('/golf/dashboard/stats');
@@ -407,7 +484,8 @@ export async function getPlayerStatsDirectAction(
         total_fairways_hit,
         total_fairways,
         total_gir,
-        total_gir_possible
+        total_gir_possible,
+        holes_played
       `)
       .eq('player_id', targetPlayerId)
       .eq('status', 'completed')
@@ -429,13 +507,25 @@ export async function getPlayerStatsDirectAction(
     }
 
     const roundsPlayed = rounds.length;
-    const scores = rounds.map(r => r.total_score!).filter(s => s !== null);
-    const scoringAverage = scores.length > 0
-      ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 100) / 100
+
+    // Normalize scoring to 18-hole equivalents using per-hole average
+    let totalStrokes = 0;
+    let totalHoles = 0;
+    const normalizedScores: number[] = [];
+    for (const r of rounds) {
+      if (r.total_score !== null) {
+        const hp = r.holes_played ?? 18;
+        totalStrokes += r.total_score;
+        totalHoles += hp;
+        normalizedScores.push(Math.round(r.total_score * (18 / hp)));
+      }
+    }
+    const scoringAverage = totalHoles > 0
+      ? Math.round((totalStrokes / totalHoles) * 18 * 100) / 100
       : null;
 
-    const bestRound = scores.length > 0 ? Math.min(...scores) : null;
-    const worstRound = scores.length > 0 ? Math.max(...scores) : null;
+    const bestRound = normalizedScores.length > 0 ? Math.min(...normalizedScores) : null;
+    const worstRound = normalizedScores.length > 0 ? Math.max(...normalizedScores) : null;
 
     // Calculate GIR percentage
     const totalGreens = rounds.reduce((sum, r) => sum + (r.total_gir_possible || 0), 0);
@@ -451,10 +541,17 @@ export async function getPlayerStatsDirectAction(
       ? Math.round((totalFairwaysHit / totalFairways) * 1000) / 10
       : null;
 
-    // Calculate putts per round
-    const totalPutts = rounds.reduce((sum, r) => sum + (r.total_putts || 0), 0);
-    const puttsPerRound = roundsPlayed > 0
-      ? Math.round((totalPutts / roundsPlayed) * 100) / 100
+    // Calculate putts per round — normalize to 18-hole equivalent
+    let totalPutts = 0;
+    let totalPuttsHoles = 0;
+    for (const r of rounds) {
+      if (r.total_putts) {
+        totalPutts += r.total_putts;
+        totalPuttsHoles += (r.holes_played ?? 18);
+      }
+    }
+    const puttsPerRound = totalPuttsHoles > 0
+      ? Math.round((totalPutts / totalPuttsHoles) * 18 * 100) / 100
       : null;
 
     return {

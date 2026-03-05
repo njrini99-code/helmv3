@@ -17,6 +17,7 @@ import { CACHE_TAGS } from '@/lib/cache/tags';
 import { z } from 'zod';
 import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
 import { notifyTeamAnnouncement } from '@/lib/notifications';
+import { sendBulkPushNotification } from '@/lib/notifications/push';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { GolfAnnouncementMeta, GolfAnnouncementEnriched } from '@/lib/types/golf';
 
@@ -241,6 +242,13 @@ export async function createEnrichedAnnouncement(input: {
                   : Promise.resolve()
               )
             );
+
+            // Send push notifications
+            const recipientUserIdsForPush = userRows.map(u => u.id);
+            await sendBulkPushNotification('team_announcement', recipientUserIdsForPush, {
+              title: validated.title,
+              content: validated.body,
+            });
           }
         }
       }

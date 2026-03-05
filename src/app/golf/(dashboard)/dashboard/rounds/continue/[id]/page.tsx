@@ -4,6 +4,7 @@ import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import ContinueRoundClient from './continue-round-client';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import type { HoleStats, ShotRecord } from '@/lib/types/golf';
+import { calculateHoleStats } from '@/lib/utils/shot-helpers';
 import type { Tables } from '@/lib/types/database';
 import type { ApproachMissDirection, PuttMissTag } from '@/lib/types/golf';
 import type { Metadata } from 'next';
@@ -17,7 +18,7 @@ type GolfShot = Tables<'golf_shots'>;
 // The golf_holes table schema - penalty_strokes is now part of the schema
 type GolfHoleRow = Tables<'golf_holes'>;
 
-const PUTT_MISS_TAGS = new Set<PuttMissTag>(['low', 'high', 'short']);
+const PUTT_MISS_TAGS = new Set<PuttMissTag>(['low', 'high', 'short', 'long']);
 const APPROACH_MISS_DIRECTIONS = new Set<ApproachMissDirection>([
   'short',
   'long',
@@ -88,19 +89,19 @@ function mapShotToRecord(shot: GolfShot): ShotRecord {
     id: shot.id,
     shotNumber: shot.shot_number,
     shotType,
-    clubType: shot.club_type as ShotRecord['clubType'],
-    lieBefore: shot.lie_before as ShotRecord['lieBefore'],
+    clubType: (shot.club_type || 'non_driver') as ShotRecord['clubType'],
+    lieBefore: (shot.lie_before || 'other') as ShotRecord['lieBefore'],
     distanceToHoleBefore: shot.distance_to_hole_before ?? 0,
     distanceUnitBefore,
-    result: shot.result as ShotRecord['result'],
+    result: (shot.result || 'other') as ShotRecord['result'],
     distanceToHoleAfter: shot.distance_to_hole_after ?? 0,
     distanceUnitAfter,
     shotDistance: shot.shot_distance ?? 0,
     missDirection: shot.miss_direction ?? undefined,
-    puttBreak: shot.putt_break as ShotRecord['puttBreak'],
-    puttSlope: shot.putt_slope as ShotRecord['puttSlope'],
+    puttBreak: (shot.putt_break ?? undefined) as ShotRecord['puttBreak'],
+    puttSlope: (shot.putt_slope ?? undefined) as ShotRecord['puttSlope'],
     isPenalty: shot.is_penalty ?? false,
-    penaltyType: shot.penalty_type as ShotRecord['penaltyType'],
+    penaltyType: (shot.penalty_type ?? undefined) as ShotRecord['penaltyType'],
     puttMissTags: parsePuttMissTags(shot),
     puttDistanceFeet: derivePuttDistanceFeet(shot),
     approachMissDirection: parseApproachMissDirection(shot),
@@ -121,7 +122,7 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
     .from('golf_players')
     .select('id')
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
   if (!player) redirect('/golf/login');
 
@@ -132,7 +133,7 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
     .eq('id', id)
     .eq('player_id', player.id)
     .eq('status', 'in_progress')
-    .single();
+    .maybeSingle();
 
   if (roundError || !round) {
     notFound();
@@ -191,34 +192,30 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
     const holeShots = shotsByHole.get(hole.hole_number) || [];
     const shots = [...holeShots].sort((a, b) => a.shot_number - b.shot_number);
 
-    completedHoleStats[hole.hole_number - 1] = {
-      holeNumber: hole.hole_number,
+    const mappedShots = shots.map(mapShotToRecord);
+    const holeConfig = {
+      number: hole.hole_number,
       par: hole.par,
       yardage: courseYardageMap.get(hole.hole_number) ?? 0,
+    };
+
+    // Re-derive full detailed stats from the shot data
+    const derivedStats = calculateHoleStats(mappedShots, holeConfig);
+
+    // Preserve DB-authoritative fields (score, putts, fairway_hit, GIR,
+    // scramble, sand save) which may differ from shot-count derivation
+    // (e.g., admin corrections, penalty_strokes stored separately)
+    completedHoleStats[hole.hole_number - 1] = {
+      ...derivedStats,
       score: hole.score!,
       putts: hole.putts || 0,
       fairwayHit: hole.fairway_hit,
       greenInRegulation: hole.gir || false,
-      drivingDistance: null,
-      usedDriver: null,
-      driveMissDirection: null,
-      approachDistance: null,
-      approachLie: null,
-      approachProximity: null,
-      approachMissDirection: null,
       scrambleAttempt: hole.up_and_down !== null,
       scrambleMade: hole.up_and_down || false,
       sandSaveAttempt: hole.sand_save !== null,
       sandSaveMade: hole.sand_save || false,
       penaltyStrokes: hole.penalty_strokes ?? 0,
-      firstPuttDistance: null,
-      firstPuttLeave: null,
-      firstPuttBreak: null,
-      firstPuttSlope: null,
-      firstPuttMissDirection: null,
-      holedOutDistance: null,
-      holedOutType: null,
-      shots: shots.map(mapShotToRecord),
     };
   }
 
@@ -236,13 +233,16 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
   const hasBackNineHoles = maxHoleNumber > 9;
   const isLikely18HoleRound = hasBackNineHoles || (round.back_nine !== null);
   const totalHoles = round.holes_played ?? (isLikely18HoleRound ? 18 : 9);
-  // Try to load hole configs from draft data stored in notes field
+  // Try to load hole configs from draft_data JSONB column first, then fall back to notes (legacy)
   let draftHoleConfigs: Array<{ number: number; par: number; yardage: number }> | null = null;
-  if (round.notes) {
+  const draftData = (round as Record<string, unknown>).draft_data as Record<string, unknown> | null;
+  if (draftData?.holes && Array.isArray(draftData.holes)) {
+    draftHoleConfigs = draftData.holes as Array<{ number: number; par: number; yardage: number }>;
+  } else if (round.notes) {
     try {
-      const draftData = JSON.parse(round.notes);
-      if (draftData?.holes && Array.isArray(draftData.holes)) {
-        draftHoleConfigs = draftData.holes;
+      const parsedNotes = JSON.parse(round.notes);
+      if (parsedNotes?.holes && Array.isArray(parsedNotes.holes)) {
+        draftHoleConfigs = parsedNotes.holes;
       }
     } catch {
       // notes field may not contain valid JSON
@@ -278,11 +278,17 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
   // current_hole is the hole the player was on when they exited (1-indexed)
   // We need to convert to 0-indexed for the component
   // If current_hole is not set, use the next hole after completed holes, or hole 1
-  const startHoleIndex = round.current_hole 
-    ? Math.max(0, round.current_hole - 1) // Convert to 0-indexed, ensure non-negative
-    : completedHoleStats.length > 0 
-      ? completedHoleStats.length // Next hole after last completed
-      : 0; // Start at hole 1 (index 0)
+  // Note: completedHoleStats may be sparse (indexed by hole_number - 1),
+  // so .length returns max_index + 1, not the actual count. Find the true max.
+  let maxCompletedHoleIndex = -1;
+  for (let i = 0; i < completedHoleStats.length; i++) {
+    if (completedHoleStats[i]) maxCompletedHoleIndex = i;
+  }
+  const startHoleIndex = round.current_hole
+    ? Math.min(Math.max(0, round.current_hole - 1), totalHoles - 1)
+    : maxCompletedHoleIndex >= 0
+      ? Math.min(maxCompletedHoleIndex + 1, totalHoles - 1)
+      : 0;
 
   // Get shots for the starting hole to restore progress
   const startHoleNumber = startHoleIndex + 1;

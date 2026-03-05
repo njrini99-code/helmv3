@@ -15,25 +15,27 @@ export function PuttMissTagSelector({
   onTagsChange, 
   disabled,
 }: PuttMissTagSelectorProps) {
-  const tags: PuttMissTag[] = ['short', 'low', 'high'];
+  const tags: PuttMissTag[] = ['short', 'long', 'low', 'high'];
   const tagLabels: Record<PuttMissTag, string> = {
     short: 'Short',
+    long: 'Long',
     low: 'Low',
     high: 'High',
   };
 
   const toggleTag = (tag: PuttMissTag) => {
     if (disabled) return;
-    
+
     if (selectedTags.includes(tag)) {
       // Remove tag
       onTagsChange(selectedTags.filter(t => t !== tag));
     } else {
-      const filtered = tag === 'low'
-        ? selectedTags.filter(t => t !== 'high')
-        : tag === 'high'
-        ? selectedTags.filter(t => t !== 'low')
-        : selectedTags;
+      // Mutually exclusive pairs: low/high (read), short/long (speed)
+      let filtered = selectedTags;
+      if (tag === 'low') filtered = filtered.filter(t => t !== 'high');
+      else if (tag === 'high') filtered = filtered.filter(t => t !== 'low');
+      else if (tag === 'short') filtered = filtered.filter(t => t !== 'long');
+      else if (tag === 'long') filtered = filtered.filter(t => t !== 'short');
       onTagsChange([...filtered, tag]);
     }
   };
@@ -41,7 +43,7 @@ export function PuttMissTagSelector({
   return (
     <div className="space-y-3">
       <p className="text-sm text-warm-600 font-medium">Miss (optional)</p>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-4 gap-2">
         {tags.map((tag) => {
           const isSelected = selectedTags.includes(tag);
 

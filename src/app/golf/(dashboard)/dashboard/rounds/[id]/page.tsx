@@ -21,7 +21,7 @@ export async function generateMetadata({
     .from('golf_rounds')
     .select('course_name, round_date, total_score, score_to_par')
     .eq('id', id)
-    .single();
+    .maybeSingle();
 
   if (!round) {
     return {
@@ -90,7 +90,7 @@ export default async function RoundDetailPage({
       player:golf_players(first_name, last_name, avatar_url)
     `)
     .eq('id', id)
-    .single();
+    .maybeSingle();
 
   if (error || !round) {
     notFound();
@@ -111,13 +111,13 @@ export default async function RoundDetailPage({
     .from('golf_coaches')
     .select('id, organization_id')
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
   const { data: player } = await supabase
     .from('golf_players')
     .select('id')
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
   // Check if coach has access by verifying round's player is on their team
   let isCoach = false;

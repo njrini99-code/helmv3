@@ -6,6 +6,15 @@ import { revalidatePath } from 'next/cache';
 import type { HoleStats, ShotRecord, RoundHole } from '@/lib/types/golf';
 import { triggerPlayerInsightsAfterRound } from '@/app/golf/actions/insights';
 
+// UUID format validation regex
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isValidUuid(id: string): boolean {
+  return UUID_REGEX.test(id);
+}
+
+// Maximum size for draft data (500KB)
+const MAX_DRAFT_SIZE_BYTES = 500 * 1024;
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -67,6 +76,17 @@ export async function saveRoundDraft(
 ): Promise<ActionResult<{ roundId: string; lastAutoSave: string }>> {
   try {
     const supabase = await createClient();
+
+    // Bug #45: Validate draft data size to prevent abuse
+    const draftJsonSize = new TextEncoder().encode(JSON.stringify(data)).length;
+    if (draftJsonSize > MAX_DRAFT_SIZE_BYTES) {
+      return { success: false, error: `Draft data too large (${Math.round(draftJsonSize / 1024)}KB). Maximum allowed is ${MAX_DRAFT_SIZE_BYTES / 1024}KB.` };
+    }
+
+    // Bug #43: Validate existingRoundId UUID format if provided
+    if (existingRoundId && !isValidUuid(existingRoundId)) {
+      return { success: false, error: 'Invalid round ID format' };
+    }
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -403,6 +423,11 @@ export async function checkForDraft(): Promise<ActionResult<{
  */
 export async function clearRoundDraft(roundId: string): Promise<ActionResult<void>> {
   try {
+    // Bug #43: Validate UUID format before passing to Supabase query
+    if (!isValidUuid(roundId)) {
+      return { success: false, error: 'Invalid round ID format' };
+    }
+
     const supabase = await createClient();
 
     const { data: { user } } = await supabase.auth.getUser();
@@ -473,12 +498,31 @@ export async function convertDraftToRound(roundId: string): Promise<ActionResult
       return { success: false, error: 'Player profile not found' };
     }
 
-    // Convert draft to regular round (clear draft data, update status)
+    // Convert draft to regular round (clear draft data, preserve player notes)
+    // Bug #61: Don't destroy player notes by setting to null
+    const { data: existingRound } = await fromUntyped(supabase, 'golf_rounds')
+      .select('notes')
+      .eq('id', roundId)
+      .eq('player_id', player.id)
+      .single();
+
+    // Extract player notes from draft JSON if present, otherwise preserve existing
+    let playerNotes: string | null = null;
+    if (existingRound?.notes) {
+      try {
+        const parsed = JSON.parse(existingRound.notes);
+        playerNotes = parsed?.playerNotes ?? null;
+      } catch {
+        // If notes isn't JSON, it's a plain text note — preserve it
+        playerNotes = existingRound.notes;
+      }
+    }
+
     const { error } = await fromUntyped(supabase, 'golf_rounds')
       .update({
         status: 'completed',
         draft_data: null,
-        notes: null,
+        notes: playerNotes,
       })
       .eq('id', roundId)
       .eq('player_id', player.id)

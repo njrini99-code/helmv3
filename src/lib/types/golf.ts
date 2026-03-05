@@ -419,7 +419,7 @@ export interface RoundHole {
 // PUTT MISS CLASSIFICATION TYPES
 // ============================================================================
 
-export type PuttMissTag = 'low' | 'high' | 'short';
+export type PuttMissTag = 'low' | 'high' | 'short' | 'long';
 
 export type PuttBreakDirection = 'left_to_right' | 'right_to_left' | 'straight';
 
@@ -478,11 +478,17 @@ export const PUTT_MISS_TAG_CONFIG: Record<PuttMissTag, {
     category: 'read',
     color: 'text-amber-400'
   },
-  short: { 
-    label: 'Short', 
-    description: 'Left it short', 
+  short: {
+    label: 'Short',
+    description: 'Left it short',
     category: 'speed',
     color: 'text-red-400'
+  },
+  long: {
+    label: 'Long',
+    description: 'Hit it past',
+    category: 'speed',
+    color: 'text-orange-400'
   },
 };
 

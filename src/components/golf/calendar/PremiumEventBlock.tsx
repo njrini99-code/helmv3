@@ -33,6 +33,7 @@ export interface PremiumEventBlockProps {
     start_time: string | null;
     end_time: string | null;
     location?: string | null;
+    all_day?: boolean;
     recurring?: boolean;
     requires_rsvp?: boolean;
     rsvp_confirmed_count?: number;
@@ -101,8 +102,8 @@ export function PremiumEventBlock({
             )}
           </div>
 
-          {/* Time */}
-          {!compact && event.start_time && (
+          {/* Time (hidden for all-day events) */}
+          {!compact && event.start_time && !event.all_day && (
             <div className="flex items-center gap-1 mt-0.5">
               <Clock className="w-3 h-3 text-warm-400" />
               <span className="text-xs text-warm-500">

@@ -37,14 +37,14 @@ export default async function TeamStatsPage() {
   if (!user) redirect('/golf/login');
 
   // Check if user is a coach - this page is COACH ONLY
-  const { data: coach, error: coachError } = await supabase
+  const { data: coach } = await supabase
     .from('golf_coaches')
     .select('id, organization_id')
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
   // If not a coach, redirect to regular stats page
-  if (coachError || !coach) {
+  if (!coach) {
     redirect('/golf/dashboard/stats');
   }
 
@@ -113,7 +113,7 @@ export default async function TeamStatsPage() {
 
   const { data: allRounds } = await supabase
     .from('golf_rounds')
-    .select('id, player_id, total_score, round_date')
+    .select('id, player_id, total_score, round_date, holes_played')
     .in('player_id', allPlayerIds)
     .eq('status', 'completed')
     .not('total_score', 'is', null)
@@ -130,7 +130,7 @@ export default async function TeamStatsPage() {
     : { data: [] };
 
   // Define types for the grouped data
-  type RoundData = { id: string; player_id: string; total_score: number | null; round_date: string };
+  type RoundData = { id: string; player_id: string; total_score: number | null; round_date: string; holes_played: number | null };
   type HoleData = { round_id: string; par: number; fairway_hit: boolean | null; gir: boolean | null; putts: number | null };
 
   // Group data by player in memory
@@ -155,22 +155,31 @@ export default async function TeamStatsPage() {
   // Calculate comprehensive stats for each player
   const playersWithStats: TeamPlayerStats[] = players.map(player => {
     const playerRounds = roundsByPlayer[player.id] || [];
-    const scores = playerRounds
-      .filter(r => r.total_score !== null)
-      .map(r => r.total_score as number);
+    const scoredRounds = playerRounds.filter(r => r.total_score !== null);
 
-    const roundsPlayed = scores.length;
-    const scoringAverage = scores.length > 0
-      ? scores.reduce((a, b) => a + b, 0) / scores.length
+    // Normalize to 18-hole equivalents
+    let totalStrokes = 0;
+    let totalHolesScored = 0;
+    const normalizedScores: number[] = [];
+    for (const r of scoredRounds) {
+      const hp = r.holes_played ?? 18;
+      totalStrokes += r.total_score as number;
+      totalHolesScored += hp;
+      normalizedScores.push(Math.round((r.total_score as number) * (18 / hp)));
+    }
+
+    const roundsPlayed = scoredRounds.length;
+    const scoringAverage = totalHolesScored > 0
+      ? (totalStrokes / totalHolesScored) * 18
       : null;
-    const bestRound = scores.length > 0 ? Math.min(...scores) : null;
-    const worstRound = scores.length > 0 ? Math.max(...scores) : null;
+    const bestRound = normalizedScores.length > 0 ? Math.min(...normalizedScores) : null;
+    const worstRound = normalizedScores.length > 0 ? Math.max(...normalizedScores) : null;
 
-    // Calculate scoring trend (last 5 vs previous 5)
+    // Calculate scoring trend (last 5 vs previous 5) using normalized scores
     let scoringTrend: number | null = null;
-    if (scores.length >= 6) {
-      const recent5 = scores.slice(0, 5);
-      const previous5 = scores.slice(5, 10);
+    if (normalizedScores.length >= 6) {
+      const recent5 = normalizedScores.slice(0, 5);
+      const previous5 = normalizedScores.slice(5, 10);
       if (previous5.length >= 3) {
         const recentAvg = recent5.reduce((a, b) => a + b, 0) / recent5.length;
         const prevAvg = previous5.reduce((a, b) => a + b, 0) / previous5.length;
@@ -213,8 +222,10 @@ export default async function TeamStatsPage() {
     const girPct = totalGirOpps > 0
       ? (totalGirHits / totalGirOpps) * 100
       : null;
-    const puttsPerRound = roundsPlayed > 0 && totalPutts > 0
-      ? totalPutts / roundsPlayed
+    // Normalize putts to 18-hole equivalent
+    const totalPlayerHoles = scoredRounds.reduce((sum, r) => sum + (r.holes_played ?? 18), 0);
+    const puttsPerRound = totalPlayerHoles > 0 && totalPutts > 0
+      ? (totalPutts / totalPlayerHoles) * 18
       : null;
 
     // TODO: birdies_per_round requires per-hole score data (golf_holes.score column).
@@ -262,7 +273,7 @@ export default async function TeamStatsPage() {
 
       {/* Table */}
       <AnimatedItem>
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8 pb-24">
         <TeamStatsTable players={playersWithStats} />
       </div>
       </AnimatedItem>

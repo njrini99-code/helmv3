@@ -28,6 +28,7 @@ export interface PlayerNotificationCounts {
   pendingTasks: number;
   unreadMessages: number;
   unseenTravel: number;
+  calendarNotifications: number;
   unseenAnnouncements: GolfAnnouncementMeta[];
   lastSeenAt: string | null;
 }
@@ -59,6 +60,7 @@ export async function getPlayerNotificationCounts(
       acksResult,
       tasksResult,
       conversationsResult,
+      calendarNotifResult,
     ] = await Promise.all([
       // 1. Get notification state (last_announcements_seen_at, last_travel_seen_at)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -102,6 +104,14 @@ export async function getPlayerNotificationCounts(
         .from('golf_conversation_participants')
         .select('conversation_id, last_read_at')
         .eq('user_id', userId),
+
+      // 7. Get unread calendar notifications count
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any)
+        .from('golf_calendar_notifications')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .is('read_at', null) as Promise<{ count: number | null; error: unknown }>,
     ]);
 
     const lastSeenAt = notifStateResult.data?.last_announcements_seen_at || null;
@@ -202,6 +212,7 @@ export async function getPlayerNotificationCounts(
         pendingTasks: tasksResult.count || 0,
         unreadMessages,
         unseenTravel,
+        calendarNotifications: calendarNotifResult.count || 0,
         unseenAnnouncements,
         lastSeenAt,
       },

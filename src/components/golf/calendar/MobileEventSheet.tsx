@@ -219,14 +219,15 @@ export function MobileEventSheet({
     try {
       await onSave(formData);
       triggerHaptic('success');
-      onClose();
+      // Don't call onClose() here — the parent's onSave handler already
+      // closes the sheet (setIsMobileSheetOpen(false)) to avoid double-close.
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save event');
       triggerHaptic('error');
     } finally {
       setIsSaving(false);
     }
-  }, [formData, onSave, onClose, triggerHaptic]);
+  }, [formData, onSave, triggerHaptic]);
 
   const handleDelete = useCallback(async () => {
     if (!onDelete) return;
@@ -235,7 +236,8 @@ export function MobileEventSheet({
     try {
       await onDelete();
       triggerHaptic('success');
-      onClose();
+      // Don't call onClose() here — the parent's onDelete handler already
+      // closes the sheet to avoid double-close.
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete event');
       triggerHaptic('error');
@@ -243,7 +245,7 @@ export function MobileEventSheet({
       setIsDeleting(false);
       setShowDeleteConfirm(false);
     }
-  }, [onDelete, onClose, triggerHaptic]);
+  }, [onDelete, triggerHaptic]);
 
   const handleRsvp = useCallback(async (response: RSVPResponse) => {
     if (!onRsvp) return { success: false, error: 'RSVP not available' };
@@ -283,7 +285,7 @@ export function MobileEventSheet({
       >
         {/* Drag handle */}
         <div className="flex justify-center py-3" aria-hidden="true">
-          <div className="w-10 h-1.5 bg-warm-400 rounded-full" />
+          <div className="w-10 h-1 bg-warm-300 rounded-full" />
         </div>
 
         {/* Header with close */}

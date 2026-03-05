@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     .from('golf_qualifiers')
     .select('name, description')
     .eq('id', id)
-    .single();
+    .maybeSingle();
 
   return {
     title: qualifier?.name ? `${qualifier.name} | Helm Sports` : 'Qualifier Details | Helm Sports',
@@ -48,7 +48,7 @@ export default async function QualifierDetailPage({ params }: PageProps) {
   if (!user) redirect('/golf/login');
 
   // Get qualifier with entries
-  const { data: qualifier, error } = await supabase
+  const { data: qualifier } = await supabase
     .from('golf_qualifiers')
     .select(`
       *,
@@ -58,9 +58,9 @@ export default async function QualifierDetailPage({ params }: PageProps) {
       )
     `)
     .eq('id', id)
-    .single();
+    .maybeSingle();
 
-  if (error || !qualifier) {
+  if (!qualifier) {
     notFound();
   }
 

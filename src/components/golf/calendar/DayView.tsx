@@ -50,7 +50,29 @@ function DroppableTimeSlot({ date, hour }: { date: Date; hour: number }) {
   );
 }
 
-const HOURS = Array.from({ length: 17 }, (_, i) => i + 6);
+const DEFAULT_START_HOUR = 6;
+const DEFAULT_END_HOUR = 22; // exclusive
+
+/** Build dynamic hour range that extends to cover events outside default bounds */
+function getHoursRange(events: CalendarEvent[]): number[] {
+  let minHour = DEFAULT_START_HOUR;
+  let maxHour = DEFAULT_END_HOUR;
+
+  for (const event of events) {
+    if (event.all_day) continue;
+    const startMins = getMinutesFromMidnight(event.start_date);
+    const endMins = event.end_date ? getMinutesFromMidnight(event.end_date) : startMins + 60;
+    const startH = Math.floor(startMins / 60);
+    const endH = Math.ceil(endMins / 60);
+    if (startH < minHour) minHour = startH;
+    if (endH > maxHour) maxHour = endH;
+  }
+
+  minHour = Math.max(0, minHour);
+  maxHour = Math.min(24, maxHour);
+
+  return Array.from({ length: maxHour - minHour }, (_, i) => i + minHour);
+}
 
 /** Format a local hour (0-23) in a target timezone */
 function formatHourInTz(localHour: number, targetTz: string, compact = false): string {
@@ -161,6 +183,25 @@ export function DayView({ date, events, onEventClick, isDraggable = false, secon
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const dayEvents = events.filter((event) => {
+    const eventDate = new Date(event.start_date);
+    return (
+      eventDate.getDate() === date.getDate() &&
+      eventDate.getMonth() === date.getMonth() &&
+      eventDate.getFullYear() === date.getFullYear()
+    );
+  });
+
+  // Separate all-day events from timed events
+  const allDayEvents = dayEvents.filter(e => e.all_day);
+  const timedEvents = dayEvents.filter(e => !e.all_day);
+
+  // Dynamic hour range based on timed events
+  const HOURS = getHoursRange(timedEvents);
+  const gridStartHour = HOURS[0] ?? DEFAULT_START_HOUR;
+
+  const layoutItems = layoutOverlappingEvents(timedEvents);
+
   // Initialize currentTime on client only to avoid hydration mismatch
   useEffect(() => {
     setCurrentTime(new Date());
@@ -176,31 +217,22 @@ export function DayView({ date, events, onEventClick, isDraggable = false, secon
     const el = scrollRef.current;
     if (!el) return;
     const hour = new Date().getHours();
-    if (hour >= 6 && hour < 22) {
-      const targetScroll = (hour - 6) * 64 - 64;
+    const lastHour = HOURS[HOURS.length - 1] ?? DEFAULT_END_HOUR;
+    if (hour >= gridStartHour && hour < lastHour) {
+      const targetScroll = (hour - gridStartHour) * 64 - 64;
       el.scrollTop = Math.max(0, targetScroll);
     }
-  }, []);
-
-  const dayEvents = events.filter((event) => {
-    const eventDate = new Date(event.start_date);
-    return (
-      eventDate.getDate() === date.getDate() &&
-      eventDate.getMonth() === date.getMonth() &&
-      eventDate.getFullYear() === date.getFullYear()
-    );
-  });
-
-  const layoutItems = layoutOverlappingEvents(dayEvents);
+  }, [HOURS, gridStartHour]);
 
   const getCurrentTimePosition = () => {
     if (!currentTime) return null;
     const hour = currentTime.getHours();
     const minutes = currentTime.getMinutes();
 
-    if (hour < 6 || hour >= 22) return null;
+    const lastHour = HOURS[HOURS.length - 1] ?? DEFAULT_END_HOUR;
+    if (hour < gridStartHour || hour >= lastHour) return null;
 
-    const hoursFromStart = hour - 6;
+    const hoursFromStart = hour - gridStartHour;
     const minuteOffset = (minutes / 60) * 64;
     return hoursFromStart * 64 + minuteOffset;
   };
@@ -214,6 +246,37 @@ export function DayView({ date, events, onEventClick, isDraggable = false, secon
       secondaryTimezone ? '[--day-gutter:48px] md:[--day-gutter:96px]' : '[--day-gutter:48px] md:[--day-gutter:80px]'
     )} data-scroll-container>
       <div className="max-w-4xl mx-auto p-3 md:p-6">
+        {/* All-day events header */}
+        {allDayEvents.length > 0 && (
+          <div className="mb-4 px-1 pb-3 border-b border-warm-200/40">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-primary-500/60" />
+              <span className="text-xs font-semibold text-warm-500 uppercase tracking-wider">All day</span>
+            </div>
+            <div className="space-y-1.5">
+              {allDayEvents.map((event) => (
+                <div key={event.id} className="pointer-events-auto">
+                  <PremiumEventBlock
+                    event={{
+                      id: event.id,
+                      title: event.title,
+                      event_type: event.event_type,
+                      status: event.status || 'scheduled',
+                      start_time: event.start_time,
+                      end_time: event.end_time,
+                      location: event.location,
+                      all_day: event.all_day,
+                      recurring: event.recurring,
+                    }}
+                    onClick={() => onEventClick?.(event)}
+                    compact={false}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="relative">
           <div className={cn(
             'grid',
@@ -271,7 +334,7 @@ export function DayView({ date, events, onEventClick, isDraggable = false, secon
             <div />
             <div className="relative pointer-events-none">
               {layoutItems.map((item) => {
-                const top = calculateEventTop(item.event.start_date, 6);
+                const top = calculateEventTop(item.event.start_date, gridStartHour);
                 const height = calculateEventHeight(item.event.start_date, item.event.end_date);
                 const widthPercent = (1 / item.totalColumns) * 100;
                 const leftPercent = (item.column / item.totalColumns) * 100;
@@ -296,6 +359,7 @@ export function DayView({ date, events, onEventClick, isDraggable = false, secon
                         start_time: item.event.start_time,
                         end_time: item.event.end_time,
                         location: item.event.location,
+                        all_day: item.event.all_day,
                         recurring: item.event.recurring,
                       }}
                       onClick={() => onEventClick?.(item.event)}
@@ -333,8 +397,8 @@ export function DayView({ date, events, onEventClick, isDraggable = false, secon
           )}
         </div>
 
-        {/* Empty state */}
-        {dayEvents.length === 0 && (
+        {/* Empty state — no timed or all-day events */}
+        {timedEvents.length === 0 && allDayEvents.length === 0 && (
           <div className="mt-16 text-center">
             <div className="
               w-16 h-16 rounded-[16px]

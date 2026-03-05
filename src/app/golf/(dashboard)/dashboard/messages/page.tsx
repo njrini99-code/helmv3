@@ -15,6 +15,10 @@ import { GolfNewMessageModal } from '@/components/golf/messages/GolfNewMessageMo
 import { GolfTeamBroadcastModal } from '@/components/golf/messages/GolfTeamBroadcastModal';
 import { useGolfUser } from '@/contexts/golf-user-context';
 import type { GolfConversationWithMeta, MessageWithReadStatus } from '@/hooks/golf/use-golf-messages';
+import { AttachmentButton } from '@/components/golf/messages/AttachmentButton';
+import { AttachmentPreview } from '@/components/golf/messages/AttachmentPreview';
+import { useMessageAttachments } from '@/hooks/golf/use-message-attachments';
+import type { PendingAttachment } from '@/lib/storage/attachments';
 
 export default function GolfMessagesPage() {
   const { showToast } = useToast();
@@ -45,16 +49,29 @@ export default function GolfMessagesPage() {
     currentUserId,
   } = useGolfMessages(selectedConversationId || '');
 
+  // Attachment support
+  const { sendMessageWithAttachments } = useMessageAttachments();
+
   // State for editing messages
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
   const [isEditSaving, setIsEditSaving] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-  // Auto-scroll to bottom when messages change
+  // Auto-scroll to bottom when messages change — only if user is near bottom
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const container = messagesContainerRef.current;
+    if (!container) {
+      // Fallback: scroll if no container ref yet
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+    const isNearBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 100;
+    if (isNearBottom) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages]);
 
   // Memoize grouped conversations for performance
@@ -172,6 +189,28 @@ export default function GolfMessagesPage() {
     try {
       await sendMessage(content);
       // NOTE: Removed refetch() - real-time subscription automatically updates messages
+      return true;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to send message';
+      showToast(errorMessage, 'error');
+      return false;
+    }
+  };
+
+  // Handle sending a message with attachments
+  const handleSendMessageWithAttachments = async (content: string, attachments: PendingAttachment[]) => {
+    if (!selectedConversationId) return false;
+
+    try {
+      const result = await sendMessageWithAttachments({
+        conversationId: selectedConversationId,
+        content,
+        attachments,
+      });
+      if (!result.success) {
+        showToast(result.error || 'Failed to send message', 'error');
+        return false;
+      }
       return true;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to send message';
@@ -421,7 +460,7 @@ export default function GolfMessagesPage() {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 overscroll-contain touch-pan-y" data-scroll-container>
+            <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 overscroll-contain touch-pan-y" data-scroll-container>
               {messagesLoading ? (
                 <div className="space-y-3 py-8 px-4">
                   <div className="h-4 w-3/4 bg-warm-200 rounded skeleton-shimmer" />
@@ -643,7 +682,11 @@ export default function GolfMessagesPage() {
             </div>
 
             {/* Message Input */}
-            <MessageInput onSend={handleSendMessage} onTyping={sendTypingStatus} />
+            <MessageInput
+              onSend={handleSendMessage}
+              onSendWithAttachments={handleSendMessageWithAttachments}
+              onTyping={sendTypingStatus}
+            />
           </>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-center p-4">
@@ -736,14 +779,17 @@ function TypingIndicator() {
 // Message Input Component
 interface MessageInputProps {
   onSend: (content: string) => Promise<boolean>;
+  onSendWithAttachments?: (content: string, attachments: PendingAttachment[]) => Promise<boolean>;
   onTyping?: (isTyping: boolean) => void;
 }
 
-function MessageInput({ onSend, onTyping }: MessageInputProps) {
+function MessageInput({ onSend, onSendWithAttachments, onTyping }: MessageInputProps) {
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const attachmentIdCounter = useRef(0);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -785,9 +831,44 @@ function MessageInput({ onSend, onTyping }: MessageInputProps) {
     };
   }, []);
 
+  // Handle file selection from AttachmentButton
+  const handleFilesSelected = (files: File[]) => {
+    const newAttachments: PendingAttachment[] = files.map(file => {
+      attachmentIdCounter.current += 1;
+      const isPreviewable = file.type.startsWith('image/') || file.type.startsWith('video/');
+      return {
+        id: `pending-${attachmentIdCounter.current}-${Date.now()}`,
+        file,
+        previewUrl: isPreviewable ? URL.createObjectURL(file) : '',
+        metadata: {
+          fileName: file.name,
+          fileType: (file.type.startsWith('image/') ? 'image' :
+            file.type.startsWith('video/') ? 'video' :
+            file.type.startsWith('audio/') ? 'audio' : 'document') as 'image' | 'video' | 'audio' | 'document',
+          mimeType: file.type,
+          fileSize: file.size,
+        },
+        status: 'pending' as const,
+        uploadProgress: 0,
+      };
+    });
+    setPendingAttachments(prev => [...prev, ...newAttachments]);
+  };
+
+  const handleRemoveAttachment = (id: string) => {
+    setPendingAttachments(prev => {
+      const removed = prev.find(a => a.id === id);
+      if (removed?.previewUrl) {
+        URL.revokeObjectURL(removed.previewUrl);
+      }
+      return prev.filter(a => a.id !== id);
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!message.trim() || sending) return;
+    const hasAttachments = pendingAttachments.length > 0;
+    if ((!message.trim() && !hasAttachments) || sending) return;
 
     // Clear typing indicator before sending
     if (onTyping) {
@@ -798,9 +879,21 @@ function MessageInput({ onSend, onTyping }: MessageInputProps) {
     }
 
     setSending(true);
-    const success = await onSend(message.trim());
+
+    let success = false;
+    if (hasAttachments && onSendWithAttachments) {
+      success = await onSendWithAttachments(message.trim(), pendingAttachments);
+    } else {
+      success = await onSend(message.trim());
+    }
+
     if (success) {
+      // Revoke object URLs for previews
+      pendingAttachments.forEach(a => {
+        if (a.previewUrl) URL.revokeObjectURL(a.previewUrl);
+      });
       setMessage('');
+      setPendingAttachments([]);
     }
     setSending(false);
   };
@@ -812,14 +905,30 @@ function MessageInput({ onSend, onTyping }: MessageInputProps) {
     }
   };
 
+  const canSend = (message.trim() || pendingAttachments.length > 0) && !sending;
+
   return (
     <form onSubmit={handleSubmit} className="p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] lg:pb-4 bg-white/60 backdrop-blur-sm border-t border-white/30">
+      {/* Pending attachment previews */}
+      {pendingAttachments.length > 0 && (
+        <AttachmentPreview
+          attachments={pendingAttachments}
+          onRemove={handleRemoveAttachment}
+          className="mb-2 rounded-xl"
+        />
+      )}
       <div className={cn(
-        'flex items-end gap-3 p-1.5 rounded-2xl',
+        'flex items-end gap-2 p-1.5 rounded-2xl',
         'bg-white/50 border border-white/30',
         'focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20',
         'transition-all duration-200'
       )}>
+        {/* Attachment button */}
+        <AttachmentButton
+          onFilesSelected={handleFilesSelected}
+          disabled={sending}
+          className="mb-0.5"
+        />
         <textarea
           ref={textareaRef}
           value={message}
@@ -828,7 +937,7 @@ function MessageInput({ onSend, onTyping }: MessageInputProps) {
           placeholder="Type a message..."
           rows={1}
           className={cn(
-            'flex-1 resize-none bg-transparent px-3 py-2 text-base lg:text-sm',
+            'flex-1 resize-none bg-transparent px-2 py-2 text-base lg:text-sm',
             'placeholder:text-warm-400',
             'focus:outline-none'
           )}
@@ -836,12 +945,12 @@ function MessageInput({ onSend, onTyping }: MessageInputProps) {
         />
         <button
           type="submit"
-          disabled={!message.trim() || sending}
+          disabled={!canSend}
           aria-label="Send message"
           className={cn(
-            'h-11 w-11 md:h-10 md:w-10 rounded-xl flex items-center justify-center',
+            'h-11 w-11 md:h-10 md:w-10 rounded-xl flex items-center justify-center flex-shrink-0',
             'transition-all duration-200 active:scale-90',
-            message.trim() && !sending
+            canSend
               ? 'bg-primary-500 text-white hover:bg-primary-600 shadow-sm'
               : 'bg-warm-200 text-warm-400 cursor-not-allowed'
           )}

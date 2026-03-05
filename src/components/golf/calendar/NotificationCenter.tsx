@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Bell, Check, Calendar, MessageSquare, AlertCircle, X, Clock } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { useNotifications, type Notification } from '@/hooks/useNotifications';
 import { useRouter } from 'next/navigation';
 
@@ -12,18 +13,18 @@ import { useRouter } from 'next/navigation';
 function getNotificationIcon(type: Notification['type']) {
   switch (type) {
     case 'event_invitation':
-      return <Calendar className="w-5 h-5 text-blue-500" />;
+      return <Calendar className="w-4 h-4 text-blue-500" />;
     case 'rsvp_response':
-      return <MessageSquare className="w-5 h-5 text-primary-500" />;
+      return <MessageSquare className="w-4 h-4 text-primary-500" />;
     case 'event_updated':
-      return <AlertCircle className="w-5 h-5 text-amber-500" />;
+      return <AlertCircle className="w-4 h-4 text-amber-500" />;
     case 'event_cancelled':
-      return <X className="w-5 h-5 text-red-500" />;
+      return <X className="w-4 h-4 text-red-500" />;
     case 'event_reminder':
     case 'rsvp_reminder':
-      return <Clock className="w-5 h-5 text-purple-500" />;
+      return <Clock className="w-4 h-4 text-purple-500" />;
     default:
-      return <Bell className="w-5 h-5 text-warm-500" />;
+      return <Bell className="w-4 h-4 text-warm-500" />;
   }
 }
 
@@ -85,7 +86,7 @@ export function NotificationCenter() {
       {/* Bell Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 rounded-lg text-warm-600 hover:text-warm-900 hover:bg-warm-100 active:bg-warm-200 transition-colors"
+        className="relative p-2.5 rounded-xl bg-white/70 backdrop-blur-sm border border-white/30 shadow-sm text-warm-500 hover:text-warm-800 hover:bg-white/90 hover:shadow-md active:scale-95 transition-all duration-200"
         aria-label="Notifications"
         aria-expanded={isOpen}
       >
@@ -93,7 +94,7 @@ export function NotificationCenter() {
 
         {/* Unread Badge */}
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+          <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-sm ring-2 ring-white">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -109,9 +110,9 @@ export function NotificationCenter() {
           />
 
           {/* Popover */}
-          <div className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] max-w-96 bg-white rounded-2xl border border-warm-200 shadow-xl z-50 overflow-hidden">
+          <div className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] max-w-96 bg-white/80 backdrop-blur-xl rounded-2xl border border-white/30 shadow-2xl z-50 overflow-hidden">
             {/* Header */}
-            <div className="px-4 py-3 border-b border-warm-200 flex items-center justify-between">
+            <div className="px-4 py-3 border-b border-warm-200/60 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-warm-900">Notifications</h3>
               {unreadCount > 0 && (
                 <button
@@ -127,23 +128,23 @@ export function NotificationCenter() {
             {/* Notification List */}
             <div className="max-h-[min(480px,60vh)] overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]" data-scroll-container>
               {loading ? (
-                <div className="p-4 space-y-3">
+                <div className="p-4 space-y-4">
                   {[1, 2, 3].map(i => (
-                    <div key={i} className="animate-pulse flex gap-3">
-                      <div className="w-10 h-10 bg-warm-200 rounded-full"></div>
-                      <div className="flex-1 space-y-2">
-                        <div className="h-4 bg-warm-200 rounded w-3/4"></div>
-                        <div className="h-3 bg-warm-200 rounded w-1/2"></div>
+                    <div key={i} className="flex gap-3">
+                      <div className="w-10 h-10 bg-warm-200 rounded-xl skeleton-shimmer" />
+                      <div className="flex-1 space-y-2 pt-1">
+                        <div className="h-3.5 bg-warm-200 rounded-md w-3/4 skeleton-shimmer" />
+                        <div className="h-3 bg-warm-100 rounded-md w-1/2 skeleton-shimmer" />
                       </div>
                     </div>
                   ))}
                 </div>
               ) : notifications.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mb-3">
-                    <Bell className="w-6 h-6 text-warm-400" />
+                  <div className="w-12 h-12 rounded-2xl bg-warm-100/80 flex items-center justify-center mb-3">
+                    <Bell className="w-5 h-5 text-warm-300" />
                   </div>
-                  <p className="text-sm font-medium text-warm-900">All caught up!</p>
+                  <p className="text-sm font-medium text-warm-800">All caught up!</p>
                   <p className="text-xs text-warm-500 mt-1">No new notifications</p>
                 </div>
               ) : (
@@ -152,20 +153,22 @@ export function NotificationCenter() {
                     <li key={notification.id}>
                       <button
                         onClick={() => handleNotificationClick(notification)}
-                        className={`w-full px-4 py-3 flex gap-3 hover:bg-warm-50 active:bg-warm-100 transition-colors text-left ${
-                          !notification.read ? 'bg-primary-50/30' : ''
-                        }`}
+                        className={cn(
+                          'w-full px-4 py-3 flex gap-3 hover:bg-warm-50 active:bg-warm-100 transition-colors text-left',
+                          !notification.read && 'bg-primary-50/30'
+                        )}
                       >
                         {/* Icon */}
-                        <div className="flex-shrink-0 mt-0.5">
+                        <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-warm-50 flex items-center justify-center">
                           {getNotificationIcon(notification.type)}
                         </div>
 
                         {/* Content */}
                         <div className="flex-1 min-w-0">
-                          <p className={`text-sm font-medium ${
+                          <p className={cn(
+                            'text-sm font-medium',
                             !notification.read ? 'text-warm-900' : 'text-warm-700'
-                          }`}>
+                          )}>
                             {notification.title}
                           </p>
                           {notification.message && (

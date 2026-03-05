@@ -49,9 +49,6 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'auth-storage',
       partialize: (state) => ({
-        user: state.user,
-        coach: state.coach,
-        player: state.player,
         coachMode: state.coachMode,
       }),
       // Sync cookie on rehydration

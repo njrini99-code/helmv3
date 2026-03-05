@@ -162,7 +162,30 @@ function layoutOverlappingEvents(events: CalendarEvent[]): LayoutEvent[] {
   return result;
 }
 
-const HOURS = Array.from({ length: 17 }, (_, i) => i + 6);
+const DEFAULT_START_HOUR = 6;
+const DEFAULT_END_HOUR = 22; // exclusive — 6AM to 10PM
+
+/** Build dynamic hour range that extends to cover events outside default bounds */
+function getHoursRange(events: CalendarEvent[]): number[] {
+  let minHour = DEFAULT_START_HOUR;
+  let maxHour = DEFAULT_END_HOUR;
+
+  for (const event of events) {
+    if (event.all_day) continue;
+    const startMins = getMinutesFromMidnight(event.start_date);
+    const endMins = event.end_date ? getMinutesFromMidnight(event.end_date) : startMins + 60;
+    const startH = Math.floor(startMins / 60);
+    const endH = Math.ceil(endMins / 60);
+    if (startH < minHour) minHour = startH;
+    if (endH > maxHour) maxHour = endH;
+  }
+
+  // Clamp to valid hour range
+  minHour = Math.max(0, minHour);
+  maxHour = Math.min(24, maxHour);
+
+  return Array.from({ length: maxHour - minHour }, (_, i) => i + minHour);
+}
 
 /** Format a local hour (0-23) in a target timezone. Returns e.g. "3 PM" or "3p" */
 function formatHourInTz(localHour: number, targetTz: string, compact = false): string {
@@ -197,6 +220,47 @@ export function WeekView({
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const weekDates = Array.from({ length: 7 }, (_, i) => {
+    const date = new Date(weekStart);
+    date.setDate(weekStart.getDate() + i);
+    return date;
+  });
+
+  // Separate all-day events from timed events
+  const allDayEventsByDay = weekDates.map((date) => {
+    return events.filter((event) => {
+      if (!event.all_day) return false;
+      const eventDate = new Date(event.start_date);
+      return (
+        eventDate.getDate() === date.getDate() &&
+        eventDate.getMonth() === date.getMonth() &&
+        eventDate.getFullYear() === date.getFullYear()
+      );
+    });
+  });
+
+  const timedEventsByDay = weekDates.map((date) => {
+    return events.filter((event) => {
+      if (event.all_day) return false;
+      const eventDate = new Date(event.start_date);
+      return (
+        eventDate.getDate() === date.getDate() &&
+        eventDate.getMonth() === date.getMonth() &&
+        eventDate.getFullYear() === date.getFullYear()
+      );
+    });
+  });
+
+  const hasAllDayEvents = allDayEventsByDay.some((dayEvents) => dayEvents.length > 0);
+
+  // Dynamic hour range based on timed events
+  const allTimedEvents = timedEventsByDay.flat();
+  const HOURS = getHoursRange(allTimedEvents);
+  const gridStartHour = HOURS[0] ?? DEFAULT_START_HOUR;
+
+  // Pre-compute overlap layout for each day's timed events (all-day excluded from grid)
+  const layoutByDay = timedEventsByDay.map((dayEvents) => layoutOverlappingEvents(dayEvents));
+
   // Initialize currentTime on client only to avoid hydration mismatch
   useEffect(() => {
     setCurrentTime(new Date());
@@ -212,31 +276,12 @@ export function WeekView({
     const el = scrollRef.current;
     if (!el) return;
     const hour = new Date().getHours();
-    if (hour >= 6 && hour < 22) {
-      const targetScroll = (hour - 6) * 64 - 64; // one row above current time
+    const lastHour = HOURS[HOURS.length - 1] ?? DEFAULT_END_HOUR;
+    if (hour >= gridStartHour && hour < lastHour) {
+      const targetScroll = (hour - gridStartHour) * 64 - 64; // one row above current time
       el.scrollTop = Math.max(0, targetScroll);
     }
-  }, []);
-
-  const weekDates = Array.from({ length: 7 }, (_, i) => {
-    const date = new Date(weekStart);
-    date.setDate(weekStart.getDate() + i);
-    return date;
-  });
-
-  const eventsByDay = weekDates.map((date) => {
-    return events.filter((event) => {
-      const eventDate = new Date(event.start_date);
-      return (
-        eventDate.getDate() === date.getDate() &&
-        eventDate.getMonth() === date.getMonth() &&
-        eventDate.getFullYear() === date.getFullYear()
-      );
-    });
-  });
-
-  // Pre-compute overlap layout for each day's events
-  const layoutByDay = eventsByDay.map((dayEvents) => layoutOverlappingEvents(dayEvents));
+  }, [HOURS, gridStartHour]);
 
   // Group player busy periods by day for overlay rendering
   const busyPeriodsByDay = weekDates.map((date) => {
@@ -255,7 +300,7 @@ export function WeekView({
     const date = new Date(startTime);
     const hours = date.getHours();
     const minutes = date.getMinutes();
-    const hoursFromStart = hours - 6; // HOURS starts at 6
+    const hoursFromStart = hours - gridStartHour;
     if (hoursFromStart < 0) return 0;
     return hoursFromStart * 64 + (minutes / 60) * 64;
   };
@@ -272,9 +317,10 @@ export function WeekView({
     const hour = currentTime.getHours();
     const minutes = currentTime.getMinutes();
 
-    if (hour < 6 || hour >= 22) return null;
+    const lastHour = HOURS[HOURS.length - 1] ?? DEFAULT_END_HOUR;
+    if (hour < gridStartHour || hour >= lastHour) return null;
 
-    const hoursFromStart = hour - 6;
+    const hoursFromStart = hour - gridStartHour;
     const minuteOffset = (minutes / 60) * 64;
     return hoursFromStart * 64 + minuteOffset;
   };
@@ -330,6 +376,43 @@ export function WeekView({
             );
           })}
         </div>
+
+        {/* All-day events header row */}
+        {hasAllDayEvents && (
+          <div
+            className={cn(
+              'grid sticky top-16 z-[19] bg-cream/85 backdrop-blur-xl border-b border-warm-200/[0.15] gap-0.5',
+              secondaryTimezone ? 'grid-cols-[72px_repeat(7,1fr)]' : 'grid-cols-[56px_repeat(7,1fr)]'
+            )}
+          >
+            <div className="px-2 py-1.5 flex items-center justify-end">
+              <span className="text-xs font-medium text-warm-400">All day</span>
+            </div>
+            {allDayEventsByDay.map((dayEvents, dayIndex) => (
+              <div key={dayIndex} className="px-0.5 py-1 space-y-0.5 min-h-[32px]">
+                {dayEvents.map((event) => (
+                  <div key={event.id} className="pointer-events-auto">
+                    <PremiumEventBlock
+                      event={{
+                        id: event.id,
+                        title: event.title,
+                        event_type: event.event_type,
+                        status: event.status || 'scheduled',
+                        start_time: event.start_time,
+                        end_time: event.end_time,
+                        location: event.location,
+                        all_day: event.all_day,
+                        recurring: event.recurring,
+                      }}
+                      onClick={() => onEventClick?.(event)}
+                      compact={true}
+                    />
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Time grid — container-based with subtle gaps */}
         <div className="relative">
@@ -452,7 +535,7 @@ export function WeekView({
             {layoutByDay.map((dayLayout, dayIndex) => (
               <div key={dayIndex} className="relative pointer-events-none">
                 {dayLayout.map((item) => {
-                  const top = calculateEventTop(item.event.start_date, 6);
+                  const top = calculateEventTop(item.event.start_date, gridStartHour);
                   const height = calculateEventHeight(item.event.start_date, item.event.end_date);
                   const widthPercent = (1 / item.totalColumns) * 100;
                   const leftPercent = (item.column / item.totalColumns) * 100;
@@ -477,6 +560,7 @@ export function WeekView({
                           start_time: item.event.start_time,
                           end_time: item.event.end_time,
                           location: item.event.location,
+                          all_day: item.event.all_day,
                           recurring: item.event.recurring,
                         }}
                         onClick={() => onEventClick?.(item.event)}
@@ -526,8 +610,8 @@ export function WeekView({
           )}
         </div>
 
-        {/* Empty state for no events this week */}
-        {events.length === 0 && (
+        {/* Empty state for no events this week — check per-day arrays, not all events */}
+        {timedEventsByDay.every(d => d.length === 0) && allDayEventsByDay.every(d => d.length === 0) && (
           <div className="mt-16 text-center">
             <div className="w-16 h-16 rounded-2xl bg-warm-100/80 mx-auto flex items-center justify-center mb-4">
               <Calendar className="w-7 h-7 text-warm-400" />

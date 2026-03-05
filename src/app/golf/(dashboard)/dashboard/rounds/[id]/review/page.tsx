@@ -111,9 +111,9 @@ export default function RoundReviewPage() {
           .from('golf_rounds')
           .select('*, holes:golf_holes(*)')
           .eq('id', roundId)
-          .single();
+          .maybeSingle();
 
-        if (fetchError) {
+        if (fetchError || !data) {
           setError('Round not found');
           return;
         }

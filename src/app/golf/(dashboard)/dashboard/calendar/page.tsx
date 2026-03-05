@@ -10,8 +10,8 @@ export const metadata: Metadata = {
   description: 'View and manage your team events, practices, and class schedule',
 };
 
-// Cache calendar for 60 seconds (events change moderately)
-export const revalidate = 60;
+// Calendar freshness matters — no stale cache
+export const revalidate = 0;
 
 export default async function GolfCalendarPage() {
   const supabase = await createClient();
@@ -21,7 +21,7 @@ export default async function GolfCalendarPage() {
 
   // Role + profiles in parallel (all need user.id)
   const [userRoleResult, coachResult, playerResult] = await Promise.all([
-    supabase.from('users').select('role').eq('id', user.id).single(),
+    supabase.from('users').select('role').eq('id', user.id).maybeSingle(),
     supabase.from('golf_coaches').select('id, organization_id').eq('user_id', user.id).maybeSingle(),
     supabase.from('golf_players').select('id').eq('user_id', user.id).maybeSingle(),
   ]);
@@ -51,7 +51,12 @@ export default async function GolfCalendarPage() {
   let events: CalendarEvent[] = [];
   let teamMembers: { id: string; first_name: string; last_name: string; avatar_url?: string }[] = [];
 
-  // Fetch events, players, and team settings in parallel
+  // Fetch events (scoped to +/- 3 months), players, and team settings in parallel
+  const threeMonthsAgo = new Date();
+  threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+  const threeMonthsAhead = new Date();
+  threeMonthsAhead.setMonth(threeMonthsAhead.getMonth() + 3);
+
   const [
     { data: eventsData },
     { data: teamMembersData },
@@ -63,6 +68,8 @@ export default async function GolfCalendarPage() {
           .select('id, team_id, title, event_type, start_time, end_time, location, description, status, all_day, created_by, requires_rsvp, rsvp_deadline, max_attendees')
           .eq('team_id', teamId)
           .neq('status', 'cancelled')
+          .gte('start_time', threeMonthsAgo.toISOString())
+          .lte('start_time', threeMonthsAhead.toISOString())
           .order('start_time', { ascending: true })
           .limit(500),
         // Get players via golf_team_members junction table

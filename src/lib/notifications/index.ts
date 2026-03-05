@@ -6,6 +6,7 @@
 
 export * from './types';
 export * from './email';
+export * from './push';
 
 // Convenience functions for common notifications
 
@@ -37,14 +38,15 @@ export async function notifyNewMessage(
   recipientEmail: string,
   senderName: string,
   preview: string,
-  conversationId: string
+  conversationId: string,
+  sport: 'baseball' | 'golf' = 'baseball'
 ) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
 
   return sendEmailNotification('new_message', recipientId, recipientEmail, {
     senderName,
     preview,
-    messageUrl: `${baseUrl}/baseball/dashboard/messages/${conversationId}`,
+    messageUrl: `${baseUrl}/${sport}/dashboard/messages/${conversationId}`,
   });
 }
 

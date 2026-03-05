@@ -43,8 +43,8 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   email_profile_views: false, // Off by default to avoid spam
   email_announcements: true,
   email_task_reminders: true,
-  push_messages: false,
-  push_events: false,
+  push_messages: true,
+  push_events: true,
   push_task_reminders: true,
 };
 

@@ -46,7 +46,7 @@ export function useUndoManager({
       if (lastShot.id) {
         const result = await deleteShot(lastShot.id);
         if (!result.success) {
-          dispatch({ type: 'UNDO_FAIL' });
+          dispatch({ type: 'UNDO_FAIL', payload: 'Server failed to delete the shot. Your data is safe — please try again.' });
           return;
         }
       }
@@ -67,7 +67,7 @@ export function useUndoManager({
       }
     } catch (error) {
       console.error('Error undoing shot:', error instanceof Error ? error.message : String(error));
-      dispatch({ type: 'UNDO_FAIL' });
+      dispatch({ type: 'UNDO_FAIL', payload: 'A network error occurred while undoing the shot. Check your connection and try again.' });
     }
   }, [dispatch, calculateHoleStats]);
 

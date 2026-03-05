@@ -368,6 +368,7 @@ export function FocusAreaCard({
               <label className="text-xs text-warm-500 mb-1 block">New Value</label>
               <input
                 type="number"
+                inputMode="numeric"
                 value={progressValue}
                 onChange={(e) => setProgressValue(e.target.value)}
                 placeholder="Enter value"

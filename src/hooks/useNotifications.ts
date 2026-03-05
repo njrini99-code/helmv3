@@ -139,13 +139,30 @@ export function useNotifications({
     fetchNotifications();
   }, [fetchNotifications]);
 
-  // Polling
+  // Polling — paused when tab is hidden to avoid wasted requests
   useEffect(() => {
     if (!enabled || pollInterval <= 0) return;
 
-    const interval = setInterval(fetchNotifications, pollInterval);
+    const pollIfVisible = () => {
+      if (document.visibilityState === 'visible') {
+        fetchNotifications();
+      }
+    };
 
-    return () => clearInterval(interval);
+    const interval = setInterval(pollIfVisible, pollInterval);
+
+    // Also refetch when tab becomes visible again after being hidden
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchNotifications();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [fetchNotifications, pollInterval, enabled]);
 
   return {

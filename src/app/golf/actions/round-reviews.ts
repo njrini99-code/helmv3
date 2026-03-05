@@ -2,6 +2,10 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+
+// UUID format validation
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isValidUuid(id: string): boolean { return UUID_REGEX.test(id); }
 import type {
   GolfRoundReview,
   ReviewStatus,
@@ -220,13 +224,13 @@ async function generateAIReviewContent(round: RoundDataForReview, keyStats: Revi
 /**
  * Convert database row to GolfRoundReview type
  */
-function dbRowToReview(row: ReviewDbRow): GolfRoundReview {
+function dbRowToReview(row: ReviewDbRow, callerRole: 'player' | 'coach' = 'coach'): GolfRoundReview {
   const extData = row.patterns_detected as ReviewExtendedData | null;
   const highlights = row.highlights as string[] | null;
   const areasToReview = row.areas_to_review as string[] | null;
   const roundStats = row.round_stats as ReviewKeyStats | null;
 
-  return {
+  const review: GolfRoundReview = {
     id: row.id,
     round_id: row.round_id,
     player_id: row.player_id,
@@ -271,6 +275,91 @@ function dbRowToReview(row: ReviewDbRow): GolfRoundReview {
     player_feedback: extData?.player_feedback,
     player_acknowledged: extData?.player_acknowledged,
   };
+
+  // Strip coach-internal fields when the caller is a player
+  if (callerRole === 'player') {
+    review.coach_notes = null;
+    review.coach_viewed_at = null;
+    review.coach_rating = undefined;
+    review.coach_highlights = undefined;
+    review.coach_focus_areas = undefined;
+    review.coach_approved = undefined;
+    review.coach_approved_at = undefined;
+    review.coach_approved_by = undefined;
+    // Redact patterns_detected to avoid leaking raw internal data
+    review.patterns_detected = null;
+  }
+
+  return review;
+}
+
+// ============================================================================
+// OWNERSHIP VERIFICATION HELPER
+// ============================================================================
+
+/**
+ * Verify the current user has access to a review's player data.
+ * Returns the user and player info if authorized, or an error.
+ * Access is granted if the user IS the player, or is a coach on the player's team.
+ */
+async function verifyReviewAccess(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  playerId: string,
+  role: 'player' | 'player_or_coach'
+): Promise<{ authorized: boolean; userId?: string; playerId?: string; callerRole?: 'player' | 'coach'; error?: string }> {
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { authorized: false, error: 'Not authenticated' };
+  }
+
+  // Check if user is the player
+  const { data: playerRecord } = await supabase
+    .from('golf_players')
+    .select('id')
+    .eq('id', playerId)
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (playerRecord) {
+    return { authorized: true, userId: user.id, playerId: playerRecord.id, callerRole: 'player' };
+  }
+
+  // For player-only actions, deny here
+  if (role === 'player') {
+    return { authorized: false, error: 'Not authorized - you do not own this review' };
+  }
+
+  // Check if user is a coach with access to this player via organization -> team -> membership
+  const { data: coach } = await supabase
+    .from('golf_coaches')
+    .select('id, organization_id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (coach?.organization_id) {
+    const { data: team } = await supabase
+      .from('golf_teams')
+      .select('id')
+      .eq('organization_id', coach.organization_id)
+      .limit(1)
+      .maybeSingle();
+
+    if (team) {
+      const { data: teamMember } = await supabase
+        .from('golf_team_members')
+        .select('id')
+        .eq('team_id', team.id)
+        .eq('player_id', playerId)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      if (teamMember) {
+        return { authorized: true, userId: user.id, playerId, callerRole: 'coach' };
+      }
+    }
+  }
+
+  return { authorized: false, error: 'Not authorized to access this review' };
 }
 
 // ============================================================================
@@ -302,6 +391,12 @@ export async function generateRoundReview(
 
     if (roundError || !round) {
       return { success: false, error: 'Round not found' };
+    }
+
+    // Verify the current user owns this round or is a coach on the player's team
+    const access = await verifyReviewAccess(supabase, round.player_id, 'player_or_coach');
+    if (!access.authorized) {
+      return { success: false, error: access.error || 'Not authorized' };
     }
 
     // Check if round is complete
@@ -496,6 +591,7 @@ export async function getReviewById(reviewId: string): Promise<{
   review?: RoundReviewWithDetails;
   error?: string;
 }> {
+  if (!isValidUuid(reviewId)) return { success: false, error: 'Invalid review ID format' };
   const supabase = await createClient();
 
   try {
@@ -517,6 +613,12 @@ export async function getReviewById(reviewId: string): Promise<{
 
     if (error || !review) {
       return { success: false, error: 'Review not found' };
+    }
+
+    // Verify the current user owns this review or is a coach on the player's team
+    const access = await verifyReviewAccess(supabase, review.player_id, 'player_or_coach');
+    if (!access.authorized) {
+      return { success: false, error: 'Review not found or not accessible' };
     }
 
     return { success: true, review: review as unknown as RoundReviewWithDetails };
@@ -550,7 +652,13 @@ export async function getReviewByRoundId(roundId: string): Promise<{
       return { success: false, error: 'Failed to fetch review' };
     }
 
-    return { success: true, review: dbRowToReview(review as ReviewDbRow) };
+    // Verify the current user owns this review or is a coach on the player's team
+    const access = await verifyReviewAccess(supabase, review.player_id, 'player_or_coach');
+    if (!access.authorized) {
+      return { success: true, review: undefined };
+    }
+
+    return { success: true, review: dbRowToReview(review as ReviewDbRow, access.callerRole ?? 'player') };
   } catch (error) {
     console.error('Error fetching review:', error);
     return { success: false, error: 'Failed to fetch review' };
@@ -578,7 +686,7 @@ export async function saveCoachFeedback(
     const { data: coach, error: coachError } = await supabase
       .from('golf_coaches')
       .select('id')
-      .eq('profile_id', user.id)
+      .eq('user_id', user.id)
       .single();
 
     if (coachError || !coach) {
@@ -712,7 +820,7 @@ export async function shareReviewWithPlayer(
     const { error: updateError } = await supabase
       .from('golf_round_reviews')
       .update({
-        shared_with_coach: true,
+        shared_with_player: true,
         shared_at: new Date().toISOString(),
         patterns_detected: updatedExtData as Json,
       })
@@ -814,6 +922,46 @@ export async function getPendingCoachReviews(_coachId?: string): Promise<{
       return { success: false, error: 'Not authenticated' };
     }
 
+    // Verify user is a coach and get their organization
+    const { data: coach } = await supabase
+      .from('golf_coaches')
+      .select('id, organization_id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (!coach) {
+      return { success: false, error: 'Not authorized - coach access required' };
+    }
+
+    if (!coach.organization_id) {
+      return { success: true, reviews: [] };
+    }
+
+    // Get the coach's team
+    const { data: team } = await supabase
+      .from('golf_teams')
+      .select('id')
+      .eq('organization_id', coach.organization_id)
+      .limit(1)
+      .maybeSingle();
+
+    if (!team) {
+      return { success: true, reviews: [] };
+    }
+
+    // Get active player IDs on this team
+    const { data: teamMembers } = await supabase
+      .from('golf_team_members')
+      .select('player_id')
+      .eq('team_id', team.id)
+      .eq('status', 'active');
+
+    if (!teamMembers || teamMembers.length === 0) {
+      return { success: true, reviews: [] };
+    }
+
+    const playerIds = teamMembers.map(m => m.player_id);
+
     const { data: reviews, error } = await supabase
       .from('golf_round_reviews')
       .select(`
@@ -827,6 +975,7 @@ export async function getPendingCoachReviews(_coachId?: string): Promise<{
           course:golf_courses(*)
         )
       `)
+      .in('player_id', playerIds)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -863,6 +1012,12 @@ export async function getPlayerReviewHistory(playerId: string): Promise<{
   const supabase = await createClient();
 
   try {
+    // Verify the current user owns this player record or is a coach on their team
+    const access = await verifyReviewAccess(supabase, playerId, 'player_or_coach');
+    if (!access.authorized) {
+      return { success: false, error: access.error || 'Not authorized' };
+    }
+
     const { data: reviews, error } = await supabase
       .from('golf_round_reviews')
       .select('*')
@@ -874,9 +1029,10 @@ export async function getPlayerReviewHistory(playerId: string): Promise<{
       return { success: false, error: 'Failed to fetch reviews' };
     }
 
+    const callerRole = access.callerRole ?? 'player';
     return {
       success: true,
-      reviews: (reviews as ReviewDbRow[]).map(dbRowToReview)
+      reviews: (reviews as ReviewDbRow[]).map(r => dbRowToReview(r, callerRole))
     };
   } catch (error) {
     console.error('Error fetching player reviews:', error);
@@ -897,12 +1053,18 @@ export async function markReviewAsViewed(reviewId: string): Promise<{
     // Get existing review
     const { data: review, error: fetchError } = await supabase
       .from('golf_round_reviews')
-      .select('patterns_detected')
+      .select('player_id, patterns_detected')
       .eq('id', reviewId)
       .single();
 
     if (fetchError || !review) {
       return { success: false, error: 'Review not found' };
+    }
+
+    // Verify the current user is the player who owns this review
+    const access = await verifyReviewAccess(supabase, review.player_id, 'player');
+    if (!access.authorized) {
+      return { success: false, error: 'Review not found or not accessible' };
     }
 
     const extData = review.patterns_detected as ReviewExtendedData | null;
@@ -947,12 +1109,18 @@ export async function addPlayerFeedback(
     // Get existing review
     const { data: review, error: fetchError } = await supabase
       .from('golf_round_reviews')
-      .select('patterns_detected')
+      .select('player_id, patterns_detected')
       .eq('id', reviewId)
       .single();
 
     if (fetchError || !review) {
       return { success: false, error: 'Review not found' };
+    }
+
+    // Verify the current user is the player who owns this review
+    const access = await verifyReviewAccess(supabase, review.player_id, 'player');
+    if (!access.authorized) {
+      return { success: false, error: 'Review not found or not accessible' };
     }
 
     const extData = review.patterns_detected as ReviewExtendedData | null;
@@ -1027,11 +1195,17 @@ export async function getReviewGenerationStatus(reviewId: string): Promise<{
   try {
     const { data: review, error } = await supabase
       .from('golf_round_reviews')
-      .select('patterns_detected')
+      .select('player_id, patterns_detected')
       .eq('id', reviewId)
       .single();
 
     if (error || !review) {
+      return { success: false, error: 'Review not found' };
+    }
+
+    // Verify the current user owns this review or is a coach on the player's team
+    const access = await verifyReviewAccess(supabase, review.player_id, 'player_or_coach');
+    if (!access.authorized) {
       return { success: false, error: 'Review not found' };
     }
 
@@ -1347,6 +1521,61 @@ export async function markReviewViewedByCoach(
   const supabase = await createClient();
 
   try {
+    // Fetch the review to get its player_id
+    const { data: review, error: fetchError } = await supabase
+      .from('golf_round_reviews')
+      .select('player_id')
+      .eq('id', reviewId)
+      .single();
+
+    if (fetchError || !review) {
+      return { success: false, error: 'Review not found' };
+    }
+
+    // Verify the current user is a coach on the player's team
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const { data: coach } = await supabase
+      .from('golf_coaches')
+      .select('id, organization_id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (!coach) {
+      return { success: false, error: 'Not authorized - coach access required' };
+    }
+
+    // Verify the player is on the coach's team
+    if (coach.organization_id) {
+      const { data: team } = await supabase
+        .from('golf_teams')
+        .select('id')
+        .eq('organization_id', coach.organization_id)
+        .limit(1)
+        .maybeSingle();
+
+      if (team) {
+        const { data: teamMember } = await supabase
+          .from('golf_team_members')
+          .select('id')
+          .eq('team_id', team.id)
+          .eq('player_id', review.player_id)
+          .eq('status', 'active')
+          .maybeSingle();
+
+        if (!teamMember) {
+          return { success: false, error: 'Not authorized to access this review' };
+        }
+      } else {
+        return { success: false, error: 'Not authorized to access this review' };
+      }
+    } else {
+      return { success: false, error: 'Not authorized to access this review' };
+    }
+
     const { error } = await supabase
       .from('golf_round_reviews')
       .update({
