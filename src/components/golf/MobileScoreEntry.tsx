@@ -3,18 +3,13 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useMobileNav } from '@/contexts/mobile-nav-context';
 import { useHapticFeedback } from '@/hooks/use-mobile-detection';
-import type { HoleStats } from './ShotTrackingComprehensive';
+import type { HoleStats, RoundHole } from '@/lib/types/golf';
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-interface Hole {
-  number: number;
-  par: number;
-  yardage: number;
-  score: number | null;
-}
+type Hole = RoundHole;
 
 interface QuickHoleEntry {
   score: number;

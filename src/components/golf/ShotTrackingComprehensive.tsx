@@ -1,76 +1,160 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import { PuttMissTagSelector } from './putt-miss-tag-selector';
 import { ApproachMissSelector } from './approach-miss-selector';
 import { useMobileNav } from '@/contexts/mobile-nav-context';
-import type { PuttMissTag, ApproachMissDirection } from '@/lib/types/golf';
-import { updateShot, deleteShot, type ShotUpdateData } from '@/app/golf/actions/golf';
+import { calculateShotDistanceWithDirection } from '@/lib/utils/shot-helpers';
+
+// Re-export canonical types for backward compatibility
+export type { ShotRecord, HoleStats, RoundHole } from '@/lib/types/golf';
+import type { ShotRecord, HoleStats, RoundHole } from '@/lib/types/golf';
+
+import { useShotStateMachine, type EditFormData } from '@/hooks/golf/use-shot-state-machine';
+import { usePenaltyHandler } from '@/hooks/golf/use-penalty-handler';
+import { useUndoManager } from '@/hooks/golf/use-undo-manager';
+import { useEditShotModal } from '@/hooks/golf/use-edit-shot-modal';
+
+// Local alias for the Hole interface used by this component's props
+type Hole = RoundHole;
 
 // ============================================================================
-// TYPES
+// HOLE COMPLETION - COMPREHENSIVE STATS CALCULATION
 // ============================================================================
+// Module-level pure function — extracted from component body so hooks can
+// reference a stable identity (avoids re-creating useCallback on every render).
 
-interface Hole {
-  number: number;
-  par: number;
-  yardage: number;
-  score: number | null;
-}
+export function calculateHoleStats(shots: ShotRecord[], hole: Hole): HoleStats {
+  const nonPenaltyShots = shots.filter(s => !s.isPenalty);
+  const score = shots.length;
+  const putts = shots.filter(s => s.shotType === 'putting').length;
+  const penalties = shots.filter(s => s.isPenalty).length;
 
-export interface ShotRecord {
-  id?: string; // Database ID (present for saved shots, undefined for new shots)
-  shotNumber: number;
-  shotType: 'tee' | 'approach' | 'around_green' | 'putting' | 'penalty';
-  clubType: 'driver' | 'non_driver' | 'putter';
-  lieBefore: 'tee' | 'fairway' | 'rough' | 'sand' | 'green' | 'other';
-  distanceToHoleBefore: number;
-  distanceUnitBefore: 'yards' | 'feet';
-  result: 'fairway' | 'rough' | 'sand' | 'green' | 'hole' | 'other' | 'penalty';
-  distanceToHoleAfter: number;
-  distanceUnitAfter: 'yards' | 'feet';
-  shotDistance: number;
-  missDirection?: string; // Legacy field, kept for backward compatibility
-  puttBreak?: 'right_to_left' | 'left_to_right' | 'straight' | 'multiple';
-  puttSlope?: 'uphill' | 'downhill' | 'level' | 'severe';
-  isPenalty: boolean;
-  penaltyType?: 'ob' | 'water' | 'unplayable' | 'lost';
-  // New putt classification fields
-  puttMissTags?: PuttMissTag[];
-  puttDistanceFeet?: number;
-  // New approach miss classification
-  approachMissDirection?: ApproachMissDirection;
-  approachMissLieType?: 'fairway' | 'rough' | 'bunker' | 'hazard';
-}
+  // DRIVING STATS (Par 4/5 only)
+  let fairwayHit: boolean | null = null;
+  let drivingDistance: number | null = null;
+  let driveMissDirection: string | null = null;
+  let driverUsed: boolean | null = null;
 
-export interface HoleStats {
-  holeNumber: number;
-  par: number;
-  yardage: number;
-  score: number;
-  putts: number;
-  fairwayHit: boolean | null;
-  greenInRegulation: boolean;
-  drivingDistance: number | null;
-  usedDriver: boolean | null;
-  driveMissDirection: string | null;
-  approachDistance: number | null;
-  approachLie: string | null;
-  approachProximity: number | null;
-  approachMissDirection: string | null;
-  scrambleAttempt: boolean;
-  scrambleMade: boolean;
-  sandSaveAttempt: boolean;
-  sandSaveMade: boolean;
-  penaltyStrokes: number;
-  firstPuttDistance: number | null;
-  firstPuttLeave: number | null;
-  firstPuttBreak: string | null;
-  firstPuttSlope: string | null;
-  firstPuttMissDirection: string | null;
-  holedOutDistance: number | null;
-  holedOutType: string | null;
-  shots: ShotRecord[];
+  if (hole.par >= 4) {
+    const teeShot = shots.find(s => s.shotType === 'tee' && !s.isPenalty);
+    if (teeShot) {
+      fairwayHit = teeShot.result === 'fairway';
+      driveMissDirection = teeShot.missDirection || null;
+      driverUsed = teeShot.clubType === 'driver';
+      drivingDistance = teeShot.shotDistance;
+    }
+  }
+
+  // APPROACH STATS
+  let approachDistance: number | null = null;
+  let approachLie: string | null = null;
+  let approachProximity: number | null = null;
+  let approachMissDir: string | null = null;
+
+  const greenShotIndex = nonPenaltyShots.findIndex(s => s.result === 'green' || s.result === 'hole');
+  if (greenShotIndex > 0 || (greenShotIndex === 0 && hole.par === 3)) {
+    const approachShot = nonPenaltyShots[greenShotIndex];
+    if (approachShot && approachShot.shotType !== 'putting') {
+      approachDistance = approachShot.distanceUnitBefore === 'feet'
+        ? Math.round(approachShot.distanceToHoleBefore / 3)
+        : approachShot.distanceToHoleBefore;
+      approachLie = approachShot.lieBefore;
+      if (approachShot.result === 'green') {
+        approachProximity = approachShot.distanceUnitAfter === 'yards'
+          ? approachShot.distanceToHoleAfter * 3
+          : approachShot.distanceToHoleAfter;
+      }
+      approachMissDir = approachShot.missDirection || null;
+    }
+  }
+
+  // GREEN IN REGULATION
+  const shotsToGreen = hole.par - 2;
+  const shotsTakenToGreen = shots.findIndex(s => s.result === 'green' || s.result === 'hole');
+  const greenInRegulation = shotsTakenToGreen !== -1 && (shotsTakenToGreen + 1) <= shotsToGreen;
+
+  // SCRAMBLING
+  const scrambleAttempt = !greenInRegulation && shotsTakenToGreen !== -1;
+  const scrambleMade = scrambleAttempt && score <= hole.par;
+
+  // SAND SAVE
+  let sandSaveAttempt = false;
+  let sandSaveMade = false;
+  const sandShots = nonPenaltyShots.filter(s =>
+    s.lieBefore === 'sand' &&
+    (s.shotType === 'around_green' || (s.distanceUnitBefore === 'yards' && s.distanceToHoleBefore <= 50))
+  );
+  if (sandShots.length > 0) {
+    sandSaveAttempt = true;
+    const sandShotIndex = nonPenaltyShots.findIndex(s => s === sandShots[0]);
+    const shotsAfterSand = nonPenaltyShots.length - sandShotIndex;
+    sandSaveMade = shotsAfterSand <= 2 && score <= hole.par;
+  }
+
+  // PUTTING STATS
+  let firstPuttDistance: number | null = null;
+  let firstPuttLeave: number | null = null;
+  let firstPuttBreak: string | null = null;
+  let firstPuttSlope: string | null = null;
+  let firstPuttMissDirection: string | null = null;
+
+  const puttingShots = nonPenaltyShots.filter(s => s.shotType === 'putting');
+  if (puttingShots.length > 0) {
+    const firstPutt = puttingShots[0]!;
+    firstPuttDistance = firstPutt.distanceUnitBefore === 'yards'
+      ? firstPutt.distanceToHoleBefore * 3
+      : firstPutt.distanceToHoleBefore;
+    firstPuttBreak = firstPutt.puttBreak || null;
+    firstPuttSlope = firstPutt.puttSlope || null;
+    if (firstPutt.result !== 'hole' && puttingShots.length > 1) {
+      firstPuttLeave = firstPutt.distanceUnitAfter === 'yards'
+        ? firstPutt.distanceToHoleAfter * 3
+        : firstPutt.distanceToHoleAfter;
+      firstPuttMissDirection = firstPutt.missDirection || null;
+    }
+  }
+
+  // HOLE OUT STATS
+  let holedOutDistance: number | null = null;
+  let holedOutType: string | null = null;
+  const holeOutShot = nonPenaltyShots.find(s => s.result === 'hole' && s.shotType !== 'putting');
+  if (holeOutShot) {
+    holedOutDistance = holeOutShot.distanceUnitBefore === 'feet'
+      ? holeOutShot.distanceToHoleBefore
+      : holeOutShot.distanceToHoleBefore * 3;
+    holedOutType = holeOutShot.shotType;
+  }
+
+  return {
+    holeNumber: hole.number,
+    par: hole.par,
+    yardage: hole.yardage,
+    score,
+    putts,
+    fairwayHit,
+    greenInRegulation,
+    drivingDistance,
+    usedDriver: driverUsed,
+    driveMissDirection,
+    approachDistance,
+    approachLie,
+    approachProximity,
+    approachMissDirection: approachMissDir,
+    scrambleAttempt,
+    scrambleMade,
+    sandSaveAttempt,
+    sandSaveMade,
+    penaltyStrokes: penalties,
+    firstPuttDistance,
+    firstPuttLeave,
+    firstPuttBreak,
+    firstPuttSlope,
+    firstPuttMissDirection,
+    holedOutDistance,
+    holedOutType,
+    shots,
+  };
 }
 
 interface ShotTrackingProps {
@@ -86,84 +170,6 @@ interface ShotTrackingProps {
   // Auto-save props
   onAutoSave?: (shots: ShotRecord[], currentHoleIndex: number) => Promise<void>;
   autoSaveInterval?: number; // in milliseconds, default 30000 (30s)
-}
-
-// ============================================================================
-// SHOT DISTANCE CALCULATION HELPER
-// ============================================================================
-
-/**
- * Calculates the actual shot distance based on miss direction.
- *
- * The key insight: distanceToHoleAfter tells us how far the ball is from the hole,
- * but the DIRECTION tells us WHERE the ball is relative to the hole:
- *
- * - SHORT: Ball is between you and the hole → shot = before - after
- * - LONG: Ball went past the hole → shot = before + after
- * - LEFT/RIGHT: Ball is lateral to the hole at ~same depth → shot ≈ before
- * - SHORT_LEFT/SHORT_RIGHT: Diagonal short → shot ≈ before - (after * 0.7)
- * - LONG_LEFT/LONG_RIGHT: Diagonal long → shot ≈ before + (after * 0.7)
- *
- * The 0.7 factor approximates a 45-degree diagonal (cos(45°) ≈ 0.707)
- */
-function calculateShotDistanceWithDirection(
-  distanceBeforeYards: number,
-  distanceAfterYards: number,
-  missDirection: string | null | undefined
-): number {
-  // If holed out, shot distance is exactly the before distance
-  if (distanceAfterYards === 0) {
-    return distanceBeforeYards;
-  }
-
-  // Golf distance calculation: "distance to hole" is always measured from ball to hole.
-  // Shot distance = how much closer you got to the hole = before - after
-  // The only exception is when the ball goes PAST the hole (long miss).
-
-  // For most cases (including left/right misses), the shot distance is simply
-  // how much closer you got to the hole.
-  if (!missDirection) {
-    return Math.max(0, distanceBeforeYards - distanceAfterYards);
-  }
-
-  const direction = missDirection.toLowerCase();
-
-  // LONG: Ball went past the hole - you traveled MORE than the before distance
-  if (direction === 'long') {
-    return distanceBeforeYards + distanceAfterYards;
-  }
-
-  // DIAGONAL LONG: Ball went past and to the side
-  if (direction === 'long_left' || direction === 'long_right') {
-    // Estimate: ball went past, so add the distances, but discount the after distance
-    // since some of it is lateral offset
-    return distanceBeforeYards + Math.round(distanceAfterYards * 0.7);
-  }
-
-  // All other cases: SHORT, LEFT, RIGHT, SHORT_LEFT, SHORT_RIGHT, HIGH, LOW, etc.
-  // The ball is closer to the hole than before, so shot distance = before - after
-  return Math.max(0, distanceBeforeYards - distanceAfterYards);
-}
-
-function deriveLieAfterFromResult(result: ShotRecord['result'] | null | undefined): string | null {
-  if (!result) return null;
-  switch (result) {
-    case 'fairway':
-      return 'fairway';
-    case 'rough':
-      return 'rough';
-    case 'sand':
-      return 'sand';
-    case 'green':
-    case 'hole':
-      return 'green';
-    case 'penalty':
-      return 'penalty';
-    case 'other':
-      return 'rough';
-    default:
-      return null;
-  }
 }
 
 // ============================================================================
@@ -186,11 +192,6 @@ export default function ShotTrackingComprehensive({
   const { hide, show } = useMobileNav();
   const currentHole = holes[currentHoleIndex];
 
-  // Auto-save state
-  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  const lastSavedShotsRef = useRef<string>('');
-  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
   // Hide mobile nav when shot tracking is active
   useEffect(() => {
     hide();
@@ -201,296 +202,58 @@ export default function ShotTrackingComprehensive({
   }, [hide, show]);
 
   // ============================================================================
-  // STATE & REFS
+  // STATE MACHINE HOOK
   // ============================================================================
 
-  const [currentShot, setCurrentShot] = useState(initialShotNumber);
-  const [shotHistory, setShotHistory] = useState<ShotRecord[]>(initialShots);
+  const {
+    state,
+    dispatch,
+    isProcessingShotRef,
+    distanceInputRef,
+    shotType,
+    isPutting,
+    isTeeShot,
+    isApproachOrAroundGreen,
+  } = useShotStateMachine({
+    initialShots,
+    initialShotNumber,
+    currentHoleIndex,
+    currentHole,
+    onAutoSave,
+    autoSaveInterval,
+  });
 
-  // Ref for auto-focusing distance input
-  const distanceInputRef = useRef<HTMLInputElement>(null);
-  
-  // Current position state - initialize from last shot if available
-  const getInitialDistance = (): number => {
-    if (initialShots.length > 0) {
-      const lastShot = initialShots[initialShots.length - 1];
-      if (lastShot != null && lastShot.distanceToHoleAfter != null) {
-        const parsed = typeof lastShot.distanceToHoleAfter === 'string'
-          ? parseFloat(lastShot.distanceToHoleAfter)
-          : lastShot.distanceToHoleAfter;
-        return isNaN(parsed) ? (currentHole?.yardage ?? 0) : parsed;
-      }
-    }
-    return currentHole?.yardage ?? 0;
-  };
+  // Destructure state for convenience
+  const {
+    currentShot, shotHistory, distanceToHole, distanceUnit, currentLie,
+    usedDriver, resultOfShot, missDirection, puttBreak, puttSlope, puttMissTags,
+    approachMissDirection, approachMissLieType, distanceAfterShot, distanceAfterUnit,
+    autoSaveStatus, showPenaltyModal, penaltyType,
+    showUndoConfirm, undoSaving,
+    editingShot, showEditModal, showDeleteConfirm, editFormData, editSaving, editError,
+    selectedShotNumber,
+  } = state;
 
-  const getInitialDistanceUnit = (): 'yards' | 'feet' => {
-    if (initialShots.length > 0) {
-      const lastShot = initialShots[initialShots.length - 1];
-      return (lastShot?.distanceUnitAfter || 'yards') as 'yards' | 'feet';
-    }
-    return 'yards';
-  };
-  
-  const getInitialLie = (): 'tee' | 'fairway' | 'rough' | 'sand' | 'green' | 'other' => {
-    if (initialShots.length > 0) {
-      const lastShot = initialShots[initialShots.length - 1];
-      if (lastShot?.result === 'green') return 'green';
-      if (lastShot?.result === 'rough') return 'rough';
-      if (lastShot?.result === 'sand') return 'sand';
-      if (lastShot?.result === 'fairway') return 'fairway';
-    }
-    return 'tee';
-  };
-
-  const [distanceToHole, setDistanceToHole] = useState(getInitialDistance());
-  const [distanceUnit, setDistanceUnit] = useState<'yards' | 'feet'>(getInitialDistanceUnit());
-  const [currentLie, setCurrentLie] = useState<'tee' | 'fairway' | 'rough' | 'sand' | 'green' | 'other'>(getInitialLie());
-  
-  // Shot input state
-  const [usedDriver, setUsedDriver] = useState<boolean | null>(null);
-  const [resultOfShot, setResultOfShot] = useState<ShotRecord['result'] | null>(null);
-  const [missDirection, setMissDirection] = useState<string | null>(null);
-  const [puttBreak, setPuttBreak] = useState<ShotRecord['puttBreak'] | null>(null);
-  const [puttSlope, setPuttSlope] = useState<ShotRecord['puttSlope'] | null>(null);
-  // New putt classification state
-  const [puttMissTags, setPuttMissTags] = useState<PuttMissTag[]>([]);
-  // New approach miss classification state
-  const [approachMissDirection, setApproachMissDirection] = useState<ApproachMissDirection | null>(null);
-  const [approachMissLieType, setApproachMissLieType] = useState<'fairway' | 'rough' | 'bunker' | 'hazard' | undefined>(undefined);
-  
-  // Distance after shot (key fix: we ask for this after EVERY shot)
-  const [distanceAfterShot, setDistanceAfterShot] = useState<string>('');
-  const [distanceAfterUnit, setDistanceAfterUnit] = useState<'yards' | 'feet'>('yards');
-  
-  // Penalty modal
-  const [showPenaltyModal, setShowPenaltyModal] = useState(false);
-  const [penaltyType, setPenaltyType] = useState<string | null>(null);
-
-  // Edit shot modal
-  const [editingShot, setEditingShot] = useState<ShotRecord | null>(null);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [editFormData, setEditFormData] = useState<{
-    clubType: 'driver' | 'non_driver' | 'putter';
-    lieBefore: 'tee' | 'fairway' | 'rough' | 'sand' | 'green' | 'other';
-    result: ShotRecord['result'];
-    distanceToHoleBefore: string;
-    distanceUnitBefore: 'yards' | 'feet';
-    distanceToHoleAfter: string;
-    distanceUnitAfter: 'yards' | 'feet';
-    missDirection: string | null;
-    puttBreak: ShotRecord['puttBreak'] | null;
-    puttSlope: ShotRecord['puttSlope'] | null;
-    isPenalty: boolean;
-    penaltyType: string | null;
-  } | null>(null);
-  const [editSaving, setEditSaving] = useState(false);
-  const [editError, setEditError] = useState<string | null>(null);
-
-  // ============================================================================
-  // RESET ON HOLE CHANGE
-  // ============================================================================
-  
-  const hydratedHoleIndexRef = useRef<number | null>(null);
-  const [selectedShotNumber, setSelectedShotNumber] = useState<number | null>(null);
+  // Local ref for scroll-to-shot in pills
   const shotHistoryRefs = useRef<Record<number, HTMLButtonElement | null>>({});
-  
-  useEffect(() => {
-    if (hydratedHoleIndexRef.current === currentHoleIndex) {
-      return;
-    }
-
-    hydratedHoleIndexRef.current = currentHoleIndex;
-
-    const hasSavedShots = initialShots.length > 0;
-
-    // Inline the getInitial* helpers to satisfy exhaustive-deps
-    let initialLie: 'tee' | 'fairway' | 'rough' | 'sand' | 'green' | 'other' = 'tee';
-    let initialDistance = currentHole?.yardage ?? 0;
-    let initialUnit: 'yards' | 'feet' = 'yards';
-
-    if (hasSavedShots) {
-      const lastShot = initialShots[initialShots.length - 1];
-      // getInitialLie
-      if (lastShot?.result === 'green') initialLie = 'green';
-      else if (lastShot?.result === 'rough') initialLie = 'rough';
-      else if (lastShot?.result === 'sand') initialLie = 'sand';
-      else if (lastShot?.result === 'fairway') initialLie = 'fairway';
-      // getInitialDistance (use != null to allow 0 as valid value)
-      if (lastShot != null && lastShot.distanceToHoleAfter != null) {
-        const parsed = typeof lastShot.distanceToHoleAfter === 'string'
-          ? parseFloat(lastShot.distanceToHoleAfter)
-          : lastShot.distanceToHoleAfter;
-        if (!isNaN(parsed)) initialDistance = parsed;
-      }
-      // getInitialDistanceUnit
-      initialUnit = (lastShot?.distanceUnitAfter || 'yards') as 'yards' | 'feet';
-    }
-    const nextShotNumber = hasSavedShots ? initialShotNumber : 1;
-
-    setCurrentShot(nextShotNumber);
-    setShotHistory(hasSavedShots ? initialShots : []);
-    setDistanceToHole(initialDistance);
-    setDistanceUnit(initialUnit);
-    setCurrentLie(initialLie);
-
-    setUsedDriver(null);
-    setResultOfShot(null);
-    setMissDirection(null);
-    setPuttBreak(null);
-    setPuttSlope(null);
-    setDistanceAfterShot('');
-    setDistanceAfterUnit(initialLie === 'green' ? 'feet' : 'yards');
-    setShowPenaltyModal(false);
-    setPenaltyType(null);
-    setPuttMissTags([]);
-    setApproachMissDirection(null);
-    setApproachMissLieType(undefined);
-    setSelectedShotNumber(null);
-  }, [currentHoleIndex, currentHole?.yardage, initialShots, initialShotNumber]);
 
   // ============================================================================
-  // AUTO-SAVE EFFECT
+  // SUB-HOOKS — must be called before any early return (Rules of Hooks)
   // ============================================================================
+  // Safe to cast currentHole as RoundHole: if currentHole is undefined, the early
+  // return below prevents any handler from ever being called.
 
-  // Use refs to always have fresh values in the save timeout without re-creating it
-  const onAutoSaveRef = useRef(onAutoSave);
-  onAutoSaveRef.current = onAutoSave;
-  const shotHistoryRef = useRef(shotHistory);
-  shotHistoryRef.current = shotHistory;
-  const currentHoleIndexRef = useRef(currentHoleIndex);
-  currentHoleIndexRef.current = currentHoleIndex;
+  const { handleAddPenalty, confirmPenalty } = usePenaltyHandler({
+    state, dispatch, currentHole: currentHole as RoundHole, onSaveShot,
+  });
 
-  // Single unified auto-save effect: quick save (3s) after shot changes, periodic backup at longer interval
-  useEffect(() => {
-    if (!onAutoSaveRef.current || shotHistory.length === 0) {
-      return;
-    }
+  const { handleEditShot, handleCloseEditModal, handleSaveEditedShot, handleDeleteShot } = useEditShotModal({
+    state, dispatch, currentHole: currentHole as RoundHole, currentHoleIndex, onAutoSave, onHoleStatsUpdate, calculateHoleStats,
+  });
 
-    // Create a fingerprint of current shots to detect changes
-    const currentShotsFingerprint = JSON.stringify(
-      shotHistory.map(s => ({
-        n: s.shotNumber,
-        t: s.shotType,
-        r: s.result,
-        d: s.distanceToHoleAfter,
-        db: s.distanceToHoleBefore,
-      }))
-    );
-
-    // Don't save if nothing changed
-    if (currentShotsFingerprint === lastSavedShotsRef.current) {
-      return;
-    }
-
-    // Clear existing timeout
-    if (autoSaveTimeoutRef.current) {
-      clearTimeout(autoSaveTimeoutRef.current);
-    }
-
-    // Quick debounce (3s) for immediate feedback after shot changes
-    // Uses refs to always get fresh callback + state, avoiding stale closures
-    autoSaveTimeoutRef.current = setTimeout(async () => {
-      // Re-check fingerprint at fire time (may have changed during debounce)
-      const freshFingerprint = JSON.stringify(
-        shotHistoryRef.current.map(s => ({
-          n: s.shotNumber,
-          t: s.shotType,
-          r: s.result,
-          d: s.distanceToHoleAfter,
-          db: s.distanceToHoleBefore,
-        }))
-      );
-
-      if (freshFingerprint === lastSavedShotsRef.current) {
-        return;
-      }
-
-      try {
-        setAutoSaveStatus('saving');
-        await onAutoSaveRef.current?.(shotHistoryRef.current, currentHoleIndexRef.current);
-        lastSavedShotsRef.current = freshFingerprint;
-        setAutoSaveStatus('saved');
-
-        // Reset to idle after 2 seconds
-        setTimeout(() => {
-          setAutoSaveStatus('idle');
-        }, 2000);
-      } catch (error) {
-        console.error('Auto-save failed:', error);
-        setAutoSaveStatus('error');
-
-        // Reset to idle after 3 seconds on error
-        setTimeout(() => {
-          setAutoSaveStatus('idle');
-        }, 3000);
-      }
-    }, 3000);
-
-    // Cleanup timeout on unmount or dependency change
-    return () => {
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current);
-      }
-    };
-  }, [shotHistory, currentHoleIndex]);
-
-  // ============================================================================
-  // DERIVED VALUES
-  // ============================================================================
-  
-  const getShotType = useCallback((): 'tee' | 'approach' | 'around_green' | 'putting' => {
-    if (currentLie === 'green') return 'putting';
-    if (currentShot === 1 && currentHole?.par === 3) return 'approach';
-    if (currentShot === 1 && currentHole?.par !== 3) return 'tee';
-    if (distanceUnit === 'feet' || distanceToHole <= 30) return 'around_green';
-    return 'approach';
-  }, [currentLie, currentShot, currentHole?.par, distanceUnit, distanceToHole]);
-
-  const shotType = getShotType();
-  const isPutting = shotType === 'putting';
-  const isTeeShot = shotType === 'tee';
-  const isApproachOrAroundGreen = shotType === 'approach' || shotType === 'around_green';
-
-  const getClubType = (): 'driver' | 'non_driver' | 'putter' => {
-    if (isPutting) return 'putter';
-    if (isTeeShot && currentHole?.par !== 3 && usedDriver) return 'driver';
-    return 'non_driver';
-  };
-
-  // Auto-set distance unit based on result
-  useEffect(() => {
-    if (resultOfShot === 'green') {
-      setDistanceAfterUnit('feet');
-    } else if (resultOfShot === 'hole') {
-      setDistanceAfterShot('0');
-      setDistanceAfterUnit('feet');
-    } else if (resultOfShot) {
-      // Keep yards for non-green results unless we're already putting
-      if (!isPutting) {
-        setDistanceAfterUnit('yards');
-      }
-    }
-  }, [resultOfShot, isPutting]);
-
-  // Auto-focus distance input when it appears (only if miss direction not needed or already filled)
-  useEffect(() => {
-    if (resultOfShot && resultOfShot !== 'hole' && distanceInputRef.current) {
-      // Check if miss direction is needed
-      const needsMissDirection =
-        (isTeeShot && ['rough', 'sand', 'other'].includes(resultOfShot)) ||
-        (isApproachOrAroundGreen && resultOfShot && !['green', 'hole'].includes(resultOfShot)) ||
-        (isPutting && resultOfShot !== null);
-
-      // Only auto-focus distance if miss direction not needed OR already filled
-      if (!needsMissDirection || missDirection) {
-        setTimeout(() => {
-          distanceInputRef.current?.focus();
-        }, 100);
-      }
-    }
-  }, [resultOfShot, missDirection, isTeeShot, isApproachOrAroundGreen, isPutting]);
+  const { handleUndoLastShot } = useUndoManager({
+    state, dispatch, currentHole: currentHole as RoundHole, currentHoleIndex, onAutoSave, onHoleStatsUpdate, calculateHoleStats,
+  });
 
   // Early return for invalid hole data - must be after all hooks
   if (!currentHole) {
@@ -501,10 +264,21 @@ export default function ShotTrackingComprehensive({
     );
   }
 
+  const completeHole = (shots: ShotRecord[]) => {
+    const holeStats = calculateHoleStats(shots, currentHole);
+    onHoleComplete(currentHoleIndex, holeStats);
+  };
+
   // ============================================================================
-  // VALIDATION
+  // DERIVED VALUES & VALIDATION
   // ============================================================================
-  
+
+  const getClubType = (): 'driver' | 'non_driver' | 'putter' => {
+    if (isPutting) return 'putter';
+    if (isTeeShot && currentHole.par !== 3 && usedDriver) return 'driver';
+    return 'non_driver';
+  };
+
   const isReadyForNextShot = (): boolean => {
     // Must have a result
     if (!resultOfShot) return false;
@@ -519,11 +293,6 @@ export default function ShotTrackingComprehensive({
 
       const parsed = parseFloat(trimmed);
       if (!Number.isFinite(parsed) || parsed < 0) return false;
-
-      // Validate distance after is less than distance before (can't be further from hole)
-      const beforeInYards = distanceUnit === 'feet' ? distanceToHole / 3 : distanceToHole;
-      const afterInYards = distanceAfterUnit === 'feet' ? parsed / 3 : parsed;
-      if (afterInYards >= beforeInYards) return false;
 
       // Validate reasonable distance for green shots (proximity should be < 150 feet)
       if (resultOfShot === 'green') {
@@ -552,222 +321,23 @@ export default function ShotTrackingComprehensive({
   // ============================================================================
   // HANDLERS
   // ============================================================================
-  
-  const handleAddPenalty = () => setShowPenaltyModal(true);
 
-  const confirmPenalty = () => {
-    if (!penaltyType) return;
-
-    // Prevent adding penalty to an already-completed hole
-    if (shotHistory.some(s => s.result === 'hole')) return;
-
-    const penaltyShot: ShotRecord = {
-      shotNumber: currentShot,
-      shotType: 'penalty',
-      clubType: 'non_driver',
-      lieBefore: currentLie,
-      distanceToHoleBefore: distanceToHole,
-      distanceUnitBefore: distanceUnit,
-      result: 'penalty',
-      distanceToHoleAfter: distanceToHole,
-      distanceUnitAfter: distanceUnit,
-      shotDistance: 0,
-      isPenalty: true,
-      penaltyType: penaltyType as 'ob' | 'water' | 'unplayable' | 'lost',
-    };
-    
-    setShotHistory(prev => [...prev, penaltyShot]);
-    setCurrentShot(prev => prev + 1);
-    setShowPenaltyModal(false);
-    setPenaltyType(null);
-    onSaveShot?.(penaltyShot);
-  };
-
-  // Open edit modal for a specific shot
-  const handleEditShot = (shot: ShotRecord) => {
-    setEditingShot(shot);
-    setEditFormData({
-      clubType: shot.clubType,
-      lieBefore: shot.lieBefore,
-      result: shot.result,
-      distanceToHoleBefore: String(shot.distanceToHoleBefore),
-      distanceUnitBefore: shot.distanceUnitBefore,
-      distanceToHoleAfter: String(shot.distanceToHoleAfter),
-      distanceUnitAfter: shot.distanceUnitAfter,
-      missDirection: shot.missDirection || null,
-      puttBreak: shot.puttBreak || null,
-      puttSlope: shot.puttSlope || null,
-      isPenalty: shot.isPenalty,
-      penaltyType: shot.penaltyType || null,
-    });
-    setEditError(null);
-    setShowEditModal(true);
-  };
-
-  // Close edit modal
-  const handleCloseEditModal = () => {
-    setShowEditModal(false);
-    setEditingShot(null);
-    setEditFormData(null);
-    setEditError(null);
-    setShowDeleteConfirm(false);
-  };
-
-  // Save edited shot
-  const handleSaveEditedShot = async () => {
-    if (!editingShot || !editFormData) return;
-
-    setEditSaving(true);
-    setEditError(null);
-
-    try {
-      // Calculate new shot distance
-      const beforeInYards = editFormData.distanceUnitBefore === 'feet'
-        ? parseFloat(editFormData.distanceToHoleBefore) / 3
-        : parseFloat(editFormData.distanceToHoleBefore);
-      const afterInYards = editFormData.distanceUnitAfter === 'feet'
-        ? parseFloat(editFormData.distanceToHoleAfter) / 3
-        : parseFloat(editFormData.distanceToHoleAfter);
-      const newShotDistance = Math.round(calculateShotDistanceWithDirection(
-        beforeInYards,
-        afterInYards,
-        editFormData.missDirection
-      ));
-      const isPuttingShot = editingShot.shotType === 'putting';
-      const distanceBeforeValue = parseFloat(editFormData.distanceToHoleBefore);
-      const puttDistanceFeet = isPuttingShot && Number.isFinite(distanceBeforeValue)
-        ? (editFormData.distanceUnitBefore === 'yards' ? distanceBeforeValue * 3 : distanceBeforeValue)
-        : undefined;
-
-      // Create the updated shot record (for local state)
-      const updatedShot: ShotRecord = {
-        ...editingShot,
-        clubType: editFormData.clubType,
-        lieBefore: editFormData.lieBefore,
-        result: editFormData.result,
-        distanceToHoleBefore: parseFloat(editFormData.distanceToHoleBefore),
-        distanceUnitBefore: editFormData.distanceUnitBefore,
-        distanceToHoleAfter: parseFloat(editFormData.distanceToHoleAfter),
-        distanceUnitAfter: editFormData.distanceUnitAfter,
-        shotDistance: newShotDistance,
-        missDirection: editFormData.missDirection || undefined,
-        puttBreak: editFormData.puttBreak || undefined,
-        puttSlope: editFormData.puttSlope || undefined,
-        puttDistanceFeet: isPuttingShot ? puttDistanceFeet : editingShot.puttDistanceFeet,
-        isPenalty: editFormData.isPenalty,
-        penaltyType: editFormData.isPenalty ? (editFormData.penaltyType as ShotRecord['penaltyType']) : undefined,
-      };
-
-      // If shot has an ID, update in database
-      if (editingShot.id) {
-        const updateData: ShotUpdateData = {
-          club_type: editFormData.clubType,
-          lie_before: editFormData.lieBefore,
-          result: editFormData.result,
-          distance_to_hole_before: parseFloat(editFormData.distanceToHoleBefore),
-          distance_unit_before: editFormData.distanceUnitBefore,
-          distance_to_hole_after: parseFloat(editFormData.distanceToHoleAfter),
-          distance_unit_after: editFormData.distanceUnitAfter,
-          shot_distance: newShotDistance,
-          miss_direction: editFormData.missDirection,
-          putt_break: editFormData.puttBreak,
-          putt_slope: editFormData.puttSlope,
-          putt_distance_feet: isPuttingShot ? puttDistanceFeet ?? null : null,
-          putt_made: isPuttingShot ? editFormData.result === 'hole' : null,
-          lie_after: deriveLieAfterFromResult(editFormData.result),
-          is_penalty: editFormData.isPenalty,
-          penalty_type: editFormData.isPenalty ? editFormData.penaltyType : null,
-        };
-
-        const result = await updateShot(editingShot.id, updateData);
-        if (!result.success) {
-          setEditError(result.error || 'Failed to update shot');
-          setEditSaving(false);
-          return;
-        }
-      }
-
-      // Compute updated history once for reuse
-      const updatedHistory = shotHistory.map(s =>
-        s.shotNumber === editingShot.shotNumber ? updatedShot : s
-      );
-
-      // Update local state
-      setShotHistory(updatedHistory);
-
-      // Recalculate parent stats if hole is still complete
-      recalculateCompletedHole(updatedHistory);
-
-      // Trigger auto-save — note: the parent's completedHoleStats in the auto-save closure
-      // won't reflect the recalculation until next render (React batching), but the shot data
-      // itself is always correct. The periodic auto-save picks up fresh state on re-render.
-      if (onAutoSave) {
-        await onAutoSave(updatedHistory, currentHoleIndex);
-      }
-
-      handleCloseEditModal();
-    } catch (error) {
-      console.error('Error updating shot:', error);
-      setEditError('An unexpected error occurred');
-    } finally {
-      setEditSaving(false);
-    }
-  };
-
-  // Delete a shot
-  const handleDeleteShot = async () => {
-    if (!editingShot) return;
-
-    setEditSaving(true);
-    setEditError(null);
-
-    try {
-      // If shot has an ID, delete from database
-      if (editingShot.id) {
-        const result = await deleteShot(editingShot.id);
-        if (!result.success) {
-          setEditError(result.error || 'Failed to delete shot');
-          setEditSaving(false);
-          return;
-        }
-      }
-
-      // Compute new history eagerly (fixes stale closure in currentShot check)
-      const deletedShotNumber = editingShot.shotNumber;
-      const newHistory = shotHistory
-        .filter(s => s.shotNumber !== deletedShotNumber)
-        .map((s, idx) => ({ ...s, shotNumber: idx + 1 }));
-
-      // Update local state
-      setShotHistory(newHistory);
-
-      // Always set currentShot to point past the last recorded shot.
-      // newHistory.length + 1 avoids duplicate shotNumbers when the final 'hole' shot is deleted
-      // and the player needs to resume entering shots.
-      setCurrentShot(newHistory.length + 1);
-
-      // Recalculate parent stats if hole is still complete
-      recalculateCompletedHole(newHistory);
-
-      // Trigger auto-save
-      if (onAutoSave) {
-        await onAutoSave(newHistory, currentHoleIndex);
-      }
-
-      handleCloseEditModal();
-    } catch (error) {
-      console.error('Error deleting shot:', error);
-      setEditError('An unexpected error occurred');
-    } finally {
-      setEditSaving(false);
-    }
+  const handleResultSelect = (result: string) => {
+    dispatch({ type: 'HANDLE_RESULT_SELECT', payload: { result, isTeeShot, isPutting, isApproachOrAroundGreen } });
   };
 
   const handleNextShot = () => {
     if (!resultOfShot) return;
 
+    // Concurrency guard: prevent double-tap from recording duplicate shots
+    if (isProcessingShotRef.current) return;
+    isProcessingShotRef.current = true;
+
     // Prevent adding shots to an already-completed hole
-    if (shotHistory.some(s => s.result === 'hole')) return;
+    if (shotHistory.some(s => s.result === 'hole')) {
+      isProcessingShotRef.current = false;
+      return;
+    }
 
     // Calculate distances
     let distanceAfter: number;
@@ -782,24 +352,12 @@ export default function ShotTrackingComprehensive({
       distanceAfter = Number.isFinite(parsedDistance) && parsedDistance >= 0 ? Math.round(parsedDistance) : 0;
       unitAfter = distanceAfterUnit;
 
-      // Validate: distance after should be less than distance before (can't go further from hole)
-      const beforeInYardsForValidation = distanceUnit === 'feet' ? distanceToHole / 3 : distanceToHole;
-      const afterInYardsForValidation = unitAfter === 'feet' ? distanceAfter / 3 : distanceAfter;
-
-      if (distanceAfter === 0 || afterInYardsForValidation >= beforeInYardsForValidation) {
-        console.warn('[ShotTracking] Invalid distance after shot:', {
-          entered: distanceAfterShot,
-          parsed: distanceAfter,
-          distanceBefore: distanceToHole,
-          unitBefore: distanceUnit
-        });
-        // If distance after is 0 or invalid, don't record the shot
-        if (distanceAfter === 0) {
-          return;
-        }
+      if (distanceAfter === 0) {
+        isProcessingShotRef.current = false;
+        return;
       }
     }
-    
+
     // Calculate shot distance using geometry based on miss direction
     const beforeInYards = distanceUnit === 'feet' ? distanceToHole / 3 : distanceToHole;
     const afterInYards = unitAfter === 'feet' ? distanceAfter / 3 : distanceAfter;
@@ -810,7 +368,7 @@ export default function ShotTrackingComprehensive({
       afterInYards,
       effectiveMissDirection
     ));
-    
+
     // Calculate unified miss direction for database storage
     // This populates the miss_direction column used by spray charts and stats
     let unifiedMissDirection: string | undefined;
@@ -850,270 +408,59 @@ export default function ShotTrackingComprehensive({
       approachMissLieType: (isApproachOrAroundGreen && approachMissLieType) ? approachMissLieType : undefined,
     };
 
+    // Record the shot in the reducer
+    const isHoleComplete = resultOfShot === 'hole';
+    dispatch({ type: 'RECORD_SHOT', payload: { shot: shotRecord, isHoleComplete } });
+
+    // Build updated history for callbacks that need it immediately
     const updatedHistory = [...shotHistory, shotRecord];
-    setShotHistory(updatedHistory);
+
     onSaveShot?.(shotRecord);
 
     // Check if hole complete
-    if (resultOfShot === 'hole') {
+    if (isHoleComplete) {
       completeHole(updatedHistory);
-      return;
     }
 
-    // Update state for next shot
-    const newLie = resultOfShot as 'fairway' | 'rough' | 'sand' | 'green' | 'other';
-    setCurrentLie(newLie);
-    setCurrentShot(currentShot + 1);
-    setDistanceToHole(distanceAfter);
-    setDistanceUnit(unitAfter);
+    if (!isHoleComplete) {
+      // Update state for next shot
+      const newLie = resultOfShot as 'fairway' | 'rough' | 'sand' | 'green' | 'other';
+      dispatch({ type: 'UPDATE_AFTER_SHOT', payload: { distanceAfter, unitAfter, newLie } });
+    }
 
-    // Reset input state
-    setUsedDriver(null);
-    setResultOfShot(null);
-    setMissDirection(null);
-    setPuttBreak(null);
-    setPuttSlope(null);
-    setPuttMissTags([]); // Reset putt miss tags for next shot
-    setApproachMissDirection(null); // Reset approach miss direction for next shot
-    setApproachMissLieType(undefined); // Reset approach lie type for next shot
-    setDistanceAfterShot('');
-    setDistanceAfterUnit(newLie === 'green' ? 'feet' : 'yards');
+    // Release concurrency guard after React batches state updates
+    // Use requestAnimationFrame to ensure it happens after the current event loop
+    requestAnimationFrame(() => {
+      isProcessingShotRef.current = false;
+    });
   };
 
-  // ============================================================================
-  // HOLE COMPLETION - COMPREHENSIVE STATS CALCULATION
-  // ============================================================================
-
-  const calculateHoleStats = (shots: ShotRecord[], hole: Hole): HoleStats => {
-    const nonPenaltyShots = shots.filter(s => !s.isPenalty);
-    const score = shots.length;
-    const putts = shots.filter(s => s.shotType === 'putting').length;
-    const penalties = shots.filter(s => s.isPenalty).length;
-
-    // -------------------------------------------------------------------------
-    // DRIVING STATS (Par 4/5 only)
-    // -------------------------------------------------------------------------
-    let fairwayHit: boolean | null = null;
-    let drivingDistance: number | null = null;
-    let driveMissDirection: string | null = null;
-    let driverUsed: boolean | null = null;
-
-    if (hole.par >= 4) {
-      const teeShot = shots.find(s => s.shotType === 'tee' && !s.isPenalty);
-      if (teeShot) {
-        fairwayHit = teeShot.result === 'fairway';
-        driveMissDirection = teeShot.missDirection || null;
-        driverUsed = teeShot.clubType === 'driver';
-
-        // Driving distance is already calculated correctly with geometry in shotDistance
-        drivingDistance = teeShot.shotDistance;
-      }
-    }
-
-    // -------------------------------------------------------------------------
-    // APPROACH STATS (shot that reached the green or closest approach)
-    // -------------------------------------------------------------------------
-    let approachDistance: number | null = null;
-    let approachLie: string | null = null;
-    let approachProximity: number | null = null;
-    let approachMissDirection: string | null = null;
-
-    // Find the approach shot (the shot that hit the green, or last shot before green)
-    const greenShotIndex = nonPenaltyShots.findIndex(s => s.result === 'green' || s.result === 'hole');
-    if (greenShotIndex > 0 || (greenShotIndex === 0 && hole.par === 3)) {
-      const approachShot = nonPenaltyShots[greenShotIndex];
-      if (approachShot && approachShot.shotType !== 'putting') {
-        // Approach distance (in yards)
-        approachDistance = approachShot.distanceUnitBefore === 'feet'
-          ? Math.round(approachShot.distanceToHoleBefore / 3)
-          : approachShot.distanceToHoleBefore;
-        approachLie = approachShot.lieBefore;
-
-        // Approach proximity (distance after, in feet)
-        if (approachShot.result === 'green') {
-          approachProximity = approachShot.distanceUnitAfter === 'yards'
-            ? approachShot.distanceToHoleAfter * 3
-            : approachShot.distanceToHoleAfter;
-        }
-        approachMissDirection = approachShot.missDirection || null;
-      }
-    }
-
-    // -------------------------------------------------------------------------
-    // GREEN IN REGULATION
-    // -------------------------------------------------------------------------
-    const shotsToGreen = hole.par - 2; // Par 4 = 2 shots, Par 5 = 3 shots, Par 3 = 1 shot
-    const shotsTakenToGreen = shots.findIndex(s => s.result === 'green' || s.result === 'hole');
-    const greenInRegulation = shotsTakenToGreen !== -1 && (shotsTakenToGreen + 1) <= shotsToGreen;
-
-    // -------------------------------------------------------------------------
-    // SCRAMBLING (missed GIR but still made par or better)
-    // -------------------------------------------------------------------------
-    const scrambleAttempt = !greenInRegulation && shotsTakenToGreen !== -1;
-    const scrambleMade = scrambleAttempt && score <= hole.par;
-
-    // -------------------------------------------------------------------------
-    // SAND SAVE (in bunker around green, got up and down)
-    // -------------------------------------------------------------------------
-    let sandSaveAttempt = false;
-    let sandSaveMade = false;
-
-    // Find if there was a shot from sand near the green
-    const sandShots = nonPenaltyShots.filter(s =>
-      s.lieBefore === 'sand' &&
-      (s.shotType === 'around_green' || (s.distanceUnitBefore === 'yards' && s.distanceToHoleBefore <= 50))
-    );
-
-    if (sandShots.length > 0) {
-      sandSaveAttempt = true;
-      // Sand save made if from that point, finished in par or better
-      const sandShotIndex = nonPenaltyShots.findIndex(s => s === sandShots[0]);
-      const shotsAfterSand = nonPenaltyShots.length - sandShotIndex;
-      // Up and down from sand = 2 shots (chip + putt) or 1 shot (hole out)
-      sandSaveMade = shotsAfterSand <= 2 && score <= hole.par;
-    }
-
-    // -------------------------------------------------------------------------
-    // PUTTING STATS
-    // -------------------------------------------------------------------------
-    let firstPuttDistance: number | null = null;
-    let firstPuttLeave: number | null = null;
-    let firstPuttBreak: string | null = null;
-    let firstPuttSlope: string | null = null;
-    let firstPuttMissDirection: string | null = null;
-
-    const puttingShots = nonPenaltyShots.filter(s => s.shotType === 'putting');
-    if (puttingShots.length > 0) {
-      const firstPutt = puttingShots[0]!;
-
-      // First putt distance (in feet)
-      firstPuttDistance = firstPutt.distanceUnitBefore === 'yards'
-        ? firstPutt.distanceToHoleBefore * 3
-        : firstPutt.distanceToHoleBefore;
-
-      firstPuttBreak = firstPutt.puttBreak || null;
-      firstPuttSlope = firstPutt.puttSlope || null;
-
-      // If first putt missed, record leave distance and miss direction
-      if (firstPutt.result !== 'hole' && puttingShots.length > 1) {
-        firstPuttLeave = firstPutt.distanceUnitAfter === 'yards'
-          ? firstPutt.distanceToHoleAfter * 3
-          : firstPutt.distanceToHoleAfter;
-        firstPuttMissDirection = firstPutt.missDirection || null;
-      }
-    }
-
-    // -------------------------------------------------------------------------
-    // HOLE OUT STATS (holed from off the green)
-    // -------------------------------------------------------------------------
-    let holedOutDistance: number | null = null;
-    let holedOutType: string | null = null;
-
-    const holeOutShot = nonPenaltyShots.find(s => s.result === 'hole' && s.shotType !== 'putting');
-    if (holeOutShot) {
-      holedOutDistance = holeOutShot.distanceUnitBefore === 'feet'
-        ? holeOutShot.distanceToHoleBefore
-        : holeOutShot.distanceToHoleBefore * 3; // Convert to feet
-      holedOutType = holeOutShot.shotType;
-    }
-
-    // -------------------------------------------------------------------------
-    // BUILD FINAL STATS OBJECT
-    // -------------------------------------------------------------------------
-    return {
-      holeNumber: hole.number,
-      par: hole.par,
-      yardage: hole.yardage,
-      score,
-      putts,
-      fairwayHit,
-      greenInRegulation,
-      drivingDistance,
-      usedDriver: driverUsed,
-      driveMissDirection,
-      approachDistance,
-      approachLie,
-      approachProximity,
-      approachMissDirection,
-      scrambleAttempt,
-      scrambleMade,
-      sandSaveAttempt,
-      sandSaveMade,
-      penaltyStrokes: penalties,
-      firstPuttDistance,
-      firstPuttLeave,
-      firstPuttBreak,
-      firstPuttSlope,
-      firstPuttMissDirection,
-      holedOutDistance,
-      holedOutType,
-      shots,
-    };
-  };
-
-  const completeHole = (shots: ShotRecord[]) => {
-    const holeStats = calculateHoleStats(shots, currentHole);
-    onHoleComplete(currentHoleIndex, holeStats);
-  };
-
-  const recalculateCompletedHole = (updatedShots: ShotRecord[]) => {
-    const isStillComplete = updatedShots.length > 0 &&
-      updatedShots[updatedShots.length - 1]?.result === 'hole';
-    if (isStillComplete && onHoleStatsUpdate) {
-      const holeStats = calculateHoleStats(updatedShots, currentHole);
-      onHoleStatsUpdate(currentHoleIndex, holeStats);
-    }
-  };
-
-  const handleResultSelect = (result: string) => {
-    setResultOfShot(result as ShotRecord['result']);
-    // Clear miss direction states if not needed for the selected result
-    if (result === 'hole' || result === 'green') {
-      // Holing out or hitting the green means no miss to record
-      setMissDirection(null);
-      setApproachMissDirection(null);
-      setApproachMissLieType(undefined);
-      setPuttMissTags([]);
-    } else if (isTeeShot) {
-      // For tee shots, clear approach/putt miss states
-      setApproachMissDirection(null);
-      setApproachMissLieType(undefined);
-      setPuttMissTags([]);
-    } else if (isPutting) {
-      // For putting, clear tee/approach miss states
-      setMissDirection(null);
-      setApproachMissDirection(null);
-      setApproachMissLieType(undefined);
-    } else if (isApproachOrAroundGreen) {
-      // For approach shots, clear tee/putt miss states and auto-set lie type from result
-      setMissDirection(null);
-      setPuttMissTags([]);
-      // Auto-derive approach miss lie type from shot result
-      if (result === 'rough' || result === 'other') {
-        setApproachMissLieType('rough');
-      } else if (result === 'sand') {
-        setApproachMissLieType('bunker');
-      } else if (result === 'fairway') {
-        setApproachMissLieType('fairway');
-      }
+  // Helper for edit modal form data updates
+  const updateEditForm = (updates: Partial<EditFormData>) => {
+    if (editFormData) {
+      dispatch({ type: 'SET_EDIT_FORM_DATA', payload: { ...editFormData, ...updates } });
     }
   };
 
   // ============================================================================
   // CALCULATIONS FOR DISPLAY
   // ============================================================================
-  
+
+  const isHoleComplete = shotHistory.length > 0 && shotHistory[shotHistory.length - 1]?.result === 'hole';
+  const nextUnplayedIdx = holes.findIndex(h => h.score === null);
+  const showBackToCurrentHole = isHoleComplete && !!onNavigateToHole && nextUnplayedIdx >= 0 && nextUnplayedIdx !== currentHoleIndex;
   const is9Hole = holes.length <= 9;
   const front9Score = holes.slice(0, 9).reduce((sum, h) => sum + (h.score || 0), 0);
   const back9Score = is9Hole ? 0 : holes.slice(9).reduce((sum, h) => sum + (h.score || 0), 0);
   const front9HasScores = holes.slice(0, 9).some(h => h.score !== null);
   const back9HasScores = is9Hole ? false : holes.slice(9).some(h => h.score !== null);
   const totalPar = holes.reduce((sum, h) => sum + h.par, 0);
-  
+
   // For sidebar visualization
-  const displayDistance = resultOfShot === 'hole' ? 0 : (parseInt(distanceAfterShot) || distanceToHole);
+  const parsedAfterDistance = parseFloat(distanceAfterShot);
+  const displayDistance = resultOfShot === 'hole' ? 0 : (Number.isFinite(parsedAfterDistance) && parsedAfterDistance >= 0 ? parsedAfterDistance : distanceToHole);
   const displayUnit = resultOfShot === 'hole' ? 'feet' : (distanceAfterShot ? distanceAfterUnit : distanceUnit);
-  
+
   // Convert to yards for progress calculation
   const totalYards = currentHole.yardage;
   const remainingYards = displayUnit === 'feet' ? displayDistance / 3 : displayDistance;
@@ -1378,7 +725,7 @@ export default function ShotTrackingComprehensive({
                   disabled={!isRecorded}
                   onClick={() => {
                     if (!isRecorded) return;
-                    setSelectedShotNumber(num);
+                    dispatch({ type: 'SELECT_SHOT', payload: num });
                     shotHistoryRefs.current[num]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     // Open the edit modal for the selected shot
                     const shot = shotHistory.find(s => s.shotNumber === num);
@@ -1411,20 +758,36 @@ export default function ShotTrackingComprehensive({
                   </span>
                 </div>
                 <p className="text-primary-100 text-sm mt-2">
-                  Shot {currentShot} • {shotType.charAt(0).toUpperCase() + shotType.slice(1).replace('_', ' ')}
-                  {' • '}<span className="capitalize font-medium">{currentLie}</span>
+                  {isHoleComplete
+                    ? `${shotHistory.length} shots • ${shotHistory.filter(s => s.shotType === 'putting').length} putts`
+                    : <>Shot {currentShot} • {shotType.charAt(0).toUpperCase() + shotType.slice(1).replace('_', ' ')}{' • '}<span className="capitalize font-medium">{currentLie}</span></>
+                  }
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-primary-200 text-xs font-semibold uppercase tracking-wider">Distance</p>
-                <p className="text-4xl font-bold mt-1">
-                  {distanceToHole}<span className="text-xl ml-1 font-semibold text-primary-100">{distanceUnit === 'yards' ? 'YDS' : 'FT'}</span>
-                </p>
+                {isHoleComplete ? (
+                  <>
+                    <p className="text-primary-200 text-xs font-semibold uppercase tracking-wider">Score</p>
+                    <p className="text-4xl font-bold mt-1">
+                      {shotHistory.length}
+                      <span className="text-xl ml-1 font-semibold text-primary-100">
+                        {shotHistory.length - currentHole.par > 0 ? `+${shotHistory.length - currentHole.par}` : shotHistory.length - currentHole.par === 0 ? 'E' : shotHistory.length - currentHole.par}
+                      </span>
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-primary-200 text-xs font-semibold uppercase tracking-wider">Distance</p>
+                    <p className="text-4xl font-bold mt-1">
+                      {distanceToHole}<span className="text-xl ml-1 font-semibold text-primary-100">{distanceUnit === 'yards' ? 'YDS' : 'FT'}</span>
+                    </p>
+                  </>
+                )}
               </div>
             </div>
 
-            {/* Inline Progress Bar - Mobile Only */}
-            <div className="xl:hidden mt-6 bg-white/10 backdrop-blur-sm rounded-lg p-4">
+            {/* Inline Progress Bar - Mobile Only (hide on completed holes) */}
+            {!isHoleComplete && <div className="xl:hidden mt-6 bg-white/10 backdrop-blur-sm rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs text-primary-100 font-semibold uppercase tracking-wide">Progress</span>
                 <span className="text-xs text-primary-100 font-bold">{Math.round(progressPercent)}%</span>
@@ -1446,9 +809,111 @@ export default function ShotTrackingComprehensive({
                   <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
                 </span>
               </div>
-            </div>
+            </div>}
           </div>
 
+          {isHoleComplete ? (
+            /* ================================================================
+               COMPLETED HOLE REVIEW — tap any shot to edit
+               ================================================================ */
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-bold text-warm-600 uppercase tracking-wider">Shot Review</p>
+                <span className="text-xs font-semibold text-primary-700 bg-primary-50 px-2.5 py-1 rounded-md ring-1 ring-primary-200">
+                  Score: {shotHistory.length} ({shotHistory.length - currentHole.par > 0 ? '+' : ''}{shotHistory.length - currentHole.par})
+                </span>
+              </div>
+              <p className="text-xs text-warm-500">Tap any shot to edit</p>
+              <div className="space-y-2">
+                {shotHistory.map((shot) => {
+                  const formatResult = (r: string) => r.charAt(0).toUpperCase() + r.slice(1);
+                  const distLabel = shot.distanceUnitBefore === 'feet'
+                    ? `${shot.distanceToHoleBefore}ft`
+                    : `${shot.distanceToHoleBefore}y`;
+                  const afterLabel = shot.result === 'hole'
+                    ? 'Holed'
+                    : shot.distanceUnitAfter === 'feet'
+                      ? `${shot.distanceToHoleAfter}ft left`
+                      : `${shot.distanceToHoleAfter}y left`;
+                  return (
+                    <button
+                      key={shot.shotNumber}
+                      onClick={() => handleEditShot(shot)}
+                      className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-all ${
+                        shot.isPenalty
+                          ? 'bg-red-50 ring-1 ring-red-200 hover:bg-red-100'
+                          : 'bg-white ring-1 ring-warm-200 hover:ring-primary-300 hover:bg-warm-50 active:bg-warm-100'
+                      }`}
+                    >
+                      {/* Shot number */}
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0 ${
+                        shot.isPenalty
+                          ? 'bg-red-100 text-red-600'
+                          : shot.result === 'hole'
+                            ? 'bg-primary-100 text-primary-700'
+                            : 'bg-warm-100 text-warm-600'
+                      }`}>
+                        {shot.isPenalty ? 'P' : shot.shotNumber}
+                      </div>
+
+                      {/* Shot info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-warm-800 capitalize">
+                            {shot.isPenalty ? `Penalty (${shot.penaltyType || 'unknown'})` : shot.shotType.replace('_', ' ')}
+                          </span>
+                          {!shot.isPenalty && (
+                            <span className="text-xs text-warm-500">
+                              {shot.clubType === 'driver' ? 'Driver' : shot.clubType === 'putter' ? 'Putter' : ''}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs text-warm-500 mt-0.5">
+                          {shot.isPenalty
+                            ? `+1 stroke`
+                            : `${distLabel} → ${afterLabel}`
+                          }
+                          {shot.missDirection && !shot.isPenalty && (
+                            <span className="ml-1.5 text-warm-400">• Miss {shot.missDirection}</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Shot distance + result badge */}
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {!shot.isPenalty && (
+                          <span className="text-sm font-bold text-primary-600">{shot.shotDistance}y</span>
+                        )}
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-md ${
+                          shot.result === 'hole' ? 'bg-primary-100 text-primary-700'
+                            : shot.result === 'green' ? 'bg-emerald-50 text-emerald-700'
+                            : shot.result === 'fairway' ? 'bg-green-50 text-green-700'
+                            : shot.result === 'penalty' ? 'bg-red-100 text-red-600'
+                            : 'bg-warm-100 text-warm-600'
+                        }`}>
+                          {formatResult(shot.result)}
+                        </span>
+                        {/* Edit indicator */}
+                        <svg className="w-4 h-4 text-warm-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Back to current hole button — show when reviewing a past hole and there's an unplayed hole to return to */}
+              {showBackToCurrentHole && (
+                <button
+                  onClick={() => onNavigateToHole!(nextUnplayedIdx)}
+                  className="w-full py-3 rounded-lg font-semibold text-sm text-primary-600 bg-primary-50 ring-1 ring-primary-200 hover:bg-primary-100 hover:ring-primary-300 transition-all"
+                >
+                  Back to Current Hole →
+                </button>
+              )}
+            </div>
+          ) : (
           <div className="space-y-5">
               {/* Club Selection (Tee Shot Par 4/5) - Segmented Control */}
               {isTeeShot && currentHole.par !== 3 && (
@@ -1461,14 +926,14 @@ export default function ShotTrackingComprehensive({
                   />
                   <p className="text-xs font-bold text-warm-600 uppercase tracking-wider mb-4">Club Off Tee</p>
                   <div className="inline-flex bg-warm-100 rounded-lg p-1 w-full">
-                    <button onClick={() => setUsedDriver(true)}
+                    <button onClick={() => dispatch({ type: 'SET_DRIVER', payload: true })}
                       className={`flex-1 py-3 rounded-md font-semibold text-sm transition-all ${
                         usedDriver === true
                           ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10'
                           : 'text-warm-600 hover:text-warm-900'}`}>
                       Driver
                     </button>
-                    <button onClick={() => setUsedDriver(false)}
+                    <button onClick={() => dispatch({ type: 'SET_DRIVER', payload: false })}
                       className={`flex-1 py-3 rounded-md font-semibold text-sm transition-all ${
                         usedDriver === false
                           ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10'
@@ -1491,7 +956,7 @@ export default function ShotTrackingComprehensive({
                     <p className="text-xs font-semibold text-warm-500 uppercase tracking-wide mb-3">Break</p>
                     <div className="inline-flex bg-white rounded-lg p-1 w-full border border-primary-200">
                       {[{v: 'left_to_right', l: 'L → R'}, {v: 'straight', l: 'Straight'}, {v: 'right_to_left', l: 'R → L'}, {v: 'multiple', l: 'Multiple'}].map(b => (
-                        <button key={b.v} onClick={() => setPuttBreak(b.v as ShotRecord['puttBreak'])}
+                        <button key={b.v} onClick={() => dispatch({ type: 'SET_PUTT_BREAK', payload: b.v as ShotRecord['puttBreak'] })}
                           className={`flex-1 py-2.5 rounded-md font-semibold text-sm transition-all ${
                             puttBreak === b.v
                               ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10'
@@ -1505,7 +970,7 @@ export default function ShotTrackingComprehensive({
                     <p className="text-xs font-semibold text-warm-500 uppercase tracking-wide mb-3">Slope</p>
                     <div className="inline-flex bg-white rounded-lg p-1 w-full border border-primary-200">
                       {[{v: 'uphill', l: 'Uphill'}, {v: 'level', l: 'Level'}, {v: 'downhill', l: 'Downhill'}, {v: 'severe', l: 'Severe'}].map(s => (
-                        <button key={s.v} onClick={() => setPuttSlope(s.v as ShotRecord['puttSlope'])}
+                        <button key={s.v} onClick={() => dispatch({ type: 'SET_PUTT_SLOPE', payload: s.v as ShotRecord['puttSlope'] })}
                           className={`flex-1 py-2.5 rounded-md font-semibold text-sm transition-all ${
                             puttSlope === s.v
                               ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10'
@@ -1536,26 +1001,38 @@ export default function ShotTrackingComprehensive({
                     if (isPutting) {
                       options = ['hole', 'green'];
                     } else if (isTeeShot && currentHole.par !== 3) {
-                      options = ['fairway', 'rough', 'sand', 'other'];
+                      // Par 4/5: fairway is common, but include green (reachable par 4/5) and hole (ace)
+                      options = ['fairway', 'rough', 'sand', 'green', 'hole', 'other'];
                     } else if (isTeeShot && currentHole.par === 3) {
-                      options = ['green', 'rough', 'sand', 'other'];
+                      // Par 3: green is common, include hole for ace
+                      options = ['green', 'rough', 'sand', 'hole', 'other'];
                     } else {
                       options = ['fairway', 'rough', 'sand', 'green', 'hole', 'other'];
                     }
-                    return options.map(r => (
+                    return options.map(r => {
+                      // For tee shots: "hole" means ace, "green" on par 4/5 means drive-the-green
+                      const isRareTeeResult = isTeeShot && (r === 'hole' || (r === 'green' && currentHole.par !== 3));
+                      return (
                       <button key={r} onClick={() => handleResultSelect(r)}
                         className={`py-3 rounded-lg font-semibold text-sm transition-all ${
                           resultOfShot === r
                             ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10 ring-1 ring-primary-700'
-                            : 'bg-warm-50 text-warm-700 ring-1 ring-warm-200 hover:ring-primary-300 hover:bg-warm-100 active:bg-warm-200'}`}>
+                            : isRareTeeResult
+                              ? 'bg-warm-50/60 text-warm-500 ring-1 ring-warm-200/70 hover:ring-primary-300 hover:bg-warm-100 hover:text-warm-700 active:bg-warm-200'
+                              : 'bg-warm-50 text-warm-700 ring-1 ring-warm-200 hover:ring-primary-300 hover:bg-warm-100 active:bg-warm-200'}`}>
                         {formatLieLabel(r)}
-                        {r === 'green' && (
+                        {r === 'green' && !isTeeShot && (
                           <span className={`block text-xs font-normal leading-tight ${
                             resultOfShot === r ? 'text-primary-100' : 'text-warm-400'
                           }`}>(putting surface, not fringe)</span>
                         )}
-                      </button>
-                    ));
+                        {r === 'hole' && isTeeShot && (
+                          <span className={`block text-xs font-normal leading-tight ${
+                            resultOfShot === r ? 'text-primary-100' : 'text-warm-400'
+                          }`}>(ace!)</span>
+                        )}
+                      </button>);
+                    });
                   })()}
                 </div>
               </div>
@@ -1575,7 +1052,7 @@ export default function ShotTrackingComprehensive({
                   {isTeeShot && (
                     <div className="inline-flex bg-warm-100 rounded-lg p-1 w-full">
                       {['left', 'right'].map(d => (
-                        <button key={d} onClick={() => setMissDirection(d)}
+                        <button key={d} onClick={() => dispatch({ type: 'SET_MISS_DIRECTION', payload: d })}
                           className={`flex-1 py-3 rounded-md font-semibold text-sm transition-all flex items-center justify-center gap-2 ${
                             missDirection === d
                               ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10'
@@ -1588,13 +1065,13 @@ export default function ShotTrackingComprehensive({
                   {isApproachOrAroundGreen && resultOfShot && !['green', 'hole'].includes(resultOfShot) && (
                     <ApproachMissSelector
                       selectedDirection={approachMissDirection}
-                      onDirectionChange={setApproachMissDirection}
+                      onDirectionChange={(dir) => dispatch({ type: 'SET_APPROACH_MISS', payload: { direction: dir } })}
                     />
                   )}
                   {isPutting && resultOfShot && resultOfShot !== 'hole' && (
                     <PuttMissTagSelector
                       selectedTags={puttMissTags}
-                      onTagsChange={setPuttMissTags}
+                      onTagsChange={(tags) => dispatch({ type: 'SET_PUTT_MISS_TAGS', payload: tags })}
                     />
                   )}
                 </div>
@@ -1619,8 +1096,9 @@ export default function ShotTrackingComprehensive({
                       ref={distanceInputRef}
                       type="number"
                       inputMode="numeric"
+                      min="0"
                       value={distanceAfterShot}
-                      onChange={(e) => setDistanceAfterShot(e.target.value)}
+                      onChange={(e) => dispatch({ type: 'SET_DISTANCE_AFTER', payload: e.target.value })}
                       placeholder="Enter distance"
                       className="w-full h-14 px-5 rounded-xl text-3xl font-bold text-primary-900 text-center bg-white border-2 border-primary-300 focus:border-primary-500 focus:ring-4 focus:ring-primary-100 focus:outline-none transition-all placeholder:text-warm-300"
                     />
@@ -1632,8 +1110,8 @@ export default function ShotTrackingComprehensive({
                             key={ft}
                             type="button"
                             onClick={() => {
-                              setDistanceAfterShot(String(ft));
-                              setDistanceAfterUnit('feet');
+                              dispatch({ type: 'SET_DISTANCE_AFTER', payload: String(ft) });
+                              dispatch({ type: 'SET_DISTANCE_AFTER_UNIT', payload: 'feet' });
                             }}
                             className={`py-2 rounded-lg text-xs font-bold transition-all ${
                               distanceAfterShot === String(ft) && distanceAfterUnit === 'feet'
@@ -1648,7 +1126,7 @@ export default function ShotTrackingComprehensive({
                     )}
                     <div className="inline-flex bg-white rounded-lg p-1 border-2 border-primary-300 w-full">
                       <button
-                        onClick={() => setDistanceAfterUnit('yards')}
+                        onClick={() => dispatch({ type: 'SET_DISTANCE_AFTER_UNIT', payload: 'yards' })}
                         className={`flex-1 py-2.5 rounded-md font-bold text-sm uppercase tracking-wide transition-all ${
                           distanceAfterUnit === 'yards'
                             ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10'
@@ -1658,7 +1136,7 @@ export default function ShotTrackingComprehensive({
                         Yards
                       </button>
                       <button
-                        onClick={() => setDistanceAfterUnit('feet')}
+                        onClick={() => dispatch({ type: 'SET_DISTANCE_AFTER_UNIT', payload: 'feet' })}
                         className={`flex-1 py-2.5 rounded-md font-bold text-sm uppercase tracking-wide transition-all ${
                           distanceAfterUnit === 'feet'
                             ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10'
@@ -1675,7 +1153,7 @@ export default function ShotTrackingComprehensive({
                       <span className="text-lg font-bold text-primary-700">
                         ~{Math.round(calculateShotDistanceWithDirection(
                           distanceUnit === 'feet' ? distanceToHole / 3 : distanceToHole,
-                          distanceAfterUnit === 'feet' ? parseInt(distanceAfterShot) / 3 : parseInt(distanceAfterShot),
+                          distanceAfterUnit === 'feet' ? (parseFloat(distanceAfterShot) || 0) / 3 : (parseFloat(distanceAfterShot) || 0),
                           isApproachOrAroundGreen ? (approachMissDirection || missDirection) : missDirection
                         ))} yards
                       </span>
@@ -1696,14 +1174,56 @@ export default function ShotTrackingComprehensive({
                 {resultOfShot === 'hole' ? `Complete Hole - Score: ${currentShot}` : 'Next Shot →'}
               </button>
 
-              {/* Penalty Button */}
-              <button
-                onClick={handleAddPenalty}
-                aria-label="Add penalty stroke"
-                className="w-full py-3 rounded-lg font-semibold text-sm text-red-600 bg-red-50 ring-1 ring-red-200 hover:bg-red-100 hover:ring-red-300 transition-all">
-                Add Penalty Stroke
-              </button>
+              {/* Action Buttons Row */}
+              <div className="flex gap-2">
+                {/* Penalty Button */}
+                <button
+                  onClick={handleAddPenalty}
+                  aria-label="Add penalty stroke"
+                  className="flex-1 py-3 rounded-lg font-semibold text-sm text-red-600 bg-red-50 ring-1 ring-red-200 hover:bg-red-100 hover:ring-red-300 transition-all">
+                  + Penalty
+                </button>
+
+                {/* Undo Last Shot Button */}
+                {shotHistory.length > 0 && (
+                  <button
+                    onClick={() => dispatch({ type: 'SHOW_UNDO_CONFIRM' })}
+                    disabled={undoSaving}
+                    aria-label="Undo last shot"
+                    className="flex-1 py-3 rounded-lg font-semibold text-sm text-warm-600 bg-warm-50 ring-1 ring-warm-200 hover:bg-warm-100 hover:ring-warm-300 transition-all disabled:opacity-50">
+                    {undoSaving ? 'Undoing...' : 'Undo Last'}
+                  </button>
+                )}
+              </div>
+
+              {/* Undo Confirmation */}
+              {showUndoConfirm && shotHistory.length > 0 && (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <p className="text-sm font-medium text-amber-900 mb-2">
+                    Undo shot {shotHistory.length}?
+                    <span className="block text-xs text-amber-700 mt-0.5">
+                      {shotHistory[shotHistory.length - 1]!.isPenalty
+                        ? `Penalty (${shotHistory[shotHistory.length - 1]!.penaltyType || 'unknown'})`
+                        : `${shotHistory[shotHistory.length - 1]!.shotType.replace('_', ' ')} → ${shotHistory[shotHistory.length - 1]!.result}`}
+                    </span>
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => dispatch({ type: 'HIDE_UNDO_CONFIRM' })}
+                      className="flex-1 py-2 rounded-md font-semibold text-xs text-warm-600 bg-white ring-1 ring-warm-200 hover:bg-warm-50 transition-all">
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleUndoLastShot}
+                      disabled={undoSaving}
+                      className="flex-1 py-2 rounded-md font-semibold text-xs text-white bg-amber-600 hover:bg-amber-700 ring-1 ring-amber-700 shadow-sm transition-all disabled:opacity-50">
+                      {undoSaving ? 'Removing...' : 'Confirm'}
+                    </button>
+                  </div>
+                </div>
+              )}
           </div>
+          )}
         </div>
 
         {/* Right Sidebar - Overhead Course View */}
@@ -1716,8 +1236,8 @@ export default function ShotTrackingComprehensive({
                 <p className="text-lg font-bold text-warm-800">Par {currentHole.par}</p>
               </div>
               <div className="text-right">
-                <p className="text-xs font-bold text-warm-400 uppercase tracking-wider">Shot</p>
-                <p className="text-lg font-bold text-primary-600">{currentShot}</p>
+                <p className="text-xs font-bold text-warm-400 uppercase tracking-wider">{isHoleComplete ? 'Score' : 'Shot'}</p>
+                <p className="text-lg font-bold text-primary-600">{isHoleComplete ? shotHistory.length : currentShot}</p>
               </div>
             </div>
 
@@ -1888,7 +1408,7 @@ export default function ShotTrackingComprehensive({
                         key={idx}
                         ref={(node) => { shotHistoryRefs.current[shot.shotNumber] = node; }}
                         onClick={() => {
-                          setSelectedShotNumber(shot.shotNumber);
+                          dispatch({ type: 'SELECT_SHOT', payload: shot.shotNumber });
                           handleEditShot(shot);
                         }}
                         className={`w-full flex items-center justify-between px-2 py-1.5 rounded text-xs transition-all ${
@@ -1917,12 +1437,19 @@ export default function ShotTrackingComprehensive({
 
       {/* Penalty Modal */}
       {showPenaltyModal && (
-        <div className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg max-w-sm w-full p-6 shadow-xl shadow-warm-950/10 ring-1 ring-warm-200">
+        <div
+          className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={() => dispatch({ type: 'CLOSE_PENALTY_MODAL' })}
+          onKeyDown={(e) => { if (e.key === 'Escape') dispatch({ type: 'CLOSE_PENALTY_MODAL' }); }}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Add penalty stroke"
+        >
+          <div className="bg-white rounded-lg max-w-sm w-full p-6 shadow-xl shadow-warm-950/10 ring-1 ring-warm-200" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-bold text-warm-900 mb-6">Add Penalty Stroke</h2>
             <div className="space-y-2 mb-6">
               {[{v: 'ob', l: 'Out of Bounds'}, {v: 'water', l: 'Water Hazard'}, {v: 'unplayable', l: 'Unplayable Lie'}, {v: 'lost', l: 'Lost Ball'}].map(p => (
-                <button key={p.v} onClick={() => setPenaltyType(p.v)}
+                <button key={p.v} onClick={() => dispatch({ type: 'SET_PENALTY_TYPE', payload: p.v })}
                   className={`w-full py-3 px-4 rounded-lg font-semibold text-sm text-left transition-all ${
                     penaltyType === p.v
                       ? 'bg-red-600 text-white shadow-sm shadow-red-950/10 ring-1 ring-red-700'
@@ -1932,7 +1459,7 @@ export default function ShotTrackingComprehensive({
               ))}
             </div>
             <div className="flex gap-3">
-              <button onClick={() => { setShowPenaltyModal(false); setPenaltyType(null); }}
+              <button onClick={() => dispatch({ type: 'CLOSE_PENALTY_MODAL' })}
                 className="flex-1 py-3 rounded-lg font-semibold text-sm text-warm-600 bg-warm-100 ring-1 ring-warm-200 hover:bg-warm-200 hover:ring-warm-300 transition-all">
                 Cancel
               </button>
@@ -1950,8 +1477,15 @@ export default function ShotTrackingComprehensive({
 
       {/* Edit Shot Modal */}
       {showEditModal && editingShot && editFormData && (
-        <div className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-xl shadow-warm-950/10 ring-1 ring-warm-200">
+        <div
+          className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={handleCloseEditModal}
+          onKeyDown={(e) => { if (e.key === 'Escape') handleCloseEditModal(); }}
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Edit shot ${editingShot.shotNumber}`}
+        >
+          <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-xl shadow-warm-950/10 ring-1 ring-warm-200" onClick={(e) => e.stopPropagation()}>
             {/* Modal Header */}
             <div className="sticky top-0 bg-white border-b border-warm-200 px-6 py-4 rounded-t-2xl">
               <div className="flex items-center justify-between">
@@ -1986,7 +1520,7 @@ export default function ShotTrackingComprehensive({
                   </div>
                   <div className="flex gap-3">
                     <button
-                      onClick={() => setShowDeleteConfirm(false)}
+                      onClick={() => dispatch({ type: 'HIDE_DELETE_CONFIRM' })}
                       disabled={editSaving}
                       className="flex-1 py-3 rounded-lg font-semibold text-sm text-warm-600 bg-warm-100 ring-1 ring-warm-200 hover:bg-warm-200 hover:ring-warm-300 transition-all disabled:opacity-50"
                     >
@@ -2030,7 +1564,7 @@ export default function ShotTrackingComprehensive({
                         {[{v: 'ob', l: 'Out of Bounds'}, {v: 'water', l: 'Water Hazard'}, {v: 'unplayable', l: 'Unplayable Lie'}, {v: 'lost', l: 'Lost Ball'}].map(p => (
                           <button
                             key={p.v}
-                            onClick={() => setEditFormData(prev => prev ? {...prev, penaltyType: p.v} : null)}
+                            onClick={() => updateEditForm({ penaltyType: p.v })}
                             className={`w-full py-3 px-4 rounded-lg font-semibold text-sm text-left transition-all ${
                               editFormData.penaltyType === p.v
                                 ? 'bg-red-600 text-white shadow-sm shadow-red-950/10 ring-1 ring-red-700'
@@ -2050,7 +1584,7 @@ export default function ShotTrackingComprehensive({
                           <p className="text-xs font-bold text-warm-600 uppercase tracking-wider mb-3">Club</p>
                           <div className="inline-flex bg-warm-100 rounded-lg p-1 w-full">
                             <button
-                              onClick={() => setEditFormData(prev => prev ? {...prev, clubType: 'driver'} : null)}
+                              onClick={() => updateEditForm({ clubType: 'driver' })}
                               className={`flex-1 py-2.5 rounded-md font-semibold text-sm transition-all ${
                                 editFormData.clubType === 'driver'
                                   ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10'
@@ -2060,7 +1594,7 @@ export default function ShotTrackingComprehensive({
                               Driver
                             </button>
                             <button
-                              onClick={() => setEditFormData(prev => prev ? {...prev, clubType: 'non_driver'} : null)}
+                              onClick={() => updateEditForm({ clubType: 'non_driver' })}
                               className={`flex-1 py-2.5 rounded-md font-semibold text-sm transition-all ${
                                 editFormData.clubType === 'non_driver'
                                   ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10'
@@ -2082,7 +1616,7 @@ export default function ShotTrackingComprehensive({
                             return (
                             <button
                               key={lie}
-                              onClick={() => setEditFormData(prev => prev ? {...prev, lieBefore: lie} : null)}
+                              onClick={() => updateEditForm({ lieBefore: lie })}
                               className={`py-2.5 rounded-lg font-semibold text-sm transition-all ${
                                 editFormData.lieBefore === lie
                                   ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10 ring-1 ring-primary-700'
@@ -2105,13 +1639,14 @@ export default function ShotTrackingComprehensive({
                           <input
                             type="number"
                             inputMode="numeric"
+                            min="0"
                             value={editFormData.distanceToHoleBefore}
-                            onChange={(e) => setEditFormData(prev => prev ? {...prev, distanceToHoleBefore: e.target.value} : null)}
+                            onChange={(e) => updateEditForm({ distanceToHoleBefore: e.target.value })}
                             className="flex-1 h-12 px-4 rounded-lg text-lg font-semibold text-warm-900 text-center bg-white border-2 border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 focus:outline-none transition-all"
                           />
                           <div className="inline-flex bg-warm-100 rounded-lg p-1">
                             <button
-                              onClick={() => setEditFormData(prev => prev ? {...prev, distanceUnitBefore: 'yards'} : null)}
+                              onClick={() => updateEditForm({ distanceUnitBefore: 'yards' })}
                               className={`px-3 py-2 rounded-md font-semibold text-xs uppercase transition-all ${
                                 editFormData.distanceUnitBefore === 'yards'
                                   ? 'bg-primary-600 text-white shadow-sm'
@@ -2121,7 +1656,7 @@ export default function ShotTrackingComprehensive({
                               Yds
                             </button>
                             <button
-                              onClick={() => setEditFormData(prev => prev ? {...prev, distanceUnitBefore: 'feet'} : null)}
+                              onClick={() => updateEditForm({ distanceUnitBefore: 'feet' })}
                               className={`px-3 py-2 rounded-md font-semibold text-xs uppercase transition-all ${
                                 editFormData.distanceUnitBefore === 'feet'
                                   ? 'bg-primary-600 text-white shadow-sm'
@@ -2143,7 +1678,35 @@ export default function ShotTrackingComprehensive({
                             return (
                             <button
                               key={r}
-                              onClick={() => setEditFormData(prev => prev ? {...prev, result: r} : null)}
+                              onClick={() => {
+                                if (!editFormData) return;
+                                const updates: Partial<EditFormData> = { result: r };
+                                // Auto-switch distance unit when result changes
+                                if (r === 'green') {
+                                  updates.distanceUnitAfter = 'feet';
+                                } else if (r === 'hole') {
+                                  updates.distanceToHoleAfter = '0';
+                                  updates.distanceUnitAfter = 'feet';
+                                } else if (editFormData.result === 'green' || editFormData.result === 'hole') {
+                                  // Switching away from green/hole — restore yards
+                                  updates.distanceUnitAfter = 'yards';
+                                }
+                                // Auto-derive approach miss lie type from result
+                                if (editingShot.shotType === 'approach' || editingShot.shotType === 'around_green') {
+                                  if (r === 'rough' || r === 'other') updates.approachMissLieType = 'rough';
+                                  else if (r === 'sand') updates.approachMissLieType = 'bunker';
+                                  else if (r === 'fairway') updates.approachMissLieType = 'fairway';
+                                  else updates.approachMissLieType = undefined;
+                                }
+                                // Clear irrelevant miss data when result changes
+                                if (r === 'green' || r === 'hole') {
+                                  updates.missDirection = null;
+                                  updates.approachMissDirection = null;
+                                  updates.approachMissLieType = undefined;
+                                  updates.puttMissTags = [];
+                                }
+                                dispatch({ type: 'SET_EDIT_FORM_DATA', payload: { ...editFormData, ...updates } });
+                              }}
                               className={`py-2.5 rounded-lg font-semibold text-sm transition-all ${
                                 editFormData.result === r
                                   ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10 ring-1 ring-primary-700'
@@ -2167,13 +1730,14 @@ export default function ShotTrackingComprehensive({
                             <input
                               type="number"
                               inputMode="numeric"
+                              min="0"
                               value={editFormData.distanceToHoleAfter}
-                              onChange={(e) => setEditFormData(prev => prev ? {...prev, distanceToHoleAfter: e.target.value} : null)}
+                              onChange={(e) => updateEditForm({ distanceToHoleAfter: e.target.value })}
                               className="flex-1 h-12 px-4 rounded-lg text-lg font-semibold text-warm-900 text-center bg-white border-2 border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 focus:outline-none transition-all"
                             />
                             <div className="inline-flex bg-warm-100 rounded-lg p-1">
                               <button
-                                onClick={() => setEditFormData(prev => prev ? {...prev, distanceUnitAfter: 'yards'} : null)}
+                                onClick={() => updateEditForm({ distanceUnitAfter: 'yards' })}
                                 className={`px-3 py-2 rounded-md font-semibold text-xs uppercase transition-all ${
                                   editFormData.distanceUnitAfter === 'yards'
                                     ? 'bg-primary-600 text-white shadow-sm'
@@ -2183,7 +1747,7 @@ export default function ShotTrackingComprehensive({
                                 Yds
                               </button>
                               <button
-                                onClick={() => setEditFormData(prev => prev ? {...prev, distanceUnitAfter: 'feet'} : null)}
+                                onClick={() => updateEditForm({ distanceUnitAfter: 'feet' })}
                                 className={`px-3 py-2 rounded-md font-semibold text-xs uppercase transition-all ${
                                   editFormData.distanceUnitAfter === 'feet'
                                     ? 'bg-primary-600 text-white shadow-sm'
@@ -2197,8 +1761,8 @@ export default function ShotTrackingComprehensive({
                         </div>
                       )}
 
-                      {/* Miss Direction (for tee shots and approach misses) */}
-                      {(editingShot.shotType === 'tee' || editingShot.shotType === 'approach' || editingShot.shotType === 'around_green') &&
+                      {/* Miss Direction (for tee shots only — approach/around_green use ApproachMissSelector below) */}
+                      {editingShot.shotType === 'tee' &&
                        editFormData.result !== 'hole' && editFormData.result !== 'green' && (
                         <div>
                           <p className="text-xs font-bold text-warm-600 uppercase tracking-wider mb-3">Miss Direction</p>
@@ -2206,7 +1770,7 @@ export default function ShotTrackingComprehensive({
                             {['left', 'right', 'short', 'long'].map(dir => (
                               <button
                                 key={dir}
-                                onClick={() => setEditFormData(prev => prev ? {...prev, missDirection: prev.missDirection === dir ? null : dir} : null)}
+                                onClick={() => updateEditForm({ missDirection: editFormData.missDirection === dir ? null : dir })}
                                 className={`py-2.5 rounded-lg font-semibold text-sm capitalize transition-all ${
                                   editFormData.missDirection === dir
                                     ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10 ring-1 ring-primary-700'
@@ -2220,6 +1784,15 @@ export default function ShotTrackingComprehensive({
                         </div>
                       )}
 
+                      {/* Approach Miss Details (for approach/around_green misses) */}
+                      {(editingShot.shotType === 'approach' || editingShot.shotType === 'around_green') &&
+                       editFormData.result !== 'hole' && editFormData.result !== 'green' && (
+                        <ApproachMissSelector
+                          selectedDirection={editFormData.approachMissDirection}
+                          onDirectionChange={(dir) => updateEditForm({ approachMissDirection: dir })}
+                        />
+                      )}
+
                       {/* Putt Details (for putting shots) */}
                       {editingShot.shotType === 'putting' && (
                         <>
@@ -2229,7 +1802,7 @@ export default function ShotTrackingComprehensive({
                               {[{v: 'left_to_right', l: 'L to R'}, {v: 'straight', l: 'Straight'}, {v: 'right_to_left', l: 'R to L'}, {v: 'multiple', l: 'Multiple'}].map(b => (
                                 <button
                                   key={b.v}
-                                  onClick={() => setEditFormData(prev => prev ? {...prev, puttBreak: b.v as ShotRecord['puttBreak']} : null)}
+                                  onClick={() => updateEditForm({ puttBreak: b.v as ShotRecord['puttBreak'] })}
                                   className={`py-2.5 rounded-lg font-semibold text-sm transition-all ${
                                     editFormData.puttBreak === b.v
                                       ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10 ring-1 ring-primary-700'
@@ -2247,7 +1820,7 @@ export default function ShotTrackingComprehensive({
                               {[{v: 'uphill', l: 'Uphill'}, {v: 'level', l: 'Level'}, {v: 'downhill', l: 'Downhill'}, {v: 'severe', l: 'Severe'}].map(s => (
                                 <button
                                   key={s.v}
-                                  onClick={() => setEditFormData(prev => prev ? {...prev, puttSlope: s.v as ShotRecord['puttSlope']} : null)}
+                                  onClick={() => updateEditForm({ puttSlope: s.v as ShotRecord['puttSlope'] })}
                                   className={`py-2.5 rounded-lg font-semibold text-sm transition-all ${
                                     editFormData.puttSlope === s.v
                                       ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10 ring-1 ring-primary-700'
@@ -2259,6 +1832,14 @@ export default function ShotTrackingComprehensive({
                               ))}
                             </div>
                           </div>
+
+                          {/* Putt Miss Tags (for missed putts) */}
+                          {editFormData.result !== 'hole' && (
+                            <PuttMissTagSelector
+                              selectedTags={editFormData.puttMissTags}
+                              onTagsChange={(tags) => updateEditForm({ puttMissTags: tags })}
+                            />
+                          )}
                         </>
                       )}
 
@@ -2270,7 +1851,9 @@ export default function ShotTrackingComprehensive({
                             ~{Math.round(calculateShotDistanceWithDirection(
                               editFormData.distanceUnitBefore === 'feet' ? parseFloat(editFormData.distanceToHoleBefore) / 3 : parseFloat(editFormData.distanceToHoleBefore),
                               editFormData.distanceUnitAfter === 'feet' ? parseFloat(editFormData.distanceToHoleAfter) / 3 : parseFloat(editFormData.distanceToHoleAfter),
-                              editFormData.missDirection
+                              (editingShot.shotType === 'approach' || editingShot.shotType === 'around_green')
+                                ? (editFormData.approachMissDirection || editFormData.missDirection)
+                                : editFormData.missDirection
                             ))} yds
                           </span>
                         </div>
@@ -2286,7 +1869,7 @@ export default function ShotTrackingComprehensive({
               <div className="sticky bottom-0 bg-white border-t border-warm-200 px-6 py-4 rounded-b-2xl">
                 <div className="flex gap-3">
                   <button
-                    onClick={() => setShowDeleteConfirm(true)}
+                    onClick={() => dispatch({ type: 'SHOW_DELETE_CONFIRM' })}
                     disabled={editSaving}
                     className="px-4 py-3 rounded-lg font-semibold text-sm text-red-600 bg-red-50 ring-1 ring-red-200 hover:bg-red-100 hover:ring-red-300 transition-all disabled:opacity-50"
                     aria-label="Delete shot"

@@ -33,7 +33,7 @@ import {
   MAX_SYNC_ATTEMPTS,
 } from '@/lib/offline/indexed-db';
 import { saveRoundDraft, type RoundDraftData } from '@/app/golf/actions/round-drafts';
-import type { ShotRecord } from '@/components/golf/ShotTrackingComprehensive';
+import type { ShotRecord } from '@/lib/types/golf';
 
 // ============================================================================
 // TYPES

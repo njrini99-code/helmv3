@@ -3,7 +3,7 @@ import { redirect, notFound } from 'next/navigation';
 import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import ContinueRoundClient from './continue-round-client';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
-import type { HoleStats, ShotRecord } from '@/components/golf/ShotTrackingComprehensive';
+import type { HoleStats, ShotRecord } from '@/lib/types/golf';
 import type { Tables } from '@/lib/types/database';
 import type { ApproachMissDirection, PuttMissTag } from '@/lib/types/golf';
 import type { Metadata } from 'next';

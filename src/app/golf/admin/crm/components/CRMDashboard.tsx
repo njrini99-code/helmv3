@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import { createClient } from '@/lib/supabase/client';
 import {
   Users,
   TrendingUp,
@@ -14,6 +15,7 @@ import {
   ArrowRight,
   BarChart3,
   Target,
+  Mail,
 } from 'lucide-react';
 import type { Coach, CoachStatus, PipelineStage } from '../crm-config';
 
@@ -48,6 +50,26 @@ export function CRMDashboard({
   onCoachClick,
 }: CRMDashboardProps) {
   const [processing, setProcessing] = useState<string | null>(null);
+  const [emailStats, setEmailStats] = useState<{
+    total_sent: number;
+    delivered: number;
+    opened: number;
+    clicked: number;
+    bounced: number;
+  } | null>(null);
+
+  // Fetch email performance stats
+  useEffect(() => {
+    async function fetchEmailStats() {
+      const supabase = createClient();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any).rpc('get_crm_email_stats');
+      if (!error && data) {
+        setEmailStats(data as { total_sent: number; delivered: number; opened: number; clicked: number; bounced: number });
+      }
+    }
+    fetchEmailStats();
+  }, []);
 
   const allNewLeads = stats.byStatus.new_lead === stats.total && stats.total > 0;
 
@@ -411,6 +433,47 @@ export function CRMDashboard({
         </div>
       </div>
 
+      {/* ── Email Performance ── */}
+      {emailStats && emailStats.total_sent > 0 && (
+        <div className="glass-standard rounded-2xl p-5">
+          <div className="flex items-center gap-2.5 mb-4">
+            <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center">
+              <Mail size={16} className="text-blue-600" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-warm-900">Email Performance</h3>
+              <p className="text-xs text-warm-500">{emailStats.total_sent} emails tracked</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <EmailStatBox
+              label="Delivery Rate"
+              value={emailStats.total_sent > 0 ? Math.round((emailStats.delivered / emailStats.total_sent) * 100) : 0}
+              color="text-emerald-600"
+              bgColor="bg-emerald-50/50"
+            />
+            <EmailStatBox
+              label="Open Rate"
+              value={emailStats.total_sent > 0 ? Math.round((emailStats.opened / emailStats.total_sent) * 100) : 0}
+              color="text-blue-600"
+              bgColor="bg-blue-50/50"
+            />
+            <EmailStatBox
+              label="Click Rate"
+              value={emailStats.total_sent > 0 ? Math.round((emailStats.clicked / emailStats.total_sent) * 100) : 0}
+              color="text-violet-600"
+              bgColor="bg-violet-50/50"
+            />
+            <EmailStatBox
+              label="Bounce Rate"
+              value={emailStats.total_sent > 0 ? Math.round((emailStats.bounced / emailStats.total_sent) * 100) : 0}
+              color="text-red-600"
+              bgColor="bg-red-50/50"
+            />
+          </div>
+        </div>
+      )}
+
       {/* ── Quick Actions + Division Breakdown ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Quick Actions — cleaner callout */}
@@ -574,6 +637,15 @@ function EmptyState({ icon, title, subtitle }: { icon: React.ReactNode; title: s
       </div>
       <p className="text-sm font-medium text-warm-500">{title}</p>
       <p className="text-xs text-warm-400 mt-0.5">{subtitle}</p>
+    </div>
+  );
+}
+
+function EmailStatBox({ label, value, color, bgColor }: { label: string; value: number; color: string; bgColor: string }) {
+  return (
+    <div className={cn('p-3 rounded-xl border border-warm-100/50', bgColor)}>
+      <p className="text-2xl font-bold tabular-nums text-warm-900">{value}%</p>
+      <p className={cn('text-xs font-medium mt-0.5', color)}>{label}</p>
     </div>
   );
 }

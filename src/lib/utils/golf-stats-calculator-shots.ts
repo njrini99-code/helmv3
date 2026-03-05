@@ -332,17 +332,20 @@ export interface PuttingBreakStats {
 // HELPER FUNCTIONS
 // ============================================================================
 
-function normalizeToYards(distance: number | null | undefined, unit: string | null | undefined): number {
+/** @internal - exported for testing */
+export function normalizeToYards(distance: number | null | undefined, unit: string | null | undefined): number {
   if (distance == null) return 0;
   return unit === 'feet' ? distance / 3 : distance;
 }
 
-function normalizeToFeet(distance: number | null | undefined, unit: string | null | undefined): number {
+/** @internal - exported for testing */
+export function normalizeToFeet(distance: number | null | undefined, unit: string | null | undefined): number {
   if (distance == null) return 0;
   return unit === 'yards' ? distance * 3 : distance;
 }
 
-function normalizeShotType(shotType: string | null | undefined): string | null {
+/** @internal - exported for testing */
+export function normalizeShotType(shotType: string | null | undefined): string | null {
   if (!shotType) return shotType ?? null;
   if (shotType === 'putt') return 'putting';
   if (shotType === 'drive') return 'tee';
@@ -355,30 +358,35 @@ function normalizeShotType(shotType: string | null | undefined): string | null {
  * Check if a shot result indicates the ball reached the green
  * Handles multiple possible result values: 'green', 'gir', 'hole' (for hole-outs)
  */
-function isGreenHit(result: string | null | undefined): boolean {
+/** @internal - exported for testing */
+export function isGreenHit(result: string | null | undefined): boolean {
   if (!result) return false;
   const normalized = result.toLowerCase();
   return normalized === 'green' || normalized === 'gir' || normalized === 'hole';
 }
 
-function normalizeRoundType(
+/** @internal - exported for testing */
+export function normalizeRoundType(
   roundType: RoundInfo['round_type']
 ): 'practice' | 'qualifier' | 'tournament' | null {
   if (roundType === 'qualifying') return 'qualifier';
   return roundType;
 }
 
-function safePercent(made: number, attempts: number): number | null {
+/** @internal - exported for testing */
+export function safePercent(made: number, attempts: number): number | null {
   if (attempts === 0) return null;
   return Math.round((made / attempts) * 1000) / 10;
 }
 
-function safeAverage(total: number, count: number): number | null {
+/** @internal - exported for testing */
+export function safeAverage(total: number, count: number): number | null {
   if (count === 0) return null;
   return Math.round((total / count) * 100) / 100;
 }
 
-function getPuttDistanceBucket(distance: number): string {
+/** @internal - exported for testing */
+export function getPuttDistanceBucket(distance: number): string {
   if (distance <= 3) return '0_3';
   if (distance <= 5) return '3_5';
   if (distance <= 10) return '5_10';
@@ -390,7 +398,8 @@ function getPuttDistanceBucket(distance: number): string {
   return '35_plus';
 }
 
-function getApproachDistanceBucket(distance: number): string {
+/** @internal - exported for testing */
+export function getApproachDistanceBucket(distance: number): string {
   // Approach shots are from >= AROUND_GREEN_THRESHOLD_YARDS (distance to hole)
   // Shots closer than this are "around the green" and tracked separately
   if (distance < AROUND_GREEN_THRESHOLD_YARDS) return '';
@@ -404,7 +413,8 @@ function getApproachDistanceBucket(distance: number): string {
   return '225_plus';
 }
 
-function getAtgDistanceBucket(distance: number): string {
+/** @internal - exported for testing */
+export function getAtgDistanceBucket(distance: number): string {
   // Buckets for around-the-green shots (up to AROUND_GREEN_THRESHOLD_YARDS from hole)
   // The '20_plus' bucket captures 20 yards through the threshold
   if (distance <= 10) return '0_10';
@@ -430,7 +440,8 @@ function getAtgDistanceBucket(distance: number): string {
  * This is a best-effort approximation. True green-edge measurement would
  * require pin position and green depth data per hole.
  */
-const AROUND_GREEN_THRESHOLD_YARDS = 50;
+/** @internal - exported for testing */
+export const AROUND_GREEN_THRESHOLD_YARDS = 50;
 
 // ============================================================================
 // STROKES GAINED - PGA TOUR BENCHMARKS
@@ -478,7 +489,8 @@ const STROKES_GAINED_BENCHMARKS = {
 };
 
 // Helper to get expected strokes from position
-function getExpectedStrokes(lie: string | null, distanceYards: number, distanceFeet?: number): number {
+/** @internal - exported for testing */
+export function getExpectedStrokes(lie: string | null, distanceYards: number, distanceFeet?: number): number {
   if (!lie) return 0;
   if (lie === 'green' && distanceFeet !== undefined) {
     // Putting - use feet
@@ -512,7 +524,8 @@ function getExpectedStrokes(lie: string | null, distanceYards: number, distanceF
 
 // Calculate Strokes Gained for a shot
 // Returns null when data is incomplete (cannot calculate accurately)
-function calculateStrokesGainedForShot(shot: RawShot): number | null {
+/** @internal - exported for testing */
+export function calculateStrokesGainedForShot(shot: RawShot): number | null {
   // Strokes Gained = Expected strokes BEFORE - (1 + Expected strokes AFTER)
 
   // CRITICAL: Cannot calculate SG without lie_before and distance_to_hole_before
@@ -571,7 +584,8 @@ function calculateStrokesGainedForShot(shot: RawShot): number | null {
 }
 
 // Categorize SG by shot type
-function getStrokesGainedCategory(shot: RawShot, par: number): 'tee' | 'approach' | 'around_green' | 'putting' {
+/** @internal - exported for testing */
+export function getStrokesGainedCategory(shot: RawShot, par: number): 'tee' | 'approach' | 'around_green' | 'putting' {
   const shotType = normalizeShotType(shot.shot_type);
   if (shotType === 'putting') return 'putting';
   if (shotType === 'tee') return par === 3 ? 'approach' : 'tee';
@@ -583,7 +597,7 @@ function getStrokesGainedCategory(shot: RawShot, par: number): 'tee' | 'approach
 // SHOT-BASED HOLE CALCULATOR
 // ============================================================================
 
-interface CalculatedHoleStats {
+export interface CalculatedHoleStats {
   holeNumber: number;
   par: number;
   score: number;
@@ -617,7 +631,8 @@ interface CalculatedHoleStats {
  * Calculate hole statistics from raw shots
  * This is where all hole-level stats are DERIVED from individual shots
  */
-function calculateHoleStatsFromShots(shots: RawShot[], par: number): CalculatedHoleStats {
+/** @internal - exported for testing */
+export function calculateHoleStatsFromShots(shots: RawShot[], par: number): CalculatedHoleStats {
   // Sort shots by shot number
   const sortedShots = [...shots].sort((a, b) => a.shot_number - b.shot_number);
   const normalizedShots = sortedShots.map((shot) => ({

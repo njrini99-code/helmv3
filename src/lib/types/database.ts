@@ -1903,6 +1903,39 @@ export type Database = {
           },
         ]
       }
+      baseball_notifications: {
+        Row: {
+          body: string | null
+          created_at: string | null
+          data: Json | null
+          id: string
+          read_at: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string | null
+          data?: Json | null
+          id?: string
+          read_at?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string | null
+          data?: Json | null
+          id?: string
+          read_at?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       baseball_player_aggregates: {
         Row: {
           career_avg: number | null
@@ -3566,6 +3599,7 @@ export type Database = {
           next_action: string | null
           next_action_date: string | null
           notes: string | null
+          resend_message_id: string | null
           subject: string | null
         }
         Insert: {
@@ -3578,6 +3612,7 @@ export type Database = {
           next_action?: string | null
           next_action_date?: string | null
           notes?: string | null
+          resend_message_id?: string | null
           subject?: string | null
         }
         Update: {
@@ -3590,6 +3625,7 @@ export type Database = {
           next_action?: string | null
           next_action_date?: string | null
           notes?: string | null
+          resend_message_id?: string | null
           subject?: string | null
         }
         Relationships: [
@@ -3605,6 +3641,47 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_email_events: {
+        Row: {
+          contact_log_id: string | null
+          created_at: string | null
+          event_type: string
+          id: string
+          occurred_at: string
+          raw_payload: Json | null
+          recipient_email: string | null
+          resend_message_id: string
+        }
+        Insert: {
+          contact_log_id?: string | null
+          created_at?: string | null
+          event_type: string
+          id?: string
+          occurred_at: string
+          raw_payload?: Json | null
+          recipient_email?: string | null
+          resend_message_id: string
+        }
+        Update: {
+          contact_log_id?: string | null
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          occurred_at?: string
+          raw_payload?: Json | null
+          recipient_email?: string | null
+          resend_message_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_email_events_contact_log_id_fkey"
+            columns: ["contact_log_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contact_log"
             referencedColumns: ["id"]
           },
         ]
@@ -6548,6 +6625,7 @@ export type Database = {
           created_at: string | null
           id: string
           last_announcements_seen_at: string | null
+          last_travel_seen_at: string | null
           player_id: string
           updated_at: string | null
         }
@@ -6555,6 +6633,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           last_announcements_seen_at?: string | null
+          last_travel_seen_at?: string | null
           player_id: string
           updated_at?: string | null
         }
@@ -6562,6 +6641,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           last_announcements_seen_at?: string | null
+          last_travel_seen_at?: string | null
           player_id?: string
           updated_at?: string | null
         }
@@ -9457,6 +9537,7 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_crm_email_stats: { Args: never; Returns: Json }
       get_crm_events_in_range: {
         Args: { p_end: string; p_start: string }
         Returns: {
@@ -9680,6 +9761,10 @@ export type Database = {
       }
       user_is_golf_team_member: {
         Args: { check_team_id: string }
+        Returns: boolean
+      }
+      user_is_teammate_of_golf_player: {
+        Args: { check_player_id: string }
         Returns: boolean
       }
     }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { saveRoundDraft, loadRoundDraft, clearRoundDraft } from '@/app/golf/actions/round-drafts';
-import type { HoleStats, ShotRecord } from '@/components/golf/ShotTrackingComprehensive';
+import type { HoleStats, ShotRecord, RoundHole } from '@/lib/types/golf';
 
 // Types
 interface RoundSetupForm {
@@ -16,12 +16,7 @@ interface RoundSetupForm {
   roundDate: string;
 }
 
-interface Hole {
-  number: number;
-  par: number;
-  yardage: number;
-  score: number | null;
-}
+type Hole = RoundHole;
 
 export interface RoundDraftData {
   step: 'setup' | 'holes' | 'tracking' | 'submitting';

@@ -2,76 +2,66 @@
 
 ## Target
 
-Full comprehensive review of GolfHelm — player dashboard, coach dashboard, all features, and database. This covers the entire GolfHelm product within the Helm Sports Labs multi-sport SaaS platform.
+Comprehensive review of ALL working tree changes (modified + untracked files) across the Helm Sports Labs GolfHelm platform. This covers ~39 files with ~2,170 insertions and ~1,429 deletions spanning multiple feature areas.
 
-## Files (~738 total)
+## Change Summary
 
-### Player Dashboard Routes (~28 files)
-- `src/app/golf/(dashboard)/dashboard/hub/` — Player home
-- `src/app/golf/(dashboard)/dashboard/coachhelm/` — Player AI insights
-- `src/app/golf/(dashboard)/dashboard/my-development/` — Player development plans
-- `src/app/golf/(dashboard)/dashboard/my-qualifiers/` — Player qualifiers
-- `src/app/golf/(dashboard)/dashboard/rounds/` — Round entry, continue, review
-- `src/app/golf/(dashboard)/dashboard/classes/` — Academic classes
+The working tree includes changes across these major areas:
+1. **Shot Tracking Refactor** - Major refactor of `ShotTrackingComprehensive.tsx` (1479 lines changed), extraction of custom hooks
+2. **Round Entry/Continue Flow** - Updates to new-round and continue-round clients
+3. **Server Actions (golf.ts)** - 513 lines changed in the main golf actions file
+4. **Round Drafts** - Changes to auto-save/draft system
+5. **CRM Admin** - Email sending, coach detail panel, CRM dashboard updates
+6. **Database Migrations** - 3 new SQL migrations (CRM email tracking, atomic partial round save, draft data column)
+7. **Type System** - Updates to database.ts, database.types.ts, golf.ts types
+8. **New Hooks** - 4 new extracted hooks (use-edit-shot-modal, use-penalty-handler, use-shot-state-machine, use-undo-manager)
+9. **New Utilities** - shot-helpers.ts with tests
+10. **Webhook Route** - New Resend webhook handler
+11. **Calendar** - PremiumCalendarClient updates
 
-### Coach Dashboard Routes (~30 files)
-- `src/app/golf/(dashboard)/dashboard/alerts/` — Coach alerts
-- `src/app/golf/(dashboard)/dashboard/patterns/` — Pattern analysis
-- `src/app/golf/(dashboard)/dashboard/insights/` — Insight management
-- `src/app/golf/(dashboard)/dashboard/intelligence/` — Intelligence hub
-- `src/app/golf/(dashboard)/dashboard/analytics/coachhelm/` — CoachHelm analytics
-- `src/app/golf/(dashboard)/dashboard/development/` — Player development management
-- `src/app/golf/(dashboard)/dashboard/stats/team/` — Team stats
-- `src/app/golf/(dashboard)/dashboard/settings/coaching-intelligence/` — AI settings
-- `src/app/golf/(dashboard)/dashboard/qualifiers/new/` — Create qualifier
+## Files to Review
 
-### Shared Dashboard Routes (~42 files)
-- Calendar, Roster, Messages, Announcements, Tasks, Documents, Travel, Qualifiers, Stats, Team, Settings
+### Modified Files (23)
+- `.env.example` - Environment variable changes
+- `package.json` / `package-lock.json` - Dependency changes
+- `src/app/api/admin/crm/send-email/route.ts` - CRM email API
+- `src/app/golf/(dashboard)/dashboard/rounds/continue/[id]/continue-round-client.tsx` - Continue round flow
+- `src/app/golf/(dashboard)/dashboard/rounds/continue/[id]/page.tsx` - Continue round page
+- `src/app/golf/(dashboard)/dashboard/rounds/new/new-round-client.tsx` - New round flow
+- `src/app/golf/actions/golf.ts` - Main golf server actions (513 lines changed)
+- `src/app/golf/actions/round-drafts.ts` - Draft save/load actions
+- `src/app/golf/admin/crm/components/CRMDashboard.tsx` - CRM admin dashboard
+- `src/app/golf/admin/crm/components/CoachDetailPanel.tsx` - Coach detail panel
+- `src/components/golf/MobileScoreEntry.tsx` - Mobile score entry
+- `src/components/golf/RoundEntryModeToggle.tsx` - Round entry mode toggle
+- `src/components/golf/ShotTrackingComprehensive.tsx` - Main shot tracking (1479 lines changed)
+- `src/components/golf/ShotTrackingWithOffline.tsx` - Offline shot tracking wrapper
+- `src/components/golf/calendar/PremiumCalendarClient.tsx` - Calendar client
+- `src/hooks/golf/use-auto-save-round.ts` - Auto-save hook
+- `src/hooks/golf/use-offline-sync.ts` - Offline sync hook
+- `src/lib/types/database.ts` - Database types
+- `src/lib/types/database.types.ts` - Supabase generated types (643 lines changed)
+- `src/lib/types/golf.ts` - Golf entity types
 
-### Server Actions (42 files)
-- `src/app/golf/actions/` — All server action files covering CoachHelm AI, rounds/stats, calendar/events, team management, auth/onboarding, admin
-
-### Components (282 files across 18+ directories)
-- `src/components/golf/coachhelm/` — 76 CoachHelm AI components
-- `src/components/golf/calendar/` — 43 calendar components
-- `src/components/golf/stats/` — 19 stats components
-- `src/components/golf/tasks/` — 14 task components
-- `src/components/golf/announcements/` — 13 announcement components
-- `src/components/golf/rounds/` — 12 round components
-- `src/components/golf/dashboard/` — 12 dashboard components
-- `src/components/golf/messages/` — 10 messaging components
-- `src/components/golf/roster/` — 10 roster components
-- `src/components/golf/settings/` — 9 settings components
-- `src/components/golf/documents/` — 9 document components
-- Plus layout, classes, player-hub, travel, qualifiers, profile, offline directories
-- 31 top-level component files (shot tracking, scorecard, mobile nav, offline, etc.)
-
-### Lib / CoachHelm Engine (52 files)
-- `src/lib/coachhelm/` — V1 legacy engine + V2 engine (orchestrator, mining, prediction, learning, reasoning, NLG, features, services)
-
-### Lib / Utilities
-- `src/lib/golf/` — 4 files (round types, SG benchmarks, strokes gained, trends)
-- `src/lib/utils/` — 6 golf-relevant files (stats calculator, formatting, audit logger, etc.)
-- `src/lib/cache/` — 2 files (golf queries, golf stats calculator)
-- `src/lib/types/` — 10 type definition files
-- `src/lib/supabase/` — 6 client files
-
-### Hooks (15 files)
-- `src/hooks/golf/` — Realtime, data, offline, keyboard, attachments, preferences
-
-### Stores (5 files)
-- `src/stores/` — Zustand stores for auth, offline sync, team state, UI
-
-### Database Migrations (114 files)
-- `supabase/migrations/` — 69 sequential migrations + 45 timestamped patches
-- Covers: golf core, rounds, courses, events, qualifiers, communication, tasks, documents, travel, academics, calendar, CoachHelm, stats cache, shot system, RLS, indexes
+### New Files (16)
+- `src/app/api/webhooks/resend/route.ts` - Resend webhook handler
+- `src/app/golf/actions/__tests__/golf-schemas.test.ts` - Golf action schema tests
+- `src/hooks/golf/use-edit-shot-modal.ts` - Edit shot modal hook
+- `src/hooks/golf/use-penalty-handler.ts` - Penalty handling hook
+- `src/hooks/golf/use-shot-state-machine.ts` - Shot state machine hook
+- `src/hooks/golf/use-undo-manager.ts` - Undo manager hook
+- `src/lib/utils/__tests__/shot-helpers.test.ts` - Shot helpers tests
+- `src/lib/utils/shot-helpers.ts` - Shot helper utilities
+- `supabase/migrations/20260304000000_create_crm_email_tracking.sql` - CRM email tracking migration
+- `supabase/migrations/20260304000001_atomic_partial_round_save.sql` - Atomic partial round save migration
+- `supabase/migrations/20260304000002_add_draft_data_column.sql` - Draft data column migration
 
 ## Flags
 
 - Security Focus: no
 - Performance Critical: no
 - Strict Mode: no
-- Framework: Next.js 16 (App Router) + Supabase + TypeScript strict + Tailwind
+- Framework: Next.js 16 (App Router) + Supabase + TypeScript
 
 ## Review Phases
 

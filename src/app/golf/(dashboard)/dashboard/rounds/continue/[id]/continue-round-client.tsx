@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import ShotTrackingComprehensive, { type HoleStats, type ShotRecord } from '@/components/golf/ShotTrackingComprehensive';
+import ShotTrackingComprehensive from '@/components/golf/ShotTrackingComprehensive';
+import type { HoleStats, ShotRecord, RoundHole } from '@/lib/types/golf';
 import { submitGolfRoundComprehensive, savePartialRound, deleteInProgressRound } from '@/app/golf/actions/golf';
 import { deleteOfflineRound } from '@/lib/offline/indexed-db';
 
@@ -11,12 +12,7 @@ import { useOfflineSync } from '@/hooks/golf/use-offline-sync';
 import { OfflineIndicator } from '@/components/golf/OfflineIndicator';
 import { useToast } from '@/components/ui/toast';
 
-interface Hole {
-  number: number;
-  par: number;
-  yardage: number;
-  score: number | null;
-}
+type Hole = RoundHole;
 
 interface RoundSetupData {
   courseName: string;
@@ -79,6 +75,53 @@ export default function ContinueRoundClient({
   const [pendingFinalStats, setPendingFinalStats] = useState<HoleStats[] | null>(null);
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);
 
+  // Concurrency lock for background server saves
+  const serverSaveInProgressRef = useRef(false);
+  const consecutiveSaveFailuresRef = useRef(0);
+  const isSubmittingRef = useRef(false);
+
+  /**
+   * Build partial round data for server persistence.
+   * Accepts overrides for values that may not be in React state yet (e.g. inside handleHoleComplete).
+   */
+  const buildPartialRoundData = useCallback((
+    overrideStats?: HoleStats[],
+    overrideCurrentHole?: number,
+    overrideInProgress?: Record<number, ShotRecord[]>,
+  ) => {
+    const statsToUse = overrideStats ?? completedHoleStats;
+    const holeIndexToUse = overrideCurrentHole ?? currentHoleIndex;
+    const inProgressMap = overrideInProgress ?? inProgressShotsByHole;
+
+    const inProgressShotsArr = Object.entries(inProgressMap)
+      .filter(([, shots]) => shots.length > 0)
+      .map(([idx, shots]) => ({
+        holeNumber: holes[Number(idx)]?.number ?? Number(idx) + 1,
+        shots,
+      }));
+
+    return {
+      courseName: setupData.courseName,
+      courseCity: setupData.courseCity || undefined,
+      courseState: setupData.courseState || undefined,
+      courseRating: setupData.courseRating ? parseFloat(setupData.courseRating) : undefined,
+      courseSlope: setupData.courseSlope ? parseInt(setupData.courseSlope) : undefined,
+      teesPlayed: setupData.teesPlayed || undefined,
+      roundType: setupData.roundType,
+      roundDate: setupData.roundDate,
+      qualifierId: setupData.qualifierId,
+      currentHole: holeIndexToUse + 1,
+      holesToPlay: holes.length as 9 | 18,
+      holes: statsToUse,
+      inProgressShots: inProgressShotsArr,
+      holeConfigs: holes.map(hole => ({
+        holeNumber: hole.number,
+        par: hole.par,
+        yardage: hole.yardage,
+      })),
+    };
+  }, [completedHoleStats, currentHoleIndex, inProgressShotsByHole, holes, setupData]);
+
   const handleHoleComplete = async (holeIndex: number, holeStats: HoleStats) => {
     // Update holes with score
     const updatedHoles = [...holes];
@@ -92,6 +135,10 @@ export default function ContinueRoundClient({
     const updatedStats = [...completedHoleStats];
     updatedStats[holeIndex] = holeStats;
     setCompletedHoleStats(updatedStats);
+
+    // Remove completed hole from in-progress map (capture snapshot for server save)
+    const inProgressAfter = { ...inProgressShotsByHole };
+    delete inProgressAfter[holeIndex];
     setInProgressShotsByHole((prev) => {
       if (!prev[holeIndex]) {
         return prev;
@@ -100,6 +147,33 @@ export default function ContinueRoundClient({
       delete next[holeIndex];
       return next;
     });
+
+    // Fire-and-forget: persist completed hole data to database (non-blocking)
+    void (async () => {
+      if (serverSaveInProgressRef.current) return;
+      serverSaveInProgressRef.current = true;
+      try {
+        const result = await savePartialRound(
+          buildPartialRoundData(updatedStats, holeIndex + 1, inProgressAfter),
+          roundId
+        );
+        if (result.success) {
+          consecutiveSaveFailuresRef.current = 0;
+        } else {
+          consecutiveSaveFailuresRef.current++;
+          if (consecutiveSaveFailuresRef.current >= 2) {
+            showToast('Auto-save is having trouble. Your data is cached locally.', 'warning');
+          }
+        }
+      } catch {
+        consecutiveSaveFailuresRef.current++;
+        if (consecutiveSaveFailuresRef.current >= 2) {
+          showToast('Auto-save is having trouble. Your data is cached locally.', 'warning');
+        }
+      } finally {
+        serverSaveInProgressRef.current = false;
+      }
+    })();
 
     // Move to next hole or prompt for finish confirmation
     if (holeIndex < holes.length - 1) {
@@ -140,13 +214,17 @@ export default function ContinueRoundClient({
    */
   const handleAutoSave = useCallback(async (shots: ShotRecord[], holeIndex: number) => {
     // Sync parent's in-progress shots so hole navigation stays consistent after edits/deletes
+    let allInProgressShots: Record<number, ShotRecord[]> = {};
     setInProgressShotsByHole(prev => {
       const existing = prev[holeIndex];
-      if (existing && existing.length === shots.length && existing === shots) return prev;
-      return { ...prev, [holeIndex]: shots };
+      const updated = (existing && existing.length === shots.length && existing === shots)
+        ? prev
+        : { ...prev, [holeIndex]: shots };
+      allInProgressShots = updated;
+      return updated;
     });
 
-    // Save to IndexedDB for offline redundancy
+    // Save to IndexedDB for offline redundancy — include ALL in-progress holes, not just current
     if (offlineSyncState.isIndexedDBReady) {
       try {
         const draftData = {
@@ -155,7 +233,7 @@ export default function ContinueRoundClient({
           holes,
           completedHoleStats,
           currentHoleIndex: holeIndex,
-          inProgressShots: { [holeIndex]: shots },
+          inProgressShots: allInProgressShots,
         };
         await offlineSyncActions.saveRoundOffline(
           roundId,
@@ -177,6 +255,32 @@ export default function ContinueRoundClient({
         }
       }
     }
+
+    // Background save to database — protects mid-hole shot data
+    if (offlineSyncState.isOnline) {
+      void (async () => {
+        if (serverSaveInProgressRef.current) return;
+        serverSaveInProgressRef.current = true;
+        try {
+          const result = await savePartialRound(buildPartialRoundData(), roundId);
+          if (result.success) {
+            consecutiveSaveFailuresRef.current = 0;
+          } else {
+            consecutiveSaveFailuresRef.current++;
+            if (consecutiveSaveFailuresRef.current >= 2) {
+              showToast('Auto-save is having trouble. Your data is cached locally.', 'warning');
+            }
+          }
+        } catch {
+          consecutiveSaveFailuresRef.current++;
+          if (consecutiveSaveFailuresRef.current >= 2) {
+            showToast('Auto-save is having trouble. Your data is cached locally.', 'warning');
+          }
+        } finally {
+          serverSaveInProgressRef.current = false;
+        }
+      })();
+    }
   }, [
     offlineSyncState.isIndexedDBReady,
     offlineSyncState.isOnline,
@@ -185,9 +289,12 @@ export default function ContinueRoundClient({
     setupData,
     holes,
     completedHoleStats,
+    buildPartialRoundData,
   ]);
 
   const handleRoundSubmit = async (allHoleStats: HoleStats[]) => {
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
     setSubmitting(true);
     setError('');
 
@@ -233,44 +340,19 @@ export default function ContinueRoundClient({
   };
 
   const handleSaveForLater = async () => {
-    const inProgressShots = Object.entries(inProgressShotsByHole)
-      .filter(([, shots]) => shots.length > 0)
-      .map(([holeIndex, shots]) => ({
-        holeNumber: holes[Number(holeIndex)]?.number ?? Number(holeIndex) + 1,
-        shots,
-      }));
+    try {
+      const result = await savePartialRound(buildPartialRoundData(), roundId);
 
-    const partialRoundData = {
-      courseName: setupData.courseName,
-      courseCity: setupData.courseCity || undefined,
-      courseState: setupData.courseState || undefined,
-      courseRating: setupData.courseRating ? parseFloat(setupData.courseRating) : undefined,
-      courseSlope: setupData.courseSlope ? parseInt(setupData.courseSlope) : undefined,
-      teesPlayed: setupData.teesPlayed || undefined,
-      roundType: setupData.roundType,
-      roundDate: setupData.roundDate,
-      qualifierId: setupData.qualifierId,
-      currentHole: currentHoleIndex + 1, // Next hole player will resume on
-      holesToPlay: holes.length as 9 | 18,
-      holes: completedHoleStats,
-      inProgressShots,
-      holeConfigs: holes.map(hole => ({
-        holeNumber: hole.number,
-        par: hole.par,
-        yardage: hole.yardage,
-      })),
-    };
+      if (!result.success) {
+        showToast(result.error || 'Failed to save round. Please try again.', 'error');
+        return;
+      }
 
-    const result = await savePartialRound(partialRoundData, roundId);
-
-    if (!result.success) {
-      throw new Error(result.error);
+      setShowExitModal(false);
+      router.push('/golf/dashboard/rounds');
+    } catch {
+      showToast('Failed to save round. Please try again.', 'error');
     }
-
-    setShowExitModal(false);
-
-    // Redirect to rounds page
-    router.push('/golf/dashboard/rounds');
   };
 
   const completedStatsForHole = completedHoleStats[currentHoleIndex];

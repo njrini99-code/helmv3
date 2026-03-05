@@ -98,11 +98,14 @@ export async function POST(request: Request) {
         });
 
         if (res.ok) {
+          const resendData = await res.json() as { id: string };
           sent++;
           await supabase.from('crm_contact_log').insert({
             coach_id: recipient.id,
             contact_type: 'email',
+            subject,
             notes: `Bulk email: "${subject}"`,
+            resend_message_id: resendData.id,
             created_by: user.id,
           });
           await supabase.from('crm_coaches').update({

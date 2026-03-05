@@ -3,19 +3,15 @@
 import { useState, useCallback } from 'react';
 import { useMobileDetection } from '@/hooks/use-mobile-detection';
 import { useLocalStorage } from '@/hooks/use-local-storage';
-import ShotTrackingComprehensive, { type HoleStats, type ShotRecord } from './ShotTrackingComprehensive';
+import ShotTrackingComprehensive from './ShotTrackingComprehensive';
+import type { HoleStats, ShotRecord, RoundHole } from '@/lib/types/golf';
 import MobileScoreEntry from './MobileScoreEntry';
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-interface Hole {
-  number: number;
-  par: number;
-  yardage: number;
-  score: number | null;
-}
+type Hole = RoundHole;
 
 export type EntryMode = 'quick' | 'detailed';
 

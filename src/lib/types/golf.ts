@@ -342,30 +342,77 @@ export interface TeamStats {
 // UI TYPES
 // ============================================================================
 
+/**
+ * Canonical ShotRecord — the comprehensive shot tracking type.
+ * Previously defined in ShotTrackingComprehensive.tsx; moved here for centralization.
+ * All files should import from '@/lib/types/golf' or '@/lib/types'.
+ */
 export interface ShotRecord {
-  shot_number: number;
-  club?: string;
-  distance_yards?: number;
-  result?: string;
-  notes?: string;
+  id?: string;
+  shotNumber: number;
+  shotType: 'tee' | 'approach' | 'around_green' | 'putting' | 'penalty';
+  clubType: 'driver' | 'non_driver' | 'putter';
+  lieBefore: 'tee' | 'fairway' | 'rough' | 'sand' | 'green' | 'other';
+  distanceToHoleBefore: number;
+  distanceUnitBefore: 'yards' | 'feet';
+  result: 'fairway' | 'rough' | 'sand' | 'green' | 'hole' | 'other' | 'penalty';
+  distanceToHoleAfter: number;
+  distanceUnitAfter: 'yards' | 'feet';
+  shotDistance: number;
+  missDirection?: string;
+  puttBreak?: 'right_to_left' | 'left_to_right' | 'straight' | 'multiple';
+  puttSlope?: 'uphill' | 'downhill' | 'level' | 'severe';
+  isPenalty: boolean;
+  penaltyType?: 'ob' | 'water' | 'unplayable' | 'lost';
+  puttMissTags?: PuttMissTag[];
+  puttDistanceFeet?: number;
+  approachMissDirection?: ApproachMissDirection;
+  approachMissLieType?: 'fairway' | 'rough' | 'bunker' | 'hazard';
 }
 
-export interface HoleData {
-  hole_number: number;
+/**
+ * Canonical HoleStats — calculated stats for a completed hole.
+ * Previously defined in ShotTrackingComprehensive.tsx; moved here for centralization.
+ */
+export interface HoleStats {
+  holeNumber: number;
   par: number;
   yardage: number;
-  score?: number;
-  putts?: number;
-  fairway_hit?: boolean;
-  green_in_regulation?: boolean;
+  score: number;
+  putts: number;
+  fairwayHit: boolean | null;
+  greenInRegulation: boolean;
+  drivingDistance: number | null;
+  usedDriver: boolean | null;
+  driveMissDirection: string | null;
+  approachDistance: number | null;
+  approachLie: string | null;
+  approachProximity: number | null;
+  approachMissDirection: string | null;
+  scrambleAttempt: boolean;
+  scrambleMade: boolean;
+  sandSaveAttempt: boolean;
+  sandSaveMade: boolean;
+  penaltyStrokes: number;
+  firstPuttDistance: number | null;
+  firstPuttLeave: number | null;
+  firstPuttBreak: string | null;
+  firstPuttSlope: string | null;
+  firstPuttMissDirection: string | null;
+  holedOutDistance: number | null;
+  holedOutType: string | null;
   shots: ShotRecord[];
 }
 
-export interface RoundData {
-  course_name: string;
-  course_location?: string;
-  played_at: string;
-  holes: HoleData[];
+/**
+ * Canonical RoundHole — the hole setup/config used across round pages.
+ * Replaces the 8+ duplicated `interface Hole { number, par, yardage, score }` definitions.
+ */
+export interface RoundHole {
+  number: number;
+  par: number;
+  yardage: number;
+  score: number | null;
 }
 
 // ============================================================================

@@ -32,6 +32,11 @@ interface CoachDetailPanelProps {
   priorityConfig: Record<number, { label: string; color: string; bgColor: string; iconLabel: string }>;
 }
 
+interface EmailEvent {
+  event_type: string;
+  occurred_at: string;
+}
+
 interface ContactLog {
   id: string;
   contact_type: string;
@@ -39,6 +44,8 @@ interface ContactLog {
   notes: string | null;
   next_action: string | null;
   next_action_date: string | null;
+  resend_message_id: string | null;
+  crm_email_events: EmailEvent[];
 }
 
 const CONTACT_TYPES = [
@@ -97,8 +104,22 @@ export function CoachDetailPanel({
   const fetchLogs = useCallback(async () => {
     setLoadingLogs(true);
     try {
-      const { data } = await supabase.from('crm_contact_log').select('*').eq('coach_id', coach.id).order('contact_date', { ascending: false });
-      setLogs((data || []) as ContactLog[]);
+      const { data } = await supabase
+        .from('crm_contact_log')
+        .select('*, crm_email_events(event_type, occurred_at)')
+        .eq('coach_id', coach.id)
+        .order('contact_date', { ascending: false });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setLogs((data || []).map((d: any) => ({
+        id: d.id,
+        contact_type: d.contact_type,
+        contact_date: d.contact_date,
+        notes: d.notes,
+        next_action: d.next_action,
+        next_action_date: d.next_action_date,
+        resend_message_id: d.resend_message_id || null,
+        crm_email_events: Array.isArray(d.crm_email_events) ? d.crm_email_events : [],
+      })));
     } catch (err) { console.error('Failed to fetch logs:', err); }
     finally { setLoadingLogs(false); }
   }, [supabase, coach.id]);
@@ -417,6 +438,9 @@ export function CoachDetailPanel({
                           <span className="text-xs text-warm-400 tabular-nums">{formatDate(log.contact_date)}</span>
                         </div>
                         {log.notes && <p className="text-xs text-warm-600 mt-0.5 leading-relaxed">{log.notes}</p>}
+                        {log.contact_type === 'email' && log.crm_email_events.length > 0 && (
+                          <EmailTrackingBadges events={log.crm_email_events} />
+                        )}
                         {log.next_action && (
                           <div className="mt-1.5 flex items-center gap-1.5 text-xs text-amber-600">
                             <Clock size={11} /> Next: {log.next_action}
@@ -518,6 +542,45 @@ function Row({ label, value }: { label: string; value: string | null | undefined
     <div className="flex justify-between items-center py-1">
       <span className="text-xs text-warm-500">{label}</span>
       <span className="text-xs font-medium text-warm-800 truncate max-w-[200px]">{value || <span className="text-warm-300">&mdash;</span>}</span>
+    </div>
+  );
+}
+
+function EmailTrackingBadges({ events }: { events: EmailEvent[] }) {
+  const eventSet = new Set(events.map(e => e.event_type));
+  const bounced = eventSet.has('email.bounced');
+  const complained = eventSet.has('email.complained');
+  const delivered = eventSet.has('email.delivered');
+  const opened = eventSet.has('email.opened');
+  const clicked = eventSet.has('email.clicked');
+
+  return (
+    <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+      {bounced && (
+        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-red-50 text-red-600 text-[10px] font-semibold leading-none">
+          <span className="w-1 h-1 rounded-full bg-red-400" /> Bounced
+        </span>
+      )}
+      {complained && (
+        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-red-50 text-red-600 text-[10px] font-semibold leading-none">
+          <span className="w-1 h-1 rounded-full bg-red-400" /> Spam
+        </span>
+      )}
+      {delivered && !bounced && (
+        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-600 text-[10px] font-semibold leading-none">
+          <span className="w-1 h-1 rounded-full bg-emerald-400" /> Delivered
+        </span>
+      )}
+      {opened && (
+        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-blue-50 text-blue-600 text-[10px] font-semibold leading-none">
+          <span className="w-1 h-1 rounded-full bg-blue-400" /> Opened
+        </span>
+      )}
+      {clicked && (
+        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-violet-50 text-violet-600 text-[10px] font-semibold leading-none">
+          <span className="w-1 h-1 rounded-full bg-violet-400" /> Clicked
+        </span>
+      )}
     </div>
   );
 }

@@ -1,8 +1,9 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import { revalidatePath } from 'next/cache';
-import type { HoleStats, ShotRecord } from '@/components/golf/ShotTrackingComprehensive';
+import type { HoleStats, ShotRecord, RoundHole } from '@/lib/types/golf';
 import { triggerPlayerInsightsAfterRound } from '@/app/golf/actions/insights';
 
 // ============================================================================
@@ -24,12 +25,7 @@ interface RoundSetupForm {
   roundDate: string;
 }
 
-interface Hole {
-  number: number;
-  par: number;
-  yardage: number;
-  score: number | null;
-}
+type Hole = RoundHole;
 
 export interface RoundDraftData {
   step: 'setup' | 'holes' | 'tracking' | 'submitting';
@@ -102,36 +98,13 @@ export async function saveRoundDraft(
     // Calculate total holes for the draft
     const totalHoles = data.holes.length || 18;
 
-    // Round data for the record
-    // KNOWN WORKAROUND: Draft data is stored in the notes field as JSON.
-    // This collides with user-entered notes. A dedicated draft_data column
-    // should be added via migration. Until then, notes are overwritten for
-    // in_progress rounds and restored to null when the draft is converted.
-    const draftJsonString = JSON.stringify(data);
+    // Draft data is stored in the dedicated draft_data JSONB column
 
     // Extract setup data with defaults
     const setupData = data.setupData;
     const defaultDate = new Date().toISOString().split('T')[0];
 
-    const roundRecord: {
-      player_id: string;
-      team_id: string | null;
-      course_name: string;
-      course_city: string | null;
-      course_state: string | null;
-      course_rating: number | null;
-      course_slope: number | null;
-      tees_played: string | null;
-      round_type: string;
-      round_date: string;
-      status: string;
-      current_hole: number | null;
-      holes_played: number;
-      notes: string;
-      total_score: null;
-      score_to_par: null;
-      total_putts: null;
-    } = {
+    const roundRecord = {
       player_id: player.id,
       team_id: teamId,
       course_name: setupData?.courseName || 'Untitled Round',
@@ -145,19 +118,20 @@ export async function saveRoundDraft(
       status: 'in_progress',
       current_hole: data.currentHoleIndex !== undefined ? data.currentHoleIndex + 1 : null,
       holes_played: totalHoles,
-      notes: draftJsonString, // WORKAROUND: collides with user notes - see comment above
+      draft_data: data as unknown as Record<string, unknown>, // JSONB column for draft state
       // Clear stats for drafts
-      total_score: null,
-      score_to_par: null,
-      total_putts: null,
+      total_score: null as null,
+      score_to_par: null as null,
+      total_putts: null as null,
     };
 
     let roundId: string;
+    // Use fromUntyped because draft_data column isn't in generated types yet
+    const roundsTable = fromUntyped(supabase, 'golf_rounds');
 
     if (existingRoundId) {
       // Update existing draft
-      const { data: updated, error: updateError } = await supabase
-        .from('golf_rounds')
+      const { data: updated, error: updateError } = await roundsTable
         .update(roundRecord)
         .eq('id', existingRoundId)
         .eq('player_id', player.id)
@@ -166,8 +140,7 @@ export async function saveRoundDraft(
 
       if (updateError) {
         // If update fails (round might not exist or not be a draft), create new
-        const { data: created, error: createError } = await supabase
-          .from('golf_rounds')
+        const { data: created, error: createError } = await fromUntyped(supabase, 'golf_rounds')
           .insert(roundRecord)
           .select('id')
           .single();
@@ -192,8 +165,7 @@ export async function saveRoundDraft(
 
       if (existingDraft) {
         // Update existing draft
-        const { error: updateError } = await supabase
-          .from('golf_rounds')
+        const { error: updateError } = await fromUntyped(supabase, 'golf_rounds')
           .update(roundRecord)
           .eq('id', existingDraft.id);
 
@@ -203,8 +175,7 @@ export async function saveRoundDraft(
         roundId = existingDraft.id;
       } else {
         // Create new draft
-        const { data: created, error: createError } = await supabase
-          .from('golf_rounds')
+        const { data: created, error: createError } = await fromUntyped(supabase, 'golf_rounds')
           .insert(roundRecord)
           .select('id')
           .single();
@@ -259,9 +230,8 @@ export async function loadRoundDraft(): Promise<ActionResult<DraftInfo | null>> 
     }
 
     // Get most recent draft (using status='in_progress' to identify drafts)
-    // Draft data is stored in the notes field as JSON
-    const { data: draft, error } = await supabase
-      .from('golf_rounds')
+    // Use fromUntyped because draft_data column isn't in generated types yet
+    const { data: draft, error } = await fromUntyped(supabase, 'golf_rounds')
       .select(`
         id,
         course_name,
@@ -271,6 +241,7 @@ export async function loadRoundDraft(): Promise<ActionResult<DraftInfo | null>> 
         round_type,
         current_hole,
         holes_played,
+        draft_data,
         notes,
         created_at,
         updated_at
@@ -289,13 +260,14 @@ export async function loadRoundDraft(): Promise<ActionResult<DraftInfo | null>> 
       return { success: true, data: null };
     }
 
-    // Parse draft_data from notes field
+    // Read draft data from dedicated column, fallback to notes for legacy data
     let draftData: RoundDraftData | null = null;
-    if (draft.notes) {
+    if (draft.draft_data) {
+      draftData = draft.draft_data as RoundDraftData;
+    } else if (draft.notes) {
       try {
         draftData = JSON.parse(draft.notes) as RoundDraftData;
       } catch {
-        // Expected: notes field may not contain valid JSON draft data
         draftData = null;
       }
     }
@@ -366,15 +338,15 @@ export async function checkForDraft(): Promise<ActionResult<{
     }
 
     // Get most recent draft (using status='in_progress' to identify drafts)
-    // Draft data is stored in the notes field as JSON
-    const { data: draft } = await supabase
-      .from('golf_rounds')
+    // Use fromUntyped because draft_data column isn't in generated types yet
+    const { data: draft } = await fromUntyped(supabase, 'golf_rounds')
       .select(`
         id,
         course_name,
         round_date,
         current_hole,
         holes_played,
+        draft_data,
         notes,
         updated_at
       `)
@@ -388,13 +360,14 @@ export async function checkForDraft(): Promise<ActionResult<{
       return { success: true, data: { hasDraft: false, draftInfo: null } };
     }
 
-    // Parse draft_data from notes field
+    // Read draft data from dedicated column, fallback to notes for legacy data
     let draftData: RoundDraftData | null = null;
-    if (draft.notes) {
+    if (draft.draft_data) {
+      draftData = draft.draft_data as RoundDraftData;
+    } else if (draft.notes) {
       try {
         draftData = JSON.parse(draft.notes) as RoundDraftData;
       } catch {
-        // Expected: notes field may not contain valid JSON draft data
         draftData = null;
       }
     }
@@ -500,12 +473,12 @@ export async function convertDraftToRound(roundId: string): Promise<ActionResult
       return { success: false, error: 'Player profile not found' };
     }
 
-    // Convert draft to regular round (clear draft data from notes, update status)
-    const { error } = await supabase
-      .from('golf_rounds')
+    // Convert draft to regular round (clear draft data, update status)
+    const { error } = await fromUntyped(supabase, 'golf_rounds')
       .update({
         status: 'completed',
-        notes: null, // Clear draft data from notes field
+        draft_data: null,
+        notes: null,
       })
       .eq('id', roundId)
       .eq('player_id', player.id)

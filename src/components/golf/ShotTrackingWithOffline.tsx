@@ -23,7 +23,7 @@ import { getSyncEngine } from '@/lib/offline/sync-engine';
 import { saveOfflineShot, saveOfflineHole, saveOfflineRound } from '@/lib/offline/shot-storage';
 // OfflineSyncStatus removed — was popping up during normal online use
 import { OfflineWarningBanner } from './OfflineWarningBanner';
-import type { ShotRecord, HoleStats } from './ShotTrackingComprehensive';
+import type { ShotRecord, HoleStats, RoundHole } from '@/lib/types/golf';
 
 // Dynamically import the main component to avoid SSR issues with IndexedDB
 const ShotTrackingComprehensive = dynamic(
@@ -35,12 +35,7 @@ const ShotTrackingComprehensive = dynamic(
 // TYPES
 // ============================================================================
 
-interface Hole {
-  number: number;
-  par: number;
-  yardage: number;
-  score: number | null;
-}
+type Hole = RoundHole;
 
 interface ShotTrackingWithOfflineProps {
   holes: Hole[];
