@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useRef, useState, useCallback } from 'react';
+import { memo, useRef, useState, useCallback, useEffect } from 'react';
 import { PuttMissTagSelector } from './putt-miss-tag-selector';
 import { ApproachMissSelector } from './approach-miss-selector';
 import { calculateShotDistanceWithDirection, calculateHoleStats } from '@/lib/utils/shot-helpers';
@@ -71,6 +71,21 @@ const ScorecardHeader = memo(function ScorecardHeader({
   onExit,
   onNavigateToHole,
 }: ScorecardHeaderProps) {
+  const headerRef = useRef<HTMLDivElement>(null);
+
+  const updateCSSProperty = useCallback(() => {
+    if (headerRef.current) {
+      const height = headerRef.current.getBoundingClientRect().height;
+      document.documentElement.style.setProperty('--scorecard-height', `${height}px`);
+    }
+  }, []);
+
+  useEffect(() => {
+    updateCSSProperty();
+    window.addEventListener('resize', updateCSSProperty);
+    return () => window.removeEventListener('resize', updateCSSProperty);
+  }, [updateCSSProperty]);
+
   const is9Hole = holes.length <= 9;
   const front9 = holes.slice(0, 9);
   const back9 = is9Hole ? [] : holes.slice(9);
@@ -103,13 +118,13 @@ const ScorecardHeader = memo(function ScorecardHeader({
         aria-label={`Hole ${hole.number}, Par ${hole.par}, ${hole.yardage} yards${hasScore ? `, Score: ${hole.score}` : ', not yet played'}${isCurrent ? ' (current hole)' : ''}${canNavigate && !isCurrent ? ', click to edit' : ''}`}
         onClick={() => canNavigate && onNavigateToHole?.(holeIndex)}
         disabled={!canNavigate}
-        className={`min-w-[75px] py-3 px-2 text-center border-r border-warm-600 transition-colors ${
+        className={`min-w-[75px] py-3 px-2 text-center border-r border-warm-700 transition-colors ${
           isCurrent
             ? 'bg-primary-600'
             : hasScore
-              ? canNavigate ? 'bg-warm-700/50 hover:bg-warm-700 cursor-pointer' : 'bg-warm-700/50 cursor-default'
+              ? canNavigate ? 'bg-warm-800/50 hover:bg-warm-800 cursor-pointer' : 'bg-warm-800/50 cursor-default'
               : canNavigate
-                ? 'hover:bg-warm-700 cursor-pointer'
+                ? 'hover:bg-warm-800 cursor-pointer'
                 : 'cursor-default'
         }`}
       >
@@ -134,8 +149,8 @@ const ScorecardHeader = memo(function ScorecardHeader({
   };
 
   return (
-    <div className="bg-[#1e293b] sticky top-0 z-50">
-      <div className="lg:hidden flex justify-between items-center px-4 py-2 border-b border-warm-600">
+    <div ref={headerRef} className="bg-warm-900 sticky top-0 z-50">
+      <div className="lg:hidden flex justify-between items-center px-4 py-2 border-b border-warm-700">
         <div className="flex items-center gap-2">
           <button
             onClick={() => scrollHoleIntoView(Math.max(1, currentHoleNumber - 1))}
@@ -188,10 +203,10 @@ const ScorecardHeader = memo(function ScorecardHeader({
         </button>
       </div>
 
-      <div className="scroll-x-fade overscroll-x-contain touch-pan-x" style={{ WebkitOverflowScrolling: 'touch' }}>
+      <div className="overflow-x-auto overscroll-x-contain touch-pan-x" style={{ WebkitOverflowScrolling: 'touch', maskImage: 'linear-gradient(to right, transparent 0, black 16px, black calc(100% - 16px), transparent 100%)', WebkitMaskImage: 'linear-gradient(to right, transparent 0, black 16px, black calc(100% - 16px), transparent 100%)' }}>
         <div className="inline-flex min-w-full">
           {front9.map((hole, index) => renderHoleButton(hole, index))}
-          <div className="min-w-[75px] py-3 px-2 text-center bg-[#334155] border-r-2 border-warm-500">
+          <div className="min-w-[75px] py-3 px-2 text-center bg-warm-800 border-r-2 border-warm-500">
             <div className="text-xs font-semibold text-amber-400">{is9Hole ? 'TOTAL' : 'OUT'}</div>
             <div className="text-xs text-warm-400">Par {front9.reduce((sum, hole) => sum + hole.par, 0)}</div>
             <div className="text-xs text-warm-500">{front9.reduce((sum, hole) => sum + hole.yardage, 0)}</div>
@@ -199,7 +214,7 @@ const ScorecardHeader = memo(function ScorecardHeader({
           </div>
           {!is9Hole && back9.map((hole, index) => renderHoleButton(hole, index + 9))}
           {!is9Hole && (
-            <div className="min-w-[75px] py-3 px-2 text-center bg-[#334155] border-r-2 border-warm-500">
+            <div className="min-w-[75px] py-3 px-2 text-center bg-warm-800 border-r-2 border-warm-500">
               <div className="text-xs font-semibold text-amber-400">IN</div>
               <div className="text-xs text-warm-400">Par {back9.reduce((sum, hole) => sum + hole.par, 0)}</div>
               <div className="text-xs text-warm-500">{back9.reduce((sum, hole) => sum + hole.yardage, 0)}</div>
@@ -207,7 +222,7 @@ const ScorecardHeader = memo(function ScorecardHeader({
             </div>
           )}
           {!is9Hole && (
-            <div className="min-w-[85px] py-3 px-2 text-center bg-[#0f172a]">
+            <div className="min-w-[85px] py-3 px-2 text-center bg-warm-950">
               <div className="text-xs font-semibold text-white">TOTAL</div>
               <div className="text-xs text-warm-400">Par {totalPar}</div>
               <div className="text-xs text-warm-500">{holes.reduce((sum, hole) => sum + hole.yardage, 0)}</div>
@@ -227,7 +242,7 @@ const ShotPillsBar = memo(function ShotPillsBar({
   onSelectShot,
 }: ShotPillsBarProps) {
   return (
-    <div className="sticky top-[105px] lg:top-[81px] z-40 bg-white py-4 -mt-4 -mx-6 px-6 shadow-sm shadow-primary-950/5 border-b border-warm-100">
+    <div className="sticky z-40 bg-white py-4 -mt-4 -mx-6 px-6 shadow-sm shadow-primary-950/5 border-b border-warm-100" style={{ top: 'var(--scorecard-height, 105px)' }}>
       <div className="flex items-center gap-3">
         <span className="text-xs font-semibold text-warm-500 uppercase tracking-wider shrink-0">Shot</span>
         <div className="flex-1 overflow-x-auto overscroll-x-contain touch-pan-x scrollbar-hide" style={{ WebkitOverflowScrolling: 'touch' }}>
@@ -365,6 +380,7 @@ export default function ShotTrackingComprehensive({
   }, [pendingNavHoleIndex, onNavigateToHole]);
 
   const completeHole = (shots: ShotRecord[]) => {
+    if (!currentHole) return;
     const holeStats = calculateHoleStats(shots, currentHole);
     onHoleComplete(currentHoleIndex, holeStats);
   };
@@ -375,7 +391,7 @@ export default function ShotTrackingComprehensive({
 
   const getClubType = (): 'driver' | 'non_driver' | 'putter' => {
     if (isPutting) return 'putter';
-    if (isTeeShot && currentHole.par !== 3 && usedDriver) return 'driver';
+    if (isTeeShot && currentHole?.par !== 3 && usedDriver) return 'driver';
     return 'non_driver';
   };
 
@@ -384,7 +400,7 @@ export default function ShotTrackingComprehensive({
     if (!resultOfShot) return false;
 
     // Tee shot on par 4/5 needs driver selection
-    if (isTeeShot && currentHole.par !== 3 && usedDriver === null) return false;
+    if (isTeeShot && currentHole?.par !== 3 && usedDriver === null) return false;
 
     // Non-hole results need valid distance after
     if (resultOfShot !== 'hole') {
@@ -539,7 +555,7 @@ export default function ShotTrackingComprehensive({
 
   const handleSelectShot = useCallback((shotNumber: number) => {
     dispatch({ type: 'SELECT_SHOT', payload: shotNumber });
-    scrollElementIntoView(shotHistoryRefs.current[shotNumber]);
+    scrollElementIntoView(shotHistoryRefs.current[shotNumber] ?? null);
 
     const shot = shotHistory.find((entry) => entry.shotNumber === shotNumber);
     if (shot) {
@@ -666,7 +682,18 @@ export default function ShotTrackingComprehensive({
           />
 
           {/* Hole Header */}
-          <div className="bg-gradient-to-br from-primary-600 to-primary-700 rounded-lg p-6 text-white shadow-sm shadow-primary-950/10 ring-1 ring-primary-950/5">
+          <div className={`rounded-lg p-6 text-white shadow-sm ring-1 ring-primary-950/5 ${
+            isHoleComplete
+              ? (() => {
+                  const toPar = shotHistory.length - currentHole.par;
+                  if (toPar <= -2) return 'bg-gradient-to-br from-blue-600 to-blue-700 shadow-blue-950/10';
+                  if (toPar === -1) return 'bg-gradient-to-br from-primary-600 to-primary-700 shadow-primary-950/10';
+                  if (toPar === 0) return 'bg-gradient-to-br from-warm-600 to-warm-700 shadow-warm-950/10';
+                  if (toPar === 1) return 'bg-gradient-to-br from-amber-600 to-amber-700 shadow-amber-950/10';
+                  return 'bg-gradient-to-br from-red-600 to-red-700 shadow-red-950/10';
+                })()
+              : 'bg-gradient-to-br from-primary-600 to-primary-700 shadow-primary-950/10'
+          }`}>
             <div className="flex justify-between items-start">
               <div>
                 <div className="flex items-center gap-3">
@@ -887,7 +914,7 @@ export default function ShotTrackingComprehensive({
                         <button key={b.v} onClick={() => dispatch({ type: 'SET_PUTT_BREAK', payload: b.v as ShotRecord['puttBreak'] })}
                           role="radio"
                           aria-checked={puttBreak === b.v}
-                          className={`flex-1 py-2.5 rounded-md font-semibold text-sm transition-all ${
+                          className={`flex-1 py-3 rounded-md font-semibold text-sm transition-all min-h-[44px] ${
                             puttBreak === b.v
                               ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10'
                               : 'text-warm-600 hover:text-warm-900'}`}>
@@ -903,7 +930,7 @@ export default function ShotTrackingComprehensive({
                         <button key={s.v} onClick={() => dispatch({ type: 'SET_PUTT_SLOPE', payload: s.v as ShotRecord['puttSlope'] })}
                           role="radio"
                           aria-checked={puttSlope === s.v}
-                          className={`flex-1 py-2.5 rounded-md font-semibold text-sm transition-all ${
+                          className={`flex-1 py-3 rounded-md font-semibold text-sm transition-all min-h-[44px] ${
                             puttSlope === s.v
                               ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10'
                               : 'text-warm-600 hover:text-warm-900'}`}>
@@ -1043,13 +1070,21 @@ export default function ShotTrackingComprehensive({
                       ref={distanceInputRef}
                       type="number"
                       inputMode="numeric"
+                      pattern="[0-9]*"
                       min="0"
                       aria-label={isPutting ? 'Leave distance in feet or yards' : 'Distance remaining to hole'}
                       value={distanceAfterShot}
                       onChange={(e) => dispatch({ type: 'SET_DISTANCE_AFTER', payload: e.target.value })}
                       placeholder="Enter distance"
-                      className="w-full h-14 px-5 rounded-xl text-3xl font-bold text-primary-900 text-center bg-white border-2 border-primary-300 focus:border-primary-500 focus:ring-4 focus:ring-primary-100 focus:outline-none transition-all placeholder:text-warm-300"
+                      className={`w-full h-14 px-5 rounded-xl text-3xl font-bold text-primary-900 text-center bg-white border-2 focus:ring-4 focus:outline-none transition-all placeholder:text-warm-300 ${
+                        distanceAfterShot && (!Number.isFinite(parseFloat(distanceAfterShot)) || parseFloat(distanceAfterShot) < 0)
+                          ? 'border-red-400 focus:border-red-500 focus:ring-red-100'
+                          : 'border-primary-300 focus:border-primary-500 focus:ring-primary-100'
+                      }`}
                     />
+                    {distanceAfterShot && (!Number.isFinite(parseFloat(distanceAfterShot)) || parseFloat(distanceAfterShot) < 0) && (
+                      <p className="text-red-500 text-sm mt-1">Please enter a valid distance</p>
+                    )}
                     {/* Quick-select buttons for common putting distances */}
                     {isPutting && (
                       <div className="grid grid-cols-6 gap-2">

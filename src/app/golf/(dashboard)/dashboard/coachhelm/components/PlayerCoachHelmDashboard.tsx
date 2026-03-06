@@ -105,8 +105,8 @@ export function PlayerCoachHelmDashboard({
 
       // Refresh the page data
       router.refresh();
-    } catch (err) {
-      console.error('Error refreshing CoachHelm dashboard:', err);
+    } catch {
+      // Silently ignore refresh errors
     } finally {
       setRefreshing(false);
     }

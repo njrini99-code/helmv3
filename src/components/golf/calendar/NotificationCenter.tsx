@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Bell, Check, Calendar, MessageSquare, AlertCircle, X, Clock } from 'lucide-react';
+import { IconBell, IconCheck, IconCalendar, IconMessageSquare, IconAlertCircle, IconX, IconClock } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { useNotifications, type Notification } from '@/hooks/useNotifications';
 import { useRouter } from 'next/navigation';
@@ -13,18 +13,18 @@ import { useRouter } from 'next/navigation';
 function getNotificationIcon(type: Notification['type']) {
   switch (type) {
     case 'event_invitation':
-      return <Calendar className="w-4 h-4 text-blue-500" />;
+      return <IconCalendar size={16} className="text-blue-500" />;
     case 'rsvp_response':
-      return <MessageSquare className="w-4 h-4 text-primary-500" />;
+      return <IconMessageSquare size={16} className="text-primary-500" />;
     case 'event_updated':
-      return <AlertCircle className="w-4 h-4 text-amber-500" />;
+      return <IconAlertCircle size={16} className="text-amber-500" />;
     case 'event_cancelled':
-      return <X className="w-4 h-4 text-red-500" />;
+      return <IconX size={16} className="text-red-500" />;
     case 'event_reminder':
     case 'rsvp_reminder':
-      return <Clock className="w-4 h-4 text-purple-500" />;
+      return <IconClock size={16} className="text-purple-500" />;
     default:
-      return <Bell className="w-4 h-4 text-warm-500" />;
+      return <IconBell size={16} className="text-warm-500" />;
   }
 }
 
@@ -90,7 +90,7 @@ export function NotificationCenter() {
         aria-label="Notifications"
         aria-expanded={isOpen}
       >
-        <Bell className="w-5 h-5" />
+        <IconBell size={20} />
 
         {/* Unread Badge */}
         {unreadCount > 0 && (
@@ -119,7 +119,7 @@ export function NotificationCenter() {
                   onClick={handleMarkAllRead}
                   className="text-xs text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
                 >
-                  <Check className="w-3 h-3" />
+                  <IconCheck size={12} />
                   Mark all read
                 </button>
               )}
@@ -142,7 +142,7 @@ export function NotificationCenter() {
               ) : notifications.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <div className="w-12 h-12 rounded-2xl bg-warm-100/80 flex items-center justify-center mb-3">
-                    <Bell className="w-5 h-5 text-warm-300" />
+                    <IconBell size={20} className="text-warm-300" />
                   </div>
                   <p className="text-sm font-medium text-warm-800">All caught up!</p>
                   <p className="text-xs text-warm-500 mt-1">No new notifications</p>

@@ -198,7 +198,6 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
                 width={56}
                 height={56}
                 className="w-14 h-14 object-contain"
-                priority
                 unoptimized
               />
             </div>
@@ -294,15 +293,18 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
                 aria-label={isCollapsed ? item.name : undefined}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'relative flex items-center gap-3 py-3 lg:py-2.5 rounded-[10px] text-[13px] font-medium touch-manipulation',
+                  'relative flex items-center gap-3 py-3 lg:py-2.5 rounded-[10px] text-[13px] font-medium touch-manipulation overflow-hidden',
                   'transition-all duration-150 ease-out will-change-transform',
                   'active:scale-[0.98]',
                   active
-                    ? 'bg-white/10 text-primary-400 border-l-[3px] border-primary-500'
+                    ? 'bg-white/10 text-primary-400'
                     : 'text-white/60 hover:bg-white/5 hover:text-white/90',
                   isCollapsed ? 'justify-center px-2' : 'px-3'
                 )}
               >
+                {active && (
+                  <div className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-primary-500" />
+                )}
                 <Icon size={18} className={cn('flex-shrink-0', active ? 'text-primary-400' : 'text-white/50')} aria-hidden="true" />
                 <span
                   className={cn(
@@ -348,14 +350,17 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
                 aria-label={isCollapsed ? item.name : undefined}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'relative flex items-center gap-3 py-3 lg:py-2.5 rounded-[10px] text-[13px] font-medium touch-manipulation',
+                  'relative flex items-center gap-3 py-3 lg:py-2.5 rounded-[10px] text-[13px] font-medium touch-manipulation overflow-hidden',
                   'transition-all duration-150 ease-out active:scale-[0.98]',
                   active
-                    ? 'bg-white/10 text-primary-400 border-l-[3px] border-primary-500'
+                    ? 'bg-white/10 text-primary-400'
                     : 'text-white/60 hover:bg-white/5 hover:text-white/90',
                   isCollapsed ? 'justify-center px-2' : 'px-3'
                 )}
               >
+                {active && (
+                  <div className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-primary-500" />
+                )}
                 <Icon size={18} className={cn('flex-shrink-0', active ? 'text-primary-400' : 'text-white/50')} aria-hidden="true" />
                 <span
                   className={cn(
@@ -393,14 +398,17 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
           aria-label={isCollapsed ? 'Settings' : undefined}
           aria-current={pathname === '/golf/dashboard/settings' ? 'page' : undefined}
           className={cn(
-            'flex items-center gap-3 py-3 lg:py-2.5 rounded-[10px] text-[13px] font-medium touch-manipulation',
+            'relative flex items-center gap-3 py-3 lg:py-2.5 rounded-[10px] text-[13px] font-medium touch-manipulation overflow-hidden',
             'transition-all duration-150 ease-out active:scale-[0.98]',
             pathname === '/golf/dashboard/settings'
-              ? 'bg-white/10 text-primary-400 border-l-[3px] border-primary-500'
+              ? 'bg-white/10 text-primary-400'
               : 'text-white/60 hover:bg-white/5 hover:text-white/90',
             isCollapsed ? 'justify-center px-2' : 'px-3'
           )}
         >
+          {pathname === '/golf/dashboard/settings' && (
+            <div className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-primary-500" />
+          )}
           <IconSettings size={18} className="flex-shrink-0 text-white/50" aria-hidden="true" />
           <span
             className={cn(

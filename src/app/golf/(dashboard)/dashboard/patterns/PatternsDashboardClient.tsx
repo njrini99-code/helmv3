@@ -7,7 +7,9 @@ import {
   IconRefresh,
   IconSparkles,
   IconArrowLeft,
+  IconMenu,
 } from '@/components/icons';
+import { useSidebar } from '@/contexts/sidebar-context';
 import { PatternDashboard } from '@/components/golf/coachhelm/patterns';
 import type { ExtendedPattern, PatternSeverity } from '@/app/golf/actions/pattern-management';
 
@@ -39,6 +41,7 @@ export function PatternsDashboardClient({
   initialStats,
 }: PatternsDashboardClientProps) {
   const router = useRouter();
+  const { toggleMobile } = useSidebar();
   const [isPending, startTransition] = useTransition();
   const [patterns] = useState(initialPatterns);
   const [stats] = useState(initialStats);
@@ -56,10 +59,21 @@ export function PatternsDashboardClient({
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              {/* Back button */}
+              <button
+                onClick={toggleMobile}
+                className={cn(
+                  'lg:hidden p-2.5 -ml-2 rounded-xl',
+                  'text-warm-500 hover:text-warm-700 hover:bg-warm-100/80',
+                  'transition-colors duration-150 active:scale-95',
+                  'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
+                )}
+                aria-label="Open navigation menu"
+              >
+                <IconMenu size={22} />
+              </button>
               <button
                 onClick={() => router.push('/golf/dashboard')}
-                className="p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 transition-colors"
+                className="hidden lg:block p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 transition-colors"
               >
                 <IconArrowLeft size={20} />
               </button>

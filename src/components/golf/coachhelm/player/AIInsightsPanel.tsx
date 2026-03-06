@@ -304,7 +304,7 @@ export function AIInsightsPanel({
           className="mt-4 pt-4 border-t border-white/20"
         >
           <Link
-            href="/golf/dashboard/coachhelm/insights"
+            href="/golf/dashboard/coachhelm"
             className="flex items-center justify-center gap-2 text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors"
           >
             View all {insights.length} insights

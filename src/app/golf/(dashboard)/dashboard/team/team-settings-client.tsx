@@ -35,7 +35,14 @@ export function TeamSettingsClient({ team }: TeamSettingsClientProps) {
 
   // Form state for creating/editing team
   const [teamName, setTeamName] = useState(team?.name || '');
-  const [season, setSeason] = useState(team?.season || '2024-2025');
+  const [season, setSeason] = useState(() => {
+    if (team?.season) return team.season;
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const seasonStart = month >= 7 ? year : year - 1;
+    return `${seasonStart}-${seasonStart + 1}`;
+  });
 
   const handleCreateTeam = () => {
     if (!teamName.trim()) {
@@ -156,7 +163,7 @@ export function TeamSettingsClient({ team }: TeamSettingsClientProps) {
       </div>
 
       {/* Team Info */}
-      <div className="bg-white rounded-2xl border border-warm-200 p-6 space-y-6 mb-6">
+      <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6 space-y-6 mb-6">
         <h2 className="text-lg font-semibold text-warm-900">Team Information</h2>
 
         <div>
@@ -195,7 +202,7 @@ export function TeamSettingsClient({ team }: TeamSettingsClientProps) {
       </div>
 
       {/* Invite Code */}
-      <div className="bg-white rounded-2xl border border-warm-200 p-6 space-y-4">
+      <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6 space-y-4">
         <h2 className="text-lg font-semibold text-warm-900">Player Invitations</h2>
         <p className="text-sm text-warm-500">
           Share this link with players to invite them to join your team.

@@ -57,6 +57,7 @@ export default function GolfMessagesPage() {
   const [editContent, setEditContent] = useState('');
   const [isEditSaving, setIsEditSaving] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [mobileActionsId, setMobileActionsId] = useState<string | null>(null);
 
   // Auto-scroll to bottom when messages change — only if user is near bottom
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -121,7 +122,7 @@ export default function GolfMessagesPage() {
             showToast('Conversation started', 'success');
           }
         } catch (err) {
-          console.error('[GolfHelm] Error starting conversation from URL param:', err);
+          void err;
           showToast('Failed to start conversation', 'error');
         }
         setHandledPlayerParam(true);
@@ -170,7 +171,7 @@ export default function GolfMessagesPage() {
         showToast(String(result.error) || 'Failed to start conversation', 'error');
       }
     } catch (err) {
-      console.error('[MessagesPage] handleNewConversation error:', err);
+      void err;
       showToast('Failed to start conversation', 'error');
     }
   };
@@ -502,11 +503,18 @@ export default function GolfMessagesPage() {
                         {!isOwn && (
                           <div className="w-8 shrink-0">
                             {isFirstInGroup && (
-                              <Avatar
-                                name={selectedConversation?.other_participant?.name || 'User'}
-                                src={selectedConversation?.other_participant?.avatar}
-                                size="sm"
-                              />
+                              selectedConversation?.is_group ? (
+                                <Avatar
+                                  name={msg.sender_id.slice(0, 8)}
+                                  size="sm"
+                                />
+                              ) : (
+                                <Avatar
+                                  name={selectedConversation?.other_participant?.name || 'User'}
+                                  src={selectedConversation?.other_participant?.avatar}
+                                  size="sm"
+                                />
+                              )
                             )}
                           </div>
                         )}
@@ -536,22 +544,41 @@ export default function GolfMessagesPage() {
                                   <IconTrash size={14} />
                                 </button>
                               </div>
-                              {/* Mobile: inline row below the bubble, always visible */}
-                              <div className="flex lg:hidden items-center gap-2 mt-0.5">
-                                <button
-                                  onClick={() => handleStartEdit(msg.id, msg.content)}
-                                  className="p-2.5 -m-1 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-warm-400 active:text-warm-600 active:bg-warm-100 transition-colors"
-                                  aria-label="Edit message"
-                                >
-                                  <IconPencil size={18} />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteClick(msg.id)}
-                                  className="p-2.5 -m-1 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-warm-400 active:text-red-500 active:bg-red-50 transition-colors"
-                                  aria-label="Delete message"
-                                >
-                                  <IconTrash size={18} />
-                                </button>
+                              {/* Mobile: "..." button that expands edit/delete */}
+                              <div className="relative flex lg:hidden items-center mt-0.5">
+                                {mobileActionsId === msg.id ? (
+                                  <div className="flex items-center gap-1 bg-warm-50 rounded-lg px-1 py-0.5">
+                                    <button
+                                      onClick={() => { handleStartEdit(msg.id, msg.content); setMobileActionsId(null); }}
+                                      className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-warm-400 active:text-warm-600 active:bg-warm-100 transition-colors"
+                                      aria-label="Edit message"
+                                    >
+                                      <IconPencil size={18} />
+                                    </button>
+                                    <button
+                                      onClick={() => { handleDeleteClick(msg.id); setMobileActionsId(null); }}
+                                      className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-warm-400 active:text-red-500 active:bg-red-50 transition-colors"
+                                      aria-label="Delete message"
+                                    >
+                                      <IconTrash size={18} />
+                                    </button>
+                                    <button
+                                      onClick={() => setMobileActionsId(null)}
+                                      className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-warm-400 active:text-warm-600 transition-colors"
+                                      aria-label="Close"
+                                    >
+                                      <IconX size={16} />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={() => setMobileActionsId(msg.id)}
+                                    className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-warm-300 active:text-warm-500 transition-colors"
+                                    aria-label="Message actions"
+                                  >
+                                    <svg width={16} height={16} viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+                                  </button>
+                                )}
                               </div>
                             </>
                           )}

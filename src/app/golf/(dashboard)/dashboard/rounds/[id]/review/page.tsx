@@ -125,8 +125,7 @@ export default function RoundReviewPage() {
           }
           setRound(roundData);
         }
-      } catch (err) {
-        console.error('[GolfHelm] Error loading round for review:', err);
+      } catch {
         setError('Failed to load round');
       } finally {
         setLoadingRound(false);
@@ -155,8 +154,8 @@ export default function RoundReviewPage() {
           setPlayerAvg(avgResult.playerAvg ?? null);
           setTeamAvg(avgResult.teamAvg ?? null);
         }
-      } catch (err) {
-        console.error('Failed to fetch review data:', err);
+      } catch {
+        // Silently ignore fetch errors
       } finally {
         setLoadingStoredReview(false);
       }
@@ -185,8 +184,7 @@ export default function RoundReviewPage() {
       } else {
         setError(result.error ?? 'Failed to generate review');
       }
-    } catch (err) {
-      console.error('[GolfHelm] Error generating round review:', err);
+    } catch {
       setError('An unexpected error occurred');
     } finally {
       setGeneratingReview(false);
@@ -223,8 +221,7 @@ export default function RoundReviewPage() {
           description: result.error ?? 'Could not share review.',
         });
       }
-    } catch (err) {
-      console.error('[GolfHelm] Error sharing round review:', err);
+    } catch {
       addToast({
         type: 'error',
         title: 'Share Failed',
@@ -238,16 +235,39 @@ export default function RoundReviewPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        <div className="flex flex-col items-center justify-center py-20">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <span className="w-2.5 h-2.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
-            <span className="w-2.5 h-2.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
-            <span className="w-2.5 h-2.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+      <div className="max-w-2xl mx-auto px-4 py-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="h-5 w-28 bg-warm-100 rounded-lg skeleton-shimmer" />
+          <div className="h-5 w-20 bg-warm-100 rounded-lg skeleton-shimmer" />
+        </div>
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-warm-100 overflow-hidden">
+            <div className="bg-gradient-to-br from-primary-600/20 to-primary-700/10 px-6 pt-6 pb-5">
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-warm-200/60 skeleton-shimmer" />
+                <div className="h-5 w-32 bg-warm-200/40 rounded-lg skeleton-shimmer" />
+                <div className="h-10 w-20 bg-warm-200/40 rounded-lg skeleton-shimmer" />
+              </div>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-3 gap-3">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="text-center p-3 rounded-xl bg-warm-50/80 border border-warm-100">
+                    <div className="h-6 w-10 bg-warm-200/60 rounded mx-auto mb-1 skeleton-shimmer" />
+                    <div className="h-3 w-12 bg-warm-100 rounded mx-auto skeleton-shimmer" />
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-3">
+                <div className="h-4 w-24 bg-warm-100 rounded skeleton-shimmer" />
+                <div className="h-16 bg-warm-50 rounded-xl border border-warm-100 skeleton-shimmer" />
+                <div className="h-16 bg-warm-50 rounded-xl border border-warm-100 skeleton-shimmer" />
+              </div>
+            </div>
           </div>
-          <p className="text-sm text-warm-500 font-medium">
+          <p className="text-sm text-warm-500 font-medium text-center">
             {generatingReview || v1Generating ? (
-              <span className="flex items-center gap-2">
+              <span className="flex items-center justify-center gap-2">
                 <IconSparkles size={16} className="text-purple-500" />
                 {isV2Enabled ? 'Running CoachHelm analysis...' : 'Analyzing your round...'}
               </span>

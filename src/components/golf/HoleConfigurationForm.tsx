@@ -56,13 +56,15 @@ export function HoleConfigurationForm({
     ));
   }
 
+  const [validationError, setValidationError] = useState<string | null>(null);
+
   function handleSubmit() {
-    // Validate all holes have valid values
     const isValid = holes.every(h => h.par >= 3 && h.par <= 6 && h.yardage > 0);
     if (!isValid) {
-      alert('Please ensure all holes have valid par (3-6) and yardage values');
+      setValidationError('Please ensure all holes have valid par (3-6) and yardage values');
       return;
     }
+    setValidationError(null);
     onSave(holes);
   }
 
@@ -218,6 +220,10 @@ export function HoleConfigurationForm({
           </div>
         </div>
       </div>
+
+      {validationError && (
+        <p className="text-red-500 text-sm font-medium">{validationError}</p>
+      )}
 
       {/* Save Button */}
       <button

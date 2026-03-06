@@ -271,28 +271,28 @@ export default function GolfCoachOnboarding() {
       </div>
 
       <div className="relative min-h-dvh flex flex-col items-center justify-center p-4 sm:p-6 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-        {/* Logo */}
-        <m.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="mb-6 sm:mb-8"
-        >
-          <div className="relative">
-            <div className="absolute inset-0 bg-helm-primary-500/25 rounded-full blur-xl scale-150" />
-            <Image
-              src="/helm-golf-logo-transparent.png"
-              alt="GolfHelm"
-              width={48}
-              height={48}
-              className="relative w-10 h-10 sm:w-12 sm:h-12 object-contain"
-              priority
-              unoptimized
-            />
-          </div>
-        </m.div>
-
         <LazyMotion features={domAnimation}>
+          {/* Logo */}
+          <m.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="mb-6 sm:mb-8"
+          >
+            <div className="relative">
+              <div className="absolute inset-0 bg-helm-primary-500/25 rounded-full blur-xl scale-150" />
+              <Image
+                src="/helm-golf-logo-transparent.png"
+                alt="GolfHelm"
+                width={48}
+                height={48}
+                className="relative w-10 h-10 sm:w-12 sm:h-12 object-contain"
+                priority
+                unoptimized
+              />
+            </div>
+          </m.div>
+
           {/* Step Indicator */}
           <m.div
             initial={{ opacity: 0, y: -10 }}

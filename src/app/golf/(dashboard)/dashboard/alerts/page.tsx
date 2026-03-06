@@ -65,7 +65,6 @@ export default function AlertsPage() {
           setError(result.error || 'Failed to load alerts.');
         }
       } catch (err) {
-        console.error('[GolfHelm] Error loading alerts:', err);
         setError('Something went wrong loading alerts. Please refresh.');
       } finally {
         setIsLoading(false);
@@ -92,7 +91,6 @@ export default function AlertsPage() {
         setError('Failed to dismiss alert. It has been restored.');
       }
     } catch (err) {
-      console.error('[GolfHelm] Error dismissing alert:', err);
       if (alertToRemove) {
         setAlerts(prev => [...prev, alertToRemove].sort((a, b) =>
           (b.createdAt ?? '').localeCompare(a.createdAt ?? '')
@@ -120,7 +118,6 @@ export default function AlertsPage() {
         setError('Failed to acknowledge alert.');
       }
     } catch (err) {
-      console.error('[GolfHelm] Error acknowledging alert:', err);
       setAlerts(prev => prev.map(a =>
         a.id === alertId ? { ...a, acknowledgedAt: previousAcknowledgedAt } : a
       ));
@@ -145,7 +142,6 @@ export default function AlertsPage() {
           setError(result.error || 'Failed to dismiss all alerts.');
         }
       } catch (err) {
-        console.error('[GolfHelm] Error dismissing all alerts:', err);
         setAlerts(previousAlerts);
         setError('Network error — dismiss all failed.');
       }
@@ -168,7 +164,6 @@ export default function AlertsPage() {
           setError(result.error || 'Failed to acknowledge all alerts.');
         }
       } catch (err) {
-        console.error('[GolfHelm] Error acknowledging all alerts:', err);
         setAlerts(previousAlerts);
         setError('Network error — acknowledge all failed.');
       }
@@ -204,34 +199,7 @@ export default function AlertsPage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="min-h-full bg-transparent">
-        <div className="max-w-4xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6">
-          <div className="flex items-center gap-4">
-            <div className="h-8 w-8 skeleton-sweep rounded-lg" />
-            <div>
-              <div className="h-6 w-36 skeleton-sweep rounded-lg" />
-              <div className="h-3 w-56 skeleton-sweep rounded mt-2" />
-            </div>
-          </div>
-          <div className="flex gap-2">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-8 w-20 skeleton-sweep rounded-full" />
-            ))}
-          </div>
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="bg-white/70 rounded-2xl border border-white/20 p-5 space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="h-3 w-3 skeleton-sweep rounded-full" />
-                <div className="h-4 w-40 skeleton-sweep rounded" />
-              </div>
-              <div className="h-3 w-full skeleton-sweep rounded" />
-              <div className="h-3 w-2/3 skeleton-sweep rounded" />
-            </div>
-          ))}
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (
@@ -433,7 +401,7 @@ function EmptyAlertsState({ filter }: { filter: FilterLevel }) {
     >
       <div className={cn(
         'w-16 h-16 rounded-full flex items-center justify-center mb-4',
-        'bg-gradient-to-br from-primary-100 to-primary-100'
+        'bg-gradient-to-br from-primary-50 to-primary-100'
       )}>
         <IconBell size={32} className="text-primary-600" />
       </div>

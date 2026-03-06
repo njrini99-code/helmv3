@@ -83,13 +83,38 @@ export default function CoachingIntelligenceSettingsPage() {
     };
 
     if (loading || !philosophy) {
-        return null;
+        return (
+            <div className="min-h-full pb-20">
+                <div className="bg-white/70 backdrop-blur-xl border-b border-white/20 sticky top-0 z-10">
+                    <div className="max-w-3xl mx-auto px-6 h-16 flex items-center gap-4">
+                        <div className="h-5 w-5 skeleton-shimmer rounded-lg lg:hidden" />
+                        <div className="h-5 w-40 skeleton-shimmer rounded-lg" />
+                    </div>
+                </div>
+                <div className="max-w-3xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-8">
+                    <div className="h-4 w-3/4 skeleton-shimmer rounded" />
+                    {[1, 2, 3, 4].map((i) => (
+                        <div key={i} className="glass-standard rounded-2xl p-6 space-y-4">
+                            <div className="space-y-2">
+                                <div className="h-5 w-40 skeleton-shimmer rounded" />
+                                <div className="h-3 w-64 skeleton-shimmer rounded" />
+                            </div>
+                            <div className="space-y-3">
+                                <div className="h-8 w-full skeleton-shimmer rounded-lg" />
+                                <div className="h-8 w-full skeleton-shimmer rounded-lg" />
+                                <div className="h-8 w-3/4 skeleton-shimmer rounded-lg" />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
     }
 
     return (
         <AnimatedPage className="min-h-full pb-20">
             {/* Header */}
-            <AnimatedItem className="bg-white border-b border-warm-200 sticky top-0 z-10">
+            <AnimatedItem className="bg-white/70 backdrop-blur-xl border-b border-white/20 sticky top-0 z-10">
                 <div className="max-w-3xl mx-auto px-6 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <button
@@ -137,7 +162,7 @@ export default function CoachingIntelligenceSettingsPage() {
                 </AnimatedItem>
 
                 {/* Priority Section */}
-                <AnimatedItem><section className="bg-white rounded-xl border border-warm-200 shadow-sm overflow-hidden">
+                <AnimatedItem><section className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-hidden">
                     <div className="p-6 border-b border-warm-100">
                         <h2 className="text-base font-semibold text-warm-900">Metric Priorities</h2>
                         <p className="text-sm text-warm-500 mt-1">
@@ -159,7 +184,7 @@ export default function CoachingIntelligenceSettingsPage() {
                 </section></AnimatedItem>
 
                 {/* Sensitivity Section */}
-                <AnimatedItem><section className="bg-white rounded-xl border border-warm-200 shadow-sm overflow-hidden">
+                <AnimatedItem><section className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-hidden">
                     <div className="p-6 border-b border-warm-100">
                         <h2 className="text-base font-semibold text-warm-900">Alert Sensitivity</h2>
                         <p className="text-sm text-warm-500 mt-1">
@@ -175,7 +200,7 @@ export default function CoachingIntelligenceSettingsPage() {
                 </section></AnimatedItem>
 
                 {/* Thresholds Section */}
-                <AnimatedItem><section className="bg-white rounded-xl border border-warm-200 shadow-sm overflow-hidden">
+                <AnimatedItem><section className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-hidden">
                     <div className="p-6 border-b border-warm-100">
                         <h2 className="text-base font-semibold text-warm-900">Fine-tune Thresholds</h2>
                         <p className="text-sm text-warm-500 mt-1">
@@ -213,7 +238,7 @@ export default function CoachingIntelligenceSettingsPage() {
                 </section></AnimatedItem>
 
                 {/* Weight Distributor Section */}
-                <AnimatedItem><section className="bg-white rounded-xl border border-warm-200 shadow-sm overflow-hidden">
+                <AnimatedItem><section className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-hidden">
                     <div className="p-6 border-b border-warm-100">
                         <h2 className="text-base font-semibold text-warm-900">Comparison Weighting</h2>
                         <p className="text-sm text-warm-500 mt-1">
@@ -235,7 +260,7 @@ export default function CoachingIntelligenceSettingsPage() {
                 </section></AnimatedItem>
 
                 {/* Alert Toggles Section */}
-                <AnimatedItem><section className="bg-white rounded-xl border border-warm-200 shadow-sm overflow-hidden">
+                <AnimatedItem><section className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-hidden">
                     <div className="p-6 border-b border-warm-100">
                         <h2 className="text-base font-semibold text-warm-900">Active Alerts</h2>
                         <p className="text-sm text-warm-500 mt-1">
@@ -251,7 +276,7 @@ export default function CoachingIntelligenceSettingsPage() {
                 </section></AnimatedItem>
 
                 {/* Display Preferences Section */}
-                <AnimatedItem><section className="bg-white rounded-xl border border-warm-200 shadow-sm overflow-hidden">
+                <AnimatedItem><section className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-hidden">
                     <div className="p-6 border-b border-warm-100">
                         <h2 className="text-base font-semibold text-warm-900">Display Preferences</h2>
                         <p className="text-sm text-warm-500 mt-1">

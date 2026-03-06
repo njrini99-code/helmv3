@@ -88,8 +88,7 @@ export default function NewRoundClient() {
           onSyncComplete: (_result) => {
             // Offline data synced successfully
           },
-          onSyncError: (error) => {
-            console.error('[NewRound] Sync error:', error.message);
+          onSyncError: (_error) => {
           },
         });
 
@@ -97,8 +96,8 @@ export default function NewRoundClient() {
         syncEngine.start();
         // Access store directly to avoid dependency issues
         await useOfflineSyncStore.getState().updatePendingCount();
-      } catch (error) {
-        console.error('[NewRound] Failed to initialize sync engine:', error);
+      } catch {
+        // Silently ignore sync init errors
       }
     };
 
@@ -138,8 +137,8 @@ export default function NewRoundClient() {
         try {
           const syncEngine = getSyncEngine();
           await syncEngine.syncNow();
-        } catch (error) {
-          console.error('[NewRound] Auto-sync failed:', error);
+        } catch {
+          // Silently ignore sync errors
         }
       }, 2000);
 
@@ -1849,7 +1848,7 @@ export default function NewRoundClient() {
                       className="mb-6"
                     >
                       <p className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-2">Scorecard</p>
-                      <div className="rounded-xl border border-warm-200/60 overflow-hidden">
+                      <div className="rounded-xl border border-warm-200/60 overflow-x-auto overflow-hidden">
                         {/* Front 9 (or all 9 for 9-hole round) */}
                         <div className="grid gap-px bg-warm-200/60" style={{ gridTemplateColumns: `repeat(${colCount}, 1fr)` }}>
                           {fs.slice(0, 9).map((_, i) => (

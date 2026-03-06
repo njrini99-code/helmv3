@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { GolfSignInForm } from '@/components/auth/golf-sign-in-form';
 import { createClient } from '@/lib/supabase/client';
 import { isNativeApp } from '@/lib/utils/capacitor';
@@ -57,6 +57,7 @@ function LoginContent() {
   }
 
   return (
+    <LazyMotion features={domAnimation}>
     <div className="min-h-dvh flex items-center justify-center relative p-4 sm:p-6 bg-auth-golf">
       {/* Skip to main content link for keyboard navigation */}
       <a
@@ -69,8 +70,8 @@ function LoginContent() {
       {/* Animated floating orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Large primary orb - top right */}
-        <motion.div
-          className="auth-orb auth-orb-1 w-[500px] h-[500px] -top-32 -right-32 bg-gradient-to-br from-helm-primary-400/40 to-helm-primary-500/30 motion-reduce:animate-none"
+        <m.div
+          className="auth-orb auth-orb-1 w-[500px] h-[500px] -top-32 -right-32 bg-gradient-to-br from-primary-400/40 to-primary-500/30 motion-reduce:animate-none"
           animate={{
             x: [0, 30, 0],
             y: [0, -20, 0],
@@ -83,8 +84,8 @@ function LoginContent() {
           }}
         />
         {/* Medium orb - bottom left */}
-        <motion.div
-          className="auth-orb auth-orb-2 w-[400px] h-[400px] -bottom-24 -left-24 bg-gradient-to-tr from-helm-primary-400/30 to-helm-primary-400/25 motion-reduce:animate-none"
+        <m.div
+          className="auth-orb auth-orb-2 w-[400px] h-[400px] -bottom-24 -left-24 bg-gradient-to-tr from-primary-400/30 to-primary-400/25 motion-reduce:animate-none"
           animate={{
             x: [0, -25, 0],
             y: [0, 25, 0],
@@ -98,8 +99,8 @@ function LoginContent() {
           }}
         />
         {/* Small accent orb - top left */}
-        <motion.div
-          className="auth-orb auth-orb-3 w-[200px] h-[200px] top-20 left-[10%] bg-gradient-to-br from-helm-primary-300/25 to-helm-primary-400/20 motion-reduce:animate-none"
+        <m.div
+          className="auth-orb auth-orb-3 w-[200px] h-[200px] top-20 left-[10%] bg-gradient-to-br from-primary-300/25 to-primary-400/20 motion-reduce:animate-none"
           animate={{
             x: [0, 20, 0],
             y: [0, -15, 0],
@@ -112,8 +113,8 @@ function LoginContent() {
           }}
         />
         {/* Tiny floating dot */}
-        <motion.div
-          className="absolute w-3 h-3 rounded-full bg-helm-primary-500/40 top-[30%] right-[20%] motion-reduce:animate-none"
+        <m.div
+          className="absolute w-3 h-3 rounded-full bg-primary-500/40 top-[30%] right-[20%] motion-reduce:animate-none"
           animate={{
             y: [0, -10, 0],
             opacity: [0.4, 0.8, 0.4],
@@ -138,21 +139,21 @@ function LoginContent() {
 
       {/* Glass card */}
       <div id="login-form" className="relative z-10 w-full max-w-[420px]">
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 20, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="auth-glass-card rounded-3xl p-8 sm:p-10"
         >
           {/* Logo with glow effect */}
-          <motion.div
+          <m.div
             className="flex flex-col items-center mb-8"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.5 }}
           >
             <div className="relative">
-              <div className="absolute inset-0 bg-helm-primary-500/30 rounded-full blur-xl scale-150" />
+              <div className="absolute inset-0 bg-primary-500/30 rounded-full blur-xl scale-150" />
               <div className="relative w-14 h-14 flex items-center justify-center mb-4">
                 <Image
                   src="/helm-golf-logo-transparent.png"
@@ -168,10 +169,10 @@ function LoginContent() {
             <h1 className="text-xl font-bold bg-gradient-to-r from-warm-900 to-warm-700 bg-clip-text text-transparent">
               GolfHelm
             </h1>
-          </motion.div>
+          </m.div>
 
           {/* Header */}
-          <motion.div
+          <m.div
             className="text-center mb-8"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -181,21 +182,21 @@ function LoginContent() {
               Welcome back
             </h2>
             <p className="text-warm-500">Sign in to continue to your dashboard</p>
-          </motion.div>
+          </m.div>
 
           {/* Success message */}
           {successMessage && (
-            <motion.div
+            <m.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-helm-primary-400/10 border border-helm-primary-400/30 text-helm-primary-600 px-4 py-3 rounded-xl text-sm mb-6"
+              className="bg-primary-400/10 border border-primary-400/30 text-primary-600 px-4 py-3 rounded-xl text-sm mb-6"
             >
               {successMessage}
-            </motion.div>
+            </m.div>
           )}
 
           {/* Form or Already Logged In */}
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.5 }}
@@ -203,14 +204,14 @@ function LoginContent() {
             {checkingAuth ? (
               <div className="flex justify-center py-8">
                 <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-helm-primary-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
-                  <span className="w-2 h-2 rounded-full bg-helm-primary-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
-                  <span className="w-2 h-2 rounded-full bg-helm-primary-600 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+                  <span className="w-2 h-2 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                  <span className="w-2 h-2 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                  <span className="w-2 h-2 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
                 </span>
               </div>
             ) : isLoggedIn ? (
               <div className="space-y-4">
-                <div className="bg-helm-primary-400/10 border border-helm-primary-400/30 text-helm-primary-600 px-4 py-3 rounded-xl text-sm text-center">
+                <div className="bg-primary-400/10 border border-primary-400/30 text-primary-600 px-4 py-3 rounded-xl text-sm text-center">
                   You&apos;re already signed in
                 </div>
                 <button
@@ -230,11 +231,11 @@ function LoginContent() {
             ) : (
               <GolfSignInForm />
             )}
-          </motion.div>
-        </motion.div>
+          </m.div>
+        </m.div>
 
         {/* Footer links with stagger animation */}
-        <motion.div
+        <m.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6, duration: 0.5 }}
@@ -244,7 +245,7 @@ function LoginContent() {
               Don&apos;t have an account?{' '}
               <Link
                 href={signupHref}
-                className="text-helm-primary-600 font-semibold hover:text-helm-primary-500 transition-colors"
+                className="text-primary-600 font-semibold hover:text-primary-500 transition-colors"
               >
                 Sign up
               </Link>
@@ -288,9 +289,10 @@ function LoginContent() {
               Terms
             </Link>
           </div>
-        </motion.div>
+        </m.div>
       </div>
     </div>
+    </LazyMotion>
   );
 }
 
@@ -298,11 +300,11 @@ export default function GolfLoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-dvh bg-warm-900 flex items-center justify-center">
+        <div className="min-h-dvh bg-auth-golf flex items-center justify-center">
           <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '0ms' }} />
-            <span className="w-2 h-2 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '150ms' }} />
-            <span className="w-2 h-2 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+            <span className="w-2 h-2 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+            <span className="w-2 h-2 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+            <span className="w-2 h-2 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
           </span>
         </div>
       }

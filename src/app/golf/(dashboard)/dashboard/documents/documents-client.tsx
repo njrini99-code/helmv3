@@ -20,6 +20,7 @@ import {
   getVersionHistory,
 } from '@/app/golf/actions/documents';
 import type { DocumentVersion, GolfDocument } from '@/lib/types/golf';
+import { useToast } from '@/components/ui/toast';
 import { DocumentPreview } from '@/components/golf/documents/DocumentPreview';
 import { VersionHistory } from '@/components/golf/documents/VersionHistory';
 import { UploadNewVersionModal } from '@/components/golf/documents/UploadNewVersionModal';
@@ -175,6 +176,8 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
 
   // Active dropdown
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [deleteConfirmDoc, setDeleteConfirmDoc] = useState<Document | null>(null);
+  const { showToast } = useToast();
 
   // ─── Computed values ─────────────────────────────────────────────
 
@@ -383,14 +386,16 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
 
   // ─── Document Actions ────────────────────────────────────────────
 
-  const handleDelete = async (doc: Document) => {
-    if (!confirm(`Delete "${doc.title}"? All versions will be removed.`)) return;
-    const result = await deleteGolfDocument(doc.id);
+  const handleDeleteConfirmed = async () => {
+    if (!deleteConfirmDoc) return;
+    const docId = deleteConfirmDoc.id;
+    setDeleteConfirmDoc(null);
+    const result = await deleteGolfDocument(docId);
     if (result.success) {
-      setDocuments(docs => docs.filter(d => d.id !== doc.id));
+      setDocuments(docs => docs.filter(d => d.id !== docId));
       router.refresh();
     } else {
-      alert(result.error || 'Failed to delete');
+      showToast(result.error || 'Failed to delete', 'error');
     }
   };
 
@@ -887,7 +892,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                               e.stopPropagation();
                               setActiveDropdown(activeDropdown === doc.id ? null : doc.id);
                             }}
-                            className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100/80 active:bg-warm-200 opacity-0 group-hover:opacity-100 transition-all"
+                            className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100/80 active:bg-warm-200 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all"
                           >
                             <IconMoreVertical size={14} />
                           </button>
@@ -928,7 +933,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                                 </button>
                                 <div className="my-1 h-px bg-warm-100" />
                                 <button
-                                  onClick={(e) => { e.stopPropagation(); handleDelete(doc); setActiveDropdown(null); }}
+                                  onClick={(e) => { e.stopPropagation(); setDeleteConfirmDoc(doc); setActiveDropdown(null); }}
                                   className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
                                 >
                                   <IconTrash size={14} /> Delete
@@ -1252,6 +1257,35 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                 className="flex-1 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 text-sm"
               >
                 {updating ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Delete Confirmation Modal ──────────────────────────── */}
+      {deleteConfirmDoc && (
+        <div className="fixed inset-0 bg-warm-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white/90 backdrop-blur-xl rounded-2xl max-w-sm w-full shadow-2xl border border-white/30 overflow-hidden">
+            <div className="p-6 text-center">
+              <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+                <IconTrash size={22} className="text-red-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-warm-900 mb-2">Delete &ldquo;{deleteConfirmDoc.title}&rdquo;?</h3>
+              <p className="text-sm text-warm-500">All versions will be permanently removed. This action cannot be undone.</p>
+            </div>
+            <div className="flex gap-3 px-6 pb-6">
+              <button
+                onClick={() => setDeleteConfirmDoc(null)}
+                className="flex-1 px-4 py-2.5 border border-warm-200 rounded-xl font-medium text-warm-700 hover:bg-warm-50 transition-colors text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteConfirmed}
+                className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium transition-colors text-sm"
+              >
+                Delete
               </button>
             </div>
           </div>

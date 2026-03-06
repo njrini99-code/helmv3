@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { IconHome, IconUsers, IconCalendar, IconChartBar, IconMessage, IconSettings, IconGolf } from '@/components/icons';
+import { IconHome, IconUsers, IconCalendar, IconChartBar, IconMessage, IconGolf, IconBell } from '@/components/icons';
 import { CountBadge } from '@/components/ui/badge';
 import { useMobileNav } from '@/contexts/mobile-nav-context';
 import { useHapticFeedback } from '@/hooks/use-haptic-feedback';
@@ -21,7 +21,7 @@ const coachNavItems: NavItem[] = [
   { href: '/golf/dashboard/roster', label: 'Roster', icon: <IconUsers size={24} /> },
   { href: '/golf/dashboard/calendar', label: 'Calendar', icon: <IconCalendar size={24} /> },
   { href: '/golf/dashboard/stats', label: 'Stats', icon: <IconChartBar size={24} /> },
-  { href: '/golf/dashboard/settings', label: 'More', icon: <IconSettings size={24} /> },
+  { href: '/golf/dashboard/alerts', label: 'Alerts', icon: <IconBell size={24} /> },
 ];
 
 const playerNavItems: NavItem[] = [
@@ -29,7 +29,7 @@ const playerNavItems: NavItem[] = [
   { href: '/golf/dashboard/rounds', label: 'Rounds', icon: <IconGolf size={24} /> },
   { href: '/golf/dashboard/calendar', label: 'Calendar', icon: <IconCalendar size={24} /> },
   { href: '/golf/dashboard/messages', label: 'Messages', icon: <IconMessage size={24} /> },
-  { href: '/golf/dashboard/settings', label: 'More', icon: <IconSettings size={24} /> },
+  { href: '/golf/dashboard/alerts', label: 'Alerts', icon: <IconBell size={24} /> },
 ];
 
 interface MobileBottomNavProps {
@@ -94,6 +94,9 @@ export function MobileBottomNav({ isCoach = true }: MobileBottomNavProps) {
                   <span className="absolute -top-1 -right-1.5">
                     <CountBadge count={badges.messages} variant="danger" />
                   </span>
+                )}
+                {item.label === 'Alerts' && badges.total > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-primary-500 ring-2 ring-white" />
                 )}
               </div>
               <span className={cn(

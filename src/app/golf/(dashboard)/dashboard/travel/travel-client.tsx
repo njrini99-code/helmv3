@@ -34,6 +34,7 @@ import {
   type TravelBudget,
 } from '@/app/golf/actions/travel';
 import { ExpenseForm, ExpenseList, ExpenseSummary } from '@/components/golf/travel';
+import { useToast } from '@/components/ui/toast';
 
 interface TravelItinerary {
   id: string;
@@ -73,6 +74,7 @@ type TabType = 'details' | 'expenses';
 export function TravelClient({ itineraries: initialItineraries, coachId, teamId, isCoach }: TravelClientProps) {
   const { toggleMobile } = useSidebar();
   const router = useRouter();
+  const { showToast } = useToast();
   const badges = useNotificationBadges();
   const [itineraries, setItineraries] = useState(initialItineraries);
   const [showModal, setShowModal] = useState(false);
@@ -100,6 +102,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
   const [showExpenseForm, setShowExpenseForm] = useState(false);
   const [editingExpense, setEditingExpense] = useState<TravelExpense | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     event_name: '',
@@ -123,18 +126,18 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
     notes: '',
   });
 
-  const getTransportIcon = (type: TransportationType) => {
+  const getTransportIcon = (type: TransportationType, size = 24) => {
     switch (type) {
       case 'flight':
-        return '✈️';
+        return <IconAirplane size={size} className="text-blue-600" />;
       case 'bus':
-        return '🚌';
+        return <span style={{ fontSize: size }}>🚌</span>;
       case 'van':
-        return '🚐';
+        return <span style={{ fontSize: size }}>🚐</span>;
       case 'carpool':
-        return '🚗';
+        return <span style={{ fontSize: size }}>🚗</span>;
       default:
-        return '🚗';
+        return <span style={{ fontSize: size }}>🚗</span>;
     }
   };
 
@@ -275,9 +278,8 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this travel itinerary?')) return;
-
+  const handleDeleteConfirmed = async (id: string) => {
+    setDeleteConfirmId(null);
     try {
       const result = await deleteGolfTravelItinerary(id);
 
@@ -288,7 +290,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
         }
         router.refresh();
       } else {
-        alert(result.error || 'Failed to delete itinerary');
+        showToast(result.error || 'Failed to delete itinerary', 'error');
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -296,7 +298,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
         window.location.reload();
         return;
       }
-      alert('An error occurred. Please try again.');
+      showToast('An error occurred. Please try again.', 'error');
     }
   };
 
@@ -351,7 +353,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
       link.click();
       document.body.removeChild(link);
     } else {
-      alert(result.error || 'Failed to export expenses');
+      showToast(result.error || 'Failed to export expenses', 'error');
     }
     setExporting(false);
   };
@@ -458,7 +460,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className="text-2xl">{getTransportIcon(itinerary.transportation_type)}</div>
+                    <div className="w-8 h-8 flex items-center justify-center">{getTransportIcon(itinerary.transportation_type, 20)}</div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <h3 className="font-semibold text-warm-900 truncate">{itinerary.event_name}</h3>
@@ -492,12 +494,12 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
             {/* Selected Itinerary Details / Expenses */}
             <div className="lg:col-span-2">
               {selectedItinerary ? (
-                <div className="bg-white rounded-2xl border border-warm-200 overflow-hidden">
+                <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-hidden">
                   {/* Itinerary Header */}
                   <div className="p-6 border-b border-warm-200">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-start gap-4">
-                        <div className="text-4xl">{getTransportIcon(selectedItinerary.transportation_type)}</div>
+                        <div className="w-12 h-12 flex items-center justify-center">{getTransportIcon(selectedItinerary.transportation_type, 28)}</div>
                         <div>
                           <h2 className="text-xl font-semibold text-warm-900">{selectedItinerary.event_name}</h2>
                           <div className="flex items-center gap-2 text-warm-500 mt-1">
@@ -515,7 +517,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                             <IconEdit size={18} className="text-warm-600" />
                           </button>
                           <button
-                            onClick={() => handleDelete(selectedItinerary.id)}
+                            onClick={() => setDeleteConfirmId(selectedItinerary.id)}
                             className="p-2 hover:bg-red-50 rounded-lg transition-colors"
                           >
                             <IconTrash size={18} className="text-red-600" />
@@ -720,7 +722,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                   </div>
                 </div>
               ) : (
-                <div className="bg-white rounded-2xl border border-warm-200 p-8 md:p-12 text-center">
+                <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-8 md:p-12 text-center">
                   <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
                     <IconAirplane size={28} className="text-warm-400" />
                   </div>
@@ -734,6 +736,35 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmId && (
+        <div className="fixed inset-0 bg-warm-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white/90 backdrop-blur-xl rounded-2xl max-w-sm w-full shadow-2xl border border-white/30 overflow-hidden">
+            <div className="p-6 text-center">
+              <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
+                <IconTrash size={22} className="text-red-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-warm-900 mb-2">Delete Itinerary?</h3>
+              <p className="text-sm text-warm-500">This action cannot be undone. All trip details and expenses will be removed.</p>
+            </div>
+            <div className="flex gap-3 px-6 pb-6">
+              <button
+                onClick={() => setDeleteConfirmId(null)}
+                className="flex-1 px-4 py-2.5 border border-warm-200 rounded-xl font-medium text-warm-700 hover:bg-warm-50 transition-colors text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteConfirmed(deleteConfirmId)}
+                className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium transition-colors text-sm"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Create/Edit Itinerary Modal */}
       {showModal && (

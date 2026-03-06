@@ -92,8 +92,8 @@ export function NotificationBadgeProvider({ children }: { children: React.ReactN
           setUnseenAnnouncements([]);
         }
       }
-    } catch {
-      // Silently fail — badges are non-critical
+    } catch (err) {
+      if (process.env.NODE_ENV === 'development') console.error(err);
     }
   }, [isActive, isPlayer, isCoach, playerId, userId, teamId]);
 

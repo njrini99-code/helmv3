@@ -131,17 +131,17 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
       </div>
 
       {/* Mobile Sidebar Overlay — z-[45] sits between bottom nav (z-40) and sidebar panel (z-50) */}
-      {mobileOpen && (
-        <div
-          className={cn(
-            'fixed inset-0 bg-warm-900/50 backdrop-blur-sm z-[45] lg:hidden',
-            'transition-opacity duration-300 ease-out',
-            'opacity-100'
-          )}
-          onClick={() => setMobileOpen(false)}
-          aria-hidden="true"
-        />
-      )}
+      <div
+        className={cn(
+          'fixed inset-0 bg-warm-900/50 backdrop-blur-sm z-[45] lg:hidden',
+          'transition-opacity duration-300 ease-out',
+          mobileOpen
+            ? 'opacity-100 pointer-events-auto'
+            : 'opacity-0 pointer-events-none'
+        )}
+        onClick={() => setMobileOpen(false)}
+        aria-hidden="true"
+      />
 
       {/* Mobile Sidebar */}
       <div

@@ -283,8 +283,8 @@ export default function ContinueRoundClient({
           '', // Player ID will be determined by the server
           draftData
         );
-      } catch (error) {
-        console.error('Failed to save to IndexedDB:', error);
+      } catch {
+        // Silently ignore offline save errors
       }
     }
 
@@ -293,8 +293,8 @@ export default function ContinueRoundClient({
       for (const shot of shots) {
         try {
           await offlineSyncActions.queueShot(shot, roundId, holes[holeIndex]?.number || holeIndex + 1);
-        } catch (error) {
-          console.error('Failed to queue shot for offline sync:', error);
+        } catch {
+          // Silently ignore offline queue errors
         }
       }
     }

@@ -136,8 +136,18 @@ export default async function GolfAnnouncementsPage() {
           </div>
         ) : isCoach ? (
           <AnnouncementsCoachView announcements={announcements} />
+        ) : !playerId ? (
+          <div className="glass-standard rounded-2xl p-8 md:p-16 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
+              <IconBell size={28} className="text-warm-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-warm-900 mb-2">Player Profile Not Found</h3>
+            <p className="text-warm-500 max-w-sm mx-auto">
+              Unable to load your player profile. Please complete onboarding or contact support.
+            </p>
+          </div>
         ) : (
-          <AnnouncementsPlayerView announcements={announcements} playerId={playerId!} />
+          <AnnouncementsPlayerView announcements={announcements} playerId={playerId} />
         )}
       </AnimatedItem>
     </AnimatedPage>

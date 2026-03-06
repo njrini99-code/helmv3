@@ -400,7 +400,7 @@ export default async function GolfRosterPage() {
             {playersWithStats.map((player) => (
               <div
                 key={player.id}
-                className="group bg-white rounded-2xl border border-warm-200 shadow-sm hover:shadow-md hover:border-warm-300 hover:-translate-y-0.5 transition-all duration-200"
+                className="group bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200"
               >
                 {/* Card Header with Avatar and Name */}
                 <div className="p-5 md:p-6">
@@ -493,17 +493,13 @@ export default async function GolfRosterPage() {
 
                 {/* Action Buttons - min 44px touch targets */}
                 <div className="px-5 md:px-6 pb-5 md:pb-6 flex items-center gap-3">
-                  <Link href={`/golf/dashboard/stats?player=${player.id}`} className="flex-1">
-                    <button className="w-full px-4 py-3 min-h-[48px] bg-warm-900 text-white text-sm font-medium rounded-xl hover:bg-warm-800 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
-                      <IconChartBar size={16} />
-                      View Stats
-                    </button>
+                  <Link href={`/golf/dashboard/stats?player=${player.id}`} className="flex-1 w-full px-4 py-3 min-h-[48px] bg-warm-900 text-white text-sm font-medium rounded-xl hover:bg-warm-800 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                    <IconChartBar size={16} />
+                    View Stats
                   </Link>
-                  <Link href={`/golf/dashboard/messages?player=${player.id}`} className="flex-1">
-                    <button className="w-full px-4 py-3 min-h-[48px] bg-white border border-warm-200 text-warm-700 text-sm font-medium rounded-xl hover:bg-warm-50 hover:border-warm-300 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
-                      <IconMessage size={16} />
-                      Message
-                    </button>
+                  <Link href={`/golf/dashboard/messages?player=${player.id}`} className="flex-1 w-full px-4 py-3 min-h-[48px] bg-white border border-warm-200 text-warm-700 text-sm font-medium rounded-xl hover:bg-warm-50 hover:border-warm-300 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                    <IconMessage size={16} />
+                    Message
                   </Link>
                 </div>
               </div>

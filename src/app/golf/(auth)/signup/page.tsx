@@ -4,12 +4,9 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { GolfSignUpForm } from '@/components/auth/golf-sign-up-form';
 import { isNativeApp } from '@/lib/utils/capacitor';
-
-// Force dynamic rendering
-export const dynamic = 'force-dynamic';
 
 // Component to render sign-in link with returnTo param preserved
 function SignInLink() {
@@ -20,7 +17,7 @@ function SignInLink() {
   return (
     <Link
       href={loginHref}
-      className="text-helm-primary-600 font-semibold hover:text-helm-primary-500 transition-colors"
+      className="text-primary-600 font-semibold hover:text-primary-500 transition-colors"
     >
       Sign in
     </Link>
@@ -30,6 +27,7 @@ function SignInLink() {
 export default function SignupPage() {
   const isNative = isNativeApp();
   return (
+    <LazyMotion features={domAnimation}>
     <div className="min-h-dvh flex items-center justify-center relative p-4 sm:p-6 bg-auth-golf">
       {/* Skip to main content link for keyboard navigation */}
       <a
@@ -42,8 +40,8 @@ export default function SignupPage() {
       {/* Animated floating orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Large primary orb - top right */}
-        <motion.div
-          className="auth-orb auth-orb-1 w-[300px] h-[300px] sm:w-[500px] sm:h-[500px] -top-20 -right-20 sm:-top-32 sm:-right-32 bg-gradient-to-br from-helm-primary-400/40 to-helm-primary-500/30 motion-reduce:animate-none"
+        <m.div
+          className="auth-orb auth-orb-1 w-[300px] h-[300px] sm:w-[500px] sm:h-[500px] -top-20 -right-20 sm:-top-32 sm:-right-32 bg-gradient-to-br from-primary-400/40 to-primary-500/30 motion-reduce:animate-none"
           animate={{
             x: [0, 30, 0],
             y: [0, -20, 0],
@@ -56,8 +54,8 @@ export default function SignupPage() {
           }}
         />
         {/* Medium orb - bottom left */}
-        <motion.div
-          className="auth-orb auth-orb-2 w-[250px] h-[250px] sm:w-[400px] sm:h-[400px] -bottom-16 -left-16 sm:-bottom-24 sm:-left-24 bg-gradient-to-tr from-helm-primary-400/30 to-helm-primary-400/25 motion-reduce:animate-none"
+        <m.div
+          className="auth-orb auth-orb-2 w-[250px] h-[250px] sm:w-[400px] sm:h-[400px] -bottom-16 -left-16 sm:-bottom-24 sm:-left-24 bg-gradient-to-tr from-primary-400/30 to-primary-400/25 motion-reduce:animate-none"
           animate={{
             x: [0, -25, 0],
             y: [0, 25, 0],
@@ -71,8 +69,8 @@ export default function SignupPage() {
           }}
         />
         {/* Small accent orb - top left (hidden on very small screens) */}
-        <motion.div
-          className="auth-orb auth-orb-3 hidden sm:block w-[200px] h-[200px] top-20 left-[10%] bg-gradient-to-br from-helm-primary-300/25 to-helm-primary-400/20 motion-reduce:animate-none"
+        <m.div
+          className="auth-orb auth-orb-3 hidden sm:block w-[200px] h-[200px] top-20 left-[10%] bg-gradient-to-br from-primary-300/25 to-primary-400/20 motion-reduce:animate-none"
           animate={{
             x: [0, 20, 0],
             y: [0, -15, 0],
@@ -85,8 +83,8 @@ export default function SignupPage() {
           }}
         />
         {/* Tiny floating dot */}
-        <motion.div
-          className="absolute w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-helm-primary-500/40 top-[30%] right-[15%] sm:right-[20%] motion-reduce:animate-none"
+        <m.div
+          className="absolute w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-primary-500/40 top-[30%] right-[15%] sm:right-[20%] motion-reduce:animate-none"
           animate={{
             y: [0, -10, 0],
             opacity: [0.4, 0.8, 0.4],
@@ -111,21 +109,21 @@ export default function SignupPage() {
 
       {/* Glass card */}
       <div id="signup-form" className="relative z-10 w-full max-w-[420px]">
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 20, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="auth-glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8"
         >
           {/* Logo with glow effect */}
-          <motion.div
+          <m.div
             className="flex flex-col items-center mb-6 sm:mb-8"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.5 }}
           >
             <div className="relative">
-              <div className="absolute inset-0 bg-helm-primary-500/30 rounded-full blur-xl scale-150" />
+              <div className="absolute inset-0 bg-primary-500/30 rounded-full blur-xl scale-150" />
               <div className="relative w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center mb-3 sm:mb-4">
                 <Image
                   src="/helm-golf-logo-transparent.png"
@@ -141,10 +139,10 @@ export default function SignupPage() {
             <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-warm-900 to-warm-700 bg-clip-text text-transparent">
               GolfHelm
             </h1>
-          </motion.div>
+          </m.div>
 
           {/* Header */}
-          <motion.div
+          <m.div
             className="text-center mb-6 sm:mb-8"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -154,10 +152,10 @@ export default function SignupPage() {
               Create your account
             </h2>
             <p className="text-warm-500 text-sm sm:text-base">Start tracking your golf journey</p>
-          </motion.div>
+          </m.div>
 
           {/* Form */}
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 0.5 }}
@@ -171,23 +169,23 @@ export default function SignupPage() {
                 </div>
                 <div className="h-12 bg-warm-200 rounded-xl" />
                 <div className="h-12 bg-warm-200 rounded-xl" />
-                <div className="h-12 bg-helm-primary-400/20 rounded-xl" />
+                <div className="h-12 bg-primary-400/20 rounded-xl" />
               </div>
             }>
               <GolfSignUpForm />
             </Suspense>
-          </motion.div>
-        </motion.div>
+          </m.div>
+        </m.div>
 
         {/* Footer links with stagger animation */}
-        <motion.div
+        <m.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6, duration: 0.5 }}
         >
           <p className="text-center mt-5 sm:mt-6 text-warm-600 text-sm">
             Already have an account?{' '}
-            <Suspense fallback={<Link href="/golf/login" className="text-helm-primary-600 font-semibold hover:text-helm-primary-500 transition-colors">Sign in</Link>}>
+            <Suspense fallback={<Link href="/golf/login" className="text-primary-600 font-semibold hover:text-primary-500 transition-colors">Sign in</Link>}>
               <SignInLink />
             </Suspense>
           </p>
@@ -218,8 +216,9 @@ export default function SignupPage() {
               Terms
             </Link>
           </div>
-        </motion.div>
+        </m.div>
       </div>
     </div>
+    </LazyMotion>
   );
 }

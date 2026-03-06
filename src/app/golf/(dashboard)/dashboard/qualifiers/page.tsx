@@ -209,7 +209,13 @@ export default async function GolfQualifiersPage() {
                         <div className="h-2 bg-warm-100 rounded-full overflow-hidden">
                           <div
                             className="h-full bg-gradient-to-r from-primary-500 to-primary-400 rounded-full transition-all duration-500"
-                            style={{ width: `${Math.min(100, 50)}%` }}
+                            style={{ width: `${Math.min(100, (() => {
+                              const start = new Date(qualifier.start_date).getTime();
+                              const end = qualifier.end_date ? new Date(qualifier.end_date).getTime() : start + 7 * 86400000;
+                              const now = Date.now();
+                              if (end <= start) return 100;
+                              return Math.round(((now - start) / (end - start)) * 100);
+                            })())}%` }}
                           />
                         </div>
                       </div>
