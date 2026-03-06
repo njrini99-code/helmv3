@@ -10,14 +10,16 @@ import {
   getCourseBreakdown,
   getWorstHoleAnalysis,
   getTrendAnalysis,
-  type StatsSummary,
-  type RoundSummary,
-  type StatsFilter,
-  type FilterOptions,
-  type CourseBreakdownResponse,
-  type WorstHoleResponse,
-  type TrendAnalysisResponse,
 } from '@/app/golf/actions/stats-data';
+import type {
+  StatsSummary,
+  RoundSummary,
+  StatsFilter,
+  FilterOptions,
+  CourseBreakdownResponse,
+  WorstHoleResponse,
+  TrendAnalysisResponse,
+} from '@/app/golf/actions/stats-data-types';
 import Image from 'next/image';
 import GolfStatsDisplay, { Sparkline } from '@/components/golf/stats/GolfStatsDisplay';
 import { generateStatisticalStrengthsWeaknesses } from '@/lib/golf/strokes-gained';

@@ -166,6 +166,16 @@ const nextConfig = {
           },
         ],
       },
+      // Never cache the service worker — browsers must always fetch the latest
+      {
+        source: '/sw.js',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-cache, no-store, must-revalidate',
+          },
+        ],
+      },
       // Cache headers for static assets
       {
         source: '/:all*(svg|jpg|jpeg|png|gif|ico|webp|avif)',

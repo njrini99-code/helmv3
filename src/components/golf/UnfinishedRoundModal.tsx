@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { IconX, IconPlay, IconTrash, IconAlertCircle, IconWarning } from '@/components/icons';
 import { deleteInProgressRound } from '@/app/golf/actions/golf';
+import { clearEmergencySave } from '@/lib/utils/emergency-save';
 import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
 
@@ -60,6 +61,7 @@ export function UnfinishedRoundModal({
       if (!result.success) {
         throw new Error(result.error);
       }
+      clearEmergencySave(round.id);
       onDeleted?.();
       onClose();
     } catch (err) {

@@ -531,7 +531,7 @@ export function useShotStateMachine({
   currentHoleIndex,
   currentHole,
   onAutoSave,
-  autoSaveInterval = 30000,
+  autoSaveInterval = 5000,
 }: UseShotStateMachineParams) {
   const holeYardage = currentHole?.yardage ?? 0;
 

@@ -13,6 +13,40 @@ import {
   generateStatisticalStrengthsWeaknesses,
   type StatisticalStrengthWeakness,
 } from '@/lib/golf/strokes-gained';
+import type {
+  StatsFilter,
+  StatsSummary,
+  RoundSummary,
+  SummaryStatsResponse,
+  TrendDataPoint,
+  RoundTrendData,
+  TrendAnalysisResponse,
+  TeamComparisonStats,
+  TeamComparisonResponse,
+  FilterOptions,
+  CourseStats,
+  CourseBreakdownResponse,
+  HoleAnalysis,
+  WorstHoleResponse,
+} from './stats-data-types';
+
+// Re-export types so existing imports from this file still work
+export type {
+  StatsFilter,
+  StatsSummary,
+  RoundSummary,
+  SummaryStatsResponse,
+  TrendDataPoint,
+  RoundTrendData,
+  TrendAnalysisResponse,
+  TeamComparisonStats,
+  TeamComparisonResponse,
+  FilterOptions,
+  CourseStats,
+  CourseBreakdownResponse,
+  HoleAnalysis,
+  WorstHoleResponse,
+} from './stats-data-types';
 
 // ============================================================================
 // AUTH GUARD
@@ -20,8 +54,15 @@ import {
 
 async function requireAuth() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Unauthorized');
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error) {
+    console.error('[Stats] Auth error:', error.message);
+    throw new Error('Unauthorized');
+  }
+  if (!user) {
+    console.error('[Stats] No user session found');
+    throw new Error('Unauthorized');
+  }
   return { supabase, user };
 }
 
@@ -68,55 +109,8 @@ async function verifyPlayerAccess(
 }
 
 // ============================================================================
-// TYPES
+// TYPES (imported from stats-data-types.ts)
 // ============================================================================
-
-/**
- * Stats filter options for filtering rounds
- */
-export interface StatsFilter {
-  // Preset filters
-  preset?: 'last5' | 'last10' | 'last20' | 'tournaments' | 'practice' | 'thisMonth' | 'thisYear' | 'custom';
-
-  // Date range (for custom filter)
-  startDate?: string;
-  endDate?: string;
-
-  // Course filter
-  courseName?: string;
-
-  // Round type filter
-  roundType?: 'practice' | 'qualifier' | 'tournament';
-
-  // Season/year filter (for historical comparison)
-  season?: number; // e.g., 2024, 2025
-}
-
-export interface StatsSummary {
-  roundsPlayed: number;
-  holesPlayed: number;
-  scoringAverage: number | null;
-  bestRound: number | null;
-  worstRound: number | null;
-  girPercentage: number | null;
-  fairwayPercentage: number | null;
-  puttsPerRound: number | null;
-  scramblingPercentage: number | null;
-}
-
-export interface RoundSummary {
-  id: string;
-  round_date: string;
-  course_name: string | null;
-  round_type: string | null;
-  total_score: number | null;
-  score_to_par: number | null;
-}
-
-export interface SummaryStatsResponse {
-  summary: StatsSummary;
-  rounds: RoundSummary[];
-}
 
 type DetailedStatsRoundRow = {
   id: string;
@@ -732,8 +726,8 @@ export async function getDetailedStats(
     return serializeDetailedStats(buildFallbackDetailedStats(roundsData));
   }
   } catch (outerError) {
-    console.error('[Stats] getDetailedStats failed:', outerError);
-    return calculateStatsFromShots([], [], []);
+    console.error('[Stats] getDetailedStats failed:', outerError instanceof Error ? outerError.message : outerError);
+    return serializeDetailedStats(calculateStatsFromShots([], [], []));
   }
 }
 
@@ -741,62 +735,7 @@ export async function getDetailedStats(
 // TREND DATA - For charts and analysis
 // ============================================================================
 
-export interface TrendDataPoint {
-  date: string;
-  value: number;
-  roundId: string;
-  courseName: string;
-}
-
-export interface RoundTrendData {
-  id: string;
-  date: string;
-  score: number;
-  toPar: number;
-  courseName: string;
-  roundType: string | null;
-  girPct: number | null;
-  fairwayPct: number | null;
-  putts: number | null;
-  scrambling: number | null;
-}
-
-export interface TrendAnalysisResponse {
-  rounds: RoundTrendData[];
-  trends: {
-    score: TrendDataPoint[];
-    gir: TrendDataPoint[];
-    fairway: TrendDataPoint[];
-    putts: TrendDataPoint[];
-  };
-  rollingAverages: {
-    score5: (number | null)[];
-    score10: (number | null)[];
-    score20: (number | null)[];
-  };
-  periodComparison: {
-    last30Days: {
-      roundCount: number;
-      scoringAvg: number | null;
-      girPct: number | null;
-      fairwayPct: number | null;
-      puttsPerRound: number | null;
-    };
-    previous30Days: {
-      roundCount: number;
-      scoringAvg: number | null;
-      girPct: number | null;
-      fairwayPct: number | null;
-      puttsPerRound: number | null;
-    };
-  };
-  personalBests: {
-    bestScore: { value: number; date: string; course: string } | null;
-    bestToPar: { value: number; date: string; course: string } | null;
-    bestGir: { value: number; date: string; course: string } | null;
-    lowestPutts: { value: number; date: string; course: string } | null;
-  };
-}
+// TrendDataPoint, RoundTrendData, TrendAnalysisResponse — see stats-data-types.ts
 
 /**
  * Get trend analysis data for visualizations
@@ -1033,35 +972,7 @@ function findBest<T extends { date: string; courseName: string }>(
 // TEAM COMPARISON DATA
 // ============================================================================
 
-export interface TeamComparisonStats {
-  playerId: string;
-  playerName: string;
-  roundCount: number;
-  scoringAverage: number | null;
-  bestRound: number | null;
-  girPct: number | null;
-  fairwayPct: number | null;
-  puttsPerRound: number | null;
-  scramblingPct: number | null;
-}
-
-export interface TeamComparisonResponse {
-  playerStats: TeamComparisonStats;
-  teamStats: TeamComparisonStats[];
-  teamAverages: {
-    scoringAverage: number | null;
-    girPct: number | null;
-    fairwayPct: number | null;
-    puttsPerRound: number | null;
-    scramblingPct: number | null;
-  };
-  playerRankings: {
-    scoringRank: number | null;
-    girRank: number | null;
-    fairwayRank: number | null;
-    puttsRank: number | null;
-  };
-}
+// TeamComparisonStats, TeamComparisonResponse — see stats-data-types.ts
 
 /**
  * Get team comparison data for a player
@@ -1356,11 +1267,7 @@ export async function getTeamComparison(
 // FILTER OPTIONS DATA
 // ============================================================================
 
-export interface FilterOptions {
-  courses: string[];
-  seasons: number[];
-  roundTypes: string[];
-}
+// FilterOptions — see stats-data-types.ts
 
 /**
  * Get available filter options for a player
@@ -1414,22 +1321,7 @@ export async function getFilterOptions(playerId: string): Promise<FilterOptions>
 // COURSE-SPECIFIC BREAKDOWN
 // ============================================================================
 
-export interface CourseStats {
-  courseName: string;
-  roundCount: number;
-  scoringAverage: number | null;
-  bestRound: number | null;
-  girPct: number | null;
-  fairwayPct: number | null;
-  puttsPerRound: number | null;
-  lastPlayed: string;
-}
-
-export interface CourseBreakdownResponse {
-  courses: CourseStats[];
-  bestCourse: string | null;
-  worstCourse: string | null;
-}
+// CourseStats, CourseBreakdownResponse — see stats-data-types.ts
 
 /**
  * Get stats broken down by course
@@ -1542,28 +1434,7 @@ export async function getCourseBreakdown(playerId: string): Promise<CourseBreakd
 // WORST HOLE ANALYSIS
 // ============================================================================
 
-export interface HoleAnalysis {
-  holeNumber: number;
-  par: number;
-  averageScore: number;
-  averageToPar: number;
-  timesPlayed: number;
-  birdieOrBetter: number;
-  pars: number;
-  bogeys: number;
-  doublePlus: number;
-  trend: 'improving' | 'declining' | 'stable';
-}
-
-export interface WorstHoleResponse {
-  holes: HoleAnalysis[];
-  worstHoles: HoleAnalysis[];
-  bestHoles: HoleAnalysis[];
-  par3Average: number | null;
-  par4Average: number | null;
-  par5Average: number | null;
-  closingHolesAverage: number | null; // Holes 16-18
-}
+// HoleAnalysis, WorstHoleResponse — see stats-data-types.ts
 
 /**
  * Get worst hole analysis
@@ -1722,6 +1593,7 @@ export async function getPlayerStrengthsWeaknesses(
   strengths: StatisticalStrengthWeakness[];
   weaknesses: StatisticalStrengthWeakness[];
 } | null> {
+  try {
   const { supabase, user } = await requireAuth();
 
   if (!(await verifyPlayerAccess(supabase, user.id, playerId))) {
@@ -1735,4 +1607,8 @@ export async function getPlayerStrengthsWeaknesses(
   }
 
   return generateStatisticalStrengthsWeaknesses(stats);
+  } catch (error) {
+    console.error('[Stats] getPlayerStrengthsWeaknesses failed:', error instanceof Error ? error.message : error);
+    return null;
+  }
 }

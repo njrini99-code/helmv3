@@ -45,8 +45,8 @@ interface UseAutoSaveRoundOptions {
   enabled?: boolean;
 }
 
-const DEFAULT_INTERVAL = 30000; // 30 seconds
-const DEBOUNCE_DELAY = 2000; // 2 seconds debounce for rapid changes
+const DEFAULT_INTERVAL = 10000; // 10 seconds
+const DEBOUNCE_DELAY = 1500; // 1.5 seconds debounce for rapid changes
 const LOCAL_STORAGE_KEY = 'golf_round_draft_backup';
 
 /**
@@ -379,6 +379,7 @@ export function useAutoSaveRound(
     saveStatus,
     isOnline,
     roundId: currentRoundId,
+    setRoundId: setCurrentRoundId,
     getTimeSinceLastSave,
 
     // Direct status checks

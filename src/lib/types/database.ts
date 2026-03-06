@@ -9803,6 +9803,17 @@ export type Database = {
         Returns: number
       }
       sg_normalize_lie: { Args: { p_lie: string }; Returns: string }
+      submit_round_atomic: {
+        Args: {
+          p_approach_details?: Json
+          p_holes: Json
+          p_putt_details?: Json
+          p_round_data: Json
+          p_round_id: string
+          p_shots: Json
+        }
+        Returns: Json
+      }
       update_player_stats_strokes_gained: {
         Args: { p_player_id: string }
         Returns: undefined

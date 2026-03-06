@@ -294,7 +294,7 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
   const startHoleNumber = startHoleIndex + 1;
   const startHoleShots = shotsByHole.get(startHoleNumber) || [];
   const sortedStartHoleShots = [...startHoleShots].sort((a, b) => a.shot_number - b.shot_number);
-  
+
   // Calculate the current shot number (next shot to record)
   // If there are shots, the next shot is shots.length + 1
   // Otherwise, start at shot 1
@@ -302,6 +302,19 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
 
   // Transform shots to ShotRecord format for the component
   const initialShots: ShotRecord[] = sortedStartHoleShots.map(mapShotToRecord);
+
+  // Build in-progress shots for ALL non-completed holes (not just the starting hole)
+  // This prevents data loss when shots exist on multiple skipped/unfinished holes
+  const allInProgressShots: Record<number, ShotRecord[]> = {};
+  for (let i = 0; i < totalHoles; i++) {
+    const holeNumber = i + 1;
+    const holeShots = shotsByHole.get(holeNumber) || [];
+    if (holeShots.length === 0) continue;
+    // Skip completed holes (they're already in completedHoleStats)
+    if (completedHoleStats[i]) continue;
+    const sorted = [...holeShots].sort((a, b) => a.shot_number - b.shot_number);
+    allInProgressShots[i] = sorted.map(mapShotToRecord);
+  }
 
   return (
     <AnimatedPage>
@@ -314,6 +327,8 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
           startHoleIndex={startHoleIndex}
           initialShots={initialShots}
           initialShotNumber={startShotNumber}
+          initialInProgressShotsByHole={allInProgressShots}
+          serverDataTimestamp={round.updated_at ?? undefined}
         />
       </AnimatedItem>
     </AnimatedPage>

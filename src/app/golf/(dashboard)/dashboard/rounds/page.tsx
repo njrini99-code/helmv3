@@ -187,22 +187,11 @@ export default async function RoundsPage() {
       player: r.player && !('error' in r.player) ? r.player : null
     })) as RoundWithPlayer[];
 
-    // Filter in-progress rounds to only show those with at least 1 recorded shot
-    const inProgressAll = (inProgressData ?? []).map(r => ({
+    // Show ALL in-progress rounds (including setup-only drafts without shots)
+    inProgressRounds = (inProgressData ?? []).map(r => ({
       ...r,
       player: r.player && !('error' in r.player) ? r.player : null
     })) as RoundWithPlayer[];
-
-    if (inProgressAll.length > 0) {
-      const roundIds = inProgressAll.map(r => r.id);
-      const { data: shotsData } = await supabase
-        .from('golf_shots')
-        .select('round_id')
-        .in('round_id', roundIds);
-
-      const roundIdsWithShots = new Set((shotsData ?? []).map(s => s.round_id));
-      inProgressRounds = inProgressAll.filter(r => roundIdsWithShots.has(r.id));
-    }
   }
 
   // Group rounds by date
