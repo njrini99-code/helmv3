@@ -47,9 +47,19 @@ interface RoundSetupForm {
 }
 
 
-export default function NewRoundClient() {
+interface NewRoundClientProps {
+  existingInProgressRound?: {
+    id: string;
+    courseName: string;
+    currentHole: number;
+    holesPlayed: number;
+  } | null;
+}
+
+export default function NewRoundClient({ existingInProgressRound }: NewRoundClientProps) {
   const router = useRouter();
   const { showToast } = useToast();
+  const [showResumePrompt, setShowResumePrompt] = useState(!!existingInProgressRound);
 
   // Hide mobile bottom nav for entire round flow (setup → holes → tracking → submit)
   const { hide: hideMobileNav, show: showMobileNav } = useMobileNav();
@@ -186,6 +196,64 @@ export default function NewRoundClient() {
   // Ref for stale closure prevention in async auto-save (#20)
   const inProgressShotsByHoleRef = useRef(inProgressShotsByHole);
   inProgressShotsByHoleRef.current = inProgressShotsByHole;
+
+  // Save data when user leaves the page (phone lock, app switch, tab close)
+  const stepRef = useRef(step);
+  stepRef.current = step;
+  useEffect(() => {
+    // Warn before closing tab/navigating away during active tracking
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (stepRef.current === 'tracking') {
+        e.preventDefault();
+      }
+    };
+
+    // Trigger immediate server save when app goes to background (phone lock, switch app)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden' && stepRef.current === 'tracking' && savedRoundIdRef.current) {
+        // Use sendBeacon-style fire-and-forget — navigator.sendBeacon can't call server actions,
+        // but we can trigger a savePartialRound. It may or may not complete before the page is frozen.
+        const mergedInProgress = { ...inProgressShotsByHoleRef.current };
+        // Build save data inline to avoid stale closure
+        const holesSnapshot = holes;
+        const statsSnapshot = completedHoleStats;
+        const currentHole = currentHoleIndexRef.current;
+        const inProgressArr = Object.entries(mergedInProgress)
+          .filter(([, shots]) => shots.length > 0)
+          .map(([idx, shots]) => ({
+            holeNumber: holesSnapshot[Number(idx)]?.number ?? Number(idx) + 1,
+            shots,
+          }));
+        const saveData = {
+          courseName: setupData.courseName,
+          courseCity: setupData.courseCity || undefined,
+          courseState: setupData.courseState || undefined,
+          courseRating: setupData.courseRating ? parseFloat(setupData.courseRating) : undefined,
+          courseSlope: setupData.courseSlope ? parseInt(setupData.courseSlope) : undefined,
+          teesPlayed: setupData.teesPlayed || undefined,
+          roundType: setupData.roundType,
+          roundDate: setupData.roundDate,
+          currentHole: currentHole + 1,
+          holesToPlay: holesSnapshot.length as 9 | 18,
+          holes: statsSnapshot,
+          inProgressShots: inProgressArr,
+          holeConfigs: holesSnapshot.map(hole => ({
+            holeNumber: hole.number,
+            par: hole.par,
+            yardage: hole.yardage,
+          })),
+        };
+        void savePartialRound(saveData, savedRoundIdRef.current ?? undefined);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [setupData, holes, completedHoleStats]);
 
   // Qualifier state
   const [qualifiers, setQualifiers] = useState<PlayerQualifierInfo[]>([]);
@@ -550,7 +618,7 @@ export default function NewRoundClient() {
     // Fire-and-forget: persist completed hole data to database (non-blocking)
     // Uses the same queue pattern as handleAutoSave to avoid silently dropping saves
     void (async () => {
-      const nextHole = isReEdit ? activeProgressHoleRef.current : Math.min(holeIndex + 1, holes.length - 1);
+      const nextHole = isReEdit ? activeProgressHoleRef.current : holeIndex + 1;
       const saveData = buildPartialRoundData(updatedStats, nextHole, inProgressAfter);
 
       if (serverSaveInProgressRef.current) {
@@ -780,6 +848,10 @@ export default function NewRoundClient() {
       setError(err instanceof Error ? err.message : 'Failed to submit round');
       isSubmittingRef.current = false;
       setStep('tracking');
+      // Re-arm the finish confirmation so the user can retry instead of being
+      // stuck on the last hole with no way to re-submit
+      setPendingFinalStats(allHoleStats);
+      setShowFinishConfirm(true);
     }
   };
 
@@ -902,6 +974,50 @@ export default function NewRoundClient() {
       })}
     </div>
   );
+
+  // ============================================================================
+  // RESUME IN-PROGRESS ROUND PROMPT
+  // ============================================================================
+  if (showResumePrompt && existingInProgressRound) {
+    return (
+      <div className="min-h-full bg-transparent flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="relative glass-standard rounded-2xl overflow-hidden p-6 sm:p-8 text-center">
+            <ShineEffect />
+            <div className="w-14 h-14 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto mb-5">
+              <IconFlag size={24} className="text-primary-500" />
+            </div>
+            <h2 className="text-xl font-semibold text-warm-900 mb-2">
+              Round in Progress
+            </h2>
+            <p className="text-warm-500 text-sm mb-1">
+              You have an unfinished round at
+            </p>
+            <p className="text-warm-800 font-medium mb-1">
+              {existingInProgressRound.courseName}
+            </p>
+            <p className="text-warm-400 text-sm mb-6">
+              Hole {existingInProgressRound.currentHole} of {existingInProgressRound.holesPlayed}
+            </p>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => router.push(`/golf/dashboard/rounds/continue/${existingInProgressRound.id}`)}
+                className="w-full py-3 rounded-xl bg-primary-600 text-white font-medium hover:bg-primary-700 transition-colors shadow-sm"
+              >
+                Continue Round
+              </button>
+              <button
+                onClick={() => setShowResumePrompt(false)}
+                className="w-full py-3 rounded-xl bg-warm-100 text-warm-600 font-medium hover:bg-warm-200 transition-colors"
+              >
+                Start Fresh Round
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // ============================================================================
   // SETUP STEP

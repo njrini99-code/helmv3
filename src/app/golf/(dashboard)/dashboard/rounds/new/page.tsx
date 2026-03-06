@@ -22,10 +22,38 @@ export default async function NewRoundPage() {
     redirect('/golf/dashboard?message=Only players can submit rounds');
   }
 
+  // Check for in-progress rounds so we can prompt the player to resume
+  const { data: inProgressRounds } = await supabase
+    .from('golf_rounds')
+    .select('id, course_name, current_hole, holes_played, updated_at')
+    .eq('player_id', player.id)
+    .eq('status', 'in_progress')
+    .order('updated_at', { ascending: false })
+    .limit(1);
+
+  // Only consider rounds that have actual shot data (not empty setup drafts)
+  let existingRound: { id: string; courseName: string; currentHole: number; holesPlayed: number } | null = null;
+  if (inProgressRounds && inProgressRounds.length > 0) {
+    const round = inProgressRounds[0]!;
+    const { count } = await supabase
+      .from('golf_shots')
+      .select('id', { count: 'exact', head: true })
+      .eq('round_id', round.id);
+
+    if (count && count > 0) {
+      existingRound = {
+        id: round.id,
+        courseName: round.course_name || 'Unknown Course',
+        currentHole: round.current_hole || 1,
+        holesPlayed: round.holes_played || 18,
+      };
+    }
+  }
+
   return (
     <AnimatedPage>
       <AnimatedItem>
-        <NewRoundClient />
+        <NewRoundClient existingInProgressRound={existingRound} />
       </AnimatedItem>
     </AnimatedPage>
   );

@@ -303,17 +303,17 @@ function buildFallbackDetailedStats(roundsData: DetailedStatsRoundRow[]): GolfSt
   let totalPuttHoles = 0;
 
   for (const round of roundsData) {
-    if (round.total_fairways_hit !== null && round.total_fairways !== null) {
+    if (round.total_fairways_hit != null && round.total_fairways != null) {
       totalFairwaysHit += round.total_fairways_hit;
       totalFairways += round.total_fairways;
     }
 
-    if (round.total_gir !== null && round.total_gir_possible !== null) {
+    if (round.total_gir != null && round.total_gir_possible != null) {
       totalGir += round.total_gir;
       totalGirPossible += round.total_gir_possible;
     }
 
-    if (round.total_putts !== null) {
+    if (round.total_putts != null) {
       totalPutts += round.total_putts;
       totalPuttHoles += round.holes_played ?? 18;
     }

@@ -24,6 +24,7 @@ import { saveOfflineShot, saveOfflineHole, saveOfflineRound } from '@/lib/offlin
 // OfflineSyncStatus removed — was popping up during normal online use
 import { OfflineWarningBanner } from './OfflineWarningBanner';
 import type { ShotRecord, HoleStats, RoundHole } from '@/lib/types/golf';
+import type { Json } from '@/lib/types/database.types';
 
 // Dynamically import the main component to avoid SSR issues with IndexedDB
 const ShotTrackingComprehensive = dynamic(
@@ -224,7 +225,7 @@ export default function ShotTrackingWithOffline({
             ...draftData,
             currentHoleIndex: holeIndex,
             inProgressShots: { [holeIndex]: shots },
-          },
+          } as unknown as Json,
         });
       } catch (error) {
         console.error('[ShotTrackingWithOffline] Failed to save round draft:', error);

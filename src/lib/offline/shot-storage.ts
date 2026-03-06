@@ -13,6 +13,7 @@
  */
 
 import type { GolfShot, GolfHole, GolfRound } from '@/lib/types/golf';
+import type { Json } from '@/lib/types/database.types';
 
 // ============================================================================
 // TYPES
@@ -85,7 +86,7 @@ export interface OfflineRound extends Partial<GolfRound>, OfflineMetadata {
   holes_to_play: number;
   current_hole?: number | null;
   status: string;
-  draft_data?: Record<string, unknown> | null;
+  draft_data?: Json | null;
 }
 
 export interface SyncResult {

@@ -834,6 +834,15 @@ export async function submitGolfRoundComprehensive(
       }
     }
 
+    // For existing rounds, clean up old holes/shots before inserting fresh data.
+    // savePartialRound inserts holes/shots during auto-save, so they already exist.
+    // Without this cleanup, the insert below would fail with a unique constraint violation,
+    // which previously triggered a catastrophic rollback that deleted the entire round.
+    if (existingRoundId) {
+      // Cascade: deleting holes also deletes their shots via ON DELETE CASCADE
+      await supabase.from('golf_holes').delete().eq('round_id', round.id);
+    }
+
     // Insert holes (schema-aligned)
     const holesData = data.holes.map(hole => ({
       round_id: round.id,
@@ -855,8 +864,13 @@ export async function submitGolfRoundComprehensive(
       .select('id, hole_number');
 
     if (holesError) {
-      // Rollback: delete the orphaned round to prevent ghost completed rounds with no holes
-      await supabase.from('golf_rounds').delete().eq('id', round.id).eq('player_id', player.id);
+      if (existingRoundId) {
+        // Revert existing round back to in_progress — NEVER delete a player's round
+        await supabase.from('golf_rounds').update({ status: 'in_progress' }).eq('id', round.id).eq('player_id', player.id);
+      } else {
+        // Only delete if this was a newly created round (no prior data to lose)
+        await supabase.from('golf_rounds').delete().eq('id', round.id).eq('player_id', player.id);
+      }
       return { success: false, error: 'Failed to save hole data. Please try again.' };
     }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import ShotTrackingComprehensive from '@/components/golf/ShotTrackingComprehensive';
 import type { HoleStats, ShotRecord, RoundHole } from '@/lib/types/golf';
@@ -87,6 +87,62 @@ export default function ContinueRoundClient({
   const inProgressShotsByHoleRef = useRef(inProgressShotsByHole);
   inProgressShotsByHoleRef.current = inProgressShotsByHole;
 
+  // Refs for visibility change handler
+  const completedHoleStatsRef = useRef(completedHoleStats);
+  completedHoleStatsRef.current = completedHoleStats;
+  const holesRef = useRef(holes);
+  holesRef.current = holes;
+
+  // Save data when user leaves the page (phone lock, app switch, tab close)
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+
+    // Trigger immediate server save when app goes to background
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        const mergedInProgress = { ...inProgressShotsByHoleRef.current };
+        const holesSnapshot = holesRef.current;
+        const statsSnapshot = completedHoleStatsRef.current;
+        const currentHole = currentHoleIndex;
+        const inProgressArr = Object.entries(mergedInProgress)
+          .filter(([, shots]) => shots.length > 0)
+          .map(([idx, shots]) => ({
+            holeNumber: holesSnapshot[Number(idx)]?.number ?? Number(idx) + 1,
+            shots,
+          }));
+        const saveData = {
+          courseName: setupData.courseName,
+          courseCity: setupData.courseCity || undefined,
+          courseState: setupData.courseState || undefined,
+          courseRating: setupData.courseRating ? parseFloat(setupData.courseRating) : undefined,
+          courseSlope: setupData.courseSlope ? parseInt(setupData.courseSlope) : undefined,
+          teesPlayed: setupData.teesPlayed || undefined,
+          roundType: setupData.roundType,
+          roundDate: setupData.roundDate,
+          currentHole: currentHole + 1,
+          holesToPlay: holesSnapshot.length as 9 | 18,
+          holes: statsSnapshot,
+          inProgressShots: inProgressArr,
+          holeConfigs: holesSnapshot.map(hole => ({
+            holeNumber: hole.number,
+            par: hole.par,
+            yardage: hole.yardage,
+          })),
+        };
+        void savePartialRound(saveData, roundId);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [roundId, setupData, currentHoleIndex]);
+
   /**
    * Build partial round data for server persistence.
    * Accepts overrides for values that may not be in React state yet (e.g. inside handleHoleComplete).
@@ -161,7 +217,7 @@ export default function ContinueRoundClient({
     // Fire-and-forget: persist completed hole data to database (non-blocking)
     // Uses queue pattern to avoid silently dropping saves
     void (async () => {
-      const nextHole = isReEdit ? activeProgressHoleRef.current : Math.min(holeIndex + 1, holes.length - 1);
+      const nextHole = isReEdit ? activeProgressHoleRef.current : holeIndex + 1;
       const saveData = buildPartialRoundData(updatedStats, nextHole, inProgressAfter);
 
       if (serverSaveInProgressRef.current) {
@@ -408,7 +464,9 @@ export default function ContinueRoundClient({
       router.push(`/golf/dashboard/rounds/${completedRoundId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to submit round');
-      // Keep submitting=true so error shows on the spinner screen with "Go Back"
+      // Re-arm the finish confirmation so "Go Back" returns to it instead of
+      // dumping the user back on hole 18 with no way to retry submission
+      setPendingFinalStats(allHoleStats);
     }
   };
 
@@ -476,12 +534,33 @@ export default function ContinueRoundClient({
           {error && (
             <div className="mt-4">
               <p className="text-sm text-red-600 mb-3">{error}</p>
-              <button
-                onClick={() => setSubmitting(false)}
-                className="px-4 py-2 bg-warm-100 text-warm-700 rounded-lg text-sm font-medium hover:bg-warm-200 transition-colors"
-              >
-                Go Back
-              </button>
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={() => {
+                    setSubmitting(false);
+                    setError('');
+                    // Re-show the finish confirmation so the user can retry
+                    if (pendingFinalStats) {
+                      setShowFinishConfirm(true);
+                    }
+                  }}
+                  className="px-4 py-2 bg-warm-100 text-warm-700 rounded-lg text-sm font-medium hover:bg-warm-200 transition-colors"
+                >
+                  Go Back
+                </button>
+                {pendingFinalStats && (
+                  <button
+                    onClick={async () => {
+                      setError('');
+                      isSubmittingRef.current = false;
+                      await handleRoundSubmit(pendingFinalStats);
+                    }}
+                    className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
+                  >
+                    Retry
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </div>
