@@ -1,5 +1,5 @@
-import { StatsPageSkeleton } from '@/components/golf/GolfSkeletons';
+import { DetailedStatsSkeleton } from '@/components/golf/GolfSkeletons';
 
 export default function Loading() {
-  return <StatsPageSkeleton />;
+  return <DetailedStatsSkeleton />;
 }

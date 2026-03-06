@@ -777,15 +777,7 @@ export default function StatsClient({
   // ============================================================================
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-full">
-        <div className="space-y-3 w-48">
-          <div className="h-4 w-full bg-warm-200 rounded skeleton-shimmer" />
-          <div className="h-4 w-3/4 bg-warm-200 rounded skeleton-shimmer" />
-          <div className="h-4 w-1/2 bg-warm-200 rounded skeleton-shimmer" />
-        </div>
-      </div>
-    );
+    return <DetailedStatsSkeleton />;
   }
 
   // Coach view - show roster with premium design
