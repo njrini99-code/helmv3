@@ -1,294 +1,130 @@
-'use client';
+import { createClient } from '@/lib/supabase/server';
+import type { PlayerQualifierInfo } from '@/app/golf/actions/golf';
+import { MyQualifiersClient } from './my-qualifiers-client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { ShineEffect } from '@/components/ui/shine-effect';
-import Link from 'next/link';
-import { getPlayerQualifiers, type PlayerQualifierInfo } from '@/app/golf/actions/golf';
-import { IconTrophy, IconChevronRight, IconCalendar, IconMapPin, IconGolf, IconMenu } from '@/components/icons';
-import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
-import { useSidebar } from '@/contexts/sidebar-context';
-import { cn } from '@/lib/utils';
+export default async function MyQualifiersPage() {
+  const supabase = await createClient();
 
-export default function MyQualifiersPage() {
-  const { toggleMobile } = useSidebar();
-  const router = useRouter();
-  const [qualifiers, setQualifiers] = useState<PlayerQualifierInfo[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    getPlayerQualifiers()
-      .then(result => {
-        setLoading(false);
-        if (result.success) {
-          setQualifiers(result.data);
-        } else {
-          setError(result.error);
-        }
-      })
-      .catch((err: Error) => {
-        // Server action not found = stale deployment, hard reload to get fresh bundle
-        if (err.message?.includes('not found on the server') || err.message?.includes('Server Action')) {
-          window.location.reload();
-          return;
-        }
-        setLoading(false);
-        setError('Failed to load qualifiers. Please try refreshing the page.');
-      });
-  }, []);
-
-  const getStatusBadge = (status: string, roundsCompleted: number, numRounds: number) => {
-    if (roundsCompleted >= numRounds) {
-      return { label: 'Complete', className: 'bg-primary-100 text-primary-700' };
-    }
-    switch (status) {
-      case 'upcoming':
-        return { label: 'Upcoming', className: 'bg-warm-100 text-warm-700' };
-      case 'in_progress':
-        return { label: 'In Progress', className: 'bg-amber-100 text-amber-700' };
-      case 'completed':
-        return { label: 'Ended', className: 'bg-warm-100 text-warm-600' };
-      default:
-        return { label: status, className: 'bg-warm-100 text-warm-600' };
-    }
-  };
-
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
-
-  const formatToPar = (toPar: number | null) => {
-    if (toPar === null) return '-';
-    if (toPar === 0) return 'E';
-    return toPar > 0 ? `+${toPar}` : toPar.toString();
-  };
-
-  if (loading) {
-    return (
-      <AnimatedPage className="min-h-full bg-transparent">
-        <div className="max-w-4xl mx-auto px-4 md:px-6 py-6 md:py-8">
-          <AnimatedItem className="flex items-center gap-3 mb-8">
-            <button
-              onClick={toggleMobile}
-              className={cn(
-                'lg:hidden p-2.5 -ml-2 rounded-xl',
-                'text-warm-500 hover:text-warm-700 hover:bg-warm-100/80',
-                'transition-colors duration-150 active:scale-95',
-                'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
-              )}
-              aria-label="Open navigation menu"
-            >
-              <IconMenu size={22} />
-            </button>
-            <div className="w-10 h-10 rounded-full bg-amber-100/70 flex items-center justify-center">
-              <IconTrophy size={20} className="text-amber-600" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-semibold text-warm-900">My Qualifiers</h1>
-              <p className="text-warm-500 text-sm">View your qualifier progress and leaderboards</p>
-            </div>
-          </AnimatedItem>
-
-          <AnimatedItem>
-            <div className="space-y-4">
-              {[0, 1, 2].map((idx) => (
-                <div key={idx} className="glass-standard rounded-2xl overflow-hidden p-6 animate-pulse">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="h-6 w-56 max-w-full bg-warm-200/70 rounded-lg mb-3" />
-                      <div className="flex flex-wrap gap-3 mb-4">
-                        <div className="h-4 w-32 bg-warm-200/60 rounded" />
-                        <div className="h-4 w-28 bg-warm-200/60 rounded" />
-                        <div className="h-4 w-20 bg-warm-200/60 rounded" />
-                      </div>
-                      <div className="flex gap-6">
-                        <div>
-                          <div className="h-3 w-12 bg-warm-200/60 rounded mb-2" />
-                          <div className="h-6 w-16 bg-warm-200/70 rounded" />
-                        </div>
-                        <div>
-                          <div className="h-3 w-16 bg-warm-200/60 rounded mb-2" />
-                          <div className="h-6 w-12 bg-warm-200/70 rounded" />
-                        </div>
-                      </div>
-                    </div>
-                    <div className="h-6 w-24 bg-warm-200/70 rounded-full" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </AnimatedItem>
-        </div>
-      </AnimatedPage>
-    );
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return <MyQualifiersClient qualifiers={[]} error="You must be signed in" />;
   }
 
-  return (
-    <AnimatedPage className="min-h-full bg-transparent">
-      <div className="max-w-4xl mx-auto px-4 md:px-6 py-6 md:py-8">
-        {/* Header */}
-        <AnimatedItem className="flex items-center gap-3 mb-8">
-          <button
-            onClick={toggleMobile}
-            className={cn(
-              'lg:hidden p-2.5 -ml-2 rounded-xl',
-              'text-warm-500 hover:text-warm-700 hover:bg-warm-100/80',
-              'transition-colors duration-150 active:scale-95',
-              'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
-            )}
-            aria-label="Open navigation menu"
-          >
-            <IconMenu size={22} />
-          </button>
-          <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
-            <IconTrophy size={20} className="text-amber-600" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-semibold text-warm-900">My Qualifiers</h1>
-            <p className="text-warm-500 text-sm">View your qualifier progress and leaderboards</p>
-          </div>
-        </AnimatedItem>
+  // Get player record
+  const { data: player } = await supabase
+    .from('golf_players')
+    .select('id')
+    .eq('user_id', user.id)
+    .single();
 
-        <AnimatedItem>
-        {error ? (
-          <div className="relative glass-standard rounded-2xl overflow-hidden p-6">
-            <ShineEffect />
-            <p className="text-red-600">{error}</p>
-          </div>
-        ) : qualifiers.length === 0 ? (
-          <div className="relative glass-standard rounded-2xl overflow-hidden p-8 md:p-12 text-center">
-            <ShineEffect />
-            <div className="w-16 h-16 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-4">
-              <IconTrophy size={32} className="text-warm-400" />
-            </div>
-            <h3 className="text-lg font-medium text-warm-900 mb-2">No Qualifiers Yet</h3>
-            <p className="text-warm-500 text-sm max-w-md mx-auto">
-              You haven&apos;t been entered into any qualifiers yet. Your coach will add you to qualifiers when they&apos;re created.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4 mobile-stagger">
-            {qualifiers.map(qualifier => {
-              const statusBadge = getStatusBadge(qualifier.status, qualifier.roundsCompleted, qualifier.numRounds);
-              const canEnterRounds = qualifier.status !== 'completed' && qualifier.roundsCompleted < qualifier.numRounds;
+  if (!player) {
+    return <MyQualifiersClient qualifiers={[]} error="Player profile not found" />;
+  }
 
-              return (
-                <Link
-                  key={qualifier.id}
-                  href={`/golf/dashboard/qualifiers/${qualifier.id}`}
-                  className="block group"
-                >
-                  <div className="relative glass-standard rounded-2xl overflow-hidden p-6 hover:shadow-md transition-all">
-                    <ShineEffect />
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-semibold text-warm-900 truncate">
-                            {qualifier.name}
-                          </h3>
-                          <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${statusBadge.className}`}>
-                            {statusBadge.label}
-                          </span>
-                        </div>
+  // Get all qualifier entries for this player
+  const { data: entries, error: entriesError } = await supabase
+    .from('golf_qualifier_entries')
+    .select(`
+      rounds_completed,
+      total_score,
+      total_to_par,
+      qualifier_id,
+      qualifier:golf_qualifiers(
+        id,
+        name,
+        description,
+        course_name,
+        start_date,
+        end_date,
+        status
+      )
+    `)
+    .eq('player_id', player.id);
 
-                        <div className="flex flex-wrap items-center gap-4 text-sm text-warm-600 mb-4">
-                          <div className="flex items-center gap-1.5">
-                            <IconCalendar size={14} className="text-warm-400" />
-                            <span>{formatDate(qualifier.startDate)}</span>
-                            {qualifier.endDate && qualifier.endDate !== qualifier.startDate && (
-                              <span> - {formatDate(qualifier.endDate)}</span>
-                            )}
-                          </div>
-                          {qualifier.courseName && (
-                            <div className="flex items-center gap-1.5">
-                              <IconMapPin size={14} className="text-warm-400" />
-                              <span>{qualifier.courseName}</span>
-                            </div>
-                          )}
-                          <div className="flex items-center gap-1.5">
-                            <IconGolf size={14} className="text-warm-400" />
-                            <span>{qualifier.holesPerRound} holes/round</span>
-                          </div>
-                        </div>
+  // If query error or no entries, return empty array
+  if (entriesError || !entries || entries.length === 0) {
+    return <MyQualifiersClient qualifiers={[]} />;
+  }
 
-                        {/* Progress */}
-                        <div className="flex items-center gap-6">
-                          <div>
-                            <p className="text-xs text-warm-500 uppercase font-medium mb-1">Rounds</p>
-                            <p className="text-lg font-semibold text-warm-900">
-                              {qualifier.roundsCompleted} / {qualifier.numRounds}
-                            </p>
-                          </div>
-                          {qualifier.totalScore !== null && (
-                            <>
-                              <div>
-                                <p className="text-xs text-warm-500 uppercase font-medium mb-1">Total Score</p>
-                                <p className="text-lg font-semibold text-warm-900">{qualifier.totalScore}</p>
-                              </div>
-                              <div>
-                                <p className="text-xs text-warm-500 uppercase font-medium mb-1">To Par</p>
-                                <p className={`text-lg font-semibold ${
-                                  (qualifier.totalToPar || 0) < 0 ? 'text-primary-600' :
-                                  (qualifier.totalToPar || 0) > 0 ? 'text-red-600' :
-                                  'text-warm-900'
-                                }`}>
-                                  {formatToPar(qualifier.totalToPar)}
-                                </p>
-                              </div>
-                            </>
-                          )}
-                          {qualifier.completedRoundNumbers.length > 0 && (
-                            <div>
-                              <p className="text-xs text-warm-500 uppercase font-medium mb-1">Completed</p>
-                              <p className="text-sm text-warm-700">
-                                {qualifier.completedRoundNumbers.map(n => `R${n}`).join(', ')}
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
+  // Get all qualifier rounds for this player
+  const qualifierIds = entries.map(e => e.qualifier_id);
+  const { data: roundsData } = await supabase
+    .from('golf_rounds')
+    .select('qualifier_id, qualifier_round_number, total_score, score_to_par')
+    .eq('player_id', player.id)
+    .in('qualifier_id', qualifierIds)
+    .eq('status', 'completed');
 
-                      <div className="flex items-center gap-2">
-                        {canEnterRounds && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              router.push(`/golf/dashboard/rounds/new?qualifier=${qualifier.id}`);
-                            }}
-                            className="px-3 py-1.5 text-sm font-medium rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors"
-                          >
-                            Enter Round
-                          </button>
-                        )}
-                        <IconChevronRight size={20} className="text-warm-400 group-hover:text-warm-600 transition-colors" />
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        )}
-        </AnimatedItem>
+  const rounds = (roundsData as unknown) as Array<{
+    qualifier_id: string | null;
+    qualifier_round_number: number | null;
+    total_score: number | null;
+    score_to_par: number | null;
+  }> | null;
 
-        {/* Help Text */}
-        <AnimatedItem className="mt-8 p-4 bg-warm-100 rounded-xl">
-          <h4 className="font-medium text-warm-700 mb-2">How Qualifiers Work</h4>
-          <ul className="text-sm text-warm-600 space-y-1">
-            <li>• When entering a new round, select &ldquo;Qualifier&rdquo; as the round type</li>
-            <li>• Choose which qualifier and round number you&apos;re playing</li>
-            <li>• Your scores automatically appear on the leaderboard</li>
-            <li>• Click any qualifier above to view the full leaderboard</li>
-          </ul>
-        </AnimatedItem>
-      </div>
-    </AnimatedPage>
-  );
+  // Build result with progress info
+  type QualifierEntry = {
+    qualifier_id: string;
+    rounds_completed: number | null;
+    total_score: number | null;
+    total_to_par: number | null;
+    qualifier: {
+      id: string;
+      name: string;
+      description: string | null;
+      course_name: string | null;
+      start_date: string;
+      end_date: string | null;
+      status: string;
+    } | null;
+  };
+
+  const qualifiers: PlayerQualifierInfo[] = (entries as unknown as QualifierEntry[])
+    .filter((e) => e.qualifier && typeof e.qualifier === 'object' && !('error' in e.qualifier))
+    .map((entry) => {
+      const q = entry.qualifier as {
+        id: string;
+        name: string;
+        description: string | null;
+        course_name: string | null;
+        start_date: string;
+        end_date: string | null;
+        status: string;
+      };
+
+      const qualifierRounds = (rounds || []).filter((r) => r.qualifier_id === q.id);
+      const completedRoundNumbers = qualifierRounds
+        .filter((r) => r.qualifier_round_number !== null)
+        .map((r) => r.qualifier_round_number as number)
+        .sort((a, b) => a - b);
+
+      const totalScore = qualifierRounds.reduce((sum, r) => sum + (r.total_score || 0), 0);
+      const totalToPar = qualifierRounds.reduce((sum, r) => sum + (r.score_to_par || 0), 0);
+      const roundsCompleted = qualifierRounds.length > 0
+        ? qualifierRounds.length
+        : (entry.rounds_completed ?? 0);
+      const inferredNumRounds = q.status === 'completed'
+        ? Math.max(roundsCompleted, 1)
+        : Math.max(roundsCompleted + 1, 1);
+
+      return {
+        id: q.id,
+        name: q.name,
+        description: q.description,
+        courseName: q.course_name,
+        location: null,
+        numRounds: inferredNumRounds,
+        holesPerRound: 18,
+        startDate: q.start_date,
+        endDate: q.end_date,
+        status: (q.status || 'upcoming') as 'upcoming' | 'in_progress' | 'completed',
+        showLiveLeaderboard: true,
+        roundsCompleted,
+        completedRoundNumbers,
+        totalScore: qualifierRounds.length > 0 ? totalScore : (entry.total_score ?? null),
+        totalToPar: qualifierRounds.length > 0 ? totalToPar : (entry.total_to_par ?? null),
+      };
+    });
+
+  return <MyQualifiersClient qualifiers={qualifiers} />;
 }

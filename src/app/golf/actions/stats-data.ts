@@ -547,6 +547,7 @@ export async function getDetailedStats(
   roundId?: string | 'overall',
   filter?: StatsFilter
 ): Promise<GolfStats> {
+  try {
   const { supabase, user } = await requireAuth();
 
   if (!(await verifyPlayerAccess(supabase, user.id, playerId))) {
@@ -591,7 +592,8 @@ export async function getDetailedStats(
 
   const { data: fetchedRounds, error: roundsError } = await query;
   if (roundsError) {
-    throw roundsError;
+    console.error('[Stats] Rounds query error:', roundsError);
+    return calculateStatsFromShots([], [], []);
   }
 
   // Apply preset limits
@@ -729,6 +731,10 @@ export async function getDetailedStats(
     console.error('[Stats] Falling back to round-level stats:', error);
     return serializeDetailedStats(buildFallbackDetailedStats(roundsData));
   }
+  } catch (outerError) {
+    console.error('[Stats] getDetailedStats failed:', outerError);
+    return calculateStatsFromShots([], [], []);
+  }
 }
 
 // ============================================================================
@@ -797,6 +803,17 @@ export interface TrendAnalysisResponse {
  * Includes round-by-round data, rolling averages, and period comparisons
  */
 export async function getTrendAnalysis(playerId: string): Promise<TrendAnalysisResponse> {
+  const emptyResponse: TrendAnalysisResponse = {
+    rounds: [],
+    trends: { score: [], gir: [], fairway: [], putts: [] },
+    rollingAverages: { score5: [], score10: [], score20: [] },
+    periodComparison: {
+      last30Days: { roundCount: 0, scoringAvg: null, girPct: null, fairwayPct: null, puttsPerRound: null },
+      previous30Days: { roundCount: 0, scoringAvg: null, girPct: null, fairwayPct: null, puttsPerRound: null },
+    },
+    personalBests: { bestScore: null, bestToPar: null, bestGir: null, lowestPutts: null },
+  };
+  try {
   const { supabase, user } = await requireAuth();
 
   if (!(await verifyPlayerAccess(supabase, user.id, playerId))) {
@@ -919,6 +936,10 @@ export async function getTrendAnalysis(playerId: string): Promise<TrendAnalysisR
     periodComparison,
     personalBests,
   };
+  } catch (error) {
+    console.error('[Stats] getTrendAnalysis failed:', error);
+    return emptyResponse;
+  }
 }
 
 // Helper: Calculate rolling average
@@ -1345,6 +1366,7 @@ export interface FilterOptions {
  * Get available filter options for a player
  */
 export async function getFilterOptions(playerId: string): Promise<FilterOptions> {
+  try {
   const { supabase, user } = await requireAuth();
 
   if (!(await verifyPlayerAccess(supabase, user.id, playerId))) {
@@ -1382,6 +1404,10 @@ export async function getFilterOptions(playerId: string): Promise<FilterOptions>
   )].sort();
 
   return { courses, seasons, roundTypes };
+  } catch (error) {
+    console.error('[Stats] getFilterOptions failed:', error);
+    return { courses: [], seasons: [], roundTypes: [] };
+  }
 }
 
 // ============================================================================
@@ -1409,6 +1435,7 @@ export interface CourseBreakdownResponse {
  * Get stats broken down by course
  */
 export async function getCourseBreakdown(playerId: string): Promise<CourseBreakdownResponse> {
+  try {
   const { supabase, user } = await requireAuth();
 
   if (!(await verifyPlayerAccess(supabase, user.id, playerId))) {
@@ -1505,6 +1532,10 @@ export async function getCourseBreakdown(playerId: string): Promise<CourseBreakd
   const worstCourse = coursesWithScores[coursesWithScores.length - 1]?.courseName || null;
 
   return { courses, bestCourse, worstCourse };
+  } catch (error) {
+    console.error('[Stats] getCourseBreakdown failed:', error);
+    return { courses: [], bestCourse: null, worstCourse: null };
+  }
 }
 
 // ============================================================================
@@ -1538,6 +1569,7 @@ export interface WorstHoleResponse {
  * Get worst hole analysis
  */
 export async function getWorstHoleAnalysis(playerId: string): Promise<WorstHoleResponse> {
+  try {
   const { supabase, user } = await requireAuth();
 
   if (!(await verifyPlayerAccess(supabase, user.id, playerId))) {
@@ -1666,6 +1698,10 @@ export async function getWorstHoleAnalysis(playerId: string): Promise<WorstHoleR
     par5Average: calcAvg(par5s),
     closingHolesAverage: calcAvg(closingHoles),
   };
+  } catch (error) {
+    console.error('[Stats] getWorstHoleAnalysis failed:', error);
+    return { holes: [], worstHoles: [], bestHoles: [], par3Average: null, par4Average: null, par5Average: null, closingHolesAverage: null };
+  }
 }
 
 // ============================================================================
