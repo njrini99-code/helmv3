@@ -8025,6 +8025,7 @@ export type Database = {
           total_fairways_hit: number | null
           total_gir: number | null
           total_gir_possible: number | null
+          total_penalties: number | null
           total_putts: number | null
           total_score: number | null
           updated_at: string | null
@@ -8063,6 +8064,7 @@ export type Database = {
           total_fairways_hit?: number | null
           total_gir?: number | null
           total_gir_possible?: number | null
+          total_penalties?: number | null
           total_putts?: number | null
           total_score?: number | null
           updated_at?: string | null
@@ -8101,6 +8103,7 @@ export type Database = {
           total_fairways_hit?: number | null
           total_gir?: number | null
           total_gir_possible?: number | null
+          total_penalties?: number | null
           total_putts?: number | null
           total_score?: number | null
           updated_at?: string | null
@@ -9778,6 +9781,10 @@ export type Database = {
       }
       recalculate_team_baseball_season_stats: {
         Args: { p_season_year?: number; p_team_id: string }
+        Returns: undefined
+      }
+      refresh_player_stats_cache: {
+        Args: { p_player_id: string }
         Returns: undefined
       }
       save_partial_round_atomic: {

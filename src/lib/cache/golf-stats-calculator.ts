@@ -294,8 +294,9 @@ export async function markStatsStale(playerId: string): Promise<void> {
  * Invalidate stats cache after round completion
  * Called from submitGolfRoundComprehensive action
  */
-export async function invalidateOnRoundComplete(playerId: string, roundId: string): Promise<void> {
+export async function invalidateOnRoundComplete(playerId: string, roundId: string): Promise<{ warnings: string[] }> {
   const supabase = await createClient();
+  const warnings: string[] = [];
 
   // 1. Invalidate the Redis layer
   await invalidateGolf.playerStats(playerId);
@@ -309,18 +310,26 @@ export async function invalidateOnRoundComplete(playerId: string, roundId: strin
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: sgRoundError } = await (supabase as any).rpc('recalculate_round_strokes_gained', { p_round_id: roundId });
-    if (sgRoundError) console.error('[Stats] recalculate_round_strokes_gained failed:', roundId, sgRoundError);
+    if (sgRoundError) {
+      console.error('[Stats] recalculate_round_strokes_gained failed:', roundId, sgRoundError);
+      warnings.push(`Round SG recalculation failed: ${sgRoundError.message}`);
+    }
   } catch (e) {
     console.error('[Stats] recalculate_round_strokes_gained threw:', roundId, e);
+    warnings.push('Round SG recalculation threw an exception.');
   }
 
   // 4. Update player stats cache with aggregated SG values
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: sgPlayerError } = await (supabase as any).rpc('update_player_stats_strokes_gained', { p_player_id: playerId });
-    if (sgPlayerError) console.error('[Stats] update_player_stats_strokes_gained failed:', playerId, sgPlayerError);
+    if (sgPlayerError) {
+      console.error('[Stats] update_player_stats_strokes_gained failed:', playerId, sgPlayerError);
+      warnings.push(`Player SG aggregation failed: ${sgPlayerError.message}`);
+    }
   } catch (e) {
     console.error('[Stats] update_player_stats_strokes_gained threw:', playerId, e);
+    warnings.push('Player SG aggregation threw an exception.');
   }
 
   // 5. Trigger full stats recalculation and await it
@@ -329,7 +338,15 @@ export async function invalidateOnRoundComplete(playerId: string, roundId: strin
     await refreshStatsCache(playerId);
   } catch (err) {
     console.error('[Stats] refreshStatsCache failed:', playerId, err);
+    warnings.push('Stats cache refresh failed.');
   }
+
+  // If any SG RPCs failed, re-mark stats as stale so the next read retries
+  if (warnings.length > 0) {
+    await markStatsStale(playerId).catch(() => {});
+  }
+
+  return { warnings };
 }
 
 // ============================================================================

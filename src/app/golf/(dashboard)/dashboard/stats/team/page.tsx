@@ -28,6 +28,13 @@ export interface TeamPlayerStats {
   putts_per_round: number | null;
   birdies_per_round: number | null;
   scoring_trend: number | null; // Difference from previous period
+  // Per-format stats (9 vs 18 holes)
+  rounds_played_18: number;
+  rounds_played_9: number;
+  scoring_average_18: number | null;
+  scoring_average_9: number | null;
+  best_round_18: number | null;
+  best_round_9: number | null;
 }
 
 export default async function TeamStatsPage() {
@@ -157,23 +164,47 @@ export default async function TeamStatsPage() {
     const playerRounds = roundsByPlayer[player.id] || [];
     const scoredRounds = playerRounds.filter(r => r.total_score !== null);
 
-    // Normalize to 18-hole equivalents
+    // Normalize to 18-hole equivalents + split by format
     let totalStrokes = 0;
     let totalHolesScored = 0;
+    let totalStrokes18 = 0;
+    let totalStrokes9 = 0;
+    let roundsPlayed18 = 0;
+    let roundsPlayed9 = 0;
     const normalizedScores: number[] = [];
+    const scores18: number[] = [];
+    const scores9: number[] = [];
     for (const r of scoredRounds) {
       const hp = r.holes_played ?? 18;
-      totalStrokes += r.total_score as number;
+      const score = r.total_score as number;
+      totalStrokes += score;
       totalHolesScored += hp;
-      normalizedScores.push(Math.round((r.total_score as number) * (18 / hp)));
+      normalizedScores.push(Math.round(score * (18 / hp)));
+      if (hp <= 9) {
+        totalStrokes9 += score;
+        roundsPlayed9++;
+        scores9.push(score);
+      } else {
+        totalStrokes18 += score;
+        roundsPlayed18++;
+        scores18.push(score);
+      }
     }
 
     const roundsPlayed = scoredRounds.length;
     const scoringAverage = totalHolesScored > 0
       ? (totalStrokes / totalHolesScored) * 18
       : null;
+    const scoringAverage18 = roundsPlayed18 > 0
+      ? totalStrokes18 / roundsPlayed18
+      : null;
+    const scoringAverage9 = roundsPlayed9 > 0
+      ? totalStrokes9 / roundsPlayed9
+      : null;
     const bestRound = normalizedScores.length > 0 ? Math.min(...normalizedScores) : null;
     const worstRound = normalizedScores.length > 0 ? Math.max(...normalizedScores) : null;
+    const bestRound18 = scores18.length > 0 ? Math.min(...scores18) : null;
+    const bestRound9 = scores9.length > 0 ? Math.min(...scores9) : null;
 
     // Calculate scoring trend (last 5 vs previous 5) using normalized scores
     let scoringTrend: number | null = null;
@@ -250,6 +281,12 @@ export default async function TeamStatsPage() {
       putts_per_round: puttsPerRound,
       birdies_per_round: birdiesPerRound,
       scoring_trend: scoringTrend,
+      rounds_played_18: roundsPlayed18,
+      rounds_played_9: roundsPlayed9,
+      scoring_average_18: scoringAverage18,
+      scoring_average_9: scoringAverage9,
+      best_round_18: bestRound18,
+      best_round_9: bestRound9,
     };
   });
 

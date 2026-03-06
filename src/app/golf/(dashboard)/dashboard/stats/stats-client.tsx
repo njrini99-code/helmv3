@@ -44,6 +44,8 @@ import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { useSidebar } from '@/contexts/sidebar-context';
 import { useGolfUser } from '@/contexts/golf-user-context';
 import { cn } from '@/lib/utils';
+import { FormatToggle } from '@/components/golf/stats/sections/shared-primitives';
+import type { HoleFormat } from '@/components/golf/stats/sections/shared-primitives';
 
 // ============================================================================
 // TYPES
@@ -67,6 +69,13 @@ interface PlayerStats {
   recent_scores?: number[];
   trend?: 'up' | 'down' | 'stable';
   last_played?: string;
+  // Per-format stats
+  rounds_played_18: number;
+  rounds_played_9: number;
+  scoring_average_18: number | null;
+  scoring_average_9: number | null;
+  best_round_18: number | null;
+  best_round_9: number | null;
 }
 
 // Sparkline is imported from GolfStatsDisplay
@@ -179,14 +188,24 @@ function PlayerCard({
   player,
   rank,
   onClick,
+  holeFormat = 'all',
 }: {
   player: Player & { stats?: PlayerStats };
   rank: number;
   onClick: () => void;
+  holeFormat?: HoleFormat;
 }) {
   const initials = `${player.first_name?.[0] || '?'}${player.last_name?.[0] || '?'}`;
   const trend = player.stats?.trend || 'stable';
   const recentScores = player.stats?.recent_scores || [];
+
+  // Resolve format-aware stats
+  const scoringAvg = holeFormat === '18' ? player.stats?.scoring_average_18
+    : holeFormat === '9' ? player.stats?.scoring_average_9
+    : player.stats?.scoring_average;
+  const bestRound = holeFormat === '18' ? player.stats?.best_round_18
+    : holeFormat === '9' ? player.stats?.best_round_9
+    : player.stats?.best_round;
 
   return (
     <button
@@ -233,14 +252,14 @@ function PlayerCard({
         <div className="flex items-center gap-3 md:gap-6">
           <div className="text-center">
             <p className="text-2xl font-bold text-warm-900 tabular-nums">
-              {player.stats?.scoring_average?.toFixed(1) || '--'}
+              {scoringAvg?.toFixed(1) || '--'}
             </p>
             <p className="text-xs text-warm-500 uppercase tracking-wide">Avg</p>
           </div>
 
           <div className="text-center hidden md:block">
             <p className="text-lg font-semibold text-warm-700 tabular-nums">
-              {player.stats?.best_round || '--'}
+              {bestRound || '--'}
             </p>
             <p className="text-xs text-warm-500 uppercase tracking-wide">Best</p>
           </div>
@@ -288,6 +307,9 @@ export default function StatsClient({
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(initialPlayerId ?? null);
   const [selectedPlayer, setSelectedPlayer] = useState<(Player & { stats?: PlayerStats }) | null>(null);
   const [playerName, setPlayerName] = useState(initialPlayerName);
+
+  // Format toggle for coach roster view
+  const [coachHoleFormat, setCoachHoleFormat] = useState<HoleFormat>('all');
 
   // Search and filter state
   const [searchQuery, setSearchQuery] = useState('');
@@ -385,23 +407,45 @@ export default function StatsClient({
     return result;
   }, [players, searchQuery, classFilter, sortBy]);
 
-  // Calculate team stats
+  // Calculate team stats (format-aware)
   const teamStats = useMemo(() => {
-    const playersWithStats = players.filter(p => p.stats?.scoring_average);
-    const totalRounds = players.reduce((sum, p) => sum + (p.stats?.rounds_played || 0), 0);
+    // Pick the right scoring average based on format
+    const getScoringAvg = (p: Player & { stats?: PlayerStats }) => {
+      if (coachHoleFormat === '18') return p.stats?.scoring_average_18 ?? null;
+      if (coachHoleFormat === '9') return p.stats?.scoring_average_9 ?? null;
+      return p.stats?.scoring_average ?? null;
+    };
+    const getRounds = (p: Player & { stats?: PlayerStats }) => {
+      if (coachHoleFormat === '18') return p.stats?.rounds_played_18 ?? 0;
+      if (coachHoleFormat === '9') return p.stats?.rounds_played_9 ?? 0;
+      return p.stats?.rounds_played ?? 0;
+    };
+
+    const playersWithStats = players.filter(p => getScoringAvg(p) !== null);
+    const totalRounds = players.reduce((sum, p) => sum + getRounds(p), 0);
     const teamAvg = playersWithStats.length > 0
-      ? playersWithStats.reduce((sum, p) => sum + (p.stats?.scoring_average || 0), 0) / playersWithStats.length
+      ? playersWithStats.reduce((sum, p) => sum + (getScoringAvg(p) || 0), 0) / playersWithStats.length
       : 0;
 
     const sortedByAvg = [...playersWithStats].sort((a, b) =>
-      (a.stats?.scoring_average || 999) - (b.stats?.scoring_average || 999)
+      (getScoringAvg(a) || 999) - (getScoringAvg(b) || 999)
     );
     const top5 = sortedByAvg.slice(0, 5);
     const top5Avg = top5.length > 0
-      ? top5.reduce((sum, p) => sum + (p.stats?.scoring_average || 0), 0) / top5.length
+      ? top5.reduce((sum, p) => sum + (getScoringAvg(p) || 0), 0) / top5.length
       : 0;
 
     const improvingCount = players.filter(p => p.stats?.trend === 'up').length;
+
+    // Format counts for the toggle
+    let h18 = 0;
+    let h9 = 0;
+    let all = 0;
+    for (const p of players) {
+      h18 += p.stats?.rounds_played_18 ?? 0;
+      h9 += p.stats?.rounds_played_9 ?? 0;
+      all += p.stats?.rounds_played ?? 0;
+    }
 
     return {
       teamAvg: teamAvg.toFixed(1),
@@ -409,8 +453,9 @@ export default function StatsClient({
       top5Avg: top5Avg.toFixed(1),
       improvingCount,
       totalPlayers: players.length,
+      formatCounts: { all, h18, h9 },
     };
-  }, [players]);
+  }, [players, coachHoleFormat]);
 
   // Get unique graduation years for filter
   const graduationYears = useMemo(() => {
@@ -539,9 +584,24 @@ export default function StatsClient({
       // Compute per-hole average then express as 18-hole equivalent
       let totalStrokes = 0;
       let totalHoles = 0;
+      let totalStrokes18 = 0;
+      let totalStrokes9 = 0;
+      let roundsPlayed18 = 0;
+      let roundsPlayed9 = 0;
+      const scores18: number[] = [];
+      const scores9: number[] = [];
       for (const r of rounds) {
         totalStrokes += r.score;
         totalHoles += r.holesPlayed;
+        if (r.holesPlayed <= 9) {
+          totalStrokes9 += r.score;
+          roundsPlayed9++;
+          scores9.push(r.score);
+        } else {
+          totalStrokes18 += r.score;
+          roundsPlayed18++;
+          scores18.push(r.score);
+        }
       }
 
       // Calculate trend based on normalized recent scores
@@ -576,6 +636,12 @@ export default function StatsClient({
           recent_scores: recentNormalized.reverse(), // Oldest to newest for sparkline
           trend,
           last_played: lastPlayed,
+          rounds_played_18: roundsPlayed18,
+          rounds_played_9: roundsPlayed9,
+          scoring_average_18: roundsPlayed18 > 0 ? totalStrokes18 / roundsPlayed18 : null,
+          scoring_average_9: roundsPlayed9 > 0 ? totalStrokes9 / roundsPlayed9 : null,
+          best_round_18: scores18.length > 0 ? Math.min(...scores18) : null,
+          best_round_9: scores9.length > 0 ? Math.min(...scores9) : null,
         }
       };
     });
@@ -777,7 +843,15 @@ export default function StatsClient({
   // ============================================================================
 
   if (loading) {
-    return <DetailedStatsSkeleton />;
+    return (
+      <div className="flex items-center justify-center min-h-full">
+        <div className="space-y-3 w-48">
+          <div className="h-4 w-full bg-warm-200 rounded skeleton-shimmer" />
+          <div className="h-4 w-3/4 bg-warm-200 rounded skeleton-shimmer" />
+          <div className="h-4 w-1/2 bg-warm-200 rounded skeleton-shimmer" />
+        </div>
+      </div>
+    );
   }
 
   // Coach view - show roster with premium design
@@ -806,6 +880,15 @@ export default function StatsClient({
                 <p className="text-warm-500 text-sm md:text-base">{players.length} players on your roster</p>
               </div>
             </div>
+          </div>
+
+          {/* Format Toggle */}
+          <div className="flex items-center mb-4">
+            <FormatToggle
+              value={coachHoleFormat}
+              onChange={setCoachHoleFormat}
+              counts={teamStats.formatCounts}
+            />
           </div>
 
           {/* KPI Summary Row */}
@@ -839,9 +922,13 @@ export default function StatsClient({
 
           {/* Team Insights Bar */}
           {players.length >= 3 && (() => {
-            const playersWithScores = players.filter(p => p.stats?.scoring_average);
+            const getAvg = (p: Player & { stats?: PlayerStats }) =>
+              coachHoleFormat === '18' ? p.stats?.scoring_average_18
+                : coachHoleFormat === '9' ? p.stats?.scoring_average_9
+                : p.stats?.scoring_average;
+            const playersWithScores = players.filter(p => getAvg(p) != null);
             const bestPlayer = playersWithScores.length > 0
-              ? [...playersWithScores].sort((a, b) => (a.stats?.scoring_average || 999) - (b.stats?.scoring_average || 999))[0]
+              ? [...playersWithScores].sort((a, b) => (getAvg(a) || 999) - (getAvg(b) || 999))[0]
               : null;
             const mostImproved = playersWithScores.filter(p => p.stats?.trend === 'up');
             const needsAttention = playersWithScores.filter(p => p.stats?.trend === 'down');
@@ -855,7 +942,7 @@ export default function StatsClient({
                     <div className="flex items-center gap-2">
                       <span className="text-primary-600 font-medium">Top Performer:</span>
                       <span className="text-warm-700">
-                        {bestPlayer.first_name} {bestPlayer.last_name} ({bestPlayer.stats?.scoring_average?.toFixed(1)} avg)
+                        {bestPlayer.first_name} {bestPlayer.last_name} ({getAvg(bestPlayer)?.toFixed(1)} avg)
                       </span>
                     </div>
                   )}
@@ -955,6 +1042,7 @@ export default function StatsClient({
                   player={player}
                   rank={index + 1}
                   onClick={() => handlePlayerClick(player.id)}
+                  holeFormat={coachHoleFormat}
                 />
               ))}
             </div>

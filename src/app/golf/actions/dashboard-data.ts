@@ -876,17 +876,6 @@ export async function getPlayerDashboardData(
 // Note: unstable_cache was removed because it wraps functions that call
 // cookies() via createClient(), which is not supported in Next.js 16.
 // The page is force-dynamic anyway, so caching provides minimal benefit.
-// These are thin async wrappers because 'use server' files can only
-// export async functions (not const aliases).
 
-export async function getCachedCoachDashboardData(
-  ...args: Parameters<typeof getCoachDashboardData>
-) {
-  return getCoachDashboardData(...args);
-}
-
-export async function getCachedPlayerDashboardData(
-  ...args: Parameters<typeof getPlayerDashboardData>
-) {
-  return getPlayerDashboardData(...args);
-}
+export const getCachedCoachDashboardData = getCoachDashboardData;
+export const getCachedPlayerDashboardData = getPlayerDashboardData;

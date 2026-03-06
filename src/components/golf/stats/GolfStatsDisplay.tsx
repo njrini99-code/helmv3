@@ -7,7 +7,8 @@ import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { StatisticalStrengthWeakness } from '@/lib/golf/strokes-gained';
 import ProgressStats from './ProgressStats';
 import ShotDispersionChart from './ShotDispersionChart';
-import { tabContentVariants } from './sections/shared-primitives';
+import { tabContentVariants, FormatToggle } from './sections/shared-primitives';
+import type { HoleFormat } from './sections/shared-primitives';
 import {
   ScoringStats, DrivingStats, ApproachStats, PuttingStats,
   ScramblingStats, StrokesGainedStats, OverviewStats, AnalysisStats,
@@ -91,6 +92,7 @@ export default function GolfStatsDisplay({
   statisticalStrengths, statisticalWeaknesses,
 }: StatsDisplayProps) {
   const [activeCategory, setActiveCategory] = useState<StatsCategory>(isCoachView ? 'overview' : 'scoring');
+  const [holeFormat, setHoleFormat] = useState<HoleFormat>('all');
   const [showFilters, setShowFilters] = useState(false);
   const [showCourseDropdown, setShowCourseDropdown] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -204,6 +206,19 @@ export default function GolfStatsDisplay({
           </AnimatePresence>
         </motion.div>
 
+        {/* Format Toggle — 9H / 18H / All */}
+        <div className="flex items-center justify-between mb-4 print:hidden">
+          <FormatToggle
+            value={holeFormat}
+            onChange={setHoleFormat}
+            counts={{
+              all: stats.roundsPlayed,
+              h18: stats.roundsPlayed18,
+              h9: stats.roundsPlayed9,
+            }}
+          />
+        </div>
+
         {/* Category Pills */}
         <motion.div className="pills-scroll pb-4 mb-4 -mx-4 px-4" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
           {categories.map((cat, idx) => (
@@ -222,10 +237,10 @@ export default function GolfStatsDisplay({
 
         <AnimatePresence mode="wait">
           <motion.div key={activeCategory} variants={tabContentVariants} initial="initial" animate="animate" exit="exit" transition={{ type: 'spring', stiffness: 300, damping: 30 }}>
-            {activeCategory === 'overview' && <OverviewStats stats={stats} playerName={playerName} playerProfile={playerProfile} trendData={trendData} statisticalStrengths={statisticalStrengths} statisticalWeaknesses={statisticalWeaknesses} />}
+            {activeCategory === 'overview' && <OverviewStats stats={stats} playerName={playerName} playerProfile={playerProfile} trendData={trendData} statisticalStrengths={statisticalStrengths} statisticalWeaknesses={statisticalWeaknesses} holeFormat={holeFormat} />}
             {activeCategory === 'progress' && <ProgressStats stats={stats} rounds={rounds} />}
             {activeCategory === 'dispersion' && <ShotDispersionChart stats={stats} />}
-            {activeCategory === 'scoring' && <ScoringStats stats={stats} />}
+            {activeCategory === 'scoring' && <ScoringStats stats={stats} holeFormat={holeFormat} />}
             {activeCategory === 'driving' && <DrivingStats stats={stats} />}
             {activeCategory === 'approach' && <ApproachStats stats={stats} />}
             {activeCategory === 'putting' && <PuttingStats stats={stats} />}

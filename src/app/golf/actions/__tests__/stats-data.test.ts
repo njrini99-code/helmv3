@@ -56,7 +56,7 @@ import {
   getFilterOptions,
 } from '../stats-data';
 
-import type { SummaryStatsResponse, FilterOptions } from '../stats-data-types';
+import type { SummaryStatsResponse, FilterOptions } from '../stats-data';
 
 // ---------------------------------------------------------------------------
 // Tests

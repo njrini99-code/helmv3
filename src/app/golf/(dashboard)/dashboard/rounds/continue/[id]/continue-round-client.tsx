@@ -639,7 +639,7 @@ export default function ContinueRoundClient({
     const toPar = totalScore - totalPar;
 
     return (
-      <div className="min-h-full bg-transparent flex items-center justify-center">
+      <div className="min-h-dvh bg-transparent flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-8">
           <div className="flex items-center justify-center gap-2 mx-auto mb-6">
             <span className="w-3 h-3 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />

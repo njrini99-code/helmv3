@@ -9,12 +9,6 @@ import { CACHE_TAGS } from '@/lib/cache/tags';
 import type { HoleStats, ShotRecord } from '@/lib/types/golf';
 import { z } from 'zod';
 import {
-  comprehensiveShotSchema,
-  comprehensiveHoleSchema,
-  partialRoundSchema,
-  shotUpdateSchema,
-} from './golf-schemas';
-import {
   requireGolfCoach,
   verifyGolfTeamOwnership,
   AuthorizationError,
@@ -47,23 +41,6 @@ export type ActionResult<T = void> =
 // ============================================================================
 // ACTION RESULT DATA TYPES
 // ============================================================================
-
-/** Putt details for shot tracking */
-interface PuttDetail {
-  shot_id: string;
-  miss_tags: string[];
-  break_direction: string | null;
-  distance_feet: number | null;
-  made: boolean;
-}
-
-/** Approach miss details for shot tracking */
-interface ApproachMissDetail {
-  shot_id: string;
-  miss_direction: string;
-  lie_type: string | null;
-  distance_from_green_yards: number | null;
-}
 
 // Golf event types: 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other' | 'class'
 
@@ -337,7 +314,63 @@ const golfRoundSchema = z.object({
   holes: z.array(holeSchema).min(1).max(18),
 });
 
-// comprehensiveShotSchema and comprehensiveHoleSchema are imported from ./golf-schemas
+/** @internal Exported for testing */
+export const comprehensiveShotSchema = z.object({
+  shotNumber: z.number().int().min(1),
+  shotType: z.enum(['tee', 'approach', 'around_green', 'putting', 'penalty']),
+  clubType: z.string().min(1),
+  lieBefore: z.enum(['tee', 'fairway', 'rough', 'sand', 'green', 'other']),
+  distanceToHoleBefore: z.number().min(0),
+  distanceUnitBefore: z.enum(['yards', 'feet']),
+  result: z.enum(['fairway', 'rough', 'sand', 'green', 'hole', 'other', 'penalty']),
+  distanceToHoleAfter: z.number().min(0),
+  distanceUnitAfter: z.enum(['yards', 'feet']),
+  shotDistance: z.number().min(0),
+  missDirection: z.string().optional(),
+  puttBreak: z.enum(['right_to_left', 'left_to_right', 'straight', 'multiple']).optional(),
+  puttSlope: z.enum(['uphill', 'downhill', 'level', 'severe']).optional(),
+  isPenalty: z.boolean(),
+  penaltyType: z.enum(['ob', 'water', 'unplayable', 'lost']).optional(),
+  puttMissTags: z.array(z.string()).optional(),
+  puttDistanceFeet: z.number().min(0).optional(),
+  approachMissDirection: z.string().optional(),
+  approachMissLieType: z.enum(['fairway', 'rough', 'bunker', 'hazard']).optional(),
+});
+
+/** @internal Exported for testing */
+export const comprehensiveHoleSchema = z.object({
+  holeNumber: z.number().int().min(1).max(18),
+  par: z.number().int().min(3).max(6),
+  yardage: z.number().min(0),
+  score: z.number().int().min(1).max(20),
+  putts: z.number().int().min(0).max(10),
+  fairwayHit: z.boolean().nullable(),
+  greenInRegulation: z.boolean(),
+  penaltyStrokes: z.number().int().min(0),
+  scrambleAttempt: z.boolean(),
+  scrambleMade: z.boolean(),
+  sandSaveAttempt: z.boolean(),
+  sandSaveMade: z.boolean(),
+  shots: z.array(comprehensiveShotSchema).min(1),
+  // Stat fields calculated from shots
+  drivingDistance: z.number().nullable().optional(),
+  usedDriver: z.boolean().nullable().optional(),
+  driveMissDirection: z.string().nullable().optional(),
+  approachDistance: z.number().nullable().optional(),
+  approachLie: z.string().nullable().optional(),
+  approachProximity: z.number().nullable().optional(),
+  approachMissDirection: z.string().nullable().optional(),
+  firstPuttDistance: z.number().nullable().optional(),
+  firstPuttLeave: z.number().nullable().optional(),
+  firstPuttBreak: z.string().nullable().optional(),
+  firstPuttSlope: z.string().nullable().optional(),
+  firstPuttMissDirection: z.string().nullable().optional(),
+  holedOutDistance: z.number().nullable().optional(),
+  holedOutType: z.string().nullable().optional(),
+}).refine(
+  (hole) => !(hole.score === 1 && (hole.par === 4 || hole.par === 5)),
+  { message: 'A score of 1 on a par 4 or par 5 hole is not allowed.' }
+);
 
 const golfRoundComprehensiveSchema = z.object({
   courseName: z.string().min(1).max(200),
@@ -357,7 +390,70 @@ const golfRoundComprehensiveSchema = z.object({
   qualifierRoundNumber: z.number().int().min(1).optional(),
 });
 
-// partialRoundSchema and shotUpdateSchema are imported from ./golf-schemas
+/** @internal Exported for testing */
+export const partialRoundSchema = z.object({
+  courseName: z.string().min(1).max(200),
+  courseCity: z.string().max(100).optional(),
+  courseState: z.string().max(2).optional(),
+  courseRating: z.number().min(60).max(80).optional().nullable(),
+  courseSlope: z.number().int().min(55).max(155).optional().nullable(),
+  teesPlayed: z.string().max(50).optional(),
+  courseId: z.string().uuid().optional().nullable(),
+  roundType: z.enum(['practice', 'tournament', 'qualifier']),
+  roundDate: z.string(),
+  currentHole: z.number().int().min(1).max(18).optional().nullable(),
+  holesToPlay: z.union([z.literal(9), z.literal(18)]).optional().nullable(),
+  qualifierId: z.string().uuid().optional().nullable(),
+  qualifierRoundNumber: z.number().int().min(1).optional().nullable(),
+  holes: z.array(z.object({
+    holeNumber: z.number().int().min(1).max(18),
+    par: z.number().int().min(3).max(6),
+    yardage: z.number().min(0),
+    score: z.number().int().min(0).max(30).optional().nullable(),
+    putts: z.number().int().min(0).max(15).optional().nullable(),
+    fairwayHit: z.boolean().optional().nullable(),
+    greenInRegulation: z.boolean().optional().nullable(),
+    penaltyStrokes: z.number().int().min(0).max(10).optional().nullable(),
+    scrambleAttempt: z.boolean().optional().nullable(),
+    scrambleMade: z.boolean().optional().nullable(),
+    sandSaveAttempt: z.boolean().optional().nullable(),
+    sandSaveMade: z.boolean().optional().nullable(),
+    shots: z.array(comprehensiveShotSchema).optional(),
+  }).passthrough()).max(18),
+  inProgressShots: z.array(z.object({
+    holeNumber: z.number().int().min(1).max(18),
+    shots: z.array(comprehensiveShotSchema),
+  })).optional(),
+  holeConfigs: z.array(z.object({
+    holeNumber: z.number().int().min(1).max(18),
+    par: z.number().int().min(3).max(6),
+    yardage: z.number().min(0).optional().nullable(),
+  })).optional(),
+});
+
+/** @internal Exported for testing */
+export const shotUpdateSchema = z.object({
+  shot_type: z.enum(['tee', 'approach', 'around_green', 'putting', 'penalty']).optional(),
+  club_type: z.enum(['driver', 'non_driver', 'putter']).optional(),
+  lie_before: z.enum(['tee', 'fairway', 'rough', 'sand', 'green', 'other']).optional(),
+  lie_after: z.enum(['tee', 'fairway', 'rough', 'sand', 'green', 'other', 'penalty']).nullable().optional(),
+  distance_to_hole_before: z.number().min(0).optional(),
+  distance_unit_before: z.enum(['yards', 'feet']).optional(),
+  result: z.enum(['fairway', 'rough', 'sand', 'green', 'hole', 'other', 'penalty']).optional(),
+  distance_to_hole_after: z.number().min(0).optional(),
+  distance_unit_after: z.enum(['yards', 'feet']).optional(),
+  shot_distance: z.number().min(0).optional(),
+  miss_direction: z.string().nullable().optional(),
+  putt_break: z.enum(['right_to_left', 'left_to_right', 'straight', 'multiple']).nullable().optional(),
+  putt_slope: z.enum(['uphill', 'downhill', 'level', 'severe']).nullable().optional(),
+  putt_distance_feet: z.number().min(0).nullable().optional(),
+  putt_made: z.boolean().nullable().optional(),
+  is_penalty: z.boolean().optional(),
+  penalty_type: z.enum(['ob', 'water', 'unplayable', 'lost']).nullable().optional(),
+  putt_miss_tags: z.array(z.string()).nullable().optional(),
+  approach_miss_direction: z.string().nullable().optional(),
+  approach_miss_lie_type: z.string().nullable().optional(),
+}).refine(data => Object.keys(data).length > 0, 'At least one field is required');
 
 const golfEventSchema = z.object({
   title: z.string().min(1).max(200),
@@ -521,30 +617,6 @@ interface GolfQualifierInput {
   playerIds: string[];
 }
 
-interface GolfShotInsert {
-  round_id: string;
-  hole_id: string | undefined;
-  hole_number: number;
-  shot_number: number;
-  shot_type: string;
-  club_type: string;
-  lie_before: string;
-  lie_after: string | null;
-  distance_to_hole_before: number;
-  distance_unit_before: string;
-  result: string;
-  distance_to_hole_after: number | null;
-  distance_unit_after: string | null;
-  shot_distance: number | null;
-  miss_direction: string | null;
-  putt_break: string | null;
-  putt_slope: string | null;
-  putt_distance_feet: number | null;
-  putt_made: boolean | null;
-  is_penalty: boolean;
-  penalty_type: string | null;
-}
-
 // deriveLieAfterFromResult, deriveLieAfter imported from '@/lib/utils/shot-helpers'
 
 function derivePuttDistanceFeet(shot: ShotRecord): number | null {
@@ -609,6 +681,15 @@ export async function submitGolfRoundComprehensive(
   try {
     // Validate input
     golfRoundComprehensiveSchema.parse(data);
+
+    // Reject impossibly low scores
+    const validationTotalScore = data.holes.reduce((sum, h) => sum + h.score, 0);
+    if (validationTotalScore < 40) {
+      return { success: false, error: 'Total score appears invalid. Please check your scorecard.' };
+    }
+    if (data.holes.every(h => h.putts === 0)) {
+      return { success: false, error: 'A round with zero putts on every hole is not valid.' };
+    }
 
     const supabase = await createClient();
 
@@ -794,9 +875,8 @@ export async function submitGolfRoundComprehensive(
       );
 
       if (rpcError) {
-        console.error('[submitGolfRoundComprehensive] RPC error:', rpcError.message, rpcError.details, rpcError.hint);
         logError(new Error(rpcError.message), undefined, { action: 'submitGolfRoundComprehensive.rpc' });
-        return { success: false, error: `Failed to submit round: ${rpcError.message}` };
+        return { success: false, error: 'Failed to submit round. Please try again.' };
       }
 
       if (rpcResult && !rpcResult.success) {
@@ -805,95 +885,44 @@ export async function submitGolfRoundComprehensive(
 
       round = { id: existingRoundId };
     } else {
-      // New round: insert round, then holes, shots, and detail tables
+      // Insert as draft — stats trigger only fires when status='completed'
       const { data: newRound, error: roundError } = await supabase
         .from('golf_rounds')
-        .insert(roundData)
-        .select()
+        .insert({ ...roundData, status: 'draft' })
+        .select('id')
         .single();
 
       if (roundError || !newRound) {
         return { success: false, error: 'Failed to save round. Please try again.' };
       }
-      round = newRound;
 
-      // Insert holes
-      const holesData = holesPayload.map(h => ({ round_id: round.id, ...h }));
-      const { data: insertedHoles, error: holesError } = await supabase
-        .from('golf_holes')
-        .insert(holesData)
-        .select('id, hole_number');
-
-      if (holesError) {
-        await supabase.from('golf_rounds').delete().eq('id', round.id).eq('player_id', player.id);
-        return { success: false, error: 'Failed to save hole data. Please try again.' };
-      }
-
-      const holeIdMap = new Map(insertedHoles?.map(h => [h.hole_number, h.id]) || []);
-
-      // Insert shots
-      const allShots: GolfShotInsert[] = [];
-      for (const group of shotsPayload) {
-        const holeId = holeIdMap.get(group.hole_number);
-        for (const shot of group.shots) {
-          allShots.push({
-            round_id: round.id,
-            hole_id: holeId,
-            hole_number: group.hole_number,
-            ...shot,
-          });
+      // Atomically set status='completed' + insert holes/shots inside one transaction.
+      // The stats trigger fires AFTER all hole data exists.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: rpcResult, error: rpcError } = await (supabase as any).rpc(
+        'submit_round_atomic',
+        {
+          p_round_id: newRound.id,
+          p_round_data: roundData,
+          p_holes: holesPayload,
+          p_shots: shotsPayload,
+          p_putt_details: puttDetailsPayload,
+          p_approach_details: approachDetailsPayload,
         }
+      );
+
+      if (rpcError) {
+        await supabase.from('golf_rounds').delete().eq('id', newRound.id).eq('player_id', player.id);
+        logError(new Error(rpcError.message), undefined, { action: 'submitGolfRoundComprehensive.rpc.new' });
+        return { success: false, error: 'Failed to submit round. Please try again.' };
       }
 
-      if (allShots.length > 0) {
-        const { data: insertedShots, error: shotsError } = await supabase
-          .from('golf_shots')
-          .insert(allShots)
-          .select('id, hole_number, shot_number, shot_type');
-
-        if (shotsError) {
-          await supabase.from('golf_holes').delete().eq('round_id', round.id);
-          await supabase.from('golf_rounds').delete().eq('id', round.id).eq('player_id', player.id);
-          return { success: false, error: 'Failed to save shot data. Please try again.' };
-        } else if (insertedShots) {
-          const shotIdMap = new Map<string, string>();
-          for (const shot of insertedShots) {
-            shotIdMap.set(`${shot.hole_number}-${shot.shot_number}`, shot.id);
-          }
-
-          // Insert putt details
-          const puttDetails: PuttDetail[] = puttDetailsPayload
-            .map(p => {
-              const shotId = shotIdMap.get(`${p.hole_number}-${p.shot_number}`);
-              if (!shotId) return null;
-              return { shot_id: shotId, miss_tags: p.miss_tags, break_direction: p.break_direction, distance_feet: p.distance_feet, made: p.made };
-            })
-            .filter((p): p is PuttDetail => p !== null);
-
-          if (puttDetails.length > 0) {
-            try {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              await (supabase as any).from('putt_details').insert(puttDetails);
-            } catch { /* non-critical */ }
-          }
-
-          // Insert approach miss details
-          const approachDetails: ApproachMissDetail[] = approachDetailsPayload
-            .map(a => {
-              const shotId = shotIdMap.get(`${a.hole_number}-${a.shot_number}`);
-              if (!shotId) return null;
-              return { shot_id: shotId, miss_direction: a.miss_direction, lie_type: a.lie_type, distance_from_green_yards: a.distance_from_green_yards };
-            })
-            .filter((a): a is ApproachMissDetail => a !== null);
-
-          if (approachDetails.length > 0) {
-            try {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              await (supabase as any).from('approach_miss_details').insert(approachDetails);
-            } catch { /* non-critical */ }
-          }
-        }
+      if (rpcResult && !rpcResult.success) {
+        await supabase.from('golf_rounds').delete().eq('id', newRound.id).eq('player_id', player.id);
+        return { success: false, error: rpcResult.error || 'Failed to submit round.' };
       }
+
+      round = { id: newRound.id };
     }
 
     // If this is a qualifier round, update the qualifier entry stats
@@ -905,9 +934,13 @@ export async function submitGolfRoundComprehensive(
 
     // Invalidate stats cache BEFORE revalidating paths so Next.js regeneration
     // picks up fresh data. Awaiting ensures the DB cache is rebuilt.
-    await invalidateOnRoundComplete(player.id, round.id).catch((err) => {
-      console.error('[Golf] Failed to invalidate stats cache after round:', player.id, err);
+    const cacheResult = await invalidateOnRoundComplete(player.id, round.id).catch((err) => {
+      console.error('[Golf] Failed to invalidate stats cache:', player.id, err);
+      return { warnings: ['Stats cache update failed.'] };
     });
+    if (cacheResult.warnings.length > 0) {
+      console.warn('[Golf] Stats warnings after round submit:', cacheResult.warnings);
+    }
 
     revalidatePath('/golf/dashboard');
     revalidatePath('/golf/dashboard/rounds');
@@ -942,9 +975,7 @@ export async function submitGolfRoundComprehensive(
 
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const issues = error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
-      console.error('[submitGolfRoundComprehensive] Zod validation failed:', issues);
-      return { success: false, error: `Validation failed: ${issues}` };
+      return { success: false, error: 'Invalid round data. Please check your inputs.' };
     }
     return formatSafeErrorResponse(error);
   }
@@ -1087,9 +1118,7 @@ export async function submitGolfRound(data: GolfRoundInput): Promise<ActionResul
 
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const issues = error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
-      console.error('[submitGolfRound] Zod validation failed:', issues);
-      return { success: false, error: `Validation failed: ${issues}` };
+      return { success: false, error: 'Invalid round data. Please check your inputs.' };
     }
     return formatSafeErrorResponse(error);
   }

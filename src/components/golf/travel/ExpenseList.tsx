@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IconEdit, IconTrash, IconEye, IconChevronDown, IconChevronUp, IconHotel, IconCar, IconUtensils, IconTicket, IconGolfFlag, IconPackage } from '@/components/icons';
+import { IconEdit, IconTrash, IconEye, IconChevronDown, IconChevronUp } from '@/components/icons';
 import {
   deleteTravelExpense,
   type TravelExpense,
@@ -16,13 +16,13 @@ interface ExpenseListProps {
   isCoach: boolean;
 }
 
-const CATEGORY_CONFIG: Record<ExpenseCategory, { icon: React.ReactNode; label: string; color: string }> = {
-  lodging: { icon: <IconHotel size={16} />, label: 'Lodging', color: 'bg-blue-100 text-blue-700' },
-  transportation: { icon: <IconCar size={16} />, label: 'Transportation', color: 'bg-purple-100 text-purple-700' },
-  meals: { icon: <IconUtensils size={16} />, label: 'Meals', color: 'bg-orange-100 text-orange-700' },
-  entry_fees: { icon: <IconTicket size={16} />, label: 'Entry Fees', color: 'bg-primary-100 text-primary-700' },
-  equipment: { icon: <IconGolfFlag size={16} />, label: 'Equipment', color: 'bg-teal-100 text-teal-700' },
-  other: { icon: <IconPackage size={16} />, label: 'Other', color: 'bg-warm-100 text-warm-700' },
+const CATEGORY_CONFIG: Record<ExpenseCategory, { icon: string; label: string; color: string }> = {
+  lodging: { icon: '🏨', label: 'Lodging', color: 'bg-blue-100 text-blue-700' },
+  transportation: { icon: '🚗', label: 'Transportation', color: 'bg-purple-100 text-purple-700' },
+  meals: { icon: '🍽️', label: 'Meals', color: 'bg-orange-100 text-orange-700' },
+  entry_fees: { icon: '🎟️', label: 'Entry Fees', color: 'bg-primary-100 text-primary-700' },
+  equipment: { icon: '⛳', label: 'Equipment', color: 'bg-teal-100 text-teal-700' },
+  other: { icon: '📦', label: 'Other', color: 'bg-warm-100 text-warm-700' },
 };
 
 const PAID_BY_LABELS: Record<string, string> = {

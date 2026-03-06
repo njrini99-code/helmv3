@@ -54,6 +54,72 @@ export const tabContentVariants = {
 };
 
 // ============================================================================
+// FORMAT TOGGLE — 9H / 18H / All segmented control
+// ============================================================================
+
+export type HoleFormat = 'all' | '18' | '9';
+
+export function FormatToggle({
+  value,
+  onChange,
+  counts,
+}: {
+  value: HoleFormat;
+  onChange: (format: HoleFormat) => void;
+  counts: { all: number; h18: number; h9: number };
+}) {
+  const options: { id: HoleFormat; label: string; count: number }[] = [
+    { id: 'all', label: 'All Rounds', count: counts.all },
+    { id: '18', label: '18 Holes', count: counts.h18 },
+    { id: '9', label: '9 Holes', count: counts.h9 },
+  ];
+
+  // Only show toggle if both formats exist
+  if (counts.h18 === 0 || counts.h9 === 0) return null;
+
+  return (
+    <motion.div
+      className="flex items-center gap-1 p-1 rounded-xl bg-warm-100/60 backdrop-blur-sm border border-warm-200/40"
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.15, type: 'spring', stiffness: 300, damping: 25 }}
+    >
+      {options.map((opt) => {
+        const isActive = value === opt.id;
+        return (
+          <motion.button
+            key={opt.id}
+            onClick={() => onChange(opt.id)}
+            className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+              isActive
+                ? 'text-primary-700'
+                : 'text-warm-500 hover:text-warm-700'
+            }`}
+            whileTap={{ scale: 0.97 }}
+          >
+            {isActive && (
+              <motion.div
+                className="absolute inset-0 rounded-lg bg-white shadow-sm border border-warm-200/60"
+                layoutId="format-toggle-bg"
+                transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+              />
+            )}
+            <span className="relative z-10">{opt.label}</span>
+            <span className={`relative z-10 tabular-nums px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
+              isActive
+                ? 'bg-primary-100 text-primary-600'
+                : 'bg-warm-200/60 text-warm-400'
+            }`}>
+              {opt.count}
+            </span>
+          </motion.button>
+        );
+      })}
+    </motion.div>
+  );
+}
+
+// ============================================================================
 // SPARKLINE COMPONENT
 // ============================================================================
 

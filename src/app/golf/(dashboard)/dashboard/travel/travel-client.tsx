@@ -7,9 +7,6 @@ import { ShineEffect } from '@/components/ui/shine-effect';
 import { cn } from '@/lib/utils';
 import {
   IconAirplane,
-  IconBus,
-  IconVan,
-  IconCar,
   IconMapPin,
   IconCalendar,
   IconClock,
@@ -134,13 +131,13 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
       case 'flight':
         return <IconAirplane size={size} className="text-blue-600" />;
       case 'bus':
-        return <IconBus size={size} className="text-amber-600" />;
+        return <span style={{ fontSize: size }}>🚌</span>;
       case 'van':
-        return <IconVan size={size} className="text-purple-600" />;
+        return <span style={{ fontSize: size }}>🚐</span>;
       case 'carpool':
-        return <IconCar size={size} className="text-primary-600" />;
+        return <span style={{ fontSize: size }}>🚗</span>;
       default:
-        return <IconCar size={size} className="text-warm-500" />;
+        return <span style={{ fontSize: size }}>🚗</span>;
     }
   };
 

@@ -77,6 +77,17 @@ export interface GolfStats {
   avgScoreToPar: number | null;
   bestRound: number | null;
   worstRound: number | null;
+
+  // Scoring by format (9 vs 18 holes)
+  scoringAverage18: number | null;
+  scoringAverage9: number | null;
+  bestRound18: number | null;
+  bestRound9: number | null;
+  worstRound18: number | null;
+  worstRound9: number | null;
+  roundsPlayed18: number;
+  roundsPlayed9: number;
+
   totalBirdies: number;
   totalEagles: number;
   totalPars: number;
@@ -936,6 +947,14 @@ function aggregateRoundStats(rounds: Array<{
     avgScoreToPar: null,
     bestRound: null,
     worstRound: null,
+    scoringAverage18: null,
+    scoringAverage9: null,
+    bestRound18: null,
+    bestRound9: null,
+    worstRound18: null,
+    worstRound9: null,
+    roundsPlayed18: 0,
+    roundsPlayed9: 0,
     totalBirdies: 0,
     totalEagles: 0,
     totalPars: 0,
@@ -1177,6 +1196,8 @@ function aggregateRoundStats(rounds: Array<{
   // Accumulators
   let totalScore = 0;
   let totalPar = 0;
+  let totalScore18 = 0;
+  let totalScore9 = 0;
   let practiceScore = 0;
   let qualifyingScore = 0;
   let tournamentScore = 0;
@@ -1293,12 +1314,28 @@ function aggregateRoundStats(rounds: Array<{
     totalScore += round.totalScore;
     stats.holesPlayed += round.holes.length;
 
-    // Best/worst round
-    if (stats.bestRound === null || round.totalScore < stats.bestRound) {
-      stats.bestRound = round.totalScore;
-    }
-    if (stats.worstRound === null || round.totalScore > stats.worstRound) {
-      stats.worstRound = round.totalScore;
+    // Determine 9-hole vs 18-hole format
+    const holesInRound = round.roundInfo.holes_played ?? round.holes.length;
+    const is9Hole = holesInRound <= 9;
+
+    if (is9Hole) {
+      totalScore9 += round.totalScore;
+      stats.roundsPlayed9++;
+      if (stats.bestRound9 === null || round.totalScore < stats.bestRound9) {
+        stats.bestRound9 = round.totalScore;
+      }
+      if (stats.worstRound9 === null || round.totalScore > stats.worstRound9) {
+        stats.worstRound9 = round.totalScore;
+      }
+    } else {
+      totalScore18 += round.totalScore;
+      stats.roundsPlayed18++;
+      if (stats.bestRound18 === null || round.totalScore < stats.bestRound18) {
+        stats.bestRound18 = round.totalScore;
+      }
+      if (stats.worstRound18 === null || round.totalScore > stats.worstRound18) {
+        stats.worstRound18 = round.totalScore;
+      }
     }
 
     // Most birdies
@@ -1733,8 +1770,23 @@ function aggregateRoundStats(rounds: Array<{
   stats.currentNo3PuttStreak = current3PuttStreak;
 
   // Calculate averages and percentages
-  stats.scoringAverage = safeAverage(totalScore, rounds.length);
-  stats.avgScoreToPar = rounds.length > 0 ? (totalScore - totalPar) / rounds.length : null;
+  // Format-specific scoring averages
+  stats.scoringAverage18 = safeAverage(totalScore18, stats.roundsPlayed18);
+  stats.scoringAverage9 = safeAverage(totalScore9, stats.roundsPlayed9);
+
+  // Blended scoring average: normalize to 18-hole equivalent
+  stats.scoringAverage = stats.holesPlayed > 0
+    ? Math.round(((totalScore / stats.holesPlayed) * 18) * 100) / 100
+    : null;
+
+  // Best/worst: prefer 18-hole, fallback to 9-hole
+  stats.bestRound = stats.bestRound18 ?? stats.bestRound9;
+  stats.worstRound = stats.worstRound18 ?? stats.worstRound9;
+
+  // Normalize avgScoreToPar to 18-hole equivalent
+  stats.avgScoreToPar = stats.holesPlayed > 0
+    ? Math.round((((totalScore - totalPar) / stats.holesPlayed) * 18) * 100) / 100
+    : null;
   stats.birdiesPerRound = safeAverage(stats.totalBirdies, rounds.length);
   stats.eaglesPerRound = safeAverage(stats.totalEagles, rounds.length);
   stats.parsPerRound = safeAverage(stats.totalPars, rounds.length);

@@ -682,7 +682,7 @@ async function sendWebPush(
 /**
  * Calculate reminder time based on due date and offset
  */
-function calculateReminderTime(
+export function calculateReminderTime(
   dueDate: string,
   offsetHours?: number,
   offsetDays?: number

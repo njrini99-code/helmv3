@@ -4,8 +4,36 @@ import { motion } from 'framer-motion';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { formatStat, formatStatInt } from '@/lib/utils/golf-stats-calculator-shots';
 import { containerVariants, StatCard, StatRow, StatSection } from './shared-primitives';
+import type { HoleFormat } from './shared-primitives';
 
-export function ScoringStats({ stats }: { stats: GolfStats }) {
+export function ScoringStats({ stats, holeFormat = 'all' }: { stats: GolfStats; holeFormat?: HoleFormat }) {
+  const hasBothFormats = stats.roundsPlayed18 > 0 && stats.roundsPlayed9 > 0;
+  const has18 = stats.roundsPlayed18 > 0;
+
+  // Resolve which stats to show based on format filter
+  const showFormat = holeFormat === 'all'
+    ? (hasBothFormats ? 'both' : has18 ? '18' : '9')
+    : holeFormat;
+
+  // Pick the right values for the selected format
+  const scoringAvg = showFormat === '9' ? stats.scoringAverage9
+    : showFormat === '18' ? stats.scoringAverage18
+    : (has18 ? stats.scoringAverage18 : stats.scoringAverage9); // 'both' → headline uses 18
+  const bestRound = showFormat === '9' ? stats.bestRound9
+    : showFormat === '18' ? stats.bestRound18
+    : (has18 ? stats.bestRound18 : stats.bestRound9);
+  const worstRound = showFormat === '9' ? stats.worstRound9
+    : showFormat === '18' ? stats.worstRound18
+    : (has18 ? stats.worstRound18 : stats.worstRound9);
+  const roundsCount = showFormat === '9' ? stats.roundsPlayed9
+    : showFormat === '18' ? stats.roundsPlayed18
+    : stats.roundsPlayed;
+
+  // Build rounds subtitle for 'both' mode
+  const roundsSubtitle = showFormat === 'both'
+    ? `${stats.roundsPlayed18} (18H) / ${stats.roundsPlayed9} (9H)`
+    : undefined;
+
   return (
     <motion.div
       className="space-y-4"
@@ -15,39 +43,104 @@ export function ScoringStats({ stats }: { stats: GolfStats }) {
     >
       {/* Key Metrics */}
       <motion.div className="grid grid-cols-2 md:grid-cols-4 gap-3" variants={containerVariants}>
-        <StatCard
-          label="Scoring Average"
-          value={formatStat(stats.scoringAverage, '', 2)}
-          numericValue={stats.scoringAverage}
-          decimals={2}
-          highlight
-          large
-          index={0}
-        />
-        <StatCard
-          label="Best Round"
-          value={formatStatInt(stats.bestRound)}
-          numericValue={stats.bestRound}
-          decimals={0}
-          index={1}
-        />
-        <StatCard
-          label="Worst Round"
-          value={formatStatInt(stats.worstRound)}
-          numericValue={stats.worstRound}
-          decimals={0}
-          index={2}
-        />
-        <StatCard
-          label="Rounds Played"
-          value={formatStatInt(stats.roundsPlayed)}
-          numericValue={stats.roundsPlayed}
-          decimals={0}
-          index={3}
-        />
+        {showFormat === 'both' ? (
+          <>
+            <StatCard
+              label="18-Hole Avg"
+              value={formatStat(stats.scoringAverage18, '', 2)}
+              numericValue={stats.scoringAverage18 ?? undefined}
+              decimals={2}
+              highlight
+              large
+              index={0}
+            />
+            <StatCard
+              label="9-Hole Avg"
+              value={formatStat(stats.scoringAverage9, '', 2)}
+              numericValue={stats.scoringAverage9 ?? undefined}
+              decimals={2}
+              index={1}
+            />
+            <StatCard
+              label="Best 18"
+              value={formatStatInt(stats.bestRound18)}
+              numericValue={stats.bestRound18 ?? undefined}
+              decimals={0}
+              index={2}
+            />
+            <StatCard
+              label="Best 9"
+              value={formatStatInt(stats.bestRound9)}
+              numericValue={stats.bestRound9 ?? undefined}
+              decimals={0}
+              index={3}
+            />
+          </>
+        ) : (
+          <>
+            <StatCard
+              label="Scoring Average"
+              value={formatStat(scoringAvg, '', 2)}
+              numericValue={scoringAvg ?? undefined}
+              decimals={2}
+              highlight
+              large
+              index={0}
+            />
+            <StatCard
+              label="Best Round"
+              value={formatStatInt(bestRound)}
+              numericValue={bestRound ?? undefined}
+              decimals={0}
+              index={1}
+            />
+            <StatCard
+              label="Worst Round"
+              value={formatStatInt(worstRound)}
+              numericValue={worstRound ?? undefined}
+              decimals={0}
+              index={2}
+            />
+            <StatCard
+              label="Rounds Played"
+              value={formatStatInt(roundsCount)}
+              numericValue={roundsCount}
+              decimals={0}
+              index={3}
+            />
+          </>
+        )}
       </motion.div>
 
-      {/* Per Round Stats */}
+      {/* Second row for 'both' mode: worst rounds + rounds played */}
+      {showFormat === 'both' && (
+        <motion.div className="grid grid-cols-2 md:grid-cols-4 gap-3" variants={containerVariants}>
+          <StatCard
+            label="Worst 18"
+            value={formatStatInt(stats.worstRound18)}
+            numericValue={stats.worstRound18 ?? undefined}
+            decimals={0}
+            index={0}
+          />
+          <StatCard
+            label="Worst 9"
+            value={formatStatInt(stats.worstRound9)}
+            numericValue={stats.worstRound9 ?? undefined}
+            decimals={0}
+            index={1}
+          />
+          <StatCard
+            label="Rounds Played"
+            value={formatStatInt(stats.roundsPlayed)}
+            numericValue={stats.roundsPlayed}
+            decimals={0}
+            subValue={roundsSubtitle}
+            index={2}
+          />
+        </motion.div>
+      )}
+
+      {/* Per Round Stats — always combined across all rounds */}
       <StatSection title="Per Round Averages" delay={0.1}>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {[

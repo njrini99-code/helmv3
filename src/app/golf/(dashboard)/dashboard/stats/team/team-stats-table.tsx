@@ -13,6 +13,8 @@ import {
   IconMinus,
   IconChevronRight,
 } from '@/components/icons';
+import { FormatToggle } from '@/components/golf/stats/sections/shared-primitives';
+import type { HoleFormat } from '@/components/golf/stats/sections/shared-primitives';
 import type { TeamPlayerStats } from './page';
 
 type SortKey =
@@ -38,13 +40,38 @@ interface TeamStatsTableProps {
 }
 
 export function TeamStatsTable({ players }: TeamStatsTableProps) {
+  const [holeFormat, setHoleFormat] = useState<HoleFormat>('all');
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: 'scoring_average',
     direction: 'asc', // Lower is better for scoring
   });
 
+  // Compute team-wide format counts for the toggle
+  const formatCounts = useMemo(() => {
+    let h18 = 0;
+    let h9 = 0;
+    let all = 0;
+    for (const p of players) {
+      h18 += p.rounds_played_18;
+      h9 += p.rounds_played_9;
+      all += p.rounds_played;
+    }
+    return { all, h18, h9 };
+  }, [players]);
+
+  // Derive format-aware view of each player
+  const formattedPlayers = useMemo(() => {
+    if (holeFormat === 'all') return players;
+    return players.map(p => ({
+      ...p,
+      rounds_played: holeFormat === '18' ? p.rounds_played_18 : p.rounds_played_9,
+      scoring_average: holeFormat === '18' ? p.scoring_average_18 : p.scoring_average_9,
+      best_round: holeFormat === '18' ? p.best_round_18 : p.best_round_9,
+    }));
+  }, [players, holeFormat]);
+
   const sortedPlayers = useMemo(() => {
-    const sorted = [...players].sort((a, b) => {
+    const sorted = [...formattedPlayers].sort((a, b) => {
       let aVal: string | number | null;
       let bVal: string | number | null;
 
@@ -110,7 +137,7 @@ export function TeamStatsTable({ players }: TeamStatsTableProps) {
     });
 
     return sorted;
-  }, [players, sortConfig]);
+  }, [formattedPlayers, sortConfig]);
 
   const handleSort = (key: SortKey) => {
     setSortConfig(prev => ({
@@ -165,6 +192,16 @@ export function TeamStatsTable({ players }: TeamStatsTableProps) {
   };
 
   return (
+    <div className="space-y-4">
+      {/* Format Toggle */}
+      <div className="flex items-center">
+        <FormatToggle
+          value={holeFormat}
+          onChange={setHoleFormat}
+          counts={formatCounts}
+        />
+      </div>
+
     <div className="relative glass-standard rounded-2xl overflow-hidden">
       <ShineEffect />
       <div className="overflow-x-auto">
@@ -393,12 +430,12 @@ export function TeamStatsTable({ players }: TeamStatsTableProps) {
             <span>
               Team Avg:{' '}
               <strong className="text-warm-900">
-                {players.filter(p => p.scoring_average !== null).length > 0
+                {formattedPlayers.filter(p => p.scoring_average !== null).length > 0
                   ? (
-                      players
+                      formattedPlayers
                         .filter(p => p.scoring_average !== null)
                         .reduce((sum, p) => sum + (p.scoring_average || 0), 0) /
-                      players.filter(p => p.scoring_average !== null).length
+                      formattedPlayers.filter(p => p.scoring_average !== null).length
                     ).toFixed(1)
                   : '—'}
               </strong>
@@ -415,6 +452,7 @@ export function TeamStatsTable({ players }: TeamStatsTableProps) {
           to { opacity: 1; }
         }
       `}</style>
+    </div>
     </div>
   );
 }

@@ -5,6 +5,7 @@ import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { formatStat } from '@/lib/utils/golf-stats-calculator-shots';
 import type { StatisticalStrengthWeakness } from '@/lib/golf/strokes-gained';
 import { containerVariants, sectionVariants, StatCard } from './shared-primitives';
+import type { HoleFormat } from './shared-primitives';
 import type { PlayerProfile, TrendAnalysisResponse } from './types';
 
 // ============================================================================
@@ -66,6 +67,7 @@ export function OverviewStats({
   trendData,
   statisticalStrengths,
   statisticalWeaknesses,
+  holeFormat = 'all',
 }: {
   stats: GolfStats;
   playerName?: string;
@@ -73,7 +75,21 @@ export function OverviewStats({
   trendData?: TrendAnalysisResponse | null;
   statisticalStrengths?: StatisticalStrengthWeakness[];
   statisticalWeaknesses?: StatisticalStrengthWeakness[];
+  holeFormat?: HoleFormat;
 }) {
+  // Resolve headline scoring average based on format filter
+  const headlineScoringAvg = holeFormat === '9' ? stats.scoringAverage9
+    : holeFormat === '18' ? stats.scoringAverage18
+    : (stats.scoringAverage18 ?? stats.scoringAverage9 ?? stats.scoringAverage);
+
+  const headlineBestRound = holeFormat === '9' ? stats.bestRound9
+    : holeFormat === '18' ? stats.bestRound18
+    : stats.bestRound;
+
+  const headlineRounds = holeFormat === '9' ? stats.roundsPlayed9
+    : holeFormat === '18' ? stats.roundsPlayed18
+    : stats.roundsPlayed;
+
   return (
     <motion.div
       className="space-y-6"
@@ -128,19 +144,21 @@ export function OverviewStats({
         <div className="grid grid-cols-3 gap-4 mt-6 pt-5 border-t border-warm-200/60">
           <div className="text-center">
             <div className="text-2xl font-bold text-warm-900 tabular-nums">
-              {stats.roundsPlayed}
+              {headlineRounds}
             </div>
-            <div className="text-xs text-warm-500 mt-0.5">Rounds</div>
+            <div className="text-xs text-warm-500 mt-0.5">
+              {holeFormat === '9' ? '9H Rounds' : holeFormat === '18' ? '18H Rounds' : 'Rounds'}
+            </div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-primary-600 tabular-nums">
-              {stats.scoringAverage !== null ? stats.scoringAverage.toFixed(1) : '--'}
+              {headlineScoringAvg !== null ? headlineScoringAvg.toFixed(1) : '--'}
             </div>
             <div className="text-xs text-warm-500 mt-0.5">Scoring Avg</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-warm-900 tabular-nums">
-              {stats.bestRound || '--'}
+              {headlineBestRound || '--'}
             </div>
             <div className="text-xs text-warm-500 mt-0.5">Best Round</div>
           </div>
