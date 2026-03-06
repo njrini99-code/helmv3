@@ -29,7 +29,7 @@ export function GolfUserProvider({
   const memoizedValue = useMemo(
     () => userData,
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [userData.userId, userData.role, userData.teamId, userData.coachId, userData.playerId]
+    [userData.userId, userData.role, userData.teamId, userData.coachId, userData.playerId, userData.avatarUrl, userData.name]
   );
 
   return (

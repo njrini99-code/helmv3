@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { m, AnimatePresence } from 'framer-motion';
 import { ShineEffect } from '@/components/ui/shine-effect';
@@ -719,6 +720,7 @@ function SaveBar({
 
 function PersonalInfoPanel({ profile, onUpdate }: { profile: UserProfile; onUpdate: () => void }) {
   const { showToast } = useToast();
+  const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [firstName, setFirstName] = useState(profile.playerData?.first_name || '');
   const [lastName, setLastName] = useState(profile.playerData?.last_name || '');
@@ -748,6 +750,8 @@ function PersonalInfoPanel({ profile, onUpdate }: { profile: UserProfile; onUpda
 
       showToast('Profile updated', 'success');
       onUpdate();
+      // Re-run the server layout so the sidebar avatar/name updates immediately
+      router.refresh();
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Failed to update profile', 'error');
     } finally {
