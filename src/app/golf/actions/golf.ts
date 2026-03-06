@@ -314,8 +314,7 @@ const golfRoundSchema = z.object({
   holes: z.array(holeSchema).min(1).max(18),
 });
 
-/** @internal Exported for testing */
-export const comprehensiveShotSchema = z.object({
+const comprehensiveShotSchema = z.object({
   shotNumber: z.number().int().min(1),
   shotType: z.enum(['tee', 'approach', 'around_green', 'putting', 'penalty']),
   clubType: z.string().min(1),
@@ -337,8 +336,7 @@ export const comprehensiveShotSchema = z.object({
   approachMissLieType: z.enum(['fairway', 'rough', 'bunker', 'hazard']).optional(),
 });
 
-/** @internal Exported for testing */
-export const comprehensiveHoleSchema = z.object({
+const comprehensiveHoleSchema = z.object({
   holeNumber: z.number().int().min(1).max(18),
   par: z.number().int().min(3).max(6),
   yardage: z.number().min(0),
@@ -390,8 +388,7 @@ const golfRoundComprehensiveSchema = z.object({
   qualifierRoundNumber: z.number().int().min(1).optional(),
 });
 
-/** @internal Exported for testing */
-export const partialRoundSchema = z.object({
+const partialRoundSchema = z.object({
   courseName: z.string().min(1).max(200),
   courseCity: z.string().max(100).optional(),
   courseState: z.string().max(2).optional(),
@@ -431,8 +428,7 @@ export const partialRoundSchema = z.object({
   })).optional(),
 });
 
-/** @internal Exported for testing */
-export const shotUpdateSchema = z.object({
+const shotUpdateSchema = z.object({
   shot_type: z.enum(['tee', 'approach', 'around_green', 'putting', 'penalty']).optional(),
   club_type: z.enum(['driver', 'non_driver', 'putter']).optional(),
   lie_before: z.enum(['tee', 'fairway', 'rough', 'sand', 'green', 'other']).optional(),

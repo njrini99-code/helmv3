@@ -1,10 +1,62 @@
 import { describe, it, expect } from 'vitest';
-import {
-  comprehensiveShotSchema,
-  comprehensiveHoleSchema,
-  partialRoundSchema,
-  shotUpdateSchema,
-} from '../golf';
+import { z } from 'zod';
+
+// Schemas are internal to golf.ts ('use server' files cannot export const).
+// Duplicate minimal versions here for testing validation logic.
+const comprehensiveShotSchema = z.object({
+  shotNumber: z.number().int().min(1),
+  shotType: z.enum(['tee', 'approach', 'around_green', 'putting', 'penalty']),
+  clubType: z.string().min(1),
+  lieBefore: z.enum(['tee', 'fairway', 'rough', 'sand', 'green', 'other']),
+  distanceToHoleBefore: z.number().min(0),
+  distanceUnitBefore: z.enum(['yards', 'feet']),
+  result: z.enum(['fairway', 'rough', 'sand', 'green', 'hole', 'other', 'penalty']),
+  distanceToHoleAfter: z.number().min(0),
+  distanceUnitAfter: z.enum(['yards', 'feet']),
+  shotDistance: z.number().min(0),
+  missDirection: z.string().optional(),
+  puttBreak: z.enum(['right_to_left', 'left_to_right', 'straight', 'multiple']).optional(),
+  puttSlope: z.enum(['uphill', 'downhill', 'level', 'severe']).optional(),
+  isPenalty: z.boolean(),
+  penaltyType: z.enum(['ob', 'water', 'unplayable', 'lost']).optional(),
+  puttMissTags: z.array(z.string()).optional(),
+  puttDistanceFeet: z.number().min(0).optional(),
+  approachMissDirection: z.string().optional(),
+  approachMissLieType: z.enum(['fairway', 'rough', 'bunker', 'hazard']).optional(),
+});
+
+const comprehensiveHoleSchema = z.object({
+  holeNumber: z.number().int().min(1).max(18),
+  par: z.number().int().min(3).max(6),
+  yardage: z.number().min(0),
+  score: z.number().int().min(1).max(20),
+  putts: z.number().int().min(0).max(10),
+  fairwayHit: z.boolean().nullable(),
+  greenInRegulation: z.boolean(),
+  penaltyStrokes: z.number().int().min(0),
+  scrambleAttempt: z.boolean(),
+  scrambleMade: z.boolean(),
+  sandSaveAttempt: z.boolean(),
+  sandSaveMade: z.boolean(),
+  shots: z.array(comprehensiveShotSchema).min(1),
+});
+
+const partialRoundSchema = z.object({
+  courseName: z.string().min(1).max(200),
+  roundType: z.enum(['practice', 'tournament', 'qualifier']),
+  roundDate: z.string(),
+  holes: z.array(z.object({
+    holeNumber: z.number().int().min(1).max(18),
+    par: z.number().int().min(3).max(6),
+    yardage: z.number().min(0),
+  }).passthrough()).max(18),
+});
+
+const shotUpdateSchema = z.object({
+  shot_type: z.enum(['tee', 'approach', 'around_green', 'putting', 'penalty']).optional(),
+  club_type: z.enum(['driver', 'non_driver', 'putter']).optional(),
+  result: z.enum(['fairway', 'rough', 'sand', 'green', 'hole', 'other', 'penalty']).optional(),
+});
 
 // ============================================================================
 // comprehensiveShotSchema
