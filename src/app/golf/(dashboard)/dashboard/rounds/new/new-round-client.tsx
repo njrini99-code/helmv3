@@ -980,6 +980,25 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
         });
       }
 
+      // Sanitize hole stats — ensure all required fields have sensible defaults
+      // to prevent Zod validation failures from missing/undefined values
+      const sanitizedHoles = allHoleStats.map(h => ({
+        ...h,
+        yardage: h.yardage ?? 0,
+        penaltyStrokes: h.penaltyStrokes ?? 0,
+        greenInRegulation: h.greenInRegulation ?? false,
+        scrambleAttempt: h.scrambleAttempt ?? false,
+        scrambleMade: h.scrambleMade ?? false,
+        sandSaveAttempt: h.sandSaveAttempt ?? false,
+        sandSaveMade: h.sandSaveMade ?? false,
+        shots: (h.shots ?? []).map(s => ({
+          ...s,
+          shotDistance: s.shotDistance ?? 0,
+          distanceToHoleAfter: s.distanceToHoleAfter ?? 0,
+          isPenalty: s.isPenalty ?? false,
+        })),
+      }));
+
       const roundData = {
         courseName: setupData.courseName,
         courseCity: setupData.courseCity || undefined,
@@ -989,11 +1008,12 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
         teesPlayed: setupData.teesPlayed || undefined,
         roundType: setupData.roundType,
         roundDate: setupData.roundDate,
-        holes: allHoleStats,
+        holes: sanitizedHoles,
         qualifierId: setupData.roundType === 'qualifier' ? selectedQualifierId ?? undefined : undefined,
         qualifierRoundNumber: setupData.roundType === 'qualifier' ? selectedRoundNumber ?? undefined : undefined,
       };
 
+      console.log('[Round Submit] Sending data:', JSON.stringify({ courseName: roundData.courseName, holeCount: roundData.holes.length, firstHole: roundData.holes[0] }));
       const result = await submitGolfRoundComprehensive(roundData, savedRoundIdRef.current ?? undefined);
       if (!result.success) {
         throw new Error(result.error);
@@ -1007,36 +1027,85 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
       const roundId = result.data.roundId;
       router.push(`/golf/dashboard/rounds/${roundId}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to submit round');
+      console.error('[Round Submit] Failed:', err);
+      setError(err instanceof Error ? err.message : 'Failed to submit round. Your data is safe — tap Retry or Go Back.');
       isSubmittingRef.current = false;
-      setStep('tracking');
-      // Re-arm the finish confirmation so the user can retry instead of being
-      // stuck on the last hole with no way to re-submit
+      // Stay on 'submitting' step to show the error + retry/back buttons.
+      // Emergency-save data so it survives navigation.
+      emergencySave({
+        roundId: savedRoundIdRef.current,
+        timestamp: Date.now(),
+        setupData: {
+          courseName: setupData.courseName,
+          courseCity: setupData.courseCity,
+          courseState: setupData.courseState,
+          courseRating: setupData.courseRating,
+          courseSlope: setupData.courseSlope,
+          teesPlayed: setupData.teesPlayed,
+          roundType: setupData.roundType,
+          roundDate: setupData.roundDate,
+          qualifierId: selectedQualifierId ?? undefined,
+          qualifierRoundNumber: selectedRoundNumber ?? undefined,
+        },
+        holes,
+        completedHoleStats,
+        inProgressShotsByHole: inProgressShotsByHoleRef.current,
+        currentHoleIndex,
+        holesPerRound: holesPerRound ?? undefined,
+      });
+      // Re-arm pending stats so the user can retry
       setPendingFinalStats(allHoleStats);
-      setShowFinishConfirm(true);
     }
   };
 
   const handleSaveForLater = async () => {
-    const result = await savePartialRound(buildPartialRoundData(), savedRoundId || undefined);
-
-    if (!result.success) {
-      throw new Error(result.error || 'Failed to save round. Please try again.');
-    }
-
-    savedRoundIdRef.current = result.data.roundId;
-    setSavedRoundId(result.data.roundId);
-
-    // Clear local draft since it's saved to database
     try {
-      clearDraft();
-    } catch {
-      // Draft cleanup failure is non-critical - round is already saved to DB
-    }
-    setShowExitModal(false);
+      const result = await savePartialRound(buildPartialRoundData(), savedRoundId || undefined);
 
-    router.push('/golf/dashboard/rounds');
-    router.refresh();
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to save round. Please try again.');
+      }
+
+      savedRoundIdRef.current = result.data.roundId;
+      setSavedRoundId(result.data.roundId);
+
+      // Clear local draft since it's saved to database
+      try {
+        clearDraft();
+      } catch {
+        // Draft cleanup failure is non-critical - round is already saved to DB
+      }
+      setShowExitModal(false);
+
+      router.push('/golf/dashboard/rounds');
+      router.refresh();
+    } catch (err) {
+      console.error('[Round Save] Failed:', err);
+      // Emergency-save so data survives navigation
+      emergencySave({
+        roundId: savedRoundIdRef.current,
+        timestamp: Date.now(),
+        setupData: {
+          courseName: setupData.courseName,
+          courseCity: setupData.courseCity,
+          courseState: setupData.courseState,
+          courseRating: setupData.courseRating,
+          courseSlope: setupData.courseSlope,
+          teesPlayed: setupData.teesPlayed,
+          roundType: setupData.roundType,
+          roundDate: setupData.roundDate,
+          qualifierId: selectedQualifierId ?? undefined,
+          qualifierRoundNumber: selectedRoundNumber ?? undefined,
+        },
+        holes,
+        completedHoleStats,
+        inProgressShotsByHole: inProgressShotsByHoleRef.current,
+        currentHoleIndex,
+        holesPerRound: holesPerRound ?? undefined,
+      });
+      setError(err instanceof Error ? err.message : 'Failed to save round. Your data has been backed up locally.');
+      setShowExitModal(false);
+    }
   };
 
   const handleDeleteRound = async () => {
@@ -1884,12 +1953,28 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
             {error && (
               <div className="mt-4">
                 <p className="text-sm text-red-600 mb-3">{error}</p>
-                <button
-                  onClick={() => setStep('tracking')}
-                  className="px-4 py-2 bg-warm-100 text-warm-700 rounded-lg text-sm font-medium hover:bg-warm-200 transition-colors"
-                >
-                  Go Back
-                </button>
+                <div className="flex gap-3 justify-center">
+                  <button
+                    onClick={() => {
+                      setError(null);
+                      if (pendingFinalStats) {
+                        handleRoundSubmit(pendingFinalStats);
+                      }
+                    }}
+                    className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
+                  >
+                    Retry
+                  </button>
+                  <button
+                    onClick={() => {
+                      setStep('tracking');
+                      setShowFinishConfirm(true);
+                    }}
+                    className="px-4 py-2 bg-warm-100 text-warm-700 rounded-lg text-sm font-medium hover:bg-warm-200 transition-colors"
+                  >
+                    Go Back
+                  </button>
+                </div>
               </div>
             )}
           </div>

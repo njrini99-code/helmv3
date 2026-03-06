@@ -941,7 +941,9 @@ export async function submitGolfRoundComprehensive(
 
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return { success: false, error: 'Invalid round data. Please check your inputs.' };
+      const issues = error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
+      console.error('[submitGolfRoundComprehensive] Zod validation failed:', issues);
+      return { success: false, error: `Validation failed: ${issues}` };
     }
     return formatSafeErrorResponse(error);
   }
@@ -1084,7 +1086,9 @@ export async function submitGolfRound(data: GolfRoundInput): Promise<ActionResul
 
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return { success: false, error: 'Invalid round data. Please check your inputs.' };
+      const issues = error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
+      console.error('[submitGolfRound] Zod validation failed:', issues);
+      return { success: false, error: `Validation failed: ${issues}` };
     }
     return formatSafeErrorResponse(error);
   }
