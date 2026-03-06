@@ -4,7 +4,7 @@ import {
   comprehensiveHoleSchema,
   partialRoundSchema,
   shotUpdateSchema,
-} from '../golf';
+} from '../golf-schemas';
 
 // ============================================================================
 // comprehensiveShotSchema

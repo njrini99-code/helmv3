@@ -30,23 +30,7 @@ import type {
   WorstHoleResponse,
 } from './stats-data-types';
 
-// Re-export types so existing imports from this file still work
-export type {
-  StatsFilter,
-  StatsSummary,
-  RoundSummary,
-  SummaryStatsResponse,
-  TrendDataPoint,
-  RoundTrendData,
-  TrendAnalysisResponse,
-  TeamComparisonStats,
-  TeamComparisonResponse,
-  FilterOptions,
-  CourseStats,
-  CourseBreakdownResponse,
-  HoleAnalysis,
-  WorstHoleResponse,
-} from './stats-data-types';
+// Types are defined in ./stats-data-types — import from there directly
 
 // ============================================================================
 // AUTH GUARD
