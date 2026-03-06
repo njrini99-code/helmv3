@@ -794,8 +794,9 @@ export async function submitGolfRoundComprehensive(
       );
 
       if (rpcError) {
+        console.error('[submitGolfRoundComprehensive] RPC error:', rpcError.message, rpcError.details, rpcError.hint);
         logError(new Error(rpcError.message), undefined, { action: 'submitGolfRoundComprehensive.rpc' });
-        return { success: false, error: 'Failed to submit round. Please try again.' };
+        return { success: false, error: `Failed to submit round: ${rpcError.message}` };
       }
 
       if (rpcResult && !rpcResult.success) {
