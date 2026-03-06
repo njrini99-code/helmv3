@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { IconUpload, IconX } from '@/components/icons';
+import { IconUpload, IconX, IconHotel, IconCar, IconUtensils, IconTicket, IconGolfFlag, IconPackage } from '@/components/icons';
 import {
   createTravelExpense,
   updateTravelExpense,
@@ -24,13 +24,13 @@ interface ExpenseFormProps {
   expense?: TravelExpense | null;
 }
 
-const CATEGORIES: { value: ExpenseCategory; label: string; icon: string }[] = [
-  { value: 'lodging', label: 'Lodging', icon: '🏨' },
-  { value: 'transportation', label: 'Transportation', icon: '🚗' },
-  { value: 'meals', label: 'Meals', icon: '🍽️' },
-  { value: 'entry_fees', label: 'Entry Fees', icon: '🎟️' },
-  { value: 'equipment', label: 'Equipment', icon: '⛳' },
-  { value: 'other', label: 'Other', icon: '📦' },
+const CATEGORIES: { value: ExpenseCategory; label: string; icon: React.ReactNode }[] = [
+  { value: 'lodging', label: 'Lodging', icon: <IconHotel size={20} className="text-blue-600" /> },
+  { value: 'transportation', label: 'Transportation', icon: <IconCar size={20} className="text-purple-600" /> },
+  { value: 'meals', label: 'Meals', icon: <IconUtensils size={20} className="text-orange-600" /> },
+  { value: 'entry_fees', label: 'Entry Fees', icon: <IconTicket size={20} className="text-primary-600" /> },
+  { value: 'equipment', label: 'Equipment', icon: <IconGolfFlag size={20} className="text-teal-600" /> },
+  { value: 'other', label: 'Other', icon: <IconPackage size={20} className="text-warm-500" /> },
 ];
 
 const PAID_BY_OPTIONS: { value: ExpensePaidBy; label: string }[] = [
