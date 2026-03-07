@@ -292,19 +292,21 @@ export function EventDetailModal({
           }
         }
 
-        const hasTime = startTime !== null || endTime !== null;
         const rsvpDeadline = event.rsvp_deadline
           ? new Date(event.rsvp_deadline).toISOString().slice(0, 16)
           : null;
+
+        // Use the authoritative all_day boolean from DB, not a parsing heuristic
+        const isAllDay = event.all_day ?? false;
 
         setFormData({
           title: event.title || '',
           eventType: (event.event_type as GolfEventType) || 'practice',
           startDate,
           endDate,
-          startTime,
-          endTime,
-          allDay: !hasTime,
+          startTime: isAllDay ? null : startTime,
+          endTime: isAllDay ? null : endTime,
+          allDay: isAllDay,
           location: event.location || null,
           courseName: null,
           description: event.description || null,

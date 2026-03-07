@@ -63,8 +63,8 @@ function formatTimezoneOffset(offsetMinutes: number): string {
  * If timezoneOffset is not provided, no offset is appended (Supabase treats as UTC).
  */
 function buildDateTimeString(date: string, time: string | undefined, timezoneOffset?: number): string {
-  if (!time) return date;
-  const tz = timezoneOffset !== undefined ? formatTimezoneOffset(timezoneOffset) : '';
+  if (!time) return `${date}T00:00:00+00:00`;
+  const tz = timezoneOffset !== undefined ? formatTimezoneOffset(timezoneOffset) : '+00:00';
   return `${date}T${time}${tz}`;
 }
 
@@ -451,13 +451,17 @@ const shotUpdateSchema = z.object({
   approach_miss_lie_type: z.string().nullable().optional(),
 }).refine(data => Object.keys(data).length > 0, 'At least one field is required');
 
+const dateString = z.string().regex(/^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])$/, 'Date must be YYYY-MM-DD');
+const timeString = z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/, 'Time must be HH:MM');
+const golfEventType = z.enum(['practice', 'tournament', 'qualifier', 'meeting', 'travel', 'other', 'class']);
+
 const golfEventSchema = z.object({
   title: z.string().min(1).max(200),
-  eventType: z.enum(['practice', 'tournament', 'qualifier', 'meeting', 'travel', 'other']),
-  startDate: z.string(),
-  endDate: z.string().optional(),
-  startTime: z.string().optional(),
-  endTime: z.string().optional(),
+  eventType: golfEventType,
+  startDate: dateString,
+  endDate: dateString.optional(),
+  startTime: timeString.optional(),
+  endTime: timeString.optional(),
   allDay: z.boolean().optional(),
   location: z.string().max(500).optional(),
   courseName: z.string().max(200).optional(),
@@ -652,7 +656,7 @@ function calculateGirFromShots(
 type GolfEventUpdateData = {
   updated_at: string;
   title?: string;
-  event_type?: 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other';
+  event_type?: 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other' | 'class';
   start_time?: string;
   end_time?: string | null;
   all_day?: boolean;
@@ -1297,15 +1301,15 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
       team_id: teamId,
       title: validatedData.title,
       event_type: validatedData.eventType,
-      // For all-day events, store date-only (no time component) so calendar views don't show a time
+      // For all-day events, store with T00:00:00+00:00 to avoid timezone date shifts
       start_time: isAllDay
-        ? validatedData.startDate
+        ? `${validatedData.startDate}T00:00:00+00:00`
         : buildDateTimeString(validatedData.startDate, validatedData.startTime, tz),
       end_time: isAllDay
-        ? (validatedData.endDate || validatedData.startDate)
+        ? `${validatedData.endDate || validatedData.startDate}T00:00:00+00:00`
         : validatedData.endTime
           ? buildDateTimeString(validatedData.endDate || validatedData.startDate, validatedData.endTime, tz)
-          : validatedData.endDate || null,
+          : validatedData.endDate ? `${validatedData.endDate}T00:00:00+00:00` : null,
       all_day: isAllDay,
       location: validatedData.location || null,
       description: validatedData.description || null,
@@ -1429,18 +1433,18 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
 // Validation schema for golf event updates
 const golfEventUpdateSchema = z.object({
   title: z.string().min(1).max(200).optional(),
-  eventType: z.enum(['practice', 'tournament', 'qualifier', 'meeting', 'travel', 'other']).optional(),
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
-  startTime: z.string().optional(),
-  endTime: z.string().optional(),
+  eventType: golfEventType.optional(),
+  startDate: dateString.optional(),
+  endDate: dateString.optional(),
+  startTime: timeString.optional(),
+  endTime: timeString.optional(),
   allDay: z.boolean().optional(),
   location: z.string().max(500).optional(),
   description: z.string().max(5000).optional(),
   requiresRsvp: z.boolean().optional(),
   rsvpDeadline: z.string().optional(),
-  maxAttendees: z.number().int().optional(),
-  attendeeIds: z.array(z.string()).optional(),
+  maxAttendees: z.number().int().positive().optional(),
+  attendeeIds: z.array(z.string().uuid()).optional(),
   timezoneOffset: z.number().int().optional(),
 });
 
@@ -1464,31 +1468,17 @@ export async function updateGolfEvent(
       .eq('user_id', user.id)
       .maybeSingle();
 
-    // If not a coach, try to get player profile
-    let teamId: string | null = null;
-
-    if (coach) {
-      teamId = await getCoachTeamId(supabase, coach.organization_id);
-      if (!teamId) {
-        return { success: false, error: 'Coach not assigned to a team' };
-      }
-    } else {
-      // Note: golf_players doesn't have team_id - we look it up via golf_team_members
-      const { data: player } = await supabase
-        .from('golf_players')
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (!player) {
-        return { success: false, error: 'User profile not found' };
-      }
-
-      // For players, team_id is optional
-      teamId = await getPlayerTeamId(supabase, player.id);
+    // Only coaches can update team events (matches createGolfEvent behavior)
+    if (!coach) {
+      return { success: false, error: 'Only coaches can update team events' };
     }
 
-    // Verify event belongs to user's team (or is a personal event if teamId is null)
+    const teamId = await getCoachTeamId(supabase, coach.organization_id);
+    if (!teamId) {
+      return { success: false, error: 'Coach not assigned to a team' };
+    }
+
+    // Verify event belongs to coach's team
     const { data: existingEvent } = await supabase
       .from('golf_events')
       .select('team_id')
@@ -1499,7 +1489,6 @@ export async function updateGolfEvent(
       return { success: false, error: 'Event not found' };
     }
 
-    // Check ownership: event's team_id must match user's team_id (both can be null for personal events)
     if (existingEvent.team_id !== teamId) {
       return { success: false, error: 'Access denied' };
     }
@@ -1512,23 +1501,22 @@ export async function updateGolfEvent(
     if (validatedData.title !== undefined) updateData.title = validatedData.title;
     if (validatedData.eventType !== undefined) updateData.event_type = validatedData.eventType;
     // Combine date+time into start_time/end_time timestamptz with timezone offset
-    // For all-day events, store date-only (no time component)
+    // For all-day events, store with T00:00:00+00:00 to avoid timezone date shifts
     const tz = validatedData.timezoneOffset;
     const isAllDay = validatedData.allDay;
     if (validatedData.startDate !== undefined) {
       updateData.start_time = isAllDay
-        ? validatedData.startDate
+        ? `${validatedData.startDate}T00:00:00+00:00`
         : buildDateTimeString(validatedData.startDate, validatedData.startTime, tz);
     }
     if (validatedData.endDate !== undefined || validatedData.endTime !== undefined || isAllDay) {
       const endDate = validatedData.endDate || validatedData.startDate;
       if (isAllDay) {
-        updateData.end_time = endDate || null;
+        updateData.end_time = endDate ? `${endDate}T00:00:00+00:00` : null;
       } else if (validatedData.endTime && endDate) {
         updateData.end_time = buildDateTimeString(endDate, validatedData.endTime, tz);
       } else if (endDate && !validatedData.endTime) {
-        // End date set but no end time — preserve the date (e.g. multi-day event)
-        updateData.end_time = endDate;
+        updateData.end_time = `${endDate}T00:00:00+00:00`;
       } else {
         updateData.end_time = null;
       }
@@ -1552,10 +1540,14 @@ export async function updateGolfEvent(
       query = query.eq('team_id', teamId);
     }
 
-    const { error } = await query;
+    const { data: updatedRows, error } = await query.select('id');
 
     if (error) {
       return { success: false, error: 'Failed to update event' };
+    }
+
+    if (!updatedRows || updatedRows.length === 0) {
+      return { success: false, error: 'Event could not be updated. You may not have permission to edit this event.' };
     }
 
     if (validatedData.attendeeIds) {
@@ -1629,31 +1621,17 @@ export async function deleteGolfEvent(
       .eq('user_id', user.id)
       .maybeSingle();
 
-    // If not a coach, try to get player profile
-    let teamId: string | null = null;
-
-    if (coach) {
-      teamId = await getCoachTeamId(supabase, coach.organization_id);
-      if (!teamId) {
-        return { success: false, error: 'Coach not assigned to a team' };
-      }
-    } else {
-      // Note: golf_players doesn't have team_id - we look it up via golf_team_members
-      const { data: player } = await supabase
-        .from('golf_players')
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (!player) {
-        return { success: false, error: 'User profile not found' };
-      }
-
-      // For players, team_id is optional
-      teamId = await getPlayerTeamId(supabase, player.id);
+    // Only coaches can delete team events (matches createGolfEvent behavior)
+    if (!coach) {
+      return { success: false, error: 'Only coaches can delete team events' };
     }
 
-    // Verify event belongs to user's team (or is a personal event if teamId is null)
+    const teamId = await getCoachTeamId(supabase, coach.organization_id);
+    if (!teamId) {
+      return { success: false, error: 'Coach not assigned to a team' };
+    }
+
+    // Verify event belongs to coach's team
     const { data: existingEvent } = await supabase
       .from('golf_events')
       .select('team_id')
@@ -1664,27 +1642,24 @@ export async function deleteGolfEvent(
       return { success: false, error: 'Event not found' };
     }
 
-    // Check ownership: event's team_id must match user's team_id (both can be null for personal events)
     if (existingEvent.team_id !== teamId) {
       return { success: false, error: 'Access denied' };
     }
 
-    let deleteQuery = supabase
+    const deleteQuery = supabase
       .from('golf_events')
       .delete()
-      .eq('id', eventId);
+      .eq('id', eventId)
+      .eq('team_id', teamId);
 
-    // Handle null team_id for personal events
-    if (teamId === null) {
-      deleteQuery = deleteQuery.is('team_id', null);
-    } else {
-      deleteQuery = deleteQuery.eq('team_id', teamId);
-    }
-
-    const { error } = await deleteQuery;
+    const { data: deletedRows, error } = await deleteQuery.select('id');
 
     if (error) {
       return { success: false, error: 'Failed to delete event' };
+    }
+
+    if (!deletedRows || deletedRows.length === 0) {
+      return { success: false, error: 'Event could not be deleted. You may not have permission to delete this event.' };
     }
 
     revalidatePath('/golf/dashboard/calendar');

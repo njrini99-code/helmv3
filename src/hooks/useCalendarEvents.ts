@@ -66,11 +66,21 @@ export function useCalendarEvents({ teamId, startDate, endDate }: UseCalendarEve
         }
 
         // Map database events to CalendarEvent format
-        const mappedEvents = (data || []).map(event => ({
-          ...event,
-          start_date: event.start_time, // Map start_time to start_date for interface compatibility
-          end_date: event.end_time || event.start_time,
-        } as CalendarEvent));
+        // For all-day events, normalize dates to prevent timezone shift
+        const mappedEvents = (data || []).map(event => {
+          let startDateVal = event.start_time;
+          let endDateVal = event.end_time || event.start_time;
+          if (event.all_day) {
+            const normalize = (d: string) => `${d.slice(0, 10)}T00:00:00`;
+            startDateVal = normalize(startDateVal);
+            endDateVal = normalize(endDateVal);
+          }
+          return {
+            ...event,
+            start_date: startDateVal,
+            end_date: endDateVal,
+          } as CalendarEvent;
+        });
 
         setEvents(mappedEvents);
       } catch (err) {

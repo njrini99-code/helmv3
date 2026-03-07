@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { format, startOfWeek as startOfWeekFn, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
 import { createClient } from '@/lib/supabase/client';
 import { useMediaQuery } from '@/hooks/use-media-query';
+import { toast } from '@/components/ui/toast';
 import { useMobileDetection } from '@/hooks/use-mobile-detection';
 import {
   DndContext,
@@ -461,18 +462,18 @@ export function PremiumCalendarClient({
           title: data.title,
           eventType: data.eventType,
           startDate: data.startDate,
-          endDate: data.endDate ?? undefined,
-          startTime: data.allDay ? undefined : (data.startTime ?? undefined),
-          endTime: data.allDay ? undefined : (data.endTime ?? undefined),
+          endDate: data.endDate || undefined,
+          startTime: data.allDay ? undefined : (data.startTime || undefined),
+          endTime: data.allDay ? undefined : (data.endTime || undefined),
           allDay: data.allDay,
-          location: data.location ?? undefined,
-          courseName: data.courseName ?? undefined,
-          description: data.description ?? undefined,
+          location: data.location || undefined,
+          courseName: data.courseName || undefined,
+          description: data.description || undefined,
           isMandatory: data.isMandatory,
           requiresRsvp: data.requiresRsvp,
-          rsvpDeadline: data.rsvpDeadline ?? undefined,
-          maxAttendees: data.maxAttendees ?? undefined,
-          attendeeIds: data.attendeeIds,
+          rsvpDeadline: data.rsvpDeadline || undefined,
+          maxAttendees: data.maxAttendees || undefined,
+          attendeeIds: data.attendeeIds.length > 0 ? data.attendeeIds : undefined,
           timezoneOffset,
         });
         if (!result.success) {
@@ -489,7 +490,7 @@ export function PremiumCalendarClient({
         window.location.reload();
         return;
       }
-      throw err;
+      toast.error('Save failed', msg || 'Failed to save event. Please try again.');
     } finally {
       setIsSavingEvent(false);
     }
@@ -543,7 +544,7 @@ export function PremiumCalendarClient({
     // Calculate new date and time
     const newDate = dropData.date;
     const newHour = dropData.hour;
-    const newStartTime = `${String(newHour).padStart(2, '0')}:00:00`;
+    const newStartTime = `${String(newHour).padStart(2, '0')}:00`;
 
     // Preserve original event duration
     let newEndTime: string | undefined;
@@ -558,16 +559,16 @@ export function PremiumCalendarClient({
         const endMinute = Math.round((durationHours % 1) * 60);
         const clampedHour = Math.min(endHour, 23);
         const clampedMinute = endHour > 23 ? 59 : endMinute;
-        newEndTime = `${String(clampedHour).padStart(2, '0')}:${String(clampedMinute).padStart(2, '0')}:00`;
+        newEndTime = `${String(clampedHour).padStart(2, '0')}:${String(clampedMinute).padStart(2, '0')}`;
       } else {
         // Fallback: 1 hour duration
         const endHour = Math.min(newHour + 1, 23);
-        newEndTime = `${String(endHour).padStart(2, '0')}:00:00`;
+        newEndTime = `${String(endHour).padStart(2, '0')}:00`;
       }
     } else {
       // No end date — default 1 hour
       const endHour = Math.min(newHour + 1, 23);
-      newEndTime = `${String(endHour).padStart(2, '0')}:00:00`;
+      newEndTime = `${String(endHour).padStart(2, '0')}:00`;
     }
 
     try {
@@ -576,6 +577,7 @@ export function PremiumCalendarClient({
         endDate: newDate,
         startTime: newStartTime,
         endTime: newEndTime,
+        allDay: false,
         timezoneOffset: new Date().getTimezoneOffset(),
       });
 

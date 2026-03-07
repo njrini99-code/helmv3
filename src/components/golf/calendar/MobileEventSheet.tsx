@@ -158,14 +158,17 @@ export function MobileEventSheet({
           }
         }
 
+        // Use the authoritative all_day boolean from DB, not a parsing heuristic
+        const isAllDay = event.all_day ?? false;
+
         setFormData({
           title: event.title || '',
           eventType: (event.event_type as GolfEventType) || 'practice',
           startDate,
           endDate,
-          startTime,
-          endTime,
-          allDay: !startTime && !endTime,
+          startTime: isAllDay ? null : startTime,
+          endTime: isAllDay ? null : endTime,
+          allDay: isAllDay,
           location: event.location || null,
           description: event.description || null,
         });
