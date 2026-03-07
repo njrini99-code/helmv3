@@ -189,13 +189,13 @@ export function MonthView({ month, events, onDateClick, onEventClick, isDraggabl
   }
 
   const getEventsForDate = (date: Date) => {
+    const checkDate = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
     return events.filter((event) => {
-      const eventDate = new Date(event.start_date);
-      return (
-        eventDate.getDate() === date.getDate() &&
-        eventDate.getMonth() === date.getMonth() &&
-        eventDate.getFullYear() === date.getFullYear()
-      );
+      const eventStart = new Date(event.start_date);
+      const normalizedStart = new Date(eventStart.getFullYear(), eventStart.getMonth(), eventStart.getDate()).getTime();
+      const eventEnd = event.end_date ? new Date(event.end_date) : eventStart;
+      const normalizedEnd = new Date(eventEnd.getFullYear(), eventEnd.getMonth(), eventEnd.getDate()).getTime();
+      return checkDate >= normalizedStart && checkDate <= normalizedEnd;
     });
   };
 

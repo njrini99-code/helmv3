@@ -184,12 +184,12 @@ export function DayView({ date, events, onEventClick, isDraggable = false, secon
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const dayEvents = events.filter((event) => {
-    const eventDate = new Date(event.start_date);
-    return (
-      eventDate.getDate() === date.getDate() &&
-      eventDate.getMonth() === date.getMonth() &&
-      eventDate.getFullYear() === date.getFullYear()
-    );
+    const checkDate = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+    const eventStart = new Date(event.start_date);
+    const normalizedStart = new Date(eventStart.getFullYear(), eventStart.getMonth(), eventStart.getDate()).getTime();
+    const eventEnd = event.end_date ? new Date(event.end_date) : eventStart;
+    const normalizedEnd = new Date(eventEnd.getFullYear(), eventEnd.getMonth(), eventEnd.getDate()).getTime();
+    return checkDate >= normalizedStart && checkDate <= normalizedEnd;
   });
 
   // Separate all-day events from timed events

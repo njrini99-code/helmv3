@@ -1524,10 +1524,13 @@ export async function updateGolfEvent(
       const endDate = validatedData.endDate || validatedData.startDate;
       if (isAllDay) {
         updateData.end_time = endDate || null;
+      } else if (validatedData.endTime && endDate) {
+        updateData.end_time = buildDateTimeString(endDate, validatedData.endTime, tz);
+      } else if (endDate && !validatedData.endTime) {
+        // End date set but no end time — preserve the date (e.g. multi-day event)
+        updateData.end_time = endDate;
       } else {
-        updateData.end_time = validatedData.endTime && endDate
-          ? buildDateTimeString(endDate, validatedData.endTime, tz)
-          : null;
+        updateData.end_time = null;
       }
     }
     if (validatedData.allDay !== undefined) updateData.all_day = validatedData.allDay;

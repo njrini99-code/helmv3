@@ -72,11 +72,13 @@ export function CalendarDayViewSwipeable({
   const scrollRef = useRef<HTMLDivElement>(null);
   const { triggerHaptic } = useHapticFeedback();
 
-  // Filter events for current date — use new Date() consistently (handles both ISO and timestamptz)
+  // Filter events for current date — includes multi-day events that span across this date
   const dayEvents = useMemo(() => {
+    const checkDate = startOfDay(currentDate).getTime();
     return events.filter((event) => {
-      const eventDate = new Date(event.start_date);
-      return isSameDay(eventDate, currentDate);
+      const eventStart = startOfDay(new Date(event.start_date)).getTime();
+      const eventEnd = event.end_date ? startOfDay(new Date(event.end_date)).getTime() : eventStart;
+      return checkDate >= eventStart && checkDate <= eventEnd;
     }).sort((a, b) => {
       return new Date(a.start_date).getTime() - new Date(b.start_date).getTime();
     });

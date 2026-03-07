@@ -226,28 +226,28 @@ export function WeekView({
     return date;
   });
 
+  // Helper: check if a date falls within an event's date range
+  const isDateInEventRange = (date: Date, event: CalendarEvent) => {
+    const checkDate = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+    const eventStart = new Date(event.start_date);
+    const normalizedStart = new Date(eventStart.getFullYear(), eventStart.getMonth(), eventStart.getDate()).getTime();
+    const eventEnd = event.end_date ? new Date(event.end_date) : eventStart;
+    const normalizedEnd = new Date(eventEnd.getFullYear(), eventEnd.getMonth(), eventEnd.getDate()).getTime();
+    return checkDate >= normalizedStart && checkDate <= normalizedEnd;
+  };
+
   // Separate all-day events from timed events
   const allDayEventsByDay = weekDates.map((date) => {
     return events.filter((event) => {
       if (!event.all_day) return false;
-      const eventDate = new Date(event.start_date);
-      return (
-        eventDate.getDate() === date.getDate() &&
-        eventDate.getMonth() === date.getMonth() &&
-        eventDate.getFullYear() === date.getFullYear()
-      );
+      return isDateInEventRange(date, event);
     });
   });
 
   const timedEventsByDay = weekDates.map((date) => {
     return events.filter((event) => {
       if (event.all_day) return false;
-      const eventDate = new Date(event.start_date);
-      return (
-        eventDate.getDate() === date.getDate() &&
-        eventDate.getMonth() === date.getMonth() &&
-        eventDate.getFullYear() === date.getFullYear()
-      );
+      return isDateInEventRange(date, event);
     });
   });
 

@@ -95,13 +95,29 @@ export default async function GolfCalendarPage() {
   // Map golf_events to CalendarEvent format
   // The start_time and end_time columns are ISO datetime strings (timestamptz)
   events = (eventsData || []).map(event => {
+    let startDate = event.start_time;
+    let endDate = event.end_time || event.start_time;
+
+    // For all-day events, normalize dates to prevent timezone shift.
+    // All-day dates are stored as date-only strings (e.g. "2026-03-07") which Postgres
+    // interprets as midnight UTC. JavaScript new Date() converts to local time, shifting
+    // the date backward in western timezones. Strip the timezone to parse as local midnight.
+    if (event.all_day) {
+      const normalizeAllDayDate = (d: string) => {
+        const datePart = d.slice(0, 10); // extract "YYYY-MM-DD"
+        return `${datePart}T00:00:00`; // local midnight, no timezone
+      };
+      startDate = normalizeAllDayDate(startDate);
+      endDate = normalizeAllDayDate(endDate);
+    }
+
     return {
       id: event.id,
       team_id: event.team_id || '',
       title: event.title,
       event_type: event.event_type,
-      start_date: event.start_time, // start_time is the datetime column
-      end_date: event.end_time || event.start_time,
+      start_date: startDate,
+      end_date: endDate,
       start_time: event.start_time,
       end_time: event.end_time,
       location: event.location,
