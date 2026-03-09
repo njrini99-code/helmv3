@@ -109,7 +109,7 @@ export async function generateStatsPDF({
 
     ${summary.sgTotal !== null ? `
     <div style="background: #f0fdf4; border-radius: 12px; padding: 20px; margin-bottom: 32px;">
-      <h2 style="font-size: 14px; font-weight: 600; color: #166534; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 16px 0;">
+      <h2 style="font-size: 14px; font-weight: 600; color: #16A34A; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 16px 0;">
         Strokes Gained Analysis
       </h2>
       <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;">

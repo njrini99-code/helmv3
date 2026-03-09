@@ -133,13 +133,13 @@ export default async function TeamStatsPage() {
   const { data: allHoles } = roundIds.length > 0
     ? await supabase
         .from('golf_holes')
-        .select('round_id, par, fairway_hit, gir, putts')
+        .select('round_id, par, fairway_hit, gir, putts, score')
         .in('round_id', roundIds)
     : { data: [] };
 
   // Define types for the grouped data
   type RoundData = { id: string; player_id: string; total_score: number | null; round_date: string; holes_played: number | null };
-  type HoleData = { round_id: string; par: number; fairway_hit: boolean | null; gir: boolean | null; putts: number | null };
+  type HoleData = { round_id: string; par: number; fairway_hit: boolean | null; gir: boolean | null; putts: number | null; score: number | null };
 
   // Group data by player in memory
   const roundsByPlayer: Record<string, RoundData[]> = {};
@@ -225,6 +225,8 @@ export default async function TeamStatsPage() {
     let totalGirHits = 0;
     let totalGirOpps = 0;
     let totalPutts = 0;
+    let totalBirdies = 0;
+    let totalHolesWithScore = 0;
 
     playerRounds.forEach(round => {
       const holes = holesByRound[round.id] || [];
@@ -243,8 +245,11 @@ export default async function TeamStatsPage() {
         if (hole.putts !== null && hole.putts > 0) {
           totalPutts += hole.putts;
         }
-        // Birdies (score = par - 1 or better)
-        // We'd need score per hole, but we can estimate from total
+        // Birdies (score <= par - 1)
+        if (hole.score !== null) {
+          totalHolesWithScore++;
+          if (hole.score <= hole.par - 1) totalBirdies++;
+        }
       });
     });
 
@@ -260,11 +265,11 @@ export default async function TeamStatsPage() {
       ? (totalPutts / totalPlayerHoles) * 18
       : null;
 
-    // TODO: birdies_per_round requires per-hole score data (golf_holes.score column).
-    // Currently golf_holes only tracks par, fairway_hit, gir, and putts — not the
-    // actual stroke count per hole, so birdies cannot be computed here.
-    // Once per-hole scores are stored, count holes where score < par.
-    const birdiesPerRound = null;
+    // Birdies per round: normalize to 18-hole equivalent
+    // golf_holes.score is stored per-hole — null values indicate pre-score-tracking rounds
+    const birdiesPerRound = totalHolesWithScore > 0
+      ? (totalBirdies / totalHolesWithScore) * 18
+      : null;
 
     return {
       id: player.id,

@@ -97,6 +97,101 @@ export const getSessionProfile = cache(async (): Promise<SessionProfile | null> 
   };
 });
 
+// ============================================================================
+// GOLF SESSION (React.cache deduplication — same pattern as baseball above)
+// ============================================================================
+
+export interface GolfCoachProfile {
+  id: string;
+  user_id: string;
+  full_name: string | null;
+  organization_id: string | null;
+  avatar_url: string | null;
+}
+
+export interface GolfPlayerProfile {
+  id: string;
+  user_id: string;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+  handicap: number | null;
+}
+
+export interface GolfSessionProfile {
+  userId: string;
+  role: 'coach' | 'player' | null;
+  coach: GolfCoachProfile | null;
+  player: GolfPlayerProfile | null;
+}
+
+/**
+ * React.cache()-wrapped golf session profile fetch.
+ *
+ * Deduplicates the getUser() + golf_coaches + golf_players queries across all
+ * server components, layouts, and server actions in the same React render tree.
+ * Without this, each page + action re-runs 4–6 redundant Supabase queries.
+ *
+ * Usage:
+ *   import { getGolfSessionProfile } from '@/lib/auth/session';
+ *   const session = await getGolfSessionProfile();
+ *   if (!session) redirect('/golf/login');
+ */
+export const getGolfSessionProfile = cache(async (): Promise<GolfSessionProfile | null> => {
+  const supabase = await createClient();
+
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) return null;
+
+  // Single-trip: coach + player in parallel
+  const [coachResult, playerResult] = await Promise.all([
+    supabase
+      .from('golf_coaches')
+      .select('id, user_id, full_name, organization_id, avatar_url')
+      .eq('user_id', user.id)
+      .maybeSingle(),
+    supabase
+      .from('golf_players')
+      .select('id, user_id, first_name, last_name, avatar_url, handicap')
+      .eq('user_id', user.id)
+      .maybeSingle(),
+  ]);
+
+  const coach = coachResult.data as GolfCoachProfile | null;
+  const player = playerResult.data as GolfPlayerProfile | null;
+  const role = coach ? 'coach' : player ? 'player' : null;
+
+  return { userId: user.id, role, coach, player };
+});
+
+/**
+ * Require an authenticated golf coach session.
+ * Throws if not authenticated or not a golf coach.
+ */
+export async function requireGolfCoachSession(): Promise<
+  Omit<GolfSessionProfile, 'coach'> & { coach: GolfCoachProfile }
+> {
+  const session = await getGolfSessionProfile();
+  if (!session?.coach) throw new Error('Unauthorized: golf coach role required');
+  return session as Omit<GolfSessionProfile, 'coach'> & { coach: GolfCoachProfile };
+}
+
+/**
+ * Require an authenticated golf player session.
+ * Throws if not authenticated or not a golf player.
+ */
+export async function requireGolfPlayerSession(): Promise<
+  Omit<GolfSessionProfile, 'player'> & { player: GolfPlayerProfile }
+> {
+  const session = await getGolfSessionProfile();
+  if (!session?.player) throw new Error('Unauthorized: golf player role required');
+  return session as Omit<GolfSessionProfile, 'player'> & { player: GolfPlayerProfile };
+}
+
+// ============================================================================
+// BASEBALL REQUIRE HELPERS
+// ============================================================================
+
 /**
  * Require an authenticated session. Throws 'Unauthorized' if not logged in.
  * Use in server actions where you want to throw rather than redirect.

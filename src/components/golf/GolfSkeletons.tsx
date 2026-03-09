@@ -529,7 +529,7 @@ export function StatsPageSkeleton() {
 export function DetailedStatsSkeleton() {
   return (
     <div className="min-h-full bg-transparent print:bg-white">
-      <div className="max-w-4xl mx-auto px-4 pt-16 pb-6 sm:pt-6 print:max-w-none print:px-8">
+      <div className="max-w-4xl mx-auto px-4 py-6 print:max-w-none print:px-8">
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-start justify-between gap-4 mb-3">
