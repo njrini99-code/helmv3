@@ -161,10 +161,10 @@ export function useQualifierRealtime(qualifierId: string | null): UseQualifierRe
         const player = entry.player as { id: string; first_name: string | null; last_name: string | null } | null;
         const roundAgg = playerRoundAggregates.get(entry.player_id);
 
-        // Prefer DB-persisted values, fall back to computed aggregates from rounds
-        const roundsCompleted = (raw.rounds_completed as number | null) ?? roundAgg?.roundsCompleted ?? 0;
-        const totalScore = (raw.total_score as number | null) ?? (roundAgg ? roundAgg.totalScore : null);
-        const totalToPar = (raw.total_to_par as number | null) ?? (roundAgg ? roundAgg.totalToPar : null);
+        // Prefer computed aggregates from rounds query (realtime), fall back to DB-persisted values
+        const roundsCompleted = roundAgg?.roundsCompleted ?? (raw.rounds_completed as number | null) ?? 0;
+        const totalScore = (roundAgg ? roundAgg.totalScore : null) ?? (raw.total_score as number | null);
+        const totalToPar = (roundAgg ? roundAgg.totalToPar : null) ?? (raw.total_to_par as number | null);
 
         return {
           id: entry.id,

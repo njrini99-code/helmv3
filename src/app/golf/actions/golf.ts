@@ -119,8 +119,8 @@ export interface ConflictResult {
     };
   }>;
   suggestions: Array<{
-    start: Date;
-    end: Date;
+    start: Date | string;
+    end: Date | string;
   }>;
 }
 
@@ -218,11 +218,12 @@ interface ShotData {
   round_id: string;
   shot_number: number;
   shot_type: string;
-  club_used: string | null;
+  club_type: string | null;
   result: string;
   distance_to_hole_before: number | null;
   distance_to_hole_after: number | null;
-  lie_type: string | null;
+  lie_before: string | null;
+  lie_after: string | null;
   notes: string | null;
 }
 
@@ -406,7 +407,7 @@ const partialRoundSchema = z.object({
     holeNumber: z.number().int().min(1).max(18),
     par: z.number().int().min(3).max(6),
     yardage: z.number().min(0),
-    score: z.number().int().min(0).max(30).optional().nullable(),
+    score: z.number().int().min(1).max(30).optional().nullable(),
     putts: z.number().int().min(0).max(15).optional().nullable(),
     fairwayHit: z.boolean().optional().nullable(),
     greenInRegulation: z.boolean().optional().nullable(),
@@ -416,7 +417,7 @@ const partialRoundSchema = z.object({
     sandSaveAttempt: z.boolean().optional().nullable(),
     sandSaveMade: z.boolean().optional().nullable(),
     shots: z.array(comprehensiveShotSchema).optional(),
-  }).passthrough()).max(18),
+  }).passthrough().nullable()).max(18),
   inProgressShots: z.array(z.object({
     holeNumber: z.number().int().min(1).max(18),
     shots: z.array(comprehensiveShotSchema),
@@ -684,7 +685,7 @@ export async function submitGolfRoundComprehensive(
 
     // Reject impossibly low scores
     const validationTotalScore = data.holes.reduce((sum, h) => sum + h.score, 0);
-    if (validationTotalScore < 40) {
+    if (validationTotalScore < data.holes.length * 2) {
       return { success: false, error: 'Total score appears invalid. Please check your scorecard.' };
     }
     if (data.holes.every(h => h.putts === 0)) {
@@ -721,6 +722,60 @@ export async function submitGolfRoundComprehensive(
 
       if (verifyError || !existingRound) {
         return { success: false, error: 'Round not found or you do not have permission to update it.' };
+      }
+    }
+
+    // Server-side qualifier validation
+    if (data.qualifierId) {
+      // Verify qualifier exists and is not completed
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: qualifierRaw, error: qualifierError } = await (supabase as any)
+        .from('golf_qualifiers')
+        .select('id, status, num_rounds')
+        .eq('id', data.qualifierId)
+        .single();
+
+      const qualifier = qualifierRaw as { id: string; status: string; num_rounds: number } | null;
+
+      if (qualifierError || !qualifier) {
+        return { success: false, error: 'Qualifier not found.' };
+      }
+
+      if (qualifier.status === 'completed') {
+        return { success: false, error: 'This qualifier has already been completed. Rounds can no longer be submitted.' };
+      }
+
+      // Verify the player has an entry in this qualifier
+      const { data: qualifierEntry, error: entryError } = await supabase
+        .from('golf_qualifier_entries')
+        .select('id')
+        .eq('qualifier_id', data.qualifierId)
+        .eq('player_id', player.id)
+        .single();
+
+      if (entryError || !qualifierEntry) {
+        return { success: false, error: 'You are not entered in this qualifier.' };
+      }
+
+      // Validate round number doesn't exceed qualifier's num_rounds
+      if (data.qualifierRoundNumber && data.qualifierRoundNumber > qualifier.num_rounds) {
+        return { success: false, error: `Round number ${data.qualifierRoundNumber} exceeds the qualifier's ${qualifier.num_rounds} rounds.` };
+      }
+
+      // Prevent duplicate qualifier round numbers
+      if (data.qualifierRoundNumber) {
+        const { data: existingRound } = await supabase
+          .from('golf_rounds')
+          .select('id')
+          .eq('qualifier_id', data.qualifierId)
+          .eq('player_id', player.id)
+          .eq('qualifier_round_number', data.qualifierRoundNumber)
+          .neq('status', 'abandoned')
+          .maybeSingle();
+
+        if (existingRound && existingRound.id !== existingRoundId) {
+          return { success: false, error: `You have already submitted round ${data.qualifierRoundNumber} for this qualifier.` };
+        }
       }
     }
 
@@ -912,13 +967,15 @@ export async function submitGolfRoundComprehensive(
       );
 
       if (rpcError) {
-        await supabase.from('golf_rounds').delete().eq('id', newRound.id).eq('player_id', player.id);
+        // Do NOT delete the round — preserve it so the user can retry.
+        // Deleting here caused permanent data loss when the RPC failed
+        // (e.g., trigger errors, network timeouts, race conditions).
         logError(new Error(rpcError.message), undefined, { action: 'submitGolfRoundComprehensive.rpc.new' });
         return { success: false, error: 'Failed to submit round. Please try again.' };
       }
 
       if (rpcResult && !rpcResult.success) {
-        await supabase.from('golf_rounds').delete().eq('id', newRound.id).eq('player_id', player.id);
+        // Do NOT delete — the round is preserved as a draft for retry
         return { success: false, error: rpcResult.error || 'Failed to submit round.' };
       }
 
@@ -1131,15 +1188,20 @@ export async function deleteGolfRound(roundId: string): Promise<ActionResult> {
       return { success: false, error: 'You must be signed in to delete rounds' };
     }
 
-    // Verify ownership
+    // Verify ownership and that the round is not completed
     const { data: round } = await supabase
       .from('golf_rounds')
-      .select('player_id, player:golf_players(user_id)')
+      .select('player_id, status, player:golf_players(user_id)')
       .eq('id', roundId)
       .single();
 
     if (!round || !round.player || round.player.user_id !== user.id) {
       return { success: false, error: 'Round not found or you do not have permission to delete it' };
+    }
+
+    // Prevent deletion of completed rounds — this is irreversible
+    if (round.status === 'completed') {
+      return { success: false, error: 'Completed rounds cannot be deleted' };
     }
 
     // Delete shots first — check for errors
@@ -1154,11 +1216,12 @@ export async function deleteGolfRound(roundId: string): Promise<ActionResult> {
       return { success: false, error: 'Failed to delete round data. Please try again.' };
     }
 
-    // Delete round
+    // Delete round — only if still not completed (race condition guard)
     const { error } = await supabase
       .from('golf_rounds')
       .delete()
-      .eq('id', roundId);
+      .eq('id', roundId)
+      .neq('status', 'completed');
 
     if (error) {
       return { success: false, error: 'Failed to delete round. Please try again.' };
@@ -2072,9 +2135,12 @@ export async function respondToEvent(
       return { success: false, error: 'Player profile not found' };
     }
 
+    // Map vocabulary: app uses 'accepted' but DB column expects 'confirmed'
+    const dbStatus = status === 'accepted' ? 'confirmed' : status;
+
     // Update RSVP
     const { updateRSVP } = await import('@/lib/calendar/rsvp');
-    await updateRSVP(eventId, player.id, status, supabase);
+    await updateRSVP(eventId, player.id, dbStatus as typeof status, supabase);
 
     revalidatePath('/golf/dashboard/calendar');
     updateTag(CACHE_TAGS.DASHBOARD);
@@ -2114,7 +2180,15 @@ export async function checkScheduleConflicts(
       { excludeEventId }
     );
 
-    return { success: true, data: result as unknown as ConflictResult };
+    // Serialize Date objects in suggestions to ISO strings for client transport
+    const serialized: ConflictResult = {
+      ...result as unknown as ConflictResult,
+      suggestions: ((result as unknown as ConflictResult).suggestions || []).map(s => ({
+        start: s.start instanceof Date ? s.start.toISOString() : s.start,
+        end: s.end instanceof Date ? s.end.toISOString() : s.end,
+      })),
+    };
+    return { success: true, data: serialized };
 
   } catch {
     return { success: false, error: 'Failed to check conflicts' };
@@ -2698,6 +2772,9 @@ export interface PartialRoundData {
     par: number;
     yardage?: number | null;
   }>;
+  // Optimistic locking: pass the round's updated_at from last fetch/save
+  // to detect concurrent edits from another device/tab
+  expectedUpdatedAt?: string;
 }
 
 /**
@@ -2860,20 +2937,78 @@ export async function savePartialRound(
       })
     );
 
+    // Build putt and approach detail payloads (mirrors submitGolfRoundComprehensive)
+    const puttDetailsPayload: Array<{
+      hole_number: number;
+      shot_number: number;
+      miss_tags: string[];
+      break_direction: string | null;
+      distance_feet: number | null;
+      made: boolean;
+    }> = [];
+    const approachDetailsPayload: Array<{
+      hole_number: number;
+      shot_number: number;
+      miss_direction: string;
+      lie_type: string | null;
+      distance_from_green_yards: number | null;
+    }> = [];
+
+    for (const [holeNumber, shots] of holesWithShotsByNumber) {
+      for (const shot of shots) {
+        if (shot.shotType === 'putting') {
+          puttDetailsPayload.push({
+            hole_number: holeNumber,
+            shot_number: shot.shotNumber,
+            miss_tags: shot.puttMissTags || [],
+            break_direction: shot.puttBreak || null,
+            distance_feet: shot.puttDistanceFeet ?? derivePuttDistanceFeet(shot),
+            made: shot.result === 'hole',
+          });
+        }
+
+        if ((shot.shotType === 'approach' || shot.shotType === 'around_green') &&
+            shot.approachMissDirection &&
+            shot.result !== 'green' && shot.result !== 'hole') {
+          approachDetailsPayload.push({
+            hole_number: holeNumber,
+            shot_number: shot.shotNumber,
+            miss_direction: shot.approachMissDirection,
+            lie_type: shot.approachMissLieType || null,
+            distance_from_green_yards: shot.distanceToHoleAfter != null
+              ? (shot.distanceUnitAfter === 'feet'
+                ? Math.round(shot.distanceToHoleAfter / 3)
+                : shot.distanceToHoleAfter)
+              : null,
+          });
+        }
+      }
+    }
+
     let roundId: string;
 
     if (existingRoundId) {
       // Use atomic RPC — wraps delete+insert in a single transaction
       // RPC not in generated types yet — use type escape
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const rpcParams: Record<string, unknown> = {
+        p_round_id: existingRoundId,
+        p_round_data: roundData,
+        p_holes: holesPayload,
+        p_shots: shotsPayload,
+        p_putt_details: puttDetailsPayload,
+        p_approach_details: approachDetailsPayload,
+      };
+
+      // Optimistic locking: pass expected updated_at to detect concurrent edits
+      if (data.expectedUpdatedAt) {
+        rpcParams.p_expected_updated_at = data.expectedUpdatedAt;
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: rpcResult, error: rpcError } = await (supabase as any).rpc(
         'save_partial_round_atomic',
-        {
-          p_round_id: existingRoundId,
-          p_round_data: roundData,
-          p_holes: holesPayload,
-          p_shots: shotsPayload,
-        }
+        rpcParams
       );
 
       if (rpcError) {
@@ -2882,6 +3017,10 @@ export async function savePartialRound(
       }
 
       if (rpcResult && !rpcResult.success) {
+        // Return conflict errors with a distinct error key so the UI can prompt a reload
+        if (rpcResult.error === 'conflict') {
+          return { success: false, error: 'conflict', };
+        }
         return { success: false, error: rpcResult.error || 'Failed to save round.' };
       }
 
@@ -2899,17 +3038,23 @@ export async function savePartialRound(
 
       let round: { id: string } | null = null;
       if (existingRound) {
-        // Update the existing in-progress round instead of creating a new one
+        // Update the existing in-progress round — ONLY if still in_progress
+        // (prevents reverting a round that was just completed by submit)
         const { data: updatedRound, error: updateError } = await supabase
           .from('golf_rounds')
           .update(roundData)
           .eq('id', existingRound.id)
           .eq('player_id', player.id)
+          .eq('status', 'in_progress')
           .select()
-          .single();
+          .maybeSingle();
         if (updateError) {
           logError(new Error(updateError.message), undefined, { action: 'savePartialRound.updateExisting' });
           return { success: false, error: 'Failed to save round. Please try again.' };
+        }
+        if (!updatedRound) {
+          // Round was completed by submit — don't create a new one, just return success
+          return { success: true, data: { roundId: existingRound.id } };
         }
         round = updatedRound;
       }
@@ -2941,8 +3086,8 @@ export async function savePartialRound(
 
         if (holesError) {
           logError(new Error(holesError.message), undefined, { action: 'savePartialRound.insertHoles' });
-          // Clean up: delete the round (cascades to any holes)
-          await supabase.from('golf_rounds').delete().eq('id', roundId);
+          // Only clean up in_progress rounds — never delete a completed round
+          await supabase.from('golf_rounds').delete().eq('id', roundId).eq('status', 'in_progress');
           return { success: false, error: 'Failed to save hole data. Please try again.' };
         }
 
@@ -2960,22 +3105,52 @@ export async function savePartialRound(
               ...shot,
             }));
 
-            const { error: shotsError } = await supabase.from('golf_shots').insert(shotsData);
+            const { data: insertedShots, error: shotsError } = await supabase.from('golf_shots').insert(shotsData).select('id, hole_number, shot_number');
             if (shotsError) {
               logError(new Error(shotsError.message), undefined, { action: 'savePartialRound.insertShots' });
-              // Clean up: delete the round (cascades to holes and shots)
-              await supabase.from('golf_rounds').delete().eq('id', roundId);
+              // Only clean up in_progress rounds — never delete a completed round
+              await supabase.from('golf_rounds').delete().eq('id', roundId).eq('status', 'in_progress');
               return { success: false, error: 'Failed to save shot data. Please try again.' };
+            }
+
+            // Insert putt_details and approach_miss_details for this hole's shots
+            if (insertedShots && insertedShots.length > 0) {
+              const shotIdMap = new Map(insertedShots.map(s => [`${s.hole_number}-${s.shot_number}`, s.id]));
+
+              // Filter putt details for this hole
+              const holePuttDetails = puttDetailsPayload.filter(p => p.hole_number === group.hole_number);
+              for (const pd of holePuttDetails) {
+                const shotIdForPutt = shotIdMap.get(`${pd.hole_number}-${pd.shot_number}`);
+                if (shotIdForPutt) {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  await (supabase as any).from('putt_details').insert({
+                    shot_id: shotIdForPutt,
+                    miss_tags: pd.miss_tags || [],
+                    break_direction: pd.break_direction,
+                    distance_feet: pd.distance_feet,
+                    made: pd.made,
+                  }).catch(() => { /* non-critical */ });
+                }
+              }
+
+              // Filter approach details for this hole
+              const holeApproachDetails = approachDetailsPayload.filter(a => a.hole_number === group.hole_number);
+              for (const ad of holeApproachDetails) {
+                const shotIdForApproach = shotIdMap.get(`${ad.hole_number}-${ad.shot_number}`);
+                if (shotIdForApproach) {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  await (supabase as any).from('approach_miss_details').insert({
+                    shot_id: shotIdForApproach,
+                    miss_direction: ad.miss_direction,
+                    lie_type: ad.lie_type,
+                    distance_from_green_yards: ad.distance_from_green_yards,
+                  }).catch(() => { /* non-critical */ });
+                }
+              }
             }
           }
         }
       }
-    }
-
-    // If this is a qualifier round, update the qualifier entry stats
-    if (data.qualifierId) {
-      await updateQualifierEntryStats(supabase, data.qualifierId, player.id);
-      revalidatePath(`/golf/dashboard/qualifiers/${data.qualifierId}`);
     }
 
     revalidatePath('/golf/dashboard/rounds');
@@ -4146,7 +4321,7 @@ export async function updateShot(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const sb = supabase as any;
         if (data.putt_miss_tags && data.putt_miss_tags.length > 0) {
-          await sb.from('putt_miss_details').upsert({
+          await sb.from('putt_details').upsert({
             shot_id: shotId,
             miss_tags: data.putt_miss_tags,
             break_direction: data.putt_break ?? null,
@@ -4155,7 +4330,7 @@ export async function updateShot(
           }, { onConflict: 'shot_id' });
         } else if (data.putt_made !== undefined) {
           // Still upsert for made putts (even with empty miss tags) to keep conversion data accurate
-          await sb.from('putt_miss_details').upsert({
+          await sb.from('putt_details').upsert({
             shot_id: shotId,
             miss_tags: [],
             break_direction: data.putt_break ?? null,
@@ -4223,6 +4398,10 @@ export interface ShotDetail {
   putt_slope: string | null;
   is_penalty: boolean | null;
   penalty_type: string | null;
+  putt_miss_tags: string[] | null;
+  approach_miss_direction: string | null;
+  approach_miss_lie_type: string | null;
+  approach_distance_from_green: number | null;
 }
 
 /** Hole summary with shots for review */
@@ -4340,6 +4519,7 @@ export async function getRoundShotDetails(
         id,
         hole_number,
         par,
+        yardage,
         score,
         putts,
         fairway_hit,
@@ -4354,6 +4534,7 @@ export async function getRoundShotDetails(
         id: string;
         hole_number: number;
         par: number;
+        yardage: number | null;
         score: number | null;
         putts: number | null;
         fairway_hit: boolean | null;
@@ -4398,13 +4579,44 @@ export async function getRoundShotDetails(
       return { success: false, error: 'Failed to fetch shots' };
     }
 
-    // Group shots by hole_number
+    // Fetch putt_details and approach_miss_details for the round's shots
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sb = supabase as any;
+    const shotIds = (shots || []).map((s: { id: string }) => s.id);
+    const puttDetailsByShot: Record<string, { miss_tags: string[] | null }> = {};
+    const approachDetailsByShot: Record<string, { miss_direction: string | null; lie_type: string | null; distance_from_green_yards: number | null }> = {};
+
+    if (shotIds.length > 0) {
+      const [puttRes, approachRes] = await Promise.all([
+        sb.from('putt_details')
+          .select('shot_id, miss_tags')
+          .in('shot_id', shotIds),
+        sb.from('approach_miss_details')
+          .select('shot_id, miss_direction, lie_type, distance_from_green_yards')
+          .in('shot_id', shotIds),
+      ]);
+
+      for (const pd of (puttRes?.data || [])) {
+        puttDetailsByShot[pd.shot_id] = { miss_tags: pd.miss_tags };
+      }
+      for (const ad of (approachRes?.data || [])) {
+        approachDetailsByShot[ad.shot_id] = {
+          miss_direction: ad.miss_direction,
+          lie_type: ad.lie_type,
+          distance_from_green_yards: ad.distance_from_green_yards,
+        };
+      }
+    }
+
+    // Group shots by hole_number, merging detail table data
     const shotsByHole: Record<number, ShotDetail[]> = {};
     for (const shot of (shots || [])) {
       if (!shotsByHole[shot.hole_number]) {
         shotsByHole[shot.hole_number] = [];
       }
       const holeShots = shotsByHole[shot.hole_number];
+      const puttDetail = puttDetailsByShot[shot.id];
+      const approachDetail = approachDetailsByShot[shot.id];
       if (holeShots) {
         holeShots.push({
           id: shot.id,
@@ -4423,6 +4635,10 @@ export async function getRoundShotDetails(
           putt_slope: shot.putt_slope,
           is_penalty: shot.is_penalty,
           penalty_type: shot.penalty_type,
+          putt_miss_tags: puttDetail?.miss_tags ?? null,
+          approach_miss_direction: approachDetail?.miss_direction ?? null,
+          approach_miss_lie_type: approachDetail?.lie_type ?? null,
+          approach_distance_from_green: approachDetail?.distance_from_green_yards ?? null,
         });
       }
     }
@@ -4444,7 +4660,7 @@ export async function getRoundShotDetails(
         id: hole.id,
         hole_number: hole.hole_number,
         par: hole.par,
-        yardage: null,
+        yardage: hole.yardage ?? null,
         score: hole.score,
         score_to_par: hole.score !== null ? hole.score - hole.par : null,
         putts: hole.putts,
@@ -4484,6 +4700,154 @@ export async function getRoundShotDetails(
 
 // ============================================================================
 // SEED TEST SHOT DATA (Development Only)
+// ============================================================================
+
+// ============================================================================
+// REVERT COMPLETED ROUND — Coach-only action to uncomplete a round
+// ============================================================================
+
+/**
+ * Revert a completed round back to in_progress so it can be re-edited.
+ * Only the team's coach can perform this action.
+ *
+ * - Changes status from 'completed' to 'in_progress'
+ * - Nulls aggregate stat columns (will be recalculated on re-submit)
+ * - Deletes the round's entry from golf_round_stats_cache
+ * - Refreshes the player's aggregate stats cache
+ * - Updates qualifier standings if applicable
+ */
+export async function revertCompletedRound(roundId: string): Promise<ActionResult<void>> {
+  try {
+    const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'You must be signed in' };
+    }
+
+    // Verify the user is a coach
+    const { data: coach } = await supabase
+      .from('golf_coaches')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!coach) {
+      return { success: false, error: 'Only coaches can revert completed rounds' };
+    }
+
+    // Get the round and verify it belongs to a player on this coach's team
+    const { data: round } = await supabase
+      .from('golf_rounds')
+      .select('id, player_id, status, qualifier_id, team_id')
+      .eq('id', roundId)
+      .single();
+
+    if (!round) {
+      return { success: false, error: 'Round not found' };
+    }
+
+    if (round.status !== 'completed') {
+      return { success: false, error: 'Round is not completed — cannot revert' };
+    }
+
+    // Verify the coach owns the team this round belongs to
+    if (round.team_id) {
+      const { data: team } = await supabase
+        .from('golf_teams')
+        .select('id')
+        .eq('id', round.team_id)
+        .eq('coach_id', coach.id)
+        .single();
+
+      if (!team) {
+        return { success: false, error: 'You do not have permission to revert this round' };
+      }
+    } else {
+      // Round has no team_id — verify player is on one of this coach's teams
+      const { data: membership } = await supabase
+        .from('golf_team_members')
+        .select('team_id, golf_teams!inner(coach_id)')
+        .eq('player_id', round.player_id)
+        .eq('status', 'active')
+        .eq('golf_teams.coach_id', coach.id)
+        .limit(1)
+        .maybeSingle();
+
+      if (!membership) {
+        return { success: false, error: 'You do not have permission to revert this round' };
+      }
+    }
+
+    // Revert the round: set status to in_progress, null out aggregate stats, and clear qualifier refs
+    const { error: updateError } = await supabase
+      .from('golf_rounds')
+      .update({
+        status: 'in_progress',
+        total_score: null,
+        score_to_par: null,
+        total_putts: null,
+        total_fairways_hit: null,
+        total_fairways: null,
+        total_gir: null,
+        total_gir_possible: null,
+        total_penalties: null,
+        front_nine: null,
+        back_nine: null,
+        qualifier_id: null,
+        qualifier_round_number: null,
+      })
+      .eq('id', roundId)
+      .eq('status', 'completed');
+
+    if (updateError) {
+      logError(new Error(updateError.message), undefined, { action: 'revertCompletedRound.update' });
+      return { success: false, error: 'Failed to revert round' };
+    }
+
+    // Delete the round's entry from the stats cache
+    await supabase
+      .from('golf_round_stats_cache')
+      .delete()
+      .eq('round_id', roundId);
+
+    // Refresh the player's aggregate stats cache
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (supabase as any)
+      .rpc('refresh_player_stats_cache', { p_player_id: round.player_id })
+      .catch((err: unknown) => {
+        console.error('[revertCompletedRound] Failed to refresh stats cache:', err);
+      });
+
+    // If this was a qualifier round, update qualifier entry stats
+    if (round.qualifier_id) {
+      await updateQualifierEntryStats(supabase, round.qualifier_id, round.player_id);
+    }
+
+    // Revalidate all relevant paths
+    revalidatePath('/golf/dashboard');
+    revalidatePath('/golf/dashboard/rounds');
+    revalidatePath('/golf/dashboard/stats');
+    revalidatePath(`/golf/dashboard/rounds/${roundId}`);
+    updateTag(CACHE_TAGS.DASHBOARD);
+    updateTag(CACHE_TAGS.ROUNDS);
+    updateTag(CACHE_TAGS.STATS);
+
+    if (round.qualifier_id) {
+      revalidatePath('/golf/dashboard/qualifiers');
+      revalidatePath(`/golf/dashboard/qualifiers/${round.qualifier_id}`);
+    }
+
+    return { success: true, data: undefined };
+
+  } catch (error) {
+    logError(error instanceof Error ? error : new Error(String(error)), undefined, { action: 'revertCompletedRound' });
+    return { success: false, error: 'Failed to revert round. Please try again.' };
+  }
+}
+
+// ============================================================================
+// SEED TEST DATA
 // ============================================================================
 
 /**

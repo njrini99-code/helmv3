@@ -73,6 +73,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
   // Auto-save hook with database persistence
   const {
     scheduleSave,
+    stopSaving: stopDraftAutoSave,
     clearDraft,
     roundId: draftRoundId,
     setRoundId: setDraftRoundId,
@@ -713,6 +714,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
       roundType: setupData.roundType,
       roundDate: setupData.roundDate,
       qualifierId: setupData.roundType === 'qualifier' ? selectedQualifierId ?? undefined : undefined,
+      qualifierRoundNumber: setupData.roundType === 'qualifier' ? selectedRoundNumber ?? undefined : undefined,
       currentHole: holeIndexToUse + 1,
       holesToPlay: holes.length as 9 | 18,
       holes: statsToUse,
@@ -723,7 +725,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
         yardage: hole.yardage,
       })),
     };
-  }, [completedHoleStats, currentHoleIndex, inProgressShotsByHole, holes, setupData, selectedQualifierId]);
+  }, [completedHoleStats, currentHoleIndex, inProgressShotsByHole, holes, setupData, selectedQualifierId, selectedRoundNumber]);
 
   const handleHoleComplete = async (holeIndex: number, holeStats: HoleStats) => {
     // Detect re-edit: hole already had completed stats before this call
@@ -987,6 +989,13 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
     setStep('submitting');
     setError('');
 
+    // CRITICAL: Stop ALL auto-save systems before submitting.
+    // This prevents race conditions where auto-save fires during/after submit
+    // and reverts the round's status from 'completed' back to 'in_progress'.
+    stopDraftAutoSave();
+    // Clear any queued shot-level auto-save
+    pendingServerSaveRef.current = null;
+
     try {
       // Save pre-submit snapshot to localStorage as insurance
       emergencySave({
@@ -1012,8 +1021,9 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
             }
           };
           check();
-          // Safety timeout — don't wait forever
-          setTimeout(resolve, 3000);
+          // Extended timeout — must wait for in-flight save to fully complete
+          // to avoid concurrent database transactions
+          setTimeout(resolve, 10000);
         });
       }
 

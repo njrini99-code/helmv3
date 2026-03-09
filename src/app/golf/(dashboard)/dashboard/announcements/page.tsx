@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
 import { IconBell } from '@/components/icons';
@@ -17,21 +18,17 @@ export const metadata: Metadata = {
 export const revalidate = 120;
 
 export default async function GolfAnnouncementsPage() {
+  // React.cache() dedupes auth queries across render tree (free after layout)
+  const session = await getGolfSessionProfile();
+  if (!session) redirect('/golf/login');
+
+  const { userId, role, coach, player } = session;
+  const isCoach = role === 'coach';
+  const orgId = coach?.organization_id ?? null;
+  const playerId = player?.id ?? null;
+
+  // Supabase client only for team/data lookups
   const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/golf/login');
-
-  // Role + profiles in parallel
-  const [userRoleResult, coachResult, playerResult] = await Promise.all([
-    supabase.from('users').select('role').eq('id', user.id).maybeSingle(),
-    supabase.from('golf_coaches').select('id, organization_id').eq('user_id', user.id).maybeSingle(),
-    supabase.from('golf_players').select('id').eq('user_id', user.id).maybeSingle(),
-  ]);
-
-  const isCoach = userRoleResult.data?.role === 'coach';
-  const orgId = coachResult.data?.organization_id;
-  const playerId = playerResult.data?.id || null;
 
   // Team lookup in parallel for coach and player paths
   const [coachTeamResult, playerTeamResult] = await Promise.all([
@@ -48,7 +45,7 @@ export default async function GolfAnnouncementsPage() {
   // Fetch announcements + coach data (roster + documents) in parallel
   const [announcementsResult, membersResult, docsResult] = await Promise.all([
     teamId
-      ? getAnnouncementsWithMeta(teamId, user.id, isCoach, playerId)
+      ? getAnnouncementsWithMeta(teamId, userId, isCoach, playerId)
       : Promise.resolve({ success: true as const, data: [] }),
     isCoach && teamId
       ? supabase

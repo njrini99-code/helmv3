@@ -143,7 +143,7 @@ export function useAttendanceRealtime(eventId: string | null): UseAttendanceReal
 
       // Calculate counts from attendance records
       const calculatedCounts: AttendanceCounts = {
-        confirmed: transformedAttendance.filter(r => r.status === 'confirmed').length,
+        confirmed: transformedAttendance.filter(r => r.status === 'confirmed' || r.status === 'accepted').length,
         maybe: transformedAttendance.filter(r => r.status === 'maybe').length,
         declined: transformedAttendance.filter(r => r.status === 'declined').length,
         pending: transformedAttendance.filter(r => r.status === 'pending' || !r.status).length,
@@ -302,7 +302,7 @@ export function useTeamEventsAttendanceRealtime(
             total: 0,
           };
 
-          if (record.status === 'confirmed') existing.confirmed++;
+          if (record.status === 'confirmed' || record.status === 'accepted') existing.confirmed++;
           else if (record.status === 'maybe') existing.maybe++;
           else if (record.status === 'declined') existing.declined++;
           else existing.pending++;

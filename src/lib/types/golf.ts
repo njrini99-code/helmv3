@@ -368,6 +368,7 @@ export interface ShotRecord {
   puttDistanceFeet?: number;
   approachMissDirection?: ApproachMissDirection;
   approachMissLieType?: 'fairway' | 'rough' | 'bunker' | 'hazard';
+  distanceFromGreenYards?: number;
 }
 
 /**

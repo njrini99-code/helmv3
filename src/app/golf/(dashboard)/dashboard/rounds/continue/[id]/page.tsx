@@ -78,12 +78,50 @@ function derivePuttDistanceFeet(shot: GolfShot): number | undefined {
     : shot.distance_to_hole_before;
 }
 
-function mapShotToRecord(shot: GolfShot): ShotRecord {
+function mapShotToRecord(
+  shot: GolfShot,
+  puttDetail?: { miss_tags: string[] | null },
+  approachDetail?: { miss_direction: string | null; lie_type: string | null; distance_from_green_yards: number | null },
+): ShotRecord {
   const shotType = (shot.shot_type ?? 'approach') as ShotRecord['shotType'];
   const distanceUnitBefore = (shot.distance_unit_before ??
     (shotType === 'putting' ? 'feet' : 'yards')) as ShotRecord['distanceUnitBefore'];
   const distanceUnitAfter = (shot.distance_unit_after ??
     (shot.result === 'green' || shot.result === 'hole' ? 'feet' : 'yards')) as ShotRecord['distanceUnitAfter'];
+
+  // Bug 5 fix: Prefer putt miss tags from putt_details table over parsing miss_direction
+  let puttMissTags: PuttMissTag[] | undefined;
+  if (puttDetail?.miss_tags && puttDetail.miss_tags.length > 0) {
+    puttMissTags = puttDetail.miss_tags.filter(
+      tag => PUTT_MISS_TAGS.has(tag as PuttMissTag)
+    ) as PuttMissTag[];
+    if (puttMissTags.length === 0) puttMissTags = undefined;
+  } else {
+    puttMissTags = parsePuttMissTags(shot);
+  }
+
+  // Bug 6 fix: Prefer approach miss details from approach_miss_details table
+  let approachMissDir = parseApproachMissDirection(shot);
+  let approachMissLie = parseApproachMissLieType(shot);
+  let distanceFromGreenYards: number | undefined;
+
+  if (approachDetail) {
+    if (approachDetail.miss_direction) {
+      const normalized = approachDetail.miss_direction.toLowerCase().replace('-', '_') as ApproachMissDirection;
+      if (APPROACH_MISS_DIRECTIONS.has(normalized)) {
+        approachMissDir = normalized;
+      }
+    }
+    if (approachDetail.lie_type) {
+      const lieMap: Record<string, ShotRecord['approachMissLieType']> = {
+        fairway: 'fairway', rough: 'rough', sand: 'bunker', bunker: 'bunker', hazard: 'hazard',
+      };
+      approachMissLie = lieMap[approachDetail.lie_type] ?? approachMissLie;
+    }
+    if (approachDetail.distance_from_green_yards != null) {
+      distanceFromGreenYards = approachDetail.distance_from_green_yards;
+    }
+  }
 
   return {
     id: shot.id,
@@ -102,10 +140,11 @@ function mapShotToRecord(shot: GolfShot): ShotRecord {
     puttSlope: (shot.putt_slope ?? undefined) as ShotRecord['puttSlope'],
     isPenalty: shot.is_penalty ?? false,
     penaltyType: (shot.penalty_type ?? undefined) as ShotRecord['penaltyType'],
-    puttMissTags: parsePuttMissTags(shot),
+    puttMissTags,
     puttDistanceFeet: derivePuttDistanceFeet(shot),
-    approachMissDirection: parseApproachMissDirection(shot),
-    approachMissLieType: parseApproachMissLieType(shot),
+    approachMissDirection: approachMissDir,
+    approachMissLieType: approachMissLie,
+    distanceFromGreenYards,
   };
 }
 
@@ -141,6 +180,8 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
 
   // Load holes, shots, and course hole yardages in parallel
   // Note: We fetch shots separately instead of using relation query due to missing FK in types
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sb = supabase as any;
   const [
     { data: holes },
     { data: allShots },
@@ -172,6 +213,33 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
     if (ch.yardage != null) courseYardageMap.set(ch.hole_number, ch.yardage);
   }
 
+  // Fetch putt_details and approach_miss_details for all shots in this round
+  const shotIds = ((allShots || []) as GolfShot[]).map(s => s.id);
+  const puttDetailsByShot = new Map<string, { miss_tags: string[] | null }>();
+  const approachDetailsByShot = new Map<string, { miss_direction: string | null; lie_type: string | null; distance_from_green_yards: number | null }>();
+
+  if (shotIds.length > 0) {
+    const [puttRes, approachRes] = await Promise.all([
+      sb.from('putt_details')
+        .select('shot_id, miss_tags')
+        .in('shot_id', shotIds),
+      sb.from('approach_miss_details')
+        .select('shot_id, miss_direction, lie_type, distance_from_green_yards')
+        .in('shot_id', shotIds),
+    ]);
+
+    for (const pd of (puttRes?.data || [])) {
+      puttDetailsByShot.set(pd.shot_id, { miss_tags: pd.miss_tags });
+    }
+    for (const ad of (approachRes?.data || [])) {
+      approachDetailsByShot.set(ad.shot_id, {
+        miss_direction: ad.miss_direction,
+        lie_type: ad.lie_type,
+        distance_from_green_yards: ad.distance_from_green_yards,
+      });
+    }
+  }
+
   // Errors are handled gracefully - holes/shots will be empty if fetch fails
 
   // Group shots by hole number for easy lookup
@@ -192,7 +260,7 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
     const holeShots = shotsByHole.get(hole.hole_number) || [];
     const shots = [...holeShots].sort((a, b) => a.shot_number - b.shot_number);
 
-    const mappedShots = shots.map(mapShotToRecord);
+    const mappedShots = shots.map(s => mapShotToRecord(s, puttDetailsByShot.get(s.id), approachDetailsByShot.get(s.id)));
     const holeConfig = {
       number: hole.hole_number,
       par: hole.par,
@@ -301,7 +369,7 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
   const startShotNumber = sortedStartHoleShots.length > 0 ? sortedStartHoleShots.length + 1 : 1;
 
   // Transform shots to ShotRecord format for the component
-  const initialShots: ShotRecord[] = sortedStartHoleShots.map(mapShotToRecord);
+  const initialShots: ShotRecord[] = sortedStartHoleShots.map(s => mapShotToRecord(s, puttDetailsByShot.get(s.id), approachDetailsByShot.get(s.id)));
 
   // Build in-progress shots for ALL non-completed holes (not just the starting hole)
   // This prevents data loss when shots exist on multiple skipped/unfinished holes
@@ -313,7 +381,7 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
     // Skip completed holes (they're already in completedHoleStats)
     if (completedHoleStats[i]) continue;
     const sorted = [...holeShots].sort((a, b) => a.shot_number - b.shot_number);
-    allInProgressShots[i] = sorted.map(mapShotToRecord);
+    allInProgressShots[i] = sorted.map(s => mapShotToRecord(s, puttDetailsByShot.get(s.id), approachDetailsByShot.get(s.id)));
   }
 
   return (

@@ -214,13 +214,14 @@ export function calculateHoleStats(shots: ShotRecord[], hole: StatsHole): HoleSt
 
   // GREEN IN REGULATION
   // Must match server-side calculateGirFromShots() in golf.ts (source of truth for stored values)
+  // Uses shotNumber (1-based) instead of array index to match the server calculation
   const shotsToGreen = hole.par - 2;
   const greenHitResults = ['green', 'hole', 'gir'];
-  const shotsTakenToGreen = shots.findIndex(s => greenHitResults.includes(s.result));
-  const greenInRegulation = shotsTakenToGreen !== -1 && (shotsTakenToGreen + 1) <= shotsToGreen;
+  const greenHitShot = shots.find(s => greenHitResults.includes(s.result));
+  const greenInRegulation = greenHitShot !== undefined && greenHitShot.shotNumber <= shotsToGreen;
 
   // SCRAMBLING
-  const scrambleAttempt = !greenInRegulation && shotsTakenToGreen !== -1;
+  const scrambleAttempt = !greenInRegulation && greenHitShot !== undefined;
   const scrambleMade = scrambleAttempt && score <= hole.par;
 
   // SAND SAVE

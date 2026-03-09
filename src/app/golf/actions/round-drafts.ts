@@ -151,28 +151,25 @@ export async function saveRoundDraft(
     const roundsTable = fromUntyped(supabase, 'golf_rounds');
 
     if (existingRoundId) {
-      // Update existing draft
+      // Update existing draft — ONLY if still in_progress (never revert a completed round)
       const { data: updated, error: updateError } = await roundsTable
         .update(roundRecord)
         .eq('id', existingRoundId)
         .eq('player_id', player.id)
+        .eq('status', 'in_progress')
         .select('id')
-        .single();
+        .maybeSingle();
 
       if (updateError) {
-        // If update fails (round might not exist or not be a draft), create new
-        const { data: created, error: createError } = await fromUntyped(supabase, 'golf_rounds')
-          .insert(roundRecord)
-          .select('id')
-          .single();
-
-        if (createError) {
-          return { success: false, error: 'Failed to save draft' };
-        }
-        roundId = created.id;
-      } else {
-        roundId = updated.id;
+        // If update fails, do NOT create a new round — this prevents orphan creation
+        // when the original round was completed by submit
+        return { success: false, error: 'Failed to save draft' };
       }
+      if (!updated) {
+        // Round was already completed or deleted — silently succeed to avoid error spam
+        return { success: true, data: { roundId: existingRoundId, lastAutoSave: now } };
+      }
+      roundId = updated.id;
     } else {
       // Check for existing draft first (using status filter for in_progress rounds)
       const { data: existingDraft } = await supabase
@@ -185,10 +182,11 @@ export async function saveRoundDraft(
         .single();
 
       if (existingDraft) {
-        // Update existing draft
+        // Update existing draft — ONLY if still in_progress
         const { error: updateError } = await fromUntyped(supabase, 'golf_rounds')
           .update(roundRecord)
-          .eq('id', existingDraft.id);
+          .eq('id', existingDraft.id)
+          .eq('status', 'in_progress');
 
         if (updateError) {
           return { success: false, error: 'Failed to update existing draft' };
@@ -381,8 +379,15 @@ export async function clearRoundDraft(roundId: string): Promise<ActionResult<voi
 // ============================================================================
 
 /**
- * Convert a draft to a regular in-progress round.
- * This removes the is_draft flag so it's treated as a manually saved round.
+ * Convert a draft to a completed round.
+ *
+ * @deprecated This function is not currently called from any UI or action.
+ * Use submitGolfRoundComprehensive in golf.ts instead, which handles
+ * hole/shot insertion, stats calculation, qualifier updates, and insights
+ * in a single atomic RPC call.
+ *
+ * Guarded with validation: refuses to mark a round completed if it has no
+ * scored holes or shots, preventing empty rounds from polluting stats.
  */
 export async function convertDraftToRound(roundId: string): Promise<ActionResult<void>> {
   try {
@@ -402,6 +407,36 @@ export async function convertDraftToRound(roundId: string): Promise<ActionResult
 
     if (!player) {
       return { success: false, error: 'Player profile not found' };
+    }
+
+    // Validate that the round actually has scored hole data before marking completed
+    const { data: scoredHoles, error: holesQueryError } = await supabase
+      .from('golf_holes')
+      .select('id')
+      .eq('round_id', roundId)
+      .not('score', 'is', null)
+      .limit(1);
+
+    if (holesQueryError) {
+      return { success: false, error: 'Failed to verify round data' };
+    }
+
+    if (!scoredHoles || scoredHoles.length === 0) {
+      return { success: false, error: 'Cannot complete round: no holes have been scored. Please enter hole scores first.' };
+    }
+
+    // Validate that at least some shots exist
+    const { count: shotCount, error: shotsQueryError } = await supabase
+      .from('golf_shots')
+      .select('id', { count: 'exact', head: true })
+      .eq('round_id', roundId);
+
+    if (shotsQueryError) {
+      return { success: false, error: 'Failed to verify shot data' };
+    }
+
+    if (!shotCount || shotCount === 0) {
+      return { success: false, error: 'Cannot complete round: no shot data exists. Please record shots first.' };
     }
 
     // Convert draft to regular round (clear draft data, preserve player notes)
@@ -440,7 +475,7 @@ export async function convertDraftToRound(roundId: string): Promise<ActionResult
 
     revalidatePath('/golf/dashboard/rounds');
 
-    // Fire-and-forget: trigger CoachHelm insight generation
+    // Only trigger insights if the round has actual data (validated above)
     triggerPlayerInsightsAfterRound(player.id).catch((err) => {
       console.error('[CoachHelm] Post-round insight trigger failed:', err);
     });

@@ -276,6 +276,26 @@ export function useAutoSaveRound(
   }, [performSave]);
 
   /**
+   * Stop all auto-save activity. Call before submitting the round
+   * to prevent race conditions where auto-save reverts a completed round.
+   */
+  const stopSaving = useCallback(() => {
+    // Clear pending debounced save
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
+    // Clear interval timer
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    // Clear queued data so interval can't fire even if re-created
+    lastDataRef.current = null;
+    pendingSaveRef.current = null;
+  }, []);
+
+  /**
    * Set up interval-based auto-save
    */
   useEffect(() => {
@@ -372,6 +392,7 @@ export function useAutoSaveRound(
     // Save functions
     scheduleSave,
     saveNow,
+    stopSaving,
     loadDraft,
     clearDraft,
 

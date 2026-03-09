@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { GolfCalendarWrapper } from '@/components/golf/calendar/GolfCalendarWrapper';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
@@ -11,28 +12,23 @@ export const metadata: Metadata = {
   description: 'View and manage your team events, practices, and class schedule',
 };
 
-// Calendar freshness matters — no stale cache
-export const revalidate = 0;
+// 30s cache: balances freshness vs cold-fetch timeouts (was 0 → 100% P75 30s)
+export const revalidate = 30;
 
 export default async function GolfCalendarPage() {
+  // React.cache() dedupes getUser() + profile queries — free after layout runs them
+  const session = await getGolfSessionProfile();
+  if (!session) redirect('/golf/login');
+
+  const { role, coach, player } = session;
+  const isCoach = role === 'coach';
+  const orgId = coach?.organization_id ?? null;
+  const playerId = player?.id ?? null;
+
+  // Supabase client for team/event data lookups only
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/golf/login');
-
-  // Role + profiles in parallel (all need user.id)
-  const [userRoleResult, coachResult, playerResult] = await Promise.all([
-    supabase.from('users').select('role').eq('id', user.id).maybeSingle(),
-    supabase.from('golf_coaches').select('id, organization_id').eq('user_id', user.id).maybeSingle(),
-    supabase.from('golf_players').select('id').eq('user_id', user.id).maybeSingle(),
-  ]);
-
-  const isCoach = userRoleResult.data?.role === 'coach';
-
-  // Get team_id + coaches in parallel (both depend on role result, but not each other)
   let teamId: string | null = null;
-  const orgId = coachResult.data?.organization_id;
-  const playerId = playerResult.data?.id;
 
   const [coachTeamResult, playerTeamResult, coachListResult] = await Promise.all([
     orgId

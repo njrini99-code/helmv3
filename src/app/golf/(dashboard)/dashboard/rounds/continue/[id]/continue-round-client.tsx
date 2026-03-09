@@ -247,6 +247,7 @@ export default function ContinueRoundClient({
       roundType: setupData.roundType,
       roundDate: setupData.roundDate,
       qualifierId: setupData.qualifierId,
+      qualifierRoundNumber: setupData.qualifierRoundNumber,
       currentHole: holeIndexToUse + 1,
       holesToPlay: holes.length as 9 | 18,
       holes: statsToUse,

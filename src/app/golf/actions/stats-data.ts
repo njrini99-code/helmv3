@@ -588,7 +588,7 @@ export async function getDetailedStats(
     const [{ data: holesData, error: holesError }, { data: shotsData, error: shotsError }] = await Promise.all([
       supabase
         .from('golf_holes')
-        .select('id, round_id, hole_number, par')
+        .select('id, round_id, hole_number, par, yardage')
         .in('round_id', roundIds),
       supabase
         .from('golf_shots')
@@ -648,7 +648,7 @@ export async function getDetailedStats(
       round_id: h.round_id,
       hole_number: h.hole_number,
       par: h.par,
-      yardage: 0,
+      yardage: h.yardage ?? null,
     }));
 
     // Map all shots - don't filter out shots with missing distances as they're still

@@ -132,7 +132,7 @@ export async function getPlayerProfileStats(
     // 4. Fetch hole info for the rounds
     const { data: holesData } = await supabase
       .from('golf_holes')
-      .select('round_id, hole_number, par')
+      .select('round_id, hole_number, par, yardage')
       .in('round_id', roundIdsToFetch);
 
     // 5. Build data structures for calculator
@@ -153,7 +153,7 @@ export async function getPlayerProfileStats(
       round_id: h.round_id,
       hole_number: h.hole_number,
       par: h.par,
-      yardage: null,
+      yardage: h.yardage ?? null,
     }));
 
     // Transform shots to RawShot format - don't filter out shots with missing distances
@@ -296,18 +296,21 @@ export async function getPlayerQuickSummary(playerId: string): Promise<QuickSumm
   }
 
   const rounds = roundsData;
-  const toParScores = rounds.map(r => r.score_to_par).filter((s): s is number => s !== null);
 
   // Normalize scoring to 18-hole equivalents
   let totalStrokes = 0;
   let totalHoles = 0;
   const normalizedScores: number[] = [];
+  const normalizedToParScores: number[] = [];
   for (const r of rounds) {
+    const hp = r.holes_played ?? 18;
     if (r.total_score !== null) {
-      const hp = r.holes_played ?? 18;
       totalStrokes += r.total_score;
       totalHoles += hp;
       normalizedScores.push(Math.round(r.total_score * (18 / hp)));
+    }
+    if (r.score_to_par !== null) {
+      normalizedToParScores.push(r.score_to_par * (18 / hp));
     }
   }
 
@@ -335,8 +338,8 @@ export async function getPlayerQuickSummary(playerId: string): Promise<QuickSumm
       scoringAverage: totalHoles > 0
         ? (totalStrokes / totalHoles) * 18
         : null,
-      avgScoreToPar: toParScores.length > 0
-        ? toParScores.reduce((a, b) => a + b, 0) / toParScores.length
+      avgScoreToPar: normalizedToParScores.length > 0
+        ? normalizedToParScores.reduce((a, b) => a + b, 0) / normalizedToParScores.length
         : null,
       bestRound: normalizedScores.length > 0 ? Math.min(...normalizedScores) : null,
       girPercentage: totalGirOpps > 0 ? (totalGir / totalGirOpps) * 100 : null,

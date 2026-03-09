@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { getGolfSessionProfile } from '@/lib/auth/session';
 import {
     getCachedCoachDashboardData,
     getCachedPlayerDashboardData,
@@ -12,29 +13,18 @@ import type { CalendarEvent } from '@/lib/types/calendar';
 export const dynamic = 'force-dynamic';
 
 export default async function GolfDashboardPage() {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    // React.cache() dedupes getUser() + profile queries across render tree
+    // Eliminates 4-6 redundant Supabase round-trips vs ad-hoc getUser()
+    const session = await getGolfSessionProfile();
 
-    if (!user) {
+    if (!session) {
         redirect('/golf/login');
     }
 
-    // Parallel role check — same queries as layout, very fast
-    const [coachResult, playerResult] = await Promise.all([
-        supabase
-            .from('golf_coaches')
-            .select('id, full_name, avatar_url, organization_id')
-            .eq('user_id', user.id)
-            .maybeSingle(),
-        supabase
-            .from('golf_players')
-            .select('id, first_name, last_name, avatar_url')
-            .eq('user_id', user.id)
-            .maybeSingle(),
-    ]);
+    const { userId, coach, player } = session;
 
-    const coach = coachResult.data;
-    const player = playerResult.data;
+    // Supabase client only needed for team lookups (not auth)
+    const supabase = await createClient();
 
     // ── Coach dashboard ──
     if (coach) {
@@ -50,12 +40,12 @@ export default async function GolfDashboardPage() {
         }
 
         if (teamId) {
-            const payload = await getCachedCoachDashboardData(coach.id, user.id, teamId);
+            const payload = await getCachedCoachDashboardData(coach.id, userId, teamId);
 
             const data: CoachDashboardData = {
                 coach: {
                     id: coach.id,
-                    user_id: user.id,
+                    user_id: userId,
                     organization_id: coach.organization_id || null,
                     full_name: coach.full_name,
                     avatar_url: coach.avatar_url || null,
@@ -78,7 +68,7 @@ export default async function GolfDashboardPage() {
         const emptyData: CoachDashboardData = {
             coach: {
                 id: coach.id,
-                user_id: user.id,
+                user_id: userId,
                 organization_id: coach.organization_id || null,
                 full_name: coach.full_name,
                 avatar_url: coach.avatar_url || null,
@@ -107,13 +97,13 @@ export default async function GolfDashboardPage() {
             .maybeSingle();
         teamId = teamMember?.team_id ?? null;
 
-        const payload = await getCachedPlayerDashboardData(player.id, user.id, teamId);
+        const payload = await getCachedPlayerDashboardData(player.id, userId, teamId);
         const nameParts = `${player.first_name} ${player.last_name}`.split(' ');
 
         const data: PlayerDashboardData = {
             player: {
                 id: player.id,
-                user_id: user.id,
+                user_id: userId,
                 first_name: nameParts[0] || '',
                 last_name: nameParts.slice(1).join(' ') || '',
                 avatar_url: player.avatar_url || null,
