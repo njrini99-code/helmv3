@@ -417,7 +417,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
         {itineraries.length === 0 ? (
-          <div className="relative glass-standard rounded-2xl overflow-hidden p-8 md:p-16 text-center">
+          <div className="relative glass-standard rounded-2xl overflow-clip p-8 md:p-16 text-center">
             <ShineEffect />
             <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
               <IconAirplane size={28} className="text-warm-400" />
@@ -494,7 +494,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
             {/* Selected Itinerary Details / Expenses */}
             <div className="lg:col-span-2">
               {selectedItinerary ? (
-                <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-hidden">
+                <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-clip">
                   {/* Itinerary Header */}
                   <div className="p-6 border-b border-warm-200">
                     <div className="flex items-start justify-between mb-4">
@@ -740,7 +740,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
       {/* Delete Confirmation Modal */}
       {deleteConfirmId && (
         <div className="fixed inset-0 bg-warm-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white/90 backdrop-blur-xl rounded-2xl max-w-sm w-full shadow-2xl border border-white/30 overflow-hidden">
+          <div className="bg-white/90 backdrop-blur-xl rounded-2xl max-w-sm w-full shadow-2xl border border-white/30 overflow-clip">
             <div className="p-6 text-center">
               <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
                 <IconTrash size={22} className="text-red-600" />

@@ -221,7 +221,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
       />
       
       {/* Modal */}
-      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="upload-schedule-title" className="relative w-full max-w-xl mx-4 glass-prominent rounded-2xl shadow-2xl overflow-hidden">
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="upload-schedule-title" className="relative w-full max-w-xl mx-4 glass-prominent rounded-2xl shadow-2xl overflow-clip">
         {/* Shine effect */}
         <div
           className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"

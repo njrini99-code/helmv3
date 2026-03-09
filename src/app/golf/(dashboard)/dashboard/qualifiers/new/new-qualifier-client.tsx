@@ -104,7 +104,7 @@ export default function NewQualifierClient({ players }: NewQualifierClientProps)
           )}
 
           {/* Basic Information */}
-          <section className="relative glass-standard rounded-2xl p-6 overflow-hidden">
+          <section className="relative glass-standard rounded-2xl p-6 overflow-clip">
             <ShineEffect />
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
@@ -135,7 +135,7 @@ export default function NewQualifierClient({ players }: NewQualifierClientProps)
           </section>
 
           {/* Schedule */}
-          <section className="relative glass-standard rounded-2xl p-6 overflow-hidden">
+          <section className="relative glass-standard rounded-2xl p-6 overflow-clip">
             <ShineEffect />
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
@@ -177,7 +177,7 @@ export default function NewQualifierClient({ players }: NewQualifierClientProps)
           </section>
 
           {/* Location & Spots */}
-          <section className="relative glass-standard rounded-2xl p-6 overflow-hidden">
+          <section className="relative glass-standard rounded-2xl p-6 overflow-clip">
             <ShineEffect />
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
@@ -209,7 +209,7 @@ export default function NewQualifierClient({ players }: NewQualifierClientProps)
           </section>
 
           {/* Player Selection */}
-          <section className="relative glass-standard rounded-2xl p-6 overflow-hidden">
+          <section className="relative glass-standard rounded-2xl p-6 overflow-clip">
             <ShineEffect />
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">

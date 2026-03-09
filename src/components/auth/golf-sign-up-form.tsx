@@ -140,7 +140,7 @@ export function GolfSignUpForm() {
             onClick={() => setRole('player')}
             aria-pressed={role === 'player'}
             className={`
-              p-4 rounded-[10px] border-2 transition-all
+              p-4 rounded-[10px] border-2 transition-colors
               flex flex-col items-center gap-2
               ${role === 'player'
                 ? 'border-primary-600 bg-primary-50'
@@ -159,7 +159,7 @@ export function GolfSignUpForm() {
             onClick={() => setRole('coach')}
             aria-pressed={role === 'coach'}
             className={`
-              p-4 rounded-[10px] border-2 transition-all
+              p-4 rounded-[10px] border-2 transition-colors
               flex flex-col items-center gap-2
               ${role === 'coach'
                 ? 'border-primary-600 bg-primary-50'
@@ -193,7 +193,7 @@ export function GolfSignUpForm() {
               w-full px-4 py-3
               bg-white border border-warm-200 rounded-[10px]
               text-warm-900 text-base lg:text-sm placeholder:text-warm-400
-              transition-all duration-200
+              transition-colors duration-200
               focus:outline-none focus:border-primary-600 focus:ring-[3px] focus:ring-primary-600/10
             "
           />
@@ -214,7 +214,7 @@ export function GolfSignUpForm() {
               w-full px-4 py-3
               bg-white border border-warm-200 rounded-[10px]
               text-warm-900 text-base lg:text-sm placeholder:text-warm-400
-              transition-all duration-200
+              transition-colors duration-200
               focus:outline-none focus:border-primary-600 focus:ring-[3px] focus:ring-primary-600/10
             "
           />
@@ -236,7 +236,7 @@ export function GolfSignUpForm() {
               w-full px-4 py-3
               bg-white border border-warm-200 rounded-[10px]
               text-warm-900 text-base lg:text-sm
-              transition-all duration-200
+              transition-colors duration-200
               focus:outline-none focus:border-primary-600 focus:ring-[3px] focus:ring-primary-600/10
               appearance-none
             "
@@ -275,7 +275,7 @@ export function GolfSignUpForm() {
             w-full px-4 py-3
             bg-white border border-warm-200 rounded-[10px]
             text-warm-900 text-base lg:text-sm placeholder:text-warm-400
-            transition-all duration-200
+            transition-colors duration-200
             focus:outline-none focus:border-primary-600 focus:ring-[3px] focus:ring-primary-600/10
           "
         />
@@ -299,7 +299,7 @@ export function GolfSignUpForm() {
             w-full px-4 py-3
             bg-white border border-warm-200 rounded-[10px]
             text-warm-900 text-base lg:text-sm placeholder:text-warm-400
-            transition-all duration-200
+            transition-colors duration-200
             focus:outline-none focus:border-primary-600 focus:ring-[3px] focus:ring-primary-600/10
           "
         />
@@ -314,7 +314,7 @@ export function GolfSignUpForm() {
           w-full py-3
           bg-primary-600 text-white font-medium text-sm
           rounded-[10px] shadow-sm
-          transition-all duration-200
+          transition-colors duration-200
           hover:bg-primary-700 hover:shadow-md
           active:scale-[0.98]
           disabled:opacity-50 disabled:cursor-not-allowed

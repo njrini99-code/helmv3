@@ -24,7 +24,7 @@ interface MobileMenuButtonProps {
  * - Consistent hover/focus ring across all dashboard pages
  */
 export function MobileMenuButton({ className, onClick, label = 'Open navigation menu' }: MobileMenuButtonProps) {
-  const { toggleMobile } = useSidebar();
+  const { toggleMobile, mobileOpen } = useSidebar();
 
   return (
     <button
@@ -40,6 +40,8 @@ export function MobileMenuButton({ className, onClick, label = 'Open navigation 
         className
       )}
       aria-label={label}
+      aria-expanded={mobileOpen}
+      aria-controls="mobile-sidebar"
     >
       <IconMenu size={22} />
     </button>

@@ -172,7 +172,7 @@ const PerformanceHeatmap = memo(function PerformanceHeatmap({
   }, [rounds, currentYear]);
 
   return (
-    <div className={`relative glass-standard rounded-2xl overflow-hidden ${className}`}>
+    <div className={`relative glass-standard rounded-2xl overflow-clip ${className}`}>
       {/* Shine effect */}
       <div
         className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"

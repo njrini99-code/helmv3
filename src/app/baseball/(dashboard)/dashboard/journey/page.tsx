@@ -234,31 +234,31 @@ export default function JourneyPage() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
             <Card variant="glass">
               <CardContent className="p-4 text-center">
-                <p className="text-2xl font-semibold tracking-tight text-slate-900">{stats.total_interests}</p>
+                <p className="text-2xl font-semibold tracking-tight text-slate-900 tabular-nums">{stats.total_interests}</p>
                 <p className="text-xs text-slate-500">Total Schools</p>
               </CardContent>
             </Card>
             <Card variant="glass">
               <CardContent className="p-4 text-center">
-                <p className="text-2xl font-semibold tracking-tight text-slate-900">{stats.schools_interested}</p>
+                <p className="text-2xl font-semibold tracking-tight text-slate-900 tabular-nums">{stats.schools_interested}</p>
                 <p className="text-xs text-slate-500">Interested</p>
               </CardContent>
             </Card>
             <Card variant="glass">
               <CardContent className="p-4 text-center">
-                <p className="text-2xl font-semibold tracking-tight text-blue-600">{stats.schools_contacted}</p>
+                <p className="text-2xl font-semibold tracking-tight text-blue-600 tabular-nums">{stats.schools_contacted}</p>
                 <p className="text-xs text-slate-500">Contacted</p>
               </CardContent>
             </Card>
             <Card variant="glass">
               <CardContent className="p-4 text-center">
-                <p className="text-2xl font-semibold tracking-tight text-purple-600">{stats.schools_visited}</p>
+                <p className="text-2xl font-semibold tracking-tight text-purple-600 tabular-nums">{stats.schools_visited}</p>
                 <p className="text-xs text-slate-500">Visited</p>
               </CardContent>
             </Card>
             <Card variant="glass">
               <CardContent className="p-4 text-center">
-                <p className="text-2xl font-semibold tracking-tight text-amber-600">{stats.schools_offered}</p>
+                <p className="text-2xl font-semibold tracking-tight text-amber-600 tabular-nums">{stats.schools_offered}</p>
                 <p className="text-xs text-slate-500">Offers</p>
               </CardContent>
             </Card>

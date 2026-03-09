@@ -154,7 +154,7 @@ function FocusAreaCard({
       </p>
 
       {/* View details hint */}
-      <div className="flex items-center text-xs font-medium text-primary-600 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="flex items-center text-xs font-medium text-primary-600 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
         View details
         <IconChevronRight size={14} className="ml-1" />
       </div>

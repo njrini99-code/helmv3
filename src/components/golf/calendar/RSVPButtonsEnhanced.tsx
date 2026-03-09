@@ -114,7 +114,7 @@ export function RSVPButtonsEnhanced({
   // Full variant - large buttons with icons and labels
   if (variant === 'full') {
     return (
-      <div className={cn('grid grid-cols-3 gap-3', className)}>
+      <div className={cn('grid grid-cols-2 md:grid-cols-3 gap-3', className)}>
         {RSVP_OPTIONS.map((option) => {
           const Icon = option.icon;
           const isActive = displayResponse === option.value;

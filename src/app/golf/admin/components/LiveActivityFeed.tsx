@@ -219,7 +219,7 @@ export function LiveActivityFeed({
   const displayedEvents = events.slice(0, maxEvents);
 
   return (
-    <div className="relative glass-standard rounded-2xl overflow-hidden">
+    <div className="relative glass-standard rounded-2xl overflow-clip">
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-warm-100/80">
         <div className="flex items-center gap-2">

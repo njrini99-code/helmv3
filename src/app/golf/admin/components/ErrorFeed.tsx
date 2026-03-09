@@ -41,7 +41,7 @@ export function ErrorFeed({ errorLogs }: Props) {
   const { totalErrors7d, criticalErrors7d, recentErrors, topErrors } = errorLogs;
 
   return (
-    <div className="glass-standard rounded-2xl p-6 transition-all duration-200 hover:bg-white/80 active:bg-white/90 hover:shadow-card-hover">
+    <div className="glass-standard rounded-2xl p-6 transition-[background-color,box-shadow] duration-200 hover:bg-white/80 active:bg-white/90 hover:shadow-card-hover">
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2.5">
@@ -70,7 +70,7 @@ export function ErrorFeed({ errorLogs }: Props) {
           <button
             onClick={() => setViewMode('recent')}
             className={cn(
-              'px-2.5 py-1 text-xs font-medium rounded-md transition-all',
+              'px-2.5 py-1 text-xs font-medium rounded-md transition-[color,background-color,box-shadow]',
               viewMode === 'recent' ? 'bg-white shadow-sm text-warm-800' : 'text-warm-400 hover:text-warm-600'
             )}
           >
@@ -79,7 +79,7 @@ export function ErrorFeed({ errorLogs }: Props) {
           <button
             onClick={() => setViewMode('top')}
             className={cn(
-              'px-2.5 py-1 text-xs font-medium rounded-md transition-all',
+              'px-2.5 py-1 text-xs font-medium rounded-md transition-[color,background-color,box-shadow]',
               viewMode === 'top' ? 'bg-white shadow-sm text-warm-800' : 'text-warm-400 hover:text-warm-600'
             )}
           >
@@ -114,7 +114,7 @@ export function ErrorFeed({ errorLogs }: Props) {
                   <div
                     key={err.id}
                     className={cn(
-                      'border-l-[3px] rounded-r-lg px-3 py-2.5 bg-white/50 transition-all',
+                      'border-l-[3px] rounded-r-lg px-3 py-2.5 bg-white/50 transition-colors',
                       style.border
                     )}
                   >
@@ -188,7 +188,7 @@ export function ErrorFeed({ errorLogs }: Props) {
                     <div
                       key={`top-${i}`}
                       className={cn(
-                        'border-l-[3px] rounded-r-lg px-3 py-2.5 bg-white/50 transition-all',
+                        'border-l-[3px] rounded-r-lg px-3 py-2.5 bg-white/50 transition-colors',
                         style.border
                       )}
                     >

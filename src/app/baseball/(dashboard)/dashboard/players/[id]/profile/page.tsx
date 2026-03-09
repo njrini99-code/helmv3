@@ -68,7 +68,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
   const hasStats = hasBatting || hasPitching;
 
   return (
-    <div className="min-h-screen bg-[#FAF6F1]">
+    <div className="min-h-dvh bg-[#FAF6F1]">
       <div className="max-w-5xl mx-auto px-6 py-8">
         {/* Back Button */}
         <Link href="/baseball/dashboard/discover">

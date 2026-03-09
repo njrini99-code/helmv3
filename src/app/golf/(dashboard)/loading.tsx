@@ -1,4 +1,4 @@
-import { PageLoading } from '@/components/ui/loading';
+import { DashboardSkeleton } from '@/components/golf/GolfSkeletons';
 
 /**
  * Loading UI for the golf dashboard layout.
@@ -6,5 +6,5 @@ import { PageLoading } from '@/components/ui/loading';
  * (e.g., on initial navigation to /golf/dashboard).
  */
 export default function GolfDashboardLoading() {
-  return <PageLoading />;
+  return <DashboardSkeleton />;
 }

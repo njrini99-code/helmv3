@@ -178,7 +178,7 @@ export function ConferenceGroupView({
         return (
           <div
             key={group.conference}
-            className="glass-standard rounded-2xl overflow-hidden"
+            className="glass-standard rounded-2xl overflow-clip"
           >
             {/* Conference Header */}
             <button

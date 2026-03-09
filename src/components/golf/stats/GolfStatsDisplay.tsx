@@ -147,15 +147,15 @@ export default function GolfStatsDisplay({
               </motion.p>
             </div>
             <div className="flex items-center gap-2 sm:gap-2 print:hidden flex-shrink-0">
-              <motion.button onClick={handleExportPDF} disabled={isExporting} className={`p-2.5 rounded-lg border transition-all ${isExporting ? 'bg-warm-100 border-warm-200 text-warm-400 cursor-not-allowed' : 'bg-white border-warm-200 text-warm-500 hover:border-primary-300 hover:text-primary-600'}`} whileHover={isExporting ? {} : { scale: 1.05 }} whileTap={isExporting ? {} : { scale: 0.95 }} title="Export as PDF">
+              <motion.button onClick={handleExportPDF} disabled={isExporting} className={`p-2.5 rounded-lg border transition-colors ${isExporting ? 'bg-warm-100 border-warm-200 text-warm-400 cursor-not-allowed' : 'bg-white border-warm-200 text-warm-500 hover:border-primary-300 hover:text-primary-600'}`} whileHover={isExporting ? {} : { scale: 1.05 }} whileTap={isExporting ? {} : { scale: 0.95 }} title="Export as PDF">
                 {isExporting ? <motion.div className="h-[18px] w-[18px] border-2 border-warm-300 border-t-primary-500 rounded-full" animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} /> : <IconDownload size={18} />}
               </motion.button>
-              <motion.button onClick={handlePrint} className="p-2.5 rounded-lg border bg-white border-warm-200 text-warm-500 hover:border-primary-300 hover:text-primary-600 transition-all" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} title="Print stats"><IconPrinter size={18} /></motion.button>
-              <motion.button onClick={() => setShowFilters(!showFilters)} className={`p-2.5 rounded-lg border transition-all ${showFilters ? 'bg-primary-50 border-primary-200 text-primary-600' : 'bg-white border-warm-200 text-warm-500 hover:border-primary-300 hover:text-primary-600'}`} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} title="Filter options"><IconFilter size={18} /></motion.button>
+              <motion.button onClick={handlePrint} className="p-2.5 rounded-lg border bg-white border-warm-200 text-warm-500 hover:border-primary-300 hover:text-primary-600 transition-colors" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} title="Print stats"><IconPrinter size={18} /></motion.button>
+              <motion.button onClick={() => setShowFilters(!showFilters)} className={`p-2.5 rounded-lg border transition-colors ${showFilters ? 'bg-primary-50 border-primary-200 text-primary-600' : 'bg-white border-warm-200 text-warm-500 hover:border-primary-300 hover:text-primary-600'}`} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} title="Filter options"><IconFilter size={18} /></motion.button>
               {onRoundChange && rounds.length > 0 && (
                 <motion.div className="flex-1 min-w-[100px] sm:min-w-[200px] max-w-[200px] sm:max-w-none" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 }}>
                   <label className="hidden sm:block text-xs font-medium text-warm-500 uppercase tracking-wide mb-1.5">View Stats</label>
-                  <select value={selectedRoundId} onChange={(e) => onRoundChange(e.target.value as string | 'overall')} className="w-full px-2 sm:px-3 py-2 rounded-lg border border-warm-200 text-xs sm:text-sm font-medium text-warm-700 bg-white hover:border-primary-300 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 outline-none transition-all">
+                  <select value={selectedRoundId} onChange={(e) => onRoundChange(e.target.value as string | 'overall')} className="w-full px-2 sm:px-3 py-2 rounded-lg border border-warm-200 text-xs sm:text-sm font-medium text-warm-700 bg-white hover:border-primary-300 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 outline-none transition-colors">
                     <option value="overall">Overall</option>
                     <optgroup label="Individual Rounds">
                       {rounds.map(round => <option key={round.id} value={round.id}>{formatRoundDate(round.round_date)} • {round.course_name} ({round.total_score})</option>)}
@@ -181,13 +181,13 @@ export default function GolfStatsDisplay({
                 </div>
                 <div className="flex flex-wrap gap-2 mb-4">
                   {FILTER_PRESETS.map((preset, idx) => (
-                    <motion.button key={preset.label} onClick={() => handleFilterClick(preset.filter)} className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all ${isFilterActive(preset.filter) ? 'bg-primary-600 text-white border border-primary-600' : 'bg-white border border-warm-200 text-warm-600 hover:border-primary-300 hover:bg-primary-50 active:bg-primary-100 hover:text-primary-700'}`} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.03 }} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>{preset.label}</motion.button>
+                    <motion.button key={preset.label} onClick={() => handleFilterClick(preset.filter)} className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${isFilterActive(preset.filter) ? 'bg-primary-600 text-white border border-primary-600' : 'bg-white border border-warm-200 text-warm-600 hover:border-primary-300 hover:bg-primary-50 active:bg-primary-100 hover:text-primary-700'}`} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.03 }} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>{preset.label}</motion.button>
                   ))}
                 </div>
                 {filterOptions && filterOptions.courses.length > 0 && (
                   <div className="relative">
                     <label className="text-xs font-medium text-warm-500 uppercase tracking-wide mb-1.5 block">Filter by Course</label>
-                    <button onClick={() => setShowCourseDropdown(!showCourseDropdown)} className={`w-full px-3 py-2 rounded-lg border text-sm font-medium text-left flex items-center justify-between transition-all ${activeFilter?.courseName ? 'bg-primary-50 border-primary-300 text-primary-700' : 'bg-white border-warm-200 text-warm-600 hover:border-primary-300'}`}>
+                    <button onClick={() => setShowCourseDropdown(!showCourseDropdown)} className={`w-full px-3 py-2 rounded-lg border text-sm font-medium text-left flex items-center justify-between transition-colors ${activeFilter?.courseName ? 'bg-primary-50 border-primary-300 text-primary-700' : 'bg-white border-warm-200 text-warm-600 hover:border-primary-300'}`}>
                       <span>{activeFilter?.courseName || 'All Courses'}</span>
                       <IconChevronDown size={16} className={`transition-transform ${showCourseDropdown ? 'rotate-180' : ''}`} />
                     </button>
@@ -222,7 +222,7 @@ export default function GolfStatsDisplay({
         {/* Category Pills */}
         <motion.div className="pills-scroll pb-4 mb-4 -mx-4 px-4" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
           {categories.map((cat, idx) => (
-            <motion.button key={cat.id} onClick={() => setActiveCategory(cat.id)} className={`relative flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${activeCategory === cat.id ? 'bg-primary-600 text-white shadow-lg shadow-primary-600/25' : 'bg-white text-warm-600 border border-warm-200 hover:border-primary-300 hover:shadow-md'}`} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 + idx * 0.03 }} whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }}>
+            <motion.button key={cat.id} onClick={() => setActiveCategory(cat.id)} className={`relative flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${activeCategory === cat.id ? 'bg-primary-600 text-white shadow-lg shadow-primary-600/25' : 'bg-white text-warm-600 border border-warm-200 hover:border-primary-300 hover:shadow-md'}`} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 + idx * 0.03 }} whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }}>
               {activeCategory === cat.id && <motion.div className="absolute inset-0 rounded-full bg-primary-400" initial={{ scale: 1 }} animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 0.3 }} style={{ zIndex: -1, opacity: 0.3 }} />}
               {cat.icon}{cat.label}
             </motion.button>

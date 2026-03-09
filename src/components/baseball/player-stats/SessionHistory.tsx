@@ -202,7 +202,7 @@ export function SessionHistory({ stats, className }: SessionHistoryProps) {
   const practiceSessions = stats.filter(s => s.stat_type === 'practice').length;
 
   return (
-    <div className={cn('glass-standard rounded-2xl overflow-hidden', className)}>
+    <div className={cn('glass-standard rounded-2xl overflow-clip', className)}>
       <div className="px-6 py-4 border-b border-warm-100">
         <div className="flex items-center justify-between">
           <div>

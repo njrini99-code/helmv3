@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { IconWarning, IconX } from '@/components/icons';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -26,6 +27,8 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  const { modalRef } = useFocusTrap(open, onCancel);
+
   if (!open) return null;
 
   const variantStyles = {
@@ -51,6 +54,10 @@ export function ConfirmDialog({
       onClick={onCancel}
     >
       <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
         className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden animate-fade-in"
         onClick={(e) => e.stopPropagation()}
       >

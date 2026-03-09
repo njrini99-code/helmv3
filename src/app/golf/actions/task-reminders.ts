@@ -680,27 +680,6 @@ async function sendWebPush(
 }
 
 /**
- * Calculate reminder time based on due date and offset
- */
-function calculateReminderTime(
-  dueDate: string,
-  offsetHours?: number,
-  offsetDays?: number
-): string {
-  const due = new Date(dueDate);
-
-  if (offsetDays) {
-    due.setDate(due.getDate() - offsetDays);
-  }
-
-  if (offsetHours) {
-    due.setHours(due.getHours() - offsetHours);
-  }
-
-  return due.toISOString();
-}
-
-/**
  * Get reminder statistics for a team
  */
 export async function getReminderStats(

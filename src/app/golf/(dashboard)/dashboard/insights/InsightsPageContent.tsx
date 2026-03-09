@@ -13,6 +13,7 @@ import {
   IconTrendingUp,
   IconCheck,
 } from '@/components/icons';
+import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
 import { InsightSearchBar } from '@/components/golf/coachhelm/insights/InsightSearchBar';
 import { InsightFiltersPanel, type InsightFilters } from '@/components/golf/coachhelm/insights/InsightFiltersPanel';
 import { InsightListView } from '@/components/golf/coachhelm/insights/InsightListView';
@@ -279,6 +280,7 @@ export function InsightsPageContent({
         <div className="max-w-7xl mx-auto px-6 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
+              <MobileMenuButton />
               <m.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}

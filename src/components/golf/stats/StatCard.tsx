@@ -103,7 +103,7 @@ export function GolfStatCard({
   return (
     <div
       className={cn(
-        'relative overflow-hidden glass-standard rounded-2xl',
+        'relative overflow-clip glass-standard rounded-2xl',
         styles.container,
         className
       )}
@@ -162,8 +162,8 @@ export function StatCardGrid({
 }) {
   const colClasses = {
     2: 'grid-cols-2',
-    3: 'grid-cols-3',
-    4: 'grid-cols-4',
+    3: 'grid-cols-2 md:grid-cols-3',
+    4: 'grid-cols-2 md:grid-cols-4',
   };
 
   return (

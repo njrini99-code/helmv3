@@ -242,7 +242,7 @@ function AnnouncementDialog({
           // Mobile: full height sheet from bottom. Desktop: max height with margin.
           'h-full sm:h-auto sm:max-h-[min(640px,calc(100dvh-3rem))]',
           'rounded-t-2xl sm:rounded-2xl',
-          'transition-all duration-200 ease-out',
+          'transition-[opacity,transform] duration-200 ease-out',
           isAnimating
             ? 'opacity-100 translate-y-0 scale-100'
             : 'opacity-0 translate-y-8 sm:translate-y-4 scale-100 sm:scale-[0.97]'
@@ -257,7 +257,7 @@ function AnnouncementDialog({
             <button
               type="button"
               onClick={handleClose}
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-all"
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
               aria-label="Close"
             >
               <IconX size={18} />
@@ -281,7 +281,7 @@ function AnnouncementDialog({
               value={body}
               onChange={(e) => setBody(e.target.value)}
               rows={3}
-              className="w-full text-sm text-warm-700 placeholder:text-warm-400 bg-warm-50/60 rounded-xl border border-warm-200 px-3.5 py-2.5 outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition-all resize-none min-h-[80px]"
+              className="w-full text-sm text-warm-700 placeholder:text-warm-400 bg-warm-50/60 rounded-xl border border-warm-200 px-3.5 py-2.5 outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition-colors resize-none min-h-[80px]"
               placeholder="Write your message to the team..."
             />
 
@@ -299,7 +299,7 @@ function AnnouncementDialog({
                         type="button"
                         onClick={() => setUrgency(opt.value)}
                         className={cn(
-                          'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all border',
+                          'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors border',
                           isActive
                             ? `${opt.activeBg} ${opt.activeBorder} ${opt.activeText}`
                             : 'bg-white border-warm-200 text-warm-500 hover:bg-warm-50'
@@ -321,7 +321,7 @@ function AnnouncementDialog({
                     type="button"
                     onClick={() => { setRecipientPlayerIds(null); setShowPlayerPicker(false); setPlayerSearch(''); }}
                     className={cn(
-                      'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all border',
+                      'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors border',
                       isAllTeam
                         ? 'bg-primary-50 border-primary-300 text-primary-700'
                         : 'bg-white border-warm-200 text-warm-500 hover:bg-warm-50'
@@ -337,7 +337,7 @@ function AnnouncementDialog({
                       setShowPlayerPicker(!showPlayerPicker);
                     }}
                     className={cn(
-                      'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all border',
+                      'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors border',
                       !isAllTeam
                         ? 'bg-primary-50 border-primary-300 text-primary-700'
                         : 'bg-white border-warm-200 text-warm-500 hover:bg-warm-50'
@@ -394,7 +394,7 @@ function AnnouncementDialog({
                                 else setRecipientPlayerIds([...current, player.id]);
                               }}
                               className={cn(
-                                'flex items-center gap-2 px-2 py-1.5 rounded-lg text-left text-sm transition-all',
+                                'flex items-center gap-2 px-2 py-1.5 rounded-lg text-left text-sm transition-colors',
                                 isSelected ? 'bg-primary-50 text-primary-900' : 'hover:bg-warm-50 text-warm-700'
                               )}
                             >
@@ -424,7 +424,7 @@ function AnnouncementDialog({
                 type="button"
                 onClick={() => setRequiresAcknowledgement(!requiresAcknowledgement)}
                 className={cn(
-                  'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all border',
+                  'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors border',
                   requiresAcknowledgement
                     ? 'bg-primary-50 border-primary-300 text-primary-700'
                     : 'bg-white border-warm-200 text-warm-500 hover:bg-warm-50'
@@ -439,7 +439,7 @@ function AnnouncementDialog({
                   type="button"
                   onClick={() => setShowDocPicker(!showDocPicker)}
                   className={cn(
-                    'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all border',
+                    'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors border',
                     showDocPicker || selectedDocumentIds.length > 0
                       ? 'bg-primary-50 border-primary-300 text-primary-700'
                       : 'bg-white border-warm-200 text-warm-500 hover:bg-warm-50'
@@ -454,7 +454,7 @@ function AnnouncementDialog({
               <button
                 type="button"
                 onClick={() => setInlineTasks(prev => [...prev, { id: crypto.randomUUID(), title: '' }])}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border bg-white border-warm-200 text-warm-500 hover:bg-warm-50 transition-all"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border bg-white border-warm-200 text-warm-500 hover:bg-warm-50 transition-colors"
               >
                 <IconClipboardList size={11} />
                 Add Task

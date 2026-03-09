@@ -22,7 +22,7 @@ export function Footer() {
   return (
     <footer className="relative overflow-hidden bg-stone-950 text-white">
       <div className="absolute inset-0">
-        <div className="absolute -top-32 left-1/4 h-72 w-72 rounded-full bg-helm-primary-500/10 blur-[120px]" />
+        <div className="absolute -top-32 left-1/4 h-72 w-72 rounded-full bg-helm-green-500/10 blur-[120px]" />
         <div className="absolute bottom-0 right-1/4 h-80 w-80 rounded-full bg-helm-amber-500/10 blur-[140px]" />
         <div
           className="absolute inset-0 opacity-[0.04]"

@@ -102,7 +102,7 @@ function StepIndicator({ currentStep }: { currentStep: Step }) {
             >
               <div
                 className={cn(
-                  'w-8 h-8 rounded-full flex items-center justify-center transition-all duration-500 text-sm font-semibold',
+                  'w-8 h-8 rounded-full flex items-center justify-center transition-[color,background-color,border-color,box-shadow] duration-500 text-sm font-semibold',
                   isCompleted && 'bg-primary-600 text-white shadow-sm shadow-primary-600/30',
                   isCurrent && 'bg-white border-2 border-primary-600 text-primary-600 shadow-sm',
                   !isCompleted && !isCurrent && 'bg-warm-100 text-warm-400'
@@ -370,7 +370,7 @@ export default function BaseballPlayerOnboarding() {
                       <button
                         key={opt.value}
                         onClick={() => { setPlayerType(opt.value); setDirection(1); setStep('about'); }}
-                        className="w-full auth-glass-card rounded-2xl p-5 text-left hover:bg-white/90 transition-all group"
+                        className="w-full auth-glass-card rounded-2xl p-5 text-left hover:bg-white/90 transition-colors group"
                       >
                         <div className="flex items-center gap-4">
                           <div className="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
@@ -532,7 +532,7 @@ export default function BaseballPlayerOnboarding() {
                       <Button
                         onClick={() => goForward('measurables')}
                         disabled={!firstName.trim() || !lastName.trim() || !primaryPosition}
-                        className="w-full bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
+                        className="w-full bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-[background-color,box-shadow]"
                         size="lg"
                       >
                         Continue
@@ -659,7 +659,7 @@ export default function BaseballPlayerOnboarding() {
                     <div className="mt-8">
                       <Button
                         onClick={() => goForward('team')}
-                        className="w-full bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
+                        className="w-full bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-[background-color,box-shadow]"
                         size="lg"
                       >
                         Continue
@@ -764,7 +764,7 @@ export default function BaseballPlayerOnboarding() {
                           onClick={handleJoinTeam}
                           disabled={!inviteCode.trim() || joiningTeam}
                           isLoading={joiningTeam}
-                          className="w-full bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 transition-all"
+                          className="w-full bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 transition-[background-color,box-shadow]"
                         >
                           Join Team
                         </Button>
@@ -779,7 +779,7 @@ export default function BaseballPlayerOnboarding() {
                     <div className="mt-8">
                       <Button
                         onClick={() => goForward('complete')}
-                        className="w-full bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
+                        className="w-full bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-[background-color,box-shadow]"
                         size="lg"
                       >
                         {teamJoined ? 'Continue' : 'Skip for Now'}
@@ -864,7 +864,7 @@ export default function BaseballPlayerOnboarding() {
                       size="lg"
                       onClick={handleComplete}
                       isLoading={loading}
-                      className="w-full sm:w-auto px-10 bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
+                      className="w-full sm:w-auto px-10 bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-[background-color,box-shadow]"
                     >
                       Go to Dashboard
                       <IconArrowRight size={16} className="ml-2" />

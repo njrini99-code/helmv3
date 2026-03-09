@@ -163,7 +163,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
       {/* Profile Completion & Team Affiliation Header */}
       <div className="grid gap-4 md:grid-cols-2">
         {/* Profile Completion Card */}
-        <div className="glass-standard rounded-2xl p-5 relative overflow-hidden">
+        <div className="glass-standard rounded-2xl p-5 relative overflow-clip">
           <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
             style={{
               background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
@@ -201,7 +201,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
         </div>
 
         {/* Team Affiliation Card */}
-        <div className="glass-standard rounded-2xl p-5 relative overflow-hidden">
+        <div className="glass-standard rounded-2xl p-5 relative overflow-clip">
           <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
             style={{
               background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
@@ -262,7 +262,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
       </div>
 
       {/* Main Editor Card */}
-      <div className="glass-standard rounded-2xl overflow-hidden relative">
+      <div className="glass-standard rounded-2xl overflow-clip relative">
         <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
           style={{
             background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',

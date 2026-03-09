@@ -217,7 +217,7 @@ export function CRMDashboard({
             <button
               onClick={() => handleResearchNext(10)}
               disabled={processing === 'research'}
-              className="px-5 py-2.5 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-all text-sm shadow-sm shadow-primary-500/25 disabled:opacity-50 hover:shadow-md"
+              className="px-5 py-2.5 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-[background-color,box-shadow] text-sm shadow-sm shadow-primary-500/25 disabled:opacity-50 hover:shadow-md"
             >
               <span className="flex items-center gap-2">
                 <Zap size={16} />
@@ -227,7 +227,7 @@ export function CRMDashboard({
             <button
               onClick={() => handleResearchNext(25)}
               disabled={processing === 'research'}
-              className="px-5 py-2.5 bg-white border border-warm-200/50 text-warm-700 rounded-xl font-medium hover:bg-warm-50 active:bg-warm-100 transition-all text-sm disabled:opacity-50"
+              className="px-5 py-2.5 bg-white border border-warm-200/50 text-warm-700 rounded-xl font-medium hover:bg-warm-50 active:bg-warm-100 transition-colors text-sm disabled:opacity-50"
             >
               Research Top 25
             </button>
@@ -270,7 +270,7 @@ export function CRMDashboard({
                     <div className="h-9 rounded-lg bg-warm-50/80 overflow-hidden">
                       <div
                         className={cn(
-                          'h-full rounded-lg transition-all duration-700 ease-out flex items-center',
+                          'h-full rounded-lg transition-[width,opacity] duration-700 ease-out flex items-center',
                           `bg-gradient-to-r ${stage.gradient}`,
                           'group-hover:brightness-110',
                           stage.count === 0 && 'opacity-0'
@@ -318,7 +318,7 @@ export function CRMDashboard({
                     </div>
                     <div className="h-1.5 rounded-full bg-warm-100 overflow-hidden">
                       <div
-                        className="h-full rounded-full bg-gradient-to-r from-primary-400 to-primary-500 transition-all duration-500"
+                        className="h-full rounded-full bg-gradient-to-r from-primary-400 to-primary-500 transition-[width] duration-500"
                         style={{ width: `${pct}%` }}
                       />
                     </div>
@@ -495,13 +495,13 @@ export function CRMDashboard({
                 <button
                   onClick={() => handleResearchNext(10)}
                   disabled={processing === 'research' || (stats.byStatus.new_lead || 0) === 0}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm bg-primary-600 text-white hover:bg-primary-700 transition-all shadow-sm shadow-primary-500/25 disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5 hover:shadow-md"
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm bg-primary-600 text-white hover:bg-primary-700 transition-[background-color,transform,box-shadow] shadow-sm shadow-primary-500/25 disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5 hover:shadow-md"
                 >
                   <Zap size={16} /> Research Next 10
                 </button>
                 <button
                   onClick={() => onNavigate('pipeline')}
-                  className="px-4 py-2.5 bg-white border border-warm-200/50 text-warm-700 rounded-xl font-medium hover:bg-warm-50 active:bg-warm-100 transition-all text-sm hover:-translate-y-0.5"
+                  className="px-4 py-2.5 bg-white border border-warm-200/50 text-warm-700 rounded-xl font-medium hover:bg-warm-50 active:bg-warm-100 transition-[background-color,transform] text-sm hover:-translate-y-0.5"
                 >
                   Open Pipeline
                 </button>
@@ -549,7 +549,7 @@ function KPICard({
       'border rounded-2xl',
       'shadow-glass',
       'p-4 lg:p-5',
-      'transition-all duration-200 group',
+      'transition-[transform,box-shadow] duration-200 group',
       'hover:-translate-y-0.5 hover:shadow-lg',
       accent ? 'border-l-[3px] border-l-primary-500 border-t-white/20 border-r-white/20 border-b-white/20' : 'border-white/20',
       className

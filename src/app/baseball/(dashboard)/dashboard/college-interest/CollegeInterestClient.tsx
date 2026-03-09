@@ -294,7 +294,7 @@ export default function CollegeInterestClient() {
               <div className="flex items-center justify-between">
                 <div className="min-w-0">
                   <p className="text-xs lg:text-sm font-medium text-slate-500 truncate">Players Tracked</p>
-                  <p className="text-xl lg:text-2xl font-semibold tracking-tight text-slate-900 mt-1">{stats.totalPlayers}</p>
+                  <p className="text-xl lg:text-2xl font-semibold tracking-tight text-slate-900 mt-1 tabular-nums">{stats.totalPlayers}</p>
                 </div>
                 <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0 ml-2">
                   <IconEye size={20} className="text-blue-600 lg:hidden" />
@@ -309,7 +309,7 @@ export default function CollegeInterestClient() {
               <div className="flex items-center justify-between">
                 <div className="min-w-0">
                   <p className="text-xs lg:text-sm font-medium text-slate-500 truncate">High Interest</p>
-                  <p className="text-xl lg:text-2xl font-semibold tracking-tight text-slate-900 mt-1">{stats.highInterest}</p>
+                  <p className="text-xl lg:text-2xl font-semibold tracking-tight text-slate-900 mt-1 tabular-nums">{stats.highInterest}</p>
                 </div>
                 <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-amber-50 flex items-center justify-center flex-shrink-0 ml-2">
                   <IconStar size={20} className="text-amber-600 lg:hidden" />
@@ -324,7 +324,7 @@ export default function CollegeInterestClient() {
               <div className="flex items-center justify-between">
                 <div className="min-w-0">
                   <p className="text-xs lg:text-sm font-medium text-slate-500 truncate">Total Views</p>
-                  <p className="text-xl lg:text-2xl font-semibold tracking-tight text-slate-900 mt-1">{stats.totalViews}</p>
+                  <p className="text-xl lg:text-2xl font-semibold tracking-tight text-slate-900 mt-1 tabular-nums">{stats.totalViews}</p>
                 </div>
                 <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-purple-50 flex items-center justify-center flex-shrink-0 ml-2">
                   <IconEye size={20} className="text-purple-600 lg:hidden" />
@@ -339,7 +339,7 @@ export default function CollegeInterestClient() {
               <div className="flex items-center justify-between">
                 <div className="min-w-0">
                   <p className="text-xs lg:text-sm font-medium text-slate-500 truncate">Avg Coaches</p>
-                  <p className="text-xl lg:text-2xl font-semibold tracking-tight text-slate-900 mt-1">{stats.avgCoachesPerPlayer}</p>
+                  <p className="text-xl lg:text-2xl font-semibold tracking-tight text-slate-900 mt-1 tabular-nums">{stats.avgCoachesPerPlayer}</p>
                 </div>
                 <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-primary-50 flex items-center justify-center flex-shrink-0 ml-2">
                   <IconTrendingUp size={20} className="text-primary-600 lg:hidden" />

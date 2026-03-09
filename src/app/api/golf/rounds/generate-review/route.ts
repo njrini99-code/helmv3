@@ -113,6 +113,15 @@ export async function POST(request: NextRequest) {
       reviewId: v2Review.roundId,
     }).catch(() => {});
 
+    // Log to insight generation log for admin dashboard metrics (fire-and-forget)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    void (supabase as any).from('golf_insight_generation_log').insert({
+      player_id: round.player_id,
+      insight_type: 'round_review',
+      insights_generated: 1 + v2Review.patternsApplied.length + v2Review.causalInsights.length,
+      engine_version: 'v2',
+    });
+
     return NextResponse.json({
       review: null, // V1 review not generated (deprecated)
       v2Review,

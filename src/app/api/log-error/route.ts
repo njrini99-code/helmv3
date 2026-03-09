@@ -27,11 +27,24 @@ export async function POST(request: NextRequest) {
       critical: 'critical',
     };
 
+    // Sanitize context field - limit size to prevent abuse
+    let sanitizedContext = null;
+    if (errorReport.context) {
+      try {
+        const contextStr = JSON.stringify(errorReport.context);
+        if (contextStr.length <= 10000) {
+          sanitizedContext = errorReport.context;
+        }
+      } catch {
+        sanitizedContext = null;
+      }
+    }
+
     await adminClient.from('error_logs').insert({
       message: String(errorReport.message || 'Unknown error').slice(0, 2000),
       severity: severityMap[errorReport.severity] || 'error',
       stack: errorReport.stack ? String(errorReport.stack).slice(0, 8000) : null,
-      context: errorReport.context || null,
+      context: sanitizedContext,
       user_agent: request.headers.get('user-agent'),
       ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
       url: errorReport.url || null,

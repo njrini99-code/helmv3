@@ -173,7 +173,7 @@ export function Select({
           className={cn(
             'w-full min-h-[44px] px-3 rounded-[10px] border bg-white text-base lg:text-sm text-left',
             'flex items-center justify-between gap-2',
-            'transition-all duration-200',
+            'transition-colors duration-200',
             'focus:outline-none focus:ring-[3px] focus:ring-primary-600/10 focus:border-primary-600',
             'disabled:bg-warm-50 disabled:text-warm-400 disabled:cursor-not-allowed',
             error
@@ -218,7 +218,7 @@ export function Select({
           <div
             className={cn(
               'absolute z-50 w-full mt-1 bg-white rounded-[14px] border border-warm-200 shadow-lg overflow-hidden',
-              'transition-all duration-150 ease-out origin-top',
+              'transition-[opacity,transform] duration-150 ease-out origin-top',
               isAnimating
                 ? 'opacity-100 scale-y-100 translate-y-0'
                 : 'opacity-0 scale-y-95 -translate-y-1'
@@ -235,7 +235,7 @@ export function Select({
                   placeholder="Search..."
                   className="w-full h-9 px-3 rounded-lg border border-warm-200 text-base lg:text-sm
                              focus:outline-none focus:border-primary-600 focus:ring-[3px] focus:ring-primary-600/10
-                             transition-all duration-200"
+                             transition-colors duration-200"
                 />
               </div>
             )}
@@ -389,7 +389,7 @@ export function MultiSelect({
           className={cn(
             'w-full min-h-[44px] px-3 rounded-[10px] border bg-white text-base lg:text-sm text-left',
             'flex items-center justify-between gap-2',
-            'transition-all duration-200',
+            'transition-colors duration-200',
             'focus:outline-none focus:ring-[3px] focus:ring-primary-600/10 focus:border-primary-600',
             'disabled:bg-warm-50 disabled:text-warm-400 disabled:cursor-not-allowed',
             error
@@ -433,7 +433,7 @@ export function MultiSelect({
           <div
             className={cn(
               'absolute z-50 w-full mt-1 bg-white rounded-[14px] border border-warm-200 shadow-lg overflow-hidden',
-              'transition-all duration-150 ease-out origin-top',
+              'transition-[opacity,transform] duration-150 ease-out origin-top',
               isAnimating
                 ? 'opacity-100 scale-y-100 translate-y-0'
                 : 'opacity-0 scale-y-95 -translate-y-1'
@@ -460,7 +460,7 @@ export function MultiSelect({
                     )}
                   >
                     <div className={cn(
-                      'w-5 h-5 rounded border-2 flex items-center justify-center transition-all duration-200',
+                      'w-5 h-5 rounded border-2 flex items-center justify-center transition-colors duration-200',
                       isSelected
                         ? 'bg-primary-600 border-primary-600 scale-100'
                         : 'border-warm-300 scale-100 hover:border-warm-400'
@@ -531,7 +531,7 @@ export const NativeSelect = forwardRef<HTMLSelectElement, NativeSelectProps>(
         ref={ref}
         className={cn(
           'w-full min-h-[44px] px-3 rounded-[10px] border bg-white text-warm-900 text-base lg:text-sm',
-          'transition-all duration-200 appearance-none cursor-pointer',
+          'transition-colors duration-200 appearance-none cursor-pointer',
           'focus:outline-none focus:ring-[3px] focus:ring-primary-600/10 focus:border-primary-600',
           'disabled:bg-warm-50 disabled:text-warm-400 disabled:cursor-not-allowed',
           error

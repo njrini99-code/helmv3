@@ -4,11 +4,13 @@ import { useCallback, useSyncExternalStore } from 'react';
 
 export type DisplayDensity = 'comfortable' | 'compact';
 export type DateFormat = 'MM/DD/YYYY' | 'DD/MM/YYYY' | 'YYYY-MM-DD';
+export type ScoreDisplay = 'to_par' | 'raw';
 
 export interface AppearancePreferences {
   displayDensity: DisplayDensity;
   dateFormat: DateFormat;
   showAnimations: boolean;
+  scoreDisplay: ScoreDisplay;
 }
 
 const STORAGE_KEY = 'golf_appearance_preferences';
@@ -17,6 +19,7 @@ const DEFAULTS: AppearancePreferences = {
   displayDensity: 'comfortable',
   dateFormat: 'MM/DD/YYYY',
   showAnimations: true,
+  scoreDisplay: 'to_par',
 };
 
 // ---------- External store for cross-component sync ----------
@@ -38,6 +41,7 @@ function readFromStorage(): AppearancePreferences {
       displayDensity: parsed.display_density || DEFAULTS.displayDensity,
       dateFormat: parsed.date_format || DEFAULTS.dateFormat,
       showAnimations: parsed.show_animations ?? DEFAULTS.showAnimations,
+      scoreDisplay: parsed.score_display || DEFAULTS.scoreDisplay,
     };
   } catch {
     return DEFAULTS;
@@ -86,6 +90,7 @@ export function useAppearancePreferences() {
         display_density: next.displayDensity,
         date_format: next.dateFormat,
         show_animations: next.showAnimations,
+        score_display: next.scoreDisplay,
       })
     );
 

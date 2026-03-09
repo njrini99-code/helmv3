@@ -207,7 +207,7 @@ function HoleOverviewCard({ hole }: { hole: HoleReviewData }) {
       )}
     >
       <div className="text-xs text-warm-500 mb-1">Hole {hole.hole_number}</div>
-      <div className={cn('text-2xl font-bold mb-1', scoreColor)}>
+      <div className={cn('text-2xl font-bold mb-1 tabular-nums', scoreColor)}>
         {score ?? '--'}
       </div>
       <div className="text-xs text-warm-400">Par {par}</div>

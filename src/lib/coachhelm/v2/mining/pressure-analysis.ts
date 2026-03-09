@@ -248,7 +248,7 @@ export async function analyzePressurePerformance(
     .from('golf_rounds')
     .select('id, round_date, score_to_par, course_name')
     .eq('player_id', playerId)
-    .eq('round_type', 'qualifier')
+    .in('round_type', ['qualifier', 'qualifying'])
     .eq('status', 'completed')
     .order('round_date', { ascending: false });
 

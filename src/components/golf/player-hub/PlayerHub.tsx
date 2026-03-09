@@ -177,7 +177,7 @@ function TripCard({ trip, onExpand }: { trip: TripData; onExpand: () => void }) 
     <m.div
       variants={fadeUp}
       onClick={onExpand}
-      className="group relative glass-standard rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
+      className="group relative glass-standard rounded-2xl overflow-clip cursor-pointer transition-[transform,box-shadow] duration-300 hover:shadow-lg hover:-translate-y-0.5"
     >
       <ShineEffect />
       {/* Colored top accent based on trip proximity */}
@@ -226,7 +226,7 @@ function TripCard({ trip, onExpand }: { trip: TripData; onExpand: () => void }) 
             </div>
           </div>
 
-          <IconChevronRight size={18} className="text-warm-300 group-hover:text-warm-500 group-hover:translate-x-0.5 transition-all flex-shrink-0 mt-1" />
+          <IconChevronRight size={18} className="text-warm-300 group-hover:text-warm-500 group-hover:translate-x-0.5 transition-[color,transform] flex-shrink-0 mt-1" />
         </div>
       </div>
     </m.div>
@@ -395,7 +395,7 @@ function PlayerTaskCard({
       variants={fadeUp}
       layout
       className={cn(
-        'relative glass-standard rounded-2xl overflow-hidden transition-all duration-300',
+        'relative glass-standard rounded-2xl overflow-clip transition-[transform,box-shadow] duration-300',
         isCompleted && 'opacity-60',
         !isCompleted && 'hover:shadow-lg hover:-translate-y-0.5',
       )}
@@ -412,7 +412,7 @@ function PlayerTaskCard({
             disabled={isCompleted || completing}
             aria-label={isCompleted ? 'Task completed' : 'Mark task complete'}
             className={cn(
-              'w-7 h-7 rounded-lg border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all duration-200',
+              'w-7 h-7 rounded-lg border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors duration-200',
               isCompleted
                 ? 'bg-primary-600 border-primary-600 text-white'
                 : 'border-warm-300 hover:border-primary-500 hover:bg-primary-50 active:scale-90',
@@ -502,7 +502,7 @@ function EventRSVPCard({
       variants={fadeUp}
       layout
       className={cn(
-        'relative glass-standard rounded-2xl overflow-hidden transition-all duration-300',
+        'relative glass-standard rounded-2xl overflow-clip transition-[transform,box-shadow] duration-300',
         !isPast && 'hover:shadow-lg hover:-translate-y-0.5',
         isPast && 'opacity-60',
       )}
@@ -564,7 +564,7 @@ function EventRSVPCard({
                   onClick={() => handleRSVP('accepted')}
                   disabled={submitting !== null}
                   className={cn(
-                    'px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200',
+                    'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors duration-200',
                     event.rsvp_status === 'accepted'
                       ? 'bg-primary-600 text-white shadow-sm'
                       : 'bg-primary-50 text-primary-700 hover:bg-primary-100 active:scale-95',
@@ -577,7 +577,7 @@ function EventRSVPCard({
                   onClick={() => handleRSVP('tentative')}
                   disabled={submitting !== null}
                   className={cn(
-                    'px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200',
+                    'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors duration-200',
                     event.rsvp_status === 'tentative'
                       ? 'bg-amber-500 text-white shadow-sm'
                       : 'bg-amber-50 text-amber-700 hover:bg-amber-100 active:scale-95',
@@ -590,7 +590,7 @@ function EventRSVPCard({
                   onClick={() => handleRSVP('declined')}
                   disabled={submitting !== null}
                   className={cn(
-                    'px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200',
+                    'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors duration-200',
                     event.rsvp_status === 'declined'
                       ? 'bg-warm-600 text-white shadow-sm'
                       : 'bg-warm-100 text-warm-600 hover:bg-warm-200 active:scale-95',
@@ -732,48 +732,45 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
       {/* Tab navigation */}
       <div className="sticky top-[65px] md:top-[73px] z-[9] bg-white/80 backdrop-blur-xl border-b border-warm-100">
         <div className="max-w-3xl mx-auto px-4 md:px-6">
-          <div className="flex gap-1 -mb-px overflow-x-auto pills-scroll">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={cn(
-                  'relative px-4 py-3 text-sm font-medium whitespace-nowrap transition-all duration-200 touch-manipulation',
-                  activeTab === tab.id
-                    ? 'text-primary-600'
-                    : 'text-warm-500 hover:text-warm-700',
-                )}
-              >
-                <span className="flex items-center gap-1.5">
-                  {tab.label}
-                  {tab.urgentCount !== undefined && tab.urgentCount > 0 && activeTab !== tab.id && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+          <div className="relative">
+            <div className="flex gap-1 -mb-px overflow-x-auto pills-scroll">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={cn(
+                    'relative px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors duration-200 touch-manipulation',
+                    activeTab === tab.id
+                      ? 'text-primary-600'
+                      : 'text-warm-500 hover:text-warm-700',
                   )}
-                </span>
-                {activeTab === tab.id && (
-                  <m.div
-                    layoutId="tab-indicator"
-                    className="absolute bottom-0 left-2 right-2 h-0.5 bg-primary-600 rounded-full"
-                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                  />
-                )}
-              </button>
-            ))}
+                >
+                  <span className="flex items-center gap-1.5">
+                    {tab.label}
+                    {tab.urgentCount !== undefined && tab.urgentCount > 0 && activeTab !== tab.id && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                    )}
+                  </span>
+                  {activeTab === tab.id && (
+                    <m.div
+                      layoutId="tab-indicator"
+                      className="absolute bottom-0 left-2 right-2 h-0.5 bg-primary-600 rounded-full"
+                      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                    />
+                  )}
+                </button>
+              ))}
+            </div>
+            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white/80 to-transparent md:hidden" />
           </div>
         </div>
       </div>
 
       {/* Content */}
       <div className="max-w-3xl mx-auto px-4 md:px-6 py-6 md:py-8">
-        <AnimatePresence mode="wait">
           {/* =============== OVERVIEW TAB =============== */}
-          {activeTab === 'overview' && (
-            <m.div
-              key="overview"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+          <div className={activeTab === 'overview' ? 'block' : 'hidden'}>
+            <div
               className="space-y-8"
             >
               {/* Urgent alert */}
@@ -899,17 +896,12 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
                   description="No pending tasks, upcoming trips, or events to respond to. Enjoy the break."
                 />
               )}
-            </m.div>
-          )}
+            </div>
+          </div>
 
           {/* =============== TRIPS TAB =============== */}
-          {activeTab === 'trips' && (
-            <m.div
-              key="trips"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+          <div className={activeTab === 'trips' ? 'block' : 'hidden'}>
+            <div
             >
               {trips.length > 0 ? (
                 <m.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-3">
@@ -926,18 +918,12 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
                   description="Your coach hasn't scheduled any trips yet. Check back later."
                 />
               )}
-            </m.div>
-          )}
+            </div>
+          </div>
 
           {/* =============== TASKS TAB =============== */}
-          {activeTab === 'tasks' && (
-            <m.div
-              key="tasks"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-            >
+          <div className={activeTab === 'tasks' ? 'block' : 'hidden'}>
+            <div>
               {tasks.length > 0 ? (
                 <div className="space-y-6">
                   {/* Pending tasks */}
@@ -985,18 +971,12 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
                   description="You don't have any assigned tasks right now."
                 />
               )}
-            </m.div>
-          )}
+            </div>
+          </div>
 
           {/* =============== EVENTS TAB =============== */}
-          {activeTab === 'events' && (
-            <m.div
-              key="events"
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-            >
+          <div className={activeTab === 'events' ? 'block' : 'hidden'}>
+            <div>
               {events.length > 0 ? (
                 <div className="space-y-6">
                   {/* Upcoming events */}
@@ -1050,9 +1030,8 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
                   description="No events have been scheduled yet. Check back later."
                 />
               )}
-            </m.div>
-          )}
-        </AnimatePresence>
+            </div>
+          </div>
       </div>
 
       {/* Trip detail sheet */}

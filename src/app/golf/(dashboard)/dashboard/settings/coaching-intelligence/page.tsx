@@ -162,7 +162,7 @@ export default function CoachingIntelligenceSettingsPage() {
                 </AnimatedItem>
 
                 {/* Priority Section */}
-                <AnimatedItem><section className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-hidden">
+                <AnimatedItem><section className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-clip">
                     <div className="p-6 border-b border-warm-100">
                         <h2 className="text-base font-semibold text-warm-900">Metric Priorities</h2>
                         <p className="text-sm text-warm-500 mt-1">
@@ -184,7 +184,7 @@ export default function CoachingIntelligenceSettingsPage() {
                 </section></AnimatedItem>
 
                 {/* Sensitivity Section */}
-                <AnimatedItem><section className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-hidden">
+                <AnimatedItem><section className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-clip">
                     <div className="p-6 border-b border-warm-100">
                         <h2 className="text-base font-semibold text-warm-900">Alert Sensitivity</h2>
                         <p className="text-sm text-warm-500 mt-1">
@@ -200,7 +200,7 @@ export default function CoachingIntelligenceSettingsPage() {
                 </section></AnimatedItem>
 
                 {/* Thresholds Section */}
-                <AnimatedItem><section className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-hidden">
+                <AnimatedItem><section className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-clip">
                     <div className="p-6 border-b border-warm-100">
                         <h2 className="text-base font-semibold text-warm-900">Fine-tune Thresholds</h2>
                         <p className="text-sm text-warm-500 mt-1">
@@ -238,7 +238,7 @@ export default function CoachingIntelligenceSettingsPage() {
                 </section></AnimatedItem>
 
                 {/* Weight Distributor Section */}
-                <AnimatedItem><section className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-hidden">
+                <AnimatedItem><section className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-clip">
                     <div className="p-6 border-b border-warm-100">
                         <h2 className="text-base font-semibold text-warm-900">Comparison Weighting</h2>
                         <p className="text-sm text-warm-500 mt-1">
@@ -260,7 +260,7 @@ export default function CoachingIntelligenceSettingsPage() {
                 </section></AnimatedItem>
 
                 {/* Alert Toggles Section */}
-                <AnimatedItem><section className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-hidden">
+                <AnimatedItem><section className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-clip">
                     <div className="p-6 border-b border-warm-100">
                         <h2 className="text-base font-semibold text-warm-900">Active Alerts</h2>
                         <p className="text-sm text-warm-500 mt-1">
@@ -276,7 +276,7 @@ export default function CoachingIntelligenceSettingsPage() {
                 </section></AnimatedItem>
 
                 {/* Display Preferences Section */}
-                <AnimatedItem><section className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-hidden">
+                <AnimatedItem><section className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-clip">
                     <div className="p-6 border-b border-warm-100">
                         <h2 className="text-base font-semibold text-warm-900">Display Preferences</h2>
                         <p className="text-sm text-warm-500 mt-1">

@@ -32,8 +32,9 @@ function getRoundTypeMeta(type: string | null) {
   switch (type) {
     case 'tournament':
       return { label: 'Tournament', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' };
+    case 'qualifier':
     case 'qualifying':
-      return { label: 'Qualifying', bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' };
+      return { label: 'Qualifier', bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200' };
     case 'practice':
       return { label: 'Practice', bg: 'bg-warm-50', text: 'text-warm-600', border: 'border-warm-200' };
     case 'casual':
@@ -268,7 +269,7 @@ export default async function RoundsPage() {
           {roundStats && rounds.length >= 3 && (
             <div className="mb-8 grid grid-cols-2 md:grid-cols-5 gap-3">
               {/* Total Rounds */}
-              <div className="relative glass-standard rounded-2xl overflow-hidden p-4">
+              <div className="relative glass-standard rounded-2xl overflow-clip p-4">
                 <ShineEffect />
                 <div className="relative z-10">
                   <div className="flex items-center gap-2 mb-2">
@@ -282,7 +283,7 @@ export default async function RoundsPage() {
               </div>
 
               {/* Avg Score */}
-              <div className="relative glass-standard rounded-2xl overflow-hidden p-4">
+              <div className="relative glass-standard rounded-2xl overflow-clip p-4">
                 <ShineEffect />
                 <div className="relative z-10">
                   <div className="flex items-center gap-2 mb-2">
@@ -296,7 +297,7 @@ export default async function RoundsPage() {
               </div>
 
               {/* Best Round */}
-              <div className="relative glass-standard rounded-2xl overflow-hidden p-4">
+              <div className="relative glass-standard rounded-2xl overflow-clip p-4">
                 <ShineEffect />
                 <div className="relative z-10">
                   <div className="flex items-center gap-2 mb-2">
@@ -313,7 +314,7 @@ export default async function RoundsPage() {
               </div>
 
               {/* Avg to Par */}
-              <div className="relative glass-standard rounded-2xl overflow-hidden p-4">
+              <div className="relative glass-standard rounded-2xl overflow-clip p-4">
                 <ShineEffect />
                 <div className="relative z-10">
                   <div className="flex items-center gap-2 mb-2">
@@ -341,7 +342,7 @@ export default async function RoundsPage() {
               </div>
 
               {/* Under Par % + Trend */}
-              <div className="relative glass-standard rounded-2xl overflow-hidden p-4 col-span-2 md:col-span-1">
+              <div className="relative glass-standard rounded-2xl overflow-clip p-4 col-span-2 md:col-span-1">
                 <ShineEffect />
                 <div className="relative z-10">
                   <div className="flex items-center gap-2 mb-2">
@@ -383,7 +384,7 @@ export default async function RoundsPage() {
 
           {rounds.length === 0 && inProgressRounds.length === 0 ? (
             /* Empty State */
-            <div className="relative glass-standard rounded-2xl overflow-hidden py-20 px-8 text-center">
+            <div className="relative glass-standard rounded-2xl overflow-clip py-20 px-8 text-center">
               <ShineEffect />
               <div className="relative z-10">
                 <div className="w-16 h-16 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto mb-5">
@@ -438,7 +439,7 @@ export default async function RoundsPage() {
 
                       return (
                         <Link key={round.id} href={`/golf/dashboard/rounds/${round.id}`}>
-                          <div className="group relative glass-standard rounded-2xl overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
+                          <div className="group relative glass-standard rounded-2xl overflow-clip hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
                             <ShineEffect />
                             <div className="relative z-10 flex items-center gap-4 p-4 md:p-5">
 

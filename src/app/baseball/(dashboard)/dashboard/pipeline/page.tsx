@@ -534,7 +534,7 @@ export default function PipelinePage() {
 
         {/* Empty State Banner */}
         {watchlist.length === 0 && (
-          <div className="relative glass-standard rounded-2xl p-8 mb-6 text-center overflow-hidden">
+          <div className="relative glass-standard rounded-2xl p-8 mb-6 text-center overflow-clip">
             <ShineEffect />
             <IconUsers size={32} className="mx-auto mb-3 text-primary-600" />
             <h3 className="text-lg font-semibold tracking-tight text-slate-900 mb-2">Your pipeline is empty</h3>
@@ -646,7 +646,7 @@ export default function PipelinePage() {
 
             {/* Bulk Actions Bar */}
             {selectedPlayers.size > 0 && (
-              <div className="relative glass-standard rounded-2xl p-5 mb-6 overflow-hidden">
+              <div className="relative glass-standard rounded-2xl p-5 mb-6 overflow-clip">
                 <ShineEffect />
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-medium text-primary-700">

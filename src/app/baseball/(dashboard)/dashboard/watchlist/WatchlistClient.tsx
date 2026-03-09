@@ -514,7 +514,7 @@ export function WatchlistClient() {
 
             {/* Bulk Actions Bar */}
             {selectedIds.size > 0 && (
-              <div className="relative glass-standard rounded-2xl p-4 mb-6 overflow-hidden">
+              <div className="relative glass-standard rounded-2xl p-4 mb-6 overflow-clip">
                 <ShineEffect />
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-medium text-primary-700">

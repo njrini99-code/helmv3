@@ -3,7 +3,7 @@
 import { m } from 'framer-motion';
 import { IconUsers, IconMail, IconCalendar, IconUser, IconClipboardList } from '@/components/icons';
 import { PremiumGlassCard, SectionHeader } from '@/components/golf/dashboard';
-import { MobileMenuButton } from '@/components/golf/layout/MobileMenuButton';
+import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
 
 interface TeamInfoPlayerProps {
   team: {

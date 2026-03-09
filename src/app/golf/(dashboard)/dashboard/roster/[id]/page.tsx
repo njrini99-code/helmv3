@@ -8,6 +8,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
+import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
 import { PlayerStatusBadge } from '@/components/golf/roster/PlayerStatusBadge';
 import { YearBadge } from '@/components/golf/roster/YearBadge';
 import { PlayerStatsSection } from '@/components/golf/profile/PlayerStatsSection';
@@ -178,13 +179,16 @@ export default async function PlayerProfilePage({ params }: PageProps) {
       <AnimatedItem>
       <div className="border-b border-warm-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 md:px-6 py-4">
-          <Link
-            href="/golf/dashboard/roster"
-            className="inline-flex items-center gap-2 text-warm-500 hover:text-warm-700 transition-colors"
-          >
-            <IconArrowLeft size={16} />
-            <span className="text-sm font-medium">Back to Roster</span>
-          </Link>
+          <div className="flex items-center gap-3">
+            <MobileMenuButton />
+            <Link
+              href="/golf/dashboard/roster"
+              className="inline-flex items-center gap-2 text-warm-500 hover:text-warm-700 transition-colors"
+            >
+              <IconArrowLeft size={16} />
+              <span className="text-sm font-medium">Back to Roster</span>
+            </Link>
+          </div>
         </div>
       </div>
       </AnimatedItem>
@@ -192,7 +196,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
       <AnimatedItem>
       <div className="max-w-6xl mx-auto px-4 md:px-6 py-6 md:py-8">
         {/* Profile Header Card - Compact */}
-        <div className="relative glass-standard rounded-2xl overflow-hidden mb-8">
+        <div className="relative glass-standard rounded-2xl overflow-clip mb-8">
           <ShineEffect />
           <div className="relative p-6">
             <div className="flex flex-col sm:flex-row gap-5">
@@ -307,7 +311,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
           </div>
 
           {totalRounds === 0 ? (
-            <div className="relative glass-standard rounded-2xl overflow-hidden p-8 md:p-12 text-center">
+            <div className="relative glass-standard rounded-2xl overflow-clip p-8 md:p-12 text-center">
               <ShineEffect />
               <div className="relative">
                 <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-3">

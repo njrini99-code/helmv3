@@ -436,7 +436,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                   <div className={cn(
                     'grid gap-2',
                     isPage
-                      ? (insight.evidenceMetrics!.length <= 3 ? 'grid-cols-3' : 'grid-cols-2 lg:grid-cols-4')
+                      ? (insight.evidenceMetrics!.length <= 3 ? 'grid-cols-2 md:grid-cols-3' : 'grid-cols-2 lg:grid-cols-4')
                       : 'grid-cols-2'
                   )}>
                     {insight.evidenceMetrics!.slice(0, isPage ? 8 : 4).map((metric, i) => (
@@ -497,7 +497,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                   <div className={cn(
                     'grid gap-2',
                     isPage
-                      ? evidenceSteps.length <= 3 ? 'grid-cols-3' : 'grid-cols-2 lg:grid-cols-4'
+                      ? evidenceSteps.length <= 3 ? 'grid-cols-2 md:grid-cols-3' : 'grid-cols-2 lg:grid-cols-4'
                       : 'grid-cols-2'
                   )}>
                     {evidenceSteps.slice(0, isPage ? 8 : 4).map((step: ReasoningStep, i: number) => (
@@ -1050,7 +1050,7 @@ const EnhancedPatternCard = memo(function EnhancedPatternCard({
               )}
 
               {/* Stats grid */}
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                 <div className="text-center bg-warm-50/80 rounded-lg py-2">
                   <div className="text-sm font-bold text-warm-800 tabular-nums">
                     {Math.round(pattern.support * 100)}%

@@ -112,7 +112,7 @@ function StepIndicator({ currentStep, steps }: { currentStep: Step; steps: typeo
             >
               <div
                 className={cn(
-                  'w-8 h-8 rounded-full flex items-center justify-center transition-all duration-500 text-sm font-semibold',
+                  'w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-500 text-sm font-semibold',
                   isCompleted && 'bg-primary-600 text-white shadow-sm shadow-primary-600/30',
                   isCurrent && 'bg-white border-2 border-primary-600 text-primary-600 shadow-sm',
                   !isCompleted && !isCurrent && 'bg-warm-100 text-warm-400'
@@ -188,7 +188,7 @@ function PlanComparisonModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="auth-glass-card rounded-2xl shadow-2xl max-w-3xl w-full max-h-[85vh] overflow-hidden"
+              className="auth-glass-card rounded-2xl shadow-2xl max-w-3xl w-full max-h-[85vh] overflow-clip"
             >
               <div className="flex items-center justify-between p-6 border-b border-warm-200">
                 <h2 className="text-xl font-bold text-warm-900">Compare Plans</h2>
@@ -509,10 +509,10 @@ export default function BaseballCoachOnboarding() {
                       <button
                         key={opt.value}
                         onClick={() => { setCoachType(opt.value); goForward('program'); }}
-                        className="w-full auth-glass-card rounded-2xl p-5 text-left hover:bg-white/90 transition-all group"
+                        className="w-full auth-glass-card rounded-2xl p-5 text-left hover:bg-white/90 transition-colors group"
                       >
                         <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-xl bg-primary-50 border border-primary-100 flex items-center justify-center group-hover:scale-110 group-hover:bg-primary-100 transition-all">
+                          <div className="w-12 h-12 rounded-xl bg-primary-50 border border-primary-100 flex items-center justify-center group-hover:scale-110 group-hover:bg-primary-100 transition-[transform,background-color]">
                             <opt.Icon size={24} className="text-primary-600" />
                           </div>
                           <div>
@@ -621,7 +621,7 @@ export default function BaseballCoachOnboarding() {
                       <Button
                         onClick={() => goForward(existingUser ? 'plan' : 'account')}
                         disabled={!schoolName.trim() || (!!existingUser && !title.trim())}
-                        className="w-full bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
+                        className="w-full bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-colors"
                         size="lg"
                       >
                         Continue
@@ -706,7 +706,7 @@ export default function BaseballCoachOnboarding() {
                       <Button
                         onClick={() => goForward('plan')}
                         disabled={!fullName.trim() || !title.trim() || !email.trim() || password.length < 8}
-                        className="w-full bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
+                        className="w-full bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-colors"
                         size="lg"
                       >
                         Continue
@@ -754,7 +754,7 @@ export default function BaseballCoachOnboarding() {
                       onClick={() => handlePlanSelectAndSubmit('free')}
                       disabled={loading || !authChecked}
                       className={cn(
-                        'auth-glass-card rounded-2xl p-6 text-left transition-all hover:bg-white/90',
+                        'auth-glass-card rounded-2xl p-6 text-left transition-colors hover:bg-white/90',
                         plan === 'free' && 'ring-2 ring-primary-500',
                         !authChecked && 'opacity-60 cursor-wait'
                       )}
@@ -775,7 +775,7 @@ export default function BaseballCoachOnboarding() {
                       onClick={() => handlePlanSelectAndSubmit('elite')}
                       disabled={loading || !authChecked}
                       className={cn(
-                        'auth-glass-card rounded-2xl p-6 text-left transition-all hover:bg-white/90 relative',
+                        'auth-glass-card rounded-2xl p-6 text-left transition-colors hover:bg-white/90 relative',
                         plan === 'elite' ? 'ring-2 ring-primary-500' : 'ring-1 ring-primary-200',
                         !authChecked && 'opacity-60 cursor-wait'
                       )}
@@ -912,7 +912,7 @@ export default function BaseballCoachOnboarding() {
                         <Button
                           size="lg"
                           onClick={handleGoToDashboard}
-                          className="w-full sm:w-auto px-10 bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-all"
+                          className="w-full sm:w-auto px-10 bg-primary-600 hover:bg-primary-700 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15 transition-colors"
                         >
                           Go to Dashboard
                           <IconArrowRight size={16} className="ml-2" />

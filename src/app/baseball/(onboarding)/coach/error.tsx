@@ -8,7 +8,7 @@ export default function Error({
   reset: () => void;
 }) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#FAF6F1]">
+    <div className="min-h-dvh flex items-center justify-center bg-[#FAF6F1]">
       <div className="text-center p-8">
         <h2 className="text-xl font-semibold text-slate-900 mb-2">
           Onboarding Error

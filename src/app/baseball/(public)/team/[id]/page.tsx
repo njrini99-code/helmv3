@@ -307,7 +307,7 @@ export default async function TeamProfilePage({ params }: PageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF6F1]">
+    <div className="min-h-dvh bg-[#FAF6F1]">
       {/* Header */}
       <div className="bg-white border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-6 py-4">

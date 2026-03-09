@@ -99,32 +99,43 @@ export function useGolfRounds(playerId?: string): UseGolfRoundsResult {
         };
         (roundsData as unknown as RoundData[]).forEach((round: RoundData) => {
           const hp = round.holes_played ?? 18;
+          const hasRoundTotals = round.total_putts !== null && round.total_putts !== undefined;
+
+          // Per-round accumulators: prefer round totals over hole-level sums
+          let roundPutts = 0;
+          let roundFairwaysHit = 0;
+          let roundFairwaysTotal = 0;
+          let roundGreensInReg = 0;
+          let roundGreensTotal = 0;
+
           if (round.holes) {
             round.holes.forEach((hole: HoleData) => {
-              // Putting
-              if (hole.putts) totalPutts += hole.putts;
-
-              // Fairways (only count par 4s and 5s)
+              if (hole.putts) roundPutts += hole.putts;
               if (hole.par && hole.par >= 4) {
-                fairwaysTotal++;
-                if (hole.fairway_hit) fairwaysHit++;
+                roundFairwaysTotal++;
+                if (hole.fairway_hit) roundFairwaysHit++;
               }
-
-              // Greens
-              greensTotal++;
-              if (hole.gir) greensInReg++;
+              roundGreensTotal++;
+              if (hole.gir) roundGreensInReg++;
             });
           }
 
-          // Also use round totals if available
-          if (round.total_putts !== null && round.total_putts !== undefined) {
-            totalPutts = round.total_putts;
+          // Override with round totals if available (more reliable than hole-level)
+          if (hasRoundTotals) {
+            roundPutts = round.total_putts!;
             totalPuttsHoles += hp;
           }
-          if (round.total_fairways_hit !== null && round.total_fairways_hit !== undefined) fairwaysHit = round.total_fairways_hit;
-          if (round.total_fairways !== null && round.total_fairways !== undefined) fairwaysTotal = round.total_fairways;
-          if (round.total_gir !== null && round.total_gir !== undefined) greensInReg = round.total_gir;
-          if (round.total_gir_possible !== null && round.total_gir_possible !== undefined) greensTotal = round.total_gir_possible;
+          if (round.total_fairways_hit !== null && round.total_fairways_hit !== undefined) roundFairwaysHit = round.total_fairways_hit;
+          if (round.total_fairways !== null && round.total_fairways !== undefined) roundFairwaysTotal = round.total_fairways;
+          if (round.total_gir !== null && round.total_gir !== undefined) roundGreensInReg = round.total_gir;
+          if (round.total_gir_possible !== null && round.total_gir_possible !== undefined) roundGreensTotal = round.total_gir_possible;
+
+          // Accumulate across rounds
+          totalPutts += roundPutts;
+          fairwaysHit += roundFairwaysHit;
+          fairwaysTotal += roundFairwaysTotal;
+          greensInReg += roundGreensInReg;
+          greensTotal += roundGreensTotal;
         });
 
         // Normalize putts to 18-hole equivalent

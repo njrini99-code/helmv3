@@ -46,7 +46,7 @@ export function V2ReviewSummary({ review }: V2ReviewSummaryProps) {
       className="space-y-4"
     >
       {/* AI Summary Card */}
-      <div className="rounded-2xl bg-white/80 backdrop-blur-sm border border-warm-200 overflow-hidden shadow-sm">
+      <div className="rounded-2xl bg-white/80 backdrop-blur-sm border border-warm-200 overflow-clip shadow-sm">
         {/* Header bar */}
         <div className="px-5 py-3.5 bg-gradient-to-r from-primary-50 to-primary-50 border-b border-primary-100/60 flex items-center gap-3">
           <div className="p-1.5 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg shadow-sm shadow-primary-500/20">

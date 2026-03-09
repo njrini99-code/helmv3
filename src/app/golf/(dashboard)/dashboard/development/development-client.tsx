@@ -472,7 +472,7 @@ export function DevelopmentPlansClient({
       <div
         key={fa.id}
         className={cn(
-          'group relative rounded-2xl border transition-all duration-200',
+          'group relative rounded-2xl border transition-[background-color,border-color,box-shadow] duration-200',
           isCompleted
             ? 'bg-white/40 border-warm-200/60'
             : 'bg-white/70 backdrop-blur-xl border-white/20 shadow-sm hover:shadow-md',
@@ -544,7 +544,7 @@ export function DevelopmentPlansClient({
               <div className="h-2 bg-warm-100 rounded-full overflow-hidden">
                 <div
                   className={cn(
-                    'h-full rounded-full transition-all duration-700',
+                    'h-full rounded-full transition-[width] duration-700',
                     pct >= 100 ? 'bg-gradient-to-r from-primary-500 to-primary-400'
                     : pct >= 75 ? 'bg-gradient-to-r from-blue-500 to-blue-400'
                     : pct >= 50 ? 'bg-gradient-to-r from-amber-500 to-amber-400'
@@ -647,7 +647,7 @@ export function DevelopmentPlansClient({
                 type="button"
                 onClick={() => handleAreaTypeChange(type.value)}
                 className={cn(
-                  'flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all duration-150',
+                  'flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-[background-color,border-color,box-shadow] duration-150',
                   formData.area_type === type.value
                     ? 'border-primary-500 bg-primary-50 shadow-sm'
                     : 'border-warm-200 hover:border-warm-300 hover:bg-warm-50 active:bg-warm-100',
@@ -828,7 +828,7 @@ export function DevelopmentPlansClient({
               <button
                 onClick={() => setSelectedPlayerId(null)}
                 className={cn(
-                  'px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all duration-150',
+                  'px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-[color,background-color,box-shadow] duration-150',
                   selectedPlayerId === null
                     ? 'bg-primary-600 text-white shadow-sm'
                     : 'bg-white/70 text-warm-600 hover:bg-white border border-warm-200/60',
@@ -843,7 +843,7 @@ export function DevelopmentPlansClient({
                     key={player.id}
                     onClick={() => setSelectedPlayerId(player.id)}
                     className={cn(
-                      'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all duration-150',
+                      'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-[color,background-color,box-shadow] duration-150',
                       selectedPlayerId === player.id
                         ? 'bg-primary-600 text-white shadow-sm'
                         : 'bg-white/70 text-warm-600 hover:bg-white border border-warm-200/60',
@@ -897,7 +897,7 @@ export function DevelopmentPlansClient({
               </div>
               <p className="text-2xl font-bold text-warm-900">{summaryStats.avgProgress}%</p>
               <div className="mt-1 h-1.5 bg-warm-100 rounded-full overflow-hidden">
-                <div className="h-full bg-primary-500 rounded-full transition-all duration-500" style={{ width: `${summaryStats.avgProgress}%` }} />
+                <div className="h-full bg-primary-500 rounded-full transition-[width] duration-500" style={{ width: `${summaryStats.avgProgress}%` }} />
               </div>
             </div>
             <div className="glass-standard rounded-xl p-4">
@@ -905,7 +905,7 @@ export function DevelopmentPlansClient({
                 <IconTarget size={14} className="text-violet-600" />
                 <p className="text-xs font-semibold text-warm-400 uppercase tracking-wider">Total</p>
               </div>
-              <p className="text-2xl font-bold text-warm-900">{summaryStats.total}</p>
+              <p className="text-2xl font-bold text-warm-900 tabular-nums">{summaryStats.total}</p>
               <p className="text-xs text-warm-500 mt-0.5">focus areas assigned</p>
             </div>
           </div>
@@ -915,7 +915,7 @@ export function DevelopmentPlansClient({
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
         {players.length === 0 ? (
-          <div className="relative glass-standard rounded-2xl overflow-hidden p-16 text-center">
+          <div className="relative glass-standard rounded-2xl overflow-clip p-16 text-center">
             <ShineEffect />
             <div className="w-14 h-14 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
               <IconUser size={24} className="text-warm-400" />
@@ -926,7 +926,7 @@ export function DevelopmentPlansClient({
             </p>
           </div>
         ) : filteredFocusAreas.length === 0 ? (
-          <div className="relative glass-standard rounded-2xl overflow-hidden p-16 text-center">
+          <div className="relative glass-standard rounded-2xl overflow-clip p-16 text-center">
             <ShineEffect />
             <div className="w-14 h-14 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto mb-4">
               <IconTarget size={24} className="text-primary-600" />
@@ -1007,7 +1007,7 @@ export function DevelopmentPlansClient({
           /* All players grouped view */
           <div className="space-y-6">
             {focusAreasByPlayer.map(({ player, areas, stats }) => (
-              <div key={player.id} className="glass-standard rounded-2xl overflow-hidden">
+              <div key={player.id} className="glass-standard rounded-2xl overflow-clip">
                 {/* Player header */}
                 <div className="flex items-center justify-between p-5 pb-0">
                   <div className="flex items-center gap-3">
@@ -1059,7 +1059,7 @@ export function DevelopmentPlansClient({
                                 <div className="flex items-center gap-2 mt-1">
                                   <div className="flex-1 h-1.5 bg-warm-200 rounded-full overflow-hidden">
                                     <div
-                                      className={cn('h-full rounded-full transition-all', pct >= 100 ? 'bg-primary-500' : pct >= 50 ? 'bg-blue-500' : 'bg-warm-400')}
+                                      className={cn('h-full rounded-full transition-[width]', pct >= 100 ? 'bg-primary-500' : pct >= 50 ? 'bg-blue-500' : 'bg-warm-400')}
                                       style={{ width: `${pct}%` }}
                                     />
                                   </div>

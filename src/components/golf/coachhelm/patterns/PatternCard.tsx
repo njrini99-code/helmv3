@@ -371,7 +371,7 @@ export function PatternCard({
                   </div>
 
                   {/* Stats grid */}
-                  <div className="grid grid-cols-4 gap-3 mb-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                     <div className="text-center p-2 bg-warm-50 rounded-lg">
                       <div className="text-lg font-semibold text-warm-800">
                         {Math.round(pattern.support * 100)}%

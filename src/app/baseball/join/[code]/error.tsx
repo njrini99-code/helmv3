@@ -11,7 +11,7 @@ export default function Error({
   reset: () => void;
 }) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-auth-baseball p-4 sm:p-6">
+    <div className="min-h-dvh flex items-center justify-center bg-auth-baseball p-4 sm:p-6">
       <div className="text-center p-6 sm:p-8 max-w-md w-full bg-white/80 backdrop-blur-xl rounded-2xl border border-white/30">
         <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4">
           <IconWarning size={32} className="text-amber-600" />

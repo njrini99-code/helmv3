@@ -82,7 +82,7 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative p-4 bg-auth-baseball">
+    <div className="min-h-dvh flex items-center justify-center relative p-4 bg-auth-baseball">
       {/* Animated floating orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Large primary orb - top right */}

@@ -124,7 +124,7 @@ export function PlayerHubAnnouncementsSection({ announcements }: PlayerHubAnnoun
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05, type: 'spring', stiffness: 400, damping: 30 }}
               className={cn(
-                'relative glass-standard rounded-xl overflow-hidden transition-all duration-200',
+                'relative glass-standard rounded-xl overflow-clip transition-all duration-200',
                 unread
                   ? 'ring-1 ring-primary-200/60 shadow-sm'
                   : 'hover:shadow-sm'

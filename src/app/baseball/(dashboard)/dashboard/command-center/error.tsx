@@ -16,7 +16,7 @@ export default function CommandCenterError({
   }, [error]);
 
   return (
-    <div className="min-h-screen bg-[#FFFEFA] flex items-center justify-center">
+    <div className="min-h-dvh bg-[#FFFEFA] flex items-center justify-center">
       <div className="max-w-md mx-auto px-4 text-center">
         <div className="glass-standard rounded-2xl p-8">
           <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">

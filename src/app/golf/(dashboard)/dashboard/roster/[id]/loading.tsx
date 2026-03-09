@@ -1,5 +1,5 @@
-import { PageLoading } from '@/components/ui/loading';
+import { DetailPageSkeleton } from '@/components/golf/GolfSkeletons';
 
 export default function Loading() {
-  return <PageLoading />;
+  return <DetailPageSkeleton />;
 }

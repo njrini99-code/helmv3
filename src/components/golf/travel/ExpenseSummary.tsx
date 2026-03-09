@@ -130,7 +130,7 @@ export function ExpenseSummary({
         <div className="flex items-start justify-between">
           <div>
             <p className="text-sm font-medium text-primary-700 mb-1">Total Expenses</p>
-            <p className="text-3xl font-bold text-primary-900">{formatCurrency(summary.total)}</p>
+            <p className="text-3xl font-bold text-primary-900 tabular-nums">{formatCurrency(summary.total)}</p>
             {totalBudget > 0 && (
               <div className="flex items-center gap-2 mt-2">
                 {summary.total <= totalBudget ? (

@@ -90,7 +90,7 @@ function PlayerAnnouncementCard({ announcement: ann }: { announcement: BaseballA
   return (
     <div
       className={cn(
-        'glass-standard rounded-2xl overflow-hidden',
+        'glass-standard rounded-2xl overflow-clip',
         'border-l-[3px]',
         urgencyBorder,
         needsAck && 'ring-1 ring-amber-200/50',

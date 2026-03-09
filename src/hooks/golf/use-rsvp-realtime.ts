@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 /**
@@ -84,7 +84,7 @@ export function useAttendanceRealtime(eventId: string | null): UseAttendanceReal
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   const fetchEventAttendance = useCallback(async () => {
     if (!eventId) {
@@ -246,7 +246,7 @@ export function useTeamEventsAttendanceRealtime(
   const [events, setEvents] = useState<EventWithAttendance[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const eventIdsRef = useRef<Set<string>>(new Set());
 
   const fetchEvents = useCallback(async () => {

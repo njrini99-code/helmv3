@@ -56,7 +56,7 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
   };
 
   return (
-    <div className={cn('relative glass-standard rounded-2xl overflow-hidden', className)}>
+    <div className={cn('relative glass-standard rounded-2xl overflow-clip', className)}>
       <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
         style={{
           background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',

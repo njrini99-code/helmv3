@@ -506,26 +506,6 @@ function weightInsightsByPhilosophy(
  * Gets insights matching coach's top priorities
  * Returns only insights from the top 2 priority categories
  */
-function getTopPriorityInsights(
-  weightedInsights: WeightedInsight[],
-  philosophy: CoachPhilosophy,
-  limit: number = 5
-): WeightedInsight[] {
-  const priorities = [
-    { category: 'ball_striking' as const, weight: philosophy.priorityBallStriking },
-    { category: 'short_game' as const, weight: philosophy.priorityShortGame },
-    { category: 'putting' as const, weight: philosophy.priorityPutting },
-    { category: 'course_management' as const, weight: philosophy.priorityCourseManagement },
-    { category: 'mental_game' as const, weight: philosophy.priorityMentalGame },
-  ].sort((a, b) => a.weight - b.weight);
-
-  const topCategories = new Set([priorities[0]?.category, priorities[1]?.category]);
-
-  return weightedInsights
-    .filter(insight => topCategories.has(insight.priorityCategory))
-    .slice(0, limit);
-}
-
 /**
  * Gets insights sorted by stroke impact (highest first)
  * For the "Top Insights by Stroke Impact" section
@@ -984,23 +964,14 @@ export async function generateTeamInsights() {
     // 8. Log generation
     const executionTime = Date.now() - startTime;
 
-    // Get top priority insights for summary
-    const topPriorityInsights = getTopPriorityInsights(weightedInsights, philosophy, 3);
-
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (supabase as any).from('golf_insight_generation_log').insert({
-      coach_id: coach.id,
-      generation_type: 'v2_consolidated',
-      insights_created: totalInsightsCreated,
-      focus_areas_updated: 0,
-      players_analyzed: players.length,
-      execution_time_ms: executionTime,
-      metadata: {
-        engine_version: 'v2',
-        analysis_depth: 'standard',
-        philosophy_weighted: true,
-        top_priority_count: topPriorityInsights.length,
-      },
+      team_id: teamId,
+      insight_type: 'v2_consolidated',
+      insights_generated: totalInsightsCreated,
+      rounds_analyzed: players.length,
+      engine_version: 'v2',
+      duration_ms: executionTime,
     });
 
     // 9. Revalidate dashboard
@@ -1872,16 +1843,12 @@ export async function generateTeamInsight(): Promise<{
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const logTable = supabase.from('golf_insight_generation_log' as any) as any;
     const { error: logError } = await logTable.insert({
-      coach_id: coach.id,
-      generation_type: 'team_insight',
-      insights_created: allInsights.length,
-      focus_areas_updated: 0,
-      players_analyzed: playersAnalyzed,
-      execution_time_ms: executionTime,
-      metadata: {
-        patterns_found: allPatterns.length,
-        engine_version: 'coachhelm',
-      },
+      team_id: teamId,
+      insight_type: 'team_insight',
+      insights_generated: allInsights.length,
+      rounds_analyzed: playersAnalyzed,
+      engine_version: 'coachhelm',
+      duration_ms: executionTime,
     });
     if (logError && process.env.NODE_ENV === 'development') {
       console.warn('Insight generation log skipped:', logError.message);

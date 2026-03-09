@@ -72,7 +72,7 @@ export function UpcomingSection({
     return (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[1, 2, 3].map(i => (
-          <div key={i} className="relative glass-standard rounded-2xl overflow-hidden">
+          <div key={i} className="relative glass-standard rounded-2xl overflow-clip">
             <ShineEffect />
             <div className="px-5 py-4 border-b border-slate-100/50">
               <div className="flex items-center gap-2">
@@ -94,7 +94,7 @@ export function UpcomingSection({
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       {/* Events */}
-      <div className="relative glass-standard rounded-2xl overflow-hidden">
+      <div className="relative glass-standard rounded-2xl overflow-clip">
         <ShineEffect />
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100/50">
           <div className="flex items-center gap-2">
@@ -135,7 +135,7 @@ export function UpcomingSection({
       </div>
 
       {/* Tasks */}
-      <div className="relative glass-standard rounded-2xl overflow-hidden">
+      <div className="relative glass-standard rounded-2xl overflow-clip">
         <ShineEffect />
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100/50">
           <div className="flex items-center gap-2">
@@ -175,7 +175,7 @@ export function UpcomingSection({
       </div>
 
       {/* Messages */}
-      <div className="relative glass-standard rounded-2xl overflow-hidden">
+      <div className="relative glass-standard rounded-2xl overflow-clip">
         <ShineEffect />
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100/50">
           <div className="flex items-center gap-2">

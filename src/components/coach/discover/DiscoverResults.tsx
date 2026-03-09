@@ -329,7 +329,7 @@ export function DiscoverResults({
 
       {/* Map View */}
       {viewMode === 'map' ? (
-        <div className="relative glass-standard rounded-2xl overflow-hidden p-8">
+        <div className="relative glass-standard rounded-2xl overflow-clip p-8">
           <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
             style={{
               background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',

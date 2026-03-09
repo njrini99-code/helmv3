@@ -663,7 +663,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                   <button
                     key={folder}
                     onClick={() => { setCurrentFolder(folder); setSearchQuery(''); setCategoryFilter(''); }}
-                    className="group/folder flex items-center gap-3 p-3.5 bg-white/70 backdrop-blur-sm border border-warm-200/60 rounded-xl hover:bg-white hover:shadow-sm hover:border-warm-300/60 transition-all text-left"
+                    className="group/folder flex items-center gap-3 p-3.5 bg-white/70 backdrop-blur-sm border border-warm-200/60 rounded-xl hover:bg-white hover:shadow-sm hover:border-warm-300/60 transition-colors text-left"
                   >
                     <div className="w-9 h-9 rounded-lg bg-primary-50 flex items-center justify-center flex-shrink-0 group-hover/folder:bg-primary-100 transition-colors">
                       <IconFolder size={18} className="text-primary-600" />
@@ -692,7 +692,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                 placeholder={currentFolder && currentFolder !== '' ? `Search in ${currentFolder}...` : 'Search documents...'}
                 enterKeyHint="search"
                 autoComplete="off"
-                className="w-full pl-9 pr-9 py-2 rounded-lg border border-warm-200/60 focus:ring-2 focus:ring-primary-600/20 focus:border-primary-500 text-sm text-warm-900 placeholder:text-warm-400 bg-white/60 backdrop-blur-sm transition-all"
+                className="w-full pl-9 pr-9 py-2 rounded-lg border border-warm-200/60 focus:ring-2 focus:ring-primary-600/20 focus:border-primary-500 text-sm text-warm-900 placeholder:text-warm-400 bg-white/60 backdrop-blur-sm transition-colors"
               />
               {searchQuery && (
                 <button
@@ -717,7 +717,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                     key={cat}
                     onClick={() => setCategoryFilter(categoryFilter === cat ? '' : cat)}
                     className={cn(
-                      'px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-all',
+                      'px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-colors',
                       categoryFilter === cat
                         ? 'bg-primary-600 text-white shadow-sm'
                         : 'bg-white/80 text-warm-600 border border-warm-200 hover:bg-white hover:border-warm-300'
@@ -742,7 +742,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
             <div className="relative flex-shrink-0">
               <button
                 onClick={() => setShowSortMenu(!showSortMenu)}
-                className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-warm-600 bg-white/80 border border-warm-200 rounded-lg hover:bg-white hover:border-warm-300 transition-all whitespace-nowrap"
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-warm-600 bg-white/80 border border-warm-200 rounded-lg hover:bg-white hover:border-warm-300 transition-colors whitespace-nowrap"
               >
                 {sortBy === 'newest' ? 'Newest' : sortBy === 'oldest' ? 'Oldest' : sortBy === 'name' ? 'Name' : 'Size'}
                 <IconChevronDown size={12} />
@@ -783,7 +783,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
         {/* Content */}
         {documents.length === 0 && currentFolder === null ? (
           <div
-            className="relative glass-standard rounded-2xl overflow-hidden p-8 md:p-16 text-center"
+            className="relative glass-standard rounded-2xl overflow-clip p-8 md:p-16 text-center"
             onDragOver={isCoach ? handleDragOver : undefined}
             onDrop={isCoach ? handleDrop : undefined}
           >
@@ -811,7 +811,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
           </div>
         ) : filteredDocuments.length === 0 ? (
           <div
-            className="relative glass-standard rounded-2xl overflow-hidden p-8 md:p-12 text-center"
+            className="relative glass-standard rounded-2xl overflow-clip p-8 md:p-12 text-center"
             onDragOver={isCoach ? handleDragOver : undefined}
             onDrop={isCoach ? handleDrop : undefined}
           >
@@ -856,7 +856,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
             {filteredDocuments.map((doc) => (
               <div
                 key={doc.id}
-                className="group relative glass-standard rounded-2xl overflow-hidden hover:shadow-md hover:bg-white/80 transition-all duration-200 cursor-pointer active:scale-[0.98]"
+                className="group relative glass-standard rounded-2xl overflow-clip hover:shadow-md hover:bg-white/80 transition-colors duration-200 cursor-pointer active:scale-[0.98]"
                 onClick={() => openPreview(doc)}
               >
                 {/* Color accent bar */}
@@ -892,7 +892,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                               e.stopPropagation();
                               setActiveDropdown(activeDropdown === doc.id ? null : doc.id);
                             }}
-                            className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100/80 active:bg-warm-200 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-all"
+                            className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100/80 active:bg-warm-200 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-colors"
                           >
                             <IconMoreVertical size={14} />
                           </button>
@@ -984,7 +984,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                       <span>{formatFileSize(doc.file_size)}</span>
                       <span>{timeAgo(doc.created_at)}</span>
                     </div>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={(e) => { e.stopPropagation(); openPreview(doc); }}
                         className="p-1.5 rounded-lg hover:bg-primary-50 active:bg-primary-100 text-primary-600 transition-colors"
@@ -1037,7 +1037,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
 
               {/* Drop zone / Add more files */}
               <div
-                className="border-2 border-dashed border-warm-200 rounded-xl p-6 text-center hover:border-primary-400 hover:bg-primary-50/30 transition-all cursor-pointer"
+                className="border-2 border-dashed border-warm-200 rounded-xl p-6 text-center hover:border-primary-400 hover:bg-primary-50/30 transition-colors cursor-pointer"
                 onClick={() => fileInputRef.current?.click()}
               >
                 <IconPlus size={24} className="mx-auto text-warm-400 mb-2" />
@@ -1109,7 +1109,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               </div>
 
               <label className="flex items-center gap-2.5 cursor-pointer select-none">
-                <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${uploadIsPublic ? 'bg-primary-600 border-primary-600' : 'border-warm-300 hover:border-warm-400'}`}>
+                <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors ${uploadIsPublic ? 'bg-primary-600 border-primary-600' : 'border-warm-300 hover:border-warm-400'}`}>
                   {uploadIsPublic && <IconCheck size={12} className="text-white" />}
                 </div>
                 <span className="text-sm text-warm-700">Visible to players</span>
@@ -1124,7 +1124,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                   </div>
                   <div className="h-2 bg-warm-100 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-primary-600 rounded-full transition-all duration-300 ease-out"
+                      className="h-full bg-primary-600 rounded-full transition-[width] duration-300 ease-out"
                       style={{ width: `${uploadProgress}%` }}
                     />
                   </div>
@@ -1224,7 +1224,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               <label className="flex items-center gap-2.5 cursor-pointer select-none">
                 <div
                   onClick={() => setEditForm(prev => ({ ...prev, is_public: !prev.is_public }))}
-                  className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all cursor-pointer ${editForm.is_public ? 'bg-primary-600 border-primary-600' : 'border-warm-300 hover:border-warm-400'}`}
+                  className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors cursor-pointer ${editForm.is_public ? 'bg-primary-600 border-primary-600' : 'border-warm-300 hover:border-warm-400'}`}
                 >
                   {editForm.is_public && <IconCheck size={12} className="text-white" />}
                 </div>
@@ -1266,7 +1266,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
       {/* ─── Delete Confirmation Modal ──────────────────────────── */}
       {deleteConfirmDoc && (
         <div className="fixed inset-0 bg-warm-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white/90 backdrop-blur-xl rounded-2xl max-w-sm w-full shadow-2xl border border-white/30 overflow-hidden">
+          <div className="bg-white/90 backdrop-blur-xl rounded-2xl max-w-sm w-full shadow-2xl border border-white/30 overflow-clip">
             <div className="p-6 text-center">
               <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
                 <IconTrash size={22} className="text-red-600" />

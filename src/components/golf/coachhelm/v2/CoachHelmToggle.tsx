@@ -57,7 +57,7 @@ export function CoachHelmToggle({ coachId, onToggle }: CoachHelmToggleProps) {
     <div className="space-y-4">
       <div
         className={cn(
-          'relative overflow-hidden rounded-2xl border bg-white/70 p-5 backdrop-blur-xl shadow-glass transition-all',
+          'relative overflow-clip rounded-2xl border bg-white/70 p-5 backdrop-blur-xl shadow-glass transition-all',
           enabled ? 'border-primary-100/70 ring-1 ring-primary-200/60' : 'border-white/60 ring-1 ring-warm-200/60'
         )}
       >

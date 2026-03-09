@@ -7,7 +7,7 @@ import {
 
 export default function CommandCenterLoading() {
   return (
-    <div className="min-h-screen bg-[#FFFEFA]">
+    <div className="min-h-dvh bg-[#FFFEFA]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
         {/* Header Skeleton */}
         <div className="flex items-center justify-between mb-8">

@@ -7,7 +7,7 @@ import { getAnnouncementsWithMeta } from '@/app/golf/actions/announcements';
 import { AnnouncementsCoachView } from '@/components/golf/announcements/AnnouncementsCoachView';
 import { AnnouncementsPlayerView } from '@/components/golf/announcements/AnnouncementsPlayerView';
 import { CreateAnnouncementFlow } from '@/components/golf/announcements/CreateAnnouncementFlow';
-import { MobileMenuButton } from '@/components/golf/layout/MobileMenuButton';
+import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
 
 export const metadata: Metadata = {
   title: 'Team Announcements | Helm Sports',

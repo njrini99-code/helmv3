@@ -49,7 +49,7 @@ export function ExpenseSummary({ summary }: ExpenseSummaryProps) {
         <div className="flex items-start justify-between">
           <div>
             <p className="text-sm font-medium text-primary-700 mb-1">Total Expenses</p>
-            <p className="text-3xl font-bold text-primary-900">{formatCurrency(summary.total)}</p>
+            <p className="text-3xl font-bold text-primary-900 tabular-nums">{formatCurrency(summary.total)}</p>
           </div>
           <div className="text-right">
             <p className="text-sm text-warm-500">{summary.count} expenses</p>

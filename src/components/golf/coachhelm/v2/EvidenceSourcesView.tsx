@@ -200,7 +200,7 @@ function EvidenceRoundCard({ round, index }: EvidenceRoundCardProps) {
             </div>
 
             {/* Stats grid */}
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {round.total_putts !== null && (
                 <StatMini label="Putts" value={round.total_putts} />
               )}

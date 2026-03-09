@@ -122,7 +122,7 @@ const ScoringTrendChart = memo(function ScoringTrendChart({ rounds }: { rounds: 
   const trend = calculateTrend(scores);
 
   return (
-    <div className="relative glass-standard rounded-2xl overflow-hidden p-6">
+    <div className="relative glass-standard rounded-2xl overflow-clip p-6">
       <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
         style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
       />
@@ -230,7 +230,7 @@ const ScoreDistributionChart = memo(function ScoreDistributionChart({ stats }: {
   }));
 
   return (
-    <div className="relative glass-standard rounded-2xl overflow-hidden p-6">
+    <div className="relative glass-standard rounded-2xl overflow-clip p-6">
       <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
         style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
       />
@@ -285,7 +285,7 @@ const RecentRounds = memo(function RecentRounds({ rounds }: { rounds: RoundData[
   const displayRounds = expanded ? rounds : rounds.slice(0, 5);
 
   return (
-    <div className="relative glass-standard rounded-2xl overflow-hidden p-6">
+    <div className="relative glass-standard rounded-2xl overflow-clip p-6">
       <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
         style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
       />
@@ -354,7 +354,7 @@ const ProgressMetrics = memo(function ProgressMetrics({ stats }: { stats: GolfSt
       {metrics.map((m, i) => (
         <div
           key={i}
-          className="relative glass-standard rounded-xl overflow-hidden p-4 text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
+          className="relative glass-standard rounded-xl overflow-clip p-4 text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
           style={{ animation: `scaleIn 0.3s ease-out forwards`, animationDelay: `${i * 50}ms` }}
         >
           <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
@@ -403,7 +403,7 @@ const RoundComparisonTable = memo(function RoundComparisonTable({ rounds }: { ro
   };
 
   return (
-    <div className="relative glass-standard rounded-2xl overflow-hidden">
+    <div className="relative glass-standard rounded-2xl overflow-clip">
       <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
         style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
       />
@@ -485,7 +485,7 @@ const PuttMakeChart = memo(function PuttMakeChart({ stats }: { stats: GolfStats 
   if (data.length === 0) return null;
 
   return (
-    <div className="relative glass-standard rounded-2xl overflow-hidden p-6">
+    <div className="relative glass-standard rounded-2xl overflow-clip p-6">
       <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
         style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
       />
@@ -541,7 +541,7 @@ const GirByParChart = memo(function GirByParChart({ stats }: { stats: GolfStats 
   if (data.length === 0) return null;
 
   return (
-    <div className="relative glass-standard rounded-2xl overflow-hidden p-6">
+    <div className="relative glass-standard rounded-2xl overflow-clip p-6">
       <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
         style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
       />
@@ -623,7 +623,7 @@ const StrokesGainedChart = memo(function StrokesGainedChart({ stats }: { stats: 
   if (!hasData) return null;
 
   return (
-    <div className="relative glass-standard rounded-2xl overflow-hidden p-6">
+    <div className="relative glass-standard rounded-2xl overflow-clip p-6">
       <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
         style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
       />
@@ -734,7 +734,7 @@ const KeyStatsSummary = memo(function KeyStatsSummary({ stats }: { stats: GolfSt
   };
 
   return (
-    <div className="relative glass-standard rounded-2xl overflow-hidden p-6">
+    <div className="relative glass-standard rounded-2xl overflow-clip p-6">
       <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
         style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
       />
@@ -912,7 +912,7 @@ export default memo(function ProgressStats({ stats, rounds }: ProgressStatsProps
 
       {/* Empty State */}
       {stats.roundsPlayed < 3 && (
-        <div className="relative text-center py-12 glass-standard rounded-2xl overflow-hidden">
+        <div className="relative text-center py-12 glass-standard rounded-2xl overflow-clip">
           <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
             style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
           />

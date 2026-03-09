@@ -110,7 +110,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
       />
 
       {/* Modal */}
-      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="confirm-classes-title" className="relative w-full max-w-2xl glass-prominent rounded-2xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col">
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="confirm-classes-title" className="relative w-full max-w-[calc(100vw-2rem)] sm:max-w-2xl glass-prominent rounded-2xl shadow-2xl max-h-[90vh] overflow-clip flex flex-col">
         {/* Top accent bar */}
         <div className="h-1 bg-gradient-to-r from-primary-500 via-primary-400 to-teal-500" />
 
@@ -198,7 +198,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                     /* ── Edit Mode ── */
                     <div className="p-5 space-y-4">
                       {/* Course code + name */}
-                      <div className="grid grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                         <div>
                           <label className="block text-xs font-medium text-warm-500 mb-1.5 uppercase tracking-wider">Course Code</label>
                           <Input
@@ -243,7 +243,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                       </div>
 
                       {/* Time + Location + Instructor */}
-                      <div className="grid grid-cols-4 gap-3">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <div>
                           <label className="block text-xs font-medium text-warm-500 mb-1.5 uppercase tracking-wider">Start</label>
                           <Input
@@ -414,7 +414,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
           </div>
 
           {/* Action Bar */}
-          <div className="px-6 pb-4 flex items-center justify-between">
+          <div className="px-6 pb-[max(1rem,env(safe-area-inset-bottom,1rem))] sm:pb-4 flex items-center justify-between">
             <p className="text-xs text-warm-400">
               {classes.length} class{classes.length !== 1 ? 'es' : ''} will sync to your calendar
             </p>

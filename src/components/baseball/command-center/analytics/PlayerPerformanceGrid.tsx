@@ -151,7 +151,7 @@ export function PlayerPerformanceGrid({ players }: PlayerPerformanceGridProps) {
   }
 
   return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl overflow-hidden">
+    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl overflow-clip">
       <div className="p-4 border-b border-white/20">
         <h3 className="font-semibold text-slate-900">Performance Grid</h3>
         <p className="text-xs text-slate-500 mt-1">
@@ -263,7 +263,7 @@ export function PlayerPerformanceGrid({ players }: PlayerPerformanceGridProps) {
 
 export function PlayerPerformanceGridSkeleton() {
   return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl overflow-hidden">
+    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl overflow-clip">
       <div className="p-4 border-b border-white/20">
         <div className="h-5 w-32 bg-slate-200 rounded animate-pulse" />
         <div className="h-3 w-48 bg-slate-200 rounded animate-pulse mt-2" />

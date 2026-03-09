@@ -331,7 +331,7 @@ export function PlayerProfileClient({
 
   // ─── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#FFFEFA]">
+    <div className="min-h-dvh bg-[#FFFEFA]">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
 
         {/* ── Back button ─────────────────────────────────────────────── */}
@@ -350,7 +350,7 @@ export function PlayerProfileClient({
         </div>
 
         {/* ── Hero card ────────────────────────────────────────────────── */}
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm mb-6 overflow-hidden">
+        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm mb-6 overflow-clip">
           {/* gradient accent bar */}
           <div className="h-1.5 w-full bg-gradient-to-r from-primary-500 via-primary-400 to-emerald-400" />
 
@@ -491,7 +491,7 @@ export function PlayerProfileClient({
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 whitespace-nowrap ${
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-[color,background-color,box-shadow] duration-200 whitespace-nowrap ${
                 activeTab === tab.id
                   ? 'bg-primary-600 text-white shadow-sm'
                   : 'bg-white/70 backdrop-blur-sm text-slate-600 hover:bg-white border border-white/20 hover:shadow-sm'
@@ -506,7 +506,7 @@ export function PlayerProfileClient({
         {/* ═══════════════════════════════════════════════════════════════
             OVERVIEW TAB
         ═══════════════════════════════════════════════════════════════ */}
-        {activeTab === 'overview' && (
+        <div className={activeTab === 'overview' ? 'block' : 'hidden'}>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
             {/* Main column */}
@@ -671,7 +671,7 @@ export function PlayerProfileClient({
                       <button
                         key={v.id}
                         onClick={() => { setSelectedVideo(v); setActiveTab('videos'); }}
-                        className="group relative aspect-video rounded-xl overflow-hidden bg-slate-100 hover:ring-2 hover:ring-primary-500 transition-all"
+                        className="group relative aspect-video rounded-xl overflow-hidden bg-slate-100 hover:ring-2 hover:ring-primary-500 transition-shadow"
                       >
                         {v.thumbnail_url ? (
                           <Image src={v.thumbnail_url} alt={v.title ?? 'Video'} fill className="object-cover" />
@@ -681,7 +681,7 @@ export function PlayerProfileClient({
                           </div>
                         )}
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center">
-                          <div className="w-9 h-9 rounded-full bg-white/90 flex items-center justify-center opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-all">
+                          <div className="w-9 h-9 rounded-full bg-white/90 flex items-center justify-center opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-[opacity,transform]">
                             <IconPlay size={16} className="text-slate-900 ml-0.5" />
                           </div>
                         </div>
@@ -761,12 +761,12 @@ export function PlayerProfileClient({
               </div>
             </div>
           </div>
-        )}
+        </div>
 
         {/* ═══════════════════════════════════════════════════════════════
             STATS TAB
         ═══════════════════════════════════════════════════════════════ */}
-        {activeTab === 'stats' && (
+        <div className={activeTab === 'stats' ? 'block' : 'hidden'}>
           <div className="space-y-5">
 
             {/* Season stats banner — links to box score stats page */}
@@ -794,7 +794,7 @@ export function PlayerProfileClient({
                   <button
                     key={f}
                     onClick={() => setStatFilter(f)}
-                    className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                    className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-[color,background-color,box-shadow] ${
                       statFilter === f
                         ? 'bg-primary-600 text-white shadow-sm'
                         : 'text-slate-600 hover:text-slate-900'
@@ -840,7 +840,7 @@ export function PlayerProfileClient({
                 <p className="text-sm text-slate-400 mt-1">Try switching to "All" to see all sessions.</p>
               </div>
             ) : (
-              <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-hidden">
+              <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-clip">
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
@@ -899,12 +899,12 @@ export function PlayerProfileClient({
               </div>
             )}
           </div>
-        )}
+        </div>
 
         {/* ═══════════════════════════════════════════════════════════════
             VIDEOS TAB
         ═══════════════════════════════════════════════════════════════ */}
-        {activeTab === 'videos' && (
+        <div className={activeTab === 'videos' ? 'block' : 'hidden'}>
           <div className="space-y-5">
 
             {/* Sub-tabs */}
@@ -915,7 +915,7 @@ export function PlayerProfileClient({
                     <button
                       key={key}
                       onClick={() => setVideoFilter(key)}
-                      className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+                      className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-[color,background-color,box-shadow] whitespace-nowrap ${
                         videoFilter === key
                           ? 'bg-primary-600 text-white shadow-sm'
                           : 'text-slate-600 hover:text-slate-900'
@@ -958,7 +958,7 @@ export function PlayerProfileClient({
                     key={video.id}
                     onClick={() => setSelectedVideo(video)}
                     className="group relative aspect-video rounded-2xl overflow-hidden bg-slate-100
-                               hover:ring-2 hover:ring-primary-500 hover:shadow-md transition-all duration-200"
+                               hover:ring-2 hover:ring-primary-500 hover:shadow-md transition-shadow duration-200"
                   >
                     {video.thumbnail_url ? (
                       <Image
@@ -976,7 +976,7 @@ export function PlayerProfileClient({
                     {/* Hover overlay */}
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
                       <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center
-                                      opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-all duration-200">
+                                      opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-[opacity,transform] duration-200">
                         <IconPlay size={20} className="text-slate-900 ml-0.5" />
                       </div>
                     </div>
@@ -1001,7 +1001,7 @@ export function PlayerProfileClient({
               </div>
             )}
           </div>
-        )}
+        </div>
 
       </div>
 

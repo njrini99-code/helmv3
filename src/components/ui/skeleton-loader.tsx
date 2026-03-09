@@ -417,7 +417,7 @@ export function SkeletonPipelineKanban({ className }: { className?: string }) {
 // Messages page skeleton
 export function SkeletonMessages({ className }: { className?: string }) {
   return (
-    <div className={cn('flex h-[calc(100vh-200px)] bg-white rounded-2xl border border-warm-200 overflow-hidden', className)}>
+    <div className={cn('flex h-[calc(100dvh-200px)] bg-white rounded-2xl border border-warm-200 overflow-hidden', className)}>
       {/* Conversation list */}
       <div className="w-80 border-r border-warm-200 flex flex-col">
         <div className="p-4 border-b border-warm-200">

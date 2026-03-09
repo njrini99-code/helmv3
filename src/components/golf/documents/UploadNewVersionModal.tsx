@@ -103,7 +103,7 @@ export function UploadNewVersionModal({
       />
 
       {/* Modal */}
-      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="upload-version-title" className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full">
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="upload-version-title" className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-clip">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-warm-200">
           <div>

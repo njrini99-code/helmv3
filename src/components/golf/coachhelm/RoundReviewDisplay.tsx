@@ -130,7 +130,7 @@ function ExpandableSection({
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
   return (
-    <div className="border border-white/20 rounded-xl overflow-hidden bg-white/50 backdrop-blur-sm">
+    <div className="border border-white/20 rounded-xl overflow-clip bg-white/50 backdrop-blur-sm">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className={cn(

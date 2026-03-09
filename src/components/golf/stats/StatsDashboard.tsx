@@ -270,21 +270,21 @@ export function StatsDashboard({
                   <CardTitle className="text-base">Scoring Summary</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-4 gap-4 mb-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                     <div className="text-center p-3 bg-primary-50/60 rounded-xl">
-                      <div className="text-2xl font-bold text-primary-600">{stats.best_round}</div>
+                      <div className="text-2xl font-bold text-primary-600 tabular-nums">{stats.best_round}</div>
                       <div className="text-xs text-warm-500">Best Round</div>
                     </div>
                     <div className="text-center p-3 bg-warm-50/70 rounded-xl">
-                      <div className="text-2xl font-bold text-warm-900">{stats.scoring_avg.toFixed(1)}</div>
+                      <div className="text-2xl font-bold text-warm-900 tabular-nums">{stats.scoring_avg.toFixed(1)}</div>
                       <div className="text-xs text-warm-500">Average</div>
                     </div>
                     <div className="text-center p-3 bg-warm-50/70 rounded-xl">
-                      <div className="text-2xl font-bold text-warm-600">{stats.worst_round}</div>
+                      <div className="text-2xl font-bold text-warm-600 tabular-nums">{stats.worst_round}</div>
                       <div className="text-xs text-warm-500">Worst Round</div>
                     </div>
                     <div className="text-center p-3 bg-warm-50/70 rounded-xl">
-                      <div className="text-2xl font-bold text-warm-900">{stats.total_rounds}</div>
+                      <div className="text-2xl font-bold text-warm-900 tabular-nums">{stats.total_rounds}</div>
                       <div className="text-xs text-warm-500">Rounds</div>
                     </div>
                   </div>

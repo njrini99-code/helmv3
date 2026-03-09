@@ -24,7 +24,7 @@ import { getFullName, formatHeight, pluralize } from '@/lib/utils';
 
 function BentoStatSkeleton() {
   return (
-    <div className="glass-standard rounded-2xl overflow-hidden animate-pulse p-5">
+    <div className="glass-standard rounded-2xl overflow-clip animate-pulse p-5">
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="h-3.5 bg-slate-200 rounded w-20 mb-3" />
@@ -55,7 +55,7 @@ function BentoStatCard({
   href?: string;
 }) {
   const content = (
-    <div className="relative group glass-standard rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 p-5">
+    <div className="relative group glass-standard rounded-2xl overflow-clip transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 p-5">
       <ShineEffect />
       <div className="flex items-start justify-between">
         <div>
@@ -121,7 +121,7 @@ export default function ShowcasePlayerDashboardPage() {
         )}
 
         {/* Profile Card */}
-        <div className="relative glass-standard rounded-2xl p-6 overflow-hidden">
+        <div className="relative glass-standard rounded-2xl p-6 overflow-clip">
           <ShineEffect />
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
             <Avatar name={getFullName(player?.first_name, player?.last_name)} size="2xl" src={player?.avatar_url} />
@@ -203,7 +203,7 @@ export default function ShowcasePlayerDashboardPage() {
         {/* Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Your Stats */}
-          <div className="relative glass-standard rounded-2xl overflow-hidden">
+          <div className="relative glass-standard rounded-2xl overflow-clip">
             <ShineEffect />
             <div className="px-6 py-4 border-b border-slate-100/50">
               <h2 className="font-semibold text-slate-900 tracking-tight">Your Stats</h2>
@@ -226,7 +226,7 @@ export default function ShowcasePlayerDashboardPage() {
           </div>
 
           {/* Quick Actions */}
-          <div className="relative glass-standard rounded-2xl overflow-hidden">
+          <div className="relative glass-standard rounded-2xl overflow-clip">
             <ShineEffect />
             <div className="px-6 py-4 border-b border-slate-100/50">
               <h2 className="font-semibold text-slate-900 tracking-tight">Quick Actions</h2>

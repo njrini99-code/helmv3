@@ -7,7 +7,7 @@ export default async function SavedComparisonsPage() {
   const { comparisons, error } = await getSavedComparisons();
 
   return (
-    <div className="min-h-screen bg-cream">
+    <div className="min-h-dvh bg-cream">
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Page Header */}
         <div className="flex items-center justify-between mb-8">

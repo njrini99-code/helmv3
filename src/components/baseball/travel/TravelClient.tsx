@@ -260,7 +260,7 @@ function ItineraryCard({
   formatDate,
 }: ItineraryCardProps) {
   return (
-    <div className="glass-standard rounded-2xl overflow-hidden">
+    <div className="glass-standard rounded-2xl overflow-clip">
       {/* Header Row */}
       <div
         className="p-5 flex items-center gap-4 cursor-pointer hover:bg-white/80 transition-colors"

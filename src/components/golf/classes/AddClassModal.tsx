@@ -260,7 +260,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
       />
       
       {/* Modal */}
-      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="add-class-title" className="relative w-full max-w-lg mx-4 glass-prominent rounded-2xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col">
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="add-class-title" className="relative w-full max-w-lg mx-4 glass-prominent rounded-2xl shadow-2xl max-h-[90vh] overflow-clip flex flex-col">
         {/* Shine effect */}
         <div
           className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
@@ -276,7 +276,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
           <button
             onClick={onClose}
             aria-label="Close"
-            className="p-2 text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
+            className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
           >
             <IconX size={20} />
           </button>
@@ -285,7 +285,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
         {/* Content */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-5">
           {/* Course Code & Name */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-warm-700 mb-1.5">
                 Course ID <span className="text-red-500">*</span>
@@ -400,7 +400,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
           </div>
 
           {/* Instructor & Credits */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div className="col-span-2">
               <label className="block text-sm font-medium text-warm-700 mb-1.5">
                 Professor

@@ -34,7 +34,7 @@ export function Navigation() {
         <div className={`hidden md:grid grid-cols-3 items-center gap-1 justify-self-center
                         backdrop-blur-3xl
                         border rounded-full px-1.5 py-1.5
-                        transition-all duration-200 ${
+                        transition-[background-color,border-color,box-shadow] duration-200 ${
                           isProductsPage
                             ? 'bg-white/80 border-neutral-200/50 shadow-[0_1px_15px_rgba(0,0,0,0.05)]'
                             : 'bg-white/[0.05] border-white/[0.08] shadow-[0_1px_15px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.05)]'
@@ -42,7 +42,7 @@ export function Navigation() {
           <Link
             href="/"
             className={`w-24 py-2 rounded-full text-[13px] font-medium tracking-[-0.01em] text-center
-                       transition-all duration-200 ease-out ${
+                       transition-colors duration-200 ease-out ${
                          isProductsPage
                            ? 'text-neutral-700 hover:text-neutral-900 hover:bg-neutral-100'
                            : 'text-white/70 hover:text-white/90 hover:bg-white/[0.06]'
@@ -53,7 +53,7 @@ export function Navigation() {
           <Link
             href="/about"
             className={`w-24 py-2 rounded-full text-[13px] font-medium tracking-[-0.01em] text-center
-                       transition-all duration-200 ease-out ${
+                       transition-colors duration-200 ease-out ${
                          isProductsPage
                            ? 'text-neutral-700 hover:text-neutral-900 hover:bg-neutral-100'
                            : 'text-white/70 hover:text-white/90 hover:bg-white/[0.06]'
@@ -64,7 +64,7 @@ export function Navigation() {
           <Link
             href="/products"
             className={`w-24 py-2 rounded-full text-[13px] font-medium tracking-[-0.01em] text-center
-                       transition-all duration-200 ease-out ${
+                       transition-colors duration-200 ease-out ${
                          isProductsPage
                            ? 'text-neutral-900 hover:text-neutral-900 hover:bg-neutral-100'
                            : 'text-white/70 hover:text-white/90 hover:bg-white/[0.06]'
@@ -80,7 +80,7 @@ export function Navigation() {
           <Link
             href="/golf/login"
             className={`hidden md:block px-4 py-2 rounded-full text-[13px] font-medium tracking-[-0.01em]
-                       transition-all duration-200 ease-out ${
+                       transition-colors duration-200 ease-out ${
                          isProductsPage
                            ? 'text-neutral-700 hover:text-neutral-900 hover:bg-neutral-100 border border-neutral-200'
                            : 'text-white/80 hover:text-white hover:bg-white/[0.08] border border-white/[0.15]'

@@ -231,7 +231,7 @@ function SingleCoachQuickAction({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={onClose}>
       <div 
-        className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/30 w-full max-w-md mx-4 overflow-hidden"
+        className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/30 w-full max-w-md mx-4 overflow-clip"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

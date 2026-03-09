@@ -38,7 +38,7 @@ function EmailCapture() {
         animate={{ opacity: 1, y: 0 }}
         className="mt-8 text-center"
       >
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-helm-primary-500/20 text-helm-primary-400">
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-helm-green-500/20 text-helm-green-400">
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
@@ -65,12 +65,12 @@ function EmailCapture() {
           placeholder="Enter your email"
           required
           disabled={loading}
-          className="flex-1 px-5 py-3 rounded-xl bg-white/10 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-helm-primary-500/50 focus:ring-2 focus:ring-helm-primary-500/20 transition-all disabled:opacity-50"
+          className="flex-1 px-5 py-3 rounded-xl bg-white/10 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-helm-green-500/50 focus:ring-2 focus:ring-helm-green-500/20 transition-all disabled:opacity-50"
         />
         <button
           type="submit"
           disabled={loading}
-          className="px-6 py-3 rounded-xl bg-helm-primary-600 hover:bg-helm-primary-500 text-white font-medium transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-6 py-3 rounded-xl bg-helm-green-600 hover:bg-helm-green-500 text-white font-medium transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? (
             <span className="flex items-center justify-center gap-2">
@@ -223,7 +223,7 @@ export function Hero({ useVideoBackground = false }: { useVideoBackground?: bool
               >
                 Where great teams
                 <br />
-                <span className="text-helm-primary-400">are built.</span>
+                <span className="text-helm-green-400">are built.</span>
               </motion.h1>
 
               {/* Subhead - smaller, muted */}

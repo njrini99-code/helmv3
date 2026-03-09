@@ -61,7 +61,7 @@ export function UrgencyPicker({ value, onChange }: UrgencyPickerProps) {
       <label className="text-sm font-medium text-warm-700 block mb-2">
         Urgency Level
       </label>
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
         {urgencyOptions.map((opt) => {
           const isActive = value === opt.value;
           return (

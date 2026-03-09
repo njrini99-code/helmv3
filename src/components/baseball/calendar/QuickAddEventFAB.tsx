@@ -68,7 +68,7 @@ export function QuickAddEventFAB({ onAddEvent, className, disabled = false }: Qu
         <div
           className={cn(
             'absolute bottom-20 right-0 flex flex-col gap-3',
-            'transition-all duration-300 ease-out origin-bottom-right',
+            'transition-[opacity,transform] duration-300 ease-out origin-bottom-right',
             isExpanded
               ? 'opacity-100 scale-100 translate-y-0'
               : 'opacity-0 scale-75 translate-y-4 pointer-events-none',
@@ -84,7 +84,7 @@ export function QuickAddEventFAB({ onAddEvent, className, disabled = false }: Qu
                 className={cn(
                   'flex items-center gap-3 pr-4 pl-3 py-2.5 rounded-full',
                   'bg-white shadow-lg',
-                  'transition-all duration-200',
+                  'transition-[transform,box-shadow] duration-200',
                   'hover:shadow-xl active:scale-95',
                   'touch-manipulation',
                 )}
@@ -111,7 +111,7 @@ export function QuickAddEventFAB({ onAddEvent, className, disabled = false }: Qu
             className={cn(
               'flex items-center gap-3 pr-4 pl-3 py-2.5 rounded-full',
               'bg-white shadow-lg',
-              'transition-all duration-200',
+              'transition-[transform,box-shadow] duration-200',
               'hover:shadow-xl active:scale-95',
               'touch-manipulation',
             )}
@@ -131,7 +131,7 @@ export function QuickAddEventFAB({ onAddEvent, className, disabled = false }: Qu
           className={cn(
             'relative w-14 h-14 rounded-2xl',
             'flex items-center justify-center',
-            'transition-all duration-300 ease-out',
+            'transition-[transform,background-color,box-shadow,border-radius] duration-300 ease-out',
             'touch-manipulation',
             'focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-300',
             isExpanded
@@ -142,7 +142,7 @@ export function QuickAddEventFAB({ onAddEvent, className, disabled = false }: Qu
           )}
           aria-label={isExpanded ? 'Close menu' : 'Add new event'}
         >
-          <div className={cn('transition-all duration-300', isExpanded && 'rotate-45')}>
+          <div className={cn('transition-transform duration-300', isExpanded && 'rotate-45')}>
             {isExpanded ? (
               <X className="w-6 h-6 text-white" />
             ) : (

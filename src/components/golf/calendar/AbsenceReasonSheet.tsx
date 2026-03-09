@@ -113,7 +113,7 @@ export function AbsenceReasonSheet({
             <label className="block text-sm font-semibold text-warm-700 mb-3">
               Reason for absence
             </label>
-            <div className="grid grid-cols-4 gap-2.5">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
               {ABSENCE_REASONS.map((reason) => {
                 const Icon = reason.icon;
                 const isSelected = selectedReason === reason.value;
@@ -242,7 +242,7 @@ export function QuickAbsenceReason({
     <div className={cn('p-4 bg-warm-50 rounded-xl space-y-3', className)}>
       <p className="text-sm font-semibold text-warm-700">Quick absence reason</p>
 
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
         {ABSENCE_REASONS.slice(0, 4).map((reason) => {
           const Icon = reason.icon;
           return (

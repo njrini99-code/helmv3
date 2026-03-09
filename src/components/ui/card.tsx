@@ -40,7 +40,7 @@ export function Card({ className, variant = 'base', padding = 'lg', loading = fa
       <div
         className={cn(
           'bg-white/70 backdrop-blur-glass border border-white/30 rounded-2xl',
-          'shadow-glass transition-all duration-200 ease-out',
+          'shadow-glass transition-[background-color,box-shadow] duration-200 ease-out',
           'hover:bg-white/75 hover:shadow-glass-hover',
           paddingClasses[padding],
           className
@@ -58,7 +58,7 @@ export function Card({ className, variant = 'base', padding = 'lg', loading = fa
       <div
         className={cn(
           'bg-white border border-warm-200 rounded-2xl cursor-pointer',
-          'shadow-card transition-all duration-200 ease-out',
+          'shadow-card transition-[transform,box-shadow,border-color] duration-200 ease-out',
           'hover:shadow-card-hover hover:-translate-y-1 hover:border-primary-200',
           'active:translate-y-0 active:shadow-card active:duration-75',
           paddingClasses[padding],
@@ -77,7 +77,7 @@ export function Card({ className, variant = 'base', padding = 'lg', loading = fa
       <div
         className={cn(
           'bg-white border border-warm-100 rounded-2xl shadow-md',
-          'transition-all duration-200 ease-out',
+          'transition-[transform,box-shadow] duration-200 ease-out',
           'hover:shadow-lg hover:-translate-y-0.5',
           paddingClasses[padding],
           className
@@ -95,7 +95,7 @@ export function Card({ className, variant = 'base', padding = 'lg', loading = fa
       <div
         className={cn(
           'bg-white border border-warm-200 border-l-2 border-l-primary-600 rounded-2xl',
-          'transition-all duration-200 ease-out',
+          'transition-[box-shadow,border-color] duration-200 ease-out',
           'hover:shadow-sm hover:border-l-primary-500',
           padding === 'lg' ? 'p-6' : paddingClasses[padding],
           className
@@ -112,7 +112,7 @@ export function Card({ className, variant = 'base', padding = 'lg', loading = fa
     <div
       className={cn(
         'bg-white border border-warm-200 rounded-2xl',
-        'transition-all duration-200 ease-out',
+        'transition-colors duration-200 ease-out',
         paddingClasses[padding],
         className
       )}

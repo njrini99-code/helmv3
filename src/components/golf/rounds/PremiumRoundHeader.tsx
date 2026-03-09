@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { Avatar } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
-import { useFormatDate } from '@/hooks/golf/use-appearance-preferences';
+import { useFormatDate, useAppearancePreferences } from '@/hooks/golf/use-appearance-preferences';
 
 interface PremiumRoundHeaderProps {
   playerName: string;
@@ -60,9 +60,14 @@ export function PremiumRoundHeader({
   teesPlayed,
   notes,
 }: PremiumRoundHeaderProps) {
-  const scoreDisplay = scoreToPar === null || scoreToPar === undefined
+  const { scoreDisplay: scoreDisplayMode } = useAppearancePreferences();
+
+  const toParLabel = scoreToPar === null || scoreToPar === undefined
     ? '--'
     : scoreToPar === 0 ? 'E' : scoreToPar > 0 ? `+${scoreToPar}` : `${scoreToPar}`;
+
+  // In 'raw' mode, suppress the to-par sub-label (raw score already shown prominently)
+  const scoreDisplay = scoreDisplayMode === 'to_par' ? toParLabel : null;
 
   const scoreColor = scoreToPar === null || scoreToPar === undefined
     ? 'text-warm-600'
@@ -154,14 +159,16 @@ export function PremiumRoundHeader({
               <div className="text-5xl font-bold text-warm-900 tabular-nums">
                 {totalScore ?? '--'}
               </div>
-              <motion.div
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.35, duration: 0.35 }}
-                className={cn('text-xl font-semibold', scoreColor)}
-              >
-                {scoreDisplay}
-              </motion.div>
+              {scoreDisplay !== null && (
+                <motion.div
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.35, duration: 0.35 }}
+                  className={cn('text-xl font-semibold', scoreColor)}
+                >
+                  {scoreDisplay}
+                </motion.div>
+              )}
               {frontNine !== null && backNine !== null && (
                 <motion.p
                   initial={{ opacity: 0 }}

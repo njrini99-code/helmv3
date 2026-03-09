@@ -90,7 +90,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: BaseballAn
     <>
       <div
         className={cn(
-          'glass-standard rounded-2xl overflow-hidden',
+          'glass-standard rounded-2xl overflow-clip',
           'border-l-[3px]',
           urgencyBorder,
           'transition-all hover:shadow-md'

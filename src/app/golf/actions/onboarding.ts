@@ -208,7 +208,7 @@ export async function completeCoachOnboarding(input: CoachOnboardingInput) {
     if (createdTeamId) {
       await supabase.from('golf_teams').delete().eq('id', createdTeamId);
     }
-    // Note: coach cleanup happens in individual error handlers above
+    // Coach cleanup happens in individual error handlers above
     if (createdOrgId) {
       await supabase.from('organizations').delete().eq('id', createdOrgId);
     }

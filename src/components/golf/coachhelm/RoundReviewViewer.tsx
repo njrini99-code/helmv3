@@ -121,7 +121,7 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
               <div key={i} className="h-10 bg-warm-100 rounded-lg animate-pulse" style={{ animationDelay: `${i * 40}ms` }} />
             ))}
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="h-20 bg-warm-50 rounded-xl border border-warm-100 animate-pulse" style={{ animationDelay: `${i * 80}ms` }} />
             ))}
@@ -795,7 +795,7 @@ function GameBreakdownSection({
   if (!hasPutting && !hasDriving && !hasShortGame) return null;
 
   return (
-    <div className="rounded-2xl border border-warm-200 bg-white/80 backdrop-blur-sm overflow-hidden shadow-sm">
+    <div className="rounded-2xl border border-warm-200 bg-white/80 backdrop-blur-sm overflow-clip shadow-sm">
       {/* Putting */}
       {hasPutting && (
         <div className="p-5">
@@ -803,7 +803,7 @@ function GameBreakdownSection({
             <IconTarget size={14} />
             Putting
           </h3>
-          <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
             {[
               { value: putting.totalPutts, label: 'Total Putts', bg: 'bg-warm-50', textColor: 'text-warm-900' },
               { value: putting.onePuttCount, label: 'One-Putts', bg: 'bg-primary-50/80', textColor: 'text-primary-700' },
@@ -878,7 +878,7 @@ function GameBreakdownSection({
             <IconBolt size={14} />
             Driving
           </h3>
-          <div className="grid grid-cols-3 gap-3 mb-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
             {driving.avgDistance !== null && (
               <div className="text-center p-3 rounded-xl bg-warm-50">
                 <div className="text-2xl font-bold text-warm-900 tabular-nums">{driving.avgDistance}y</div>

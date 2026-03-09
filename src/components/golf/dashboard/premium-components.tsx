@@ -201,7 +201,7 @@ export const PremiumStatCard = memo(function PremiumStatCard({
             </div>
 
             {href && (
-                <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute bottom-4 right-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                     <IconArrowRight size={14} className="text-primary-500" />
                 </div>
             )}
@@ -238,7 +238,7 @@ export const QuickActionCard = memo(function QuickActionCard({
             <m.div
                 className={cn(
                     'group flex items-center gap-4 p-4 rounded-2xl cursor-pointer', // Standardized: 16px
-                    'transition-all duration-200 touch-manipulation hover:shadow-card-hover',
+                    'transition-colors duration-200 touch-manipulation hover:shadow-card-hover',
                     'min-h-[56px]', // Ensure minimum touch target height
                     variant === 'primary'
                         ? [
@@ -261,7 +261,7 @@ export const QuickActionCard = memo(function QuickActionCard({
             >
                 <div className={cn(
                     'w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0', // Standardized: 12px
-                    'transition-all duration-200 group-hover:scale-105',
+                    'transition-transform duration-200 group-hover:scale-105',
                     variant === 'primary'
                         ? 'bg-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]'
                         : 'bg-warm-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]'
@@ -287,7 +287,7 @@ export const QuickActionCard = memo(function QuickActionCard({
                 <IconArrowRight
                     size={16}
                     className={cn(
-                        'flex-shrink-0 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all',
+                        'flex-shrink-0 opacity-100 translate-x-0 md:opacity-0 md:-translate-x-2 md:group-hover:opacity-100 md:group-hover:translate-x-0 transition-[opacity,transform]',
                         variant === 'primary' ? 'text-white/60' : 'text-primary-500'
                     )}
                 />
@@ -360,7 +360,7 @@ export function RoundRow({
             role={id ? undefined : "button"}
             tabIndex={id ? undefined : 0}
             aria-label={accessibleLabel}
-            className="group flex items-center gap-4 px-4 py-4 hover:bg-white/30 rounded-lg transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+            className="group flex items-center gap-4 px-4 py-4 hover:bg-white/30 rounded-lg transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
             whileHover={{ x: 4 }}
         >
             <div className={cn(
@@ -489,7 +489,7 @@ export const RecentRoundCard = memo(function RecentRoundCard({
                 aria-label={accessibleLabel}
                 className={cn(
                     'group relative px-4 py-4',
-                    'hover:bg-white/40 transition-all duration-200 cursor-pointer',
+                    'hover:bg-white/40 transition-colors duration-200 cursor-pointer',
                     'focus-within:ring-2 focus-within:ring-primary-500/30 focus-within:ring-offset-1'
                 )}
                 whileHover={{ x: 2 }}
@@ -581,7 +581,7 @@ export const RecentRoundCard = memo(function RecentRoundCard({
                     </div>
 
                     {/* Arrow indicator */}
-                    <div className="flex-shrink-0 mt-2 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200">
+                    <div className="flex-shrink-0 mt-2 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-[opacity,transform] duration-200">
                         <IconArrowRight size={14} className="text-primary-500" />
                     </div>
                 </div>
@@ -620,7 +620,7 @@ export function TopPerformerRow({
         <m.div
             role="listitem"
             aria-label={`${rankLabel} place: ${name}, average score ${avgScore.toFixed(1)} over ${rounds} rounds`}
-            className="flex items-center gap-3 px-4 py-4 hover:bg-white/30 rounded-lg transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2" // Standardized: 12px
+            className="flex items-center gap-3 px-4 py-4 hover:bg-white/30 rounded-lg transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2" // Standardized: 12px
             whileHover={{ x: 4 }}
             tabIndex={0}
         >

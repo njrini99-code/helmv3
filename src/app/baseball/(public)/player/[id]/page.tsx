@@ -174,8 +174,11 @@ export default async function PublicPlayerProfilePage({ params }: PageProps) {
     .eq('player_id', player.id);
 
   // Combine player data with separately fetched data
+  // Map Supabase relation keys to the interface keys expected by PlayerProfileClient
   const playerData = {
     ...player,
+    videos: player.baseball_videos ?? [],
+    team_members: player.baseball_team_members ?? [],
     player_settings: playerSettings,
     recruiting_interests: recruitingInterests || [],
     player_stats: [], // No baseball stats table exists

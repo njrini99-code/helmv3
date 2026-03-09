@@ -120,7 +120,7 @@ export function CreateCampModal({ open, onClose, camp }: CreateCampModalProps) {
 
   return (
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="relative glass-prominent rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="relative glass-prominent rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-clip flex flex-col">
         {/* Shine effect */}
         <div
           className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"

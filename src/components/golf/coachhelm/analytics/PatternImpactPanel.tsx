@@ -64,7 +64,7 @@ export function PatternImpactPanel({
     return (
       <div className={cn('space-y-4', className)}>
         {/* Summary Stats */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <StatCard
             label="Detected"
             value={data.patternsDetected}

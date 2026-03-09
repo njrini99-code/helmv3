@@ -1,9 +1,9 @@
 export default function CalendarLoading() {
   return (
-    <div className="h-[calc(100vh-64px)] p-6" style={{
+    <div className="h-[calc(100dvh-64px)] p-6" style={{
       background: 'linear-gradient(180deg, #FFFEFA 0%, #FDF9F0 33%, #FAF5EB 66%, #F5F0E6 100%)',
     }}>
-      <div className="glass-standard rounded-2xl overflow-hidden h-full animate-pulse">
+      <div className="glass-standard rounded-2xl overflow-clip h-full animate-pulse">
         {/* Calendar header skeleton */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100/50">
           <div className="flex items-center gap-3">

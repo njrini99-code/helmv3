@@ -1,3 +1,5 @@
+'use client';
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { User, CoachWithOrganization, Player } from '@/lib/types';
@@ -10,7 +12,7 @@ export type CoachMode = 'recruiting' | 'team';
  */
 function syncModeToCookie(mode: CoachMode) {
   if (typeof document !== 'undefined') {
-    document.cookie = `coach_mode=${mode}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
+    document.cookie = `coach_mode=${mode}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax; Secure`;
   }
 }
 

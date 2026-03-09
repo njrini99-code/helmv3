@@ -94,7 +94,7 @@ export function MyStatsClient() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#FFFEFA] flex items-center justify-center p-4">
+      <div className="min-h-dvh bg-[#FFFEFA] flex items-center justify-center p-4">
         <div className="glass-standard rounded-2xl p-8 text-center max-w-md w-full">
           <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
             <IconChart size={24} className="text-red-500" />
@@ -115,7 +115,7 @@ export function MyStatsClient() {
     : '';
 
   return (
-    <div className="min-h-screen bg-[#FFFEFA]">
+    <div className="min-h-dvh bg-[#FFFEFA]">
       <Header
         title="My Stats"
         subtitle="Track your performance and progress"

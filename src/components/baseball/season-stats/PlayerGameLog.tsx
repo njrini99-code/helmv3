@@ -122,7 +122,7 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
 
       {/* Batting log */}
       {activeTab === 'batting' && (
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-clip">
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
@@ -220,7 +220,7 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
 
       {/* Pitching log */}
       {activeTab === 'pitching' && (
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-clip">
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>

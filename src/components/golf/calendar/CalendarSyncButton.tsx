@@ -172,7 +172,7 @@ export function CalendarSyncButton({
               'border border-white/40 hover:border-primary-200',
               'text-warm-500 hover:text-primary-600',
               'shadow-sm hover:shadow-md',
-              'transition-all duration-200',
+              'transition-[color,background-color,border-color,box-shadow] duration-200',
               className
             )}
             aria-label="Subscribe to Calendar"
@@ -188,7 +188,7 @@ export function CalendarSyncButton({
             'rounded-lg font-medium text-sm',
             'bg-primary-600 hover:bg-primary-700 active:scale-95 text-white',
             'shadow-sm hover:shadow-md',
-            'transition-all duration-200',
+            'transition-[background-color,transform,box-shadow] duration-200',
             className
           )}
         >
@@ -270,7 +270,7 @@ export function CalendarSyncButton({
                     <button
                       onClick={handleCopy}
                       className={cn(
-                        'shrink-0 p-2.5 rounded-lg font-medium text-sm transition-all',
+                        'shrink-0 p-2.5 rounded-lg font-medium text-sm transition-colors',
                         copied
                           ? 'bg-primary-100 text-primary-700'
                           : 'bg-warm-100 text-warm-700 hover:bg-warm-200'
@@ -292,7 +292,7 @@ export function CalendarSyncButton({
                   <p className="text-sm font-medium text-warm-700 mb-3">
                     Or add directly to:
                   </p>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {/* Google Calendar */}
                     <a
                       href={calendarUrls?.google}
@@ -302,7 +302,7 @@ export function CalendarSyncButton({
                         'flex flex-col items-center gap-2 p-4 rounded-xl',
                         'border-2 border-warm-200 hover:border-blue-300',
                         'bg-white hover:bg-blue-50 active:bg-blue-100',
-                        'transition-all duration-200 group'
+                        'transition-colors duration-200 group'
                       )}
                     >
                       <GoogleIcon className="w-6 h-6" />
@@ -318,7 +318,7 @@ export function CalendarSyncButton({
                         'flex flex-col items-center gap-2 p-4 rounded-xl',
                         'border-2 border-warm-200 hover:border-warm-400',
                         'bg-white hover:bg-warm-50 active:bg-warm-100',
-                        'transition-all duration-200 group'
+                        'transition-colors duration-200 group'
                       )}
                     >
                       <AppleIcon className="w-6 h-6 text-warm-800" />
@@ -336,7 +336,7 @@ export function CalendarSyncButton({
                         'flex flex-col items-center gap-2 p-4 rounded-xl',
                         'border-2 border-warm-200 hover:border-blue-300',
                         'bg-white hover:bg-blue-50 active:bg-blue-100',
-                        'transition-all duration-200 group'
+                        'transition-colors duration-200 group'
                       )}
                     >
                       <OutlookIcon className="w-6 h-6" />

@@ -56,7 +56,7 @@ export default function CollegesPage() {
       />
       <div className="p-6 lg:p-8">
         {/* Filters */}
-        <div className="relative glass-standard rounded-2xl p-5 mb-6 overflow-hidden">
+        <div className="relative glass-standard rounded-2xl p-5 mb-6 overflow-clip">
           <ShineEffect />
           <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3">
             <div className="relative flex-1 min-w-[200px] sm:max-w-md">

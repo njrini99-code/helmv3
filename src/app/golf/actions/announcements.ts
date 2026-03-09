@@ -285,6 +285,44 @@ export async function getAnnouncementsWithMeta(
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: 'Not authenticated' };
 
+    // Verify team membership - check coach or player association
+    const { data: coachCheck } = await supabase
+      .from('golf_coaches')
+      .select('id, organization_id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    const { data: playerCheck } = await supabase
+      .from('golf_players')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (coachCheck?.organization_id) {
+      const { data: teamCheck } = await supabase
+        .from('golf_teams')
+        .select('id')
+        .eq('id', teamId)
+        .eq('organization_id', coachCheck.organization_id)
+        .maybeSingle();
+      if (!teamCheck && !playerCheck) {
+        return { success: false, error: 'Not authorized for this team' };
+      }
+    } else if (playerCheck) {
+      const { data: memberCheck } = await supabase
+        .from('golf_team_members')
+        .select('id')
+        .eq('player_id', playerCheck.id)
+        .eq('team_id', teamId)
+        .eq('status', 'active')
+        .maybeSingle();
+      if (!memberCheck) {
+        return { success: false, error: 'Not authorized for this team' };
+      }
+    } else {
+      return { success: false, error: 'Not authorized for this team' };
+    }
+
     // Fetch all announcements for this team
     const { data: announcements, error } = await supabase
       .from('golf_announcements')
@@ -437,6 +475,44 @@ export async function getAnnouncementDetail(
       .single();
 
     if (error || !ann) return { success: false, error: 'Announcement not found' };
+
+    // Verify team membership - check coach or player association
+    const { data: coachCheck } = await supabase
+      .from('golf_coaches')
+      .select('id, organization_id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    const { data: playerCheck } = await supabase
+      .from('golf_players')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (coachCheck?.organization_id) {
+      const { data: teamCheck } = await supabase
+        .from('golf_teams')
+        .select('id')
+        .eq('id', ann.team_id)
+        .eq('organization_id', coachCheck.organization_id)
+        .maybeSingle();
+      if (!teamCheck && !playerCheck) {
+        return { success: false, error: 'Not authorized for this team' };
+      }
+    } else if (playerCheck) {
+      const { data: memberCheck } = await supabase
+        .from('golf_team_members')
+        .select('id')
+        .eq('player_id', playerCheck.id)
+        .eq('team_id', ann.team_id)
+        .eq('status', 'active')
+        .maybeSingle();
+      if (!memberCheck) {
+        return { success: false, error: 'Not authorized for this team' };
+      }
+    } else {
+      return { success: false, error: 'Not authorized for this team' };
+    }
 
     // Fetch recipients with player info
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

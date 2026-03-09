@@ -97,7 +97,7 @@ export function UploadNewVersionModal({
       />
 
       {/* Modal */}
-      <div className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full">
+      <div className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-clip">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
           <div>

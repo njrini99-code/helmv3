@@ -69,6 +69,7 @@ export interface PremiumCalendarClientProps {
   // Optional custom action handlers (defaults to golf actions)
   actionHandlers?: CalendarActionHandlers;
   teamTimezone?: string | null;
+  teamId?: string;
 }
 
 export function PremiumCalendarClient({
@@ -79,6 +80,7 @@ export function PremiumCalendarClient({
   onSyncSettings,
   actionHandlers = defaultActionHandlers,
   teamTimezone,
+  teamId: teamIdProp,
 }: PremiumCalendarClientProps) {
   const router = useRouter();
   const isMobileQuery = useMediaQuery('(max-width: 768px)');
@@ -299,7 +301,8 @@ export function PremiumCalendarClient({
 
   // Real-time subscription for calendar events — refresh on any change
   useEffect(() => {
-    const teamId = initialEvents[0]?.team_id;
+    // Derive teamId from prop, events, or team members
+    const teamId = teamIdProp || initialEvents[0]?.team_id || (teamMembers[0] as unknown as Record<string, unknown> | undefined)?.team_id as string | undefined;
     if (!teamId) return;
 
     const supabase = createClient();
@@ -322,7 +325,7 @@ export function PremiumCalendarClient({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [initialEvents, router]);
+  }, [teamIdProp, initialEvents, teamMembers, router]);
 
   // Configure drag sensors - require 8px movement before drag starts
   const sensors = useSensors(

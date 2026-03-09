@@ -127,7 +127,7 @@ export function BoxScoreView({ game, batting, pitching }: BoxScoreViewProps) {
 
       {/* Batting */}
       {batting.length > 0 && (
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-clip">
           <div className="px-5 py-3 border-b border-slate-100">
             <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wider">Batting</h2>
           </div>
@@ -199,7 +199,7 @@ export function BoxScoreView({ game, batting, pitching }: BoxScoreViewProps) {
 
       {/* Pitching */}
       {pitching.length > 0 && (
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-clip">
           <div className="px-5 py-3 border-b border-slate-100">
             <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wider">Pitching</h2>
           </div>

@@ -5,6 +5,7 @@ import { Metadata } from 'next';
 import { Button } from '@/components/ui/button';
 import { IconArrowLeft, IconChartBar } from '@/components/icons';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
+import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
 import { RoundReviewViewer } from '@/components/golf/coachhelm/RoundReviewViewer';
 import { ShotByShot } from '@/components/golf/rounds';
 import { PremiumRoundHeader } from '@/components/golf/rounds/PremiumRoundHeader';
@@ -155,12 +156,15 @@ export default async function RoundDetailPage({
       {/* Navigation */}
       <AnimatedItem>
       <div className="flex items-center justify-between mb-6">
-        <Link href="/golf/dashboard/rounds">
-          <Button variant="secondary" size="sm">
-            <IconArrowLeft size={16} className="mr-2" />
-            Back
-          </Button>
-        </Link>
+        <div className="flex items-center gap-3">
+          <MobileMenuButton />
+          <Link href="/golf/dashboard/rounds">
+            <Button variant="secondary" size="sm">
+              <IconArrowLeft size={16} className="mr-2" />
+              Back
+            </Button>
+          </Link>
+        </div>
         <Link href="/golf/dashboard/stats">
           <Button variant="secondary" size="sm">
             <IconChartBar size={16} className="mr-2" />

@@ -76,12 +76,12 @@ export function MyQualifiersClient({ qualifiers, error }: MyQualifiersClientProp
 
         <AnimatedItem>
         {error ? (
-          <div className="relative glass-standard rounded-2xl overflow-hidden p-6">
+          <div className="relative glass-standard rounded-2xl overflow-clip p-6">
             <ShineEffect />
             <p className="text-red-600">{error}</p>
           </div>
         ) : qualifiers.length === 0 ? (
-          <div className="relative glass-standard rounded-2xl overflow-hidden p-8 md:p-12 text-center">
+          <div className="relative glass-standard rounded-2xl overflow-clip p-8 md:p-12 text-center">
             <ShineEffect />
             <div className="w-16 h-16 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-4">
               <IconTrophy size={32} className="text-warm-400" />
@@ -103,7 +103,7 @@ export function MyQualifiersClient({ qualifiers, error }: MyQualifiersClientProp
                   href={`/golf/dashboard/qualifiers/${qualifier.id}`}
                   className="block group"
                 >
-                  <div className="relative glass-standard rounded-2xl overflow-hidden p-6 hover:shadow-md transition-all">
+                  <div className="relative glass-standard rounded-2xl overflow-clip p-6 hover:shadow-md transition-all">
                     <ShineEffect />
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">

@@ -816,54 +816,11 @@ export function calculateHoleStatsFromShots(shots: RawShot[], par: number): Calc
 // MAIN CALCULATOR - Calculate stats from raw shots
 // ============================================================================
 
-// Debug mode - set to true to see diagnostic output in console
-// Enable this to diagnose approach efficiency calculation issues
-const DEBUG_STATS = false;
-
 export function calculateStatsFromShots(
   shots: RawShot[],
   holes: HoleInfo[],
   rounds: RoundInfo[]
 ): GolfStats {
-  // DEBUG: Diagnostic output for approach data quality
-  if (DEBUG_STATS) {
-    const greenShots = shots.filter(s => isGreenHit(s.result));
-    const withDistanceBefore = greenShots.filter(s => s.distance_to_hole_before !== null);
-    const with30PlusYards = withDistanceBefore.filter(s => {
-      const yards = s.distance_unit_before === 'feet'
-        ? (s.distance_to_hole_before || 0) / 3
-        : (s.distance_to_hole_before || 0);
-      return yards >= AROUND_GREEN_THRESHOLD_YARDS;
-    });
-
-    // Check proximity data (distance_to_hole_after)
-    const withDistanceAfter = greenShots.filter(s => s.distance_to_hole_after !== null);
-
-    console.log('[STATS DEBUG] Approach efficiency data quality:');
-    console.log(`  Total shots: ${shots.length}`);
-    console.log(`  Shots with result='green': ${greenShots.length}`);
-    console.log(`  Green shots with distance_to_hole_before: ${withDistanceBefore.length}`);
-    console.log(`  Green shots with distance_to_hole_after (proximity): ${withDistanceAfter.length}`);
-    console.log(`  Green shots with distance >= ${AROUND_GREEN_THRESHOLD_YARDS} yards (approach): ${with30PlusYards.length}`);
-
-    // Check for shots that have BOTH before AND after distances (required for proximity by distance)
-    const withBothDistances = greenShots.filter(s =>
-      s.distance_to_hole_before !== null && s.distance_to_hole_after !== null
-    );
-    console.log(`  Green shots with BOTH before & after distances: ${withBothDistances.length}`);
-
-    if (greenShots.length > 0 && withDistanceAfter.length === 0) {
-      console.log('  [WARNING] No green shots have distance_to_hole_after - proximity stats will be empty!');
-      console.log('  Sample green shot:', JSON.stringify(greenShots[0], null, 2));
-    }
-
-    if (greenShots.length > 0 && withDistanceBefore.length < greenShots.length) {
-      console.log('  [WARNING] Some green shots are missing distance_to_hole_before data!');
-      console.log('  Sample green shot without distance:',
-        greenShots.find(s => s.distance_to_hole_before === null));
-    }
-  }
-
   // Group shots by round
   const shotsByRound = new Map<string, RawShot[]>();
   for (const shot of shots) {
@@ -2062,18 +2019,6 @@ function aggregateRoundStats(rounds: Array<{
     (approachProxByDistance['225_plus'] || []).reduce((a, b) => a + b, 0),
     (approachProxByDistance['225_plus'] || []).length
   );
-
-  // DEBUG: Log approach proximity collection results
-  if (DEBUG_STATS) {
-    console.log('[STATS DEBUG] Approach proximity collection results:');
-    console.log(`  approachProximities collected: ${approachProximities.length}`);
-    console.log(`  approachProxByDistance buckets:`);
-    for (const [bucket, values] of Object.entries(approachProxByDistance)) {
-      console.log(`    ${bucket}: ${(values as number[]).length} shots, avg: ${safeAverage((values as number[]).reduce((a, b) => a + b, 0), (values as number[]).length)?.toFixed(1) || 'N/A'}`);
-    }
-    console.log(`  Final stats.approachProx125_150: ${stats.approachProx125_150}`);
-    console.log(`  Final stats.approachProx150_175: ${stats.approachProx150_175}`);
-  }
 
   // Approach efficiency by distance and lie
   // Map bucket names to stats property names

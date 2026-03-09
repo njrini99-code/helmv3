@@ -244,7 +244,7 @@ export function InsightFiltersPanel({
               'bg-white border border-warm-200 rounded-lg',
               'text-warm-900',
               'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20',
-              'transition-all duration-200'
+              'transition-colors duration-200'
             )}
           >
             <option value="">All players</option>
@@ -269,7 +269,7 @@ export function InsightFiltersPanel({
               'bg-white border border-warm-200 rounded-lg',
               'text-warm-900',
               'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20',
-              'transition-all duration-200'
+              'transition-colors duration-200'
             )}
           >
             <option value="">All types</option>
@@ -297,7 +297,7 @@ export function InsightFiltersPanel({
               'bg-white border border-warm-200 rounded-lg',
               'text-warm-900',
               'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20',
-              'transition-all duration-200'
+              'transition-colors duration-200'
             )}
           >
             <option value="">All priorities</option>
@@ -322,7 +322,7 @@ export function InsightFiltersPanel({
               'bg-white border border-warm-200 rounded-lg',
               'text-warm-900',
               'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20',
-              'transition-all duration-200'
+              'transition-colors duration-200'
             )}
           >
             <option value="">All statuses</option>
@@ -356,7 +356,7 @@ export function InsightFiltersPanel({
               'bg-white border border-warm-200 rounded-lg',
               'text-warm-900',
               'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20',
-              'transition-all duration-200'
+              'transition-colors duration-200'
             )}
           >
             <option value="">All time</option>
@@ -378,7 +378,7 @@ export function InsightFiltersPanel({
                   'bg-white border border-warm-200 rounded-lg',
                   'text-warm-900',
                   'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20',
-                  'transition-all duration-200'
+                  'transition-colors duration-200'
                 )}
               />
               <input
@@ -390,7 +390,7 @@ export function InsightFiltersPanel({
                   'bg-white border border-warm-200 rounded-lg',
                   'text-warm-900',
                   'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20',
-                  'transition-all duration-200'
+                  'transition-colors duration-200'
                 )}
               />
             </>

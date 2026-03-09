@@ -85,7 +85,7 @@ function ActivityRow({ activity }: { activity: TeamActivity }) {
 export function TeamActivityFeed({ data, loading }: TeamActivityFeedProps) {
   if (loading) {
     return (
-      <div className="relative glass-standard rounded-2xl overflow-hidden">
+      <div className="relative glass-standard rounded-2xl overflow-clip">
         <ShineEffect />
         <div className="px-5 py-4 border-b border-slate-100/50">
           <div className="flex items-center gap-2">
@@ -109,7 +109,7 @@ export function TeamActivityFeed({ data, loading }: TeamActivityFeedProps) {
   }
 
   return (
-    <div className="relative glass-standard rounded-2xl overflow-hidden">
+    <div className="relative glass-standard rounded-2xl overflow-clip">
       <ShineEffect />
       
       {/* Header */}

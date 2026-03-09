@@ -353,7 +353,7 @@ export function TrendLineChart({
 
       {/* Analysis summary */}
       {analysis && sortedData.length > 0 && (
-        <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
+        <div className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-2 text-center text-xs">
           <div className="bg-warm-50 rounded p-2">
             <div className="text-warm-500">Current</div>
             <div className="font-semibold text-warm-900">{formatValue(sortedData[sortedData.length - 1]!.value)}</div>

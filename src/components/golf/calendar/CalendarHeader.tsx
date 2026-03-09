@@ -124,7 +124,7 @@ export function CalendarHeader({
             onClick={() => onNavigate('prev')}
             aria-label={`Previous ${view}`}
             className={cn(
-              'rounded-lg transition-all duration-150 active:scale-95',
+              'rounded-lg transition-[color,background-color,transform] duration-150 active:scale-95',
               'text-warm-500 hover:text-warm-700 hover:bg-warm-100/60',
               isMobile ? 'w-12 h-12' : 'w-8 h-8',
               'flex items-center justify-center'
@@ -137,7 +137,7 @@ export function CalendarHeader({
             onClick={() => onNavigate('next')}
             aria-label={`Next ${view}`}
             className={cn(
-              'rounded-lg transition-all duration-150 active:scale-95',
+              'rounded-lg transition-[color,background-color,transform] duration-150 active:scale-95',
               'text-warm-500 hover:text-warm-700 hover:bg-warm-100/60',
               isMobile ? 'w-12 h-12' : 'w-8 h-8',
               'flex items-center justify-center'
@@ -152,7 +152,7 @@ export function CalendarHeader({
           type="button"
           onClick={() => onNavigate('today')}
           className={cn(
-            'rounded-lg text-sm font-medium transition-all duration-150 active:scale-95',
+            'rounded-lg text-sm font-medium transition-[color,background-color,transform] duration-150 active:scale-95',
             'text-warm-600 hover:text-warm-800',
             'bg-white/50 hover:bg-white/70 border border-warm-200/40',
             isMobile ? 'px-3 py-2 min-h-[40px]' : 'px-3 py-1.5',
@@ -179,7 +179,7 @@ export function CalendarHeader({
                 aria-checked={view === v}
                 onClick={() => onViewChange(v)}
                 className={cn(
-                  'px-3.5 py-1.5 text-[13px] font-medium rounded-lg transition-all duration-200',
+                  'px-3.5 py-1.5 text-[13px] font-medium rounded-lg transition-[color,background-color,box-shadow] duration-200',
                   view === v
                     ? 'bg-white text-warm-900 shadow-sm'
                     : 'text-warm-400 hover:text-warm-600'
@@ -199,7 +199,7 @@ export function CalendarHeader({
               onClick={() => setTzDropdownOpen(!tzDropdownOpen)}
               aria-label={secondaryTimezone ? `Secondary timezone: ${secondaryTimezone}` : 'Add secondary timezone'}
               className={cn(
-                'flex items-center gap-1.5 rounded-lg text-[13px] font-medium transition-all duration-150 active:scale-95',
+                'flex items-center gap-1.5 rounded-lg text-[13px] font-medium transition-[color,background-color,transform] duration-150 active:scale-95',
                 secondaryTimezone
                   ? 'px-2.5 py-1.5 bg-primary-50 text-primary-700 border border-primary-200/60'
                   : 'px-2 py-1.5 text-warm-400 hover:text-warm-600 hover:bg-warm-100/60'
@@ -250,7 +250,7 @@ export function CalendarHeader({
           <button
             type="button"
             onClick={onAddEvent}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white active:scale-95 transition-all duration-150 bg-gradient-to-br from-primary-500 to-primary-600 shadow-[0_2px_10px_rgba(22,163,74,0.3),inset_0_1px_0_rgba(255,255,255,0.2)]"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white active:scale-95 transition-[transform,box-shadow] duration-150 bg-gradient-to-br from-primary-500 to-primary-600 shadow-[0_2px_10px_rgba(22,163,74,0.3),inset_0_1px_0_rgba(255,255,255,0.2)]"
           >
             <Plus className="w-4 h-4" />
             Add Event

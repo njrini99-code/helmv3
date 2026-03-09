@@ -263,7 +263,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
       />
       
       {/* Premium Glass Dialog */}
-      <div className="absolute top-[20%] left-1/2 -translate-x-1/2 w-full max-w-lg animate-scale-in">
+      <div className="absolute top-[20%] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] sm:w-full max-w-lg animate-scale-in">
         <div className={cn(
           'bg-white/60 backdrop-blur-[24px]', // Enhanced glass effect
           'rounded-2xl', // Standardized: 16px

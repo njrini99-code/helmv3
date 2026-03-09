@@ -7,6 +7,7 @@ import type { HoleReviewData } from '@/app/golf/actions/golf';
 import { ShotCard, type OfflineShotExtended } from './ShotCard';
 import { IconChevronDown, IconCheck, IconX, IconFlag } from '@/components/icons';
 import type { SyncStatus } from '@/lib/offline/shot-storage';
+import { useAppearancePreferences } from '@/hooks/golf/use-appearance-preferences';
 
 // ============================================================================
 // TYPES
@@ -150,7 +151,12 @@ export function HoleAccordion({
   isOffline = false,
 }: HoleAccordionProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
-  const scoreDisplay = getScoreDisplay(hole.score ?? null, hole.par ?? 4);
+  const { scoreDisplay: scoreDisplayMode } = useAppearancePreferences();
+  const toParDisplay = getScoreDisplay(hole.score ?? null, hole.par ?? 4);
+  // In 'raw' mode show the actual stroke count; keep to-par labels in 'to_par' mode
+  const scoreDisplay = scoreDisplayMode === 'raw' && hole.score !== null && hole.score !== undefined
+    ? { label: String(hole.score), color: 'text-warm-700', bgColor: 'bg-warm-100' }
+    : toParDisplay;
   const hasShots = (hole.shots?.length ?? 0) > 0;
   const scoreToPar = getScoreToPar(hole.score ?? null, hole.par ?? 4);
 
@@ -163,7 +169,7 @@ export function HoleAccordion({
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-2xl glass-standard overflow-hidden"
+      className="rounded-2xl glass-standard overflow-clip"
     >
       {/* Accordion header - always visible */}
       <button

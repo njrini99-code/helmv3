@@ -118,6 +118,18 @@ export async function getDocument(documentId: string): Promise<{ data: GolfDocum
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: 'Unauthorized' };
 
+    // Verify user has access to this document's team
+    const { data: docCheck, error: docCheckError } = await supabase
+      .from('golf_documents')
+      .select('team_id')
+      .eq('id', documentId)
+      .single();
+
+    if (docCheckError || !docCheck) return { data: null, error: 'Document not found' };
+
+    const hasAccess = await verifyTeamAccess(supabase, user.id, docCheck.team_id);
+    if (!hasAccess) return { data: null, error: 'Not authorized to access this document' };
+
     const { data, error } = await (supabase as any)
       .from('golf_documents')
       .select(`
@@ -435,6 +447,18 @@ export async function getDocumentVersions(documentId: string): Promise<{ data: D
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: 'Unauthorized' };
 
+    // Verify user has access to this document's team
+    const { data: docCheck, error: docCheckError } = await supabase
+      .from('golf_documents')
+      .select('team_id')
+      .eq('id', documentId)
+      .single();
+
+    if (docCheckError || !docCheck) return { data: null, error: 'Document not found' };
+
+    const hasAccess = await verifyTeamAccess(supabase, user.id, docCheck.team_id);
+    if (!hasAccess) return { data: null, error: 'Not authorized to access this document' };
+
     const { data: rawData, error } = await supabase
       .from('golf_document_versions' as any)
       .select(`
@@ -556,6 +580,18 @@ export async function compareVersions(
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: 'Unauthorized' };
 
+    // Verify user has access to this document's team
+    const { data: docCheck, error: docCheckError } = await supabase
+      .from('golf_documents')
+      .select('team_id')
+      .eq('id', documentId)
+      .single();
+
+    if (docCheckError || !docCheck) return { data: null, error: 'Document not found' };
+
+    const hasAccess = await verifyTeamAccess(supabase, user.id, docCheck.team_id);
+    if (!hasAccess) return { data: null, error: 'Not authorized to access this document' };
+
     const { data: versionsData, error } = await supabase
       .from('golf_document_versions' as any)
       .select(`
@@ -608,6 +644,18 @@ export async function getPreviewUrl(
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: 'Unauthorized' };
+
+    // Verify user has access to this document's team
+    const { data: docCheck, error: docCheckError } = await supabase
+      .from('golf_documents')
+      .select('team_id')
+      .eq('id', documentId)
+      .single();
+
+    if (docCheckError || !docCheck) return { data: null, error: 'Document not found' };
+
+    const hasAccess = await verifyTeamAccess(supabase, user.id, docCheck.team_id);
+    if (!hasAccess) return { data: null, error: 'Not authorized to access this document' };
 
     if (versionNumber) {
       // Get specific version
@@ -892,6 +940,18 @@ export async function getTextFileContent(
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { data: null, error: 'Unauthorized' };
+
+    // Verify user has access to this document's team
+    const { data: docCheck, error: docCheckError } = await supabase
+      .from('golf_documents')
+      .select('team_id')
+      .eq('id', documentId)
+      .single();
+
+    if (docCheckError || !docCheck) return { data: null, error: 'Document not found' };
+
+    const hasAccess = await verifyTeamAccess(supabase, user.id, docCheck.team_id);
+    if (!hasAccess) return { data: null, error: 'Not authorized to access this document' };
 
     let storagePath: string;
 

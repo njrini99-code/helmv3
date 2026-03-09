@@ -191,6 +191,16 @@ export function MobileEventSheet({
     }
   }, [isOpen, event, isCreating, initialEventType]);
 
+  // Close on Escape key
+  useEffect(() => {
+    if (!isOpen) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose();
+    }
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [isOpen, onClose]);
+
   // Prevent body scroll when sheet is open
   useEffect(() => {
     if (isOpen) {
@@ -336,7 +346,7 @@ export function MobileEventSheet({
                       disabled={isSaving}
                       className={cn(
                         'flex items-center gap-2 px-3.5 py-2 rounded-full text-sm font-medium',
-                        'whitespace-nowrap transition-all duration-200 active:scale-95',
+                        'whitespace-nowrap transition-[color,background-color,transform,box-shadow] duration-200 active:scale-95',
                         'min-h-[40px] touch-manipulation',
                         isActive
                           ? cn(pill.activeBg, pill.activeText, 'shadow-md')
@@ -544,7 +554,7 @@ export function MobileEventSheet({
                   <Users className="w-4 h-4" />
                   Attendance ({rsvpSummary.accepted + rsvpSummary.tentative}/{rsvpSummary.total})
                 </h4>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                   <div className="bg-white rounded-xl p-2.5 text-center shadow-sm">
                     <CheckCircle2 className="w-4 h-4 text-primary-600 mx-auto mb-0.5" />
                     <p className="text-lg font-bold text-primary-700">{rsvpSummary.accepted}</p>
@@ -582,7 +592,7 @@ export function MobileEventSheet({
                     'px-4 py-3 rounded-2xl bg-warm-50',
                     'text-warm-700 font-medium text-sm',
                     'active:scale-[0.98] active:bg-warm-100',
-                    'transition-all min-h-[48px]'
+                    'transition-[background-color,transform] min-h-[48px]'
                   )}
                 >
                   <Bell className="w-4.5 h-4.5" />
@@ -599,7 +609,7 @@ export function MobileEventSheet({
                     'px-4 py-3 rounded-2xl bg-red-50',
                     'text-red-600 font-medium text-sm',
                     'active:scale-[0.98] active:bg-red-100',
-                    'transition-all min-h-[48px]'
+                    'transition-[background-color,transform] min-h-[48px]'
                   )}
                 >
                   <Trash2 className="w-4.5 h-4.5" />
@@ -659,7 +669,7 @@ export function MobileEventSheet({
                 'w-full py-4 rounded-2xl font-semibold text-base',
                 'bg-gradient-to-r from-primary-600 to-primary-500 text-white',
                 'shadow-lg shadow-primary-600/25',
-                'active:scale-[0.98] transition-all min-h-[52px]',
+                'active:scale-[0.98] transition-[transform,opacity] min-h-[52px]',
                 isSaving && 'opacity-50'
               )}
             >
@@ -672,7 +682,7 @@ export function MobileEventSheet({
               className={cn(
                 'w-full py-4 rounded-2xl font-semibold text-base',
                 'bg-warm-100 text-warm-700',
-                'active:scale-[0.98] transition-all min-h-[52px]'
+                'active:scale-[0.98] transition-[transform,opacity] min-h-[52px]'
               )}
             >
               Close

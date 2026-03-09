@@ -177,7 +177,7 @@ export function JoinRequestsModal({ onClose }: JoinRequestsModalProps) {
               </div>
               <button
                 onClick={onClose}
-                className="p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors"
                 aria-label="Close"
               >
                 <IconX size={20} />

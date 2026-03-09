@@ -108,6 +108,7 @@ export function useOfflineSync(options: UseOfflineSyncOptions = {}): [OfflineSyn
   const syncIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isSyncingRef = useRef(false);
   const isMountedRef = useRef(true);
+  const performSyncRef = useRef<(() => Promise<void>) | null>(null);
 
   // ============================================================================
   // INITIALIZATION
@@ -153,7 +154,7 @@ export function useOfflineSync(options: UseOfflineSyncOptions = {}): [OfflineSyn
 
         // Auto-sync when back online
         if (syncOnReconnect) {
-          performSync();
+          performSyncRef.current?.();
         }
       }
     };
@@ -185,7 +186,7 @@ export function useOfflineSync(options: UseOfflineSyncOptions = {}): [OfflineSyn
     // Set up periodic sync
     syncIntervalRef.current = setInterval(() => {
       if (state.isOnline && state.pendingCount.total > 0 && !isSyncingRef.current) {
-        performSync();
+        performSyncRef.current?.();
       }
     }, autoSyncInterval);
 
@@ -312,6 +313,8 @@ export function useOfflineSync(options: UseOfflineSyncOptions = {}): [OfflineSyn
       }
     }
   }, [state.isOnline, state.isIndexedDBReady, onSyncComplete]);
+
+  performSyncRef.current = performSync;
 
   // ============================================================================
   // ACTIONS

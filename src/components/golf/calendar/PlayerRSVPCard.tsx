@@ -213,7 +213,7 @@ export function PlayerRSVPCard({
             </p>
 
             {/* Large tap target buttons (≥52px) */}
-            <div className="grid grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
               {RSVP_OPTIONS.map((option) => {
                 const Icon = option.icon;
                 const isSelected = selectedResponse === option.value;

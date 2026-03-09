@@ -104,7 +104,8 @@ export function StrokesGainedRadar({
         width={size}
         height={size}
         viewBox={`0 0 ${size} ${size}`}
-        className="overflow-visible"
+        className="overflow-visible w-full"
+        style={{ maxWidth: size, height: 'auto' }}
       >
         {/* Grid circles */}
         {gridCircles.map((circle, i) => (

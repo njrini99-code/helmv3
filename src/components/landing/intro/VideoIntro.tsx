@@ -14,9 +14,10 @@ export function VideoIntro({
   const videoRef = useRef<HTMLVideoElement>(null)
   const [isRevealing, setIsRevealing] = useState(false)
   const [shouldPlay, setShouldPlay] = useState(false)
+  const shouldPlayRef = useRef(false)
 
   const handleCanPlay = () => {
-    if (!shouldPlay) return
+    if (!shouldPlayRef.current) return
     videoRef.current?.play().catch(() => {})
   }
 
@@ -31,6 +32,7 @@ export function VideoIntro({
     const delay = reduceMotion ? 0 : 2000
     const timer = window.setTimeout(() => {
       setIsRevealing(true)
+      shouldPlayRef.current = true
       setShouldPlay(true)
     }, delay)
 

@@ -158,7 +158,7 @@ function KPICard({
   trend?: 'up' | 'down';
 }) {
   return (
-    <div className="relative overflow-hidden glass-standard rounded-2xl p-5 hover:shadow-glass-md hover:-translate-y-0.5 transition-all duration-200">
+    <div className="relative overflow-clip glass-standard rounded-2xl p-5 hover:shadow-glass-md hover:-translate-y-0.5 transition-[transform,box-shadow] duration-200">
       <ShineEffect />
       <div className="flex items-start justify-between">
         <div>
@@ -210,7 +210,7 @@ function PlayerCard({
   return (
     <button
       onClick={onClick}
-      className="w-full group glass-standard rounded-2xl p-4 hover:shadow-glass-md hover:-translate-y-0.5 hover:bg-white/80 active:bg-white/90 transition-all duration-200 text-left"
+      className="w-full group glass-standard rounded-2xl p-4 hover:shadow-glass-md hover:-translate-y-0.5 hover:bg-white/80 active:bg-white/90 transition-[transform,box-shadow,background-color] duration-200 text-left"
     >
       <div className="flex items-center gap-4">
         {/* Rank badge */}
@@ -987,7 +987,7 @@ export default function StatsClient({
                   onChange={(e) => setSearchQuery(e.target.value)}
                   enterKeyHint="search"
                   autoComplete="off"
-                  className="w-full pl-10 pr-4 py-2 rounded-xl border border-white/40 bg-white/60 text-base md:text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-100 outline-none transition-all"
+                  className="w-full pl-10 pr-4 py-2 rounded-xl border border-white/40 bg-white/60 text-base md:text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-100 outline-none transition-colors"
                 />
               </div>
 
@@ -1017,7 +1017,7 @@ export default function StatsClient({
 
           {/* Player Cards */}
           {filteredPlayers.length === 0 ? (
-            <div className="relative bg-white/70 backdrop-blur-xl rounded-2xl border border-white/30 overflow-hidden p-8 md:p-16 text-center shadow-glass-sm">
+            <div className="relative bg-white/70 backdrop-blur-xl rounded-2xl border border-white/30 overflow-clip p-8 md:p-16 text-center shadow-glass-sm">
               <ShineEffect />
               <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
                 <IconUser size={28} className="text-warm-400" />
@@ -1068,7 +1068,7 @@ export default function StatsClient({
       <button
         onClick={toggleMobile}
         className={cn(
-          'fixed z-50 p-3 rounded-xl bg-white/90 backdrop-blur-sm border border-warm-200 shadow-lg hover:shadow-xl hover:bg-white transition-all group',
+          'fixed z-50 p-3 rounded-xl bg-white/90 backdrop-blur-sm border border-warm-200 shadow-lg hover:shadow-xl hover:bg-white transition-colors group',
           'lg:hidden',
           userRole === 'coach' ? 'left-20' : 'left-4'
         )}
@@ -1083,7 +1083,7 @@ export default function StatsClient({
         <button
           onClick={handleBackClick}
           aria-label="Go back"
-          className="fixed left-4 z-50 p-3 rounded-xl bg-white/90 backdrop-blur-sm border border-warm-200 shadow-lg hover:shadow-xl hover:bg-white transition-all group"
+          className="fixed left-4 z-50 p-3 rounded-xl bg-white/90 backdrop-blur-sm border border-warm-200 shadow-lg hover:shadow-xl hover:bg-white transition-colors group"
           style={{ top: 'max(1rem, env(safe-area-inset-top, 0.5rem))' }}
         >
           <IconChevronLeft size={20} className="text-warm-600 group-hover:text-primary-600 transition-colors" />
@@ -1094,7 +1094,7 @@ export default function StatsClient({
       <button
         onClick={handleRefresh}
         disabled={loadingDetailed}
-        className="fixed right-4 z-50 p-3 rounded-xl bg-white/90 backdrop-blur-sm border border-warm-200 shadow-lg hover:shadow-xl hover:bg-white transition-all group disabled:opacity-50"
+        className="fixed right-4 z-50 p-3 rounded-xl bg-white/90 backdrop-blur-sm border border-warm-200 shadow-lg hover:shadow-xl hover:bg-white transition-colors group disabled:opacity-50"
         style={{ top: 'max(1rem, env(safe-area-inset-top, 0.5rem))' }}
         title="Refresh stats"
         aria-label="Refresh stats"
@@ -1167,7 +1167,7 @@ export default function StatsClient({
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
-              className="relative glass-standard rounded-2xl p-10 md:p-16 text-center overflow-hidden"
+              className="relative glass-standard rounded-2xl p-10 md:p-16 text-center overflow-clip"
             >
               <ShineEffect />
               <m.div
@@ -1224,7 +1224,7 @@ export default function StatsClient({
                 >
                   <a
                     href="/golf/dashboard/rounds/new"
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white rounded-xl font-medium shadow-sm hover:shadow-md transition-all duration-200 min-h-[44px]"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white rounded-xl font-medium shadow-sm hover:shadow-md transition-colors duration-200 min-h-[44px]"
                   >
                     <IconPlus size={16} />
                     Start Your First Round
@@ -1253,7 +1253,7 @@ export default function StatsClient({
                 <a
                   key={round.id}
                   href={`/golf/dashboard/rounds/${round.id}`}
-                  className="flex items-center gap-4 px-4 py-3 rounded-xl bg-white/60 border border-white/30 hover:bg-white/80 active:bg-white/90 hover:shadow-sm transition-all duration-200 group"
+                  className="flex items-center gap-4 px-4 py-3 rounded-xl bg-white/60 border border-white/30 hover:bg-white/80 active:bg-white/90 hover:shadow-sm transition-colors duration-200 group"
                 >
                   <div className={cn('w-11 h-11 rounded-xl flex items-center justify-center font-bold text-lg ring-1', scoreBg, scoreColor)}>
                     {round.total_score ?? '--'}

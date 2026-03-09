@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { PageLoading } from '@/components/ui/loading';
 import { IntelligenceCommandCenter } from '@/components/golf/coachhelm/v2';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
+import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
 
 // ============================================================================
 // METADATA
@@ -71,6 +72,9 @@ export default async function IntelligenceDashboardPage() {
 
   return (
     <div className="flex flex-col min-h-full">
+      <div className="px-4 md:px-6 pt-4 pb-2 lg:hidden">
+        <MobileMenuButton />
+      </div>
       <Suspense fallback={<PageLoading />}>
         <AnimatedPage>
           <AnimatedItem>

@@ -1,5 +1,3 @@
-import { Skeleton } from '@/components/ui/skeleton';
-
 export default function Loading() {
   return (
     <div className="min-h-full">
@@ -8,10 +6,10 @@ export default function Loading() {
         <div className="max-w-7xl mx-auto px-6 py-5">
           <div className="flex items-center justify-between">
             <div>
-              <Skeleton className="h-8 w-40 mb-2" />
-              <Skeleton className="h-4 w-32" />
+              <div className="h-8 w-40 bg-warm-200/60 rounded-lg skeleton-shimmer mb-2" />
+              <div className="h-4 w-32 bg-warm-100/60 rounded skeleton-shimmer" />
             </div>
-            <Skeleton className="h-10 w-32" />
+            <div className="h-10 w-32 bg-warm-200/60 rounded-lg skeleton-shimmer" />
           </div>
         </div>
       </div>
@@ -20,20 +18,20 @@ export default function Loading() {
       <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="glass-standard rounded-2xl p-6">
+            <div key={i} className="glass-standard rounded-2xl overflow-clip p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <Skeleton className="h-6 w-48 mb-2" />
-                  <Skeleton className="h-4 w-full" />
+                  <div className="h-6 w-48 bg-warm-200/60 rounded skeleton-shimmer mb-2" />
+                  <div className="h-4 w-full bg-warm-100/60 rounded skeleton-shimmer" />
                 </div>
-                <Skeleton className="h-6 w-20 rounded-full" />
+                <div className="h-6 w-20 bg-warm-100/60 rounded-full skeleton-shimmer" />
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-full" />
+                <div className="h-4 w-full bg-warm-100/60 rounded skeleton-shimmer" />
+                <div className="h-4 w-full bg-warm-100/60 rounded skeleton-shimmer" />
               </div>
               <div className="mt-4 pt-4 border-t border-warm-100">
-                <Skeleton className="h-4 w-24" />
+                <div className="h-4 w-24 bg-warm-100/60 rounded skeleton-shimmer" />
               </div>
             </div>
           ))}

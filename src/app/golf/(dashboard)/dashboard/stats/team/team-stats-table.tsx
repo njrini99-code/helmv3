@@ -202,7 +202,7 @@ export function TeamStatsTable({ players }: TeamStatsTableProps) {
         />
       </div>
 
-    <div className="relative glass-standard rounded-2xl overflow-hidden">
+    <div className="relative glass-standard rounded-2xl overflow-clip">
       <ShineEffect />
       <div className="overflow-x-auto">
         <table className="w-full">

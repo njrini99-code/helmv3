@@ -137,7 +137,7 @@ const StatComparisonCard = memo(function StatComparisonCard({
   ].filter(Boolean) as Array<{ name: string; value: number; color: string }>;
 
   return (
-    <div className={`relative glass-standard rounded-2xl overflow-hidden ${className}`}>
+    <div className={`relative glass-standard rounded-2xl overflow-clip ${className}`}>
       {/* Shine effect */}
       <div
         className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
@@ -203,7 +203,7 @@ const StatComparisonCard = memo(function StatComparisonCard({
         )}
 
         {/* Comparison details */}
-        <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-warm-100">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-3 pt-3 border-t border-warm-100">
           {/* vs Team */}
           {teamAverage?.value !== null && teamAverage?.value !== undefined && teamComparison && (
             <div className={`flex flex-col items-center p-2 rounded-lg ${getBgClass(teamComparison)}`}>
@@ -384,7 +384,7 @@ export const PeriodComparisonCard = memo(function PeriodComparisonCard({
   ];
 
   return (
-    <div className={`relative glass-standard rounded-2xl overflow-hidden ${className}`}>
+    <div className={`relative glass-standard rounded-2xl overflow-clip ${className}`}>
       <div
         className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
         style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}

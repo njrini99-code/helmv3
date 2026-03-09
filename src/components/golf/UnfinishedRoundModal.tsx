@@ -105,7 +105,7 @@ export function UnfinishedRoundModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 8 }}
             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-            className="glass-prominent rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
+            className="glass-prominent rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto pb-[env(safe-area-inset-bottom,0px)] sm:pb-0"
           >
             {/* Header */}
             <div className="px-6 py-4 border-b border-warm-200/60 flex items-center justify-between">

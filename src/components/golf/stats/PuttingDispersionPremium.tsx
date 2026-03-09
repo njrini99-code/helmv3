@@ -96,7 +96,7 @@ function PuttingGreenVisualization({
   const dots = generateMissDots();
 
   return (
-    <svg viewBox="0 0 200 200" className="w-full max-w-[200px] mx-auto">
+    <svg viewBox="0 0 200 200" className="w-full max-w-[280px] sm:max-w-[200px] mx-auto">
       <defs>
         {/* Green surface gradient */}
         <radialGradient id="puttingGreenGrad" cx="50%" cy="50%" r="50%">
@@ -380,7 +380,7 @@ export const PuttingDispersionPremium = memo(function PuttingDispersionPremium({
       {/* Stats */}
       <div className="px-6 py-5 bg-white border-t border-warm-100">
         {/* Quick stats row */}
-        <div className="grid grid-cols-3 gap-3 mb-5">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-5">
           <div className="text-center p-3 rounded-xl bg-primary-50 border border-primary-200">
             <div className="text-2xl font-bold text-primary-700 tabular-nums">{onePuttsTotal}</div>
             <div className="text-xs font-medium text-warm-600">1-Putts</div>

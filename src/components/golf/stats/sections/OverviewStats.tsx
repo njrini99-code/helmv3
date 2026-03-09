@@ -100,7 +100,7 @@ export function OverviewStats({
       {/* Player Header Card */}
       <motion.div
         variants={sectionVariants}
-        className="relative glass-standard rounded-2xl overflow-hidden p-6"
+        className="relative glass-standard rounded-2xl overflow-clip p-6"
       >
         <div className="flex items-start gap-5">
           {/* Player Avatar */}
@@ -141,7 +141,7 @@ export function OverviewStats({
         </div>
 
         {/* Quick Stats Bar */}
-        <div className="grid grid-cols-3 gap-4 mt-6 pt-5 border-t border-warm-200/60">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-6 pt-5 border-t border-warm-200/60">
           <div className="text-center">
             <div className="text-2xl font-bold text-warm-900 tabular-nums">
               {headlineRounds}
@@ -215,7 +215,7 @@ export function OverviewStats({
                 {stats.strokesGainedTotal >= 0 ? '+' : ''}{stats.strokesGainedTotal.toFixed(2)}
               </span>
             </div>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               {[
                 { label: 'Tee', value: stats.strokesGainedTee },
                 { label: 'Approach', value: stats.strokesGainedApproach },

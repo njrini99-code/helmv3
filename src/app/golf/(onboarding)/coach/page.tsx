@@ -265,9 +265,9 @@ export default function GolfCoachOnboarding() {
     <div className="min-h-dvh bg-auth-golf relative">
       {/* Floating Orbs (CSS-driven, matches login/signup) */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="auth-orb auth-orb-1 w-[400px] h-[400px] sm:w-[500px] sm:h-[500px] -top-24 -right-24 bg-gradient-to-br from-helm-primary-400/40 to-helm-primary-500/25" />
-        <div className="auth-orb auth-orb-2 w-[350px] h-[350px] sm:w-[400px] sm:h-[400px] -bottom-20 -left-20 bg-gradient-to-tr from-helm-primary-400/25 to-helm-primary-400/15" />
-        <div className="auth-orb auth-orb-3 hidden sm:block w-[200px] h-[200px] top-1/3 left-[8%] bg-gradient-to-br from-helm-primary-300/20 to-helm-primary-400/15" />
+        <div className="auth-orb auth-orb-1 w-[400px] h-[400px] sm:w-[500px] sm:h-[500px] -top-24 -right-24 bg-gradient-to-br from-helm-green-400/40 to-helm-green-500/25" />
+        <div className="auth-orb auth-orb-2 w-[350px] h-[350px] sm:w-[400px] sm:h-[400px] -bottom-20 -left-20 bg-gradient-to-tr from-helm-green-400/25 to-helm-green-400/15" />
+        <div className="auth-orb auth-orb-3 hidden sm:block w-[200px] h-[200px] top-1/3 left-[8%] bg-gradient-to-br from-helm-green-300/20 to-helm-green-400/15" />
       </div>
 
       <div className="relative min-h-dvh flex flex-col items-center justify-center p-4 sm:p-6 pb-[calc(1rem+env(safe-area-inset-bottom))]">
@@ -280,7 +280,7 @@ export default function GolfCoachOnboarding() {
             className="mb-6 sm:mb-8"
           >
             <div className="relative">
-              <div className="absolute inset-0 bg-helm-primary-500/25 rounded-full blur-xl scale-150" />
+              <div className="absolute inset-0 bg-helm-green-500/25 rounded-full blur-xl scale-150" />
               <Image
                 src="/helm-golf-logo-transparent.png"
                 alt="GolfHelm"

@@ -17,7 +17,7 @@ import {
   IconActivity,
 } from '@/components/icons';
 import { cn } from '@/lib/utils';
-import { MobileMenuButton } from '@/components/golf/layout/MobileMenuButton';
+import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
@@ -155,7 +155,7 @@ export default async function MyDevelopmentPage() {
       <AnimatedItem>
         <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 md:py-8">
         {(focusAreas || []).length === 0 ? (
-          <div className="relative glass-standard rounded-2xl overflow-hidden p-8 md:p-16 text-center">
+          <div className="relative glass-standard rounded-2xl overflow-clip p-8 md:p-16 text-center">
             <ShineEffect />
             <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
               <IconTarget size={28} className="text-warm-400" />
@@ -193,7 +193,7 @@ export default async function MyDevelopmentPage() {
                     return (
                       <div
                         key={fa.id}
-                        className="relative glass-standard rounded-2xl overflow-hidden hover:shadow-md transition-shadow"
+                        className="relative glass-standard rounded-2xl overflow-clip hover:shadow-md transition-shadow"
                       >
                         <ShineEffect />
                         {/* Colored top accent */}
@@ -306,7 +306,7 @@ export default async function MyDevelopmentPage() {
                     return (
                       <div
                         key={fa.id}
-                        className="relative bg-white/50 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-hidden"
+                        className="relative bg-white/50 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-clip"
                       >
                         <ShineEffect />
                         <div className="p-5">

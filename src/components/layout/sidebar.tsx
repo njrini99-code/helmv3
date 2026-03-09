@@ -284,7 +284,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
       className={cn(
         // Dark sidebar per Batch 3 spec
         'bg-[rgba(28,25,23,0.97)] backdrop-blur-xl',
-        'h-screen flex flex-col relative',
+        'h-dvh flex flex-col relative',
         'transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
         'will-change-[width]',
         isCollapsed ? 'w-[72px]' : 'w-64',
@@ -301,7 +301,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
             'w-10 h-10 rounded-full bg-[#1C1917] border border-white/20',
             'flex items-center justify-center',
             'shadow-lg hover:bg-white/10 active:bg-white/15 hover:border-white/30',
-            'transition-all duration-200',
+            'transition-colors duration-200',
             'focus:outline-none focus:ring-2 focus:ring-primary-500/40'
           )}
         >
@@ -329,7 +329,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
               aria-hidden={!isCollapsed}
               className={cn(
                 'w-10 h-10 flex items-center justify-center flex-shrink-0',
-                'transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+                'transition-[opacity,transform] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
                 isCollapsed ? 'opacity-100 scale-100' : 'opacity-0 scale-75 absolute'
               )}
             >
@@ -347,7 +347,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
             <div
               aria-hidden={isCollapsed}
               className={cn(
-                'flex items-center gap-2 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+                'flex items-center gap-2 transition-[opacity,transform] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
                 isCollapsed ? 'opacity-0 scale-75 absolute' : 'opacity-100 scale-100'
               )}
             >
@@ -409,7 +409,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
                   title={isCollapsed ? item.name : undefined}
                   className={cn(
                     'flex items-center gap-3 py-3 rounded-[10px] text-[13px] font-medium min-h-[44px]',
-                    'transition-all duration-150 ease-out will-change-transform',
+                    'transition-colors duration-150 ease-out will-change-transform',
                     'active:scale-[0.98]',
                     isActive
                       ? 'bg-white/10 text-primary-400 border-l-[3px] border-primary-500'
@@ -428,7 +428,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
                   {/* Text - animates out */}
                   <span
                     className={cn(
-                      'flex-1 whitespace-nowrap transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+                      'flex-1 whitespace-nowrap transition-opacity duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
                       isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
                     )}
                   >
@@ -438,7 +438,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
                   {item.badge && unreadCount > 0 && (
                     <span
                       className={cn(
-                        'flex items-center justify-center text-micro font-semibold bg-primary-600 text-white rounded-full transition-all duration-300',
+                        'flex items-center justify-center text-micro font-semibold bg-primary-600 text-white rounded-full transition-opacity duration-300',
                         isCollapsed
                           ? 'absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1'
                           : 'ml-auto px-1.5 py-0.5'
@@ -474,7 +474,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
                       title={isCollapsed ? item.name : undefined}
                       className={cn(
                         'flex items-center gap-3 py-3 rounded-[10px] text-[13px] font-medium min-h-[44px]',
-                        'transition-all duration-150 ease-out',
+                        'transition-colors duration-150 ease-out',
                         isActive
                           ? 'bg-white/10 text-primary-400 border-l-[3px] border-primary-500'
                           : 'text-white/60 hover:bg-white/5 active:bg-white/10 hover:text-white/90',
@@ -491,7 +491,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
                       />
                       <span
                         className={cn(
-                          'whitespace-nowrap transition-all duration-300',
+                          'whitespace-nowrap transition-opacity duration-300',
                           isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
                         )}
                       >
@@ -525,7 +525,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
                   title={isCollapsed ? item.name : undefined}
                   className={cn(
                     'flex items-center gap-3 py-3 rounded-[10px] text-[13px] font-medium min-h-[44px]',
-                    'transition-all duration-150 ease-out',
+                    'transition-colors duration-150 ease-out',
                     isActive
                       ? 'bg-white/10 text-primary-400'
                       : 'text-white/60 hover:bg-white/5 active:bg-white/10 hover:text-white/90',
@@ -535,7 +535,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
                   <item.icon size={18} className="flex-shrink-0 text-white/50" aria-hidden="true" />
                   <span
                     className={cn(
-                      'whitespace-nowrap transition-all duration-300',
+                      'whitespace-nowrap transition-opacity duration-300',
                       isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
                     )}
                   >
@@ -558,7 +558,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
         <div
           className={cn(
             'rounded-xl bg-white/5 border border-white/10 overflow-hidden',
-            'transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+            'transition-opacity duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
             isCollapsed ? 'h-0 opacity-0 p-0 mb-0 border-0' : 'h-auto opacity-100 p-3 mb-3'
           )}
         >
@@ -572,7 +572,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
         {/* User info */}
         <div
           className={cn(
-            'rounded-xl bg-white/5 overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+            'rounded-xl bg-white/5 overflow-hidden transition-opacity duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
             isCollapsed ? 'h-0 opacity-0 p-0 mb-0' : 'h-auto opacity-100 px-3 py-2.5 mb-2'
           )}
         >
@@ -588,14 +588,14 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
           className={cn(
             'w-full flex items-center gap-3 py-3 rounded-[10px] text-[13px] font-medium min-h-[44px]',
             'text-white/60 hover:bg-red-500/10 hover:text-red-400',
-            'transition-all duration-150 ease-out active:scale-[0.98]',
+            'transition-colors duration-150 ease-out active:scale-[0.98]',
             isCollapsed ? 'justify-center px-2' : 'px-3'
           )}
         >
           <IconLogOut size={18} className="flex-shrink-0 text-white/50" aria-hidden="true" />
           <span
             className={cn(
-              'whitespace-nowrap transition-all duration-300',
+              'whitespace-nowrap transition-opacity duration-300',
               isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
             )}
           >

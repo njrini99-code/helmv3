@@ -42,7 +42,7 @@ export default async function VideoEditPage({ params }: PageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-cream">
+    <div className="min-h-dvh bg-cream">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
         {/* Header */}
         <div className="mb-6">

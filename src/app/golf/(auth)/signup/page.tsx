@@ -7,8 +7,7 @@ import { useSearchParams } from 'next/navigation';
 import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { GolfSignUpForm } from '@/components/auth/golf-sign-up-form';
 import { isNativeApp } from '@/lib/utils/capacitor';
-
-const ACCESS_CODE = '1881';
+import { validateAccessCode } from '@/app/golf/actions/access-code';
 
 // Component to render sign-in link with returnTo param preserved
 function SignInLink() {
@@ -32,9 +31,10 @@ export default function SignupPage() {
   const [code, setCode] = useState('');
   const [codeError, setCodeError] = useState(false);
 
-  function handleCodeSubmit(e: React.FormEvent) {
+  async function handleCodeSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (code.trim() === ACCESS_CODE) {
+    const isValid = await validateAccessCode(code);
+    if (isValid) {
       setAccessGranted(true);
       setCodeError(false);
     } else {

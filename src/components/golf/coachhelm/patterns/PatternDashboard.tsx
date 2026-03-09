@@ -199,47 +199,47 @@ export function PatternDashboard({
       {/* Controls */}
       <div className="flex flex-wrap items-center gap-3">
         {/* View mode tabs */}
-        <div className="flex bg-white/50 rounded-lg p-1 border border-white/20">
+        <div className="flex bg-white/50 rounded-lg p-1 border border-white/20 overflow-x-auto scrollbar-none">
           <button
             onClick={() => setViewMode('all')}
             className={cn(
-              'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
+              'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap',
               viewMode === 'all'
                 ? 'bg-white text-warm-900 shadow-sm'
                 : 'text-warm-600 hover:text-warm-900'
             )}
           >
             <IconList size={16} />
-            All Patterns
+            <span className="hidden sm:inline">All Patterns</span><span className="sm:hidden">All</span>
           </button>
           <button
             onClick={() => setViewMode('by-player')}
             className={cn(
-              'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
+              'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap',
               viewMode === 'by-player'
                 ? 'bg-white text-warm-900 shadow-sm'
                 : 'text-warm-600 hover:text-warm-900'
             )}
           >
             <IconUsers size={16} />
-            By Player
+            <span className="hidden sm:inline">By Player</span><span className="sm:hidden">Player</span>
           </button>
           <button
             onClick={() => setViewMode('by-type')}
             className={cn(
-              'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
+              'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap',
               viewMode === 'by-type'
                 ? 'bg-white text-warm-900 shadow-sm'
                 : 'text-warm-600 hover:text-warm-900'
             )}
           >
             <IconLayoutGrid size={16} />
-            By Type
+            <span className="hidden sm:inline">By Type</span><span className="sm:hidden">Type</span>
           </button>
           <button
             onClick={() => setViewMode('timeline')}
             className={cn(
-              'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
+              'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap',
               viewMode === 'timeline'
                 ? 'bg-white text-warm-900 shadow-sm'
                 : 'text-warm-600 hover:text-warm-900'

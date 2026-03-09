@@ -126,21 +126,21 @@ export default function GolfTasksPage() {
       <div className="min-h-full bg-transparent">
         <div className="max-w-4xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6">
           <div className="flex items-center justify-between">
-            <div className="h-7 w-28 skeleton-sweep rounded-lg" />
-            <div className="h-9 w-24 skeleton-sweep rounded-lg" />
+            <div className="h-7 w-28 skeleton-shimmer rounded-lg" />
+            <div className="h-9 w-24 skeleton-shimmer rounded-lg" />
           </div>
           <div className="flex gap-2">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-8 w-20 skeleton-sweep rounded-full" />
+              <div key={i} className="h-8 w-20 skeleton-shimmer rounded-full" />
             ))}
           </div>
           {[...Array(4)].map((_, i) => (
             <div key={i} className="bg-white/70 rounded-2xl border border-white/20 p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <div className="h-4 w-48 skeleton-sweep rounded" />
-                <div className="h-5 w-16 skeleton-sweep rounded-full" />
+                <div className="h-4 w-48 skeleton-shimmer rounded" />
+                <div className="h-5 w-16 skeleton-shimmer rounded-full" />
               </div>
-              <div className="h-3 w-32 skeleton-sweep rounded" />
+              <div className="h-3 w-32 skeleton-shimmer rounded" />
             </div>
           ))}
         </div>
@@ -297,7 +297,7 @@ export default function GolfTasksPage() {
                 className="sticky top-6"
               >
                 {/* Templates Section */}
-                <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/20 shadow-lg overflow-hidden">
+                <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/20 shadow-lg overflow-clip">
                   <button
                     onClick={() => setShowTemplates(!showTemplates)}
                     className="w-full flex items-center justify-between p-4 hover:bg-warm-50/50 transition-colors"

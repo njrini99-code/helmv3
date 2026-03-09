@@ -436,7 +436,7 @@ export const ApproachDispersionPremium = memo(function ApproachDispersionPremium
             <div className="text-xs font-semibold text-warm-400 uppercase tracking-wide mb-3">
               Miss Pattern
             </div>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               {misses.map(({ type, pct }) => (
                 <StatPill
                   key={type}

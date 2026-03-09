@@ -84,7 +84,7 @@ export function PlayerAttendanceRow({
     <div
       className={cn(
         'flex items-center gap-3 p-3 bg-white rounded-xl border border-warm-200',
-        'transition-all duration-200',
+        'transition-colors duration-200',
         isPresent && 'bg-primary-50 border-primary-200',
         isAbsent && !isExcused && 'bg-rose-50 border-rose-200',
         isExcused && 'bg-amber-50 border-amber-200',
@@ -166,7 +166,7 @@ export function PlayerAttendanceRow({
           disabled={disabled || loading}
           className={cn(
             'min-w-[52px] min-h-[52px] rounded-xl flex items-center justify-center',
-            'transition-all duration-200',
+            'transition-[color,background-color,transform,box-shadow] duration-200',
             'touch-manipulation',
             'active:scale-95',
             isPresent
@@ -188,7 +188,7 @@ export function PlayerAttendanceRow({
           disabled={disabled || loading}
           className={cn(
             'min-w-[52px] min-h-[52px] rounded-xl flex items-center justify-center',
-            'transition-all duration-200',
+            'transition-[color,background-color,transform,box-shadow] duration-200',
             'touch-manipulation',
             'active:scale-95',
             isAbsent
@@ -262,7 +262,7 @@ export function CompactPlayerAttendanceRow({
           onClick={onMarkPresent}
           className={cn(
             'min-w-[44px] min-h-[44px] p-2 rounded-lg',
-            'transition-all active:scale-95',
+            'transition-[color,background-color,transform] active:scale-95',
             isPresent
               ? 'bg-primary-600 text-white'
               : 'bg-primary-50 text-primary-700 hover:bg-primary-100'
@@ -278,7 +278,7 @@ export function CompactPlayerAttendanceRow({
           onClick={onMarkAbsent}
           className={cn(
             'min-w-[44px] min-h-[44px] p-2 rounded-lg',
-            'transition-all active:scale-95',
+            'transition-[color,background-color,transform] active:scale-95',
             isAbsent
               ? 'bg-rose-500 text-white'
               : 'bg-rose-50 text-rose-700 hover:bg-rose-100'

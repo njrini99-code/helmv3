@@ -121,7 +121,7 @@ export function InsightBulkActions({
             exit={{ opacity: 0, y: 20 }}
             transition={{ type: 'spring', damping: 25, stiffness: 400 }}
             className={cn(
-              'fixed bottom-6 left-1/2 -translate-x-1/2 z-40',
+              'fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] lg:bottom-6 left-1/2 -translate-x-1/2 z-40 pb-[env(safe-area-inset-bottom)]',
               'w-full max-w-2xl px-4',
               className
             )}

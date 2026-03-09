@@ -64,7 +64,7 @@ export function CompareBar({
   return (
     <div
       className={cn(
-        'fixed bottom-6 left-1/2 -translate-x-1/2 z-50',
+        'fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pb-[env(safe-area-inset-bottom)]',
         'flex items-center gap-4 px-5 py-3 rounded-2xl',
         'bg-slate-900/95 backdrop-blur-lg border border-slate-700/50',
         'shadow-2xl shadow-black/20',

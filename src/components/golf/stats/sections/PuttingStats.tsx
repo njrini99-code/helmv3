@@ -201,7 +201,7 @@ export function PuttingStats({ stats }: { stats: GolfStats }) {
             {/* Miss Direction for Selected Break */}
             <div className="bg-warm-50 rounded-lg p-4">
               <div className="text-sm font-semibold text-warm-700 mb-3">Miss Direction</div>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                 <div className="text-center p-2 bg-white rounded">
                   <div className="text-lg font-bold text-warm-700">
                     {formatStat(stats.puttingByBreak[selectedBreak].missShortPct, '%', 0)}

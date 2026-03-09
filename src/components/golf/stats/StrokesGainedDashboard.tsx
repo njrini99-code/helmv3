@@ -99,7 +99,7 @@ export function StrokesGainedDashboard({
   return (
     <div className={cn('space-y-6', className)}>
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="text-xl font-semibold text-warm-900">Strokes Gained Analysis</h2>
           <p className="text-sm text-warm-500">
@@ -108,7 +108,7 @@ export function StrokesGainedDashboard({
         </div>
 
         {/* Quick summary badges */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <div
             className={cn(
               'px-3 py-1.5 rounded-full text-sm font-medium',
@@ -381,8 +381,9 @@ export function StrokesGainedDashboard({
                   />
 
                   {/* Detailed comparison table */}
+                  <div className="overflow-x-auto -mx-1 px-1">
                   <div className="border rounded-lg overflow-hidden">
-                    <table className="w-full">
+                    <table className="w-full min-w-[480px]">
                       <thead className="bg-white/40">
                         <tr>
                           <th className="text-left px-4 py-2 text-sm font-medium text-warm-700">
@@ -440,6 +441,7 @@ export function StrokesGainedDashboard({
                         })}
                       </tbody>
                     </table>
+                  </div>
                   </div>
                 </div>
               </CardContent>

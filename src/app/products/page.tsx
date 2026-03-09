@@ -88,7 +88,7 @@ export default function ProductsPage() {
                 <button
                   className="w-full sm:w-auto flex items-center gap-4 px-5 py-3.5 rounded-xl
                            bg-white border border-warm-200 shadow-sm
-                           hover:border-helm-primary-300 hover:shadow-md active:scale-[0.98] transition-all
+                           hover:border-helm-green-300 hover:shadow-md active:scale-[0.98] transition-all
                            focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:ring-offset-2"
                 >
                   <div className="w-11 h-11 relative flex-shrink-0">

@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=1080">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'DM Sans', sans-serif; overflow: hidden; }
+
+    .canvas {
+      width: 1080px;
+      height: 1350px;
+      position: relative;
+      background: linear-gradient(to bottom, #0f172a, #020617);
+      overflow: hidden;
+    }
+
+    /* Aurora glow */
+    .canvas::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 40%, rgba(22, 163, 74, 0.18), transparent 65%);
+      pointer-events: none;
+    }
+
+    /* Subtle secondary glow */
+    .canvas::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 30% 70%, rgba(22, 163, 74, 0.06), transparent 50%),
+                  radial-gradient(ellipse at 70% 20%, rgba(22, 163, 74, 0.04), transparent 40%);
+      pointer-events: none;
+    }
+
+    /* Noise overlay */
+    .noise {
+      position: absolute;
+      inset: 0;
+      opacity: 0.04;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    /* Top bar */
+    .top-bar {
+      position: absolute;
+      top: 48px;
+      left: 60px;
+      right: 60px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 10;
+    }
+
+    .wordmark {
+      font-size: 26px;
+      font-weight: 700;
+      color: #FFFEFA;
+      letter-spacing: -0.02em;
+    }
+    .wordmark span {
+      color: #22c55e;
+    }
+
+    .ai-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(22, 163, 74, 0.15);
+      border: 1px solid rgba(22, 163, 74, 0.3);
+      border-radius: 9999px;
+      padding: 6px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #4ade80;
+      letter-spacing: 0.02em;
+    }
+    .ai-badge::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #4ade80;
+      box-shadow: 0 0 8px rgba(74, 222, 128, 0.6);
+    }
+
+    /* Hero card */
+    .hero-card {
+      position: absolute;
+      top: 130px;
+      left: 60px;
+      right: 60px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 24px;
+      padding: 36px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08);
+      z-index: 10;
+    }
+
+    .hero-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+    .header-icon-box {
+      width: 32px;
+      height: 32px;
+      border-radius: 9px;
+      background: rgba(22, 163, 74, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .header-icon-box svg {
+      width: 17px;
+      height: 17px;
+      color: #4ade80;
+    }
+    .hero-header h2 {
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.5);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .ai-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      color: #4ade80;
+      background: rgba(22, 163, 74, 0.12);
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid rgba(22, 163, 74, 0.25);
+      flex-shrink: 0;
+    }
+    .hero-header .line {
+      flex: 1;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    /* Top row: Prediction + Pattern */
+    .top-row {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .prediction-card {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+    .prediction-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.4);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .prediction-score {
+      font-size: 64px;
+      font-weight: 700;
+      color: #FFFEFA;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+    .prediction-meta {
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .prediction-range {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.5);
+      font-weight: 400;
+    }
+    .confidence-bar-wrap {
+      margin-top: 6px;
+    }
+    .confidence-label {
+      font-size: 12px;
+      color: #4ade80;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .confidence-bar-bg {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 9999px;
+      overflow: hidden;
+    }
+    .confidence-bar-fill {
+      width: 78%;
+      height: 100%;
+      background: linear-gradient(90deg, #16a34a, #4ade80);
+      border-radius: 9999px;
+    }
+
+    .pattern-card {
+      flex: 1.1;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+      display: flex;
+      flex-direction: column;
+    }
+    .pattern-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.4);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+    .pattern-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .pattern-item:last-child {
+      margin-bottom: 0;
+    }
+    .pattern-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-top: 5px;
+      flex-shrink: 0;
+    }
+    .pattern-dot.red { background: #ef4444; box-shadow: 0 0 6px rgba(239, 68, 68, 0.4); }
+    .pattern-dot.amber { background: #f59e0b; box-shadow: 0 0 6px rgba(245, 158, 11, 0.4); }
+    .pattern-dot.green { background: #22c55e; box-shadow: 0 0 6px rgba(34, 197, 94, 0.4); }
+    .pattern-text {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.75);
+      line-height: 1.45;
+      font-weight: 400;
+    }
+    .pattern-players {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.35);
+      font-weight: 500;
+      margin-top: 2px;
+    }
+
+    /* Insight cards */
+    .insights-section {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .insight-card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 14px;
+      padding: 18px 20px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+    }
+    .insight-icon {
+      flex-shrink: 0;
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+    }
+    .insight-icon svg {
+      width: 20px;
+      height: 20px;
+    }
+    .insight-icon.green {
+      background: rgba(22, 163, 74, 0.15);
+      color: #4ade80;
+    }
+    .insight-icon.amber {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+    }
+    .insight-icon.blue {
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+    }
+    .insight-content {
+      flex: 1;
+      min-width: 0;
+    }
+    .insight-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.9);
+      margin-bottom: 3px;
+      line-height: 1.3;
+    }
+    .insight-desc {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.4);
+      font-weight: 400;
+      line-height: 1.4;
+    }
+    .insight-badge {
+      flex-shrink: 0;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      letter-spacing: -0.01em;
+    }
+    .insight-badge.positive {
+      background: rgba(22, 163, 74, 0.15);
+      color: #4ade80;
+    }
+    .insight-badge.negative {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+    }
+    .insight-badge.neutral {
+      background: rgba(255, 255, 255, 0.08);
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    /* Bottom section */
+    .bottom-section {
+      position: absolute;
+      bottom: 140px;
+      left: 60px;
+      right: 60px;
+      z-index: 10;
+    }
+
+    .headline {
+      font-size: 58px;
+      font-weight: 700;
+      color: #FFFEFA;
+      letter-spacing: -0.03em;
+      line-height: 1.05;
+      margin-bottom: 16px;
+    }
+    .headline em {
+      font-style: normal;
+      background: linear-gradient(135deg, #22c55e, #4ade80);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtext {
+      font-size: 19px;
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.45);
+      line-height: 1.5;
+      margin-bottom: 32px;
+      max-width: 640px;
+    }
+
+    .cta-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #16a34a 0%, #22c55e 50%, #4ade80 100%);
+      color: white;
+      font-size: 17px;
+      font-weight: 600;
+      padding: 14px 32px;
+      border-radius: 12px;
+      border: none;
+      box-shadow: 0 4px 16px rgba(22, 163, 74, 0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+      letter-spacing: -0.01em;
+    }
+    .cta-arrow {
+      font-size: 18px;
+      opacity: 0.9;
+    }
+
+    /* Subtle glow behind hero card */
+    .hero-glow {
+      position: absolute;
+      top: 200px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 700px;
+      height: 500px;
+      background: radial-gradient(ellipse, rgba(22, 163, 74, 0.12), transparent 70%);
+      pointer-events: none;
+      z-index: 5;
+    }
+  </style>
+</head>
+<body>
+  <div class="canvas">
+    <div class="noise"></div>
+
+    <!-- Aurora glow behind card -->
+    <div class="hero-glow"></div>
+
+    <!-- Top bar -->
+    <div class="top-bar">
+      <div class="wordmark">Golf<span>Helm</span></div>
+      <div class="ai-badge">CoachHelm AI</div>
+    </div>
+
+    <!-- Hero Intelligence Card -->
+    <div class="hero-card">
+      <div class="hero-header">
+        <div class="header-icon-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3l1.5 5.5L19 10l-5.5 1.5L12 17l-1.5-5.5L5 10l5.5-1.5L12 3z"/>
+            <path d="M19 15l.5 1.5L21 17l-1.5.5L19 19l-.5-1.5L17 17l1.5-.5L19 15z"/>
+          </svg>
+        </div>
+        <h2>Team Intelligence</h2>
+        <div class="ai-chip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px;">
+            <path d="M12 3l1.5 5.5L19 10l-5.5 1.5L12 17l-1.5-5.5L5 10l5.5-1.5L12 3z"/>
+          </svg>
+          AI Powered
+        </div>
+        <div class="line"></div>
+      </div>
+
+      <!-- Top row: Prediction + Patterns -->
+      <div class="top-row">
+        <div class="prediction-card">
+          <div class="prediction-label">Next Round Prediction</div>
+          <div class="prediction-score">73</div>
+          <div class="prediction-meta">
+            <div class="prediction-range">Range: 70–76 &nbsp;·&nbsp; ±1.2 vs avg</div>
+            <div class="confidence-bar-wrap">
+              <div class="confidence-label">78% confidence</div>
+              <div class="confidence-bar-bg">
+                <div class="confidence-bar-fill"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="pattern-card">
+          <div class="pattern-label">Detected Patterns</div>
+          <div class="pattern-item">
+            <div class="pattern-dot red"></div>
+            <div>
+              <div class="pattern-text">Three-putt rate up 40% on back 9</div>
+              <div class="pattern-players">Across 6 players · Last 3 weeks</div>
+            </div>
+          </div>
+          <div class="pattern-item">
+            <div class="pattern-dot green"></div>
+            <div>
+              <div class="pattern-text">Short game consistency improving team-wide</div>
+              <div class="pattern-players">Scrambling +8% · Last 10 rounds</div>
+            </div>
+          </div>
+          <div class="pattern-item">
+            <div class="pattern-dot amber"></div>
+            <div>
+              <div class="pattern-text">Tee accuracy declining in tournaments</div>
+              <div class="pattern-players">4 players · Tournament rounds only</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Insight cards -->
+      <div class="insights-section">
+        <div class="insight-card">
+          <div class="insight-icon green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 9H4a2 2 0 01-2-2V5a2 2 0 012-2h2"/>
+              <path d="M18 9h2a2 2 0 002-2V5a2 2 0 00-2-2h-2"/>
+              <path d="M6 3h12v7a6 6 0 01-12 0V3z"/>
+              <path d="M9 21h6"/><path d="M12 17v4"/>
+            </svg>
+          </div>
+          <div class="insight-content">
+            <div class="insight-title">Short game is your weapon right now</div>
+            <div class="insight-desc">Up-and-down conversion from 30–40 yds jumped to 68%</div>
+          </div>
+          <div class="insight-badge positive">+0.8 SG</div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-icon blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+              <polyline points="17 6 23 6 23 12"/>
+            </svg>
+          </div>
+          <div class="insight-content">
+            <div class="insight-title">Tee-to-green at season best</div>
+            <div class="insight-desc">FW + GIR combo rate hit 52% — up from 41% at start</div>
+          </div>
+          <div class="insight-badge positive">+1.2 SG</div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-icon amber">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+          </div>
+          <div class="insight-content">
+            <div class="insight-title">Mid-range putting inconsistent</div>
+            <div class="insight-desc">8–15 ft make rate dropped to 18% over last 5 rounds</div>
+          </div>
+          <div class="insight-badge negative">-0.4 SG</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom section -->
+    <div class="bottom-section">
+      <div class="headline">Intelligence That<br/><em>Coaches</em></div>
+      <div class="subtext">AI-powered patterns, predictions, and insights your team needs to compete.</div>
+      <div class="cta-button">See It In Action <span class="cta-arrow">→</span></div>
+    </div>
+  </div>
+</body>
+</html>

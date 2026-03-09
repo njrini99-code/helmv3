@@ -112,7 +112,7 @@ function MessagesContent() {
 
   if (conversationsLoading) {
     return (
-      <div className="h-[calc(100vh-64px)] flex bg-[#FAF6F1]">
+      <div className="h-[calc(100dvh-64px)] flex bg-[#FAF6F1]">
         {/* Conversation list skeleton */}
         <div className="w-full lg:w-80 xl:w-96 flex-shrink-0 border-r border-slate-200 bg-white">
           <div className="p-4 border-b border-slate-200">
@@ -140,7 +140,7 @@ function MessagesContent() {
   }
 
   return (
-    <div className="h-[calc(100vh-64px)] flex bg-[#FAF6F1]">
+    <div className="h-[calc(100dvh-64px)] flex bg-[#FAF6F1]">
       {/* Conversation List - Hidden on mobile when viewing chat */}
       <div className={cn(
         'w-full lg:w-80 xl:w-96 flex-shrink-0 border-r border-slate-200',
@@ -194,7 +194,7 @@ function MessagesContent() {
 export default function MessagesPage() {
   return (
     <Suspense fallback={
-      <div className="h-[calc(100vh-64px)] flex items-center justify-center bg-[#FAF6F1]">
+      <div className="h-[calc(100dvh-64px)] flex items-center justify-center bg-[#FAF6F1]">
         <Loading />
       </div>
     }>

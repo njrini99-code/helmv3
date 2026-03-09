@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 /**
@@ -36,8 +36,8 @@ export interface QualifierDetails {
   description: string | null;
   course_name: string | null;
   course_id: string | null;
-  num_rounds: number;
-  holes_per_round: number;
+  num_rounds?: number | null;
+  holes_per_round?: number | null;
   start_date: string;
   end_date: string | null;
   entry_deadline: string | null;
@@ -74,7 +74,7 @@ export function useQualifierRealtime(qualifierId: string | null): UseQualifierRe
   const [coursePar, setCoursePar] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   const fetchQualifierData = useCallback(async () => {
     if (!qualifierId) {
@@ -138,15 +138,16 @@ export function useQualifierRealtime(qualifierId: string | null): UseQualifierRe
       }>();
 
       for (const round of roundsData || []) {
+        // Only count completed rounds for scoring aggregates
+        if (round.status !== 'completed') continue;
+
         const existing = playerRoundAggregates.get(round.player_id) ?? {
           roundsCompleted: 0,
           totalScore: 0,
           totalToPar: 0,
         };
 
-        if (round.status === 'completed') {
-          existing.roundsCompleted += 1;
-        }
+        existing.roundsCompleted += 1;
         existing.totalScore += round.total_score ?? 0;
         existing.totalToPar += round.score_to_par ?? 0;
 
@@ -254,7 +255,8 @@ export function useQualifierRealtime(qualifierId: string | null): UseQualifierRe
         },
         (payload) => {
           // Update qualifier status in place
-          setQualifier((prev) => prev ? { ...prev, ...payload.new } as QualifierDetails : null);
+          const update = payload.new as Partial<QualifierDetails>;
+          setQualifier((prev) => prev ? { ...prev, ...update } : null);
         }
       )
       .subscribe();
@@ -284,7 +286,7 @@ export function useTeamQualifiersRealtime(teamId: string | null) {
   const [qualifiers, setQualifiers] = useState<QualifierDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   const fetchQualifiers = useCallback(async () => {
     if (!teamId) {
@@ -301,7 +303,7 @@ export function useTeamQualifiersRealtime(teamId: string | null) {
         .from('golf_qualifiers')
         .select('*')
         .eq('team_id', teamId)
-        .in('status', ['scheduled', 'in_progress'])
+        .in('status', ['upcoming', 'in_progress'])
         .order('start_date', { ascending: true });
 
       if (fetchError) throw fetchError;

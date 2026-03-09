@@ -235,7 +235,7 @@ export function InsightDrillDownModal({
                 )}
 
                 {/* Quick stats */}
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="bg-warm-50 rounded-lg p-3 text-center">
                     <p className="text-2xl font-semibold text-warm-900">
                       {Math.round(insight.confidence * 100)}%

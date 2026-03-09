@@ -280,7 +280,7 @@ export function CardSkeleton({ rows = 4 }: { rows?: number }) {
 
 export function TableSkeleton({ rows = 5, cols = 4 }: { rows?: number; cols?: number }) {
   return (
-    <div className="glass-standard rounded-2xl overflow-hidden animate-pulse">
+    <div className="glass-standard rounded-2xl overflow-clip animate-pulse">
       {/* Header */}
       <div className="px-6 py-4 border-b border-warm-100 flex gap-4">
         {Array.from({ length: cols }).map((_, i) => (

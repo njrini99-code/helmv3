@@ -93,7 +93,7 @@ export function TeamStatsChart({ data, loading }: TeamStatsChartProps) {
 
   if (loading) {
     return (
-      <div className="lg:col-span-2 relative glass-standard rounded-2xl overflow-hidden">
+      <div className="lg:col-span-2 relative glass-standard rounded-2xl overflow-clip">
         <ShineEffect />
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100/50">
           <div className="flex items-center gap-3">
@@ -117,7 +117,7 @@ export function TeamStatsChart({ data, loading }: TeamStatsChartProps) {
   }
 
   return (
-    <div className="lg:col-span-2 relative glass-standard rounded-2xl overflow-hidden">
+    <div className="lg:col-span-2 relative glass-standard rounded-2xl overflow-clip">
       <ShineEffect />
       
       {/* Header */}

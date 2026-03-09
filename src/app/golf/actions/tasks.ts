@@ -422,8 +422,10 @@ export async function createTask(
         .single();
 
       if (!team) {
-        return { success: false, error: 'Not authorized to create tasks for this team' };
+        return { success: false, error: 'Not authorized for this team' };
       }
+    } else {
+      return { success: false, error: 'Coach profile is not associated with an organization' };
     }
 
     // Create the task
@@ -557,8 +559,10 @@ export async function deleteTask(taskId: string): Promise<ActionResult> {
         .single();
 
       if (!team) {
-        return { success: false, error: 'Not authorized to delete this task' };
+        return { success: false, error: 'Not authorized for this team' };
       }
+    } else {
+      return { success: false, error: 'Coach profile is not associated with an organization' };
     }
 
     // Delete task (assignments should cascade delete via FK)
@@ -631,8 +635,10 @@ export async function setTaskReminder(
         .single();
 
       if (!team) {
-        return { success: false, error: 'Not authorized to modify this task' };
+        return { success: false, error: 'Not authorized for this team' };
       }
+    } else {
+      return { success: false, error: 'Coach profile is not associated with an organization' };
     }
 
     // Update task with reminder
@@ -701,8 +707,10 @@ export async function clearTaskReminder(taskId: string): Promise<ActionResult> {
         .single();
 
       if (!team) {
-        return { success: false, error: 'Not authorized to modify this task' };
+        return { success: false, error: 'Not authorized for this team' };
       }
+    } else {
+      return { success: false, error: 'Coach profile is not associated with an organization' };
     }
 
     // Update task to clear reminder
@@ -819,8 +827,10 @@ export async function createTaskTemplate(
         .single();
 
       if (!team) {
-        return { success: false, error: 'Not authorized to create templates for this team' };
+        return { success: false, error: 'Not authorized for this team' };
       }
+    } else {
+      return { success: false, error: 'Coach profile is not associated with an organization' };
     }
 
     // Create template
@@ -910,8 +920,10 @@ export async function updateTaskTemplate(
         .single();
 
       if (!team) {
-        return { success: false, error: 'Not authorized to update this template' };
+        return { success: false, error: 'Not authorized for this team' };
       }
+    } else {
+      return { success: false, error: 'Coach profile is not associated with an organization' };
     }
 
     // Build update object
@@ -988,8 +1000,10 @@ export async function deleteTaskTemplate(templateId: string): Promise<ActionResu
         .single();
 
       if (!team) {
-        return { success: false, error: 'Not authorized to delete this template' };
+        return { success: false, error: 'Not authorized for this team' };
       }
+    } else {
+      return { success: false, error: 'Coach profile is not associated with an organization' };
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

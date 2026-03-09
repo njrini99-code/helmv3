@@ -272,7 +272,7 @@ export default function GolfSettingsPage() {
       <div className="max-w-2xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6">
         {/* Profile Card */}
         <AnimatedItem>
-          <div className="relative glass-standard rounded-2xl overflow-hidden p-5">
+          <div className="relative glass-standard rounded-2xl overflow-clip p-5">
             <ShineEffect />
             <div className="flex items-center gap-4">
               <Avatar src={profile.avatarUrl} name={profile.name} size="lg" />
@@ -295,7 +295,7 @@ export default function GolfSettingsPage() {
         {/* Account */}
         <AnimatedItem>
           <SectionHeader>Account</SectionHeader>
-          <div className="glass-standard rounded-2xl overflow-hidden relative">
+          <div className="glass-standard rounded-2xl overflow-clip relative">
             <ShineEffect />
             <SettingsExpandableRow
               icon={<IconUser size={18} />}
@@ -333,7 +333,7 @@ export default function GolfSettingsPage() {
         {/* Preferences */}
         <AnimatedItem>
           <SectionHeader>Preferences</SectionHeader>
-          <div className="glass-standard rounded-2xl overflow-hidden relative">
+          <div className="glass-standard rounded-2xl overflow-clip relative">
             <ShineEffect />
             <SettingsExpandableRow
               icon={<IconBell size={18} />}
@@ -382,7 +382,7 @@ export default function GolfSettingsPage() {
         {profile.role === 'coach' && profile.teamId && (
           <AnimatedItem>
             <SectionHeader>Golf Settings</SectionHeader>
-            <div className="glass-standard rounded-2xl overflow-hidden relative">
+            <div className="glass-standard rounded-2xl overflow-clip relative">
               <ShineEffect />
               <SettingsExpandableRow
                 icon={<IconSettings size={18} />}
@@ -402,7 +402,7 @@ export default function GolfSettingsPage() {
         {profile.role === 'player' && profile.playerId && (
           <AnimatedItem>
             <SectionHeader>Golf Profile</SectionHeader>
-            <div className="glass-standard rounded-2xl overflow-hidden relative">
+            <div className="glass-standard rounded-2xl overflow-clip relative">
               <ShineEffect />
               <SettingsExpandableRow
                 icon={<IconSettings size={18} />}
@@ -426,7 +426,7 @@ export default function GolfSettingsPage() {
         {profile.role === 'coach' && profile.coachId && (
           <AnimatedItem>
             <SectionHeader>AI Features</SectionHeader>
-            <div className="glass-standard rounded-2xl overflow-hidden p-4 relative">
+            <div className="glass-standard rounded-2xl overflow-clip p-4 relative">
               <ShineEffect />
               <CoachHelmToggle coachId={profile.coachId} />
             </div>
@@ -437,7 +437,7 @@ export default function GolfSettingsPage() {
         <AnimatedItem>
           <SectionHeader>Team</SectionHeader>
           {profile.role === 'coach' && (
-            <div className="glass-standard rounded-2xl overflow-hidden relative">
+            <div className="glass-standard rounded-2xl overflow-clip relative">
               <ShineEffect />
               <SettingsExpandableRow
                 icon={<IconUsers size={18} />}
@@ -471,7 +471,7 @@ export default function GolfSettingsPage() {
         {/* Legal */}
         <AnimatedItem>
           <SectionHeader>Legal</SectionHeader>
-          <div className="glass-standard rounded-2xl overflow-hidden relative">
+          <div className="glass-standard rounded-2xl overflow-clip relative">
             <ShineEffect />
             <SettingsLinkRow
               icon={<IconShield size={18} />}
@@ -492,7 +492,7 @@ export default function GolfSettingsPage() {
         {/* Danger Zone */}
         <AnimatedItem>
           <SectionHeader>Danger Zone</SectionHeader>
-          <div className="glass-standard rounded-2xl overflow-hidden p-5 relative">
+          <div className="glass-standard rounded-2xl overflow-clip p-5 relative">
             <ShineEffect />
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
@@ -512,7 +512,7 @@ export default function GolfSettingsPage() {
         <AnimatedItem>
           <button
             onClick={handleSignOut}
-            className="relative w-full glass-standard rounded-2xl overflow-hidden p-4 flex items-center gap-3 hover:border-red-200 hover:bg-red-50/50 transition-all group"
+            className="relative w-full glass-standard rounded-2xl overflow-clip p-4 flex items-center gap-3 hover:border-red-200 hover:bg-red-50/50 transition-colors group"
           >
             <ShineEffect />
             <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center group-hover:bg-red-100 transition-colors">
@@ -1028,7 +1028,7 @@ function AppearancePanel() {
               key={opt}
               onClick={() => setDensity(opt)}
               className={cn(
-                'p-3 rounded-lg border-2 text-left transition-all',
+                'p-3 rounded-lg border-2 text-left transition-colors',
                 density === opt ? 'border-primary-600 bg-primary-50' : 'border-warm-200 hover:border-warm-300'
               )}
             >
@@ -1052,7 +1052,7 @@ function AppearancePanel() {
               key={val}
               onClick={() => setDateFormat(val)}
               className={cn(
-                'w-full p-2.5 rounded-lg border-2 text-left text-sm flex justify-between items-center transition-all',
+                'w-full p-2.5 rounded-lg border-2 text-left text-sm flex justify-between items-center transition-colors',
                 dateFormat === val ? 'border-primary-600 bg-primary-50' : 'border-warm-200 hover:border-warm-300'
               )}
             >
@@ -1070,7 +1070,7 @@ function AppearancePanel() {
           <button
             onClick={() => setScoreDisplay('to_par')}
             className={cn(
-              'p-3 rounded-lg border-2 text-left transition-all',
+              'p-3 rounded-lg border-2 text-left transition-colors',
               scoreDisplay === 'to_par' ? 'border-primary-600 bg-primary-50' : 'border-warm-200 hover:border-warm-300'
             )}
           >
@@ -1080,7 +1080,7 @@ function AppearancePanel() {
           <button
             onClick={() => setScoreDisplay('raw')}
             className={cn(
-              'p-3 rounded-lg border-2 text-left transition-all',
+              'p-3 rounded-lg border-2 text-left transition-colors',
               scoreDisplay === 'raw' ? 'border-primary-600 bg-primary-50' : 'border-warm-200 hover:border-warm-300'
             )}
           >
@@ -1231,7 +1231,7 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
               key={val}
               onClick={() => setScoringFormat(val)}
               className={cn(
-                'p-3 rounded-lg border-2 text-left transition-all',
+                'p-3 rounded-lg border-2 text-left transition-colors',
                 scoringFormat === val ? 'border-primary-600 bg-primary-50' : 'border-warm-200 hover:border-warm-300'
               )}
             >
@@ -1263,7 +1263,7 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
               key={tee}
               onClick={() => setDefaultTees(tee)}
               className={cn(
-                'px-2 py-2 rounded-lg border-2 text-center text-sm font-medium capitalize transition-all',
+                'px-2 py-2 rounded-lg border-2 text-center text-sm font-medium capitalize transition-colors',
                 defaultTees === tee ? 'border-primary-600 bg-primary-50 text-primary-700' : 'border-warm-200 hover:border-warm-300 text-warm-700'
               )}
             >
@@ -1303,7 +1303,7 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
                 key={level}
                 onClick={() => setSgBenchmark(level)}
                 className={cn(
-                  'p-2.5 rounded-lg border-2 text-left transition-all',
+                  'p-2.5 rounded-lg border-2 text-left transition-colors',
                   sgBenchmark === level
                     ? 'border-primary-600 bg-primary-50'
                     : 'border-warm-200 hover:border-warm-300'

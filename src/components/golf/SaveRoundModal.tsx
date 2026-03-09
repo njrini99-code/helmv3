@@ -90,7 +90,7 @@ export function SaveRoundModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="save-round-modal-title"
-        className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[calc(100vh-4rem)] overflow-y-auto"
+        className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[calc(100vh-4rem)] overflow-y-auto pb-[env(safe-area-inset-bottom,0px)] sm:pb-0"
         onClick={(e) => {
           // Prevent clicks inside modal from closing it
           e.stopPropagation();
@@ -103,7 +103,7 @@ export function SaveRoundModal({
             </h2>
             <button
               onClick={onClose}
-              className="p-1 rounded-lg hover:bg-warm-100 active:bg-warm-200 transition-colors"
+              className="p-2.5 rounded-lg hover:bg-warm-100 active:bg-warm-200 transition-colors"
               disabled={saving}
               aria-label="Close dialog"
             >

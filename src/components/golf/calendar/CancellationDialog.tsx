@@ -190,7 +190,7 @@ export function CancellationDialog({
             <label className="block text-sm font-medium text-warm-700 mb-2">
               Reason for cancellation
             </label>
-            <div className="grid grid-cols-3 gap-2 mb-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
               {QUICK_REASONS.map((quickReason) => {
                 const Icon = quickReason.icon;
                 const isSelected = reason === quickReason.value;

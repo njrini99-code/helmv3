@@ -13,7 +13,7 @@
  * - Shot data pages: Stale-while-revalidate
  */
 
-const CACHE_VERSION = 'golfhelm-v1772823444796';
+const CACHE_VERSION = 'golfhelm-ve13c33b';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const API_CACHE = `${CACHE_VERSION}-api`;
@@ -48,12 +48,9 @@ const OFFLINE_PAGES = [
 // ============================================================================
 
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing service worker...');
-
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
-        console.log('[SW] Pre-caching static assets...');
         // Cache what we can, but don't fail if some assets aren't available
         return Promise.allSettled(
           STATIC_ASSETS.map(url =>
@@ -64,7 +61,6 @@ self.addEventListener('install', (event) => {
         );
       })
       .then(() => {
-        console.log('[SW] Service worker installed');
         // Take control immediately
         return self.skipWaiting();
       })
@@ -76,8 +72,6 @@ self.addEventListener('install', (event) => {
 // ============================================================================
 
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating service worker...');
-
   event.waitUntil(
     // Clean up old caches
     caches.keys()
@@ -86,13 +80,11 @@ self.addEventListener('activate', (event) => {
           cacheNames
             .filter(name => name.startsWith('golfhelm-') && name !== STATIC_CACHE && name !== DYNAMIC_CACHE && name !== API_CACHE)
             .map(name => {
-              console.log('[SW] Deleting old cache:', name);
               return caches.delete(name);
             })
         );
       })
       .then(() => {
-        console.log('[SW] Service worker activated');
         // Claim all clients immediately
         return self.clients.claim();
       })
@@ -148,8 +140,6 @@ async function handleApiRequest(request) {
 
     return response;
   } catch (error) {
-    console.log('[SW] Network failed for API request, checking cache:', request.url);
-
     const cachedResponse = await cache.match(request);
     if (cachedResponse) {
       return cachedResponse;
@@ -186,8 +176,7 @@ async function handlePageRequest(request) {
       }
       return response;
     })
-    .catch((error) => {
-      console.log('[SW] Network failed for page request:', error);
+    .catch(() => {
       return null;
     });
 
@@ -225,8 +214,7 @@ async function handleStaticAsset(request) {
       cache.put(request, response.clone());
     }
     return response;
-  } catch (error) {
-    console.log('[SW] Failed to fetch static asset:', request.url);
+  } catch {
     return new Response('', { status: 404 });
   }
 }
@@ -260,8 +248,6 @@ async function handleDynamicRequest(request) {
 // ============================================================================
 
 self.addEventListener('sync', (event) => {
-  console.log('[SW] Background sync triggered:', event.tag);
-
   if (event.tag === 'sync-shots' || event.tag === 'sync-rounds') {
     event.waitUntil(performBackgroundSync(event.tag));
   }
@@ -271,8 +257,6 @@ self.addEventListener('sync', (event) => {
  * Perform background sync of offline data
  */
 async function performBackgroundSync(tag) {
-  console.log('[SW] Performing background sync for:', tag);
-
   try {
     // Notify all clients to trigger sync
     const clients = await self.clients.matchAll();
@@ -296,8 +280,6 @@ async function performBackgroundSync(tag) {
 // ============================================================================
 
 self.addEventListener('push', (event) => {
-  console.log('[SW] Push notification received');
-
   let data = {};
   try {
     data = event.data?.json() || {};
@@ -321,8 +303,6 @@ self.addEventListener('push', (event) => {
 });
 
 self.addEventListener('notificationclick', (event) => {
-  console.log('[SW] Notification clicked');
-
   event.notification.close();
 
   const urlToOpen = event.notification.data?.url || '/golf/dashboard';
@@ -347,8 +327,6 @@ self.addEventListener('notificationclick', (event) => {
 // ============================================================================
 
 self.addEventListener('message', (event) => {
-  console.log('[SW] Message received:', event.data);
-
   switch (event.data?.type) {
     case 'SKIP_WAITING':
       self.skipWaiting();
@@ -514,4 +492,3 @@ function getOfflinePage() {
   );
 }
 
-console.log('[SW] Service worker loaded');

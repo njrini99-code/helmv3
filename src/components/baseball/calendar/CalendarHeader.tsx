@@ -91,7 +91,7 @@ export function CalendarHeader({
             onClick={() => onNavigate('prev')}
             aria-label="Previous month"
             className={cn(
-              'rounded-lg transition-all duration-150 active:scale-95',
+              'rounded-lg transition-[color,background-color,transform] duration-150 active:scale-95',
               'text-slate-500 hover:text-slate-700 hover:bg-slate-100/60',
               isMobile ? 'w-12 h-12' : 'w-8 h-8',
               'flex items-center justify-center',
@@ -104,7 +104,7 @@ export function CalendarHeader({
             onClick={() => onNavigate('next')}
             aria-label="Next month"
             className={cn(
-              'rounded-lg transition-all duration-150 active:scale-95',
+              'rounded-lg transition-[color,background-color,transform] duration-150 active:scale-95',
               'text-slate-500 hover:text-slate-700 hover:bg-slate-100/60',
               isMobile ? 'w-12 h-12' : 'w-8 h-8',
               'flex items-center justify-center',
@@ -118,7 +118,7 @@ export function CalendarHeader({
           type="button"
           onClick={() => onNavigate('today')}
           className={cn(
-            'rounded-lg text-sm font-medium transition-all duration-150 active:scale-95',
+            'rounded-lg text-sm font-medium transition-[color,background-color,transform] duration-150 active:scale-95',
             'text-slate-600 hover:text-slate-800',
             'bg-white/50 hover:bg-white/70 border border-slate-200/40',
             isMobile ? 'px-3 py-2 min-h-[40px]' : 'px-3 py-1.5',
@@ -154,7 +154,7 @@ export function CalendarHeader({
               key={key}
               onClick={() => onViewChange(key)}
               className={cn(
-                'flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium rounded-lg transition-all duration-200',
+                'flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium rounded-lg transition-[color,background-color,box-shadow] duration-200',
                 view === key
                   ? 'bg-white text-slate-900 shadow-sm'
                   : 'text-slate-400 hover:text-slate-600',
@@ -171,7 +171,7 @@ export function CalendarHeader({
           <button
             type="button"
             onClick={onAddEvent}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white active:scale-95 transition-all duration-150"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white active:scale-95 transition-[transform,box-shadow] duration-150"
             style={{
               background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
               boxShadow:

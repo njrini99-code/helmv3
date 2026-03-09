@@ -72,7 +72,7 @@ export function VideoShowcase({
 
   if (loading) {
     return (
-      <div className={cn('relative glass-standard rounded-2xl overflow-hidden p-6', className)}>
+      <div className={cn('relative glass-standard rounded-2xl overflow-clip p-6', className)}>
         <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
           style={{
             background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
@@ -92,7 +92,7 @@ export function VideoShowcase({
 
   if (videos.length === 0) {
     return (
-      <div className={cn('relative glass-subtle rounded-2xl overflow-hidden p-8 text-center', className)}>
+      <div className={cn('relative glass-subtle rounded-2xl overflow-clip p-8 text-center', className)}>
         <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
           style={{
             background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
@@ -115,7 +115,7 @@ export function VideoShowcase({
 
   return (
     <>
-      <div className={cn('relative glass-standard rounded-2xl overflow-hidden', className)}>
+      <div className={cn('relative glass-standard rounded-2xl overflow-clip', className)}>
         <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
           style={{
             background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
@@ -251,7 +251,7 @@ function VideoModal({ video, onClose }: VideoModalProps) {
       onClick={onClose}
     >
       <div
-        className="relative glass-prominent rounded-2xl shadow-2xl max-w-4xl w-full overflow-hidden"
+        className="relative glass-prominent rounded-2xl shadow-2xl max-w-4xl w-full overflow-clip"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"

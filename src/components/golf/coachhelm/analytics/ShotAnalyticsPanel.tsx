@@ -439,7 +439,7 @@ function StatCard({
 function LoadingSkeleton() {
   return (
     <div className="space-y-4 animate-pulse">
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[1, 2, 3, 4].map(i => (
           <div key={i} className="h-20 bg-warm-100 rounded-xl" />
         ))}

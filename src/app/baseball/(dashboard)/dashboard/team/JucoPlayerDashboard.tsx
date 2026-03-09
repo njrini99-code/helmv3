@@ -74,7 +74,7 @@ function RecruitingSnapshotCard({
 }) {
   if (loading) {
     return (
-      <div className="relative glass-standard rounded-2xl overflow-hidden">
+      <div className="relative glass-standard rounded-2xl overflow-clip">
         <ShineEffect />
         <div className="px-6 py-4 border-b border-slate-100/50">
           <Skeleton variant="text" width={180} height={20} />
@@ -100,7 +100,7 @@ function RecruitingSnapshotCard({
   }
 
   return (
-    <div className="relative glass-standard rounded-2xl overflow-hidden">
+    <div className="relative glass-standard rounded-2xl overflow-clip">
       <ShineEffect />
       
       {/* Header */}
@@ -445,7 +445,7 @@ export function JucoPlayerDashboard({ playerName, playerId }: JucoPlayerDashboar
             )}
 
             {/* Switch to Recruiting */}
-            <div className="relative glass-standard rounded-2xl p-5 overflow-hidden bg-gradient-to-br from-primary-50 to-blue-50 border-primary-100">
+            <div className="relative glass-standard rounded-2xl p-5 overflow-clip bg-gradient-to-br from-primary-50 to-blue-50 border-primary-100">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center shrink-0">
                   <IconTarget size={24} className="text-primary-600" />

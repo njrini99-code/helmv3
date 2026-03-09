@@ -130,7 +130,7 @@ export function PatternValidationModal({
               role="dialog"
               aria-modal="true"
               aria-labelledby="pattern-validation-modal-title"
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-lg pointer-events-auto"
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-lg pointer-events-auto overflow-clip"
               onClick={e => e.stopPropagation()}
             >
               {/* Header */}

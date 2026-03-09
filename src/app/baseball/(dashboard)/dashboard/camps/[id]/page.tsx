@@ -265,7 +265,7 @@ export default function CampDetailPage() {
 
       <div className="p-6 lg:p-8 space-y-6">
         {/* Camp Info */}
-        <div className="relative glass-standard rounded-2xl p-6 overflow-hidden">
+        <div className="relative glass-standard rounded-2xl p-6 overflow-clip">
           <ShineEffect />
           <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-8">
             <div className="flex items-center gap-3 text-slate-600">
@@ -311,24 +311,24 @@ export default function CampDetailPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card variant="glass" className="p-4">
             <p className="text-sm text-slate-500">Total</p>
-            <p className="text-2xl font-semibold text-slate-900">{stats.total}</p>
+            <p className="text-2xl font-semibold text-slate-900 tabular-nums">{stats.total}</p>
           </Card>
           <Card variant="glass" className="p-4">
             <p className="text-sm text-slate-500">Checked In</p>
-            <p className="text-2xl font-semibold text-green-600">{stats.attended}</p>
+            <p className="text-2xl font-semibold text-green-600 tabular-nums">{stats.attended}</p>
           </Card>
           <Card variant="glass" className="p-4">
             <p className="text-sm text-slate-500">Pending</p>
-            <p className="text-2xl font-semibold text-blue-600">{stats.pending}</p>
+            <p className="text-2xl font-semibold text-blue-600 tabular-nums">{stats.pending}</p>
           </Card>
           <Card variant="glass" className="p-4">
             <p className="text-sm text-slate-500">No Show</p>
-            <p className="text-2xl font-semibold text-amber-600">{stats.noShow}</p>
+            <p className="text-2xl font-semibold text-amber-600 tabular-nums">{stats.noShow}</p>
           </Card>
         </div>
 
         {/* Roster */}
-        <div className="relative glass-standard rounded-2xl overflow-hidden">
+        <div className="relative glass-standard rounded-2xl overflow-clip">
           <ShineEffect />
           <div className="px-6 py-4 border-b border-slate-100/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <h2 className="font-semibold text-slate-900">Roster ({filteredRegistrations.length})</h2>

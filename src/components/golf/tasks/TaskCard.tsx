@@ -59,7 +59,7 @@ export function TaskCard({ task }: TaskCardProps) {
       initial="hidden"
       animate="visible"
       layout
-      className="relative glass-standard rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98]"
+      className="relative glass-standard rounded-2xl overflow-clip transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98]"
     >
       <ShineEffect />
 

@@ -40,7 +40,7 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative p-4 bg-auth-baseball">
+    <div className="min-h-dvh flex items-center justify-center relative p-4 bg-auth-baseball">
       {/* Skip to main content link for keyboard navigation */}
       <a
         href="#forgot-form"

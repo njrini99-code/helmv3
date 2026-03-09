@@ -43,7 +43,7 @@ export function PuttMissTagSelector({
   return (
     <div className="space-y-3">
       <p className="text-sm text-warm-600 font-medium">Miss (optional)</p>
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
         {tags.map((tag) => {
           const isSelected = selectedTags.includes(tag);
 

@@ -108,7 +108,7 @@ export function NotificationCenter({
       {isOpen && (
         <div
           ref={dropdownRef}
-          className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] max-w-96 glass-prominent rounded-xl shadow-2xl overflow-hidden animate-fade-in z-50"
+          className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] max-w-96 glass-prominent rounded-xl shadow-2xl overflow-clip animate-fade-in z-50"
         >
           <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
             style={{

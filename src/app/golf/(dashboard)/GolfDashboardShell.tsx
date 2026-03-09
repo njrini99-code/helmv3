@@ -145,6 +145,7 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
 
       {/* Mobile Sidebar */}
       <div
+        id="mobile-sidebar"
         ref={mobileSidebarRef}
         role="dialog"
         aria-label="Navigation menu"
@@ -209,7 +210,7 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
 function AppearanceMotionConfig({ children }: { children: React.ReactNode }) {
   const { showAnimations } = useAppearancePreferences();
   return (
-    <MotionConfig reducedMotion={showAnimations ? 'never' : 'always'}>
+    <MotionConfig reducedMotion={showAnimations ? 'user' : 'always'}>
       {children}
     </MotionConfig>
   );

@@ -406,7 +406,7 @@ export function StatsUploadClient({
   // ============================================================================
 
   return (
-    <div className="min-h-screen bg-[#FFFEFA]">
+    <div className="min-h-dvh bg-[#FFFEFA]">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -630,7 +630,7 @@ export function StatsUploadClient({
             </div>
 
             {/* Data Preview */}
-            <div className="glass-standard rounded-2xl p-6 overflow-hidden">
+            <div className="glass-standard rounded-2xl p-6 overflow-clip">
               <h3 className="font-semibold text-slate-900 mb-4">Data Preview</h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">

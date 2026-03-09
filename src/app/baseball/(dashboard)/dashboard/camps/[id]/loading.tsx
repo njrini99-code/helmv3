@@ -31,7 +31,7 @@ export default function CampDetailLoading() {
         </div>
 
         {/* Roster Skeleton */}
-        <div className="glass-standard rounded-2xl overflow-hidden animate-pulse">
+        <div className="glass-standard rounded-2xl overflow-clip animate-pulse">
           <div className="px-6 py-4 border-b border-slate-100/50 flex items-center justify-between">
             <div className="h-5 w-24 bg-slate-200 rounded" />
             <div className="h-8 w-48 bg-slate-200 rounded" />

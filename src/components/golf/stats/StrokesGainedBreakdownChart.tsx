@@ -182,7 +182,7 @@ export function StrokesGainedBreakdownChart({
             <div className="font-semibold text-warm-900">Total Strokes Gained</div>
             <div className="text-sm text-warm-500">Combined performance vs. scratch</div>
           </div>
-          <div className={cn('text-2xl font-bold', getStrokesGainedColor(data.sg_total))}>
+          <div className={cn('text-2xl font-bold tabular-nums', getStrokesGainedColor(data.sg_total))}>
             {formatStrokesGained(data.sg_total)}
           </div>
         </div>

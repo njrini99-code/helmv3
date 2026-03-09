@@ -66,7 +66,7 @@ export default async function RecruitingPreferencesPage() {
   const initialGradYears = philosophy?.target_grad_years ?? [];
 
   return (
-    <div className="min-h-screen bg-[#FFFEFA]">
+    <div className="min-h-dvh bg-[#FFFEFA]">
       <div className="max-w-4xl mx-auto px-6 py-8">
         {/* Header */}
         <div className="mb-8">

@@ -9726,6 +9726,18 @@ export type Database = {
           worst_round: number
         }[]
       }
+      get_qualifier_leaderboard: {
+        Args: { qualifier_uuid: string }
+        Returns: {
+          avg_score: number
+          best_score: number
+          first_name: string
+          last_name: string
+          player_id: string
+          rounds_played: number
+          total_score: number
+        }[]
+      }
       get_user_golf_organization_id: { Args: never; Returns: string }
       get_user_golf_team_ids: { Args: never; Returns: string[] }
       get_user_last_active: {

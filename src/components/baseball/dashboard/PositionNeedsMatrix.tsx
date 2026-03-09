@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ShineEffect } from '@/components/ui/shine-effect';
@@ -109,20 +109,20 @@ export function PositionNeedsMatrix({
   onSetGoals,
 }: PositionNeedsMatrixProps) {
   const [showAllPositions, setShowAllPositions] = useState(false);
+  const [positionGoals, setPositionGoals] = useState<PositionGoal[]>(DEFAULT_POSITION_GOALS);
 
-  // Load goals from localStorage or use defaults
-  const positionGoals = useMemo(() => {
-    if (typeof window === 'undefined') return DEFAULT_POSITION_GOALS;
-
+  // Load goals from localStorage after hydration to avoid SSR mismatch
+  useEffect(() => {
     try {
       const stored = localStorage.getItem(`position_goals_${gradYear}`);
       if (stored) {
-        return JSON.parse(stored) as PositionGoal[];
+        setPositionGoals(JSON.parse(stored) as PositionGoal[]);
+      } else {
+        setPositionGoals(DEFAULT_POSITION_GOALS);
       }
     } catch {
       // Ignore errors
     }
-    return DEFAULT_POSITION_GOALS;
   }, [gradYear]);
 
   // Calculate position data from watchlist
@@ -200,7 +200,7 @@ export function PositionNeedsMatrix({
 
   if (loading) {
     return (
-      <div className="relative glass-standard rounded-2xl overflow-hidden">
+      <div className="relative glass-standard rounded-2xl overflow-clip">
         <ShineEffect />
         <div className="px-6 py-4 border-b border-slate-100/50">
           <div className="h-5 w-32 bg-slate-200 rounded animate-pulse" />
@@ -217,7 +217,7 @@ export function PositionNeedsMatrix({
   }
 
   return (
-    <div className="relative glass-standard rounded-2xl overflow-hidden">
+    <div className="relative glass-standard rounded-2xl overflow-clip">
       <ShineEffect />
 
       {/* Header */}

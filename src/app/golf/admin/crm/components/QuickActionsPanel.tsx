@@ -227,14 +227,14 @@ export function QuickActionsPanel({
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => setView('schedule')}
-                  className="flex items-center justify-center gap-2 p-4 bg-gradient-to-br from-violet-500 to-violet-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]"
+                  className="flex items-center justify-center gap-2 p-4 bg-gradient-to-br from-violet-500 to-violet-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-[transform,box-shadow] hover:scale-[1.02]"
                 >
                   <span className="text-2xl">📅</span>
                   <span>Schedule</span>
                 </button>
                 <button
                   onClick={() => setView('log')}
-                  className="flex items-center justify-center gap-2 p-4 bg-gradient-to-br from-primary-500 to-primary-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]"
+                  className="flex items-center justify-center gap-2 p-4 bg-gradient-to-br from-primary-500 to-primary-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-[transform,box-shadow] hover:scale-[1.02]"
                 >
                   <span className="text-2xl">✏️</span>
                   <span>Log Contact</span>
@@ -281,7 +281,7 @@ export function QuickActionsPanel({
                         key={status}
                         onClick={() => handleStatusChange(status)}
                         className={cn(
-                          'flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
+                          'flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
                           isActive
                             ? `${config.bgColor} ${config.color} ring-2 ring-offset-1 ring-warm-300`
                             : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
@@ -303,7 +303,7 @@ export function QuickActionsPanel({
                   <button
                     onClick={() => handlePriorityChange(0)}
                     className={cn(
-                      'flex-1 py-2 rounded-lg text-sm font-medium transition-all',
+                      'flex-1 py-2 rounded-lg text-sm font-medium transition-colors',
                       coach.priority === 0
                         ? 'bg-warm-200 text-warm-700 ring-2 ring-warm-400'
                         : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
@@ -314,7 +314,7 @@ export function QuickActionsPanel({
                   <button
                     onClick={() => handlePriorityChange(1)}
                     className={cn(
-                      'flex-1 py-2 rounded-lg text-sm font-medium transition-all',
+                      'flex-1 py-2 rounded-lg text-sm font-medium transition-colors',
                       coach.priority === 1
                         ? 'bg-amber-100 text-amber-700 ring-2 ring-amber-400'
                         : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
@@ -325,7 +325,7 @@ export function QuickActionsPanel({
                   <button
                     onClick={() => handlePriorityChange(2)}
                     className={cn(
-                      'flex-1 py-2 rounded-lg text-sm font-medium transition-all',
+                      'flex-1 py-2 rounded-lg text-sm font-medium transition-colors',
                       coach.priority === 2
                         ? 'bg-orange-100 text-orange-700 ring-2 ring-orange-400'
                         : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
@@ -360,7 +360,7 @@ export function QuickActionsPanel({
                       title: `${type.label} with ${coach.school}`,
                     }))}
                     className={cn(
-                      'p-3 rounded-xl text-center transition-all',
+                      'p-3 rounded-xl text-center transition-colors',
                       scheduleForm.type === type.value
                         ? `${type.color} text-white shadow-lg`
                         : 'bg-warm-100 hover:bg-warm-200'
@@ -430,7 +430,7 @@ export function QuickActionsPanel({
                       key={d}
                       onClick={() => setScheduleForm(f => ({ ...f, duration: d }))}
                       className={cn(
-                        'flex-1 py-2 rounded-lg text-sm font-medium transition-all',
+                        'flex-1 py-2 rounded-lg text-sm font-medium transition-colors',
                         scheduleForm.duration === d
                           ? 'bg-primary-100 text-primary-700 ring-2 ring-primary-400'
                           : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
@@ -474,7 +474,7 @@ export function QuickActionsPanel({
               <button
                 onClick={handleSchedule}
                 disabled={submitting || !scheduleForm.date || !scheduleForm.time}
-                className="w-full py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-shadow disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submitting ? 'Scheduling...' : '📅 Schedule Event'}
               </button>
@@ -505,7 +505,7 @@ export function QuickActionsPanel({
                     key={type.value}
                     onClick={() => setLogForm(f => ({ ...f, type: type.value }))}
                     className={cn(
-                      'px-4 py-2 rounded-xl text-sm font-medium transition-all',
+                      'px-4 py-2 rounded-xl text-sm font-medium transition-colors',
                       logForm.type === type.value
                         ? 'bg-primary-500 text-white shadow-lg'
                         : 'bg-warm-100 hover:bg-warm-200'
@@ -561,7 +561,7 @@ export function QuickActionsPanel({
               <button
                 onClick={handleLogContact}
                 disabled={submitting}
-                className="w-full py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
+                className="w-full py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-shadow disabled:opacity-50"
               >
                 {submitting ? 'Saving...' : '✓ Log Contact'}
               </button>
@@ -591,7 +591,7 @@ export function QuickActionsPanel({
               <button
                 onClick={handleSaveNote}
                 disabled={submitting}
-                className="w-full py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
+                className="w-full py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-shadow disabled:opacity-50"
               >
                 {submitting ? 'Saving...' : '💾 Save Note'}
               </button>

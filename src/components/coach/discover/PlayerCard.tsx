@@ -92,7 +92,7 @@ const PlayerCardComponent = function PlayerCard({
         className={cn(
           "flex items-center gap-3 p-3 rounded-[16px] cursor-pointer relative",
           "bg-white/70 backdrop-blur-md border border-white/40",
-          "transition-all duration-200",
+          "transition-[transform,box-shadow,border-color] duration-200",
           "hover:-translate-y-0.5 hover:shadow-md hover:border-white/60",
           isSelected && "ring-2 ring-primary-500 ring-offset-2 border-primary-200",
           className
@@ -105,7 +105,7 @@ const PlayerCardComponent = function PlayerCard({
             aria-label="Select player for comparison"
             onClick={(e) => { e.stopPropagation(); onSelect?.(); }}
             className={cn(
-              'w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all duration-200 flex-shrink-0',
+              'w-5 h-5 rounded-md border-2 flex items-center justify-center transition-[color,background-color,border-color,transform] duration-200 flex-shrink-0',
               isSelected
                 ? 'bg-primary-600 border-primary-600 text-white scale-110'
                 : 'border-slate-300 hover:border-primary-500 bg-white'
@@ -141,7 +141,7 @@ const PlayerCardComponent = function PlayerCard({
       <div className={cn(
         "relative overflow-hidden rounded-[20px]",
         "bg-white/70 backdrop-blur-md border border-white/40",
-        "transition-all duration-200",
+        "transition-[transform,box-shadow,border-color] duration-200",
         "hover:-translate-y-1 hover:shadow-xl hover:border-white/60",
         isSelected && "ring-2 ring-primary-500 ring-offset-2 border-primary-200",
         isFeatured && "ring-2 ring-amber-400/50 ring-offset-2 ring-offset-white shadow-amber-100",
@@ -155,7 +155,7 @@ const PlayerCardComponent = function PlayerCard({
               aria-label="Select player for comparison"
               onClick={(e) => { e.stopPropagation(); onSelect?.(); }}
               className={cn(
-                'w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-200',
+                'w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-[color,background-color,border-color,transform] duration-200',
                 isSelected
                   ? 'bg-primary-600 border-primary-600 text-white scale-110'
                   : 'border-slate-300 hover:border-primary-500 bg-white/90 backdrop-blur-sm'
@@ -262,7 +262,7 @@ const PlayerCardComponent = function PlayerCard({
     <div className={cn(
       "relative overflow-hidden rounded-[20px]",
       "bg-white/70 backdrop-blur-md border border-white/40",
-      "transition-all duration-200",
+      "transition-[transform,box-shadow,border-color] duration-200",
       "hover:-translate-y-1 hover:shadow-lg hover:border-white/60",
       "group",
       isSelected && "ring-2 ring-primary-500 ring-offset-2 border-primary-200",
@@ -277,7 +277,7 @@ const PlayerCardComponent = function PlayerCard({
             aria-label="Select player for comparison"
             onClick={(e) => { e.stopPropagation(); onSelect?.(); }}
             className={cn(
-              'w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-200',
+              'w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-[color,background-color,border-color,transform] duration-200',
               isSelected
                 ? 'bg-primary-600 border-primary-600 text-white scale-110'
                 : 'border-slate-300 hover:border-primary-500 bg-white/90 backdrop-blur-sm'
@@ -493,7 +493,7 @@ const ActionButton = memo(function ActionButton({
       className={cn(
         "rounded-lg bg-white/90 backdrop-blur-sm text-slate-600",
         "hover:bg-white active:bg-white/70 hover:text-slate-900",
-        "transition-all duration-200",
+        "transition-[color,background-color,transform] duration-200",
         "active:scale-95",
         sizeClasses[size],
         active && activeClass

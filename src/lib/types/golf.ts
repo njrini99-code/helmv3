@@ -96,7 +96,7 @@ export interface GolfCoachNote {
 export type GolfPlayerYear = 'freshman' | 'sophomore' | 'junior' | 'senior' | 'graduate';
 export type GolfPlayerStatus = 'active' | 'inactive' | 'redshirt' | 'medical' | 'transfer';
 export type GolfEventType = 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other';
-export type GolfQualifierStatus = 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+export type GolfQualifierStatus = 'upcoming' | 'in_progress' | 'completed' | 'cancelled';
 export type GolfTaskStatus = 'pending' | 'in_progress' | 'completed' | 'overdue';
 
 // ============================================================================

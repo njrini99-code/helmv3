@@ -5,7 +5,8 @@
       "name": "nextjs-dev",
       "runtimeExecutable": "python3",
       "runtimeArgs": ["/Users/ricknini/Downloads/helmv3/.claude/start-dev.py"],
-      "port": 3000
+      "port": 3000,
+      "autoPort": false
     },
     {
       "name": "supabase-local",
@@ -24,6 +25,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "test:e2e:ui"],
       "port": 0
+    },
+    {
+      "name": "mockup-server",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8766"],
+      "port": 8766
     }
   ],
   "autoVerify": false

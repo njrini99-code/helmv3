@@ -293,7 +293,7 @@ export function StatCard({
   return (
     <motion.div
       variants={itemVariants}
-      className={`relative glass-standard rounded-xl overflow-hidden p-4 group cursor-default`}
+      className={`relative glass-standard rounded-xl overflow-clip p-4 group cursor-default`}
       whileHover={{
         scale: 1.02,
         y: -4,
@@ -425,7 +425,7 @@ export function StatSection({
 
   return (
     <motion.div
-      className="relative glass-standard rounded-2xl overflow-hidden mb-4 group"
+      className="relative glass-standard rounded-2xl overflow-clip mb-4 group"
       variants={sectionVariants}
       initial="hidden"
       animate="visible"

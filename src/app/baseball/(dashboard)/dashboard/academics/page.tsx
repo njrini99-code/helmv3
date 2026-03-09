@@ -270,7 +270,7 @@ export default function AcademicsPage() {
                 </div>
                 <div>
                   <p className="text-sm leading-relaxed text-slate-500">Team GPA</p>
-                  <p className="text-2xl font-semibold tracking-tight text-slate-900">{avgGpa.toFixed(2)}</p>
+                  <p className="text-2xl font-semibold tracking-tight text-slate-900 tabular-nums">{avgGpa.toFixed(2)}</p>
                 </div>
               </div>
             </CardContent>

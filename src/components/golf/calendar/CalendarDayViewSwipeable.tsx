@@ -231,7 +231,7 @@ export function CalendarDayViewSwipeable({
       {/* Pull-to-refresh indicator */}
       {(pullDistance > 0 || isRefreshing) && (
         <div
-          className="flex items-center justify-center py-3 transition-all duration-200"
+          className="flex items-center justify-center py-3 transition-[height,opacity] duration-200"
           style={{ height: isRefreshing ? 48 : pullDistance }}
         >
           <RefreshCw
@@ -280,7 +280,7 @@ export function CalendarDayViewSwipeable({
                   'w-10 h-10 rounded-xl',
                   'bg-primary-100 text-primary-700',
                   'hover:bg-primary-200 active:scale-95',
-                  'transition-all duration-200',
+                  'transition-[color,background-color,transform] duration-200',
                   'touch-manipulation mr-1'
                 )}
                 aria-label="Go to today"
@@ -299,7 +299,7 @@ export function CalendarDayViewSwipeable({
                 'w-10 h-10 rounded-xl',
                 'bg-warm-100/80 text-warm-600',
                 'hover:bg-warm-200 active:bg-warm-300 active:scale-95',
-                'transition-all duration-200',
+                'transition-[color,background-color,transform,opacity] duration-200',
                 'touch-manipulation',
                 isTransitioning && 'opacity-50'
               )}
@@ -316,7 +316,7 @@ export function CalendarDayViewSwipeable({
                 'w-10 h-10 rounded-xl',
                 'bg-warm-100/80 text-warm-600',
                 'hover:bg-warm-200 active:bg-warm-300 active:scale-95',
-                'transition-all duration-200',
+                'transition-[color,background-color,transform,opacity] duration-200',
                 'touch-manipulation',
                 isTransitioning && 'opacity-50'
               )}
@@ -365,7 +365,7 @@ export function CalendarDayViewSwipeable({
                     'shadow-lg shadow-primary-600/25',
                     'hover:bg-primary-700 hover:shadow-primary-600/30',
                     'active:scale-95',
-                    'transition-all duration-200',
+                    'transition-[transform,box-shadow,background-color] duration-200',
                     'touch-manipulation'
                   )}
                 >
@@ -481,7 +481,7 @@ export function MobileWeekPicker({
               className={cn(
                 'flex flex-col items-center justify-center relative',
                 'w-12 h-16 rounded-2xl',
-                'transition-all duration-200 ease-out',
+                'transition-[transform,background-color,box-shadow,opacity] duration-200 ease-out',
                 'touch-manipulation select-none',
                 isSelected
                   ? 'bg-primary-600 shadow-lg shadow-primary-600/30 scale-105'

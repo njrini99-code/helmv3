@@ -265,7 +265,7 @@ export function PrivacySettingsForm({
             {group.settings.map((setting) => (
               <div
                 key={setting.key}
-                className="relative flex items-start justify-between gap-4 p-4 glass-subtle rounded-lg overflow-hidden"
+                className="relative flex items-start justify-between gap-4 p-4 glass-subtle rounded-lg overflow-clip"
               >
                 <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
                   style={{

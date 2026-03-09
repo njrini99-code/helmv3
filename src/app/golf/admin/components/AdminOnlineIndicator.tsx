@@ -115,7 +115,7 @@ export function AdminOnlineIndicator({
               transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
               className={cn(
                 'absolute top-full right-0 mt-2 z-50',
-                'w-80 bg-white/95 backdrop-blur-xl border border-white/20 rounded-xl shadow-xl overflow-hidden'
+                'w-80 bg-white/95 backdrop-blur-xl border border-white/20 rounded-xl shadow-xl overflow-clip'
               )}
             >
               {/* Header */}

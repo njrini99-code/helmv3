@@ -506,7 +506,7 @@ export function DiscoverView({
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
             >
-            <div className="relative glass-standard rounded-2xl overflow-hidden p-8">
+            <div className="relative glass-standard rounded-2xl overflow-clip p-8">
               {/* Decorative top highlight */}
               <div
                 className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"

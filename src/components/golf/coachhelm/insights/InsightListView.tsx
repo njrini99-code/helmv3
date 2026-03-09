@@ -131,7 +131,7 @@ function InsightRow({ insight, isSelected, onToggleSelect, onRefresh }: InsightR
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       className={cn(
-        'glass-standard rounded-xl overflow-hidden transition-all duration-200',
+        'glass-standard rounded-xl overflow-clip transition-all duration-200',
         isSelected
           ? 'border-primary-500 ring-2 ring-primary-500/20'
           : 'border-warm-200 hover:border-warm-300'

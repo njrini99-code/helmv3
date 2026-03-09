@@ -76,7 +76,7 @@ function InterestRow({ item }: { item: CollegeInterestItem }) {
 export function CollegeInterestSummary({ data, loading }: CollegeInterestSummaryProps) {
   if (loading) {
     return (
-      <div className="relative glass-standard rounded-2xl overflow-hidden">
+      <div className="relative glass-standard rounded-2xl overflow-clip">
         <ShineEffect />
         <div className="px-6 py-4 border-b border-slate-100/50">
           <div className="flex items-center gap-3">
@@ -116,7 +116,7 @@ export function CollegeInterestSummary({ data, loading }: CollegeInterestSummary
   const hasInterest = data.totalProfileViews > 0 || data.topInterest.length > 0;
 
   return (
-    <div className="relative glass-standard rounded-2xl overflow-hidden">
+    <div className="relative glass-standard rounded-2xl overflow-clip">
       <ShineEffect />
       
       {/* Header */}

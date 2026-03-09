@@ -307,7 +307,7 @@ export function EmptyState({
 
     if (glass) {
       return (
-        <div className={cn('relative glass-standard rounded-2xl overflow-hidden transition-all duration-300', className)}>
+        <div className={cn('relative glass-standard rounded-2xl overflow-clip transition-all duration-300', className)}>
           <div
             className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
             style={{

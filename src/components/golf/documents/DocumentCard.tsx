@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -116,8 +116,6 @@ export function DocumentCard({
   isCoach = false,
   className,
 }: DocumentCardProps) {
-  const [isHovered, setIsHovered] = useState(false);
-
   const categoryLabel = DOCUMENT_CATEGORIES.find((c: { value: string; label: string }) => c.value === document.category)?.label || document.category;
 
   const handlePreview = useCallback(() => {
@@ -142,8 +140,6 @@ export function DocumentCard({
         'group transition-all duration-200 hover:shadow-md hover:border-primary/20',
         className
       )}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
     >
       <CardContent className="p-4">
         <div className="flex items-start gap-4">
@@ -174,7 +170,7 @@ export function DocumentCard({
               {/* Quick Actions */}
               <div className={cn(
                 'flex items-center gap-1 transition-opacity',
-                isHovered ? 'opacity-100' : 'opacity-0'
+                'opacity-100 md:opacity-0 md:group-hover:opacity-100'
               )}>
                 {onPreview && (
                   <Button

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 /**
@@ -89,7 +89,7 @@ export function useTaskRealtime(
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   const fetchTasks = useCallback(async () => {
     if (!teamId) {
@@ -261,7 +261,7 @@ export function useSingleTaskRealtime(taskId: string | null) {
   const [task, setTask] = useState<TaskWithPlayer | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   const fetchTask = useCallback(async () => {
     if (!taskId) {
@@ -376,7 +376,7 @@ export function useTaskCountsRealtime(teamId: string | null, playerId?: string |
     completion_rate: 0,
   });
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   const fetchCounts = useCallback(async () => {
     if (!teamId) {
@@ -480,7 +480,7 @@ export function useTaskCountsRealtime(teamId: string | null, playerId?: string |
 export function useReminderRealtime(userId: string, enabled = true) {
   const [reminders, setReminders] = useState<unknown[]>([]);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     if (!enabled || !userId) return;
@@ -542,7 +542,7 @@ export function useReminderRealtime(userId: string, enabled = true) {
 export function useTemplateRealtime(teamId: string, enabled = true) {
   const [templates, setTemplates] = useState<unknown[]>([]);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     if (!enabled || !teamId) return;

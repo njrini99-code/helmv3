@@ -14,7 +14,18 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const swPath = resolve(__dirname, '..', 'public', 'sw.js');
 
-const buildId = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 8) || Date.now().toString();
+import { execFileSync } from 'node:child_process';
+
+let buildId;
+if (process.env.VERCEL_GIT_COMMIT_SHA) {
+  buildId = process.env.VERCEL_GIT_COMMIT_SHA.slice(0, 8);
+} else {
+  try {
+    buildId = execFileSync('git', ['rev-parse', '--short', 'HEAD'], { encoding: 'utf8' }).trim();
+  } catch {
+    buildId = Date.now().toString();
+  }
+}
 
 const content = readFileSync(swPath, 'utf8');
 const updated = content.replace(

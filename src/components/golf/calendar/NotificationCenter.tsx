@@ -110,7 +110,7 @@ export function NotificationCenter() {
           />
 
           {/* Popover */}
-          <div className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] max-w-96 bg-white/80 backdrop-blur-xl rounded-2xl border border-white/30 shadow-2xl z-50 overflow-hidden">
+          <div className="fixed left-4 right-4 top-full mt-2 sm:absolute sm:left-auto sm:right-0 sm:w-96 bg-white/80 backdrop-blur-xl rounded-2xl border border-white/30 shadow-2xl z-50 overflow-clip">
             {/* Header */}
             <div className="px-4 py-3 border-b border-warm-200/60 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-warm-900">Notifications</h3>

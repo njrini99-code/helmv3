@@ -172,7 +172,7 @@ export default function DevPlansPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-slate-500">Active Plans</p>
-                  <p className="text-2xl font-semibold tracking-tight text-slate-900 mt-1">{stats.activePlans}</p>
+                  <p className="text-2xl font-semibold tracking-tight text-slate-900 mt-1 tabular-nums">{stats.activePlans}</p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
                   <IconNote size={24} className="text-slate-600" strokeWidth={1.5} />
@@ -186,7 +186,7 @@ export default function DevPlansPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-slate-500">Players Enrolled</p>
-                  <p className="text-2xl font-semibold tracking-tight text-slate-900 mt-1">{stats.playersEnrolled}</p>
+                  <p className="text-2xl font-semibold tracking-tight text-slate-900 mt-1 tabular-nums">{stats.playersEnrolled}</p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
                   <IconUsers size={24} className="text-slate-600" strokeWidth={1.5} />
@@ -200,7 +200,7 @@ export default function DevPlansPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-slate-500">Total Goals</p>
-                  <p className="text-2xl font-semibold tracking-tight text-slate-900 mt-1">{stats.totalGoals}</p>
+                  <p className="text-2xl font-semibold tracking-tight text-slate-900 mt-1 tabular-nums">{stats.totalGoals}</p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
                   <IconTarget size={24} className="text-slate-600" strokeWidth={1.5} />
@@ -214,7 +214,7 @@ export default function DevPlansPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-slate-500">Completed</p>
-                  <p className="text-2xl font-semibold tracking-tight text-slate-900 mt-1">{stats.completed}</p>
+                  <p className="text-2xl font-semibold tracking-tight text-slate-900 mt-1 tabular-nums">{stats.completed}</p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
                   <IconCheck size={24} className="text-slate-600" strokeWidth={1.5} />

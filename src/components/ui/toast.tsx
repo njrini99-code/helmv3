@@ -81,7 +81,7 @@ export function useToast() {
 function ToastContainerInternal({ toasts, onRemove }: { toasts: Toast[]; onRemove: (id: string) => void }) {
   return (
     <div
-      className="fixed bottom-6 right-6 z-[60] flex flex-col gap-3 pointer-events-none"
+      className="fixed bottom-6 right-6 z-[60] flex flex-col gap-3 pointer-events-none pb-[env(safe-area-inset-bottom)]"
       role="region"
       aria-label="Notifications"
     >

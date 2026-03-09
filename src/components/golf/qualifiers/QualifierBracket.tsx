@@ -261,7 +261,7 @@ export function QualifierBracket({
 
       {/* Summary */}
       <div className="mt-6 pt-4 border-t border-warm-100">
-        <div className="grid grid-cols-3 gap-4 text-center">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
           <div className="p-3 bg-primary-50 rounded-xl">
             <p className="text-2xl font-bold text-primary-600">
               {leaderboard.filter((_, i) => i < effectiveCutline).length}

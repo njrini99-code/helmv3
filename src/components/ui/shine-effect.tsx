@@ -6,7 +6,7 @@
  *
  * Usage:
  * ```tsx
- * <div className="relative glass-standard rounded-2xl overflow-hidden">
+ * <div className="relative glass-standard rounded-2xl overflow-clip">
  *   <ShineEffect />
  *   {children}
  * </div>

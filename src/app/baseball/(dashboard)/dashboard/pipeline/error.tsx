@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 
 export default function DashboardError({
@@ -10,8 +9,6 @@ export default function DashboardError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  useEffect(() => {
-  }, [error]);
 
   return (
     <div className="min-h-[400px] flex items-center justify-center p-8">

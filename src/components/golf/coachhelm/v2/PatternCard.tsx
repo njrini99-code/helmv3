@@ -134,7 +134,7 @@ export function PatternCard({ pattern, onDismiss }: PatternCardProps) {
               </div>
 
               {/* Stats */}
-              <div className="grid grid-cols-3 gap-3 mt-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-4">
                 <div className="text-center">
                   <div className="text-lg font-semibold text-warm-800">
                     {supportPercent}%

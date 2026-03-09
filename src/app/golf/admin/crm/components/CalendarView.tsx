@@ -269,7 +269,7 @@ export function CalendarView({
                             onMouseEnter={() => setHoveredEvent(event.id)}
                             onMouseLeave={() => setHoveredEvent(null)}
                             className={cn(
-                              'text-label px-1.5 py-0.5 rounded-md truncate cursor-pointer transition-all font-medium',
+                              'text-label px-1.5 py-0.5 rounded-md truncate cursor-pointer transition-[transform,box-shadow] font-medium',
                               config.bgColor,
                               config.textColor,
                               hoveredEvent === event.id && 'ring-2 ring-offset-1 ring-warm-400 scale-[1.02]'
@@ -383,7 +383,7 @@ export function CalendarView({
                         onMouseEnter={() => setHoveredEvent(event.id)}
                         onMouseLeave={() => setHoveredEvent(null)}
                         className={cn(
-                          'absolute left-1 right-1 rounded-lg px-2 py-1 cursor-pointer transition-all overflow-hidden',
+                          'absolute left-1 right-1 rounded-lg px-2 py-1 cursor-pointer transition-[box-shadow] overflow-hidden',
                           'border-l-4',
                           config.bgColor,
                           config.textColor,
@@ -483,7 +483,7 @@ export function CalendarView({
                     onMouseEnter={() => setHoveredEvent(event.id)}
                     onMouseLeave={() => setHoveredEvent(null)}
                     className={cn(
-                      'absolute left-2 right-4 rounded-xl px-4 py-2.5 cursor-pointer transition-all',
+                      'absolute left-2 right-4 rounded-xl px-4 py-2.5 cursor-pointer transition-[transform,box-shadow]',
                       'border-l-4',
                       config.bgColor,
                       config.textColor,
@@ -527,7 +527,7 @@ export function CalendarView({
   // ============================================================================
   return (
     <div className={cn(
-      'flex flex-col h-[calc(100vh-220px)] min-h-[500px]',
+      'flex flex-col h-[calc(100dvh-220px)] min-h-[500px]',
       'bg-white/65 backdrop-blur-[16px]',
       'border border-white/30 rounded-2xl',
       'shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)]'
@@ -545,7 +545,7 @@ export function CalendarView({
                 key={view}
                 onClick={() => setViewMode(view)}
                 className={cn(
-                  'px-4 py-2 rounded-lg text-sm font-medium transition-all capitalize',
+                  'px-4 py-2 rounded-lg text-sm font-medium transition-[color,background-color,box-shadow] capitalize',
                   viewMode === view
                     ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/20'
                     : 'text-warm-600 hover:text-warm-900 hover:bg-white/60'
@@ -606,7 +606,7 @@ export function CalendarView({
             <button
               onClick={onConnectGoogle}
               className={cn(
-                'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
+                'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
                 'bg-white/60 border border-warm-200/50 text-warm-600',
                 'hover:bg-white/80 active:bg-white/90 hover:text-warm-900'
               )}

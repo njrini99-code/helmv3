@@ -95,7 +95,7 @@ export function RSVPProgressRing({
       <svg
         width={config.diameter}
         height={config.diameter}
-        className={cn('transform -rotate-90', animated && 'transition-all duration-500')}
+        className={cn('transform -rotate-90', animated && 'transition-transform duration-500')}
       >
         {/* Background circle */}
         <circle
@@ -119,7 +119,7 @@ export function RSVPProgressRing({
             strokeDasharray={`${pendingArc} ${circumference - pendingArc}`}
             strokeDashoffset={-pendingOffset}
             strokeLinecap="round"
-            className={animated ? 'transition-all duration-500' : ''}
+            className={animated ? 'transition-[stroke-dasharray,stroke-dashoffset] duration-500' : ''}
             style={animated ? { transitionDelay: '450ms' } : undefined}
           />
         )}
@@ -136,7 +136,7 @@ export function RSVPProgressRing({
             strokeDasharray={`${declinedArc} ${circumference - declinedArc}`}
             strokeDashoffset={-declinedOffset}
             strokeLinecap="round"
-            className={animated ? 'transition-all duration-500' : ''}
+            className={animated ? 'transition-[stroke-dasharray,stroke-dashoffset] duration-500' : ''}
             style={animated ? { transitionDelay: '300ms' } : undefined}
           />
         )}
@@ -153,7 +153,7 @@ export function RSVPProgressRing({
             strokeDasharray={`${maybeArc} ${circumference - maybeArc}`}
             strokeDashoffset={-maybeOffset}
             strokeLinecap="round"
-            className={animated ? 'transition-all duration-500' : ''}
+            className={animated ? 'transition-[stroke-dasharray,stroke-dashoffset] duration-500' : ''}
             style={animated ? { transitionDelay: '150ms' } : undefined}
           />
         )}
@@ -170,7 +170,7 @@ export function RSVPProgressRing({
             strokeDasharray={`${confirmedArc} ${circumference - confirmedArc}`}
             strokeDashoffset={0}
             strokeLinecap="round"
-            className={animated ? 'transition-all duration-500' : ''}
+            className={animated ? 'transition-[stroke-dasharray,stroke-dashoffset] duration-500' : ''}
           />
         )}
 
@@ -278,7 +278,7 @@ export function CompactRSVPRing({
         strokeWidth={config.strokeWidth}
         strokeDasharray={`${arcLength} ${circumference - arcLength}`}
         strokeLinecap="round"
-        className="transition-all duration-500"
+        className="transition-[stroke-dasharray,stroke-dashoffset] duration-500"
       />
 
       {/* Center text */}

@@ -163,7 +163,7 @@ function AttachmentPreviewItem({ attachment, onRemove }: AttachmentPreviewItemPr
           'absolute -top-1 -right-1 w-5 h-5 rounded-full',
           'bg-warm-700 text-white shadow-md',
           'flex items-center justify-center',
-          'opacity-0 group-hover:opacity-100 transition-opacity duration-200',
+          'opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200',
           'hover:bg-red-600',
           'focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-red-500'
         )}

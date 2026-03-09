@@ -78,7 +78,7 @@ function DevPlanCard({ item }: { item: DevPlanProgressItem }) {
 export function TeamDevProgress({ data, loading }: TeamDevProgressProps) {
   if (loading) {
     return (
-      <div className="relative glass-standard rounded-2xl overflow-hidden">
+      <div className="relative glass-standard rounded-2xl overflow-clip">
         <ShineEffect />
         <div className="px-5 py-4 border-b border-slate-100/50">
           <div className="flex items-center gap-2">
@@ -103,7 +103,7 @@ export function TeamDevProgress({ data, loading }: TeamDevProgressProps) {
   }
 
   return (
-    <div className="relative glass-standard rounded-2xl overflow-hidden">
+    <div className="relative glass-standard rounded-2xl overflow-clip">
       <ShineEffect />
       <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100/50">
         <div className="flex items-center gap-2">

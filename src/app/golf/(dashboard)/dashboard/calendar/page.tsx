@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { GolfCalendarWrapper } from '@/components/golf/calendar/GolfCalendarWrapper';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
+import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { Metadata } from 'next';
 
@@ -181,9 +182,15 @@ export default async function GolfCalendarPage() {
             background: 'linear-gradient(180deg, #FFFEFA 0%, #FDF9F0 33%, #FAF5EB 66%, #F5F0E6 100%)',
           }}
         >
-          {/* Event Summary Strip */}
+          {/* Mobile Menu + Event Summary Strip */}
+          <div className="flex-shrink-0 px-4 md:px-6 pt-4 md:pt-6 pb-2">
+            <div className="flex items-center gap-3">
+              <MobileMenuButton />
+              <h1 className="text-xl font-semibold tracking-tight text-warm-900 lg:hidden">Calendar</h1>
+            </div>
+          </div>
           {events.length > 0 && (
-            <div className="flex-shrink-0 px-4 md:px-6 pt-4 md:pt-6 pb-2">
+            <div className="flex-shrink-0 px-4 md:px-6 pb-2">
               <div className="flex items-center gap-4 overflow-x-auto scrollbar-hide">
                 <span className="text-sm font-medium text-warm-600 whitespace-nowrap">
                   {upcomingEvents} upcoming event{upcomingEvents !== 1 ? 's' : ''}

@@ -102,7 +102,7 @@ export function FAB({ onSchedule, onLogContact, onAddCoach }: FABProps) {
   };
 
   return (
-    <div ref={containerRef} className="fixed bottom-6 right-6 z-50">
+    <div ref={containerRef} className="fixed bottom-6 right-6 z-50 pb-[env(safe-area-inset-bottom)]">
       {/* Search Modal */}
       {showSearch && (
         <div className="absolute bottom-20 right-0 w-96 bg-white rounded-2xl shadow-2xl border border-warm-200 overflow-hidden animate-in slide-in-from-bottom-4 duration-200">

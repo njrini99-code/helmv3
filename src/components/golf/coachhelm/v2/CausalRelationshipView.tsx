@@ -81,9 +81,9 @@ export function CausalRelationshipView({
     <div className="space-y-6">
       {/* Main cause-effect visualization */}
       <div className="bg-gradient-to-r from-blue-50 via-white to-primary-50 border border-warm-200 rounded-xl p-6">
-        <div className="flex items-center justify-center gap-4">
+        <div className="flex flex-col md:flex-row items-center justify-center gap-3 md:gap-4">
           {/* Cause */}
-          <div className="flex-1 max-w-[200px]">
+          <div className="w-full md:flex-1 md:max-w-[200px]">
             <div className="bg-blue-100 border border-blue-200 rounded-xl p-4 text-center">
               <p className="text-xs text-blue-600 uppercase tracking-wide font-medium mb-1">
                 Cause
@@ -99,8 +99,8 @@ export function CausalRelationshipView({
             </div>
           </div>
 
-          {/* Arrow with relationship type */}
-          <div className="flex flex-col items-center gap-2">
+          {/* Arrow with relationship type - horizontal (desktop) */}
+          <div className="hidden md:flex flex-col items-center gap-2">
             <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium', typeInfo.color)}>
               {typeInfo.label}
             </span>
@@ -112,8 +112,19 @@ export function CausalRelationshipView({
             <span className="text-xs text-warm-400">{typeInfo.desc}</span>
           </div>
 
+          {/* Arrow with relationship type - vertical (mobile) */}
+          <div className="flex md:hidden flex-col items-center gap-1">
+            <span className={cn('px-2 py-0.5 rounded-full text-xs font-medium', typeInfo.color)}>
+              {typeInfo.label}
+            </span>
+            <svg className="w-5 h-5 text-warm-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+            <span className="text-xs text-warm-400">{typeInfo.desc}</span>
+          </div>
+
           {/* Effect */}
-          <div className="flex-1 max-w-[200px]">
+          <div className="w-full md:flex-1 md:max-w-[200px]">
             <div className="bg-primary-100 border border-primary-200 rounded-xl p-4 text-center">
               <p className="text-xs text-primary-600 uppercase tracking-wide font-medium mb-1">
                 Effect

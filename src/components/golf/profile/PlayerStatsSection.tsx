@@ -108,7 +108,7 @@ const ScoringTrendMini = memo(function ScoringTrendMini({ rounds }: { rounds: Ro
   const improving = recentAvg < olderAvg;
 
   return (
-    <div className="relative glass-standard rounded-2xl overflow-hidden p-5">
+    <div className="relative glass-standard rounded-2xl overflow-clip p-5">
       <div
         className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
         style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
@@ -183,7 +183,7 @@ const ScoreDistribution = memo(function ScoreDistribution({ stats }: { stats: Go
   if (total === 0) return null;
 
   return (
-    <div className="relative glass-standard rounded-2xl overflow-hidden p-5">
+    <div className="relative glass-standard rounded-2xl overflow-clip p-5">
       <div
         className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
         style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
@@ -327,7 +327,7 @@ const DetailedStatsTabs = memo(function DetailedStatsTabs({ stats }: { stats: Go
   ];
 
   return (
-    <div className="relative glass-standard rounded-2xl overflow-hidden">
+    <div className="relative glass-standard rounded-2xl overflow-clip">
       <div
         className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
         style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
@@ -366,7 +366,7 @@ const DetailedStatsTabs = memo(function DetailedStatsTabs({ stats }: { stats: Go
 
 function NoStatsPlaceholder() {
   return (
-    <div className="relative glass-standard rounded-2xl overflow-hidden p-12 text-center">
+    <div className="relative glass-standard rounded-2xl overflow-clip p-12 text-center">
       <div
         className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
         style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}

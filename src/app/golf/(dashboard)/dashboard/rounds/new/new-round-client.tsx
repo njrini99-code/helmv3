@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { ShineEffect } from '@/components/ui/shine-effect';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import ShotTrackingComprehensive from '@/components/golf/ShotTrackingComprehensive';
 import type { HoleStats, ShotRecord, RoundHole } from '@/lib/types/golf';
 import {
@@ -59,6 +59,7 @@ interface NewRoundClientProps {
 
 export default function NewRoundClient({ existingInProgressRound }: NewRoundClientProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { showToast } = useToast();
   const [showResumePrompt, setShowResumePrompt] = useState(!!existingInProgressRound);
 
@@ -359,7 +360,9 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
 
   // Qualifier state
   const [qualifiers, setQualifiers] = useState<PlayerQualifierInfo[]>([]);
+  const [allActiveQualifiers, setAllActiveQualifiers] = useState<PlayerQualifierInfo[]>([]);
   const [loadingQualifiers, setLoadingQualifiers] = useState(false);
+  const [loadingActiveQualifiers, setLoadingActiveQualifiers] = useState(true);
   const [selectedQualifierId, setSelectedQualifierId] = useState<string | null>(null);
   const [selectedRoundNumber, setSelectedRoundNumber] = useState<number | null>(null);
   const [availableRounds, setAvailableRounds] = useState<number[]>([]);
@@ -374,6 +377,35 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
   const [saveCourseChecked, setSaveCourseChecked] = useState(false);
   const [courseSearchQuery, setCourseSearchQuery] = useState('');
   const [nineSelection, setNineSelection] = useState<'front' | 'back'>('front');
+
+  // Fetch active qualifiers on mount for the quick-select cards
+  useEffect(() => {
+    getPlayerQualifiers()
+      .then(result => {
+        setLoadingActiveQualifiers(false);
+        if (result.success) {
+          const active = result.data.filter(
+            q => q.status !== 'completed' && q.roundsCompleted < q.numRounds
+          );
+          setAllActiveQualifiers(active);
+        }
+      })
+      .catch(() => {
+        setLoadingActiveQualifiers(false);
+      });
+  }, []);
+
+  // Auto-select qualifier from URL param (e.g. ?qualifier=<id>)
+  const urlQualifierHandled = useRef(false);
+  useEffect(() => {
+    if (urlQualifierHandled.current) return;
+    const qualifierParam = searchParams.get('qualifier');
+    if (qualifierParam) {
+      urlQualifierHandled.current = true;
+      setSetupData(prev => ({ ...prev, roundType: 'qualifier' }));
+      setSelectedQualifierId(qualifierParam);
+    }
+  }, [searchParams]);
 
   // Fetch qualifiers when round type changes to 'qualifier'
   useEffect(() => {
@@ -406,7 +438,12 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
         });
     } else {
       // Reset qualifier state when switching away from qualifier
-      setSelectedQualifierId(null);
+      // Guard: don't wipe if URL param just set the qualifier (prevents race condition)
+      if (!urlQualifierHandled.current) {
+        setSelectedQualifierId(null);
+      } else {
+        urlQualifierHandled.current = false;
+      }
       setSelectedRoundNumber(null);
       setAvailableRounds([]);
       setQualifierError(null);
@@ -1122,7 +1159,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
           <div key={s.key} className="flex-1 flex flex-col items-center gap-1">
             <div className="w-full h-1.5 rounded-full overflow-hidden bg-warm-200">
               <div
-                className={`h-full rounded-full transition-all duration-500 ${
+                className={`h-full rounded-full transition-[width] duration-500 ${
                   isComplete ? 'bg-primary-500 w-full' : isActive ? 'bg-primary-400 w-1/2' : 'w-0'
                 }`}
                 style={{ width: isComplete ? '100%' : isActive ? '50%' : '0%' }}
@@ -1145,7 +1182,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
     return (
       <div className="min-h-dvh bg-transparent flex items-center justify-center p-4">
         <div className="w-full max-w-md">
-          <div className="relative glass-standard rounded-2xl overflow-hidden p-6 sm:p-8 text-center">
+          <div className="relative glass-standard rounded-2xl overflow-clip p-6 sm:p-8 text-center">
             <ShineEffect />
             <div className="w-14 h-14 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto mb-5">
               <IconFlag size={24} className="text-primary-500" />
@@ -1189,7 +1226,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
     return (
       <div className="min-h-dvh bg-transparent flex items-center justify-center p-4">
         <div className="w-full max-w-2xl">
-          <div className="relative glass-standard rounded-2xl overflow-hidden p-5 sm:p-8">
+          <div className="relative glass-standard rounded-2xl overflow-clip p-5 sm:p-8">
             <ShineEffect />
             <StepProgressBar />
             <h1 className="text-2xl font-semibold tracking-tight text-warm-900 mb-2">
@@ -1238,7 +1275,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                             handleSavedCourseSelect(savedCourses[0]!.id);
                           }
                         }}
-                        className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                        className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-[color,background-color,box-shadow] ${
                           courseMode === 'saved'
                             ? 'bg-white text-warm-900 shadow-sm'
                             : 'text-warm-500 hover:text-warm-700'
@@ -1265,7 +1302,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                             teesPlayed: 'White',
                           }));
                         }}
-                        className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                        className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-[color,background-color,box-shadow] ${
                           courseMode === 'new'
                             ? 'bg-white text-warm-900 shadow-sm'
                             : 'text-warm-500 hover:text-warm-700'
@@ -1316,7 +1353,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                                 key={course.id}
                                 type="button"
                                 onClick={() => handleSavedCourseSelect(isSelected ? null : course.id)}
-                                className={`w-full text-left rounded-xl border p-3.5 transition-all duration-150 ${
+                                className={`w-full text-left rounded-xl border p-3.5 transition-[color,background-color,border-color,box-shadow] duration-150 ${
                                   isSelected
                                     ? 'border-primary-400/60 bg-primary-50/60 ring-2 ring-primary-500/20 shadow-sm'
                                     : 'border-warm-200/70 bg-white/70 hover:border-warm-300 hover:bg-white/90 hover:shadow-sm'
@@ -1554,13 +1591,13 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                       <button
                         type="button"
                         onClick={() => setSaveCourseChecked(!saveCourseChecked)}
-                        className={`w-full flex items-center gap-3 p-3.5 rounded-xl border transition-all duration-150 ${
+                        className={`w-full flex items-center gap-3 p-3.5 rounded-xl border transition-colors duration-150 ${
                           saveCourseChecked
                             ? 'border-primary-300/60 bg-primary-50/50'
                             : 'border-warm-200/70 bg-white/50 hover:bg-white/70'
                         }`}
                       >
-                        <div className={`flex-shrink-0 h-5 w-5 rounded-md border-2 flex items-center justify-center transition-all ${
+                        <div className={`flex-shrink-0 h-5 w-5 rounded-md border-2 flex items-center justify-center transition-colors ${
                           saveCourseChecked
                             ? 'border-primary-500 bg-primary-500'
                             : 'border-warm-300'
@@ -1577,6 +1614,48 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                         </div>
                       </button>
                     )}
+                  </div>
+                </div>
+              )}
+
+              {/* Active Qualifiers — quick-select cards */}
+              {!loadingActiveQualifiers && allActiveQualifiers.length > 0 && setupData.roundType !== 'qualifier' && (
+                <div className="rounded-2xl border border-purple-200/60 bg-purple-50/40 p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <IconTrophy size={18} className="text-purple-600" />
+                    <h3 className="text-sm font-semibold text-purple-900">Active Qualifiers</h3>
+                  </div>
+                  <p className="text-xs text-purple-700/70 mb-3">Tap to start a qualifier round</p>
+                  <div className="space-y-2 max-h-[220px] overflow-y-auto">
+                    {allActiveQualifiers.map(q => (
+                      <button
+                        key={q.id}
+                        type="button"
+                        onClick={() => {
+                          setSetupData(prev => ({ ...prev, roundType: 'qualifier' }));
+                          setSelectedQualifierId(q.id);
+                        }}
+                        className="w-full flex items-center justify-between gap-3 p-3.5 rounded-xl border border-purple-200/60 bg-white/80 hover:bg-white hover:shadow-sm active:scale-[0.98] transition-all duration-150 text-left"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-warm-900 truncate">{q.name}</p>
+                          <div className="flex items-center gap-3 mt-1 text-xs text-warm-500">
+                            {q.courseName && (
+                              <span className="flex items-center gap-1 truncate">
+                                <IconMapPin size={11} />
+                                {q.courseName}
+                              </span>
+                            )}
+                            <span>{q.roundsCompleted}/{q.numRounds} rounds</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-700">
+                            Play
+                          </span>
+                        </div>
+                      </button>
+                    ))}
                   </div>
                 </div>
               )}
@@ -1625,7 +1704,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                       <button
                         type="button"
                         onClick={() => setHolesPerRound(9)}
-                        className={`px-5 py-2 rounded-md text-sm font-semibold transition-all ${
+                        className={`px-5 py-2 rounded-md text-sm font-semibold transition-[color,background-color,box-shadow] ${
                           holesPerRound === 9
                             ? 'bg-white text-warm-900 shadow-sm'
                             : 'text-warm-500 hover:text-warm-700'
@@ -1636,7 +1715,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                       <button
                         type="button"
                         onClick={() => setHolesPerRound(18)}
-                        className={`px-5 py-2 rounded-md text-sm font-semibold transition-all ${
+                        className={`px-5 py-2 rounded-md text-sm font-semibold transition-[color,background-color,box-shadow] ${
                           holesPerRound === 18
                             ? 'bg-white text-warm-900 shadow-sm'
                             : 'text-warm-500 hover:text-warm-700'
@@ -1652,7 +1731,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                         <button
                           type="button"
                           onClick={() => setNineSelection('front')}
-                          className={`px-5 py-2 rounded-md text-sm font-semibold transition-all ${
+                          className={`px-5 py-2 rounded-md text-sm font-semibold transition-[color,background-color,box-shadow] ${
                             nineSelection === 'front'
                               ? 'bg-white text-warm-900 shadow-sm'
                               : 'text-warm-500 hover:text-warm-700'
@@ -1663,7 +1742,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                         <button
                           type="button"
                           onClick={() => setNineSelection('back')}
-                          className={`px-5 py-2 rounded-md text-sm font-semibold transition-all ${
+                          className={`px-5 py-2 rounded-md text-sm font-semibold transition-[color,background-color,box-shadow] ${
                             nineSelection === 'back'
                               ? 'bg-white text-warm-900 shadow-sm'
                               : 'text-warm-500 hover:text-warm-700'
@@ -1839,7 +1918,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
     return (
       <div className="min-h-full bg-transparent flex items-start justify-center p-4 pt-6">
         <div className="w-full max-w-2xl">
-          <div className="relative glass-standard rounded-2xl overflow-hidden p-5 sm:p-8">
+          <div className="relative glass-standard rounded-2xl overflow-clip p-5 sm:p-8">
             <ShineEffect />
             <StepProgressBar />
             <HoleConfigurationForm
@@ -1865,7 +1944,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
     return (
       <div className="min-h-dvh bg-transparent flex items-center justify-center p-4">
         <div className="w-full max-w-md">
-          <div className="relative glass-standard rounded-2xl overflow-hidden p-8 text-center">
+          <div className="relative glass-standard rounded-2xl overflow-clip p-8 text-center">
             <ShineEffect />
             <div className="flex items-center justify-center gap-2 mx-auto mb-6">
               <span className="w-3 h-3 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />

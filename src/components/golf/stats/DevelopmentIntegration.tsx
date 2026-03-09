@@ -141,7 +141,7 @@ export function DevelopmentIntegration({
       </div>
 
       {/* Priority Overview */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className={criticalAreas.length > 0 ? 'border-red-200' : 'opacity-50'}>
           <CardContent className="p-4 text-center">
             <div className="text-3xl font-bold text-red-600">{criticalAreas.length}</div>

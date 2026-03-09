@@ -149,8 +149,8 @@ function ImageAttachment({ url, fileName, width, height, isOwnMessage: _isOwnMes
         {/* Expand overlay */}
         <div
           className={cn(
-            'absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors',
-            'flex items-center justify-center opacity-0 group-hover:opacity-100'
+            'absolute inset-0 bg-black/0 md:group-hover:bg-black/20 transition-colors',
+            'flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100'
           )}
         >
           <IconZoomIn size={24} className="text-white drop-shadow-lg" />

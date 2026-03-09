@@ -21,7 +21,7 @@ export default function MyStatsError({
   }, [error]);
 
   return (
-    <div className="min-h-screen bg-[#FFFEFA] flex items-center justify-center p-4">
+    <div className="min-h-dvh bg-[#FFFEFA] flex items-center justify-center p-4">
       <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
         {/* Error Icon */}
         <div className="w-16 h-16 mx-auto rounded-full bg-red-100 flex items-center justify-center mb-4">

@@ -45,6 +45,7 @@ export interface RoundDraftData {
   selectedQualifierId?: string | null;
   selectedRoundNumber?: number | null;
   inProgressShots?: Record<number, ShotRecord[]>;
+  holesPerRound?: 9 | 18;
 }
 
 export interface DraftInfo {
@@ -116,7 +117,7 @@ export async function saveRoundDraft(
     const now = new Date().toISOString();
 
     // Calculate total holes for the draft
-    const totalHoles = data.holes.length || 18;
+    const totalHoles = data.holesPerRound ?? (data.holes.length > 0 ? data.holes.length : 18);
 
     // Draft data is stored in the dedicated draft_data JSONB column
 

@@ -91,7 +91,7 @@ export function QualifierViewTabs({ leaderboard, numRounds = 1, showLiveLeaderbo
               {leaderboard.map((entry, index) => {
                 const position = index + 1;
                 const isLeader = position === 1;
-                const showPosition = !entry.isTied || index === 0 || leaderboard[index - 1]!.totalScore !== entry.totalScore;
+                const showPosition = !entry.isTied || index === 0 || leaderboard[index - 1]!.totalToPar !== entry.totalToPar;
 
                 return (
                   <tr

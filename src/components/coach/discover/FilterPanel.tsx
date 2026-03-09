@@ -143,7 +143,7 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
   };
 
   return (
-    <div className="glass-subtle rounded-2xl p-6 sticky top-6 overflow-hidden relative">
+    <div className="glass-subtle rounded-2xl p-6 sticky top-6 overflow-clip relative">
       {/* Shine effect */}
       <div
         className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"

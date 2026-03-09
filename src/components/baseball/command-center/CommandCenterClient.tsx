@@ -126,7 +126,7 @@ function PlayerRosterCard({
     <button
       onClick={onClick}
       className="w-full text-left bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-4
-                 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group"
+                 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-[transform,box-shadow] duration-200 group"
     >
       <div className="flex items-start gap-3">
         {/* Avatar */}
@@ -331,7 +331,7 @@ export function CommandCenterClient({
   // ─── Render ──────────────────────────────────────────────────────────────────
   return (
     <>
-      <div className="min-h-screen bg-[#FFFEFA]">
+      <div className="min-h-dvh bg-[#FFFEFA]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
 
           {/* ── Header ─────────────────────────────────────────────────── */}
@@ -353,7 +353,7 @@ export function CommandCenterClient({
               <Link href="/baseball/dashboard/stats/upload">
                 <button className="flex items-center gap-2 px-4 py-2 bg-white/70 backdrop-blur-sm
                                    border border-white/20 rounded-xl text-sm font-medium text-slate-700
-                                   hover:bg-white hover:shadow-sm transition-all">
+                                   hover:bg-white hover:shadow-sm transition-[background-color,box-shadow]">
                   <IconUpload size={16} />
                   <span className="hidden sm:inline">Upload Stats</span>
                 </button>
@@ -383,14 +383,14 @@ export function CommandCenterClient({
                   <button
                     key={day.date.toISOString()}
                     onClick={() => router.push('/baseball/dashboard/calendar')}
-                    className="flex flex-col items-center py-2.5 px-1 rounded-xl transition-all group hover:bg-slate-50"
+                    className="flex flex-col items-center py-2.5 px-1 rounded-xl transition-colors group hover:bg-slate-50"
                   >
                     <span className={`text-[10px] font-semibold uppercase tracking-wide mb-1.5 ${
                       day.isToday ? 'text-primary-600' : 'text-slate-400'
                     }`}>
                       {day.dayLabel}
                     </span>
-                    <span className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold transition-all ${
+                    <span className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold transition-[color,background-color,box-shadow] ${
                       day.isToday
                         ? 'bg-primary-600 text-white shadow-sm'
                         : 'text-slate-700 group-hover:bg-slate-100'
@@ -421,7 +421,7 @@ export function CommandCenterClient({
               <button
                 key={id}
                 onClick={() => setActiveTab(id)}
-                className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-medium transition-all ${
+                className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-medium transition-[color,background-color,box-shadow] ${
                   activeTab === id
                     ? 'bg-primary-600 text-white shadow-sm'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -436,7 +436,7 @@ export function CommandCenterClient({
           {/* ══════════════════════════════════════════════════════════════
               ROSTER TAB
           ══════════════════════════════════════════════════════════════ */}
-          {activeTab === 'roster' && (
+          <div className={activeTab === 'roster' ? 'block' : 'hidden'}>
             <div className="space-y-5">
 
               {/* Search + filters row */}
@@ -482,7 +482,7 @@ export function CommandCenterClient({
                 {/* Upload stats */}
                 <Link href="/baseball/dashboard/stats/upload" className="sm:ml-auto">
                   <button className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-slate-500
-                                     bg-white/60 border border-slate-200/60 rounded-xl hover:bg-white transition-all whitespace-nowrap">
+                                     bg-white/60 border border-slate-200/60 rounded-xl hover:bg-white transition-colors whitespace-nowrap">
                     <IconUpload size={14} />
                     Upload Stats
                   </button>
@@ -529,12 +529,12 @@ export function CommandCenterClient({
                 </div>
               )}
             </div>
-          )}
+          </div>
 
           {/* ══════════════════════════════════════════════════════════════
               STATS TAB
           ══════════════════════════════════════════════════════════════ */}
-          {activeTab === 'stats' && (
+          <div className={activeTab === 'stats' ? 'block' : 'hidden'}>
             <div className="space-y-6">
 
               {/* Team overview cards */}
@@ -596,7 +596,7 @@ export function CommandCenterClient({
                         <button
                           key={t}
                           onClick={() => setStatTypeFilter(t)}
-                          className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
+                          className={`px-3 py-1 rounded-lg text-xs font-medium transition-[color,background-color] ${
                             statTypeFilter === t
                               ? 'bg-primary-600 text-white'
                               : 'text-slate-600 hover:text-slate-900'
@@ -625,7 +625,7 @@ export function CommandCenterClient({
                     <p className="text-slate-500 text-sm">No player data available yet.</p>
                   </div>
                 ) : (
-                  <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-hidden">
+                  <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-clip">
                     <div className="overflow-x-auto">
                       <table className="w-full">
                         <thead>
@@ -712,7 +712,7 @@ export function CommandCenterClient({
                 )}
               </div>
             </div>
-          )}
+          </div>
 
         </div>
       </div>

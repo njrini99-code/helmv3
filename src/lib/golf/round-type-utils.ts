@@ -11,7 +11,7 @@
  * Frontend uses: 'practice', 'tournament', 'qualifier'
  */
 export function roundTypeFromDb(roundType: string): 'practice' | 'tournament' | 'qualifier' {
-  if (roundType === 'qualifying') return 'qualifier';
-  if (roundType === 'qualifier') return 'qualifier';
-  return roundType as 'practice' | 'tournament' | 'qualifier';
+  if (roundType === 'qualifying' || roundType === 'qualifier') return 'qualifier';
+  if (roundType === 'practice' || roundType === 'tournament') return roundType;
+  return 'practice'; // fallback for unknown types ('casual', etc.)
 }

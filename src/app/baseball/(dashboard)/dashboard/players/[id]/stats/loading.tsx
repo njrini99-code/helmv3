@@ -2,7 +2,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export default function PlayerStatsLoading() {
   return (
-    <div className="min-h-screen bg-[#FFFEFA]">
+    <div className="min-h-dvh bg-[#FFFEFA]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Header */}
         <div className="mb-6">
@@ -64,7 +64,7 @@ export default function PlayerStatsLoading() {
         </div>
 
         {/* Session History */}
-        <div className="glass-standard rounded-2xl overflow-hidden">
+        <div className="glass-standard rounded-2xl overflow-clip">
           <div className="px-6 py-4 border-b border-warm-100">
             <div className="flex items-center justify-between">
               <div>

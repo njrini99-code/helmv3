@@ -133,10 +133,11 @@ export function GolfCalendarWrapper({
         currentUserId={currentUserId}
         onSyncSettings={() => setShowFeedManager(true)}
         teamTimezone={teamTimezone}
+        teamId={teamId ?? undefined}
       />
 
       <Dialog open={showFeedManager} onOpenChange={setShowFeedManager}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>Calendar Feeds</DialogTitle>
           </DialogHeader>

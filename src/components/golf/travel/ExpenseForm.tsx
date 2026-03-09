@@ -205,7 +205,7 @@ export function ExpenseForm({
         {/* Category Selection */}
         <div>
           <label className="text-sm font-medium text-warm-700 block mb-2">Category</label>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
             {CATEGORIES.map((cat) => (
               <motion.button
                 key={cat.value}

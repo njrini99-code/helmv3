@@ -184,7 +184,7 @@ export function Header({ title, subtitle, children, backHref }: HeaderProps) {
 
             {/* User Dropdown */}
             {showUserMenu && (
-              <div className="absolute right-0 top-full mt-2 w-64 glass-standard rounded-2xl shadow-xl border border-white/30 overflow-hidden z-50 animate-fade-in">
+              <div className="absolute right-0 top-full mt-2 w-64 glass-standard rounded-2xl shadow-xl border border-white/30 overflow-clip z-50 animate-fade-in">
                 {/* User info */}
                 <div className="p-4 border-b border-white/20 bg-white/30">
                   <div className="flex items-center gap-3">

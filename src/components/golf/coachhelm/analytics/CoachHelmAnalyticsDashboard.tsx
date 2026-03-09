@@ -8,7 +8,7 @@
  */
 
 import { useState, useTransition } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { GlassCard } from '@/components/ui/glass-card';
 import {
@@ -20,6 +20,7 @@ import {
   IconChartRadar,
   IconCalendar,
 } from '@/components/icons';
+import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
 import { AnalyticsSummaryCards } from './AnalyticsSummaryCards';
 import { InsightEffectivenessPanel } from './InsightEffectivenessPanel';
 import { PredictionAccuracyPanel } from './PredictionAccuracyPanel';
@@ -125,18 +126,19 @@ export function CoachHelmAnalyticsDashboard({
     <div className="min-h-full">
       {/* Header */}
       <div className="border-b border-warm-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 py-5">
-          <div className="flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-5">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-4">
+              <MobileMenuButton />
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/20"
+                className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/20"
               >
                 <IconChartBar size={24} className="text-white" />
               </motion.div>
               <div>
-                <h1 className="text-2xl font-semibold tracking-tight text-warm-900">
+                <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">
                   CoachHelm Analytics
                 </h1>
                 <p className="text-warm-500 text-sm">
@@ -145,7 +147,7 @@ export function CoachHelmAnalyticsDashboard({
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="w-full md:w-auto flex items-center gap-3">
               {/* Date Range Selector */}
               <div className="flex items-center gap-2">
                 <IconCalendar size={16} className="text-warm-400" />
@@ -234,16 +236,8 @@ export function CoachHelmAnalyticsDashboard({
         </motion.div>
 
         {/* Tab Content */}
-        <AnimatePresence mode="wait">
-          {activeTab === 'overview' && (
-            <motion.div
-              key="overview"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              transition={{ duration: 0.3 }}
-              className="grid grid-cols-1 lg:grid-cols-2 gap-6"
-            >
+          <div className={activeTab === 'overview' ? 'block' : 'hidden'}>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Insight Effectiveness Summary */}
               {effectiveness && (
                 <GlassCard className="p-0" padding="none">
@@ -282,17 +276,11 @@ export function CoachHelmAnalyticsDashboard({
                   </div>
                 </GlassCard>
               )}
-            </motion.div>
-          )}
+            </div>
+          </div>
 
-          {activeTab === 'insights' && effectiveness && (
-            <motion.div
-              key="insights"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              transition={{ duration: 0.3 }}
-            >
+          <div className={activeTab === 'insights' ? 'block' : 'hidden'}>
+            {effectiveness && (
               <GlassCard className="p-0" padding="none">
                 <div className="px-6 py-4 border-b border-warm-100">
                   <h3 className="text-lg font-semibold text-warm-900">Insight Effectiveness</h3>
@@ -304,17 +292,11 @@ export function CoachHelmAnalyticsDashboard({
                   <InsightEffectivenessPanel data={effectiveness} />
                 </div>
               </GlassCard>
-            </motion.div>
-          )}
+            )}
+          </div>
 
-          {activeTab === 'predictions' && performance && (
-            <motion.div
-              key="predictions"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              transition={{ duration: 0.3 }}
-            >
+          <div className={activeTab === 'predictions' ? 'block' : 'hidden'}>
+            {performance && (
               <GlassCard className="p-0" padding="none">
                 <div className="px-6 py-4 border-b border-warm-100">
                   <h3 className="text-lg font-semibold text-warm-900">Prediction Performance</h3>
@@ -326,17 +308,11 @@ export function CoachHelmAnalyticsDashboard({
                   <PredictionAccuracyPanel data={performance} />
                 </div>
               </GlassCard>
-            </motion.div>
-          )}
+            )}
+          </div>
 
-          {activeTab === 'patterns' && patternImpact && (
-            <motion.div
-              key="patterns"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              transition={{ duration: 0.3 }}
-            >
+          <div className={activeTab === 'patterns' ? 'block' : 'hidden'}>
+            {patternImpact && (
               <GlassCard className="p-0" padding="none">
                 <div className="px-6 py-4 border-b border-warm-100">
                   <h3 className="text-lg font-semibold text-warm-900">Pattern Impact Analysis</h3>
@@ -348,9 +324,8 @@ export function CoachHelmAnalyticsDashboard({
                   <PatternImpactPanel data={patternImpact} />
                 </div>
               </GlassCard>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            )}
+          </div>
 
         {/* Empty State */}
         {!overview && !effectiveness && !performance && !patternImpact && (

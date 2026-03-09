@@ -34,7 +34,7 @@ function AnimatedStat({ value, suffix = '' }: { value: number; suffix?: string }
 
 function BentoStatSkeleton({ size = 'default' }: { size?: 'default' | 'large' }) {
   return (
-    <div className={`glass-standard rounded-2xl overflow-hidden animate-pulse ${size === 'large' ? 'p-6' : 'p-5'}`}>
+    <div className={`glass-standard rounded-2xl overflow-clip animate-pulse ${size === 'large' ? 'p-6' : 'p-5'}`}>
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="h-3.5 bg-slate-200 rounded w-20 mb-3" />
@@ -67,7 +67,7 @@ function BentoStatCard({
   href?: string;
 }) {
   const content = (
-    <div className={`relative group glass-standard rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 ${size === 'large' ? 'p-6' : 'p-5'}`}>
+    <div className={`relative group glass-standard rounded-2xl overflow-clip transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 ${size === 'large' ? 'p-6' : 'p-5'}`}>
       <ShineEffect />
       <div className="flex items-start justify-between">
         <div>
@@ -205,7 +205,7 @@ export default function CollegeCoachDashboard() {
 
         {/* Engagement Chart + Activity Feed */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="lg:col-span-2 relative glass-standard rounded-2xl overflow-hidden">
+          <div className="lg:col-span-2 relative glass-standard rounded-2xl overflow-clip">
             <ShineEffect />
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100/50">
               <div className="flex items-center gap-3">
@@ -223,7 +223,7 @@ export default function CollegeCoachDashboard() {
             </div>
           </div>
 
-          <div className="relative glass-standard rounded-2xl overflow-hidden">
+          <div className="relative glass-standard rounded-2xl overflow-clip">
             <ShineEffect />
             <div className="px-5 py-4 border-b border-slate-100/50">
               <div className="flex items-center gap-2">
@@ -288,7 +288,7 @@ export default function CollegeCoachDashboard() {
         </div>
 
         {/* Player Distribution Map */}
-        <div className="relative glass-standard rounded-2xl overflow-hidden">
+        <div className="relative glass-standard rounded-2xl overflow-clip">
           <ShineEffect />
           <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100/50">
             <div className="flex items-center gap-3">
@@ -337,7 +337,7 @@ export default function CollegeCoachDashboard() {
         </div>
 
         {/* Saved Searches */}
-        <div className="relative glass-standard rounded-2xl p-5 overflow-hidden">
+        <div className="relative glass-standard rounded-2xl p-5 overflow-clip">
           <ShineEffect />
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">

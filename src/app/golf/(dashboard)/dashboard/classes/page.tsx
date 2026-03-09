@@ -11,7 +11,7 @@ import { AddClassModal, type ClassFormData } from '@/components/golf/classes/Add
 import { UploadScheduleModal } from '@/components/golf/classes/UploadScheduleModal';
 import { ConfirmClassesModal } from '@/components/golf/classes/ConfirmClassesModal';
 import { ClassDetailModal } from '@/components/golf/classes/ClassDetailModal';
-import { MobileMenuButton } from '@/components/golf/layout/MobileMenuButton';
+import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
 import { formatTimeDisplay, formatDaysDisplay, generateClassColor, type ParsedClass } from '@/lib/utils/schedule-parser';
 import { syncClassToCalendar, removeClassFromCalendar } from '@/app/golf/actions/calendar-sync';
 
@@ -507,7 +507,7 @@ export default function GolfClassesPage() {
                   <IconCalendar size={20} className="text-warm-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-semibold text-warm-900">{totalCredits}</p>
+                  <p className="text-2xl font-semibold text-warm-900 tabular-nums">{totalCredits}</p>
                   <p className="text-xs text-warm-500">Credits</p>
                 </div>
               </div>

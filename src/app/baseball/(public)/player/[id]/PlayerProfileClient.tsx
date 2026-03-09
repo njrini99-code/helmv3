@@ -224,7 +224,7 @@ export function PlayerProfileClient({
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-primary-50/30">
+    <div className="min-h-dvh bg-gradient-to-br from-slate-50 via-white to-primary-50/30">
       {/* Hero Header */}
       <div className="relative">
         {/* Background banner - custom image or premium gradient */}

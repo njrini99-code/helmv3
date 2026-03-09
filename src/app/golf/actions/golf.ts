@@ -927,9 +927,7 @@ export async function submitGolfRoundComprehensive(
 
     // If this is a qualifier round, update the qualifier entry stats
     if (data.qualifierId) {
-      updateQualifierEntryStats(supabase, data.qualifierId, player.id).catch((err) => {
-        console.error('[Golf] Failed to update qualifier stats after round:', data.qualifierId, err);
-      });
+      await updateQualifierEntryStats(supabase, data.qualifierId, player.id);
     }
 
     // Invalidate stats cache BEFORE revalidating paths so Next.js regeneration
@@ -1739,7 +1737,7 @@ export async function createGolfQualifier(data: GolfQualifierInput): Promise<Act
       const entries = validatedData.playerIds.map(playerId => ({
         qualifier_id: qualifier.id,
         player_id: playerId,
-        status: 'registered',
+        status: 'entered',
       }));
 
       const { error: entriesError } = await supabase
@@ -3227,6 +3225,7 @@ export async function getPlayerQualifiers(): Promise<ActionResult<PlayerQualifie
           name,
           description,
           course_name,
+          num_rounds,
           start_date,
           end_date,
           status
@@ -3247,6 +3246,10 @@ export async function getPlayerQualifiers(): Promise<ActionResult<PlayerQualifie
       .eq('player_id', player.id)
       .in('qualifier_id', qualifierIds)
       .eq('status', 'completed');
+
+    if (roundsResult.error) {
+      return { success: false, error: 'Failed to load qualifier round history.' };
+    }
 
     const rounds = (roundsResult.data as unknown) as Array<{
       qualifier_id: string | null;
@@ -3296,9 +3299,9 @@ export async function getPlayerQualifiers(): Promise<ActionResult<PlayerQualifie
         const roundsCompleted = qualifierRounds.length > 0
           ? qualifierRounds.length
           : (entry.rounds_completed ?? 0);
-        const inferredNumRounds = q.status === 'completed'
+        const numRounds = (q as Record<string, unknown>).num_rounds as number | null ?? (q.status === 'completed'
           ? Math.max(roundsCompleted, 1)
-          : Math.max(roundsCompleted + 1, 1);
+          : Math.max(roundsCompleted + 1, 1));
 
         return {
           id: q.id,
@@ -3306,7 +3309,7 @@ export async function getPlayerQualifiers(): Promise<ActionResult<PlayerQualifie
           description: q.description,
           courseName: q.course_name,
           location: null,
-          numRounds: inferredNumRounds,
+          numRounds,
           holesPerRound: 18,
           startDate: q.start_date,
           endDate: q.end_date,
@@ -3664,16 +3667,19 @@ async function updateQualifierEntryStats(
 
     // Filter out rounds with null total_score to avoid summing 0 in place of missing data
     const scoredRounds = rounds.filter((r): r is typeof r & { total_score: number } => r.total_score != null);
-    if (scoredRounds.length === 0) return;
 
     const totalScore = scoredRounds.reduce((sum, r) => sum + r.total_score, 0);
+    const totalToPar = scoredRounds.reduce((sum, r) => sum + (r.score_to_par ?? 0), 0);
+    const roundsCompleted = scoredRounds.length;
 
-    // Update the qualifier entry with the total score
-    // Note: golf_qualifier_entries has only 'score' column, not 'total_score' or 'rounds_completed'
+    // Update all aggregate columns on the qualifier entry
     await supabase
       .from('golf_qualifier_entries')
       .update({
         score: totalScore,
+        total_score: totalScore,
+        total_to_par: totalToPar,
+        rounds_completed: roundsCompleted,
       })
       .eq('qualifier_id', qualifierId)
       .eq('player_id', playerId);

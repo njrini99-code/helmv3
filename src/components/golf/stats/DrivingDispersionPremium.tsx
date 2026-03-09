@@ -432,7 +432,7 @@ export const DrivingDispersionPremium = memo(function DrivingDispersionPremium({
 
       {/* Stats breakdown */}
       <div className="px-6 py-5 bg-white border-t border-warm-100/80">
-        <div className="grid grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
           <ZoneStatCard
             label="Left"
             percentage={leftPct}

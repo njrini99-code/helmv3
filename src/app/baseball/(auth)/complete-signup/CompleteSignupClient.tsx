@@ -93,14 +93,14 @@ export default function CompleteSignupClient() {
 
   if (checking) {
     return (
-      <div className="min-h-screen bg-[#FAF6F1] flex items-center justify-center">
+      <div className="min-h-dvh bg-[#FAF6F1] flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#FAF6F1] flex items-center justify-center p-4">
+    <div className="min-h-dvh bg-[#FAF6F1] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="w-16 h-16 rounded-full bg-primary-50 flex items-center justify-center mx-auto mb-4">
