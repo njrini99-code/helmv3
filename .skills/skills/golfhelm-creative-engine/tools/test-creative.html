@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=1080">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'DM Sans', sans-serif; overflow: hidden; }
+    .canvas {
+      width: 1080px;
+      height: 1350px;
+      position: relative;
+      background: linear-gradient(180deg, #FFFEFA 0%, #FDF9F0 35%, #F5F0E6 70%, #EDE8DD 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px;
+    }
+
+    /* Logo area */
+    .logo {
+      position: absolute;
+      top: 48px;
+      left: 48px;
+      font-size: 18px;
+      font-weight: 700;
+      color: #15803D;
+      letter-spacing: -0.02em;
+    }
+    .logo span { color: #78716c; font-weight: 500; }
+
+    /* Glass Card */
+    .glass-card {
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: 20px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.6);
+      padding: 40px;
+      width: 100%;
+      max-width: 860px;
+      margin-bottom: 48px;
+    }
+
+    /* Prediction header */
+    .prediction-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: #78716c;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+    }
+    .prediction-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(22, 163, 74, 0.1);
+      border: 1px solid rgba(22, 163, 74, 0.2);
+      border-radius: 9999px;
+      padding: 4px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #15803D;
+      margin-bottom: 20px;
+    }
+    .prediction-badge .dot {
+      width: 6px; height: 6px;
+      background: #15803D;
+      border-radius: 50%;
+    }
+
+    /* Score display */
+    .score-row {
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .score-big {
+      font-size: 96px;
+      font-weight: 700;
+      color: #1c1917;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+    .score-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .score-meta span {
+      font-size: 16px;
+      color: #78716c;
+      font-weight: 500;
+    }
+    .score-meta .trend {
+      color: #15803D;
+      font-weight: 600;
+    }
+
+    /* Confidence bar */
+    .confidence-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .confidence-label {
+      font-size: 14px;
+      font-weight: 500;
+      color: #78716c;
+      min-width: 80px;
+    }
+    .confidence-bar {
+      flex: 1;
+      height: 8px;
+      background: rgba(0,0,0,0.06);
+      border-radius: 9999px;
+      overflow: hidden;
+    }
+    .confidence-fill {
+      height: 100%;
+      border-radius: 9999px;
+      background: linear-gradient(135deg, #16a34a 0%, #22c55e 50%, #4ade80 100%);
+    }
+    .confidence-value {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1c1917;
+      min-width: 36px;
+      text-align: right;
+    }
+
+    /* Stat pills */
+    .stat-pills {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .stat-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,255,255,0.8);
+      border: 1px solid rgba(0,0,0,0.06);
+      border-radius: 12px;
+      padding: 10px 16px;
+    }
+    .stat-pill .stat-value {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1c1917;
+    }
+    .stat-pill .stat-label {
+      font-size: 12px;
+      color: #78716c;
+      font-weight: 500;
+    }
+
+    /* Headline */
+    .headline {
+      font-size: 56px;
+      font-weight: 700;
+      color: #1c1917;
+      letter-spacing: -0.025em;
+      line-height: 1.1;
+      text-align: center;
+      margin-bottom: 16px;
+      max-width: 800px;
+    }
+    .headline .green { color: #15803D; }
+
+    .subtext {
+      font-size: 20px;
+      font-weight: 400;
+      color: #78716c;
+      text-align: center;
+      margin-bottom: 40px;
+      max-width: 600px;
+    }
+
+    /* CTA */
+    .cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #16a34a 0%, #22c55e 50%, #4ade80 100%);
+      color: white;
+      font-size: 18px;
+      font-weight: 600;
+      padding: 16px 32px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
+      letter-spacing: -0.01em;
+    }
+    .cta .arrow { font-size: 20px; }
+  </style>
+</head>
+<body>
+  <div class="canvas">
+    <!-- Logo -->
+    <div class="logo">GolfHelm <span>CoachHelm AI</span></div>
+
+    <!-- Glass Card: Score Prediction -->
+    <div class="glass-card">
+      <div class="prediction-label">Next Round Prediction</div>
+      <div class="prediction-badge"><span class="dot"></span> AI Confidence: High</div>
+
+      <div class="score-row">
+        <div class="score-big">73</div>
+        <div class="score-meta">
+          <span>Predicted Score</span>
+          <span>Range: 71–76</span>
+          <span class="trend">↓ 2.3 vs season avg</span>
+        </div>
+      </div>
+
+      <div class="confidence-row">
+        <span class="confidence-label">Confidence</span>
+        <div class="confidence-bar"><div class="confidence-fill" style="width: 82%"></div></div>
+        <span class="confidence-value">82%</span>
+      </div>
+      <div class="confidence-row">
+        <span class="confidence-label">Ball Striking</span>
+        <div class="confidence-bar"><div class="confidence-fill" style="width: 71%"></div></div>
+        <span class="confidence-value">71%</span>
+      </div>
+      <div class="confidence-row">
+        <span class="confidence-label">Short Game</span>
+        <div class="confidence-bar"><div class="confidence-fill" style="width: 65%"></div></div>
+        <span class="confidence-value">65%</span>
+      </div>
+
+      <div class="stat-pills">
+        <div class="stat-pill">
+          <span class="stat-value">61%</span>
+          <span class="stat-label">Fairways</span>
+        </div>
+        <div class="stat-pill">
+          <span class="stat-value">56%</span>
+          <span class="stat-label">GIR</span>
+        </div>
+        <div class="stat-pill">
+          <span class="stat-value">30.2</span>
+          <span class="stat-label">Putts/Rd</span>
+        </div>
+        <div class="stat-pill">
+          <span class="stat-value">2.1</span>
+          <span class="stat-label">Penalties</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Headline -->
+    <div class="headline">Your AI-Powered <span class="green">Golf Coach</span></div>
+    <div class="subtext">Score predictions, pattern detection, and round analysis for college golf teams.</div>
+
+    <!-- CTA -->
+    <div class="cta">See It In Action <span class="arrow">→</span></div>
+  </div>
+</body>
+</html>

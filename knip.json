@@ -1,0 +1,10 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "src/app/**/!(*.test|*.spec).{ts,tsx}",
+    "next.config.js",
+    "tailwind.config.ts"
+  ],
+  "project": ["src/**/*.{ts,tsx}"],
+  "ignore": ["**/*.d.ts", "src/components/ui/**/*.tsx"]
+}
