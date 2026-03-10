@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { getGolfSessionProfile } from '@/lib/auth/session';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
@@ -44,25 +45,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function QualifierDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const supabase = await createClient();
+  const session = await getGolfSessionProfile();
+  if (!session) redirect('/golf/login');
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/golf/login');
-
-  // Check if user is coach or player
-  const { data: coach } = await supabase
-    .from('golf_coaches')
-    .select('id')
-    .eq('user_id', user.id)
-    .maybeSingle();
+  const { coach, player } = session;
   const isCoach = !!coach;
-
-  const { data: player } = await supabase
-    .from('golf_players')
-    .select('id')
-    .eq('user_id', user.id)
-    .maybeSingle();
   const isPlayer = !!player;
+
+  const supabase = await createClient();
 
   // Get qualifier with entries
   const { data: qualifier } = await supabase

@@ -21,40 +21,16 @@ export const metadata = {
 // ============================================================================
 
 export default async function IntelligenceDashboardPage() {
-  const supabase = await createClient();
+  const session = await getGolfSessionProfile();
+  if (!session) redirect('/golf/login');
 
-  // Auth check
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect('/golf/login');
-  }
-
-  // Get coach record
-  const { data: coachData } = await supabase
-    .from('golf_coaches')
-    .select('id, organization_id')
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  const coach = coachData as { id: string; organization_id: string | null } | null;
-
+  const { coach, player } = session;
   if (!coach) {
-    // Check if player
-    const { data: player } = await supabase
-      .from('golf_players')
-      .select('id')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    if (player) {
-      redirect('/golf/dashboard/coachhelm');
-    }
-
+    if (player) redirect('/golf/dashboard/coachhelm');
     redirect('/golf/login');
   }
+
+  const supabase = await createClient();
 
   // Look up team_id via organization_id
   let teamId: string | null = null;

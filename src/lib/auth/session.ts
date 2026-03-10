@@ -107,6 +107,7 @@ export interface GolfCoachProfile {
   full_name: string | null;
   organization_id: string | null;
   avatar_url: string | null;
+  onboarding_completed: boolean | null;
 }
 
 export interface GolfPlayerProfile {
@@ -116,6 +117,7 @@ export interface GolfPlayerProfile {
   last_name: string | null;
   avatar_url: string | null;
   handicap: number | null;
+  onboarding_completed: boolean | null;
 }
 
 export interface GolfSessionProfile {
@@ -147,12 +149,12 @@ export const getGolfSessionProfile = cache(async (): Promise<GolfSessionProfile 
   const [coachResult, playerResult] = await Promise.all([
     supabase
       .from('golf_coaches')
-      .select('id, user_id, full_name, organization_id, avatar_url')
+      .select('id, user_id, full_name, organization_id, avatar_url, onboarding_completed')
       .eq('user_id', user.id)
       .maybeSingle(),
     supabase
       .from('golf_players')
-      .select('id, user_id, first_name, last_name, avatar_url, handicap')
+      .select('id, user_id, first_name, last_name, avatar_url, handicap, onboarding_completed')
       .eq('user_id', user.id)
       .maybeSingle(),
   ]);

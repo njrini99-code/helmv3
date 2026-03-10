@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
 import { createClient } from '@/lib/supabase/server';
+import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -87,22 +88,13 @@ function StatsSectionSkeleton() {
 
 export default async function PlayerProfilePage({ params }: PageProps) {
   const { id } = await params;
+  const session = await getGolfSessionProfile();
+  if (!session) redirect('/golf/login');
+
+  const { coach } = session;
+  if (!coach) redirect('/golf/login');
+
   const supabase = await createClient();
-
-  // Auth check
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/golf/login');
-
-  // Verify coach access
-  const { data: coach } = await supabase
-    .from('golf_coaches')
-    .select('id, organization_id')
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  if (!coach) {
-    redirect('/golf/login');
-  }
 
   // Get the player with team membership verification
   const { data: player } = await supabase

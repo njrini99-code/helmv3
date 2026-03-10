@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect, notFound } from 'next/navigation';
 import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import ContinueRoundClient from './continue-round-client';
@@ -150,20 +151,13 @@ function mapShotToRecord(
 
 export default async function ContinueRoundPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const supabase = await createClient();
+  const session = await getGolfSessionProfile();
+  if (!session) redirect('/golf/login');
 
-  // Get current user
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/golf/login');
-
-  // Get player
-  const { data: player } = await supabase
-    .from('golf_players')
-    .select('id')
-    .eq('user_id', user.id)
-    .maybeSingle();
-
+  const { player } = session;
   if (!player) redirect('/golf/login');
+
+  const supabase = await createClient();
 
   // Load in-progress round
   const { data: round, error: roundError } = await supabase

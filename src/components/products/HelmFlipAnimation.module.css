@@ -1,0 +1,172 @@
+.scene {
+  width: 100%;
+  min-height: 340px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  background: #0a0b0f;
+  padding: 3.5rem 1.5rem 2.5rem;
+}
+
+.glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(
+    ellipse,
+    rgba(22, 163, 74, 0.08) 0%,
+    transparent 70%
+  );
+  filter: blur(50px);
+  pointer-events: none;
+}
+
+.wordRow {
+  display: flex;
+  align-items: center;
+  user-select: none;
+  position: relative;
+}
+
+/* Flipper container */
+.flipper {
+  display: inline-flex;
+  height: 1.15em;
+  overflow: hidden;
+  font-size: clamp(36px, 7vw, 72px);
+  text-align: right;
+  will-change: width, opacity;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.flipperInner {
+  will-change: transform;
+}
+
+.flipWord {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  height: 1.15em;
+  line-height: 1.15;
+  font-size: inherit;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: rgba(255, 255, 255, 0.92);
+  white-space: nowrap;
+  gap: 0.18em;
+  font-family: 'DM Sans', var(--font-sans), system-ui, sans-serif;
+}
+
+.flipWordLogo {
+  height: 1.05em;
+  width: 1.05em;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Force Next/Image to fill the logo container */
+.flipWordLogo img {
+  height: 100% !important;
+  width: 100% !important;
+  object-fit: contain !important;
+}
+
+/* Hidden state — flipper collapses */
+.flipperHidden {
+  opacity: 0;
+  width: 0 !important;
+  transition: width 1s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Helm text */
+.helm {
+  font-size: clamp(36px, 7vw, 72px);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: #16a34a;
+  line-height: 1.15;
+  position: relative;
+  font-family: 'DM Sans', var(--font-sans), system-ui, sans-serif;
+}
+
+/* Sports Labs canvas wrap */
+.slWrap {
+  position: relative;
+  margin-left: -0.02em;
+  display: none;
+  align-items: center;
+}
+
+.slWrapVisible {
+  display: inline-flex;
+}
+
+/* Main logo */
+.mainLogo {
+  height: 1.05em;
+  width: 1.05em;
+  font-size: clamp(36px, 7vw, 72px);
+  margin-left: 0.2em;
+  flex-shrink: 0;
+  will-change: opacity;
+  opacity: 0;
+  transition: opacity 1.4s cubic-bezier(0.4, 0, 0.2, 1);
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.mainLogo img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+}
+
+.mainLogoVisible {
+  display: inline-flex;
+}
+
+.mainLogoRevealed {
+  opacity: 1;
+}
+
+/* Tagline */
+.tagline {
+  position: absolute;
+  bottom: 1.25rem;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 10px;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.13);
+  font-weight: 700;
+  will-change: opacity;
+  opacity: 0;
+  transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: 'DM Sans', var(--font-sans), system-ui, sans-serif;
+}
+
+.taglineVisible {
+  opacity: 1;
+}
+
+/* Font preloader (invisible) */
+.fontPreload {
+  font-family: 'Satisfy', cursive;
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}

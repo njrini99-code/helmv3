@@ -1,5 +1,4 @@
 import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { GlassCard } from '@/components/ui/glass-card';
 import { IconInfo, IconSparkles } from '@/components/icons';
@@ -67,34 +66,12 @@ function NotCoachState() {
  * Coach-only page.
  */
 export default async function PatternsPage() {
-  const supabase = await createClient();
+  const session = await getGolfSessionProfile();
+  if (!session) redirect('/golf/login');
 
-  // Get authenticated user
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect('/golf/login');
-  }
-
-  // Verify user is a coach
-  const { data: coach } = await supabase
-    .from('golf_coaches')
-    .select('id, organization_id')
-    .eq('user_id', user.id)
-    .maybeSingle();
-
+  const { coach, player } = session;
   if (!coach) {
-    // Check if user is a player
-    const { data: player } = await supabase
-      .from('golf_players')
-      .select('id')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    if (player) {
-      return <NotCoachState />;
-    }
-
+    if (player) return <NotCoachState />;
     return <ErrorState error="No coach or player profile found. Please complete onboarding." />;
   }
 

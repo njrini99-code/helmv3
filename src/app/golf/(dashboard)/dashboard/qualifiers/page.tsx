@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { getGolfSessionProfile } from '@/lib/auth/session';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
@@ -18,55 +19,30 @@ export const metadata: Metadata = {
 export const revalidate = 300;
 
 export default async function GolfQualifiersPage() {
+  const session = await getGolfSessionProfile();
+  if (!session) redirect('/golf/login');
+
+  const { role, coach, player } = session;
+  const isCoach = role === 'coach';
   const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/golf/login');
-
-  const { data: userData } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', user.id)
-    .maybeSingle();
-
-  const userRole = userData?.role;
-  const isCoach = userRole === 'coach';
 
   let teamId: string | null = null;
   let qualifiers: GolfQualifier[] = [];
 
-  if (isCoach) {
-    const { data: coach } = await supabase
-      .from('golf_coaches')
-      .select('id, organization_id')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    // Get team_id from organization
-    if (coach?.organization_id) {
-      const { data: orgTeam } = await supabase
-        .from('golf_teams')
-        .select('id')
-        .eq('organization_id', coach.organization_id)
-        .maybeSingle();
-      teamId = orgTeam?.id || null;
-    }
-  } else {
-    const { data: player } = await supabase
-      .from('golf_players')
+  if (isCoach && coach?.organization_id) {
+    const { data: orgTeam } = await supabase
+      .from('golf_teams')
       .select('id')
-      .eq('user_id', user.id)
+      .eq('organization_id', coach.organization_id)
       .maybeSingle();
-
-    // Get team_id from team_members
-    if (player?.id) {
-      const { data: teamMember } = await supabase
-        .from('golf_team_members')
-        .select('team_id')
-        .eq('player_id', player.id)
-        .maybeSingle();
-      teamId = teamMember?.team_id || null;
-    }
+    teamId = orgTeam?.id || null;
+  } else if (player?.id) {
+    const { data: teamMember } = await supabase
+      .from('golf_team_members')
+      .select('team_id')
+      .eq('player_id', player.id)
+      .maybeSingle();
+    teamId = teamMember?.team_id || null;
   }
 
   if (teamId) {

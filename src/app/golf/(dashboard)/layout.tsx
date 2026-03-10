@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { getGolfSessionProfile } from '@/lib/auth/session';
 import { GolfDashboardShell } from './GolfDashboardShell';
 import type { GolfUserData } from '@/contexts/golf-user-context';
 
@@ -12,69 +13,66 @@ import type { GolfUserData } from '@/contexts/golf-user-context';
  *
  * All interactive UI (sidebar, providers, nav) lives in GolfDashboardShell
  * which is a client component receiving the resolved userData as props.
+ *
+ * Auth strategy:
+ * - Uses React.cache()-backed getGolfSessionProfile() so child pages that also
+ *   call it get a full cache hit (0 extra DB queries for auth per page load).
+ * - The onboarding retry path (rare post-signup edge case) falls back to direct
+ *   Supabase queries so fresh data is fetched correctly.
  */
 export default async function GolfDashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
+  // 1. Fast-path auth via React.cache() — deduplicates with all child pages
+  //    that also call getGolfSessionProfile() in this render tree.
+  const session = await getGolfSessionProfile();
+  if (!session) redirect('/golf/login');
 
-  // 1. Authenticate — server-side, uses cookies (refreshed by middleware)
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  let { coach, player } = session;
+  let declaredRole: 'coach' | 'player' | null = null;
 
-  if (authError || !user) {
-    redirect('/golf/login');
-  }
-
-  // 2. Fetch role + profiles in parallel
-  const [userResult, coachResult, playerResult] = await Promise.all([
-    supabase
+  if (coach?.onboarding_completed || player?.onboarding_completed) {
+    // Fast path (>99% of requests) — onboarded user, derive role from profiles.
+    // Saves 1 users.role query; role is unambiguous from profile presence + onboarding state.
+    declaredRole = coach?.onboarding_completed ? 'coach' : 'player';
+  } else {
+    // Slow path — post-onboarding eventual consistency edge case.
+    // Re-fetch directly (bypassing React.cache) to get fresh data after the
+    // brief propagation delay, then also query users.role for disambiguation.
+    const supabase = await createClient();
+    const { data: userData } = await supabase
       .from('users')
       .select('role')
-      .eq('id', user.id)
-      .maybeSingle(),
-    supabase
-      .from('golf_coaches')
-      .select('id, full_name, avatar_url, organization_id, onboarding_completed')
-      .eq('user_id', user.id)
-      .maybeSingle(),
-    supabase
-      .from('golf_players')
-      .select('id, first_name, last_name, avatar_url, onboarding_completed')
-      .eq('user_id', user.id)
-      .maybeSingle(),
-  ]);
+      .eq('id', session.userId)
+      .maybeSingle();
 
-  let userRole = userResult.data?.role;
-  let coach = coachResult.data;
-  let player = playerResult.data;
+    declaredRole = (userData?.role === 'coach' || userData?.role === 'player')
+      ? userData.role
+      : null;
 
-  // Only retry if no completed profile was found (handles post-onboarding propagation).
-  // For already-onboarded users (the vast majority of page loads), this never executes.
-  if (!(coach && coach.onboarding_completed) && !(player && player.onboarding_completed)) {
     // Brief wait for eventual consistency after onboarding write
     await new Promise(resolve => setTimeout(resolve, 300));
 
-    const [retryUserResult, retryCoachResult, retryPlayerResult] = await Promise.all([
-      supabase.from('users').select('role').eq('id', user.id).maybeSingle(),
-      supabase.from('golf_coaches')
-        .select('id, full_name, avatar_url, organization_id, onboarding_completed')
-        .eq('user_id', user.id)
+    const [retryCoachResult, retryPlayerResult] = await Promise.all([
+      supabase
+        .from('golf_coaches')
+        .select('id, user_id, full_name, avatar_url, organization_id, onboarding_completed')
+        .eq('user_id', session.userId)
         .maybeSingle(),
-      supabase.from('golf_players')
-        .select('id, first_name, last_name, avatar_url, onboarding_completed')
-        .eq('user_id', user.id)
+      supabase
+        .from('golf_players')
+        .select('id, user_id, first_name, last_name, avatar_url, handicap, onboarding_completed')
+        .eq('user_id', session.userId)
         .maybeSingle(),
     ]);
 
-    userRole = retryUserResult.data?.role ?? userRole;
-    coach = retryCoachResult.data ?? coach;
-    player = retryPlayerResult.data ?? player;
+    if (retryCoachResult.data) coach = { ...coach, ...retryCoachResult.data } as typeof coach;
+    if (retryPlayerResult.data) player = { ...player, ...retryPlayerResult.data } as typeof player;
   }
 
-  // 3. Resolve role
-  const declaredRole = (userRole === 'coach' || userRole === 'player') ? userRole : null;
+  // 2. Resolve final role
   const resolvedRole = coach && player
     ? (declaredRole || 'coach')
     : coach
@@ -83,7 +81,9 @@ export default async function GolfDashboardLayout({
         ? 'player'
         : declaredRole;
 
-  // 4. Build userData based on resolved role, or redirect to onboarding
+  // 3. Build userData based on resolved role, or redirect to onboarding.
+  //    Team data queries are unique to the layout (not in getGolfSessionProfile),
+  //    so they still run here.
   let userData: GolfUserData;
 
   if (resolvedRole === 'coach') {
@@ -95,6 +95,7 @@ export default async function GolfDashboardLayout({
     let teamId: string | undefined;
     let teamName: string | undefined;
     if (coach.organization_id) {
+      const supabase = await createClient();
       const { data: team } = await supabase
         .from('golf_teams')
         .select('id, name')
@@ -106,7 +107,7 @@ export default async function GolfDashboardLayout({
 
     userData = {
       role: 'coach',
-      userId: user.id,
+      userId: session.userId,
       name: coach.full_name || 'Coach',
       teamName,
       avatarUrl: coach.avatar_url || undefined,
@@ -122,6 +123,7 @@ export default async function GolfDashboardLayout({
     // Fetch player's team via team membership
     let teamId: string | undefined;
     let teamName: string | undefined;
+    const supabase = await createClient();
     const { data: teamMember } = await supabase
       .from('golf_team_members')
       .select('team_id, golf_teams(id, name)')
@@ -137,7 +139,7 @@ export default async function GolfDashboardLayout({
 
     userData = {
       role: 'player',
-      userId: user.id,
+      userId: session.userId,
       name: `${player.first_name} ${player.last_name}`,
       teamName,
       avatarUrl: player.avatar_url || undefined,
@@ -157,7 +159,7 @@ export default async function GolfDashboardLayout({
     return null;
   }
 
-  // 5. Render the client shell with resolved data — no loading spinner needed
+  // 4. Render the client shell with resolved data — no loading spinner needed
   return (
     <GolfDashboardShell userData={userData}>
       {children}

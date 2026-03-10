@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
 import NewQualifierClient from './new-qualifier-client';
@@ -10,30 +11,13 @@ export const metadata: Metadata = {
 };
 
 export default async function NewQualifierPage() {
+  const session = await getGolfSessionProfile();
+  if (!session) redirect('/golf/login');
+
+  const { role, coach } = session;
+  if (role !== 'coach') redirect('/golf/dashboard/qualifiers');
+
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect('/golf/login');
-  }
-
-  // Verify user is a coach
-  const { data: userData } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', user.id)
-    .maybeSingle();
-
-  if (userData?.role !== 'coach') {
-    redirect('/golf/dashboard/qualifiers');
-  }
-
-  // Get coach's players for selection
-  const { data: coach } = await supabase
-    .from('golf_coaches')
-    .select('organization_id')
-    .eq('user_id', user.id)
-    .maybeSingle();
 
   let players: Array<{ id: string; first_name: string; last_name: string }> = [];
 

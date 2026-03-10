@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Metadata } from 'next';
@@ -75,12 +76,11 @@ export default async function RoundDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const session = await getGolfSessionProfile();
+  if (!session) redirect('/golf/login');
 
-  if (!user) {
-    redirect('/golf/login');
-  }
+  const { coach, player } = session;
+  const supabase = await createClient();
 
   // Fetch round with player avatar
   const { data: round, error } = await supabase
@@ -105,19 +105,6 @@ export default async function RoundDetailPage({
     ...round,
     player: Array.isArray(round.player) ? round.player[0] : round.player,
   } as unknown as RoundWithDetails;
-
-  // Check authorization
-  const { data: coach } = await supabase
-    .from('golf_coaches')
-    .select('id, organization_id')
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  const { data: player } = await supabase
-    .from('golf_players')
-    .select('id')
-    .eq('user_id', user.id)
-    .maybeSingle();
 
   // Check if coach has access by verifying round's player is on their team
   let isCoach = false;

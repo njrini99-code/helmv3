@@ -6,7 +6,7 @@ import { motion } from "framer-motion"
 import { Navigation } from "@/components/landing/Navigation"
 import { Footer } from "@/components/landing/Footer"
 import { SmoothScroll } from "@/components/landing/SmoothScroll"
-import { DashboardMockup } from "@/components/products/DashboardMockup"
+import { HelmFlipAnimation } from "@/components/products/HelmFlipAnimation"
 import { GolfHelmSection } from "@/components/products/GolfHelmSection"
 import { BaseballHelmSection } from "@/components/products/BaseballHelmSection"
 
@@ -25,13 +25,12 @@ const features = [
   },
 ];
 
-// Optimized animation variants - faster, snappier
 const fadeInUp = {
   hidden: { opacity: 0, y: 16 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] as const }
+    transition: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1] as const }
   }
 };
 
@@ -39,7 +38,7 @@ const staggerContainer = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.05, delayChildren: 0.05 }
+    transition: { staggerChildren: 0.08, delayChildren: 0.1 }
   }
 };
 
@@ -56,37 +55,31 @@ export default function ProductsPage() {
         <Navigation />
       </div>
 
-      {/* Hero Section */}
-      <motion.section
-        id="main-content"
-        className="relative px-5 sm:px-6 py-16 md:py-24 max-w-6xl mx-auto"
-        initial="hidden"
-        animate="visible"
-        variants={staggerContainer}
-      >
-        <div className="relative grid md:grid-cols-2 gap-10 md:gap-12 items-center">
-          {/* Text Content */}
-          <motion.div variants={fadeInUp}>
-            <p className="text-sm font-medium text-primary-600 tracking-wide uppercase mb-4">
-              Products
-            </p>
+      {/* Hero — Animation Centerpiece */}
+      <section id="main-content" className="relative">
+        {/* Full-bleed animation */}
+        <div className="w-full">
+          <HelmFlipAnimation />
+        </div>
 
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold leading-[1.1] text-foreground tracking-tight mb-6">
-              Take the{' '}
-              <span className="text-primary-600">Helm</span>
-              <br />
-              of your program
-            </h1>
-
-            <p className="text-lg text-muted-foreground max-w-md leading-relaxed mb-8">
+        {/* Content below animation */}
+        <motion.div
+          className="relative px-5 sm:px-6 pt-10 pb-16 md:pt-14 md:pb-24 max-w-5xl mx-auto"
+          initial="hidden"
+          animate="visible"
+          variants={staggerContainer}
+        >
+          {/* Tagline + CTA */}
+          <motion.div className="text-center mb-12" variants={fadeInUp}>
+            <p className="text-lg sm:text-xl text-muted-foreground max-w-xl mx-auto leading-relaxed mb-8">
               The ultimate platform to manage your team with precision and clarity.
             </p>
 
-            {/* Product Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3">
+            {/* Product Buttons — centered */}
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link href="#golfhelm">
                 <button
-                  className="w-full sm:w-auto flex items-center gap-4 px-5 py-3.5 rounded-xl
+                  className="w-full sm:w-auto flex items-center gap-4 px-6 py-4 rounded-xl
                            bg-white border border-warm-200 shadow-sm
                            hover:border-helm-green-300 hover:shadow-md active:scale-[0.98] transition-all
                            focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:ring-offset-2"
@@ -109,7 +102,7 @@ export default function ProductsPage() {
 
               <Link href="#baseballhelm">
                 <button
-                  className="w-full sm:w-auto flex items-center gap-4 px-5 py-3.5 rounded-xl
+                  className="w-full sm:w-auto flex items-center gap-4 px-6 py-4 rounded-xl
                            bg-white border border-warm-200 shadow-sm
                            hover:border-blue-300 hover:shadow-md active:scale-[0.98] transition-all
                            focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:ring-offset-2"
@@ -132,48 +125,40 @@ export default function ProductsPage() {
             </div>
           </motion.div>
 
-          {/* Dashboard Mockup */}
+          {/* Features Strip */}
           <motion.div
-            className="relative"
-            variants={fadeInUp}
+            className="pt-10 border-t border-warm-200"
+            variants={staggerContainer}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-50px" }}
           >
-            <DashboardMockup />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
+              {features.map((feature, index) => (
+                <motion.div
+                  key={feature.title}
+                  variants={fadeInUp}
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="w-8 h-8 rounded-full bg-primary-50 text-primary-600
+                                  flex items-center justify-center text-sm font-semibold flex-shrink-0 mt-0.5">
+                      {index + 1}
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-warm-900 mb-1">
+                        {feature.title}
+                      </h3>
+                      <p className="text-warm-600 text-sm leading-relaxed">
+                        {feature.description}
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
           </motion.div>
-        </div>
-
-        {/* Features Strip */}
-        <motion.div
-          className="mt-16 md:mt-20 pt-10 border-t border-warm-200"
-          variants={staggerContainer}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-50px" }}
-        >
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
-            {features.map((feature, index) => (
-              <motion.div
-                key={feature.title}
-                variants={fadeInUp}
-              >
-                <div className="flex items-start gap-4">
-                  <div className="w-8 h-8 rounded-full bg-primary-50 text-primary-600
-                                flex items-center justify-center text-sm font-semibold flex-shrink-0 mt-0.5">
-                    {index + 1}
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-warm-900 mb-1">
-                      {feature.title}
-                    </h3>
-                    <p className="text-warm-600 text-sm leading-relaxed">
-                      {feature.description}
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
         </motion.div>
-      </motion.section>
+      </section>
 
       {/* GolfHelm Section */}
       <GolfHelmSection />
