@@ -136,6 +136,19 @@ export default function ContinueRoundClient({
   // eslint-disable-next-line react-hooks/exhaustive-deps -- Only run on mount
   }, []);
 
+  // If ALL holes are already scored on mount (e.g., previous submit timed out
+  // but auto-save had captured all scores), immediately show the submit dialog.
+  // Without this, the user is stuck — submit only triggers from handleHoleComplete.
+  useEffect(() => {
+    const allScored = initialCompletedStats.length === initialHoles.length
+      && initialHoles.every((_, i) => initialCompletedStats[i]?.score != null);
+    if (allScored) {
+      setPendingFinalStats(initialCompletedStats);
+      setShowFinishConfirm(true);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- Only run on mount
+  }, []);
+
   // Save data when user leaves the page (phone lock, app switch, tab close)
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -363,9 +376,22 @@ export default function ContinueRoundClient({
     })();
 
     // Navigate after completion
-    if (isReEdit) {
-      // Re-editing a previously completed hole — return to the active frontier
-      setCurrentHoleIndex(activeProgressHoleRef.current);
+    // Check if every hole now has a score (all completed)
+    const allHolesScored = updatedStats.length === holes.length && updatedStats.every(s => s?.score != null);
+
+    if (allHolesScored && holeIndex === holes.length - 1) {
+      // Last hole (re-)completed and all holes scored — always show finish confirmation
+      setPendingFinalStats(updatedStats);
+      setShowFinishConfirm(true);
+    } else if (isReEdit) {
+      if (allHolesScored) {
+        // All holes scored after re-edit — show finish confirmation
+        setPendingFinalStats(updatedStats);
+        setShowFinishConfirm(true);
+      } else {
+        // Re-editing a previously completed hole — return to the active frontier
+        setCurrentHoleIndex(activeProgressHoleRef.current);
+      }
     } else if (holeIndex < holes.length - 1) {
       // Normal progression — advance to next hole
       const nextHole = holeIndex + 1;
