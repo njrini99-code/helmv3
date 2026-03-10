@@ -10,14 +10,16 @@ const satisfy = Satisfy({ weight: '400', subsets: ['latin'], display: 'swap' });
 /**
  * Helm Sports Labs flip animation — ported from standalone HTML.
  * Cycles through "GolfHelm", "BaseballHelm", "CoachHelm" then
- * collapses to reveal "Helm Sports Labs" with handwritten canvas text.
+ * collapses to reveal "Helm Sports Labs" with handwritten SVG text.
  * Pauses (holds) once the animation completes.
  */
 export function HelmFlipAnimation() {
   const flipperRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const helmRef = useRef<HTMLSpanElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
+  const textRef = useRef<SVGTextElement>(null);
+  const clipRectRef = useRef<SVGRectElement>(null);
   const slWrapRef = useRef<HTMLDivElement>(null);
   const logoRef = useRef<HTMLDivElement>(null);
   const taglineRef = useRef<HTMLDivElement>(null);
@@ -56,78 +58,67 @@ export function HelmFlipAnimation() {
     return () => observer.disconnect();
   }, []);
 
-  const animateHandwriting = useCallback((cb: () => void) => {
-    const canvas = canvasRef.current;
+  /** Size the SVG viewBox + container to fit the text at the given font size. */
+  const sizeSvg = useCallback(() => {
+    const svg = svgRef.current;
+    const textEl = textRef.current;
     const helm = helmRef.current;
-    if (!canvas || !helm) return;
+    if (!svg || !textEl || !helm) return;
 
-    const doIt = () => {
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-      const text = 'Sports Labs';
-      const dpr = window.devicePixelRatio || 1;
-      const hH = helm.getBoundingClientRect().height;
-      const fs = Math.round(hH * 0.78);
+    const hH = helm.getBoundingClientRect().height;
+    const fs = Math.round(hH * 0.78);
+    textEl.style.fontSize = `${fs}px`;
+    // Force layout so getBBox is accurate
+    textEl.getBoundingClientRect();
+    const bbox = textEl.getBBox();
+    const vbX = bbox.x - 2;
+    const vbY = bbox.y - 2;
+    const vbW = bbox.width + 4;
+    const vbH = bbox.height + 4;
+    svg.setAttribute('viewBox', `${vbX} ${vbY} ${vbW} ${vbH}`);
+    svg.style.width = `${vbW}px`;
+    svg.style.height = `${vbH}px`;
 
-      ctx.font = `${fs}px ${satisfy.style.fontFamily}`;
-      const tw = Math.ceil(ctx.measureText(text).width) + 40;
-      const cH = Math.ceil(hH);
+    // Size the clip rect to cover the full viewBox height
+    const clipRect = clipRectRef.current;
+    if (clipRect) {
+      clipRect.setAttribute('x', `${vbX}`);
+      clipRect.setAttribute('y', `${vbY}`);
+      clipRect.setAttribute('width', '0');
+      clipRect.setAttribute('height', `${vbH}`);
+    }
+  }, []);
 
-      canvas.width = tw * dpr;
-      canvas.height = cH * dpr;
-      canvas.style.width = `${tw}px`;
-      canvas.style.height = `${cH}px`;
+  const animateHandwriting = useCallback((cb: () => void) => {
+    const svg = svgRef.current;
+    const textEl = textRef.current;
+    const clipRect = clipRectRef.current;
+    const helm = helmRef.current;
+    if (!svg || !textEl || !clipRect || !helm) return;
 
-      const tY = cH * 0.76;
+    const track = (id: ReturnType<typeof setTimeout>) => { timersRef.current.push(id); return id; };
 
-      // Offscreen text canvas — premium rendering
-      const textCanvas = document.createElement('canvas');
-      textCanvas.width = tw * dpr;
-      textCanvas.height = cH * dpr;
-      const tCtx = textCanvas.getContext('2d');
-      if (!tCtx) return;
-      tCtx.scale(dpr, dpr);
-      tCtx.font = `${fs}px ${satisfy.style.fontFamily}`;
-      tCtx.textBaseline = 'alphabetic';
+    document.fonts.load(`72px ${satisfy.style.fontFamily}`).then(() => {
+      if (unmountedRef.current) return;
 
-      // Subtle glow behind text for depth
-      tCtx.shadowColor = 'rgba(255,255,255,0.1)';
-      tCtx.shadowBlur = 6;
-      tCtx.fillStyle = 'rgba(255,255,255,0.92)';
-      tCtx.fillText(text, 18, tY);
+      // Ensure SVG is sized (may already be from step 3, but re-measure to be safe)
+      sizeSvg();
 
-      // Crisp edge stroke (thin for premium feel)
-      tCtx.shadowColor = 'transparent';
-      tCtx.shadowBlur = 0;
-      tCtx.strokeStyle = 'rgba(255,255,255,0.25)';
-      tCtx.lineWidth = 0.6;
-      tCtx.lineJoin = 'round';
-      tCtx.strokeText(text, 18, tY);
-
-      // Mask canvas
-      const maskCanvas = document.createElement('canvas');
-      maskCanvas.width = tw * dpr;
-      maskCanvas.height = cH * dpr;
-      const mCtx = maskCanvas.getContext('2d');
-      if (!mCtx) return;
-
-      const edgeWidth = fs * 0.18;
-      const duration = 3000;
-      let startTime: number | null = null;
-
-      ctx.scale(dpr, dpr);
+      const bbox = textEl.getBBox();
+      const vbW = bbox.width + 4;
 
       // Smoothstep helper
       const smoothstep = (x: number) => x * x * (3 - 2 * x);
 
+      const duration = 3000;
+      let startTime: number | null = null;
+
       const draw = (ts: number) => {
+        if (unmountedRef.current) return;
         if (!startTime) startTime = ts;
         const t = Math.min((ts - startTime) / duration, 1);
 
         // Piecewise easing with natural pause at word break
-        // Phase 1: Write "Sports" — accelerate in
-        // Phase 2: Brief pause at space — pen lifts between words
-        // Phase 3: Write "Labs" — smooth ease-out
         let e: number;
         if (t <= 0.42) {
           const s = t / 0.42;
@@ -140,86 +131,35 @@ export function HelmFlipAnimation() {
           e = 0.55 + smoothstep(s) * 0.45;
         }
 
-        const revealX = e * (tw + edgeWidth);
-
-        // Build mask
-        mCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        mCtx.clearRect(0, 0, tw, cH);
-
-        // Solid revealed portion
-        mCtx.fillStyle = 'white';
-        mCtx.fillRect(0, 0, Math.max(0, revealX - edgeWidth), cH);
-
-        // Feathered edge — tight ink-like falloff
-        if (revealX > 0) {
-          const grad = mCtx.createLinearGradient(
-            Math.max(0, revealX - edgeWidth), 0,
-            revealX, 0
-          );
-          grad.addColorStop(0, 'rgba(255,255,255,1)');
-          grad.addColorStop(0.3, 'rgba(255,255,255,0.6)');
-          grad.addColorStop(0.6, 'rgba(255,255,255,0.15)');
-          grad.addColorStop(1, 'rgba(255,255,255,0)');
-          mCtx.fillStyle = grad;
-          mCtx.fillRect(Math.max(0, revealX - edgeWidth), 0, edgeWidth, cH);
-        }
-
-        // Composite text with mask
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(textCanvas, 0, 0);
-        ctx.globalCompositeOperation = 'destination-in';
-        ctx.drawImage(maskCanvas, 0, 0);
-        ctx.globalCompositeOperation = 'source-over';
-
-        // Pen cursor glow — green-tinted, clearly visible
-        if (t > 0.01 && t < 0.96) {
-          ctx.save();
-          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-          const cursorX = Math.max(0, revealX - edgeWidth * 0.1);
-          const cursorY = tY - fs * 0.15;
-          const glowR = fs * 0.4;
-          // Bright during writing, dims during word-break pause
-          const isInPause = t > 0.42 && t < 0.54;
-          const writingIntensity = isInPause ? 0.15 : 1;
-          const glowAlpha = Math.min(1, t * 6) * Math.min(1, (1 - t) * 8) * 0.4 * writingIntensity;
-
-          const rg = ctx.createRadialGradient(cursorX, cursorY, 0, cursorX, cursorY, glowR);
-          rg.addColorStop(0, `rgba(22, 163, 74, ${glowAlpha})`);
-          rg.addColorStop(0.3, `rgba(200, 255, 220, ${glowAlpha * 0.4})`);
-          rg.addColorStop(0.6, `rgba(255, 255, 255, ${glowAlpha * 0.1})`);
-          rg.addColorStop(1, 'rgba(255, 255, 255, 0)');
-          ctx.fillStyle = rg;
-          ctx.fillRect(cursorX - glowR, cursorY - glowR, glowR * 2, glowR * 2);
-
-          ctx.restore();
-        }
+        // Reveal via clip rect width
+        clipRect.setAttribute('width', `${e * vbW}`);
 
         if (t < 1) {
           rafRef.current = requestAnimationFrame(draw);
         } else {
-          ctx.setTransform(1, 0, 0, 1, 0, 0);
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(textCanvas, 0, 0);
-          cb();
+          // Fully reveal
+          clipRect.setAttribute('width', `${vbW}`);
+          // Fade in the fill
+          textEl.classList.add(styles.handwritingFill!);
+          track(setTimeout(() => {
+            cb();
+          }, 400));
         }
       };
 
       rafRef.current = requestAnimationFrame(draw);
-    };
-
-    document.fonts.load(`72px ${satisfy.style.fontFamily}`).then(doIt).catch(doIt);
-  }, []);
+    });
+  }, [sizeSvg]);
 
   const nextStep = useCallback(() => {
     const flipper = flipperRef.current;
     const inner = innerRef.current;
+    const helm = helmRef.current;
     const slWrap = slWrapRef.current;
     const logo = logoRef.current;
     const tagline = taglineRef.current;
     const words = wordRefs.current;
-    if (!flipper || !inner || !slWrap || !logo || !tagline) return;
+    if (!flipper || !inner || !helm || !slWrap || !logo || !tagline) return;
 
     stepRef.current++;
     const step = stepRef.current;
@@ -234,32 +174,86 @@ export function HelmFlipAnimation() {
       inner.style.transform = `translateY(-${step * 1.15}em)`;
       track(setTimeout(nextStep, 2000));
     } else if (step === 3) {
+      const wordRow = flipper.parentElement;
+      // 1) Pause before collapsing flipper
       track(setTimeout(() => {
         if (unmountedRef.current) return;
-        flipper.classList.add(styles.flipperHidden!);
 
-        track(setTimeout(() => {
+        // Ensure font is loaded before measuring
+        document.fonts.load(`72px ${satisfy.style.fontFamily}`).then(() => {
           if (unmountedRef.current) return;
-          slWrap.classList.add(styles.slWrapVisible!);
-          animateHandwriting(() => {
-            if (unmountedRef.current) return;
-            logo.classList.add(styles.mainLogoVisible!);
-            requestAnimationFrame(() => {
-              requestAnimationFrame(() => {
-                if (unmountedRef.current) return;
-                logo.classList.add(styles.mainLogoRevealed!);
-              });
-            });
 
-            track(setTimeout(() => {
+          // Measure Helm position before any changes
+          const helmBefore = helm.getBoundingClientRect().left;
+
+          // Hide wordRow so no intermediate frames are painted
+          if (wordRow) wordRow.style.visibility = 'hidden';
+
+          // Show slWrap (invisible due to wordRow hidden) so SVG text is measurable
+          slWrap.style.opacity = '0';
+          slWrap.classList.add(styles.slWrapVisible!);
+
+          // Pre-size the SVG so slWrap has its final width
+          sizeSvg();
+
+          // Collapse flipper instantly
+          flipper.style.transition = 'none';
+          flipper.style.opacity = '0';
+          flipper.style.width = '0px';
+          flipper.style.overflow = 'hidden';
+
+          // Measure Helm in its final position
+          const helmFinal = helm.getBoundingClientRect().left;
+          const diff = helmBefore - helmFinal;
+
+          // Apply offset so Helm appears unmoved, then reveal
+          if (wordRow) {
+            wordRow.style.transition = 'none';
+            wordRow.style.transform = `translateX(${diff}px)`;
+            // Force the browser to commit this layout before we animate
+            wordRow.getBoundingClientRect();
+            wordRow.style.visibility = 'visible';
+            // Force commit again with visibility
+            wordRow.getBoundingClientRect();
+
+            // Now animate to final centered position
+            wordRow.style.transition = 'transform 1.2s cubic-bezier(0.25, 0.1, 0.25, 1)';
+            wordRow.style.transform = 'translateX(-1.2em)';
+          }
+
+          // 2) Wait for slide to finish, then start handwriting
+          track(setTimeout(() => {
+            if (unmountedRef.current) return;
+            // slWrap is already visible and sized — just make it opaque
+            slWrap.style.opacity = '1';
+
+            // 3) Handwriting takes ~3s — wait for it to complete
+            animateHandwriting(() => {
               if (unmountedRef.current) return;
-              tagline.classList.add(styles.taglineVisible!);
-            }, 800));
-          });
-        }, 1000));
+
+              // 4) Pause after handwriting, then fade in logo
+              track(setTimeout(() => {
+                if (unmountedRef.current) return;
+                logo.classList.add(styles.mainLogoVisible!);
+                requestAnimationFrame(() => {
+                  requestAnimationFrame(() => {
+                    if (unmountedRef.current) return;
+                    logo.classList.add(styles.mainLogoRevealed!);
+                  });
+                });
+
+                // 5) Tagline fades in after logo has started appearing
+                track(setTimeout(() => {
+                  if (unmountedRef.current) return;
+                  tagline.classList.add(styles.taglineVisible!);
+                }, 1000));
+              }, 600));
+            });
+          }, 1100));
+        });
       }, 1600));
     }
-  }, [animateHandwriting]);
+  }, [animateHandwriting, sizeSvg]);
 
   // Init flipper width + start sequence
   useEffect(() => {
@@ -283,7 +277,7 @@ export function HelmFlipAnimation() {
 
   return (
     <div ref={containerRef} className={styles.scene}>
-      {/* Hidden span to force font load before canvas uses it */}
+      {/* Hidden span to force font load before SVG uses it */}
       <span className={`${styles.fontPreload} ${satisfy.className}`}>Sports Labs</span>
 
       {/* Green glow */}
@@ -323,9 +317,22 @@ export function HelmFlipAnimation() {
           Helm
         </span>
 
-        {/* Sports Labs handwriting canvas */}
+        {/* Sports Labs handwriting SVG */}
         <div ref={slWrapRef} className={styles.slWrap}>
-          <canvas ref={canvasRef} />
+          <svg ref={svgRef} className={styles.handwritingSvg}>
+            <defs>
+              <clipPath id="hw-clip">
+                <rect ref={clipRectRef} />
+              </clipPath>
+            </defs>
+            <text
+              ref={textRef}
+              className={`${styles.handwritingText} ${satisfy.className}`}
+              clipPath="url(#hw-clip)"
+            >
+              Sports Labs
+            </text>
+          </svg>
         </div>
 
         {/* Main logo */}

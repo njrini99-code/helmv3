@@ -22,6 +22,7 @@ import { invalidateOnRoundComplete } from '@/lib/cache/golf-stats-calculator';
 import { triggerPlayerInsightsAfterRound } from '@/app/golf/actions/insights';
 import { logRoundSubmitted } from '@/lib/admin-logger';
 import { logCritical, logError } from '@/lib/error-monitoring';
+import { logServerError } from '@/lib/server-error-logger';
 import { deriveLieAfterFromResult, deriveLieAfter } from '@/lib/utils/shot-helpers';
 
 // ============================================================================
@@ -824,10 +825,45 @@ export async function submitGolfRoundComprehensive(
 
       if (rpcError) {
         logError(new Error(rpcError.message), undefined, { action: 'submitGolfRoundComprehensive.rpc' });
-        return { success: false, error: 'Failed to submit round. Please try again.' };
+        await logServerError(`Round submit RPC failed: ${rpcError.message}`, {
+          action: 'submitGolfRoundComprehensive',
+          roundId: existingRoundId,
+          playerId: player.id,
+          userId: user.id,
+          userEmail: user.email,
+          holesCount: holesPayload.length,
+          shotsCount: shotsPayload.reduce((sum, g) => sum + g.shots.length, 0),
+          errorCode: rpcError.code,
+          errorHint: rpcError.hint,
+          errorDetails: rpcError.details,
+          extra: { path: 'existing_round', courseName: data.courseName },
+        }, 'critical');
+        const errMsg = rpcError.code === '57014' ? 'Round submission timed out — the server was too slow. Please try again.'
+          : rpcError.code === '55P03' ? 'Round submission was blocked by a concurrent save. Please wait a moment and try again.'
+          : `Failed to submit round. Please try again. (code: ${rpcError.code || 'unknown'})`;
+        return { success: false, error: errMsg };
       }
 
       if (rpcResult && !rpcResult.success) {
+        const isInternalError = rpcResult.error === 'internal_error';
+        await logServerError(`Round submit RPC returned failure: ${rpcResult.error}${isInternalError ? ` [${rpcResult.error_code}] at step "${rpcResult.step}": ${rpcResult.detail}` : ''}`, {
+          action: 'submitGolfRoundComprehensive',
+          roundId: existingRoundId,
+          playerId: player.id,
+          userId: user.id,
+          userEmail: user.email,
+          holesCount: holesPayload.length,
+          shotsCount: shotsPayload.reduce((sum, g) => sum + g.shots.length, 0),
+          errorCode: rpcResult.error_code,
+          errorDetails: rpcResult.step,
+          extra: { rpcResult, path: 'existing_round' },
+        }, isInternalError ? 'critical' : 'error');
+        if (isInternalError) {
+          const errMsg = rpcResult.error_code === '57014' ? 'Round submission timed out — the server was too slow. Please try again.'
+            : rpcResult.error_code === '55P03' ? 'Round submission was blocked by a concurrent save. Please wait a moment and try again.'
+            : `Failed to submit round at step "${rpcResult.step}". Please try again. (code: ${rpcResult.error_code})`;
+          return { success: false, error: errMsg };
+        }
         return { success: false, error: rpcResult.error || 'Failed to submit round.' };
       }
 
@@ -841,6 +877,17 @@ export async function submitGolfRoundComprehensive(
         .single();
 
       if (roundError || !newRound) {
+        await logServerError(`Round draft insert failed: ${roundError?.message || 'no data returned'}`, {
+          action: 'submitGolfRoundComprehensive',
+          playerId: player.id,
+          userId: user.id,
+          userEmail: user.email,
+          holesCount: holesPayload.length,
+          errorCode: roundError?.code,
+          errorHint: roundError?.hint,
+          errorDetails: roundError?.details,
+          extra: { path: 'new_round_draft', courseName: data.courseName },
+        }, 'critical');
         return { success: false, error: 'Failed to save round. Please try again.' };
       }
 
@@ -864,11 +911,46 @@ export async function submitGolfRoundComprehensive(
         // Deleting here caused permanent data loss when the RPC failed
         // (e.g., trigger errors, network timeouts, race conditions).
         logError(new Error(rpcError.message), undefined, { action: 'submitGolfRoundComprehensive.rpc.new' });
-        return { success: false, error: 'Failed to submit round. Please try again.' };
+        await logServerError(`Round submit RPC failed (new round): ${rpcError.message}`, {
+          action: 'submitGolfRoundComprehensive',
+          roundId: newRound.id,
+          playerId: player.id,
+          userId: user.id,
+          userEmail: user.email,
+          holesCount: holesPayload.length,
+          shotsCount: shotsPayload.reduce((sum, g) => sum + g.shots.length, 0),
+          errorCode: rpcError.code,
+          errorHint: rpcError.hint,
+          errorDetails: rpcError.details,
+          extra: { path: 'new_round_rpc', courseName: data.courseName },
+        }, 'critical');
+        const errMsg = rpcError.code === '57014' ? 'Round submission timed out — the server was too slow. Please try again.'
+          : rpcError.code === '55P03' ? 'Round submission was blocked by a concurrent save. Please wait a moment and try again.'
+          : `Failed to submit round. Please try again. (code: ${rpcError.code || 'unknown'})`;
+        return { success: false, error: errMsg };
       }
 
       if (rpcResult && !rpcResult.success) {
         // Do NOT delete — the round is preserved as a draft for retry
+        const isInternalError = rpcResult.error === 'internal_error';
+        await logServerError(`Round submit RPC returned failure (new round): ${rpcResult.error}${isInternalError ? ` [${rpcResult.error_code}] at step "${rpcResult.step}": ${rpcResult.detail}` : ''}`, {
+          action: 'submitGolfRoundComprehensive',
+          roundId: newRound.id,
+          playerId: player.id,
+          userId: user.id,
+          userEmail: user.email,
+          holesCount: holesPayload.length,
+          shotsCount: shotsPayload.reduce((sum, g) => sum + g.shots.length, 0),
+          errorCode: rpcResult.error_code,
+          errorDetails: rpcResult.step,
+          extra: { rpcResult, path: 'new_round_rpc' },
+        }, isInternalError ? 'critical' : 'error');
+        if (isInternalError) {
+          const errMsg = rpcResult.error_code === '57014' ? 'Round submission timed out — the server was too slow. Please try again.'
+            : rpcResult.error_code === '55P03' ? 'Round submission was blocked by a concurrent save. Please wait a moment and try again.'
+            : `Failed to submit round at step "${rpcResult.step}". Please try again. (code: ${rpcResult.error_code})`;
+          return { success: false, error: errMsg };
+        }
         return { success: false, error: rpcResult.error || 'Failed to submit round.' };
       }
 
@@ -932,6 +1014,14 @@ export async function submitGolfRoundComprehensive(
     if (error instanceof z.ZodError) {
       return { success: false, error: 'Invalid round data. Please check your inputs.' };
     }
+    await logServerError(`Round submit unexpected error: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'submitGolfRoundComprehensive.catch',
+      extra: {
+        stack: error instanceof Error ? error.stack : undefined,
+        courseName: data.courseName,
+        holesCount: data.holes?.length,
+      },
+    }, 'critical');
     return formatSafeErrorResponse(error);
   }
 }
@@ -2639,6 +2729,19 @@ export async function savePartialRound(
 
       if (rpcError) {
         logError(new Error(rpcError.message), undefined, { action: 'savePartialRound.rpc' });
+        await logServerError(`Auto-save RPC failed: ${rpcError.message}`, {
+          action: 'savePartialRound',
+          roundId: existingRoundId,
+          playerId: player.id,
+          userId: user.id,
+          userEmail: user.email,
+          holesCount: holesPayload.length,
+          shotsCount: shotsPayload.reduce((sum, g) => sum + g.shots.length, 0),
+          errorCode: rpcError.code,
+          errorHint: rpcError.hint,
+          errorDetails: rpcError.details,
+          extra: { courseName: data.courseName, currentHole: data.currentHole },
+        });
         return { success: false, error: 'Failed to save round. Please try again.' };
       }
 
@@ -2686,6 +2789,16 @@ export async function savePartialRound(
           .maybeSingle();
         if (updateError) {
           logError(new Error(updateError.message), undefined, { action: 'savePartialRound.updateExisting' });
+          await logServerError(`Auto-save update failed: ${updateError.message}`, {
+            action: 'savePartialRound.updateExisting',
+            roundId: existingRound.id,
+            playerId: player.id,
+            userId: user.id,
+            userEmail: user.email,
+            errorCode: updateError.code,
+            errorHint: updateError.hint,
+            errorDetails: updateError.details,
+          });
           return { success: false, error: 'Failed to save round. Please try again.' };
         }
         if (!updatedRound) {
@@ -2705,6 +2818,14 @@ export async function savePartialRound(
 
         if (roundError) {
           logError(new Error(roundError.message), undefined, { action: 'savePartialRound.insertRound' });
+          await logServerError(`Auto-save insert round failed: ${roundError.message}`, {
+            action: 'savePartialRound.insertRound',
+            playerId: player.id,
+            userId: user.id,
+            userEmail: user.email,
+            errorCode: roundError.code,
+            errorDetails: roundError.details,
+          });
           return { success: false, error: 'Failed to save round. Please try again.' };
         }
         round = newRound;
@@ -2722,6 +2843,16 @@ export async function savePartialRound(
 
         if (holesError) {
           logError(new Error(holesError.message), undefined, { action: 'savePartialRound.insertHoles' });
+          await logServerError(`Auto-save insert holes failed: ${holesError.message}`, {
+            action: 'savePartialRound.insertHoles',
+            roundId,
+            playerId: player.id,
+            userId: user.id,
+            userEmail: user.email,
+            holesCount: holesPayload.length,
+            errorCode: holesError.code,
+            errorDetails: holesError.details,
+          });
           // Only clean up in_progress rounds — never delete a completed round
           await supabase.from('golf_rounds').delete().eq('id', roundId).eq('status', 'in_progress');
           return { success: false, error: 'Failed to save hole data. Please try again.' };
@@ -2744,6 +2875,18 @@ export async function savePartialRound(
             const { data: insertedShots, error: shotsError } = await supabase.from('golf_shots').insert(shotsData).select('id, hole_number, shot_number');
             if (shotsError) {
               logError(new Error(shotsError.message), undefined, { action: 'savePartialRound.insertShots' });
+              await logServerError(`Auto-save insert shots failed: ${shotsError.message}`, {
+                action: 'savePartialRound.insertShots',
+                roundId,
+                playerId: player.id,
+                userId: user.id,
+                userEmail: user.email,
+                holesCount: holesPayload.length,
+                shotsCount: group.shots.length,
+                errorCode: shotsError.code,
+                errorDetails: shotsError.details,
+                extra: { holeNumber: group.hole_number },
+              });
               // Only clean up in_progress rounds — never delete a completed round
               await supabase.from('golf_rounds').delete().eq('id', roundId).eq('status', 'in_progress');
               return { success: false, error: 'Failed to save shot data. Please try again.' };
@@ -2798,6 +2941,10 @@ export async function savePartialRound(
 
   } catch (err) {
     logCritical(err instanceof Error ? err : new Error(String(err)), { action: 'savePartialRound' });
+    await logServerError(`Auto-save unexpected error: ${err instanceof Error ? err.message : String(err)}`, {
+      action: 'savePartialRound.catch',
+      extra: { stack: err instanceof Error ? err.stack : undefined },
+    }, 'critical');
     return {
       success: false,
       error: 'Failed to save round. Please try again.'

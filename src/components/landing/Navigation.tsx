@@ -10,7 +10,13 @@ export function Navigation() {
   const isProductsPage = pathname === '/products'
   
   return (
-    <nav className="relative z-[60] pointer-events-auto pt-3 pb-2 md:pt-4 md:pb-2">
+    <nav className={`z-[60] pointer-events-auto pt-1.5 pb-1 md:pt-2 md:pb-1 ${
+      isProductsPage
+        ? 'relative'
+        : 'fixed top-0 left-0 right-0 backdrop-blur-xl'
+    }`}
+      style={!isProductsPage ? { background: 'rgba(0, 0, 0, 0.3)' } : undefined}
+    >
       <div className="max-w-7xl mx-auto px-6 flex items-center justify-between md:grid md:grid-cols-[1fr_auto_1fr] md:gap-6">
         {/* Logo on left */}
         <div className="flex items-center gap-2 justify-self-start">
@@ -20,7 +26,7 @@ export function Navigation() {
               alt="Helm"
               width={72}
               height={72}
-              className="w-[56px] h-[56px] sm:w-[64px] sm:h-[64px] md:w-[72px] md:h-[72px] object-contain"
+              className="w-[40px] h-[40px] sm:w-[44px] sm:h-[44px] md:w-[48px] md:h-[48px] object-contain"
             />
             <span className={`font-semibold text-base sm:text-lg transition-colors duration-200 ${
               isProductsPage ? 'text-neutral-900' : 'text-white'
@@ -30,52 +36,31 @@ export function Navigation() {
           </Link>
         </div>
 
-        {/* Floating pill navigation - centered */}
-        <div className={`hidden md:grid grid-cols-3 items-center gap-1 justify-self-center
-                        backdrop-blur-3xl
-                        border rounded-full px-1.5 py-1.5
-                        transition-[background-color,border-color,box-shadow] duration-200 ${
-                          isProductsPage
-                            ? 'bg-white/80 border-neutral-200/50 shadow-[0_1px_15px_rgba(0,0,0,0.05)]'
-                            : 'bg-white/[0.05] border-white/[0.08] shadow-[0_1px_15px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.05)]'
-                        }`}>
-          <Link
-            href="/"
-            className={`w-24 py-2 rounded-full text-[13px] font-medium tracking-[-0.01em] text-center
-                       transition-colors duration-200 ease-out ${
-                         isProductsPage
-                           ? 'text-neutral-700 hover:text-neutral-900 hover:bg-neutral-100'
-                           : 'text-white/70 hover:text-white/90 hover:bg-white/[0.06]'
-                       }`}
-          >
-            Home
-          </Link>
-          <Link
-            href="/about"
-            className={`w-24 py-2 rounded-full text-[13px] font-medium tracking-[-0.01em] text-center
-                       transition-colors duration-200 ease-out ${
-                         isProductsPage
-                           ? 'text-neutral-700 hover:text-neutral-900 hover:bg-neutral-100'
-                           : 'text-white/70 hover:text-white/90 hover:bg-white/[0.06]'
-                       }`}
-          >
-            About
-          </Link>
-          <Link
-            href="/products"
-            className={`w-24 py-2 rounded-full text-[13px] font-medium tracking-[-0.01em] text-center
-                       transition-colors duration-200 ease-out ${
-                         isProductsPage
-                           ? 'text-neutral-900 hover:text-neutral-900 hover:bg-neutral-100'
-                           : 'text-white/70 hover:text-white/90 hover:bg-white/[0.06]'
-                       }`}
-          >
-            Products
-          </Link>
-        </div>
+        {/* Navigation links */}
+        {isProductsPage ? (
+          /* Products page: floating sticky pill */
+          <div className="hidden md:fixed md:top-4 md:left-1/2 md:-translate-x-1/2 md:z-[70] md:grid grid-cols-3 items-center gap-1
+                          backdrop-blur-2xl bg-[rgba(237,232,221,0.55)] border border-white/50 rounded-full px-1.5 py-1.5
+                          shadow-[0_4px_20px_rgba(0,0,0,0.08),0_0_0_1px_rgba(0,0,0,0.03)]">
+            <Link href="/" className="w-24 py-2 rounded-full text-[13px] font-medium tracking-[-0.01em] text-center text-neutral-700 hover:text-neutral-900 hover:bg-neutral-100 transition-colors duration-200">Home</Link>
+            <Link href="/about" className="w-24 py-2 rounded-full text-[13px] font-medium tracking-[-0.01em] text-center text-neutral-700 hover:text-neutral-900 hover:bg-neutral-100 transition-colors duration-200">About</Link>
+            <Link href="/products" className="w-24 py-2 rounded-full text-[13px] font-medium tracking-[-0.01em] text-center text-neutral-900 hover:bg-neutral-100 transition-colors duration-200">Products</Link>
+          </div>
+        ) : (
+          /* Landing page: inline links spread in nav */
+          <div className="hidden md:flex items-center gap-14 justify-self-center">
+            <Link href="/" className="text-[13px] font-medium text-white/90 hover:text-white transition-colors duration-200">Home</Link>
+            <Link href="/about" className="text-[13px] font-medium text-white/70 hover:text-white transition-colors duration-200">About</Link>
+            <Link href="/products" className="text-[13px] font-medium text-white/70 hover:text-white transition-colors duration-200">Products</Link>
+          </div>
+        )}
 
         {/* Login Button + Mobile Nav */}
-        <div className="flex items-center gap-3 justify-self-end">
+        <div className={`flex items-center gap-3 ${
+          isProductsPage
+            ? 'md:fixed md:top-4 md:right-6 md:z-[70] justify-self-end'
+            : 'justify-self-end'
+        }`}>
           {/* Desktop Login Button */}
           <Link
             href="/golf/login"

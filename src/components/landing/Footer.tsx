@@ -20,23 +20,13 @@ const footerLinks = {
 
 export function Footer() {
   return (
-    <footer className="relative overflow-hidden bg-stone-950 text-white">
-      <div className="absolute inset-0">
-        <div className="absolute -top-32 left-1/4 h-72 w-72 rounded-full bg-helm-green-500/10 blur-[120px]" />
-        <div className="absolute bottom-0 right-1/4 h-80 w-80 rounded-full bg-helm-amber-500/10 blur-[140px]" />
-        <div
-          className="absolute inset-0 opacity-[0.04]"
-          style={{
-            backgroundImage: `
-              linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(255,255,255,0.08) 1px, transparent 1px)
-            `,
-            backgroundSize: '80px 80px',
-          }}
-        />
-      </div>
-
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+    <footer className="relative overflow-hidden text-warm-900" style={{
+      background: `
+        radial-gradient(ellipse 80% 60% at 50% 60%, rgba(21, 128, 61, 0.12), transparent),
+        linear-gradient(180deg, #F0EBE1 0%, #E8E1D4 100%)
+      `
+    }}>
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-warm-300 to-transparent" />
 
       <div className="relative max-w-7xl mx-auto px-6 py-14 md:py-20">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 mb-10 md:mb-12">
@@ -50,22 +40,22 @@ export function Footer() {
                 height={48}
                 className="h-10 w-10 object-contain"
               />
-              <div className="text-lg font-semibold tracking-tight">Helm Sports Labs</div>
+              <div className="text-lg font-semibold tracking-tight text-warm-900">Helm Sports Labs</div>
             </div>
-            <p className="mt-4 text-sm text-white/50 leading-relaxed">
+            <p className="mt-4 text-sm text-warm-500 leading-relaxed">
               Premium tools for coaches who care about performance and clarity.
             </p>
           </div>
 
           {/* Products */}
           <div>
-            <h4 className="text-xs font-semibold uppercase tracking-[0.2em] text-white/50 mb-4">Products</h4>
+            <h4 className="text-xs font-semibold uppercase tracking-[0.2em] text-warm-500 mb-4">Products</h4>
             <ul className="space-y-3">
               {footerLinks.products.map((link) => (
                 <li key={link.name}>
                   <Link
                     href={link.href}
-                    className="text-sm text-white/60 hover:text-white transition-colors"
+                    className="text-sm text-warm-600 hover:text-warm-900 transition-colors"
                   >
                     {link.name}
                   </Link>
@@ -76,13 +66,13 @@ export function Footer() {
 
           {/* Login */}
           <div>
-            <h4 className="text-xs font-semibold uppercase tracking-[0.2em] text-white/50 mb-4">Login</h4>
+            <h4 className="text-xs font-semibold uppercase tracking-[0.2em] text-warm-500 mb-4">Login</h4>
             <ul className="space-y-3">
               {footerLinks.login.map((link) => (
                 <li key={link.name}>
                   <Link
                     href={link.href}
-                    className="text-sm text-white/60 hover:text-white transition-colors"
+                    className="text-sm text-warm-600 hover:text-warm-900 transition-colors"
                   >
                     {link.name}
                   </Link>
@@ -93,30 +83,30 @@ export function Footer() {
 
           {/* Contact */}
           <div>
-            <h4 className="text-xs font-semibold uppercase tracking-[0.2em] text-white/50 mb-4">Contact</h4>
+            <h4 className="text-xs font-semibold uppercase tracking-[0.2em] text-warm-500 mb-4">Contact</h4>
             <ul className="space-y-3">
               <li>
                 <a
                   href="mailto:admin@helmsportslabs.com"
-                  className="text-sm text-white/60 hover:text-white transition-colors"
+                  className="text-sm text-warm-600 hover:text-warm-900 transition-colors"
                 >
                   admin@helmsportslabs.com
                 </a>
               </li>
-              <li className="text-xs text-white/40">General inquiries</li>
+              <li className="text-xs text-warm-400">General inquiries</li>
             </ul>
           </div>
         </div>
 
         {/* Bottom bar */}
-        <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex flex-col md:flex-row items-center gap-3 text-sm text-white/40">
+        <div className="pt-8 border-t border-warm-300 flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="flex flex-col md:flex-row items-center gap-3 text-sm text-warm-400">
             <p>© {new Date().getFullYear()} Helm Sports Labs. All rights reserved.</p>
-            <div className="flex items-center gap-4 text-white/60">
-              <Link href="/privacy" className="hover:text-white transition-colors">
+            <div className="flex items-center gap-4 text-warm-600">
+              <Link href="/privacy" className="hover:text-warm-900 transition-colors">
                 Privacy
               </Link>
-              <Link href="/terms" className="hover:text-white transition-colors">
+              <Link href="/terms" className="hover:text-warm-900 transition-colors">
                 Terms
               </Link>
             </div>
@@ -126,7 +116,7 @@ export function Footer() {
           <div className="flex gap-4">
             <a
               href="https://twitter.com/helmsportslabs"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 text-white/50 hover:text-white hover:border-white/30 hover:bg-white/[0.04] transition-colors"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-warm-300 text-warm-500 hover:text-warm-900 hover:border-warm-400 hover:bg-warm-100 transition-colors"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Helm Sports Labs on X"
@@ -137,7 +127,7 @@ export function Footer() {
             </a>
             <a
               href="https://linkedin.com/company/helmsportslabs"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 text-white/50 hover:text-white hover:border-white/30 hover:bg-white/[0.04] transition-colors"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-warm-300 text-warm-500 hover:text-warm-900 hover:border-warm-400 hover:bg-warm-100 transition-colors"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Helm Sports Labs on LinkedIn"
@@ -149,7 +139,7 @@ export function Footer() {
           </div>
         </div>
 
-        <p className="mt-6 text-xs text-white/35 text-center">
+        <p className="mt-6 text-xs text-warm-400 text-center">
           Product names and logos are trademarks of their respective owners. Visuals are for illustrative purposes.
         </p>
       </div>

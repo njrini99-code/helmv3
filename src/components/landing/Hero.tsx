@@ -3,10 +3,11 @@
 import { motion, useScroll, useTransform, useReducedMotion } from 'framer-motion'
 import { useRef, useState, useEffect } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { Navigation } from './Navigation'
 import { submitDemoRequest } from '@/app/actions/demo-request'
 
-// Email capture form
+// Email capture — dark theme
 function EmailCapture() {
   const [email, setEmail] = useState('')
   const [submitted, setSubmitted] = useState(false)
@@ -36,15 +37,14 @@ function EmailCapture() {
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mt-8 text-center"
       >
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-helm-green-500/20 text-helm-green-400">
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-primary-600/10 border border-primary-600/20">
+          <svg className="w-4 h-4 text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
-          <span>You&apos;re on the list!</span>
+          <span className="text-primary-500 text-sm font-medium">You&apos;re on the list</span>
         </div>
-        <p className="text-white/40 text-sm mt-3">
+        <p className="text-white/25 text-sm mt-3">
           We&apos;ll notify you as soon as we launch.
         </p>
       </motion.div>
@@ -52,12 +52,8 @@ function EmailCapture() {
   }
 
   return (
-    <div className="mt-8 text-center">
-      <p className="text-white/60 text-base sm:text-lg mb-4">
-        Be first to know when we launch
-      </p>
-
-      <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+    <div>
+      <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
         <input
           type="email"
           value={email}
@@ -65,12 +61,12 @@ function EmailCapture() {
           placeholder="Enter your email"
           required
           disabled={loading}
-          className="flex-1 px-5 py-3 rounded-xl bg-white/10 border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-helm-green-500/50 focus:ring-2 focus:ring-helm-green-500/20 transition-all disabled:opacity-50"
+          className="px-5 py-3.5 rounded-xl bg-white/[0.06] border border-white/[0.1] text-white placeholder:text-white/25 focus:outline-none focus:border-primary-600/30 focus:bg-white/[0.08] transition-all disabled:opacity-50 text-sm w-full sm:w-64"
         />
         <button
           type="submit"
           disabled={loading}
-          className="px-6 py-3 rounded-xl bg-helm-green-600 hover:bg-helm-green-500 text-white font-medium transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-7 py-3.5 rounded-xl bg-primary-600 hover:bg-primary-600 text-white font-medium text-sm transition-all whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(22,163,74,0.3)] hover:shadow-[0_0_30px_rgba(22,163,74,0.45)]"
         >
           {loading ? (
             <span className="flex items-center justify-center gap-2">
@@ -81,7 +77,7 @@ function EmailCapture() {
               Sending...
             </span>
           ) : (
-            'Notify Me'
+            'Get Early Access'
           )}
         </button>
       </form>
@@ -93,7 +89,7 @@ function EmailCapture() {
   )
 }
 
-export function Hero({ useVideoBackground = false }: { useVideoBackground?: boolean }) {
+export function Hero() {
   const [isClient, setIsClient] = useState(false)
   const shouldReduceMotion = useReducedMotion()
   useEffect(() => {
@@ -106,163 +102,290 @@ export function Hero({ useVideoBackground = false }: { useVideoBackground?: bool
     offset: ['start start', 'end start']
   })
 
-  const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0])
-  const showStaticBackground = !useVideoBackground
+  const textY = useTransform(scrollYProgress, [0, 1], [0, -60])
+  const mockupY = useTransform(scrollYProgress, [0, 1], [0, 40])
+  const opacity = useTransform(scrollYProgress, [0, 0.6], [1, 0])
+
+  const initial = (values: Record<string, number>) =>
+    shouldReduceMotion ? false : isClient ? { opacity: 0, ...values } : false
 
   return (
     <section
       ref={containerRef}
-      className={`relative min-h-[100svh] md:min-h-screen overflow-hidden ${showStaticBackground ? 'bg-stone-950' : 'bg-transparent'}`}
+      className="relative min-h-[100svh] md:min-h-screen overflow-hidden bg-stone-950"
     >
-      {showStaticBackground && (
-        <>
-          {/* Background image - z-0 */}
-          <div className="absolute inset-0 z-0">
-            <Image
-              src="/stadium-lights-hero.avif"
-              alt="Stadium atmosphere"
-              fill
-              className="object-cover"
-              priority
-            />
-          </div>
+      {/* Background image */}
+      <div className="absolute inset-0 z-0">
+        <Image
+          src="/hero-golf.jpg"
+          alt=""
+          fill
+          className="object-cover scale-105"
+          priority
+          quality={90}
+          sizes="100vw"
+        />
+      </div>
 
-          {/* Background gradient overlay for depth - z-2 */}
-          <div
-            className="absolute inset-0 z-[2]"
-            style={{
-              background: `
-                linear-gradient(
-                  110deg,
-                  rgba(0,0,0,0.7) 0%,
-                  rgba(0,0,0,0.5) 40%,
-                  rgba(0,0,0,0.3) 70%,
-                  rgba(0,0,0,0.2) 100%
-                )
-              `,
-            }}
-          />
+      {/* Overlay — only on left side for text readability, no edge darkening */}
+      <div
+        className="absolute inset-0 z-[1]"
+        style={{
+          background: `
+            linear-gradient(
+              to right,
+              rgba(0,0,0,0.82) 0%,
+              rgba(0,0,0,0.6) 40%,
+              rgba(0,0,0,0.15) 70%,
+              transparent 100%
+            )
+          `,
+        }}
+      />
 
-          {/* Light rays from stadium lights - z-5 */}
-          <div className="absolute inset-0 pointer-events-none z-[5]">
-            {/* Main light cone */}
-            <div
-              className="absolute inset-0"
-              style={{
-                background: `
-                  conic-gradient(
-                    from -80deg at 92% 12%,
-                    transparent 0deg,
-                    rgba(255, 250, 220, 0.12) 15deg,
-                    rgba(255, 245, 200, 0.08) 35deg,
-                    rgba(255, 240, 180, 0.04) 55deg,
-                    transparent 75deg
-                  )
-                `,
-              }}
-            />
+      {/* Green ambient glow behind mockup */}
+      <div
+        className="absolute z-[2] hidden lg:block pointer-events-none"
+        style={{
+          right: '-5%',
+          top: '15%',
+          width: '55%',
+          height: '70%',
+          background: 'radial-gradient(ellipse at 60% 50%, rgba(22,163,74,0.06), transparent 70%)',
+          filter: 'blur(60px)',
+        }}
+      />
 
-            {/* Secondary softer wash */}
-            <div
-              className="absolute inset-0"
-              style={{
-                background: `
-                  radial-gradient(
-                    ellipse 100% 80% at 80% 20%,
-                    rgba(255, 250, 230, 0.08) 0%,
-                    rgba(255, 245, 210, 0.04) 30%,
-                    transparent 60%
-                  )
-                `,
-              }}
-            />
-          </div>
-        </>
-      )}
+      {/* Film grain texture */}
+      <div
+        className="absolute inset-0 z-[3] pointer-events-none mix-blend-overlay"
+        style={{
+          opacity: 0.035,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+          backgroundSize: '128px',
+        }}
+      />
 
-
-      {/* Navigation - z-30 */}
+      {/* Navigation */}
       <div className="relative z-30">
         <Navigation />
       </div>
 
-      {/* Main Content - z-20 */}
-      <div className="relative z-20 flex items-center justify-center min-h-[calc(100svh-80px)] md:min-h-[calc(100vh-80px)] px-4 sm:px-6 py-10 md:py-12">
-        <motion.div
-          style={{ opacity }}
-          initial={shouldReduceMotion ? false : isClient ? { opacity: 0, y: 24, scale: 0.97 } : false}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.4, delay: 0.15, ease: [0.25, 0.1, 0.25, 1] }}
-        >
-          {/* Premium Glass Card with warm edge from light */}
-          <div
-            className="relative backdrop-blur-2xl rounded-3xl p-6 sm:p-8 md:p-12 lg:p-16 max-w-2xl mx-auto"
-            style={{
-              background: 'linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)',
-              border: '1px solid rgba(255,255,255,0.05)',
-              boxShadow: `
-                4px 0 30px rgba(255,245,200,0.03),
-                0 0 80px rgba(255,250,220,0.03),
-                0 25px 50px -12px rgba(0,0,0,0.5),
-                inset 1px 0 0 rgba(255,250,220,0.05),
-                inset 0 1px 1px rgba(255,255,255,0.05)
-              `,
-            }}
+      {/* Main Content */}
+      <motion.div
+        style={{ opacity }}
+        className="relative z-20 max-w-[90rem] mx-auto px-6 lg:px-14 xl:px-20"
+      >
+        <div className="grid grid-cols-1 lg:grid-cols-2 items-center min-h-[calc(100svh-64px)] md:min-h-[calc(100vh-64px)] gap-8 lg:gap-4">
+
+          {/* ─── Left: Typography + CTA ─── */}
+          <motion.div
+            style={{ y: textY }}
+            className="pt-24 lg:pt-0 pb-4 lg:pb-0"
           >
-            {/* Inner shine effect */}
-            <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-white/[0.03] via-transparent to-transparent pointer-events-none" />
+            {/* Eyebrow */}
+            <motion.div
+              initial={initial({ y: 20 })}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.15, ease: [0.25, 0.1, 0.25, 1] }}
+              className="flex items-center gap-4 mb-8"
+            >
+              <div className="w-8 h-px bg-primary-600/70" />
+              <span className="text-primary-500/70 tracking-[0.25em] uppercase text-[11px] font-medium">
+                College Golf Intelligence
+              </span>
+            </motion.div>
 
-            {/* Content */}
-            <div className="relative z-10">
-              {/* Main headline - BIG and dominant */}
-              <motion.h1
-                initial={shouldReduceMotion ? false : isClient ? { opacity: 0, y: 16 } : false}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.35, delay: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
-                className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold text-white text-center leading-tight"
-              >
-                Where great teams
-                <br />
-                <span className="text-helm-green-400">are built.</span>
-              </motion.h1>
+            {/* Headline */}
+            <motion.h1
+              initial={initial({ y: 50 })}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.9, delay: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
+              className="font-serif text-[clamp(2.75rem,5.5vw,5.5rem)] text-white leading-[0.93] tracking-tightest"
+            >
+              Command
+              <br />
+              <span className="italic text-primary-500">every angle</span>
+              <br />
+              of your program
+            </motion.h1>
 
-              {/* Subhead - smaller, muted */}
-              <motion.p
-                initial={shouldReduceMotion ? false : isClient ? { opacity: 0, y: 16 } : false}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.35, delay: 0.35, ease: [0.25, 0.1, 0.25, 1] }}
-                className="mt-5 text-base sm:text-lg md:text-xl text-white/60 text-center max-w-lg mx-auto"
-              >
-                The command center for college sports. Recruiting, roster management, and athlete development—unified.
-              </motion.p>
+            {/* Subtitle */}
+            <motion.p
+              initial={initial({ y: 25 })}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.45, ease: [0.25, 0.1, 0.25, 1] }}
+              className="text-white/35 text-base lg:text-lg mt-7 max-w-md leading-relaxed"
+            >
+              The platform built for college golf coaches who demand
+              clarity, precision, and a competitive edge.
+            </motion.p>
 
-              {/* Email Capture */}
-              <motion.div
-                initial={shouldReduceMotion ? false : isClient ? { opacity: 0, y: 16 } : false}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.35, delay: 0.45, ease: [0.25, 0.1, 0.25, 1] }}
+            {/* Email CTA */}
+            <motion.div
+              initial={initial({ y: 25 })}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
+              className="mt-10"
+            >
+              <EmailCapture />
+            </motion.div>
+
+            {/* Explore GolfHelm pill */}
+            <motion.div
+              initial={initial({ y: 15 })}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
+              className="mt-10"
+            >
+              <Link href="/products#golfhelm" className="group inline-flex">
+                <div
+                  className="flex items-center gap-3 px-5 py-3 rounded-full border border-white/[0.1] hover:border-white/[0.18] transition-all duration-200 group-hover:scale-[1.02] group-active:scale-[0.98]"
+                  style={{
+                    background: 'rgba(255,255,255,0.05)',
+                    backdropFilter: 'blur(20px)',
+                  }}
+                >
+                  <Image
+                    src="/anim/helm-golf-icon.png"
+                    alt=""
+                    width={28}
+                    height={28}
+                    className="w-7 h-7 object-contain"
+                  />
+                  <span className="text-white/70 text-sm font-medium tracking-tight group-hover:text-white/90 transition-colors">
+                    Explore GolfHelm
+                  </span>
+                  <svg className="w-4 h-4 text-white/30 group-hover:text-white/50 group-hover:translate-x-0.5 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </Link>
+            </motion.div>
+          </motion.div>
+
+          {/* ─── Right: Dashboard in premium browser frame ─── */}
+          <motion.div
+            style={{ y: mockupY }}
+            initial={initial({ x: 80, scale: 0.96 })}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            transition={{ duration: 1.1, delay: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
+            className="relative pb-12 lg:pb-0"
+          >
+            <div className="lg:-mr-[25%]">
+              {/* Glow behind frame */}
+              <div
+                className="absolute -inset-8 z-0 hidden lg:block"
+                style={{
+                  background: 'radial-gradient(ellipse at 50% 40%, rgba(22,163,74,0.08), transparent 60%)',
+                  filter: 'blur(40px)',
+                }}
+              />
+
+              {/* Browser frame */}
+              <div
+                className="relative z-10 rounded-2xl overflow-hidden max-h-[70vh]"
+                style={{
+                  boxShadow: '0 0 0 1px rgba(255,255,255,0.08)',
+                }}
               >
-                <EmailCapture />
-              </motion.div>
+                {/* Title bar — dark chrome */}
+                <div className="bg-[#161616] px-4 py-3 flex items-center border-b border-white/[0.04]">
+                  {/* Traffic lights */}
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-[#ff5f57] shadow-[inset_0_-1px_1px_rgba(0,0,0,0.2)]" />
+                    <div className="w-3 h-3 rounded-full bg-[#febc2e] shadow-[inset_0_-1px_1px_rgba(0,0,0,0.2)]" />
+                    <div className="w-3 h-3 rounded-full bg-[#28c840] shadow-[inset_0_-1px_1px_rgba(0,0,0,0.2)]" />
+                  </div>
+
+                  {/* Tabs area */}
+                  <div className="flex items-center gap-1 ml-6">
+                    {/* Active tab */}
+                    <div className="flex items-center gap-2 bg-[#252525] rounded-lg px-3.5 py-1.5 border border-white/[0.04]">
+                      <Image
+                        src="/Helm-Logo-New-Main.png"
+                        alt=""
+                        width={14}
+                        height={14}
+                        className="w-3.5 h-3.5 object-contain"
+                      />
+                      <span className="text-[11px] text-white/60 font-medium">Dashboard | GolfHelm</span>
+                      <span className="text-white/20 text-[10px] ml-1">&#x2715;</span>
+                    </div>
+                    {/* New tab button */}
+                    <div className="w-6 h-6 rounded-md flex items-center justify-center text-white/15 hover:bg-white/[0.04] text-xs">+</div>
+                  </div>
+                </div>
+
+                {/* URL bar */}
+                <div className="bg-[#161616] px-4 py-2 flex items-center gap-3 border-b border-white/[0.04]">
+                  {/* Nav arrows */}
+                  <div className="flex items-center gap-1">
+                    <svg className="w-3.5 h-3.5 text-white/15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                    </svg>
+                    <svg className="w-3.5 h-3.5 text-white/15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                  {/* Address bar */}
+                  <div className="flex-1 bg-[#0e0e0e] rounded-lg px-3.5 py-1.5 flex items-center gap-2 border border-white/[0.04]">
+                    <svg className="w-3 h-3 text-primary-600/60 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    <span className="text-[11px] text-white/30 tracking-wide">helmsportslabs.com/golf/dashboard</span>
+                  </div>
+                  {/* Action icons */}
+                  <div className="flex items-center gap-2">
+                    <svg className="w-3.5 h-3.5 text-white/15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    <svg className="w-3.5 h-3.5 text-white/15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                    </svg>
+                  </div>
+                </div>
+
+                {/* Dashboard screenshot */}
+                <Image
+                  src="/dashboard-screenshot.jpg"
+                  alt="GolfHelm Dashboard"
+                  width={2880}
+                  height={1621}
+                  className="w-full h-auto block"
+                  quality={95}
+                  priority
+                />
+
+                {/* Bottom fade — makes the crop look intentional */}
+                <div
+                  className="absolute bottom-0 left-0 right-0 h-32 z-10 pointer-events-none"
+                  style={{
+                    background: 'linear-gradient(to top, rgba(0,0,0,0.6), transparent)',
+                  }}
+                />
+              </div>
             </div>
-          </div>
-        </motion.div>
-      </div>
+          </motion.div>
+        </div>
+      </motion.div>
 
       {/* Scroll indicator */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.7 }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20"
+        transition={{ delay: 1.8, duration: 1 }}
+        style={{ opacity }}
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2"
       >
+        <span className="text-white/15 text-[10px] tracking-[0.3em] uppercase font-medium">
+          Scroll
+        </span>
         <motion.div
-          animate={{ y: [0, 6, 0] }}
-          transition={{ repeat: Infinity, duration: 1.2 }}
-          className="w-6 h-10 rounded-full border-2 border-white/30 flex items-start justify-center p-2"
-        >
-          <div className="w-1.5 h-3 rounded-full bg-white/40" />
-        </motion.div>
+          animate={{ y: [0, 8, 0] }}
+          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+          className="w-px h-8 bg-gradient-to-b from-white/15 to-transparent"
+        />
       </motion.div>
     </section>
   )

@@ -154,7 +154,7 @@ function LoginContent() {
             className="mb-4"
           >
             <Link
-              href="/golf"
+              href="/"
               className="inline-flex items-center gap-1.5 text-sm text-warm-500 hover:text-warm-700 transition-colors px-2 py-1.5 -ml-2 rounded-lg hover:bg-warm-100/50"
             >
               <IconChevronLeft size={16} />

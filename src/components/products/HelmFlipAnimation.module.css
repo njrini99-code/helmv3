@@ -7,9 +7,22 @@
   justify-content: center;
   position: relative;
   overflow: hidden;
-  background: #0a0b0f;
-  padding: 3.5rem 1.5rem 2.5rem;
+  background:
+    radial-gradient(ellipse 80% 70% at 50% 60%, rgba(21, 128, 61, 0.06), transparent),
+    radial-gradient(ellipse 60% 50% at 30% 40%, rgba(217, 179, 60, 0.05), transparent),
+    rgba(237, 232, 221, 0.45);
+  backdrop-filter: blur(48px);
+  -webkit-backdrop-filter: blur(48px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.12),
+    0 4px 12px rgba(0, 0, 0, 0.06),
+    0 0 0 1px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.03);
+  padding: 2.5rem 1.5rem 2.5rem;
 }
+
 
 .glow {
   position: absolute;
@@ -20,7 +33,7 @@
   height: 300px;
   background: radial-gradient(
     ellipse,
-    rgba(22, 163, 74, 0.08) 0%,
+    rgba(22, 163, 74, 0.06) 0%,
     transparent 70%
   );
   filter: blur(50px);
@@ -39,7 +52,7 @@
   display: inline-flex;
   height: 1.15em;
   overflow: hidden;
-  font-size: clamp(36px, 7vw, 72px);
+  font-size: clamp(42px, 8.5vw, 88px);
   text-align: right;
   will-change: width, opacity;
   transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1),
@@ -59,7 +72,7 @@
   font-size: inherit;
   font-weight: 900;
   letter-spacing: -0.03em;
-  color: rgba(255, 255, 255, 0.92);
+  color: rgba(28, 25, 23, 0.9);
   white-space: nowrap;
   gap: 0.18em;
   font-family: 'DM Sans', var(--font-sans), system-ui, sans-serif;
@@ -91,33 +104,38 @@
 
 /* Helm text */
 .helm {
-  font-size: clamp(36px, 7vw, 72px);
+  font-size: clamp(42px, 8.5vw, 88px);
   font-weight: 900;
   letter-spacing: -0.03em;
-  color: #16a34a;
+  color: #1B7D2F;
   line-height: 1.15;
   position: relative;
   font-family: 'DM Sans', var(--font-sans), system-ui, sans-serif;
 }
 
-/* Sports Labs canvas wrap */
+/* Sports Labs SVG wrap */
 .slWrap {
   position: relative;
-  margin-left: -0.02em;
+  font-size: clamp(42px, 8.5vw, 88px);
+  margin-left: 0.15em;
   display: none;
   align-items: center;
+  transform: translateY(0.08em);
 }
 
 .slWrapVisible {
   display: inline-flex;
 }
 
-/* Main logo */
+/* Main logo — positioned absolutely so it doesn't shift the text */
 .mainLogo {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translate(calc(100% + 0.2em), -50%);
   height: 1.05em;
   width: 1.05em;
-  font-size: clamp(36px, 7vw, 72px);
-  margin-left: 0.2em;
+  font-size: clamp(42px, 8.5vw, 88px);
   flex-shrink: 0;
   will-change: opacity;
   opacity: 0;
@@ -148,11 +166,11 @@
   left: 0;
   right: 0;
   text-align: center;
-  font-size: 10px;
+  font-size: 14px;
   letter-spacing: 0.35em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.13);
-  font-weight: 700;
+  color: rgba(28, 25, 23, 0.35);
+  font-weight: 800;
   will-change: opacity;
   opacity: 0;
   transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -161,6 +179,28 @@
 
 .taglineVisible {
   opacity: 1;
+}
+
+/* SVG handwriting text */
+.handwritingSvg {
+  overflow: visible;
+  display: block;
+}
+
+.handwritingText {
+  fill: transparent;
+  stroke: rgba(28, 25, 23, 0.9);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  font-size: inherit;
+  paint-order: stroke fill;
+}
+
+/* Fade in the fill after stroke completes */
+.handwritingFill {
+  fill: rgba(28, 25, 23, 0.9);
+  transition: fill 0.8s ease;
 }
 
 /* Font preloader (invisible) */

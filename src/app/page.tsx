@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import { VideoIntro } from '@/components/landing/intro'
 import { Hero } from '@/components/landing/Hero'
 import { Footer } from '@/components/landing/Footer'
 import { SmoothScroll } from '@/components/landing/SmoothScroll'
@@ -37,9 +36,7 @@ export default function LandingPage() {
       </a>
       <SmoothScroll />
       <div id="main-content">
-      <VideoIntro videoSrc="/videos/intro.mp4">
-        <Hero useVideoBackground />
-      </VideoIntro>
+        <Hero />
       </div>
       <Footer />
     </main>

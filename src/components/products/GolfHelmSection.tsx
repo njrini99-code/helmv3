@@ -1,10 +1,8 @@
 'use client';
 
 import Image from 'next/image';
-import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { LiveRoundMockup, QualifierMockup, StatsMockup, CoachAIMockup } from './golf-mockups';
-import { IconArrowRight, IconSparkles } from '@/components/icons';
+import { LiveRoundMockup, QualifierMockup, StatsMockup } from './golf-mockups';
 
 /**
  * GolfHelm Product Section - Multi-Feature Showcase
@@ -31,7 +29,7 @@ export function GolfHelmSection() {
   return (
     <section
       id="golfhelm"
-      className="relative py-20 md:py-28 overflow-hidden scroll-mt-20 bg-white"
+      className="relative py-20 md:py-28 overflow-hidden scroll-mt-20 bg-[#F5F0E8]"
     >
       <motion.div
         className="relative max-w-5xl mx-auto px-5 sm:px-6"
@@ -45,7 +43,7 @@ export function GolfHelmSection() {
           <div className="flex flex-col items-center justify-center gap-4 mb-6">
             <div className="w-20 h-20 sm:w-24 sm:h-24 relative">
               <Image
-                src="/helm-golf-logo-transparent.png"
+                src="/anim/helm-golf-icon.png"
                 alt="GolfHelm"
                 fill
                 className="object-contain"
@@ -62,24 +60,9 @@ export function GolfHelmSection() {
           </h2>
 
           <p className="text-lg text-slate-600 mb-8 leading-relaxed">
-            Complete team management from qualifying rounds to tournament day.
+            Complete team management system with comprehensive round tracking. Everything you need to build a winning program!
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link href="/golf/signup">
-              <button className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-lg
-                               bg-emerald-600 text-white font-semibold
-                               hover:bg-emerald-700 active:scale-[0.98] transition-all">
-                Start Free Trial
-                <IconArrowRight size={16} />
-              </button>
-            </Link>
-            <button className="w-full sm:w-auto px-6 py-3 rounded-lg
-                             text-slate-700 font-medium border border-slate-200
-                             hover:bg-slate-50 active:scale-[0.98] transition-all">
-              Watch Demo
-            </button>
-          </div>
         </motion.div>
 
         {/* Feature 1: Live Round Tracking */}
@@ -174,31 +157,190 @@ export function GolfHelmSection() {
 
         {/* Feature 4: CoachHelm AI */}
         <motion.div variants={itemVariants} className="relative">
-          <div className="bg-slate-900 rounded-2xl p-8 md:p-10 overflow-hidden">
-            <div className="relative grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
-              <div>
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/10 text-emerald-400 text-sm font-medium rounded-md mb-4">
-                  <IconSparkles size={14} />
-                  CoachHelm AI
+          <div className="bg-gradient-to-b from-[#0c0c10] via-[#0e0f14] to-[#0a0a0e] rounded-2xl p-8 md:p-12 overflow-hidden relative">
+            {/* Subtle dot grid */}
+            <div className="absolute inset-0 opacity-[0.025]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '28px 28px' }} />
+            {/* Soft warm glow top center */}
+            <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-96 h-96 bg-white/[0.02] blur-[120px] rounded-full" />
+
+            <div className="relative">
+              {/* Header — centered */}
+              <div className="text-center mb-12">
+                <div className="flex flex-col items-center gap-4 mb-6">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 relative">
+                    <Image src="/anim/helm-coach-icon.png" alt="CoachHelm" fill className="object-contain" sizes="80px" unoptimized />
+                  </div>
+                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/[0.06] text-white/80 text-base font-bold rounded-xl ring-1 ring-white/[0.08]">
+                    Coach<span className="text-emerald-400">Helm</span>&nbsp;AI
+                  </div>
                 </div>
-                <h3 className="text-2xl sm:text-3xl font-bold text-white mb-4 tracking-tight">
-                  Your AI coaching assistant
+                <h3 className="text-3xl sm:text-4xl font-bold text-white mb-3 tracking-tight">
+                  Your personal golf intelligence
                 </h3>
-                <p className="text-slate-400 mb-5 leading-relaxed">
-                  CoachHelm AI analyzes your team's data and surfaces actionable insights.
-                  Spot declining performance, identify opportunities, and get personalized recommendations.
+                <p className="text-white/35 text-lg max-w-xl mx-auto leading-relaxed">
+                  Smarter practice. Lower scores. AI that understands every shot.
                 </p>
-                <ul className="space-y-2">
-                  {['Performance alerts', 'Lineup suggestions', 'Practice recommendations', 'Player development tips'].map((item) => (
-                    <li key={item} className="flex items-center gap-3 text-slate-400 text-sm">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
               </div>
-              <div>
-                <CoachAIMockup />
+
+              {/* Feature cards grid */}
+              <div className="grid md:grid-cols-3 gap-4 mb-8">
+                {/* Round Review Card */}
+                <div className="bg-white/[0.06] backdrop-blur-sm rounded-xl p-5 ring-1 ring-white/[0.08] hover:ring-white/15 transition-all group">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center ring-1 ring-emerald-500/20">
+                      <svg className="w-4.5 h-4.5 text-emerald-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                      </svg>
+                    </div>
+                    <h4 className="text-white font-semibold text-sm">AI Round Review</h4>
+                  </div>
+                  {/* Mini round review mockup */}
+                  <div className="bg-black/30 rounded-lg p-3.5 mb-3">
+                    <div className="flex items-center justify-between mb-2.5">
+                      <span className="text-[10px] text-white/40 font-medium">Pebble Beach GL</span>
+                      <span className="text-lg font-bold text-white">72 <span className="text-xs text-white/40 font-normal">Even</span></span>
+                    </div>
+                    {/* Mini scorecard */}
+                    <div className="flex gap-0.5 mb-3">
+                      {[4,3,4,5,3,5,3,4,4].map((s, i) => {
+                        const pars = [4,4,3,5,4,4,3,5,4];
+                        const diff = s - pars[i]!;
+                        return (
+                          <div key={i} className={`flex-1 h-5 rounded text-[8px] font-bold flex items-center justify-center ${
+                            diff < 0 ? 'bg-emerald-500/30 text-emerald-300' :
+                            diff === 0 ? 'bg-white/10 text-white/50' :
+                            'bg-amber-500/20 text-amber-300'
+                          }`}>{s}</div>
+                        );
+                      })}
+                    </div>
+                    <div className="bg-white/[0.04] rounded-md p-2 ring-1 ring-white/[0.06]">
+                      <p className="text-[10px] text-white/50 font-medium leading-relaxed">
+                        Short game improved 18% this round. Approach shots within 120yds averaged 12ft from pin.
+                      </p>
+                    </div>
+                  </div>
+                  {/* Stats row */}
+                  <div className="flex gap-2">
+                    {[
+                      { label: 'Short Game', value: '+18%', color: 'text-emerald-400' },
+                      { label: 'Proximity', value: '12 ft', color: 'text-white' },
+                      { label: 'FIR', value: '71%', color: 'text-emerald-400' },
+                    ].map((s) => (
+                      <div key={s.label} className="flex-1 bg-black/20 rounded-md px-2 py-1.5 text-center">
+                        <p className={`text-xs font-bold ${s.color}`}>{s.value}</p>
+                        <p className="text-[9px] text-white/30 mt-0.5">{s.label}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Team Trends Card */}
+                <div className="bg-white/[0.06] backdrop-blur-sm rounded-xl p-5 ring-1 ring-white/[0.08] hover:ring-white/15 transition-all group">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center ring-1 ring-emerald-500/20">
+                      <svg className="w-4.5 h-4.5 text-emerald-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <polyline points="23,6 13.5,15.5 8.5,10.5 1,18" />
+                        <polyline points="17,6 23,6 23,12" />
+                      </svg>
+                    </div>
+                    <h4 className="text-white font-semibold text-sm">Team Trends</h4>
+                  </div>
+                  {/* Mini trend chart */}
+                  <div className="bg-black/30 rounded-lg p-3.5 mb-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] text-white/40 font-medium">Team Avg (Last 7 rounds)</span>
+                      <span className="text-xs font-bold text-emerald-400">+1.8 ↓</span>
+                    </div>
+                    {/* Sparkline bars */}
+                    <div className="flex items-end gap-1 h-16">
+                      {[78, 76, 77, 74, 75, 73, 72].map((v, i) => (
+                        <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
+                          <div
+                            className={`w-full rounded-sm ${i === 6 ? 'bg-emerald-500' : 'bg-emerald-500/30'}`}
+                            style={{ height: `${((80 - v) / 10) * 100}%`, minHeight: '12%' }}
+                          />
+                          <span className="text-[7px] text-white/25">{v}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Trend indicators */}
+                  <div className="space-y-1.5">
+                    {[
+                      { label: '5 members improving', icon: '↑', color: 'text-emerald-400 bg-emerald-500/10' },
+                      { label: '2 declining', icon: '↓', color: 'text-red-400 bg-red-500/10' },
+                      { label: '1 stable', icon: '—', color: 'text-white/40 bg-white/5' },
+                    ].map((t) => (
+                      <div key={t.label} className="flex items-center gap-2">
+                        <span className={`w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold ${t.color}`}>{t.icon}</span>
+                        <span className="text-[11px] text-white/50">{t.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Strengths & Weaknesses Card */}
+                <div className="bg-white/[0.06] backdrop-blur-sm rounded-xl p-5 ring-1 ring-white/[0.08] hover:ring-white/15 transition-all group">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-9 h-9 rounded-lg bg-emerald-500/10 flex items-center justify-center ring-1 ring-emerald-500/20">
+                      <svg className="w-4.5 h-4.5 text-emerald-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+                        <line x1="9" y1="9" x2="9.01" y2="9" />
+                        <line x1="15" y1="9" x2="15.01" y2="9" />
+                      </svg>
+                    </div>
+                    <h4 className="text-white font-semibold text-sm">Strengths & Weaknesses</h4>
+                  </div>
+                  {/* Strokes gained breakdown */}
+                  <div className="bg-black/30 rounded-lg p-3.5 mb-3">
+                    <p className="text-[10px] text-white/40 font-medium mb-3">Strokes Gained vs Field</p>
+                    <div className="space-y-2">
+                      {[
+                        { label: 'SG: Approach', value: '+1.3', pct: 65, positive: true },
+                        { label: 'Scrambling %', value: '+1.1', pct: 55, positive: true },
+                        { label: 'Doubles+/Rnd', value: '+2.0', pct: 75, positive: true },
+                      ].map((s) => (
+                        <div key={s.label}>
+                          <div className="flex items-center justify-between mb-0.5">
+                            <span className="text-[10px] text-white/50">{s.label}</span>
+                            <span className="text-[10px] font-bold text-emerald-400">{s.value}</span>
+                          </div>
+                          <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                            <div className="h-full bg-emerald-500/60 rounded-full" style={{ width: `${s.pct}%` }} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="h-px bg-white/5 my-3" />
+                    <p className="text-[9px] text-red-400/60 font-semibold uppercase tracking-wider mb-2">Areas to Improve</p>
+                    <div className="space-y-2">
+                      {[
+                        { label: 'SG: Putting', value: '-2.0', pct: 70, positive: false },
+                        { label: 'Three-putts', value: '-1.4', pct: 50, positive: false },
+                      ].map((s) => (
+                        <div key={s.label}>
+                          <div className="flex items-center justify-between mb-0.5">
+                            <span className="text-[10px] text-white/50">{s.label}</span>
+                            <span className="text-[10px] font-bold text-red-400">{s.value}</span>
+                          </div>
+                          <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                            <div className="h-full bg-red-500/50 rounded-full" style={{ width: `${s.pct}%` }} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-white/30 leading-relaxed">AI-identified from your strokes gained data across 14 rounds.</p>
+                </div>
+              </div>
+
+              {/* Bottom tagline */}
+              <div className="flex items-center justify-center gap-3 pt-2">
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent to-white/10" />
+                <p className="text-white/25 text-xs font-semibold uppercase tracking-widest">Powered by AI</p>
+                <div className="h-px flex-1 bg-gradient-to-l from-transparent to-white/10" />
               </div>
             </div>
           </div>

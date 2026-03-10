@@ -17,7 +17,7 @@ export function VideoMockup() {
             <h3 className="font-semibold text-white text-sm tracking-tight">Video Library</h3>
             <p className="text-micro text-white/40 mt-0.5">234 clips • 12.4 GB</p>
           </div>
-          <button className="px-3 py-1.5 bg-blue-500 text-white text-micro font-semibold rounded-md hover:bg-blue-400 transition-colors tracking-wide uppercase">
+          <button className="px-3 py-1.5 bg-emerald-500 text-white text-micro font-semibold rounded-md hover:bg-blue-400 transition-colors tracking-wide uppercase">
             Upload
           </button>
         </div>
@@ -41,7 +41,7 @@ export function VideoMockup() {
 
             {/* Motion blur streaks */}
             <div className="absolute top-1/4 left-1/5 w-32 h-px bg-gradient-to-r from-white/30 via-white/10 to-transparent rotate-12" />
-            <div className="absolute top-1/2 left-1/4 w-24 h-px bg-gradient-to-r from-blue-400/40 to-transparent -rotate-6" />
+            <div className="absolute top-1/2 left-1/4 w-24 h-px bg-gradient-to-r from-emerald-400/40 to-transparent -rotate-6" />
             <div className="absolute bottom-1/3 right-1/4 w-20 h-px bg-gradient-to-l from-white/20 to-transparent rotate-3" />
           </div>
 
@@ -65,7 +65,7 @@ export function VideoMockup() {
           <div className="absolute bottom-3 left-4 right-4">
             <div className="flex items-end justify-between">
               <div>
-                <span className="inline-block px-2 py-0.5 bg-blue-500 text-[9px] text-white font-bold uppercase tracking-wider rounded mb-1">
+                <span className="inline-block px-2 py-0.5 bg-emerald-500 text-[9px] text-white font-bold uppercase tracking-wider rounded mb-1">
                   Highlight
                 </span>
                 <h4 className="text-white font-semibold text-sm">State Championship At-Bat</h4>
@@ -77,7 +77,7 @@ export function VideoMockup() {
 
           {/* Progress bar */}
           <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white/10">
-            <div className="h-full w-[35%] bg-blue-500" />
+            <div className="h-full w-[35%] bg-emerald-500" />
           </div>
         </div>
 
@@ -85,7 +85,7 @@ export function VideoMockup() {
         <div className="p-4">
           <div className="flex items-center justify-between mb-3">
             <span className="text-micro text-white/40 uppercase tracking-widest font-medium">Recent</span>
-            <span className="text-micro text-blue-400 hover:text-blue-300 cursor-pointer">View All</span>
+            <span className="text-micro text-emerald-400 hover:text-emerald-300 cursor-pointer">View All</span>
           </div>
 
           <div className="grid grid-cols-3 gap-2">
@@ -159,7 +159,7 @@ function VideoThumb({ color, label, duration, isNew }: {
 
         {/* New indicator */}
         {isNew && (
-          <span className="absolute top-1 left-1 px-1.5 py-0.5 bg-blue-500 text-white text-[8px] font-bold uppercase tracking-wider rounded">
+          <span className="absolute top-1 left-1 px-1.5 py-0.5 bg-emerald-500 text-white text-[8px] font-bold uppercase tracking-wider rounded">
             New
           </span>
         )}
