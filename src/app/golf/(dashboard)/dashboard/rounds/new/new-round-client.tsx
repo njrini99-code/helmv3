@@ -380,6 +380,8 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
   const [loadingSavedCourses, setLoadingSavedCourses] = useState(true);
   const [courseMode, setCourseMode] = useState<'new' | 'saved'>('new');
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+  // FK to golf_courses (resolved from saved course or server-side fallback)
+  const resolvedCourseIdRef = useRef<string | null>(null);
   const [preloadedHoleConfigs, setPreloadedHoleConfigs] = useState<SavedCourseHoleConfig[] | null>(null);
   const [saveCourseChecked, setSaveCourseChecked] = useState(false);
   const [courseSearchQuery, setCourseSearchQuery] = useState('');
@@ -520,11 +522,14 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
         teesPlayed: 'White',
       }));
       setPreloadedHoleConfigs(null);
+      resolvedCourseIdRef.current = null;
       return;
     }
 
     const course = savedCourses.find(c => c.id === courseId);
     if (course) {
+      // Store the golf_courses FK from the saved course
+      resolvedCourseIdRef.current = course.courseId ?? null;
       // Populate form with saved course data
       setSetupData(prev => ({
         ...prev,
@@ -713,6 +718,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
 
     return {
       courseName: setupData.courseName,
+      courseId: resolvedCourseIdRef.current || undefined,
       courseCity: setupData.courseCity || undefined,
       courseState: setupData.courseState || undefined,
       courseRating: setupData.courseRating ? parseFloat(setupData.courseRating) : undefined,
@@ -1056,6 +1062,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
 
       const roundData = {
         courseName: setupData.courseName,
+        courseId: resolvedCourseIdRef.current || undefined,
         courseCity: setupData.courseCity || undefined,
         courseState: setupData.courseState || undefined,
         courseRating: setupData.courseRating ? parseFloat(setupData.courseRating) : undefined,
@@ -1320,6 +1327,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                         onClick={() => {
                           setCourseMode('new');
                           setSelectedCourseId(null);
+                          resolvedCourseIdRef.current = null;
                           setPreloadedHoleConfigs(null);
                           setCourseSearchQuery('');
                           setSetupData(prev => ({

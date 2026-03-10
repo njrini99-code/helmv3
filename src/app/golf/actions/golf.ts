@@ -25,6 +25,30 @@ import { logCritical, logError } from '@/lib/error-monitoring';
 import { deriveLieAfterFromResult, deriveLieAfter } from '@/lib/utils/shot-helpers';
 
 // ============================================================================
+// COURSE ID RESOLUTION
+// ============================================================================
+
+/**
+ * Resolve a course_id from golf_courses by name lookup.
+ * Returns providedCourseId if already set; otherwise does a case-insensitive
+ * lookup of courseName against golf_courses.name.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function resolveCourseId(supabase: any, courseName: string, providedCourseId?: string | null): Promise<string | null> {
+  if (providedCourseId) return providedCourseId;
+  if (!courseName) return null;
+
+  const { data } = await supabase
+    .from('golf_courses')
+    .select('id')
+    .ilike('name', courseName)
+    .limit(1)
+    .maybeSingle();
+
+  return (data as { id: string } | null)?.id ?? null;
+}
+
+// ============================================================================
 // RESULT TYPE
 // ============================================================================
 
@@ -666,10 +690,11 @@ export async function submitGolfRoundComprehensive(
 
     // Prepare round data
     const teamId = await getPlayerTeamId(supabase, player.id);
+    const resolvedCourseId = await resolveCourseId(supabase, data.courseName, data.courseId);
     const roundData = {
       player_id: player.id,
       team_id: teamId,
-      course_id: data.courseId || null,
+      course_id: resolvedCourseId,
       course_name: data.courseName,
       course_city: data.courseCity || null,
       course_state: data.courseState || null,
@@ -2415,11 +2440,12 @@ export async function savePartialRound(
     }
 
     const teamId = await getPlayerTeamId(supabase, player.id);
+    const resolvedCourseId = await resolveCourseId(supabase, data.courseName, data.courseId);
 
     const roundData = {
       player_id: player.id,
       team_id: teamId,
-      course_id: data.courseId || null,
+      course_id: resolvedCourseId,
       course_name: data.courseName,
       course_city: data.courseCity || null,
       course_state: data.courseState || null,
@@ -3371,6 +3397,7 @@ export interface SavedCourseHoleConfig {
 /** Saved course data returned to client */
 export interface SavedCourse {
   id: string;
+  courseId: string | null;
   courseName: string;
   courseCity: string | null;
   courseState: string | null;
@@ -3389,6 +3416,7 @@ export interface SavedCourse {
  */
 interface SavedCourseRow {
   id: string;
+  course_id: string | null;
   course_name: string;
   notes: string | null;
   last_played_at: string | null;
@@ -3461,6 +3489,7 @@ export async function getPlayerSavedCourses(): Promise<ActionResult<SavedCourse[
     }
     return {
       id: course.id,
+      courseId: course.course_id ?? null,
       courseName: course.course_name,
       courseCity: parsed.city ?? null,
       courseState: parsed.state ?? null,
@@ -3508,9 +3537,13 @@ export async function savePlayerCourse(input: SaveCourseInput): Promise<ActionRe
     .ilike('course_name', input.courseName)
     .maybeSingle();
 
+  // Try to resolve course_id from golf_courses by name
+  const resolvedCourseId = await resolveCourseId(supabase, input.courseName);
+
   // Course data with extended fields - stored as JSON in notes if extended columns don't exist
   const courseData = {
     player_id: player.id,
+    course_id: resolvedCourseId,
     course_name: input.courseName,
     notes: JSON.stringify({
       city: input.courseCity,
@@ -3552,6 +3585,7 @@ export async function savePlayerCourse(input: SaveCourseInput): Promise<ActionRe
   }
   const savedCourse: SavedCourse = {
     id: course.id,
+    courseId: course.course_id ?? null,
     courseName: course.course_name,
     courseCity: parsed.city ?? null,
     courseState: parsed.state ?? null,
