@@ -609,7 +609,7 @@ export function getStrokesGainedCategory(shot: RawShot, par: number): 'tee' | 'a
 // SHOT-BASED HOLE CALCULATOR
 // ============================================================================
 
-export interface CalculatedHoleStats {
+interface CalculatedHoleStats {
   holeNumber: number;
   par: number;
   score: number;

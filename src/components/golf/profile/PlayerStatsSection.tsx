@@ -562,4 +562,3 @@ export const PlayerStatsSection = memo(function PlayerStatsSection({
   );
 });
 
-export default PlayerStatsSection;

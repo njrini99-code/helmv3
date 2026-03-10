@@ -25,7 +25,7 @@ export interface BusyPeriod {
   ownerType?: 'coach' | 'player';
 }
 
-export interface AvailabilityResult {
+interface AvailabilityResult {
   userId: string;
   busyPeriods: BusyPeriod[];
   freePeriods: Array<{ start: Date; end: Date }>;
@@ -36,7 +36,7 @@ export interface TimeSlot {
   end: Date;
 }
 
-export interface WorkingHours {
+interface WorkingHours {
   start: number; // hour (0-23)
   end: number;   // hour (0-23)
 }
@@ -447,7 +447,7 @@ export function getEndOfWeek(date: Date): Date {
 /**
  * Format a date range for display
  */
-export function formatDateRange(start: Date, end: Date): string {
+function formatDateRange(start: Date, end: Date): string {
   const sameDay = start.toDateString() === end.toDateString();
 
   if (sameDay) {

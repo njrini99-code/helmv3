@@ -8,8 +8,6 @@ import { triggerHaptic } from '@/lib/utils/capacitor';
 // Re-export for any existing callers
 export { calculateHoleStats } from '@/lib/utils/shot-helpers';
 
-// Re-export canonical types for backward compatibility
-export type { ShotRecord, HoleStats, RoundHole } from '@/lib/types/golf';
 import type { ShotRecord, HoleStats, RoundHole } from '@/lib/types/golf';
 
 import { useShotStateMachine, type EditFormData } from '@/hooks/golf/use-shot-state-machine';

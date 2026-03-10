@@ -168,7 +168,7 @@ export const getGolfSessionProfile = cache(async (): Promise<GolfSessionProfile 
  * Require an authenticated golf coach session.
  * Throws if not authenticated or not a golf coach.
  */
-export async function requireGolfCoachSession(): Promise<
+async function requireGolfCoachSession(): Promise<
   Omit<GolfSessionProfile, 'coach'> & { coach: GolfCoachProfile }
 > {
   const session = await getGolfSessionProfile();
@@ -180,7 +180,7 @@ export async function requireGolfCoachSession(): Promise<
  * Require an authenticated golf player session.
  * Throws if not authenticated or not a golf player.
  */
-export async function requireGolfPlayerSession(): Promise<
+async function requireGolfPlayerSession(): Promise<
   Omit<GolfSessionProfile, 'player'> & { player: GolfPlayerProfile }
 > {
   const session = await getGolfSessionProfile();
@@ -196,7 +196,7 @@ export async function requireGolfPlayerSession(): Promise<
  * Require an authenticated session. Throws 'Unauthorized' if not logged in.
  * Use in server actions where you want to throw rather than redirect.
  */
-export async function requireSession(): Promise<SessionProfile> {
+async function requireSession(): Promise<SessionProfile> {
   const session = await getSessionProfile();
   if (!session) throw new Error('Unauthorized');
   return session;
@@ -206,7 +206,7 @@ export async function requireSession(): Promise<SessionProfile> {
  * Require an authenticated coach session.
  * Throws if not authenticated or not a coach.
  */
-export async function requireCoachSession(): Promise<
+async function requireCoachSession(): Promise<
   Omit<SessionProfile, 'coach'> & { coach: CoachProfile }
 > {
   const session = await requireSession();
@@ -220,7 +220,7 @@ export async function requireCoachSession(): Promise<
  * Require an authenticated player session.
  * Throws if not authenticated or not a player.
  */
-export async function requirePlayerSession(): Promise<
+async function requirePlayerSession(): Promise<
   Omit<SessionProfile, 'player'> & { player: PlayerProfile }
 > {
   const session = await requireSession();

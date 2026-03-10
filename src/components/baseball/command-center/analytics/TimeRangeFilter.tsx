@@ -9,13 +9,13 @@ import { IconCalendar } from '@/components/icons';
 
 export type TimeRange = '7d' | '30d' | 'season' | 'all';
 
-export interface TimeRangeOption {
+interface TimeRangeOption {
   value: TimeRange;
   label: string;
   shortLabel: string;
 }
 
-export interface TimeRangeFilterProps {
+interface TimeRangeFilterProps {
   value: TimeRange;
   onChange: (value: TimeRange) => void;
   size?: 'sm' | 'md';
@@ -26,39 +26,12 @@ export interface TimeRangeFilterProps {
 // CONSTANTS
 // ============================================================================
 
-export const TIME_RANGE_OPTIONS: TimeRangeOption[] = [
+const TIME_RANGE_OPTIONS: TimeRangeOption[] = [
   { value: '7d', label: 'Last 7 Days', shortLabel: '7D' },
   { value: '30d', label: 'Last 30 Days', shortLabel: '30D' },
   { value: 'season', label: 'This Season', shortLabel: 'Season' },
   { value: 'all', label: 'All Time', shortLabel: 'All' },
 ];
-
-// ============================================================================
-// HELPERS
-// ============================================================================
-
-export function getTimeRangeStartDate(range: TimeRange): Date | null {
-  const now = new Date();
-
-  switch (range) {
-    case '7d':
-      return new Date(now.setDate(now.getDate() - 7));
-    case '30d':
-      return new Date(now.setDate(now.getDate() - 30));
-    case 'season': {
-      // Baseball season roughly Feb 1 - Nov 1
-      // If current month is before Feb, use previous year
-      const currentMonth = new Date().getMonth();
-      const seasonYear =
-        currentMonth < 1 ? new Date().getFullYear() - 1 : new Date().getFullYear();
-      return new Date(seasonYear, 1, 1); // Feb 1
-    }
-    case 'all':
-      return null;
-    default:
-      return null;
-  }
-}
 
 // ============================================================================
 // COMPONENT

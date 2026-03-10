@@ -11,7 +11,7 @@ import type { CausalRelationship, CausalRelationshipType, CausalEvidence } from 
 /**
  * Correlation result between two metrics
  */
-export interface Correlation {
+interface Correlation {
   id: string;
   metric1: string;
   metric2: string;
@@ -28,7 +28,7 @@ export interface Correlation {
 /**
  * Multi-variate relationship between metrics
  */
-export interface MetricRelationship {
+interface MetricRelationship {
   id: string;
   primaryMetric: string;
   influencingMetrics: Array<{
@@ -44,7 +44,7 @@ export interface MetricRelationship {
 /**
  * Discovered insight from correlation analysis
  */
-export interface CorrelationInsight {
+interface CorrelationInsight {
   id: string;
   playerId: string;
   title: string;
@@ -138,7 +138,7 @@ const MEANINGFUL_METRIC_PAIRS: Array<{
  * Correlation Discovery Engine
  * Finds meaningful statistical relationships between golf metrics
  */
-export class CorrelationEngine {
+class CorrelationEngine {
   private playerId: string;
 
   constructor(playerId: string) {

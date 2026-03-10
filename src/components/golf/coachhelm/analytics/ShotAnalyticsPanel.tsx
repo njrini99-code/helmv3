@@ -453,7 +453,3 @@ function LoadingSkeleton() {
   );
 }
 
-// Export index for the analytics folder
-export { MissPatternChart, MissPatternChartMini } from './MissPatternChart';
-export { ShotTypeBreakdown } from './ShotTypeBreakdown';
-export { TrendIndicator, TrendBadge, TrendSummary } from './TrendIndicator';

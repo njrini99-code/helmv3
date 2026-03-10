@@ -11,7 +11,7 @@ import {
 // TYPES
 // ============================================================================
 
-export interface PressureGapIndicatorProps {
+interface PressureGapIndicatorProps {
   gap: number; // Positive = better in games, Negative = struggles in games
   practiceAvg: number;
   gameAvg: number;
@@ -47,13 +47,13 @@ export function getGapBgColor(gap: number): string {
   return 'bg-warm-50';
 }
 
-export function getGapLabel(gap: number): string {
+function getGapLabel(gap: number): string {
   if (gap > 0.02) return 'clutch performer';
   if (gap < -0.02) return 'pressure struggles';
   return 'consistent';
 }
 
-export function getGapCategory(gap: number): 'clutch' | 'consistent' | 'struggling' {
+function getGapCategory(gap: number): 'clutch' | 'consistent' | 'struggling' {
   if (gap > 0.02) return 'clutch';
   if (gap < -0.02) return 'struggling';
   return 'consistent';
@@ -210,41 +210,3 @@ export function PressureGapIndicator({
   );
 }
 
-// ============================================================================
-// BADGE VARIANT (for quick display in lists/cards)
-// ============================================================================
-
-interface PressureGapBadgeProps {
-  gap: number;
-  showLabel?: boolean;
-  className?: string;
-}
-
-export function PressureGapBadge({
-  gap,
-  showLabel = false,
-  className,
-}: PressureGapBadgeProps) {
-  const category = getGapCategory(gap);
-
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium',
-        category === 'clutch' && 'bg-primary-50 text-primary-700',
-        category === 'struggling' && 'bg-red-50 text-red-700',
-        category === 'consistent' && 'bg-warm-100 text-warm-600',
-        className
-      )}
-    >
-      {category === 'clutch' && <IconTrendingUp size={12} />}
-      {category === 'struggling' && <IconTrendingDown size={12} />}
-      {category === 'consistent' && <IconMinus size={12} />}
-      {showLabel ? (
-        <span className="capitalize">{category}</span>
-      ) : (
-        <span className="tabular-nums">{formatGap(gap)}</span>
-      )}
-    </span>
-  );
-}

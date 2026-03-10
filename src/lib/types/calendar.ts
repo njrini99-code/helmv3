@@ -19,7 +19,7 @@ export type EventType =
 
 export type RSVPStatus = 'accepted' | 'declined' | 'tentative' | 'pending';
 
-export type SyncDirection = 'push' | 'pull' | 'both';
+type SyncDirection = 'push' | 'pull' | 'both';
 
 export type RecurrenceFrequency = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
@@ -49,7 +49,7 @@ export interface CalendarEvent {
   updated_at: string;
 }
 
-export interface CalendarEventAttendee {
+interface CalendarEventAttendee {
   id: string;
   event_id: string;
   user_id: string;
@@ -65,7 +65,7 @@ export interface CalendarEventAttendee {
   };
 }
 
-export interface CalendarPreferences {
+interface CalendarPreferences {
   id: string;
   user_id: string;
   default_view: CalendarView;
@@ -119,7 +119,7 @@ export interface TeamMember {
   role?: 'player' | 'coach' | 'staff';
 }
 
-export interface DayEvent {
+interface DayEvent {
   event: CalendarEvent;
   attendees: CalendarEventAttendee[];
   topOffset: number; // px from top of day column
@@ -138,7 +138,7 @@ export interface RecurrenceRule {
   byMonth?: number[];
 }
 
-export interface CalendarSync {
+interface CalendarSync {
   provider: 'google' | 'apple';
   connected: boolean;
   calendarId?: string;
@@ -148,7 +148,7 @@ export interface CalendarSync {
   errorMessage?: string;
 }
 
-export interface EventFormData {
+interface EventFormData {
   title: string;
   description: string;
   event_type: EventType;

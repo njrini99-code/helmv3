@@ -10,7 +10,7 @@ interface ReminderBadgeProps {
   size?: 'sm' | 'md';
 }
 
-export function ReminderBadge({ reminderAt, className, size = 'md' }: ReminderBadgeProps) {
+function ReminderBadge({ reminderAt, className, size = 'md' }: ReminderBadgeProps) {
   const reminderDate = new Date(reminderAt);
   const now = new Date();
   const diff = reminderDate.getTime() - now.getTime();

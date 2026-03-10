@@ -36,9 +36,4 @@
  * ```
  */
 
-export { PeekPanel } from './PeekPanel';
 export { PeekPanelProvider } from './PeekPanelProvider';
-export { PeekPanelTrigger } from './PeekPanelTrigger';
-export { PlayerPeekContent } from './PlayerPeekContent';
-export { PlayerQuickActions } from './PlayerQuickActions';
-export { QuickStatsDisplay } from './QuickStatsDisplay';

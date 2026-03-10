@@ -38,7 +38,7 @@ export interface AdminEvent {
   created_at: string;
 }
 
-export interface UseAdminRealtimeOptions {
+interface UseAdminRealtimeOptions {
   /** Maximum events to keep in state */
   maxEvents?: number;
   /** Filter by event types */

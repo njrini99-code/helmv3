@@ -7,7 +7,7 @@ import { isToday } from '@/lib/calendar/event-styles';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { PremiumEventBlock } from './PremiumEventBlock';
 
-export interface MonthViewProps {
+interface MonthViewProps {
   month: Date;
   events: CalendarEvent[];
   onDateClick?: (date: Date) => void;

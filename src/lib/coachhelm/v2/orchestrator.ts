@@ -41,7 +41,7 @@ import type {
 /**
  * Main CoachHelm Intelligence class that orchestrates all V2 components
  */
-export class CoachHelmIntelligence {
+class CoachHelmIntelligence {
   private reasoningEngine: ReasoningEngine;
   private confidenceCalibrator: ConfidenceCalibrator;
   private insightComposer: InsightComposer;

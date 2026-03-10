@@ -20,7 +20,7 @@ interface PlayerQuickCardProps {
   className?: string;
 }
 
-export function PlayerQuickCard({ player, children, className }: PlayerQuickCardProps) {
+function PlayerQuickCard({ player, children, className }: PlayerQuickCardProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [position, setPosition] = useState<'top' | 'bottom'>('bottom');
   const triggerRef = useRef<HTMLDivElement>(null);

@@ -283,4 +283,3 @@ export function ReminderPicker({
   );
 }
 
-export default ReminderPicker;

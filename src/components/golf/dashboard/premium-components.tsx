@@ -122,7 +122,7 @@ interface PremiumStatCardProps {
     ariaLabel?: string;
 }
 
-export const PremiumStatCard = memo(function PremiumStatCard({
+const PremiumStatCard = memo(function PremiumStatCard({
     icon,
     iconColor,
     iconBg,
@@ -226,7 +226,7 @@ interface QuickActionCardProps {
     variant?: 'default' | 'primary';
 }
 
-export const QuickActionCard = memo(function QuickActionCard({
+const QuickActionCard = memo(function QuickActionCard({
     icon,
     label,
     description,
@@ -437,7 +437,7 @@ function formatRoundType(type: string | null): string {
     return map[type] || type.charAt(0).toUpperCase() + type.slice(1);
 }
 
-export interface RecentRoundCardProps {
+interface RecentRoundCardProps {
     id: string;
     playerId: string;
     playerName: string;

@@ -20,17 +20,17 @@ import { createClient } from '@/lib/supabase/server';
 /**
  * Round types in the golf system
  */
-export type RoundType = 'tournament' | 'qualifier' | 'practice' | 'casual';
+type RoundType = 'tournament' | 'qualifier' | 'practice' | 'casual';
 
 /**
  * Trend direction for pressure gap
  */
-export type PressureGapTrend = 'widening' | 'narrowing' | 'stable';
+type PressureGapTrend = 'widening' | 'narrowing' | 'stable';
 
 /**
  * Scoring statistics for a specific round type
  */
-export interface ScoringByRoundType {
+interface ScoringByRoundType {
   roundType: RoundType;
   averageScore: number;
   averageToPar: number;
@@ -44,7 +44,7 @@ export interface ScoringByRoundType {
 /**
  * Qualifier performance metrics
  */
-export interface QualifierPerformance {
+interface QualifierPerformance {
   totalQualifiers: number;
   madeCount: number;
   missedCount: number;
@@ -59,7 +59,7 @@ export interface QualifierPerformance {
 /**
  * Pressure scenario analysis
  */
-export interface PressureScenario {
+interface PressureScenario {
   scenario: string;
   description: string;
   occurrences: number;
@@ -72,7 +72,7 @@ export interface PressureScenario {
 /**
  * Trend data point for pressure gap over time
  */
-export interface PressureGapDataPoint {
+interface PressureGapDataPoint {
   eventDate: string;
   eventName: string;
   eventType: RoundType;
@@ -84,7 +84,7 @@ export interface PressureGapDataPoint {
 /**
  * Generated insight from pressure analysis
  */
-export interface PressureInsight {
+interface PressureInsight {
   id: string;
   category: 'pressure_gap' | 'qualifier' | 'tournament' | 'trend' | 'scenario';
   headline: string;
@@ -98,7 +98,7 @@ export interface PressureInsight {
 /**
  * Complete pressure analysis result
  */
-export interface PressureAnalysis {
+interface PressureAnalysis {
   playerId: string;
   analyzedAt: string;
 
@@ -189,7 +189,7 @@ interface QualifierRoundRow {
  * @param playerId - The player's UUID
  * @returns Complete pressure analysis or null if insufficient data
  */
-export async function analyzePressurePerformance(
+async function analyzePressurePerformance(
   playerId: string
 ): Promise<PressureAnalysis | null> {
   const supabase = await createClient();

@@ -28,16 +28,9 @@ export * from './nlg';
 
 // Gate (enable/disable)
 export {
-  isCoachHelmEnabled,
   isCoachHelmEnabledForCoach,
   isCoachHelmEnabledForPlayer,
-  getCoachHelmSettings,
-  getTeamCoachHelmSettings,
-  enableCoachHelm,
-  disableCoachHelm,
-  enableTeamCoachHelm,
-  disableTeamCoachHelm,
 } from './gate';
 
 // Orchestrator
-export { CoachHelmIntelligence, coachHelmIntelligence } from './orchestrator';
+export { coachHelmIntelligence } from './orchestrator';

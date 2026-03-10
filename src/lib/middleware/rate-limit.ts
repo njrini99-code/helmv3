@@ -42,7 +42,7 @@ export function withRateLimit(
 /**
  * Add rate limit headers to a successful response
  */
-export function addRateLimitHeaders(
+function addRateLimitHeaders(
   response: NextResponse,
   remaining: number,
   resetAt: number,

@@ -35,7 +35,7 @@ export type BenchmarkLevel =
   | 'break_90'
   | 'break_100';
 
-export interface BenchmarkMeta {
+interface BenchmarkMeta {
   id: BenchmarkLevel;
   label: string;
   shortLabel: string;
@@ -333,7 +333,7 @@ export const SG_COMPARISON_BASELINES: Record<BenchmarkLevel, {
 /**
  * Get the default benchmark level for a given team division.
  */
-export function getDefaultBenchmarkForDivision(division: string | null): BenchmarkLevel {
+function getDefaultBenchmarkForDivision(division: string | null): BenchmarkLevel {
   if (!division) return 'scratch';
   const normalized = division.toLowerCase().replace(/\s+/g, '');
   if (normalized.includes('d1') || normalized.includes('divisioni') || normalized === 'ncaadivisioni') return 'ncaa_d1';

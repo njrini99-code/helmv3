@@ -655,5 +655,3 @@ export function OfflineSyncStatus({
 // EXPORTS
 // ============================================================================
 
-export default OfflineSyncStatus;
-export type { OfflineSyncStatusProps };

@@ -91,7 +91,7 @@ export const PRIORITY_METRICS: PriorityMetric[] = [
 ];
 
 // Alert type groupings for the UI
-export interface AlertGroup {
+interface AlertGroup {
     title: string;
     alerts: {
         key: keyof CoachPhilosophy;

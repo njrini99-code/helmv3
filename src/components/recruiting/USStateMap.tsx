@@ -489,13 +489,3 @@ export const USStateMap = memo(function USStateMap({
     </div>
   );
 });
-
-export function calculatePlayersByState(players: Array<{ state?: string | null }>): Record<string, number> {
-  return players.reduce((acc, player) => {
-    const state = player.state;
-    if (state && STATE_CODE_TO_NAME[state]) {
-      acc[state] = (acc[state] || 0) + 1;
-    }
-    return acc;
-  }, {} as Record<string, number>);
-}

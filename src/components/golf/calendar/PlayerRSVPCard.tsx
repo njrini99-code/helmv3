@@ -31,7 +31,7 @@ import {
 import { format } from 'date-fns';
 import '@/styles/calendar-tokens.css';
 
-export interface PlayerRSVPCardProps {
+interface PlayerRSVPCardProps {
   event: {
     id: string;
     title: string;
@@ -310,65 +310,3 @@ export function PlayerRSVPCard({
   );
 }
 
-/**
- * Compact RSVP Card (for lists/grids)
- */
-export function CompactPlayerRSVPCard({
-  event,
-  currentResponse,
-  onRespond,
-}: Omit<PlayerRSVPCardProps, 'className' | 'compact'>) {
-  const [loading, setLoading] = useState(false);
-  const compactStartTime = event.start_time
-    || (event.start_date.includes('T') ? event.start_date.split('T')[1]?.slice(0, 5) ?? null : null);
-
-  async function handleQuickRespond(response: RSVPOption) {
-    setLoading(true);
-    try {
-      await onRespond(response);
-    } catch {
-      // RSVP submission failed
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-warm-200 hover:border-warm-300 hover:shadow-sm transition-all">
-      <div className="flex-1 min-w-0">
-        <p className="font-semibold text-sm text-warm-900 truncate">{event.title}</p>
-        {compactStartTime && (
-          <p className="text-xs text-warm-500 mt-0.5">{formatTime(compactStartTime)}</p>
-        )}
-      </div>
-
-      <div className="flex items-center gap-2 shrink-0">
-        {RSVP_OPTIONS.map((option) => {
-          const Icon = option.icon;
-          const isSelected = currentResponse === option.value;
-
-          return (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => handleQuickRespond(option.value)}
-              disabled={loading}
-              className={cn(
-                'p-2.5 rounded-lg transition-all',
-                'min-w-[44px] min-h-[44px]', // Touch-friendly
-                isSelected ? option.selectedClass : `${option.bgClass} ${option.hoverClass}`,
-                loading && 'opacity-50',
-                'active:scale-95'
-              )}
-              title={option.label}
-            >
-              <Icon
-                className={cn('w-4 h-4', isSelected ? 'text-white' : option.colorClass)}
-              />
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}

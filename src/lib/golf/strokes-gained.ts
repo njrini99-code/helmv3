@@ -39,7 +39,7 @@ export type BaselineData = Record<LieType, Record<number, number>>;
  * Maps from database fields to calculation-friendly names
  * All distances are normalized to YARDS (green distances converted from feet)
  */
-export interface SGShot {
+interface SGShot {
   hole_id: string | null;
   shot_number: number;
   starting_lie: LieType;
@@ -54,7 +54,7 @@ export interface SGShot {
  * Internal hole representation for strokes gained calculations
  * Maps from database fields to calculation-friendly names
  */
-export interface SGHole {
+interface SGHole {
   id: string;
   par: number;
   score: number;
@@ -69,7 +69,7 @@ export interface SGHole {
 /**
  * Internal round representation for strokes gained calculations
  */
-export interface SGRound {
+interface SGRound {
   holes: SGHole[];
 }
 
@@ -90,7 +90,7 @@ function normalizeDistanceToYards(
  * Convert database shot to internal shot format.
  * Normalizes all distances to yards using the distance_unit_before/after fields.
  */
-export function convertDbShot(shot: DbGolfShot): SGShot {
+function convertDbShot(shot: DbGolfShot): SGShot {
   return {
     hole_id: shot.hole_id,
     shot_number: shot.shot_number,
@@ -121,7 +121,7 @@ export function convertDbShot(shot: DbGolfShot): SGShot {
  *
  * Call this on the full array of database shots BEFORE converting to SGShot[].
  */
-export function applyDistanceAfterFallback(shots: DbGolfShot[]): DbGolfShot[] {
+function applyDistanceAfterFallback(shots: DbGolfShot[]): DbGolfShot[] {
   // Sort by hole_id then shot_number to ensure correct ordering
   const sorted = [...shots].sort((a, b) => {
     if (a.hole_id !== b.hole_id) return (a.hole_id ?? '').localeCompare(b.hole_id ?? '');
@@ -157,7 +157,7 @@ export function applyDistanceAfterFallback(shots: DbGolfShot[]): DbGolfShot[] {
 /**
  * Convert database hole to internal hole format
  */
-export function convertDbHole(hole: DbGolfHole, shots?: DbGolfShot[]): SGHole {
+function convertDbHole(hole: DbGolfHole, shots?: DbGolfShot[]): SGHole {
   return {
     id: hole.id,
     par: hole.par,
@@ -177,7 +177,7 @@ export function convertDbHole(hole: DbGolfHole, shots?: DbGolfShot[]): SGHole {
  * Note: null lies are also mapped to 'fairway' - callers should handle null lie_before
  * by checking shot data completeness before calling strokes gained calculations.
  */
-export function mapLieType(lie: string | null): LieType {
+function mapLieType(lie: string | null): LieType {
   if (!lie) return 'fairway';
   const normalized = lie.toLowerCase();
   if (normalized === 'tee' || normalized === 'teebox') return 'tee';
@@ -192,7 +192,7 @@ export function mapLieType(lie: string | null): LieType {
 /**
  * Strokes gained result with breakdown by category
  */
-export interface StrokesGainedResult {
+interface StrokesGainedResult {
   sg_off_tee: number;
   sg_approach: number;
   sg_around_green: number;
@@ -203,7 +203,7 @@ export interface StrokesGainedResult {
 /**
  * Extended strokes gained breakdown with shot counts and per-shot averages
  */
-export interface StrokesGainedBreakdown extends StrokesGainedResult {
+interface StrokesGainedBreakdown extends StrokesGainedResult {
   shots_off_tee: number;
   shots_approach: number;
   shots_around_green: number;
@@ -214,8 +214,6 @@ export interface StrokesGainedBreakdown extends StrokesGainedResult {
   sg_per_shot_putting: number;
 }
 
-// Re-export database types for external use
-export type { DbGolfShot as GolfShot, DbGolfHole as GolfHole, DbGolfRound as GolfRound };
 
 // ============================================
 // PGA TOUR BASELINE DATA
@@ -227,7 +225,7 @@ export type { DbGolfShot as GolfShot, DbGolfHole as GolfHole, DbGolfRound as Gol
  * Distance for tee/fairway/rough is in YARDS
  * Distance for green is in FEET
  */
-export const PGA_BASELINE_DATA: BaselineData = {
+const PGA_BASELINE_DATA: BaselineData = {
   tee: {
     // Par 5 tee shots (long)
     600: 4.90, 580: 4.85, 560: 4.80, 540: 4.75, 520: 4.70,
@@ -356,7 +354,7 @@ export function getExpectedStrokes(
  * @param shot - The shot data
  * @param benchmarkLevel - Which benchmark set to use (default: pga_tour)
  */
-export function calculateShotStrokesGained(
+function calculateShotStrokesGained(
   shot: SGShot,
   benchmarkLevel?: BenchmarkLevel
 ): number | null {
@@ -397,7 +395,7 @@ export function calculateShotStrokesGained(
 /**
  * Categorize a shot into SG category
  */
-export function categorizeShot(shot: SGShot, holePar: number): keyof StrokesGainedResult | null {
+function categorizeShot(shot: SGShot, holePar: number): keyof StrokesGainedResult | null {
   // Penalty shots don't contribute to SG categories meaningfully
   if (shot.is_penalty) return null;
 
@@ -432,7 +430,7 @@ export function categorizeShot(shot: SGShot, holePar: number): keyof StrokesGain
  * @param holes - Array of holes (for par values)
  * @param benchmarkLevel - Which benchmark set to use (default: pga_tour)
  */
-export function calculateStrokesGained(
+function calculateStrokesGained(
   shots: SGShot[],
   holes: SGHole[],
   benchmarkLevel?: BenchmarkLevel
@@ -476,7 +474,7 @@ export function calculateStrokesGained(
  * @param holes - Array of holes (for par values)
  * @param benchmarkLevel - Which benchmark set to use (default: pga_tour)
  */
-export function calculateStrokesGainedBreakdown(
+function calculateStrokesGainedBreakdown(
   shots: SGShot[],
   holes: SGHole[],
   benchmarkLevel?: BenchmarkLevel
@@ -541,7 +539,7 @@ export function calculateStrokesGainedBreakdown(
  * Estimate strokes gained from hole-level data when shot data is unavailable
  * This provides approximate SG values based on traditional stats
  */
-export function estimateStrokesGainedFromHoles(holes: SGHole[]): StrokesGainedResult {
+function estimateStrokesGainedFromHoles(holes: SGHole[]): StrokesGainedResult {
   let sg_off_tee = 0;
   let sg_approach = 0;
   let sg_around_green = 0;
@@ -606,7 +604,7 @@ export function estimateStrokesGainedFromHoles(holes: SGHole[]): StrokesGainedRe
  * @param round - The round data with holes and shots
  * @param benchmarkLevel - Which benchmark set to use (default: pga_tour)
  */
-export function calculateRoundStrokesGained(
+function calculateRoundStrokesGained(
   round: SGRound,
   benchmarkLevel?: BenchmarkLevel
 ): StrokesGainedResult {
@@ -645,7 +643,7 @@ export function calculateRoundStrokesGained(
  * @param rounds - Array of rounds
  * @param benchmarkLevel - Which benchmark set to use (default: pga_tour)
  */
-export function aggregateStrokesGained(
+function aggregateStrokesGained(
   rounds: SGRound[],
   benchmarkLevel?: BenchmarkLevel
 ): StrokesGainedResult {
@@ -695,7 +693,7 @@ export function aggregateStrokesGained(
  * Compare player's strokes gained to a baseline.
  * Supports both legacy string baselines and new BenchmarkLevel system.
  */
-export function compareToBaseline(
+function compareToBaseline(
   playerSG: StrokesGainedResult,
   baseline: 'scratch' | 'tour_avg' | 'amateur' | BenchmarkLevel
 ): StrokesGainedResult {
@@ -731,7 +729,7 @@ export function compareToBaseline(
 /**
  * Identify strengths and weaknesses based on strokes gained
  */
-export function identifyStrengthsWeaknesses(sg: StrokesGainedResult): {
+function identifyStrengthsWeaknesses(sg: StrokesGainedResult): {
   strengths: string[];
   weaknesses: string[];
   primaryStrength: string | null;
@@ -1352,7 +1350,7 @@ export function formatStrokesGained(value: number): string {
 /**
  * Get color class based on strokes gained value
  */
-export function getStrokesGainedColor(value: number): string {
+function getStrokesGainedColor(value: number): string {
   if (value >= 0.5) return 'text-green-600';
   if (value >= 0.1) return 'text-green-500';
   if (value >= -0.1) return 'text-gray-600';
@@ -1363,7 +1361,7 @@ export function getStrokesGainedColor(value: number): string {
 /**
  * Get background color class based on strokes gained value
  */
-export function getStrokesGainedBgColor(value: number): string {
+function getStrokesGainedBgColor(value: number): string {
   if (value >= 0.5) return 'bg-green-100';
   if (value >= 0.1) return 'bg-green-50';
   if (value >= -0.1) return 'bg-gray-50';

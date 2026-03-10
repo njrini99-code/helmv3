@@ -279,7 +279,7 @@ function checkMinimumStandards(
 /**
  * Sort players by match score (descending).
  */
-export function sortByMatchScore(
+function sortByMatchScore(
   players: Array<{ match_score?: number }>
 ): Array<{ match_score?: number }> {
   return [...players].sort((a, b) => {
@@ -344,7 +344,7 @@ export function calculatePercentile(
 /**
  * Batch calculate match scores for multiple players.
  */
-export function batchCalculateMatchScores(
+function batchCalculateMatchScores(
   players: Array<Pick<Player, 'id' | 'primary_position' | 'secondary_position' | 'state' | 'gpa' | 'exit_velo' | 'pitch_velo' | 'sixty_time'>>,
   percentileMap: Map<string, PlayerPercentiles>,
   philosophy: CoachRecruitingPhilosophy

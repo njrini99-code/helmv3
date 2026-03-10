@@ -77,7 +77,7 @@ export interface PlayerFocusArea {
   updated_at: string;
 }
 
-export interface InsightGenerationLog {
+interface InsightGenerationLog {
   id: string;
   coach_id: string;
   generation_type: 'manual' | 'scheduled' | 'triggered';
@@ -91,7 +91,7 @@ export interface InsightGenerationLog {
   created_at: string;
 }
 
-export interface PlayerPerformanceSnapshot {
+interface PlayerPerformanceSnapshot {
   id: string;
   player_id: string;
   snapshot_date: string;
@@ -119,7 +119,7 @@ export interface InsightWithPlayer extends CoachInsight {
   } | null;
 }
 
-export interface FocusAreaWithPlayer extends PlayerFocusArea {
+interface FocusAreaWithPlayer extends PlayerFocusArea {
   player: {
     id: string;
     first_name: string;
@@ -132,7 +132,7 @@ export interface FocusAreaWithPlayer extends PlayerFocusArea {
 // INSIGHT METADATA TYPES
 // ============================================================================
 
-export interface ScoringDeclineMetadata {
+interface ScoringDeclineMetadata {
   recent_avg: number;
   previous_avg: number;
   rounds_analyzed: number;
@@ -140,7 +140,7 @@ export interface ScoringDeclineMetadata {
   confidence_score: number;
 }
 
-export interface StatRegressionMetadata {
+interface StatRegressionMetadata {
   stat_name: string;
   current_value: number;
   previous_value: number;
@@ -148,7 +148,7 @@ export interface StatRegressionMetadata {
   rounds_analyzed: number;
 }
 
-export interface TournamentPressureMetadata {
+interface TournamentPressureMetadata {
   practice_avg: number;
   tournament_avg: number;
   gap: number;
@@ -156,7 +156,7 @@ export interface TournamentPressureMetadata {
   rounds_tournament: number;
 }
 
-export interface BubblePlayerMetadata {
+interface BubblePlayerMetadata {
   current_rank: number;
   cutoff_rank: number;
   distance_from_cutoff: number; // in strokes
@@ -164,14 +164,14 @@ export interface BubblePlayerMetadata {
   avg_score: number;
 }
 
-export interface SurgePlayerMetadata {
+interface SurgePlayerMetadata {
   improvement_rate: number; // strokes per round
   rounds_analyzed: number;
   starting_avg: number;
   current_avg: number;
 }
 
-export interface StreakMetadata {
+interface StreakMetadata {
   streak_type: 'hot' | 'cold';
   streak_length: number;
   avg_during_streak: number;
@@ -182,7 +182,7 @@ export interface StreakMetadata {
 // INSIGHT CONFIGURATION
 // ============================================================================
 
-export interface InsightTypeConfig {
+interface InsightTypeConfig {
   type: InsightType;
   label: string;
   description: string;
@@ -302,7 +302,7 @@ export interface FocusAreaConfig {
   relatedStats: string[];
 }
 
-export const FOCUS_AREA_CONFIGS: Record<FocusAreaCategory, FocusAreaConfig> = {
+const FOCUS_AREA_CONFIGS: Record<FocusAreaCategory, FocusAreaConfig> = {
   ball_striking: {
     category: 'ball_striking',
     label: 'Ball Striking',
@@ -372,7 +372,7 @@ export function getPriorityColor(priority: InsightPriority): string {
   }
 }
 
-export function getPriorityLabel(priority: InsightPriority): string {
+function getPriorityLabel(priority: InsightPriority): string {
   return priority.charAt(0).toUpperCase() + priority.slice(1);
 }
 

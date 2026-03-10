@@ -19,7 +19,7 @@ export const FILE_SIZE_LIMITS: Record<string, number> = {
 };
 
 // Max file size (largest allowed)
-export const MAX_FILE_SIZE = Math.max(...Object.values(FILE_SIZE_LIMITS));
+const MAX_FILE_SIZE = Math.max(...Object.values(FILE_SIZE_LIMITS));
 
 // Allowed file types and their categories
 export const ALLOWED_MIME_TYPES: Record<string, string> = {
@@ -58,7 +58,7 @@ export const ALLOWED_MIME_TYPES: Record<string, string> = {
   'audio/webm': 'audio',
 };
 
-export type AttachmentFileType = 'image' | 'video' | 'document' | 'audio';
+type AttachmentFileType = 'image' | 'video' | 'document' | 'audio';
 
 export interface AttachmentMetadata {
   fileName: string;
@@ -70,7 +70,7 @@ export interface AttachmentMetadata {
   durationSeconds?: number;
 }
 
-export interface UploadResult {
+interface UploadResult {
   success: boolean;
   storagePath?: string;
   url?: string;
@@ -121,21 +121,21 @@ export function validateFile(file: File): { valid: boolean; error?: string } {
 /**
  * Get the file size limit for a given file type
  */
-export function getFileSizeLimit(fileType: AttachmentFileType): number {
+function getFileSizeLimit(fileType: AttachmentFileType): number {
   return FILE_SIZE_LIMITS[fileType] || MAX_FILE_SIZE;
 }
 
 /**
  * Get human-readable file type limits description
  */
-export function getFileSizeLimitsDescription(): string {
+function getFileSizeLimitsDescription(): string {
   return `Images: ${formatFileSize(FILE_SIZE_LIMITS.image ?? 0)}, Videos: ${formatFileSize(FILE_SIZE_LIMITS.video ?? 0)}, Documents: ${formatFileSize(FILE_SIZE_LIMITS.document ?? 0)}, Audio: ${formatFileSize(FILE_SIZE_LIMITS.audio ?? 0)}`;
 }
 
 /**
  * Get file type category from mime type
  */
-export function getFileType(mimeType: string): AttachmentFileType {
+function getFileType(mimeType: string): AttachmentFileType {
   return (ALLOWED_MIME_TYPES[mimeType] as AttachmentFileType) || 'document';
 }
 
@@ -153,7 +153,7 @@ export function formatFileSize(bytes: number): string {
 /**
  * Generate a unique storage path for the file
  */
-export function generateStoragePath(
+function generateStoragePath(
   conversationId: string,
   messageId: string,
   fileName: string
@@ -166,7 +166,7 @@ export function generateStoragePath(
 /**
  * Get image dimensions from a File
  */
-export function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
+function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
@@ -184,7 +184,7 @@ export function getImageDimensions(file: File): Promise<{ width: number; height:
 /**
  * Get video metadata from a File
  */
-export function getVideoMetadata(
+function getVideoMetadata(
   file: File
 ): Promise<{ width: number; height: number; durationSeconds: number }> {
   return new Promise((resolve, reject) => {
@@ -209,14 +209,14 @@ export function getVideoMetadata(
 /**
  * Create a preview URL for a file
  */
-export function createPreviewUrl(file: File): string {
+function createPreviewUrl(file: File): string {
   return URL.createObjectURL(file);
 }
 
 /**
  * Revoke a preview URL to free memory
  */
-export function revokePreviewUrl(url: string): void {
+function revokePreviewUrl(url: string): void {
   URL.revokeObjectURL(url);
 }
 
@@ -323,7 +323,7 @@ export async function uploadAttachment(
 /**
  * Delete an attachment from storage
  */
-export async function deleteAttachment(storagePath: string): Promise<{ success: boolean; error?: string }> {
+async function deleteAttachment(storagePath: string): Promise<{ success: boolean; error?: string }> {
   const supabase = createClient();
 
   const { error } = await supabase.storage.from(STORAGE_BUCKET).remove([storagePath]);
@@ -339,7 +339,7 @@ export async function deleteAttachment(storagePath: string): Promise<{ success: 
 /**
  * Get a fresh signed URL for an attachment
  */
-export async function getSignedUrl(
+async function getSignedUrl(
   storagePath: string,
   expiresIn: number = 3600
 ): Promise<{ url?: string; error?: string }> {
@@ -359,7 +359,7 @@ export async function getSignedUrl(
 /**
  * Get file icon based on mime type
  */
-export function getFileIcon(mimeType: string): string {
+function getFileIcon(mimeType: string): string {
   const type = getFileType(mimeType);
   switch (type) {
     case 'image':
@@ -400,14 +400,14 @@ export function isAudio(mimeType: string): boolean {
 /**
  * Check if a file is a document
  */
-export function isDocument(mimeType: string): boolean {
+function isDocument(mimeType: string): boolean {
   return getFileType(mimeType) === 'document';
 }
 
 /**
  * Check if a file is previewable (image or video)
  */
-export function isPreviewable(mimeType: string): boolean {
+function isPreviewable(mimeType: string): boolean {
   const type = getFileType(mimeType);
   return type === 'image' || type === 'video';
 }
@@ -415,7 +415,7 @@ export function isPreviewable(mimeType: string): boolean {
 /**
  * Check if a file is a media type (image, video, or audio)
  */
-export function isMedia(mimeType: string): boolean {
+function isMedia(mimeType: string): boolean {
   const type = getFileType(mimeType);
   return type === 'image' || type === 'video' || type === 'audio';
 }
@@ -423,7 +423,7 @@ export function isMedia(mimeType: string): boolean {
 /**
  * Get audio metadata from a File
  */
-export function getAudioMetadata(file: File): Promise<{ durationSeconds: number }> {
+function getAudioMetadata(file: File): Promise<{ durationSeconds: number }> {
   return new Promise((resolve, reject) => {
     const audio = new Audio();
     audio.preload = 'metadata';

@@ -527,38 +527,3 @@ export function PlayerComparison({
 </>
   );
 }
-
-// Simplified inline comparison for 2 players
-export function InlinePlayerComparison({ playerA, playerB }: { playerA: Player; playerB: Player }) {
-  const nameA = getFullName(playerA.first_name, playerA.last_name);
-  const nameB = getFullName(playerB.first_name, playerB.last_name);
-
-  return (
-    <div className="grid grid-cols-[1fr_auto_1fr] gap-4 items-center">
-      {/* Player A */}
-      <div className="flex items-center gap-3">
-        <Avatar name={nameA} src={playerA.avatar_url} size="lg" ring />
-        <div>
-          <p className="font-semibold text-slate-900">{nameA}</p>
-          <p className="text-sm leading-relaxed text-slate-500">{playerA.primary_position}</p>
-        </div>
-      </div>
-
-      {/* VS */}
-      <div className="flex items-center justify-center">
-        <div className="px-4 py-2 bg-slate-100 rounded-lg">
-          <span className="text-sm font-semibold text-slate-600">VS</span>
-        </div>
-      </div>
-
-      {/* Player B */}
-      <div className="flex items-center gap-3 flex-row-reverse">
-        <Avatar name={nameB} src={playerB.avatar_url} size="lg" ring />
-        <div className="text-right">
-          <p className="font-semibold text-slate-900">{nameB}</p>
-          <p className="text-sm leading-relaxed text-slate-500">{playerB.primary_position}</p>
-        </div>
-      </div>
-    </div>
-  );
-}

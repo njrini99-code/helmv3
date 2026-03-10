@@ -25,7 +25,7 @@ interface RecentActivityFeedProps {
   className?: string;
 }
 
-export function RecentActivityFeed({ 
+function RecentActivityFeed({
   teamId, 
   playerId, 
   limit = 10,

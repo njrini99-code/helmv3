@@ -37,7 +37,7 @@ export interface MetricCorrelation {
 /**
  * Result of correlation discovery analysis
  */
-export interface CorrelationDiscoveryResult {
+interface CorrelationDiscoveryResult {
   playerId: string;
   analyzedAt: string;
   correlations: MetricCorrelation[];
@@ -857,7 +857,7 @@ export class CorrelationDiscovery {
  * @param playerId - The player's UUID
  * @returns Array of discovered metric correlations
  */
-export async function discoverMetricCorrelations(playerId: string): Promise<MetricCorrelation[]> {
+async function discoverMetricCorrelations(playerId: string): Promise<MetricCorrelation[]> {
   const discovery = new CorrelationDiscovery(playerId);
   return discovery.discoverMetricCorrelations();
 }

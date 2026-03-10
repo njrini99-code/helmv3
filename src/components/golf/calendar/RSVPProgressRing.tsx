@@ -19,7 +19,7 @@
 import { cn } from '@/lib/utils';
 import '@/styles/calendar-tokens.css';
 
-export interface RSVPProgressRingProps {
+interface RSVPProgressRingProps {
   confirmed: number;
   maybe: number;
   declined: number;
@@ -235,63 +235,5 @@ export function RSVPProgressRing({
         </div>
       )}
     </div>
-  );
-}
-
-/**
- * Compact RSVP Ring (for cards/lists)
- */
-export function CompactRSVPRing({
-  confirmed,
-  total,
-  size = 'sm',
-}: {
-  confirmed: number;
-  total: number;
-  size?: 'sm' | 'md';
-}) {
-  const config = SIZE_CONFIGS[size];
-  const radius = (config.diameter - config.strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const percentage = total > 0 ? (confirmed / total) * 100 : 0;
-  const arcLength = (percentage / 100) * circumference;
-
-  return (
-    <svg width={config.diameter} height={config.diameter} className="transform -rotate-90">
-      {/* Background */}
-      <circle
-        cx={config.diameter / 2}
-        cy={config.diameter / 2}
-        r={radius}
-        fill="none"
-        stroke="var(--rsvp-pending)"
-        strokeWidth={config.strokeWidth}
-      />
-
-      {/* Progress */}
-      <circle
-        cx={config.diameter / 2}
-        cy={config.diameter / 2}
-        r={radius}
-        fill="none"
-        stroke="var(--rsvp-confirmed)"
-        strokeWidth={config.strokeWidth}
-        strokeDasharray={`${arcLength} ${circumference - arcLength}`}
-        strokeLinecap="round"
-        className="transition-[stroke-dasharray,stroke-dashoffset] duration-500"
-      />
-
-      {/* Center text */}
-      <text
-        x={config.diameter / 2}
-        y={config.diameter / 2}
-        textAnchor="middle"
-        dominantBaseline="middle"
-        className="text-xs font-semibold fill-warm-900"
-        transform={`rotate(90 ${config.diameter / 2} ${config.diameter / 2})`}
-      >
-        {confirmed}/{total}
-      </text>
-    </svg>
   );
 }

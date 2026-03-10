@@ -114,7 +114,7 @@ function isValidCourseCode(code: string): boolean {
   return true;
 }
 
-export function parseCourseCode(text: string): string {
+function parseCourseCode(text: string): string {
   const match = text.match(COURSE_CODE_RE);
   if (!match || !match[1] || !match[2]) return '';
   const code = `${match[1].toUpperCase()} ${match[2].toUpperCase()}`;
@@ -133,7 +133,7 @@ export function parseCourseCode(text: string): string {
 const DAYS_INLINE_RE = /\b((?:M|Tu?|W|Th?|R|F|Sa?|Su?)(?:(?:M|Tu?|W|Th?|R|F|Sa?|Su?))*)\b/;
 const FULL_DAY_RE = /\b((?:Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|Sat(?:urday)?|Sun(?:day)?)(?:\s*[/,&]\s*(?:Mon(?:day)?|Tue(?:sday)?|Wed(?:nesday)?|Thu(?:rsday)?|Fri(?:day)?|Sat(?:urday)?|Sun(?:day)?))*)\b/i;
 
-export function parseDays(daysStr: string): string[] {
+function parseDays(daysStr: string): string[] {
   const normalized = daysStr.trim();
 
   // Try full day names first (Monday, Tuesday...)
@@ -224,7 +224,7 @@ function extractDays(line: string): string[] | null {
 // ============================================================================
 
 /** Parse a single time value to 24-hour HH:MM */
-export function parseTime(timeStr: string, inferredPeriod?: string): string {
+function parseTime(timeStr: string, inferredPeriod?: string): string {
   const cleaned = timeStr.trim().toUpperCase().replace(/\s+/g, '');
 
   // Match "9:30AM", "09:30 AM", "1:00PM", "13:00", "900", "0930"
@@ -264,7 +264,7 @@ export function parseTime(timeStr: string, inferredPeriod?: string): string {
 }
 
 /** Parse a time range like "9:30AM - 10:45AM" or "1:00 - 1:50 PM" */
-export function parseTimeRange(rangeStr: string): { start: string; end: string } {
+function parseTimeRange(rangeStr: string): { start: string; end: string } {
   // Split on dash, en-dash, em-dash, or "to"
   const parts = rangeStr.split(/\s*[-–—]\s*|\s+to\s+/i).map(s => s.trim());
 
@@ -324,7 +324,7 @@ function extractTimeRange(line: string): { start: string; end: string } | null {
 // LOCATION PARSING
 // ============================================================================
 
-export function parseLocation(location: string): { building: string; room: string } {
+function parseLocation(location: string): { building: string; room: string } {
   const cleaned = location.trim();
 
   // "HAL 101", "ENGR 203B", "Room 305"
@@ -906,7 +906,7 @@ export function formatDaysDisplay(days: string[]): string {
   return days.join('');
 }
 
-export function getDayName(abbrev: string): string {
+function getDayName(abbrev: string): string {
   const names: Record<string, string> = {
     'Su': 'Sunday', 'M': 'Monday', 'T': 'Tuesday',
     'W': 'Wednesday', 'Th': 'Thursday', 'F': 'Friday', 'Sa': 'Saturday',
@@ -914,7 +914,7 @@ export function getDayName(abbrev: string): string {
   return names[abbrev] || abbrev;
 }
 
-export function dayToNumber(day: string): number {
+function dayToNumber(day: string): number {
   const map: Record<string, number> = {
     'Su': 0, 'M': 1, 'T': 2, 'W': 3, 'Th': 4, 'F': 5, 'Sa': 6,
   };

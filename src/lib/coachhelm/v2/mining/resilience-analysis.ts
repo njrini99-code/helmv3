@@ -22,7 +22,7 @@ import { createClient } from '@/lib/supabase/server';
 /**
  * Core resilience metrics for a player
  */
-export interface ResilienceMetrics {
+interface ResilienceMetrics {
   /** % par or better on hole immediately after bogey */
   bounceBackRate: number;
   /** % par or better on hole immediately after double bogey+ */
@@ -54,7 +54,7 @@ export interface ResilienceMetrics {
 /**
  * Benchmark data for comparison
  */
-export interface ResilienceBenchmarks {
+interface ResilienceBenchmarks {
   /** Tour average bounce-back rate (~50%) */
   tourBounceBackRate: number;
   /** College average bounce-back rate (~40%) */
@@ -70,7 +70,7 @@ export interface ResilienceBenchmarks {
 /**
  * Individual insight with actionable recommendation
  */
-export interface ResilienceInsight {
+interface ResilienceInsight {
   id: string;
   category: 'bounce_back' | 'collapse' | 'momentum' | 'back_nine' | 'streaks';
   headline: string;
@@ -86,7 +86,7 @@ export interface ResilienceInsight {
 /**
  * Complete resilience analysis result
  */
-export interface ResilienceAnalysis {
+interface ResilienceAnalysis {
   playerId: string;
   playerName?: string;
   analyzedAt: string;
@@ -151,7 +151,7 @@ interface RoundHoleSequence {
  * @param playerId - The player's UUID
  * @returns Complete resilience analysis or null if insufficient data
  */
-export async function analyzeResilience(
+async function analyzeResilience(
   playerId: string
 ): Promise<ResilienceAnalysis | null> {
   const supabase = await createClient();
@@ -835,7 +835,7 @@ function createInsufficientDataResult(
  * Analyzes resilience for an entire team
  * Useful for identifying players who need mental game support
  */
-export async function analyzeTeamResilience(
+async function analyzeTeamResilience(
   teamId: string
 ): Promise<{
   teamAverage: Partial<ResilienceMetrics>;

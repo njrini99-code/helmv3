@@ -27,7 +27,7 @@ export const DEFAULT_TIMEZONE = 'America/New_York';
 /**
  * Common US timezones for team settings dropdown
  */
-export const US_TIMEZONES = [
+const US_TIMEZONES = [
   { value: 'America/New_York', label: 'Eastern Time (ET)' },
   { value: 'America/Chicago', label: 'Central Time (CT)' },
   { value: 'America/Denver', label: 'Mountain Time (MT)' },
@@ -40,7 +40,7 @@ export const US_TIMEZONES = [
 /**
  * All IANA timezones commonly used (for international support)
  */
-export const ALL_TIMEZONES = [
+const ALL_TIMEZONES = [
   ...US_TIMEZONES,
   { value: 'UTC', label: 'UTC' },
   { value: 'Europe/London', label: 'London (GMT/BST)' },
@@ -53,7 +53,7 @@ export const ALL_TIMEZONES = [
 // TYPES
 // ============================================================================
 
-export interface TimezoneInfo {
+interface TimezoneInfo {
   timezone: string;
   abbreviation: string;
   offsetMinutes: number;
@@ -78,7 +78,7 @@ export interface TimezoneInfo {
  * // During EST: 9:00 AM local
  * // During EDT: 10:00 AM local
  */
-export function toTimezone(utcDate: Date, timezone: string = DEFAULT_TIMEZONE): Date {
+function toTimezone(utcDate: Date, timezone: string = DEFAULT_TIMEZONE): Date {
   return toZonedTime(utcDate, timezone);
 }
 
@@ -96,7 +96,7 @@ export function toTimezone(utcDate: Date, timezone: string = DEFAULT_TIMEZONE): 
  * // During EST: 14:00:00Z
  * // During EDT: 13:00:00Z
  */
-export function fromTimezone(localDate: Date, timezone: string = DEFAULT_TIMEZONE): Date {
+function fromTimezone(localDate: Date, timezone: string = DEFAULT_TIMEZONE): Date {
   return fromZonedTime(localDate, timezone);
 }
 
@@ -107,7 +107,7 @@ export function fromTimezone(localDate: Date, timezone: string = DEFAULT_TIMEZON
  * @param timezone - Target timezone
  * @returns Date in the target timezone
  */
-export function parseInTimezone(isoString: string, timezone: string = DEFAULT_TIMEZONE): Date {
+function parseInTimezone(isoString: string, timezone: string = DEFAULT_TIMEZONE): Date {
   const utcDate = parseISO(isoString);
   return toTimezone(utcDate, timezone);
 }
@@ -124,7 +124,7 @@ export function parseInTimezone(isoString: string, timezone: string = DEFAULT_TI
  * formatInTz(new Date(), 'America/New_York', 'MMM d, yyyy h:mm a zzz')
  * // "Mar 15, 2024 9:00 AM EST"
  */
-export function formatInTz(
+function formatInTz(
   date: Date,
   timezone: string = DEFAULT_TIMEZONE,
   formatStr: string = 'yyyy-MM-dd HH:mm:ss'
@@ -135,7 +135,7 @@ export function formatInTz(
 /**
  * Get the current time in a specific timezone
  */
-export function nowInTimezone(timezone: string = DEFAULT_TIMEZONE): Date {
+function nowInTimezone(timezone: string = DEFAULT_TIMEZONE): Date {
   return toTimezone(new Date(), timezone);
 }
 
@@ -149,7 +149,7 @@ export function nowInTimezone(timezone: string = DEFAULT_TIMEZONE): Date {
  * @example formatDateTimeWithTz(date, 'America/New_York')
  * // "Mar 15, 2024 at 9:00 AM EST"
  */
-export function formatDateTimeWithTz(
+function formatDateTimeWithTz(
   date: Date,
   timezone: string = DEFAULT_TIMEZONE
 ): string {
@@ -162,7 +162,7 @@ export function formatDateTimeWithTz(
  * @example formatTimeWithTz(date, 'America/New_York')
  * // "9:00 AM EST"
  */
-export function formatTimeWithTz(
+function formatTimeWithTz(
   date: Date,
   timezone: string = DEFAULT_TIMEZONE
 ): string {
@@ -175,7 +175,7 @@ export function formatTimeWithTz(
  *
  * Note: For iCal, we include TZID in the property, not in the value
  */
-export function formatICalDateTime(
+function formatICalDateTime(
   date: Date,
   timezone: string = DEFAULT_TIMEZONE
 ): string {
@@ -185,7 +185,7 @@ export function formatICalDateTime(
 /**
  * Format a date for iCal in UTC (with Z suffix)
  */
-export function formatICalDateTimeUTC(date: Date): string {
+function formatICalDateTimeUTC(date: Date): string {
   return format(date, "yyyyMMdd'T'HHmmss") + 'Z';
 }
 
@@ -207,7 +207,7 @@ export function formatICalDate(date: Date): string {
  * @param date - Date to check (affects DST calculation)
  * @returns Timezone information including offset and DST status
  */
-export function getTimezoneInfo(
+function getTimezoneInfo(
   timezone: string = DEFAULT_TIMEZONE,
   date: Date = new Date()
 ): TimezoneInfo {
@@ -248,7 +248,7 @@ export function getTimezoneInfo(
  * @example getTimezoneLabel('America/New_York')
  * // "Eastern Time (ET)"
  */
-export function getTimezoneLabel(timezone: string): string {
+function getTimezoneLabel(timezone: string): string {
   const found = ALL_TIMEZONES.find(tz => tz.value === timezone);
   return found?.label ?? timezone;
 }
@@ -261,7 +261,7 @@ export function getTimezoneLabel(timezone: string): string {
  * Get the start of day in a specific timezone, returned as UTC
  * Useful for querying events that start on a specific day
  */
-export function startOfDayInTimezone(
+function startOfDayInTimezone(
   date: Date,
   timezone: string = DEFAULT_TIMEZONE
 ): Date {
@@ -273,7 +273,7 @@ export function startOfDayInTimezone(
 /**
  * Get the end of day in a specific timezone, returned as UTC
  */
-export function endOfDayInTimezone(
+function endOfDayInTimezone(
   date: Date,
   timezone: string = DEFAULT_TIMEZONE
 ): Date {
@@ -286,7 +286,7 @@ export function endOfDayInTimezone(
  * Check if a date falls on a specific day in a timezone
  * Handles cases where UTC date might be different from local date
  */
-export function isSameDayInTimezone(
+function isSameDayInTimezone(
   date1: Date,
   date2: Date,
   timezone: string = DEFAULT_TIMEZONE
@@ -308,7 +308,7 @@ export function isSameDayInTimezone(
 /**
  * Check if a string is a valid IANA timezone
  */
-export function isValidTimezone(timezone: string): boolean {
+function isValidTimezone(timezone: string): boolean {
   try {
     // Attempt to use the timezone - will throw if invalid
     Intl.DateTimeFormat(undefined, { timeZone: timezone });

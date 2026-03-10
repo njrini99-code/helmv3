@@ -119,7 +119,7 @@ export interface PlayerStatsCache {
 /**
  * Round-level cached stats
  */
-export interface RoundStatsCache {
+interface RoundStatsCache {
   roundId: string;
   playerId: string;
   totalScore: number | null;
@@ -528,10 +528,3 @@ function transformToPlayerStatsCache(row: any): PlayerStatsCache {
   };
 }
 
-// ============================================================================
-// EXPORTS
-// ============================================================================
-
-export {
-  invalidateGolf,
-};

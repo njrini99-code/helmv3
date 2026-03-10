@@ -23,7 +23,7 @@ import { CreateFeedSection } from './CreateFeedSection';
 import { Calendar, Plus, Search, Filter } from 'lucide-react';
 import '@/styles/calendar-tokens.css';
 
-export interface CalendarFeedManagerProps {
+interface CalendarFeedManagerProps {
   feeds: CalendarFeed[];
   onCreateFeed: (type: FeedType, name: string) => Promise<CalendarFeed>;
   onRegenerateFeed: (feedId: string) => Promise<void>;
@@ -241,57 +241,3 @@ export function CalendarFeedManager({
   );
 }
 
-/**
- * Compact Feed Manager (for settings sidebar)
- */
-export function CompactFeedManager({
-  feeds,
-  onManage,
-}: {
-  feeds: CalendarFeed[];
-  onManage: () => void;
-}) {
-  return (
-    <div className="bg-white rounded-xl border border-warm-200 p-4">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-warm-400" />
-          <span className="text-sm font-semibold text-warm-900">Calendar Feeds</span>
-        </div>
-        <span className="text-xs font-medium text-warm-500">
-          {feeds.length} {feeds.length === 1 ? 'feed' : 'feeds'}
-        </span>
-      </div>
-
-      {feeds.length === 0 ? (
-        <p className="text-xs text-warm-500 mb-3">
-          No feeds configured yet
-        </p>
-      ) : (
-        <div className="space-y-2 mb-3">
-          {feeds.slice(0, 3).map((feed) => (
-            <div key={feed.id} className="flex items-center gap-2 text-xs">
-              <div className="w-2 h-2 rounded-full bg-primary-500"></div>
-              <span className="text-warm-700 truncate">{feed.name}</span>
-            </div>
-          ))}
-          {feeds.length > 3 && (
-            <p className="text-xs text-warm-500 pl-4">
-              +{feeds.length - 3} more
-            </p>
-          )}
-        </div>
-      )}
-
-      <button
-        type="button"
-        onClick={onManage}
-        className="w-full py-2 px-3 rounded-lg text-xs font-medium
-                 bg-warm-100 text-warm-700 hover:bg-warm-200
-                 transition-colors"
-      >
-        Manage Feeds
-      </button>
-    </div>
-  );
-}

@@ -23,7 +23,7 @@ export interface BusyPeriod {
   playerId?: string;
 }
 
-export interface WeekViewProps {
+interface WeekViewProps {
   weekStart: Date;
   events: CalendarEvent[];
   onEventClick?: (event: CalendarEvent) => void;

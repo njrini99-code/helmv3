@@ -59,9 +59,9 @@ const COMMON_PASSWORDS = new Set([
   'administrator',
 ]);
 
-export type PasswordStrength = 'weak' | 'fair' | 'good' | 'strong';
+type PasswordStrength = 'weak' | 'fair' | 'good' | 'strong';
 
-export interface PasswordValidationResult {
+interface PasswordValidationResult {
   valid: boolean;
   strength: PasswordStrength;
   score: number; // 0-4
@@ -146,7 +146,7 @@ export function validatePassword(password: string): PasswordValidationResult {
 /**
  * Get password strength color for UI display
  */
-export function getPasswordStrengthColor(strength: PasswordStrength): string {
+function getPasswordStrengthColor(strength: PasswordStrength): string {
   switch (strength) {
     case 'weak':
       return 'bg-red-500';
@@ -164,7 +164,7 @@ export function getPasswordStrengthColor(strength: PasswordStrength): string {
 /**
  * Get password strength text for UI display
  */
-export function getPasswordStrengthText(strength: PasswordStrength): string {
+function getPasswordStrengthText(strength: PasswordStrength): string {
   switch (strength) {
     case 'weak':
       return 'Weak password';
@@ -182,6 +182,6 @@ export function getPasswordStrengthText(strength: PasswordStrength): string {
 /**
  * Get password strength percentage for progress bar
  */
-export function getPasswordStrengthPercentage(score: number): number {
+function getPasswordStrengthPercentage(score: number): number {
   return Math.min(100, (score / 6) * 100);
 }

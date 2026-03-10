@@ -516,4 +516,3 @@ function getStatusVariant(status: string): 'info' | 'warning' | 'success' {
 }
 
 // Export sub-components for reuse
-export { PlayerAvatar, VerifiedBadge, StatBadge };

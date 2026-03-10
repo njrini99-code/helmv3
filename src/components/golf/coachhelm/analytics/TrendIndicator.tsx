@@ -137,49 +137,6 @@ export function TrendIndicator({
   );
 }
 
-// Compact trend badge for use in tables/lists
-interface TrendBadgeProps {
-  direction: 'up' | 'down' | 'flat';
-  isImprovement: boolean;
-  value?: number;
-  className?: string;
-}
-
-export function TrendBadge({
-  direction,
-  isImprovement,
-  value,
-  className,
-}: TrendBadgeProps) {
-  const isFlat = direction === 'flat';
-
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-medium',
-        isFlat && 'bg-warm-100 text-warm-500',
-        isImprovement && !isFlat && 'bg-primary-100 text-primary-700',
-        !isImprovement && !isFlat && 'bg-red-100 text-red-700',
-        className
-      )}
-    >
-      {isFlat ? (
-        '—'
-      ) : direction === 'up' ? (
-        <>
-          <IconTrendingUp size={10} />
-          {value !== undefined && <span>{value > 0 ? '+' : ''}{value}</span>}
-        </>
-      ) : (
-        <>
-          <IconTrendingDown size={10} />
-          {value !== undefined && <span>{value}</span>}
-        </>
-      )}
-    </span>
-  );
-}
-
 // Trend summary for multiple metrics
 interface TrendSummaryProps {
   trends: TrendData[];

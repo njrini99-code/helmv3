@@ -313,5 +313,3 @@ export function TextPreview({
     </div>
   );
 }
-
-export default TextPreview;

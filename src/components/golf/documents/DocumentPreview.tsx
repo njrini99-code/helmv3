@@ -378,5 +378,3 @@ export function DocumentPreview({
     </Dialog>
   );
 }
-
-export default DocumentPreview;

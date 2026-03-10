@@ -272,5 +272,3 @@ export function VersionHistory({
     </>
   );
 }
-
-export default VersionHistory;

@@ -49,7 +49,7 @@ export interface ExpandedEvent {
  * Convert RecurrenceRule to RRULE string format
  * Format: RRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=MO,WE,FR;COUNT=10
  */
-export function toRRULE(rule: RecurrenceRule): string {
+function toRRULE(rule: RecurrenceRule): string {
   const parts: string[] = [];
 
   // Frequency (required)
@@ -143,7 +143,7 @@ export function fromRRULE(rrule: string): RecurrenceRule | null {
  * Generate human-readable description of recurrence rule
  * Example: "Every week on Monday, Wednesday, Friday"
  */
-export function describeRecurrence(rule: RecurrenceRule): string {
+function describeRecurrence(rule: RecurrenceRule): string {
   const parts: string[] = [];
 
   // Frequency + Interval
@@ -182,7 +182,7 @@ export function describeRecurrence(rule: RecurrenceRule): string {
  * Calculate next occurrence date based on recurrence rule
  * Note: This is a simplified implementation. For production, use a library like rrule.js
  */
-export function getNextOccurrence(startDate: Date, rule: RecurrenceRule): Date {
+function getNextOccurrence(startDate: Date, rule: RecurrenceRule): Date {
   const next = new Date(startDate);
 
   switch (rule.frequency) {
@@ -213,7 +213,7 @@ export function getNextOccurrence(startDate: Date, rule: RecurrenceRule): Date {
 /**
  * Expand a recurring event into individual instances within a date range
  */
-export function expandRecurringEvent(
+function expandRecurringEvent(
   event: RecurringEvent,
   rangeStart: Date,
   rangeEnd: Date,
@@ -412,7 +412,7 @@ function isDateAcademicallyExcluded(
 /**
  * Get weekday code from JavaScript day number
  */
-export function getWeekdayCode(dayNumber: number): string {
+function getWeekdayCode(dayNumber: number): string {
   const map: Record<number, string> = {
     0: 'SU',
     1: 'MO',
@@ -428,7 +428,7 @@ export function getWeekdayCode(dayNumber: number): string {
 /**
  * Get JavaScript day number from weekday code
  */
-export function getDayNumber(weekday: string): number {
+function getDayNumber(weekday: string): number {
   const map: Record<string, number> = {
     SU: 0,
     MO: 1,

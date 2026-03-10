@@ -14,7 +14,7 @@ export interface AdminAlert {
   createdAt: Date;
 }
 
-export interface UseAdminAlertsOptions {
+interface UseAdminAlertsOptions {
   /** Minimum severity to create alerts for */
   minSeverity?: AdminEventSeverity;
   /** Maximum alerts to keep */
@@ -169,7 +169,7 @@ export function useAdminAlerts(options: UseAdminAlertsOptions = {}): UseAdminAle
  * Hook that combines useAdminAlerts with toast notifications
  * Must be used within AdminToastProvider
  */
-export function useAdminAlertsWithToast(
+function useAdminAlertsWithToast(
   toastFn: {
     warning: (title: string, message?: string) => void;
     error: (title: string, message?: string) => void;
@@ -215,7 +215,7 @@ export function useAdminAlertsWithToast(
 /**
  * Get a human-readable description of the alert
  */
-export function getAlertDescription(alert: AdminAlert): string {
+function getAlertDescription(alert: AdminAlert): string {
   const { event } = alert;
   
   switch (event.event_type) {
@@ -243,7 +243,7 @@ export function getAlertDescription(alert: AdminAlert): string {
 /**
  * Get severity color classes
  */
-export function getSeverityClasses(severity: AdminEventSeverity): {
+function getSeverityClasses(severity: AdminEventSeverity): {
   bg: string;
   text: string;
   border: string;

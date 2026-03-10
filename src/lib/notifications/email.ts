@@ -71,7 +71,7 @@ export async function getUserNotificationPreferences(
 /**
  * Update user's notification preferences
  */
-export async function updateUserNotificationPreferences(
+async function updateUserNotificationPreferences(
   userId: string,
   preferences: Partial<NotificationPreferences>
 ): Promise<{ success: boolean; error?: string }> {

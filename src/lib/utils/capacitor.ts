@@ -3,8 +3,6 @@ import { Browser } from '@capacitor/browser';
 import { Haptics, ImpactStyle, NotificationType as HapticNotificationType } from '@capacitor/haptics';
 import { StatusBar, Style as StatusBarStyle } from '@capacitor/status-bar';
 import { SplashScreen } from '@capacitor/splash-screen';
-import { Share } from '@capacitor/share';
-import { Network } from '@capacitor/network';
 
 /**
  * Detect if the app is running inside a Capacitor native shell (iOS/Android).
@@ -85,18 +83,6 @@ export async function setStatusBarStyle(style: 'light' | 'dark' = 'dark'): Promi
 }
 
 /**
- * Show the native splash screen.
- */
-export async function showSplashScreen(): Promise<void> {
-  if (!isNativeApp()) return;
-  try {
-    await SplashScreen.show();
-  } catch {
-    // SplashScreen not available
-  }
-}
-
-/**
  * Hide the native splash screen.
  */
 export async function hideSplashScreen(): Promise<void> {
@@ -108,35 +94,3 @@ export async function hideSplashScreen(): Promise<void> {
   }
 }
 
-/**
- * Open the native share sheet.
- */
-export async function shareContent(title: string, text: string, url?: string): Promise<void> {
-  if (!isNativeApp()) {
-    // Web fallback: use Web Share API if available
-    if (navigator.share) {
-      await navigator.share({ title, text, url });
-    }
-    return;
-  }
-  try {
-    await Share.share({ title, text, url });
-  } catch {
-    // Share cancelled or not available
-  }
-}
-
-/**
- * Get current network connectivity status.
- */
-export async function getNetworkStatus(): Promise<{ connected: boolean; connectionType: string }> {
-  if (!isNativeApp()) {
-    return { connected: navigator.onLine, connectionType: 'unknown' };
-  }
-  try {
-    const status = await Network.getStatus();
-    return { connected: status.connected, connectionType: status.connectionType };
-  } catch {
-    return { connected: navigator.onLine, connectionType: 'unknown' };
-  }
-}

@@ -191,5 +191,3 @@ export function PDFViewer({
     </div>
   );
 }
-
-export default PDFViewer;

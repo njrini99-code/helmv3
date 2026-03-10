@@ -104,7 +104,7 @@ function getStatColor(value: number | null, type: 'avg' | 'obp' | 'slg' | 'ops')
   return 'text-amber-600';
 }
 
-export function TeamBattingOverview({ players }: TeamBattingOverviewProps) {
+function TeamBattingOverview({ players }: TeamBattingOverviewProps) {
   const stats = useMemo(() => calculateTeamStats(players), [players]);
 
   const statCards = [

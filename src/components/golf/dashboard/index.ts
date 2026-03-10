@@ -8,8 +8,6 @@
  * ```tsx
  * import {
  *   PremiumGlassCard,
- *   PremiumStatCard,
- *   QuickActionCard,
  *   SectionHeader,
  *   RoundRow,
  *   TopPerformerRow,
@@ -21,8 +19,6 @@
 
 export {
     PremiumGlassCard,
-    PremiumStatCard,
-    QuickActionCard,
     SectionHeader,
     RoundRow,
     RecentRoundCard,
@@ -30,7 +26,6 @@ export {
     containerVariants,
     itemVariants
 } from './premium-components';
-export type { RecentRoundCardProps } from './premium-components';
 
 // New bento dashboard components
 export { TodayTimeline } from './today-timeline';

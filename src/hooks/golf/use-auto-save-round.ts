@@ -32,7 +32,7 @@ export interface RoundDraftData {
   holesPerRound?: 9 | 18;
 }
 
-export interface SaveStatus {
+interface SaveStatus {
   status: 'idle' | 'saving' | 'saved' | 'error' | 'offline';
   lastSaved: Date | null;
   error: string | null;

@@ -40,17 +40,7 @@ import {
 
 export type SyncStatus = 'idle' | 'syncing' | 'success' | 'error' | 'offline';
 
-export interface PendingItem {
-  id: string;
-  type: 'round' | 'hole' | 'shot';
-  description: string;
-  createdAt: string;
-  status: 'pending' | 'syncing' | 'failed';
-  retryCount: number;
-  error?: string;
-}
-
-export interface SyncHistoryEntry {
+interface SyncHistoryEntry {
   id: string;
   timestamp: string;
   success: boolean;
@@ -102,7 +92,7 @@ export interface OfflineSyncState {
   notificationQueue: string[];
 }
 
-export interface OfflineSyncActions {
+interface OfflineSyncActions {
   // Connection actions
   setOnline: (isOnline: boolean) => void;
   setSlowConnection: (isSlow: boolean) => void;
@@ -671,27 +661,6 @@ export const useOfflineSyncStore = create<OfflineSyncStore>()(
 // ============================================================================
 // SELECTORS
 // ============================================================================
-
-export const selectIsOffline = (state: OfflineSyncState) => !state.isOnline;
-export const selectHasPendingItems = (state: OfflineSyncState) => state.pendingCount.total > 0;
-export const selectShouldShowBanner = (state: OfflineSyncState) =>
-  !state.isOnline || state.pendingCount.total > 0 || state.syncError !== null;
-export const selectSyncProgress = (state: OfflineSyncState) => state.syncProgress;
-export const selectPendingTotal = (state: OfflineSyncState) => state.pendingCount.total;
-
-// ============================================================================
-// HOOKS
-// ============================================================================
-
-/**
- * Hook to initialize the offline sync store
- */
-export function useInitializeOfflineSync() {
-  const initialize = useOfflineSyncStore((state) => state.initialize);
-  const cleanup = useOfflineSyncStore((state) => state.cleanup);
-
-  return { initialize, cleanup };
-}
 
 /**
  * Hook for offline sync status

@@ -253,7 +253,7 @@ function PlayerRow({ player, showDetails, onToggleDetails }: PlayerRowProps) {
 // MAIN COMPONENT
 // ============================================================================
 
-export function GameVsPracticePanel({
+function GameVsPracticePanel({
   players,
   onExpandClick,
   className,

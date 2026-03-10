@@ -19,7 +19,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 // TYPES
 // ============================================================================
 
-export interface ServiceWorkerState {
+interface ServiceWorkerState {
   /** Whether service workers are supported */
   isSupported: boolean;
   /** Whether the service worker is registered */
@@ -38,7 +38,7 @@ export interface ServiceWorkerState {
   syncSupported: boolean;
 }
 
-export interface UseServiceWorkerOptions {
+interface UseServiceWorkerOptions {
   /** Path to the service worker file */
   swPath?: string;
   /** Whether to register immediately */

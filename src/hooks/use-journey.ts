@@ -32,7 +32,7 @@ export interface JourneyEvent {
   is_anonymous: boolean;
 }
 
-export interface JourneyStats {
+interface JourneyStats {
   total_interests: number;
   schools_interested: number;
   schools_contacted: number;
@@ -240,7 +240,7 @@ export async function updateInterestStatus(interestId: string, status: string) {
   return { success: true };
 }
 
-export async function updateInterestNotes(interestId: string, notes: string) {
+async function updateInterestNotes(interestId: string, notes: string) {
   const supabase = createClient();
 
   const { error } = await supabase

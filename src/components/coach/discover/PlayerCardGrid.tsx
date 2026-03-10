@@ -272,4 +272,3 @@ function PlayerCardSkeleton({ variant = 'default' }: { variant?: string }) {
 
 // Export memoized grid and skeleton
 export const PlayerCardGrid = memo(PlayerCardGridComponent);
-export { PlayerCardSkeleton };

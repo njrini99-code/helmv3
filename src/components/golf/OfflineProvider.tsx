@@ -262,6 +262,3 @@ export function OfflineProvider({
 // ============================================================================
 // EXPORTS
 // ============================================================================
-
-export default OfflineProvider;
-export type { OfflineContextValue, OfflineProviderProps };

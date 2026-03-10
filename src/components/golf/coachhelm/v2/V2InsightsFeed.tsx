@@ -33,13 +33,10 @@ interface InsightsFeedProps {
   initialPredictions?: Array<PerformancePrediction & { playerName?: string }>;
 }
 
-// Also export as V2InsightsFeed for backwards compatibility
-export { InsightsFeed as V2InsightsFeed };
-
 type TabType = 'insights' | 'patterns' | 'predictions';
 type TeamPrediction = PerformancePrediction & { playerName?: string };
 
-export function InsightsFeed({
+function InsightsFeed({
   teamId: _teamId, // Reserved for future use
   coachId,
   initialInsights = [],

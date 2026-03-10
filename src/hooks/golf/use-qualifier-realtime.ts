@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client';
  * Qualifier leaderboard entry with player info and scoring aggregates
  * Based on golf_qualifier_entries table schema
  */
-export interface QualifierLeaderboardEntry {
+interface QualifierLeaderboardEntry {
   id: string;
   qualifier_id: string;
   player_id: string;
@@ -29,7 +29,7 @@ export interface QualifierLeaderboardEntry {
  * Qualifier details
  * Based on golf_qualifiers table schema
  */
-export interface QualifierDetails {
+interface QualifierDetails {
   id: string;
   team_id: string;
   name: string;
@@ -273,79 +273,5 @@ export function useQualifierRealtime(qualifierId: string | null): UseQualifierRe
     loading,
     error,
     refetch: fetchQualifierData,
-  };
-}
-
-/**
- * Hook for real-time updates across all active qualifiers for a team
- * Useful for dashboard views showing multiple qualifiers
- *
- * @param teamId - The team ID to get qualifiers for
- */
-export function useTeamQualifiersRealtime(teamId: string | null) {
-  const [qualifiers, setQualifiers] = useState<QualifierDetails[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const supabase = useMemo(() => createClient(), []);
-
-  const fetchQualifiers = useCallback(async () => {
-    if (!teamId) {
-      setQualifiers([]);
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const { data, error: fetchError } = await supabase
-        .from('golf_qualifiers')
-        .select('*')
-        .eq('team_id', teamId)
-        .in('status', ['upcoming', 'in_progress'])
-        .order('start_date', { ascending: true });
-
-      if (fetchError) throw fetchError;
-      setQualifiers((data || []) as QualifierDetails[]);
-    } catch (err) {
-      console.error('Error fetching team qualifiers:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load qualifiers');
-    } finally {
-      setLoading(false);
-    }
-  }, [teamId, supabase]);
-
-  useEffect(() => {
-    fetchQualifiers();
-
-    if (!teamId) return;
-
-    const channel = supabase
-      .channel(`team-qualifiers-${teamId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'golf_qualifiers',
-          filter: `team_id=eq.${teamId}`,
-        },
-        () => {
-          fetchQualifiers();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [teamId, fetchQualifiers, supabase]);
-
-  return {
-    qualifiers,
-    loading,
-    error,
-    refetch: fetchQualifiers,
   };
 }

@@ -1,14 +1,6 @@
 'use client';
 
-import type { Message, Conversation, Coach, Player } from '@/lib/types';
-
-// Message status for UI display
-export type MessageStatus = 'sending' | 'sent' | 'delivered' | 'read';
-
-// Extended message with UI status
-export interface UIMessage extends Message {
-  status?: MessageStatus;
-}
+import type { Conversation, Coach, Player } from '@/lib/types';
 
 // Participant with user details
 export interface ParticipantDetails {
@@ -44,11 +36,6 @@ export type ConversationWithMeta = Conversation & {
   other_user?: OtherUser | null;
   last_message?: LastMessage | null;
 };
-
-// Conversation with participant details added
-export interface ConversationWithParticipant extends ConversationWithMeta {
-  participant: ParticipantDetails | null;
-}
 
 // Helper to extract participant details from conversation
 export function getParticipantDetails(
@@ -96,59 +83,3 @@ export function getParticipantDetails(
   };
 }
 
-// Group messages by date
-export function groupMessagesByDate(messages: UIMessage[]): Map<string, UIMessage[]> {
-  const groups = new Map<string, UIMessage[]>();
-
-  messages.forEach(message => {
-    const date = message.created_at ? new Date(message.created_at) : new Date();
-    const dateKey = formatDateKey(date);
-
-    if (!groups.has(dateKey)) {
-      groups.set(dateKey, []);
-    }
-    groups.get(dateKey)!.push(message);
-  });
-
-  return groups;
-}
-
-// Format date for grouping
-function formatDateKey(date: Date): string {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-
-  if (messageDate.getTime() === today.getTime()) {
-    return 'Today';
-  }
-  if (messageDate.getTime() === yesterday.getTime()) {
-    return 'Yesterday';
-  }
-
-  // Check if it's within this week
-  const weekAgo = new Date(today);
-  weekAgo.setDate(weekAgo.getDate() - 7);
-  if (messageDate > weekAgo) {
-    return date.toLocaleDateString('en-US', { weekday: 'long' });
-  }
-
-  // Otherwise show full date
-  return date.toLocaleDateString('en-US', {
-    month: 'long',
-    day: 'numeric',
-    year: messageDate.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
-  });
-}
-
-// Format time for message
-export function formatMessageTime(date: Date | string): string {
-  const d = new Date(date);
-  return d.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true
-  });
-}

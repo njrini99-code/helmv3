@@ -1,6 +1,6 @@
 import { Skeleton } from '@/components/ui/skeleton';
 
-export function TaskSkeleton() {
+function TaskSkeleton() {
   return (
     <div className="relative glass-standard rounded-2xl overflow-clip p-5">
       <div className="space-y-3">

@@ -14,19 +14,6 @@ import { Tables } from './database';
 export type GolfCoach = Tables<'golf_coaches'>;
 export type GolfPlayer = Tables<'golf_players'>;
 export type GolfTeam = Tables<'golf_teams'>;
-// TODO: Regenerate Supabase types to include golf_organizations
-// export type GolfOrganization = Tables<'golf_organizations'>;
-export type GolfOrganization = {
-  id: string;
-  name: string;
-  city: string | null;
-  state: string | null;
-  division: string | null;
-  conference: string | null;
-  logo_url: string | null;
-  created_at: string;
-};
-
 // ============================================================================
 // ROUND TRACKING
 // ============================================================================
@@ -42,14 +29,6 @@ export type GolfShot = Tables<'golf_shots'>; // Using golf_shots instead of golf
 export type GolfEvent = Tables<'golf_events'>;
 export type GolfEventAttendance = Tables<'golf_event_attendance'>;
 export type GolfTask = Tables<'golf_tasks'>;
-// GolfTaskCompletion - table doesn't exist, define manually
-export interface GolfTaskCompletion {
-  id: string;
-  task_id: string;
-  player_id: string;
-  completed_at: string;
-  created_at?: string;
-}
 export type GolfAnnouncement = Tables<'golf_announcements'>;
 // GolfAnnouncementAcknowledgement - table doesn't exist, define manually
 export interface GolfAnnouncementAcknowledgement {
@@ -60,7 +39,6 @@ export interface GolfAnnouncementAcknowledgement {
   created_at?: string;
 }
 export type GolfDocument = Tables<'golf_documents'>;
-export type GolfTravelItinerary = Tables<'golf_travel_itineraries'>;
 
 // ============================================================================
 // QUALIFIERS & COMPETITION
@@ -79,79 +57,11 @@ export type GolfPlayerClass = Tables<'golf_player_classes'>;
 // COACH NOTES
 // ============================================================================
 
-// GolfCoachNote - table doesn't exist, define manually
-export interface GolfCoachNote {
-  id: string;
-  coach_id: string;
-  player_id: string;
-  note: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
 // ============================================================================
 // ENUMS (manually defined - not in database schema)
 // ============================================================================
 
-export type GolfPlayerYear = 'freshman' | 'sophomore' | 'junior' | 'senior' | 'graduate';
-export type GolfPlayerStatus = 'active' | 'inactive' | 'redshirt' | 'medical' | 'transfer';
 export type GolfEventType = 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other';
-export type GolfQualifierStatus = 'upcoming' | 'in_progress' | 'completed' | 'cancelled';
-export type GolfTaskStatus = 'pending' | 'in_progress' | 'completed' | 'overdue';
-
-// ============================================================================
-// EXTENDED TYPES (with relations)
-// ============================================================================
-
-export type GolfPlayerWithTeam = GolfPlayer & {
-  team: GolfTeam | null;
-};
-
-export type GolfRoundWithHoles = GolfRound & {
-  holes: GolfHole[];
-};
-
-export type GolfHoleWithShots = GolfHole & {
-  shots: GolfShot[];
-};
-
-export type GolfEventWithAttendance = GolfEvent & {
-  attendance: GolfEventAttendance[];
-};
-
-export type GolfTaskWithCompletions = GolfTask & {
-  completions: GolfTaskCompletion[];
-};
-
-export type GolfAnnouncementWithAcknowledgements = GolfAnnouncement & {
-  acknowledgements: GolfAnnouncementAcknowledgement[];
-};
-
-// Announcement Recipients (junction - specific players)
-export interface GolfAnnouncementRecipient {
-  id: string;
-  announcement_id: string;
-  player_id: string;
-  created_at?: string;
-}
-
-// Announcement Documents (junction - links to golf_documents)
-export interface GolfAnnouncementDocument {
-  id: string;
-  announcement_id: string;
-  document_id: string;
-  sort_order: number;
-  created_at?: string;
-}
-
-// Announcement Tasks (junction - links to golf_tasks)
-export interface GolfAnnouncementTask {
-  id: string;
-  announcement_id: string;
-  task_id: string;
-  sort_order: number;
-  created_at?: string;
-}
 
 // Enriched announcement with all relations (used by detail views)
 export interface GolfAnnouncementEnriched extends GolfAnnouncement {
@@ -211,69 +121,6 @@ export interface GolfAnnouncementMeta extends GolfAnnouncement {
 }
 
 // ============================================================================
-// FORM DATA TYPES
-// ============================================================================
-
-export interface CreateRoundData {
-  player_id: string;
-  course_name: string;
-  course_location?: string;
-  played_at: string;
-  total_score?: number;
-  total_putts?: number;
-  fairways_hit?: number;
-  greens_in_regulation?: number;
-  notes?: string;
-}
-
-export interface CreateHoleData {
-  round_id: string;
-  hole_number: number;
-  par: number;
-  yardage: number;
-  score: number;
-  putts?: number;
-  fairway_hit?: boolean;
-  green_in_regulation?: boolean;
-}
-
-export interface CreateShotData {
-  hole_id: string;
-  shot_number: number;
-  club?: string;
-  distance_yards?: number;
-  result?: string;
-  notes?: string;
-}
-
-export interface CreateEventData {
-  team_id: string;
-  title: string;
-  description?: string;
-  event_type: GolfEventType;
-  start_time: string;
-  end_time?: string;
-  location?: string;
-  is_mandatory?: boolean;
-}
-
-export interface CreateTaskData {
-  team_id: string;
-  title: string;
-  description?: string;
-  due_date?: string;
-  priority?: 'low' | 'normal' | 'high' | 'urgent';
-  assigned_to?: string[];
-}
-
-export interface CreateAnnouncementData {
-  team_id: string;
-  title: string;
-  content: string;
-  priority?: 'normal' | 'high' | 'urgent';
-}
-
-// ============================================================================
 // STATISTICS TYPES
 // ============================================================================
 
@@ -327,8 +174,6 @@ export interface PlayerStats {
 }
 
 // Alias for consistency
-export type GolfPlayerStats = PlayerStats;
-
 export interface TeamStats {
   total_players: number;
   active_players: number;
@@ -422,20 +267,6 @@ export interface RoundHole {
 
 export type PuttMissTag = 'low' | 'high' | 'short' | 'long';
 
-export type PuttBreakDirection = 'left_to_right' | 'right_to_left' | 'straight';
-
-export interface PuttDetails {
-  id: string;
-  shotId: string;
-  missTags: PuttMissTag[];
-  breakDirection?: PuttBreakDirection;
-  estimatedBreakInches?: number;
-  distanceFeet?: number;
-  made: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
 export interface PlayerPuttTendencies {
   playerId: string;
   fullName: string;
@@ -461,38 +292,6 @@ export interface PlayerPuttTendencies {
   };
 }
 
-export const PUTT_MISS_TAG_CONFIG: Record<PuttMissTag, { 
-  label: string; 
-  description: string; 
-  category: 'read' | 'speed' | 'stroke';
-  color: string;
-}> = {
-  low: { 
-    label: 'Low (More Break)', 
-    description: 'Broke more than read', 
-    category: 'read',
-    color: 'text-blue-400'
-  },
-  high: { 
-    label: 'High (Less Break)', 
-    description: 'Broke less than read', 
-    category: 'read',
-    color: 'text-amber-400'
-  },
-  short: {
-    label: 'Short',
-    description: 'Left it short',
-    category: 'speed',
-    color: 'text-red-400'
-  },
-  long: {
-    label: 'Long',
-    description: 'Hit it past',
-    category: 'speed',
-    color: 'text-orange-400'
-  },
-};
-
 // ============================================================================
 // APPROACH MISS CLASSIFICATION TYPES
 // ============================================================================
@@ -506,26 +305,6 @@ export type ApproachMissDirection =
   | 'short_right'
   | 'long_left'
   | 'long_right';
-
-export interface ApproachMissDetails {
-  id: string;
-  shotId: string;
-  missDirection: ApproachMissDirection;
-  distanceFromGreenYards?: number;
-  lieType?: 'fairway' | 'rough' | 'bunker' | 'hazard';
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface ApproachTendencies {
-  playerId: string;
-  fullName: string;
-  totalMisses: number;
-  byDirection: Record<ApproachMissDirection, number>;
-  shortTendencyPct: number;
-  leftTendencyPct: number;
-  bunkerMissPct: number;
-}
 
 export const APPROACH_MISS_CONFIG: Record<ApproachMissDirection, {
   label: string;
@@ -712,16 +491,6 @@ export type TaskCategory =
   | 'administrative'
   | 'other';
 
-export const TASK_CATEGORIES: Record<TaskCategory, { label: string; color: string }> = {
-  practice: { label: 'Practice', color: 'bg-green-100 text-green-800' },
-  fitness: { label: 'Fitness', color: 'bg-blue-100 text-blue-800' },
-  mental: { label: 'Mental', color: 'bg-purple-100 text-purple-800' },
-  academic: { label: 'Academic', color: 'bg-yellow-100 text-yellow-800' },
-  equipment: { label: 'Equipment', color: 'bg-gray-100 text-gray-800' },
-  administrative: { label: 'Admin', color: 'bg-orange-100 text-orange-800' },
-  other: { label: 'Other', color: 'bg-slate-100 text-slate-800' },
-};
-
 export interface TaskTemplate {
   id: string;
   team_id: string;
@@ -734,17 +503,6 @@ export interface TaskTemplate {
   created_by: string;
   created_at?: string;
   updated_at?: string;
-}
-
-export interface TaskTemplateInsert {
-  team_id: string;
-  name: string;
-  description?: string;
-  category?: TaskCategory;
-  default_priority?: 'low' | 'normal' | 'high' | 'urgent';
-  default_due_days?: number;
-  is_active?: boolean;
-  created_by: string;
 }
 
 // ============================================================================
@@ -950,120 +708,10 @@ export interface RoundReviewWithDetails extends GolfRoundReview {
 }
 
 // ============================================================================
-// ROUND DRAFT EXTENDED TYPES
-// ============================================================================
-
-/**
- * Extended GolfRound type with draft-related fields.
- * The code uses these fields for round drafts, which may need a migration.
- */
-export interface GolfRoundDraftFields {
-  is_draft?: boolean;
-  draft_data?: Record<string, unknown> | null;
-  last_auto_save?: string | null;
-  holes_to_play?: number;
-  total_to_par?: number | null;
-}
-
-/**
- * GolfRound extended with draft fields
- */
-export type GolfRoundWithDraft = GolfRound & GolfRoundDraftFields;
-
-// ============================================================================
 // ADVANCED STATISTICS TYPES
 // ============================================================================
 
 export type RoundType = 'practice' | 'qualifier' | 'tournament' | 'all';
-
-export type ComparisonBaseline =
-  | 'pga'
-  | 'scratch'
-  | 'team'
-  | 'personal_best'
-  | 'pga_tour'
-  | 'ncaa_d1'
-  | 'ncaa_d2'
-  | 'ncaa_d3'
-  | 'break_80'
-  | 'break_90'
-  | 'break_100';
-
-export interface DataQuality {
-  roundCount: number;
-  isReliable: boolean;
-  message?: string;
-}
-
-export interface StatsOptions {
-  playerId: string;
-  dateRange?: { start: string; end: string };
-  roundType?: RoundType;
-  includeQualifiers?: boolean;
-}
-
-export interface StatsResponse<T> {
-  data: T | null;
-  error: string | null;
-  quality: DataQuality;
-}
-
-export interface MultiMetricTrend {
-  metric: string;
-  values: { date: string; value: number }[];
-  trend: 'improving' | 'declining' | 'stable';
-  changePercent: number;
-}
-
-export interface ComparisonResult {
-  metric: string;
-  playerValue: number;
-  baselineValue: number;
-  difference: number;
-  percentile?: number;
-}
-
-export interface CoursePerformance {
-  courseName: string;
-  roundsPlayed: number;
-  scoringAverage: number;
-  bestScore: number;
-  worstScore: number;
-}
-
-export interface HolePerformance {
-  holeNumber: number;
-  par: number;
-  averageScore: number;
-  scoreToPar: number;
-  birdieRate: number;
-  parRate: number;
-  bogeyPlusRate: number;
-}
-
-export interface WeakAreaIdentification {
-  area: string;
-  severity: 'critical' | 'moderate' | 'minor';
-  metric: string;
-  value: number;
-  benchmark: number;
-  recommendation: string;
-}
-
-// ============================================================================
-// STAT GOALS
-// ============================================================================
-
-export interface StatGoal {
-  id: string;
-  player_id: string;
-  metric: string;
-  target_value: number;
-  current_value?: number;
-  deadline?: string;
-  created_at?: string;
-  updated_at?: string;
-}
 
 // ============================================================================
 // TASK TEMPLATE DATA TYPES
@@ -1097,101 +745,9 @@ export interface CreateTaskFromTemplate {
   custom_description?: string;
 }
 
-export const DEFAULT_TEMPLATES: Omit<TaskTemplate, 'id' | 'team_id' | 'created_by' | 'created_at' | 'updated_at'>[] = [
-  {
-    name: 'Weekly Practice Log',
-    description: 'Complete weekly practice hours log',
-    category: 'practice',
-    default_priority: 'normal',
-    default_due_days: 7,
-    is_active: true,
-  },
-  {
-    name: 'Fitness Check-in',
-    description: 'Complete weekly fitness metrics',
-    category: 'fitness',
-    default_priority: 'normal',
-    default_due_days: 7,
-    is_active: true,
-  },
-];
-
-// ============================================================================
-// HOLE SCORE TYPES
-// ============================================================================
-
-/**
- * Individual hole score for scorecard display
- */
-export interface HoleScore {
-  hole_number: number;
-  par: number;
-  score: number;
-  putts?: number;
-  fairway_hit?: boolean;
-  green_in_regulation?: boolean;
-}
-
-// ============================================================================
-// REVIEW TIMELINE TYPES
-// ============================================================================
-
-/**
- * Timeline item for displaying review history
- */
-export interface ReviewTimelineItem {
-  id: string;
-  round_id: string;
-  player_id: string;
-  status: ReviewStatus;
-  created_at: string;
-  updated_at?: string;
-  round_date?: string;
-  course_name?: string;
-  total_score?: number;
-  score_to_par?: number;
-  player_name?: string;
-}
-
-/**
- * Player's review history summary
- */
-export interface PlayerReviewHistory {
-  player_id: string;
-  player_name: string;
-  total_reviews: number;
-  reviews: ReviewTimelineItem[];
-  average_score?: number;
-  recent_trend?: 'improving' | 'declining' | 'stable';
-}
-
 // ============================================================================
 // UI UTILITY FUNCTIONS
 // ============================================================================
-
-/**
- * Get badge color classes for review status
- */
-export function getStatusBadgeColor(status: ReviewStatus): string {
-  switch (status) {
-    case 'pending':
-      return 'bg-gray-100 text-gray-700';
-    case 'generating':
-      return 'bg-blue-100 text-blue-700';
-    case 'draft':
-      return 'bg-yellow-100 text-yellow-700';
-    case 'coach_review':
-      return 'bg-purple-100 text-purple-700';
-    case 'approved':
-      return 'bg-green-100 text-green-700';
-    case 'shared':
-      return 'bg-emerald-100 text-emerald-700';
-    case 'failed':
-      return 'bg-red-100 text-red-700';
-    default:
-      return 'bg-gray-100 text-gray-700';
-  }
-}
 
 /**
  * Get human-readable label for review status
@@ -1218,20 +774,6 @@ export function getStatusLabel(status: ReviewStatus): string {
 }
 
 /**
- * Check if a review is in an editable state
- */
-export function isReviewEditable(status: ReviewStatus): boolean {
-  return status === 'draft' || status === 'coach_review';
-}
-
-/**
- * Check if a review can be shared with the player
- */
-export function canShareReview(status: ReviewStatus): boolean {
-  return status === 'approved';
-}
-
-/**
  * Get color class for score display based on relation to par
  */
 export function getScoreColor(score: number, par: number): string {
@@ -1244,18 +786,3 @@ export function getScoreColor(score: number, par: number): string {
   return 'text-blue-800'; // Triple+
 }
 
-/**
- * Calculate fairway hit percentage
- */
-export function calculateFairwayPercentage(hit: number | null, total: number | null): number | null {
-  if (hit === null || total === null || total === 0) return null;
-  return Math.round((hit / total) * 100);
-}
-
-/**
- * Calculate greens in regulation percentage
- */
-export function calculateGIRPercentage(gir: number | null, total: number | null): number | null {
-  if (gir === null || total === null || total === 0) return null;
-  return Math.round((gir / total) * 100);
-}

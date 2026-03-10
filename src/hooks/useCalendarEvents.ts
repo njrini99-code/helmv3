@@ -28,7 +28,7 @@ export interface CalendarEvent {
   rsvp_total_count?: number;
 }
 
-export interface UseCalendarEventsOptions {
+interface UseCalendarEventsOptions {
   teamId: string | null;
   startDate: Date;
   endDate: Date;

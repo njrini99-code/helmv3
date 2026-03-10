@@ -355,5 +355,3 @@ export function OfflineWarningBanner({
 // EXPORTS
 // ============================================================================
 
-export default OfflineWarningBanner;
-export type { OfflineWarningBannerProps };

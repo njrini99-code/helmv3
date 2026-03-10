@@ -93,88 +93,9 @@ export function sanitizeHtml(input: string): string {
 }
 
 /**
- * Sanitize SQL input (for search queries, not for parameterized queries)
- */
-export function sanitizeSqlLike(input: string): string {
-  return input
-    .replace(/[_%\\]/g, '\\$&')
-    .trim();
-}
-
-/**
- * Validate and sanitize file path to prevent path traversal
- */
-export function validateFilePath(path: string): { valid: boolean; sanitized: string } {
-  // Remove any path traversal attempts
-  const sanitized = path
-    .replace(/\.\./g, '')
-    .replace(/\/\//g, '/')
-    .replace(/^\//, '');
-
-  // Check for suspicious patterns (intentionally detecting control characters for security)
-  // eslint-disable-next-line no-control-regex
-  const suspicious = /[<>:"|?*\x00-\x1f]/.test(sanitized);
-
-  return {
-    valid: !suspicious && sanitized === path.replace(/^\//, ''),
-    sanitized,
-  };
-}
-
-/**
- * Rate limit key generator for mutations
- */
-export function getMutationRateLimitKey(
-  action: string,
-  userId: string,
-  resource?: string
-): string {
-  if (resource) {
-    return `mutation:${action}:${userId}:${resource}`;
-  }
-  return `mutation:${action}:${userId}`;
-}
-
-/**
- * Validate object keys to prevent mass assignment
- */
-export function validateAllowedKeys<T extends Record<string, unknown>>(
-  data: Record<string, unknown>,
-  allowedKeys: (keyof T)[]
-): T {
-  const filtered: Record<string, unknown> = {};
-
-  for (const key of allowedKeys) {
-    if (key in data) {
-      filtered[key as string] = data[key as string];
-    }
-  }
-
-  return filtered as T;
-}
-
-/**
- * Validate array length
- */
-export function validateArrayLength<T>(
-  arr: T[],
-  min: number,
-  max: number,
-  fieldName: string = 'Array'
-): { valid: boolean; error?: string } {
-  if (arr.length < min) {
-    return { valid: false, error: `${fieldName} must have at least ${min} items` };
-  }
-  if (arr.length > max) {
-    return { valid: false, error: `${fieldName} must have at most ${max} items` };
-  }
-  return { valid: true };
-}
-
-/**
  * Server action error wrapper
  */
-export class ServerActionError extends Error {
+class ServerActionError extends Error {
   constructor(
     message: string,
     public code: 'VALIDATION' | 'UNAUTHORIZED' | 'NOT_FOUND' | 'RATE_LIMIT' | 'SERVER_ERROR',
@@ -188,7 +109,7 @@ export class ServerActionError extends Error {
 /**
  * Security event types
  */
-export type SecurityEventType =
+type SecurityEventType =
   | 'validation_failed'
   | 'unauthorized_access'
   | 'rate_limit_exceeded'
@@ -252,29 +173,3 @@ export async function logSecurityEvent(details: {
   // Could extend this to write to a security_events table in the future
 }
 
-/**
- * Validation decorator for server actions
- *
- * Example:
- * ```ts
- * const schema = z.object({ name: z.string(), age: z.number() });
- * const validated = await validateInput(schema, rawInput);
- * ```
- */
-export async function validateInput<T extends z.ZodType>(
-  schema: T,
-  input: unknown
-): Promise<z.infer<T>> {
-  try {
-    return await schema.parseAsync(input);
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      await logSecurityEvent({
-        event: 'validation_failed',
-        action: 'input_validation',
-        metadata: { errors: error.issues },
-      });
-    }
-    throw error;
-  }
-}

@@ -250,5 +250,3 @@ export function ImagePreview({
     </div>
   );
 }
-
-export default ImagePreview;

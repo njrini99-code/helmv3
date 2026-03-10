@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
-export interface TeamContext {
+interface TeamContext {
   // User identity
   userId: string | null;
   userRole: 'coach' | 'player' | null;

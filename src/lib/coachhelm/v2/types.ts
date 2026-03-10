@@ -668,31 +668,6 @@ export interface CoachHelmStatus {
 }
 
 // ============================================================================
-// CONSTANTS
-// ============================================================================
-
-/** Minimum thresholds for pattern validity */
-export const PATTERN_THRESHOLDS = {
-  minSupport: 0.1,
-  minConfidence: 0.6,
-  minLift: 1.5,
-  minSampleSize: 10,
-  minStrokeImpact: 0.3,
-} as const;
-
-/** Prediction model weights */
-export const PREDICTION_WEIGHTS = {
-  recentFormAdjustment: 0.6,
-  trendMomentum: 0.2,
-  restRustFactor: 0.1,
-  pressureAdjustment: 0.05,
-  formCycleAdjustment: 0.05,
-} as const;
-
-/** Confidence calibration buckets */
-export const CALIBRATION_BUCKETS = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0] as const;
-
-// ============================================================================
 // SHOT-LEVEL PATTERN TYPES
 // ============================================================================
 

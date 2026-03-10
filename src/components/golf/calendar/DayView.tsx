@@ -8,7 +8,7 @@ import { PremiumEventBlock } from './PremiumEventBlock';
 import { calculateEventTop, calculateEventHeight, isToday } from '@/lib/calendar/event-styles';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 
-export interface DayViewProps {
+interface DayViewProps {
   date: Date;
   events: CalendarEvent[];
   onEventClick?: (event: CalendarEvent) => void;

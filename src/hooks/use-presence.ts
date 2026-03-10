@@ -55,7 +55,7 @@ export function usePresence() {
  * @param lastSeen - The user's last_seen timestamp
  * @param thresholdMinutes - How many minutes of inactivity before considered offline (default: 5)
  */
-export function isUserOnline(lastSeen: string | null, thresholdMinutes: number = 5): boolean {
+function isUserOnline(lastSeen: string | null, thresholdMinutes: number = 5): boolean {
   if (!lastSeen) return false;
 
   const lastSeenDate = new Date(lastSeen);

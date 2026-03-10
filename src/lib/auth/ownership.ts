@@ -24,7 +24,7 @@ export class NotFoundError extends Error {
 /**
  * Get the current authenticated user or throw
  */
-export async function requireAuth() {
+async function requireAuth() {
   const supabase = await createClient();
   const { data: { user }, error } = await supabase.auth.getUser();
 
@@ -57,7 +57,7 @@ export async function requireCoach() {
 /**
  * Get the current player profile or throw
  */
-export async function requirePlayer() {
+async function requirePlayer() {
   const { supabase, user } = await requireAuth();
 
   const { data: player, error } = await supabase
@@ -130,7 +130,7 @@ export async function verifyWatchlistOwnership(
 /**
  * Verify organization admin
  */
-export async function verifyOrganizationAdmin(
+async function verifyOrganizationAdmin(
   supabase: SupabaseClient,
   organizationId: string,
   userId: string
@@ -205,7 +205,7 @@ export async function verifyGolfTeamOwnership(
 /**
  * Verify team invitation and return player from current user
  */
-export async function verifyTeamInvitationForCurrentUser(
+async function verifyTeamInvitationForCurrentUser(
   supabase: SupabaseClient,
   inviteCode: string,
   userId: string

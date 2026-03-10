@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/stores/auth-store';
 
-export interface Notification {
+interface Notification {
   id: string;
   type: 'profile_view' | 'watchlist_add' | 'message' | 'evaluation' | 'camp_interest' | 'team_join' | 'team_join_request' | 'team_join_approved' | 'team_join_rejected' | 'other';
   title: string;

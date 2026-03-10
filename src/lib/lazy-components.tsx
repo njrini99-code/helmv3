@@ -26,7 +26,7 @@ const DefaultLoading = () => (
  * Lazy load Video Showcase component
  * Heavy component with video player and modals
  */
-export const LazyVideoShowcase = dynamic(
+const LazyVideoShowcase = dynamic(
   () => import('@/components/player/VideoShowcase').then(mod => ({ default: mod.VideoShowcase })),
   {
     loading: () => <DefaultLoading />,
@@ -60,7 +60,7 @@ export const LazyConversationList = dynamic(
  * Lazy load USA Map component
  * Heavy component with map rendering
  */
-export const LazyUSAMap = dynamic(
+const LazyUSAMap = dynamic(
   () => import('@/components/coach/discover/USAMap').then(mod => ({ default: mod.USAMap })),
   {
     loading: () => <DefaultLoading />,
@@ -71,7 +71,7 @@ export const LazyUSAMap = dynamic(
 /**
  * Generic lazy component loader with custom loading component
  */
-export function createLazyComponent<P = Record<string, unknown>>(
+function createLazyComponent<P = Record<string, unknown>>(
   importFn: () => Promise<{ default: ComponentType<P> }>,
   options?: {
     loading?: () => React.ReactElement;
@@ -88,7 +88,7 @@ export function createLazyComponent<P = Record<string, unknown>>(
  * Preload a lazy component
  * Call this when you know the user will need the component soon
  */
-export function preloadComponent(lazyComponent: DynamicComponent) {
+function preloadComponent(lazyComponent: DynamicComponent) {
   if (lazyComponent && typeof lazyComponent.preload === 'function') {
     lazyComponent.preload();
   }

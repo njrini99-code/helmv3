@@ -2,11 +2,11 @@
 
 import { useCallback, useSyncExternalStore } from 'react';
 
-export type DisplayDensity = 'comfortable' | 'compact';
-export type DateFormat = 'MM/DD/YYYY' | 'DD/MM/YYYY' | 'YYYY-MM-DD';
-export type ScoreDisplay = 'to_par' | 'raw';
+type DisplayDensity = 'comfortable' | 'compact';
+type DateFormat = 'MM/DD/YYYY' | 'DD/MM/YYYY' | 'YYYY-MM-DD';
+type ScoreDisplay = 'to_par' | 'raw';
 
-export interface AppearancePreferences {
+interface AppearancePreferences {
   displayDensity: DisplayDensity;
   dateFormat: DateFormat;
   showAnimations: boolean;
@@ -106,7 +106,7 @@ export function useAppearancePreferences() {
  * Format a date string or Date object using the user's preferred date format.
  * Falls back to MM/DD/YYYY if no preference is set.
  */
-export function formatDate(
+function formatDate(
   date: string | Date | null | undefined,
   format: DateFormat = DEFAULTS.dateFormat
 ): string {

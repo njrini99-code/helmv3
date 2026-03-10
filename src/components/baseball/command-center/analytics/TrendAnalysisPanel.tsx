@@ -42,7 +42,7 @@ function formatChange(current: number | null, previous: number | null): string {
   return `${sign}${diff.toFixed(0)} pts`;
 }
 
-export function TrendAnalysisPanel({ players }: TrendAnalysisPanelProps) {
+function TrendAnalysisPanel({ players }: TrendAnalysisPanelProps) {
   const trendData = useMemo(() => {
     const playersWithTrends = players.filter(
       (p) => p.aggregates?.recent_trend != null

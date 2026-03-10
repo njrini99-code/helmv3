@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { IconX, IconTrendingUp, IconTrendingDown, IconMinus } from '@/components/icons';
 import type { BaseballRosterPlayer } from '@/lib/types';
 
-export interface TeamPlayerPeekPanelProps {
+interface TeamPlayerPeekPanelProps {
   player: BaseballRosterPlayer | null;
   onClose: () => void;
 }

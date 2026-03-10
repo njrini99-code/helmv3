@@ -17,7 +17,7 @@ export interface ErrorContext {
   [key: string]: unknown;
 }
 
-export interface ErrorLogEntry {
+interface ErrorLogEntry {
   error: Error;
   context?: ErrorContext;
   severity: 'low' | 'medium' | 'high' | 'critical';
@@ -58,7 +58,7 @@ export function logError(
 /**
  * Log a critical error that requires immediate attention
  */
-export function logCriticalError(error: Error, context?: ErrorContext): void {
+function logCriticalError(error: Error, context?: ErrorContext): void {
   logError(error, context, 'critical');
 
   // Additional actions for critical errors
@@ -71,7 +71,7 @@ export function logCriticalError(error: Error, context?: ErrorContext): void {
 /**
  * Log a warning (non-blocking error)
  */
-export function logWarning(message: string, context?: ErrorContext): void {
+function logWarning(message: string, context?: ErrorContext): void {
   const error = new Error(message);
   error.name = 'Warning';
   logError(error, context, 'low');
@@ -103,7 +103,7 @@ function sendToMonitoringService(logEntry: ErrorLogEntry): void {
 /**
  * Capture and log unhandled promise rejections
  */
-export function setupGlobalErrorHandlers(): void {
+function setupGlobalErrorHandlers(): void {
   if (typeof window !== 'undefined') {
     // Unhandled promise rejections
     window.addEventListener('unhandledrejection', (event) => {
@@ -138,7 +138,7 @@ export function setupGlobalErrorHandlers(): void {
 /**
  * Helper to get current user context for error logging
  */
-export async function getCurrentUserContext(): Promise<ErrorContext | undefined> {
+async function getCurrentUserContext(): Promise<ErrorContext | undefined> {
   try {
     // This would typically fetch from your auth context/store
     // For now, return undefined
@@ -159,7 +159,7 @@ export async function getCurrentUserContext(): Promise<ErrorContext | undefined>
 /**
  * Wrapper for async operations with automatic error logging
  */
-export async function withErrorLogging<T>(
+async function withErrorLogging<T>(
   operation: () => Promise<T>,
   context?: ErrorContext
 ): Promise<T | null> {
@@ -178,7 +178,7 @@ export async function withErrorLogging<T>(
 /**
  * Performance monitoring helper
  */
-export function logPerformanceMetric(
+function logPerformanceMetric(
   metricName: string,
   value: number,
   context?: ErrorContext

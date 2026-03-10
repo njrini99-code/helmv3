@@ -22,7 +22,7 @@ import { RSVPProgressRing } from './RSVPProgressRing';
 import { Users, Download, Search } from 'lucide-react';
 import '@/styles/calendar-tokens.css';
 
-export interface RSVPParticipant {
+interface RSVPParticipant {
   id: string;
   user_id: string;
   name: string;
@@ -33,7 +33,7 @@ export interface RSVPParticipant {
   phone?: string;
 }
 
-export interface RSVPStatusSectionProps {
+interface RSVPStatusSectionProps {
   participants: RSVPParticipant[];
   totalInvited: number;
   className?: string;
@@ -427,29 +427,3 @@ function ParticipantRow({
   );
 }
 
-/**
- * Compact RSVP Status (for sidebars/previews)
- */
-export function CompactRSVPStatus({
-  participants,
-  totalInvited: _totalInvited,
-}: Pick<RSVPStatusSectionProps, 'participants' | 'totalInvited'>) {
-  void _totalInvited; // May be used in future for percentage calculations
-  const accepted = participants.filter((p) => p.response === 'accepted').length;
-  const pending = participants.filter((p) => p.response === 'pending').length;
-
-  return (
-    <div className="flex items-center gap-3">
-      <div className="flex items-center gap-2">
-        <div className="w-2 h-2 rounded-full bg-primary-500"></div>
-        <span className="text-sm font-medium text-warm-700">{accepted} accepted</span>
-      </div>
-      {pending > 0 && (
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-warm-300"></div>
-          <span className="text-sm text-warm-500">{pending} pending</span>
-        </div>
-      )}
-    </div>
-  );
-}

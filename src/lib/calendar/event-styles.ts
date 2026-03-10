@@ -5,7 +5,7 @@
 
 import type { EventType, EventTypeConfig } from '@/lib/types/calendar';
 
-export const eventTypeConfigs: Record<EventType, EventTypeConfig> = {
+const eventTypeConfigs: Record<EventType, EventTypeConfig> = {
   // Game/Tournament - Premium emerald (brand)
   game: {
     label: 'Game',
@@ -134,7 +134,7 @@ export function getEventTypeConfig(type: EventType): EventTypeConfig {
 /**
  * Check if event type should show text (false for classes/blocked time)
  */
-export function shouldShowEventText(type: EventType): boolean {
+function shouldShowEventText(type: EventType): boolean {
   return eventTypeConfigs[type]?.showText ?? true;
 }
 
@@ -205,7 +205,7 @@ export function isToday(dateString: string): boolean {
 /**
  * Get hour from date string or time string (0-23)
  */
-export function getHour(timeString: string): number {
+function getHour(timeString: string): number {
   // Handle time-only strings (HH:MM:SS or HH:MM)
   if (timeString && !timeString.includes('T') && !timeString.includes(' ')) {
     const parts = timeString.split(':').map(Number);

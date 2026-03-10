@@ -19,8 +19,6 @@ export type College = Tables['organizations']['Row'];
 export type Organization = Tables['organizations']['Row'];
 export type Team = Tables['baseball_teams']['Row'];
 export type TeamMember = Tables['baseball_team_members']['Row'];
-export type TeamInvitation = Tables['baseball_team_invitations']['Row'];
-export type TeamCoachStaff = Tables['baseball_team_coach_staff']['Row'];
 
 // Player related
 export type PlayerSettings = Tables['baseball_player_settings']['Row'];
@@ -43,20 +41,7 @@ export interface PlayerAchievement {
 export type RecruitingInterest = Tables['baseball_recruiting_interests']['Row'];
 export type PlayerEngagementEvent = Tables['baseball_player_engagement_events']['Row'];
 
-// Coach related - CoachNote doesn't exist as separate table, use coach_insights instead
-export interface CoachNote {
-  id: string;
-  coach_id: string;
-  player_id: string;
-  note: string;
-  created_at?: string;
-  updated_at?: string;
-}
-export type DevelopmentalPlan = Tables['baseball_developmental_plans']['Row'];
-
 // Events & Camps
-export type Event = Tables['baseball_events']['Row'];
-export type Camp = Tables['baseball_camps']['Row'];
 export type CampRegistration = Tables['baseball_camp_registrations']['Row'];
 
 // Recruiting
@@ -98,39 +83,13 @@ export interface PlayerComparison {
   updated_at: string;
 }
 
-export interface PlayerComparisonInsert {
-  coach_id: string;
-  name: string;
-  description?: string | null;
-  player_ids: string[];
-  comparison_data?: ComparisonData;
-}
-
 // Messaging (using generated types from database)
 export type Message = Tables['baseball_messages']['Row'];
 export type Conversation = Tables['baseball_conversations']['Row'];
-export type ConversationParticipant = Tables['baseball_conversation_participants']['Row'];
 export type Notification = Tables['notifications']['Row'];
 
 // Golf Messaging types
 export type GolfMessageRow = Tables['golf_messages']['Row'];
-export type GolfConversationRow = Tables['golf_conversations']['Row'];
-export type GolfConversationParticipantRow = Tables['golf_conversation_participants']['Row'];
-
-// Insert types (what you send when creating)
-export type UserInsert = Tables['users']['Insert'];
-export type CoachInsert = Tables['baseball_coaches']['Insert'];
-export type PlayerInsert = Tables['baseball_players']['Insert'];
-export type OrganizationInsert = Tables['organizations']['Insert'];
-export type TeamInsert = Tables['baseball_teams']['Insert'];
-export type TeamMemberInsert = Tables['baseball_team_members']['Insert'];
-
-// Update types (what you send when updating)
-export type UserUpdate = Tables['users']['Update'];
-export type CoachUpdate = Tables['baseball_coaches']['Update'];
-export type PlayerUpdate = Tables['baseball_players']['Update'];
-export type OrganizationUpdate = Tables['organizations']['Update'];
-export type TeamUpdate = Tables['baseball_teams']['Update'];
 
 // ============================================
 // ENUM TYPES
@@ -140,8 +99,6 @@ export type UserRole = Enums['user_role'];
 export type CoachType = Enums['baseball_coach_type'];
 export type PlayerType = Enums['baseball_player_type'];
 export type PipelineStage = Enums['baseball_pipeline_stage'];
-export type TeamType = 'high_school' | 'showcase' | 'juco' | 'college';
-
 // ============================================
 // COMPOSITE/JOINED TYPES
 // ============================================
@@ -168,14 +125,6 @@ export type CoachProfile = Coach & {
   user?: User;
   organization?: Organization;
   teams?: Team[];
-};
-
-// Team with members and coaches
-export type TeamWithMembers = Team & {
-  organization?: Organization;
-  head_coach?: Coach;
-  members?: (TeamMember & { player: Player })[];
-  coaching_staff?: (TeamCoachStaff & { coach: Coach })[];
 };
 
 // Player for discover page (optimized for list view)
@@ -205,20 +154,6 @@ export type WatchlistWithPlayer = Watchlist & {
   player?: Player;
 };
 
-// Camp with organization and registration count
-export type CampWithDetails = Camp & {
-  organization?: Organization;
-  coach: Coach;
-  registrations_count?: number;
-};
-
-// Event with team/org details
-export type EventWithDetails = Event & {
-  team?: Team;
-  organization?: Organization;
-  created_by_coach?: Coach;
-};
-
 // ============================================
 // TYPE GUARDS
 // ============================================
@@ -231,34 +166,6 @@ export function isCoach(user: User): boolean {
   return user.role === 'coach';
 }
 
-export function isCollegeCoach(coach: Coach): boolean {
-  return coach.coach_type === 'college';
-}
-
-export function isHighSchoolCoach(coach: Coach): boolean {
-  return coach.coach_type === 'high_school';
-}
-
-export function isJUCOCoach(coach: Coach): boolean {
-  return coach.coach_type === 'juco';
-}
-
-export function isShowcaseCoach(coach: Coach): boolean {
-  return coach.coach_type === 'showcase';
-}
-
-export function isHighSchoolPlayer(player: Player): boolean {
-  return player.player_type === 'high_school';
-}
-
-export function isShowcasePlayer(player: Player): boolean {
-  return player.player_type === 'showcase';
-}
-
-export function isJUCOPlayer(player: Player): boolean {
-  return player.player_type === 'juco';
-}
-
 export function isCollegePlayer(player: Player): boolean {
   return player.player_type === 'college';
 }
@@ -267,24 +174,9 @@ export function isRecruitingActivated(player: Player): boolean {
   return player.recruiting_activated === true;
 }
 
-export function canCoachRecruit(coach: Coach): boolean {
-  return coach.coach_type === 'college' || coach.coach_type === 'juco';
-}
-
-export function canPlayerRecruit(player: Player): boolean {
-  // College players cannot activate recruiting
-  return player.player_type !== 'college';
-}
-
 // ============================================
 // UTILITY TYPES
 // ============================================
-
-// API response wrapper
-export type ApiResponse<T> = {
-  data: T | null;
-  error: Error | null;
-};
 
 // Pagination params
 export type PaginationParams = {
@@ -307,23 +199,6 @@ export type DiscoverFilters = {
   search?: string;
 };
 
-// Sort options for discover
-export type DiscoverSortOption =
-  | 'name_asc'
-  | 'name_desc'
-  | 'grad_year_asc'
-  | 'grad_year_desc'
-  | 'gpa_desc'
-  | 'updated_desc';
-
-// Filter params for watchlist
-export type WatchlistFilters = {
-  stage?: PipelineStage;
-  gradYear?: number;
-  position?: string;
-  search?: string;
-};
-
 // Onboarding steps
 export type OnboardingStep = {
   step: number;
@@ -339,11 +214,6 @@ export type DashboardStats = {
   watchlistAdds?: number;
   messages?: number;
   profileCompletion?: number;
-};
-
-// Form validation
-export type FormErrors<T> = {
-  [K in keyof T]?: string;
 };
 
 // ============================================
@@ -424,66 +294,12 @@ export function formatPlayerName(player: Pick<Player, 'first_name' | 'last_name'
 }
 
 /**
- * Format coach name
- */
-export function formatCoachName(coach: Pick<Coach, 'full_name'>): string {
-  return coach.full_name || 'Unknown Coach';
-}
-
-/**
- * Format GPA
- */
-export function formatGPA(gpa?: number | string | null): string {
-  if (!gpa) return 'N/A';
-  const numGPA = typeof gpa === 'string' ? parseFloat(gpa) : gpa;
-  return numGPA.toFixed(2);
-}
-
-/**
- * Format velocity (mph)
- */
-export function formatVelocity(velo?: number | string | null): string {
-  if (!velo) return 'N/A';
-  const numVelo = typeof velo === 'string' ? parseFloat(velo) : velo;
-  return `${numVelo.toFixed(1)} mph`;
-}
-
-/**
  * Format time (seconds)
  */
 export function formatTime(time?: number | string | null): string {
   if (!time) return 'N/A';
   const numTime = typeof time === 'string' ? parseFloat(time) : time;
   return `${numTime.toFixed(2)}s`;
-}
-
-/**
- * Get grad year label (e.g., "Class of 2026")
- */
-export function getGradYearLabel(year?: number | null): string {
-  if (!year) return 'N/A';
-  return `Class of ${year}`;
-}
-
-/**
- * Check if player can have multiple teams
- */
-export function canHaveMultipleTeams(playerType: PlayerType): boolean {
-  return playerType === 'high_school' || playerType === 'showcase';
-}
-
-/**
- * Get organization type label
- */
-export function getOrgTypeLabel(type: string): string {
-  const labels: Record<string, string> = {
-    college: 'College',
-    high_school: 'High School',
-    juco: 'JUCO',
-    showcase_org: 'Showcase Organization',
-    travel_ball: 'Travel Ball',
-  };
-  return labels[type] || type;
 }
 
 // ============================================
@@ -572,51 +388,6 @@ export interface BaseballPlayerStats {
 
   created_at: string;
   updated_at: string;
-}
-
-export interface BaseballPlayerStatsInsert {
-  player_id: string;
-  team_id: string;
-  coach_id: string;
-  stat_type: BaseballStatType;
-  session_date: string;
-  session_name?: string | null;
-
-  at_bats?: number;
-  hits?: number;
-  doubles?: number;
-  triples?: number;
-  home_runs?: number;
-  rbis?: number;
-  walks?: number;
-  strikeouts?: number;
-  stolen_bases?: number;
-  caught_stealing?: number;
-  hit_by_pitch?: number;
-  sacrifice_bunts?: number;
-  sacrifice_flies?: number;
-
-  innings_pitched?: number;
-  earned_runs?: number;
-  runs_allowed?: number;
-  hits_allowed?: number;
-  walks_allowed?: number;
-  strikeouts_thrown?: number;
-  pitches_thrown?: number;
-  strikes_thrown?: number;
-
-  putouts?: number;
-  assists?: number;
-  errors?: number;
-
-  exit_velocity?: number | null;
-  launch_angle?: number | null;
-  pitch_velocity?: number | null;
-  spin_rate?: number | null;
-
-  source?: BaseballStatSource;
-  upload_batch_id?: string | null;
-  notes?: string | null;
 }
 
 export interface BaseballStatUpload {
@@ -764,25 +535,6 @@ export interface BaseballCoachPhilosophy {
   updated_at: string;
 }
 
-export interface BaseballCoachPhilosophyUpdate {
-  priority_hitting?: number;
-  priority_pitching?: number;
-  priority_fielding?: number;
-  priority_speed?: number;
-  priority_mental_game?: number;
-
-  alert_sensitivity?: BaseballAlertSensitivity;
-  decline_threshold?: number;
-  pressure_gap_threshold?: number;
-
-  alert_performance_decline?: boolean;
-  alert_pressure_gap?: boolean;
-  alert_streaks?: boolean;
-  alert_breakout_candidates?: boolean;
-  alert_plateau?: boolean;
-  alert_position_opportunities?: boolean;
-}
-
 // Player with aggregates for command center
 export interface BaseballRosterPlayer extends Player {
   aggregates?: BaseballPlayerAggregates;
@@ -793,46 +545,6 @@ export interface BaseballRosterPlayer extends Player {
   team_position?: string | null;
   team_status?: string | null;
   joined_at?: string | null;
-}
-
-// Pressure Performance Index
-export interface PressurePerformanceIndex {
-  playerId: string;
-  playerName: string;
-  ppi: number; // 0-100 scale
-  practiceAvg: number;
-  gameAvg: number;
-  gap: number;
-  trend: BaseballTrend;
-  sessionsAnalyzed: number;
-}
-
-// Trend Velocity
-export interface TrendVelocity {
-  playerId: string;
-  metric: string;
-  velocity: number; // Rate of change per session
-  acceleration: number; // Is velocity itself changing?
-  projection30Days: number;
-  confidence: number; // 0-1
-}
-
-// CSV Column Mapping
-export interface CSVColumnMapping {
-  csvColumn: string;
-  dbField: keyof BaseballPlayerStatsInsert | null;
-  required: boolean;
-}
-
-// Upload Result
-export interface StatsUploadResult {
-  success: boolean;
-  uploadId: string;
-  totalRows: number;
-  matchedRows: number;
-  unmatchedRows: number;
-  unmatched: UnmatchedPlayerData[];
-  error?: string;
 }
 
 // ============================================
@@ -1010,15 +722,6 @@ export interface MetricScoreDetail {
   percentile: number;
   weight: number;
   contribution: number; // percentile * weight / total_weight
-}
-
-/**
- * Player with match score for discover results.
- */
-export interface DiscoverPlayerWithScore extends DiscoverPlayer {
-  match_score?: number;
-  match_breakdown?: MatchScoreBreakdown;
-  percentiles?: PlayerPercentiles;
 }
 
 /**
@@ -1213,22 +916,6 @@ export interface BaseballPlayerSeasonStats {
     primary_position: string | null;
     jersey_number?: string | null;
   };
-}
-
-export interface BaseballBoxScoreUpload {
-  id: string;
-  team_id: string;
-  game_id: string | null;
-  coach_id: string;
-  filename: string;
-  upload_type: 'csv' | 'pdf' | 'manual';
-  raw_content: string | null;
-  parsed_data: unknown | null;
-  status: 'pending' | 'processing' | 'review_needed' | 'completed' | 'failed';
-  matched_players: Array<{ csvName: string; playerId: string; confidence: number; playerName: string }>;
-  unmatched_players: Array<{ csvName: string }>;
-  error_message: string | null;
-  created_at: string;
 }
 
 export interface BoxScoreBattingInput {

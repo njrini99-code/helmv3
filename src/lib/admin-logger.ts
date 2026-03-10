@@ -26,7 +26,7 @@ export type AdminEventType =
 
 export type AdminEventSeverity = 'info' | 'warning' | 'error' | 'critical';
 
-export interface AdminEventInput {
+interface AdminEventInput {
   eventType: AdminEventType;
   title: string;
   severity?: AdminEventSeverity;
@@ -39,13 +39,6 @@ export interface AdminEventInput {
   browserInfo?: Record<string, unknown>;
 }
 
-export interface AdminEvent extends AdminEventInput {
-  id: string;
-  createdAt: string;
-  resolved: boolean;
-  resolvedAt?: string;
-  resolvedBy?: string;
-}
 
 // ============================================
 // MAIN LOGGER
@@ -55,7 +48,7 @@ export interface AdminEvent extends AdminEventInput {
  * Log an admin event to the database
  * Uses service role to bypass RLS
  */
-export async function logAdminEvent(input: AdminEventInput): Promise<string | null> {
+async function logAdminEvent(input: AdminEventInput): Promise<string | null> {
   try {
     const adminDb = createAdminClient();
     
@@ -97,7 +90,7 @@ export async function logAdminEvent(input: AdminEventInput): Promise<string | nu
  * Log an error with full context
  * Extracts stack trace and formats error details
  */
-export async function logAdminError(
+async function logAdminError(
   error: Error | unknown,
   context: {
     title?: string;
@@ -130,7 +123,7 @@ export async function logAdminError(
 /**
  * Log a critical error (will trigger alerts)
  */
-export async function logCriticalError(
+async function logCriticalError(
   error: Error | unknown,
   context: {
     title?: string;
@@ -227,7 +220,7 @@ export async function logAIGeneration(
 /**
  * Log feature usage
  */
-export async function logFeatureUse(
+async function logFeatureUse(
   featureName: string,
   userId?: string,
   userEmail?: string,
@@ -246,7 +239,7 @@ export async function logFeatureUse(
 /**
  * Log onboarding milestone
  */
-export async function logOnboardingMilestone(
+async function logOnboardingMilestone(
   userId: string,
   userEmail: string,
   milestone: string,
@@ -281,7 +274,7 @@ export async function logSecurityEvent(
 /**
  * Log system event (deployments, maintenance, etc.)
  */
-export async function logSystemEvent(
+async function logSystemEvent(
   title: string,
   severity: AdminEventSeverity = 'info',
   metadata?: Record<string, unknown>
@@ -302,7 +295,7 @@ export async function logSystemEvent(
  * Wrap a server action with error logging
  * Automatically logs errors with context
  */
-export function withAdminLogging<T extends (...args: unknown[]) => Promise<unknown>>(
+function withAdminLogging<T extends (...args: unknown[]) => Promise<unknown>>(
   actionName: string,
   action: T,
   options?: {

@@ -38,17 +38,17 @@ import { createClient } from '@/lib/supabase/server';
 export type LieType = 'tee' | 'fairway' | 'rough' | 'sand' | 'green' | 'other';
 
 /** Miss direction categories */
-export type MissDirection = 'left' | 'right' | 'short' | 'long' | 'short_left' | 'short_right' | 'long_left' | 'long_right' | 'none';
+type MissDirection = 'left' | 'right' | 'short' | 'long' | 'short_left' | 'short_right' | 'long_left' | 'long_right' | 'none';
 
 /** Distance range for grouping */
-export interface DistanceRange {
+interface DistanceRange {
   min: number;
   max: number;
   label: string;
 }
 
 /** Miss breakdown percentages */
-export interface MissBreakdown {
+interface MissBreakdown {
   left: number;       // percentage (0-100)
   right: number;      // percentage (0-100)
   short: number;      // percentage (0-100)
@@ -159,7 +159,7 @@ export interface ApproachBracket {
 }
 
 /** Driving analysis results */
-export interface DrivingAnalysis {
+interface DrivingAnalysis {
   totalDrives: number;
   fairwayHitRate: number;          // percentage
   avgDrivingDistance: number;       // yards
@@ -188,7 +188,7 @@ export interface DrivingAnalysis {
 }
 
 /** Approach analysis by distance bracket */
-export interface ApproachBracketAnalysis {
+interface ApproachBracketAnalysis {
   bracket: ApproachBracket;
   totalShots: number;
   girRate: number;                  // greens in regulation percentage
@@ -218,7 +218,7 @@ export interface ApproachBracketAnalysis {
 }
 
 /** Around the green analysis */
-export interface AroundGreenAnalysis {
+interface AroundGreenAnalysis {
   totalShots: number;
   upAndDownRate: number;            // percentage
   avgProximityAfter: number;        // avg distance to hole after chip/pitch (feet)
@@ -283,7 +283,7 @@ export interface ShotCategoryInsight {
 // ============================================================================
 
 /** Dispersion pattern for a shot category */
-export interface DispersionPattern {
+interface DispersionPattern {
   category: ShotCategory;
   bracket?: ApproachBracket;
 
@@ -315,7 +315,7 @@ export interface DispersionPattern {
 }
 
 /** Miss severity classification */
-export interface MissSeverityBreakdown {
+interface MissSeverityBreakdown {
   perfect: number;                  // hit target (green/fairway)
   minor: number;                    // small miss, easy up-and-down
   moderate: number;                 // medium miss, challenging position
@@ -528,7 +528,7 @@ function calculateConfidence(sampleSize: number): number {
  * Lie-Specific Miss Pattern Analyzer
  * Analyzes shot data to identify lie-dependent miss patterns and root causes
  */
-export class LieSpecificAnalyzer {
+class LieSpecificAnalyzer {
   private playerId: string;
   private shots: RawShot[] = [];
 

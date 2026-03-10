@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import type { EventType } from '@/lib/types/calendar';
 import { getEventTypeConfig, formatTime } from '@/lib/calendar/event-styles';
 
-export interface EventCardProps {
+interface EventCardProps {
   id: string;
   title: string;
   type: string; // Event type string (accepts any event type for flexibility)

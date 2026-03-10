@@ -32,7 +32,7 @@ export interface InsightFilters {
   endDate?: string;
 }
 
-export interface FilterOption {
+interface FilterOption {
   id: string;
   name: string;
 }

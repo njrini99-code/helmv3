@@ -7,7 +7,7 @@
  * - Datadog: npm install @datadog/browser-logs
  */
 
-export interface ErrorContext {
+interface ErrorContext {
   userId?: string;
   userEmail?: string;
   page?: string;
@@ -15,14 +15,14 @@ export interface ErrorContext {
   metadata?: Record<string, unknown>;
 }
 
-export enum ErrorSeverity {
+enum ErrorSeverity {
   LOW = 'low',
   MEDIUM = 'medium',
   HIGH = 'high',
   CRITICAL = 'critical',
 }
 
-export interface ErrorReport {
+interface ErrorReport {
   message: string;
   stack?: string;
   severity: ErrorSeverity;
@@ -196,12 +196,12 @@ class ErrorMonitoring {
 }
 
 // Export singleton instance
-export const errorMonitoring = new ErrorMonitoring();
+const errorMonitoring = new ErrorMonitoring();
 
 // Convenience exports
 export const logError = errorMonitoring.logError.bind(errorMonitoring);
-export const logException = errorMonitoring.logException.bind(errorMonitoring);
+const logException = errorMonitoring.logException.bind(errorMonitoring);
 export const logCritical = errorMonitoring.logCritical.bind(errorMonitoring);
-export const logWarning = errorMonitoring.logWarning.bind(errorMonitoring);
-export const setUser = errorMonitoring.setUser.bind(errorMonitoring);
-export const clearUser = errorMonitoring.clearUser.bind(errorMonitoring);
+const logWarning = errorMonitoring.logWarning.bind(errorMonitoring);
+const setUser = errorMonitoring.setUser.bind(errorMonitoring);
+const clearUser = errorMonitoring.clearUser.bind(errorMonitoring);

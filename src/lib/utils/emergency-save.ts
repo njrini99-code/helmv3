@@ -115,7 +115,7 @@ export function clearEmergencySave(roundId?: string | null): void {
 /**
  * Remove emergency saves older than MAX_AGE_MS.
  */
-export function cleanupOldEmergencySaves(): void {
+function cleanupOldEmergencySaves(): void {
   try {
     const keysToRemove: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {

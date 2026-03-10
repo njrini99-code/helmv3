@@ -116,4 +116,3 @@ export function MobileMenuButton({
   );
 }
 
-export { AnimatedMenuIcon, StaticMenuIcon };

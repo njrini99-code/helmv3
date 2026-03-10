@@ -62,7 +62,7 @@ export function PlayerCardSkeleton({ delay = 0 }: { delay?: number }) {
 // ROUND ROW SKELETON (for stats/rounds list)
 // ============================================================================
 
-export function RoundRowSkeleton({ delay = 0, showPlayer = true }: { delay?: number; showPlayer?: boolean }) {
+function RoundRowSkeleton({ delay = 0, showPlayer = true }: { delay?: number; showPlayer?: boolean }) {
   return (
     <div
       className="flex items-center gap-4 px-4 py-3"
@@ -112,7 +112,7 @@ export function QuickActionSkeleton({ delay = 0 }: { delay?: number }) {
 // STATS CARD SKELETON
 // ============================================================================
 
-export function StatsCardSkeleton({ delay = 0 }: { delay?: number }) {
+function StatsCardSkeleton({ delay = 0 }: { delay?: number }) {
   return (
     <div
       className="relative bg-white/45 backdrop-blur-sm md:backdrop-blur-glass-prominent border border-white/30 rounded-2xl p-6 overflow-clip"
@@ -140,7 +140,7 @@ export function StatsCardSkeleton({ delay = 0 }: { delay?: number }) {
 // QUALIFIER CARD SKELETON
 // ============================================================================
 
-export function QualifierCardSkeleton({ delay = 0 }: { delay?: number }) {
+function QualifierCardSkeleton({ delay = 0 }: { delay?: number }) {
   return (
     <div
       className="relative bg-white/45 backdrop-blur-sm md:backdrop-blur-glass-prominent border border-white/30 rounded-2xl p-5 overflow-clip"
@@ -167,7 +167,7 @@ export function QualifierCardSkeleton({ delay = 0 }: { delay?: number }) {
 // MESSAGE THREAD SKELETON
 // ============================================================================
 
-export function MessageThreadSkeleton({ delay = 0 }: { delay?: number }) {
+function MessageThreadSkeleton({ delay = 0 }: { delay?: number }) {
   return (
     <div
       className="flex items-center gap-3 px-4 py-3"
@@ -221,7 +221,7 @@ export function AnnouncementCardSkeleton({ delay = 0 }: { delay?: number }) {
 // CALENDAR EVENT SKELETON
 // ============================================================================
 
-export function CalendarEventSkeleton({ delay = 0 }: { delay?: number }) {
+function CalendarEventSkeleton({ delay = 0 }: { delay?: number }) {
   return (
     <div
       className="flex items-center gap-3 p-3 rounded-lg"
@@ -240,7 +240,7 @@ export function CalendarEventSkeleton({ delay = 0 }: { delay?: number }) {
 // DOCUMENT CARD SKELETON
 // ============================================================================
 
-export function DocumentCardSkeleton({ delay = 0 }: { delay?: number }) {
+function DocumentCardSkeleton({ delay = 0 }: { delay?: number }) {
   return (
     <div
       className="relative bg-white/45 backdrop-blur-sm md:backdrop-blur-glass-prominent border border-white/30 rounded-2xl p-4 overflow-clip"
@@ -605,7 +605,7 @@ export function DetailedStatsSkeleton() {
 // SHOT STATS TAB SKELETON (for individual tab content loading)
 // ============================================================================
 
-export function ShotStatsTabSkeleton() {
+function ShotStatsTabSkeleton() {
   return (
     <div className="space-y-4">
       {/* Key Metrics Grid */}
@@ -1069,7 +1069,7 @@ export function ClassesPageSkeleton() {
 // GRID SKELETON (for loading multiple cards)
 // ============================================================================
 
-export function SkeletonGrid({
+function SkeletonGrid({
   type = 'metric',
   count = 4,
   columns = 4,

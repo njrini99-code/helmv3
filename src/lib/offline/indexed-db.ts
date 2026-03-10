@@ -41,7 +41,7 @@ export interface OfflineRound {
   error?: string;
 }
 
-export interface SyncQueueItem {
+interface SyncQueueItem {
   id: string;
   type: 'shot' | 'round';
   data: OfflineShot | OfflineRound;
@@ -131,7 +131,7 @@ export async function openDatabase(): Promise<IDBDatabase> {
 /**
  * Close the database connection
  */
-export function closeDatabase(): void {
+function closeDatabase(): void {
   if (dbInstance) {
     dbInstance.close();
     dbInstance = null;
@@ -145,7 +145,7 @@ export function closeDatabase(): void {
 /**
  * Generate a unique client-side ID
  */
-export function generateClientId(): string {
+function generateClientId(): string {
   return `offline_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 }
 
@@ -367,7 +367,7 @@ export async function saveOfflineRound(round: Omit<OfflineRound, 'id' | 'timesta
 /**
  * Get an offline round by ID
  */
-export async function getOfflineRound(roundId: string): Promise<OfflineRound | null> {
+async function getOfflineRound(roundId: string): Promise<OfflineRound | null> {
   const db = await openDatabase();
 
   return new Promise((resolve, reject) => {
@@ -388,7 +388,7 @@ export async function getOfflineRound(roundId: string): Promise<OfflineRound | n
 /**
  * Get all offline rounds for a player
  */
-export async function getOfflineRoundsForPlayer(playerId: string): Promise<OfflineRound[]> {
+async function getOfflineRoundsForPlayer(playerId: string): Promise<OfflineRound[]> {
   const db = await openDatabase();
 
   return new Promise((resolve, reject) => {
@@ -514,7 +514,7 @@ export async function deleteOfflineRound(roundId: string): Promise<void> {
 /**
  * Get next items to sync from the queue (ordered by priority and creation time)
  */
-export async function getNextSyncItems(limit: number = 10): Promise<SyncQueueItem[]> {
+async function getNextSyncItems(limit: number = 10): Promise<SyncQueueItem[]> {
   const db = await openDatabase();
 
   return new Promise((resolve, reject) => {
@@ -586,7 +586,7 @@ export async function getPendingSyncCount(): Promise<{ shots: number; rounds: nu
 /**
  * Clear all offline data
  */
-export async function clearAllOfflineData(): Promise<void> {
+async function clearAllOfflineData(): Promise<void> {
   const db = await openDatabase();
 
   return new Promise((resolve, reject) => {
@@ -620,7 +620,7 @@ export async function isIndexedDBAvailable(): Promise<boolean> {
 /**
  * Get storage usage estimate (if available)
  */
-export async function getStorageEstimate(): Promise<{ usage: number; quota: number } | null> {
+async function getStorageEstimate(): Promise<{ usage: number; quota: number } | null> {
   if (typeof navigator === 'undefined' || !navigator.storage?.estimate) {
     return null;
   }
@@ -641,12 +641,5 @@ export async function getStorageEstimate(): Promise<{ usage: number; quota: numb
 // ============================================================================
 
 export {
-  DB_NAME,
-  DB_VERSION,
-  SHOTS_STORE,
-  ROUNDS_STORE,
-  SYNC_QUEUE_STORE,
   MAX_SYNC_ATTEMPTS,
-  SYNC_RETRY_DELAY_MS,
-  DATA_EXPIRY_MS,
 };

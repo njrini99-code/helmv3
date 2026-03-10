@@ -125,5 +125,5 @@ const PeekPanelTriggerComponent = function PeekPanelTrigger({
   );
 };
 
-export const PeekPanelTrigger = memo(PeekPanelTriggerComponent);
+const PeekPanelTrigger = memo(PeekPanelTriggerComponent);
 PeekPanelTrigger.displayName = 'PeekPanelTrigger';

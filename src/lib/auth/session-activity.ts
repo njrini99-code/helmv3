@@ -159,7 +159,7 @@ export function useSessionActivity() {
 /**
  * Get remaining time until session timeout (in ms)
  */
-export function getSessionTimeRemaining(): number {
+function getSessionTimeRemaining(): number {
   const lastActivity = getLastActivity();
   const now = Date.now();
   const elapsed = now - lastActivity;
@@ -171,7 +171,7 @@ export function getSessionTimeRemaining(): number {
 /**
  * Format remaining time for display
  */
-export function formatSessionTimeRemaining(): string {
+function formatSessionTimeRemaining(): string {
   const remaining = getSessionTimeRemaining();
 
   if (remaining === 0) {
@@ -193,7 +193,7 @@ export function formatSessionTimeRemaining(): string {
  * Call this in server components/actions to validate session is still active.
  * Returns true if session is valid, false if timed out.
  */
-export function validateSessionTimeout(lastActivityCookie: string | undefined): {
+function validateSessionTimeout(lastActivityCookie: string | undefined): {
   valid: boolean;
   message?: string;
 } {

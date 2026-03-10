@@ -20,7 +20,7 @@ interface Video {
   player_id: string;
 }
 
-export interface VideoShowcaseProps {
+interface VideoShowcaseProps {
   playerId: string;
   maxVideos?: number;
   showViewAll?: boolean;

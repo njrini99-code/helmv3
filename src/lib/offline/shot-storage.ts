@@ -21,7 +21,7 @@ import type { Json } from '@/lib/types/database.types';
 
 export type SyncStatus = 'pending' | 'syncing' | 'synced' | 'failed';
 
-export interface OfflineMetadata {
+interface OfflineMetadata {
   _offline_id: string;
   _sync_status: SyncStatus;
   _created_offline: string; // ISO timestamp
@@ -98,7 +98,7 @@ export interface SyncResult {
   errors: string[];
 }
 
-export interface OfflineStats {
+interface OfflineStats {
   pendingRounds: number;
   pendingHoles: number;
   pendingShots: number;
@@ -140,7 +140,7 @@ let dbInitPromise: Promise<IDBDatabase> | null = null;
 /**
  * Generate a unique offline ID
  */
-export function generateOfflineId(): string {
+function generateOfflineId(): string {
   const timestamp = Date.now().toString(36);
   const randomPart = Math.random().toString(36).substring(2, 11);
   return `off_${timestamp}_${randomPart}`;
@@ -149,7 +149,7 @@ export function generateOfflineId(): string {
 /**
  * Open or create the IndexedDB database with all stores
  */
-export async function openShotDatabase(): Promise<IDBDatabase> {
+async function openShotDatabase(): Promise<IDBDatabase> {
   // Return existing instance if available and connection is still open
   if (dbInstance) {
     try {
@@ -255,7 +255,7 @@ export async function openShotDatabase(): Promise<IDBDatabase> {
 /**
  * Close the database connection
  */
-export function closeShotDatabase(): void {
+function closeShotDatabase(): void {
   if (dbInstance) {
     dbInstance.close();
     dbInstance = null;
@@ -270,7 +270,7 @@ export function closeShotDatabase(): void {
 /**
  * Save a shot to offline storage
  */
-export async function saveOfflineShot(
+async function saveOfflineShot(
   shotData: Omit<OfflineShot, keyof OfflineMetadata> & { round_offline_id: string }
 ): Promise<OfflineShot> {
   const db = await openShotDatabase();
@@ -330,7 +330,7 @@ export async function updateOfflineShot(
 /**
  * Get all offline shots for a round
  */
-export async function getOfflineShotsForRound(roundOfflineId: string): Promise<OfflineShot[]> {
+async function getOfflineShotsForRound(roundOfflineId: string): Promise<OfflineShot[]> {
   const db = await openShotDatabase();
 
   return new Promise((resolve, reject) => {
@@ -358,7 +358,7 @@ export async function getOfflineShotsForRound(roundOfflineId: string): Promise<O
 /**
  * Get all offline shots for a hole
  */
-export async function getOfflineShotsForHole(holeOfflineId: string): Promise<OfflineShot[]> {
+async function getOfflineShotsForHole(holeOfflineId: string): Promise<OfflineShot[]> {
   const db = await openShotDatabase();
 
   return new Promise((resolve, reject) => {
@@ -456,7 +456,7 @@ export async function markShotFailed(offlineId: string, errorMessage: string): P
 /**
  * Delete an offline shot
  */
-export async function deleteOfflineShot(offlineId: string): Promise<void> {
+async function deleteOfflineShot(offlineId: string): Promise<void> {
   const db = await openShotDatabase();
 
   return new Promise((resolve, reject) => {
@@ -476,7 +476,7 @@ export async function deleteOfflineShot(offlineId: string): Promise<void> {
 /**
  * Save a hole to offline storage
  */
-export async function saveOfflineHole(
+async function saveOfflineHole(
   holeData: Omit<OfflineHole, keyof OfflineMetadata> & { round_offline_id: string }
 ): Promise<OfflineHole> {
   const db = await openShotDatabase();
@@ -534,7 +534,7 @@ export async function updateOfflineHole(
 /**
  * Get all offline holes for a round
  */
-export async function getOfflineHolesForRound(roundOfflineId: string): Promise<OfflineHole[]> {
+async function getOfflineHolesForRound(roundOfflineId: string): Promise<OfflineHole[]> {
   const db = await openShotDatabase();
 
   return new Promise((resolve, reject) => {
@@ -634,7 +634,7 @@ export async function markHoleFailed(offlineId: string, errorMessage: string): P
 /**
  * Save a round to offline storage
  */
-export async function saveOfflineRound(
+async function saveOfflineRound(
   roundData: Omit<OfflineRound, keyof OfflineMetadata>
 ): Promise<OfflineRound> {
   const db = await openShotDatabase();
@@ -692,7 +692,7 @@ export async function updateOfflineRound(
 /**
  * Get an offline round by ID
  */
-export async function getOfflineRound(offlineId: string): Promise<OfflineRound | null> {
+async function getOfflineRound(offlineId: string): Promise<OfflineRound | null> {
   const db = await openShotDatabase();
 
   return new Promise((resolve, reject) => {
@@ -708,7 +708,7 @@ export async function getOfflineRound(offlineId: string): Promise<OfflineRound |
 /**
  * Get all offline rounds for a player
  */
-export async function getOfflineRoundsForPlayer(playerId: string): Promise<OfflineRound[]> {
+async function getOfflineRoundsForPlayer(playerId: string): Promise<OfflineRound[]> {
   const db = await openShotDatabase();
 
   return new Promise((resolve, reject) => {
@@ -806,7 +806,7 @@ export async function markRoundFailed(offlineId: string, errorMessage: string): 
 /**
  * Delete an offline round and all its holes and shots
  */
-export async function deleteOfflineRound(offlineId: string): Promise<void> {
+async function deleteOfflineRound(offlineId: string): Promise<void> {
   const db = await openShotDatabase();
 
   return new Promise((resolve, reject) => {
@@ -1058,7 +1058,7 @@ export async function isOfflineStorageAvailable(): Promise<boolean> {
 /**
  * Calculate exponential backoff delay
  */
-export function calculateRetryDelay(retryCount: number): number {
+function calculateRetryDelay(retryCount: number): number {
   const delay = INITIAL_RETRY_DELAY_MS * Math.pow(2, retryCount);
   return Math.min(delay, MAX_RETRY_DELAY_MS);
 }
@@ -1085,15 +1085,3 @@ export function shouldRetry(retryCount: number, lastRetry?: string): boolean {
 // EXPORTS
 // ============================================================================
 
-export {
-  DB_NAME,
-  DB_VERSION,
-  SHOTS_STORE,
-  HOLES_STORE,
-  ROUNDS_STORE,
-  SYNC_META_STORE,
-  INITIAL_RETRY_DELAY_MS,
-  MAX_RETRY_DELAY_MS,
-  MAX_RETRY_COUNT,
-  DATA_EXPIRY_DAYS,
-};

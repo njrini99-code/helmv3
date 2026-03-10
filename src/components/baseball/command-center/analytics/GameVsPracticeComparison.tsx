@@ -333,7 +333,7 @@ function PlayerComparisonRow({
 // MAIN COMPONENT
 // ============================================================================
 
-export function GameVsPracticeComparison({
+function GameVsPracticeComparison({
   players,
   selectedPlayerId: externalSelectedId,
   onPlayerSelect,
@@ -643,7 +643,7 @@ export function GameVsPracticeComparison({
 // SKELETON
 // ============================================================================
 
-export function GameVsPracticeComparisonSkeleton() {
+function GameVsPracticeComparisonSkeleton() {
   return (
     <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl">
       {/* Header skeleton */}

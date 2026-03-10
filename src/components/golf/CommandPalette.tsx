@@ -365,33 +365,3 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
   );
 }
 
-// Trigger button to show in UI
-export function CommandPaletteTrigger() {
-  const [, setOpen] = useState(false);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        setOpen(true);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  return (
-    <button
-      onClick={() => {
-        // Dispatch a keyboard event to open the palette
-        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }));
-      }}
-      aria-label="Search commands"
-      className="flex items-center gap-2 px-3 py-1.5 text-sm text-warm-500 bg-warm-100 hover:bg-warm-200 rounded-lg transition-colors"
-    >
-      <IconSearch size={14} aria-hidden="true" />
-      <span className="hidden sm:inline">Search</span>
-      <kbd className="hidden sm:inline text-xs text-warm-400 ml-2" aria-hidden="true">⌘K</kbd>
-    </button>
-  );
-}

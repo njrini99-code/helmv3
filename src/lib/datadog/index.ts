@@ -83,41 +83,41 @@ async function getLogs() {
 }
 
 // Set user context after login
-export async function setDatadogUser(user: { id: string; email?: string; name?: string }) {
+async function setDatadogUser(user: { id: string; email?: string; name?: string }) {
   const rum = await getRum();
   rum?.setUser({ id: user.id, email: user.email, name: user.name });
 }
 
 // Clear user context on logout
-export async function clearDatadogUser() {
+async function clearDatadogUser() {
   const rum = await getRum();
   rum?.clearUser();
 }
 
 // Log custom actions
-export async function trackAction(name: string, context?: Record<string, unknown>) {
+async function trackAction(name: string, context?: Record<string, unknown>) {
   const rum = await getRum();
   rum?.addAction(name, context);
 }
 
 // Log custom errors
-export async function trackError(error: Error, context?: Record<string, unknown>) {
+async function trackError(error: Error, context?: Record<string, unknown>) {
   const rum = await getRum();
   rum?.addError(error, context);
 }
 
 // Log to Datadog
-export async function logInfo(message: string, context?: Record<string, unknown>) {
+async function logInfo(message: string, context?: Record<string, unknown>) {
   const logs = await getLogs();
   logs?.logger.info(message, context);
 }
 
-export async function logWarn(message: string, context?: Record<string, unknown>) {
+async function logWarn(message: string, context?: Record<string, unknown>) {
   const logs = await getLogs();
   logs?.logger.warn(message, context);
 }
 
-export async function logError(message: string, context?: Record<string, unknown>) {
+async function logError(message: string, context?: Record<string, unknown>) {
   const logs = await getLogs();
   logs?.logger.error(message, context);
 }

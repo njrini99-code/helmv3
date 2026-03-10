@@ -41,7 +41,7 @@ export interface ICalEvent {
   updatedAt?: Date;
 }
 
-export interface ICalCalendar {
+interface ICalCalendar {
   name: string;
   description?: string;
   timezone?: string;
@@ -52,7 +52,7 @@ export interface ICalCalendar {
 
 // CalendarEventRow uses snake_case fields matching database schema
 // Note: golf_events table uses start_time/end_time, not start_date/end_date
-export interface CalendarEventRow {
+interface CalendarEventRow {
   id: string;
   title: string;
   description?: string | null;
@@ -75,7 +75,7 @@ export interface CalendarEventRow {
 /**
  * Generate complete iCal file content
  */
-export function generateICalendar(calendar: ICalCalendar): string {
+function generateICalendar(calendar: ICalCalendar): string {
   const lines: string[] = [];
 
   // Calendar header
@@ -245,7 +245,7 @@ function escapeText(text: string): string {
  * @param timezone - IANA timezone string (e.g., 'America/New_York')
  *                   Defaults to DEFAULT_TIMEZONE if not provided
  */
-export function generateTeamCalendar(
+function generateTeamCalendar(
   teamName: string,
   events: ICalEvent[],
   timezone?: string
@@ -267,7 +267,7 @@ export function generateTeamCalendar(
  * @param events - Array of calendar events
  * @param timezone - IANA timezone string (defaults to DEFAULT_TIMEZONE)
  */
-export function generatePlayerCalendar(
+function generatePlayerCalendar(
   playerName: string,
   events: ICalEvent[],
   timezone?: string

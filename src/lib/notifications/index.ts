@@ -172,7 +172,7 @@ export async function notifyDevPlanAssigned(
 /**
  * Send RSVP reminder for an event
  */
-export async function notifyEventRSVPReminder(
+async function notifyEventRSVPReminder(
   recipientId: string,
   recipientEmail: string,
   eventName: string,

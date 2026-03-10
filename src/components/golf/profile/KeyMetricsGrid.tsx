@@ -186,4 +186,3 @@ export const KeyMetricsGrid = memo(function KeyMetricsGrid({
   );
 });
 
-export default KeyMetricsGrid;

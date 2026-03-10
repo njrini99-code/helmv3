@@ -25,8 +25,6 @@ import {
 import { InsightDrillDownModal } from './InsightDrillDownModal';
 import type { ComposedInsight, MinedPattern, CausalRelationship } from '@/lib/coachhelm/v2/types';
 
-// Also export as V2InsightCard for backwards compatibility
-export { InsightCard as V2InsightCard };
 
 interface InsightCardProps {
   insight: ComposedInsight;

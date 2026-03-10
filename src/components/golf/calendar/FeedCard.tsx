@@ -46,7 +46,7 @@ export interface CalendarFeed {
   last_synced_at?: string | null;
 }
 
-export interface FeedCardProps {
+interface FeedCardProps {
   feed: CalendarFeed;
   onRegenerate: () => Promise<void>;
   onDelete: () => Promise<void>;
@@ -301,62 +301,3 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
   );
 }
 
-/**
- * Compact Feed Card (for lists/grids)
- */
-export function CompactFeedCard({
-  feed,
-  onClick,
-}: {
-  feed: CalendarFeed;
-  onClick?: () => void;
-}) {
-  const config = FEED_TYPE_CONFIGS[feed.type];
-  const Icon = config.icon;
-  const [copied, setCopied] = useState(false);
-
-  async function handleCopy(e: React.MouseEvent) {
-    e.stopPropagation();
-    try {
-      await navigator.clipboard.writeText(feed.url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Copy failed - button remains in default state
-    }
-  }
-
-  return (
-    <div
-      onClick={onClick}
-      className={cn(
-        'flex items-center gap-3 p-3 rounded-lg border border-warm-200',
-        'hover:border-warm-300 hover:bg-warm-50 active:bg-warm-100 transition-all',
-        onClick && 'cursor-pointer'
-      )}
-    >
-      <div className={cn('shrink-0 w-8 h-8 rounded-lg flex items-center justify-center', config.bgClass)}>
-        <Icon className={cn('w-4 h-4', config.colorClass)} />
-      </div>
-
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-warm-900 truncate">{feed.name}</p>
-        <p className="text-xs text-warm-500">{config.label}</p>
-      </div>
-
-      <button
-        type="button"
-        onClick={handleCopy}
-        className={cn(
-          'shrink-0 p-2 rounded-lg transition-colors',
-          copied
-            ? 'bg-primary-100 text-primary-700'
-            : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
-        )}
-        aria-label={copied ? 'URL copied' : 'Copy feed URL'}
-      >
-        {copied ? <Check className="w-3.5 h-3.5" aria-hidden="true" /> : <Copy className="w-3.5 h-3.5" aria-hidden="true" />}
-      </button>
-    </div>
-  );
-}

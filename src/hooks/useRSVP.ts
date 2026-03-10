@@ -231,7 +231,7 @@ export function useRSVP({
 /**
  * Hook specifically for player pending invitations
  */
-export function usePendingInvitations() {
+function usePendingInvitations() {
   return useRSVP();
 }
 

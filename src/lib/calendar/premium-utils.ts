@@ -15,7 +15,7 @@ import type { ReactNode } from 'react';
  * Get cell intensity class based on event count
  * Creates visual rhythm showing busy vs free days
  */
-export function getCellDensityClass(eventCount: number): string {
+function getCellDensityClass(eventCount: number): string {
   if (eventCount === 0) return 'density-0';
   if (eventCount === 1) return 'density-1';
   if (eventCount === 2) return 'density-2';
@@ -30,7 +30,7 @@ interface EventWithStartDate {
 /**
  * Calculate event density for a date
  */
-export function getEventDensity(date: Date, events: EventWithStartDate[]): number {
+function getEventDensity(date: Date, events: EventWithStartDate[]): number {
   return events.filter(event =>
     isSameDay(new Date(event.start_date), date)
   ).length;
@@ -40,7 +40,7 @@ export function getEventDensity(date: Date, events: EventWithStartDate[]): numbe
 // EVENT STYLING
 // ============================================================================
 
-export interface EventStyleConfig {
+interface EventStyleConfig {
   container: string;
   badge: string;
   icon: ReactNode;
@@ -50,7 +50,7 @@ export interface EventStyleConfig {
 /**
  * Get event type styling
  */
-export function getEventTypeClass(eventType: string): string {
+function getEventTypeClass(eventType: string): string {
   const typeMap: Record<string, string> = {
     practice: 'event-type-practice',
     match: 'event-type-match',
@@ -64,7 +64,7 @@ export function getEventTypeClass(eventType: string): string {
 /**
  * Get event status styling
  */
-export function getEventStatusClass(status: string): string {
+function getEventStatusClass(status: string): string {
   const statusMap: Record<string, string> = {
     draft: 'status-draft',
     confirmed: 'status-confirmed',
@@ -104,7 +104,7 @@ export interface RSVPStats {
 /**
  * Calculate RSVP statistics for visualization
  */
-export function calculateRSVPStats(
+function calculateRSVPStats(
   responses: Array<{ status: string }>,
   totalInvited: number
 ): RSVPStats {
@@ -126,7 +126,7 @@ export function calculateRSVPStats(
 /**
  * Get RSVP status color
  */
-export function getRSVPColor(status: string): string {
+function getRSVPColor(status: string): string {
   const colorMap: Record<string, string> = {
     confirmed: 'text-emerald-600 bg-emerald-50 border-emerald-200',
     maybe: 'text-amber-600 bg-amber-50 border-amber-200',
@@ -140,7 +140,7 @@ export function getRSVPColor(status: string): string {
 // AVAILABILITY HEAT MAP
 // ============================================================================
 
-export interface HeatLevel {
+interface HeatLevel {
   level: 0 | 1 | 2 | 3 | 4 | 5;
   className: string;
   percentage: number;
@@ -149,7 +149,7 @@ export interface HeatLevel {
 /**
  * Calculate heat level for availability grid cell
  */
-export function getHeatLevel(
+function getHeatLevel(
   availableCount: number,
   maybeCount: number,
   totalResponses: number
@@ -175,7 +175,7 @@ export function getHeatLevel(
 /**
  * Check if time is before sunrise (pre-dawn tee times)
  */
-export function isPreDawn(time: string, sunriseTime: string = '06:00'): boolean {
+function isPreDawn(time: string, sunriseTime: string = '06:00'): boolean {
   const [hour] = time.split(':').map(Number);
   const [sunriseHour] = sunriseTime.split(':').map(Number);
   if (hour === undefined || sunriseHour === undefined) return false;
@@ -229,7 +229,7 @@ export function getCurrentTimePosition(
 /**
  * Get today's date styling
  */
-export function getTodayClasses(date: Date): string {
+function getTodayClasses(date: Date): string {
   if (!isToday(date)) return '';
   return 'ring-2 ring-emerald-500 ring-offset-2 bg-emerald-50/50';
 }
@@ -237,7 +237,7 @@ export function getTodayClasses(date: Date): string {
 /**
  * Get date label for today/tomorrow
  */
-export function getDateLabel(date: Date): string | null {
+function getDateLabel(date: Date): string | null {
   if (isToday(date)) return 'Today';
   if (isTomorrow(date)) return 'Tomorrow';
   return null;
@@ -247,12 +247,12 @@ export function getDateLabel(date: Date): string | null {
 // URGENCY INDICATORS
 // ============================================================================
 
-export type UrgencyLevel = 'urgent' | 'warning' | 'normal';
+type UrgencyLevel = 'urgent' | 'warning' | 'normal';
 
 /**
  * Determine urgency level based on minutes until deadline
  */
-export function getUrgencyLevel(minutesUntil: number): UrgencyLevel {
+function getUrgencyLevel(minutesUntil: number): UrgencyLevel {
   if (minutesUntil <= 60) return 'urgent';
   if (minutesUntil <= 240) return 'warning';
   return 'normal';
@@ -261,7 +261,7 @@ export function getUrgencyLevel(minutesUntil: number): UrgencyLevel {
 /**
  * Get urgency styling classes
  */
-export function getUrgencyClasses(level: UrgencyLevel): string {
+function getUrgencyClasses(level: UrgencyLevel): string {
   const classMap: Record<UrgencyLevel, string> = {
     urgent: 'bg-rose-50 text-rose-700 border-rose-200',
     warning: 'bg-amber-50 text-amber-700 border-amber-200',
@@ -274,7 +274,7 @@ export function getUrgencyClasses(level: UrgencyLevel): string {
 // ATTENDANCE
 // ============================================================================
 
-export interface AttendanceStats {
+interface AttendanceStats {
   present: number;
   absent: number;
   excused: number;
@@ -285,7 +285,7 @@ export interface AttendanceStats {
 /**
  * Calculate attendance statistics
  */
-export function calculateAttendanceStats(
+function calculateAttendanceStats(
   attendance: Array<{ status: string; is_excused?: boolean }>
 ): AttendanceStats {
   const present = attendance.filter(a => a.status === 'present').length;
@@ -305,7 +305,7 @@ export function calculateAttendanceStats(
 /**
  * Get attendance status color
  */
-export function getAttendanceColor(status: string, isExcused?: boolean): string {
+function getAttendanceColor(status: string, isExcused?: boolean): string {
   if (status === 'present') return 'bg-emerald-500 text-white';
   if (status === 'absent' && isExcused) return 'bg-amber-500 text-white';
   if (status === 'absent') return 'bg-rose-500 text-white';
@@ -319,7 +319,7 @@ export function getAttendanceColor(status: string, isExcused?: boolean): string 
 /**
  * Check if a week is the current week (for visual highlight)
  */
-export function isCurrentWeek(date: Date): boolean {
+function isCurrentWeek(date: Date): boolean {
   const now = new Date();
   const startOfWeek = new Date(now);
   startOfWeek.setDate(now.getDate() - now.getDay());

@@ -49,7 +49,7 @@ export const PIPELINE_STAGES = [
 export type PipelineStageColor = (typeof PIPELINE_STAGES)[number]['color'];
 
 // Helper to get stage info
-export function getStageInfo(stageId: PipelineStage) {
+function getStageInfo(stageId: PipelineStage) {
   return PIPELINE_STAGES.find((s) => s.id === stageId);
 }
 
@@ -63,7 +63,7 @@ export function getNextStage(currentStage: PipelineStage): PipelineStage | null 
 }
 
 // Helper to get previous stage
-export function getPreviousStage(currentStage: PipelineStage): PipelineStage | null {
+function getPreviousStage(currentStage: PipelineStage): PipelineStage | null {
   const currentIndex = PIPELINE_STAGES.findIndex((s) => s.id === currentStage);
   if (currentIndex <= 0) {
     return null;

@@ -139,7 +139,7 @@ export function resetRateLimit(identifier: string): void {
 /**
  * Get rate limit status without incrementing
  */
-export function getRateLimitStatus(
+function getRateLimitStatus(
   identifier: string,
   config: RateLimitConfig
 ): {

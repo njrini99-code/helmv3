@@ -39,7 +39,7 @@ import type { ShotRecord } from '@/lib/types/golf';
 // TYPES
 // ============================================================================
 
-export interface OfflineSyncState {
+interface OfflineSyncState {
   isOnline: boolean;
   isIndexedDBReady: boolean;
   isSyncing: boolean;
@@ -53,7 +53,7 @@ export interface OfflineSyncState {
   syncError: string | null;
 }
 
-export interface OfflineSyncActions {
+interface OfflineSyncActions {
   // Shot operations
   queueShot: (shot: ShotRecord, roundId: string, holeNumber: number) => Promise<string>;
   getQueuedShots: (roundId: string) => Promise<OfflineShot[]>;
@@ -443,4 +443,3 @@ export function useOfflineSync(options: UseOfflineSyncOptions = {}): [OfflineSyn
 // EXPORTS
 // ============================================================================
 
-export type { OfflineShot, OfflineRound };

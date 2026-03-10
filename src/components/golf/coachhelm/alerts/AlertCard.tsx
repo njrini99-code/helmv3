@@ -315,17 +315,3 @@ export function AlertCard({
   );
 }
 
-// Trend indicator component for alert messages
-export function TrendIndicator({ direction }: { direction: 'up' | 'down' }) {
-  return direction === 'up' ? (
-    <span>
-      <IconTrendingUp size={14} className="text-primary-600" />
-      <span className="sr-only">Trending up</span>
-    </span>
-  ) : (
-    <span>
-      <IconTrendingDown size={14} className="text-red-500" />
-      <span className="sr-only">Trending down</span>
-    </span>
-  );
-}

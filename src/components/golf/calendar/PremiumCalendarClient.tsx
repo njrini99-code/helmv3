@@ -47,7 +47,7 @@ export interface TeamMember {
 type CalendarActionResult<T = unknown> = Promise<{ success: boolean; error?: string; data?: T }>;
 
 // Action handler types for different sports - use generic types for flexibility
-export interface CalendarActionHandlers {
+interface CalendarActionHandlers {
   createEvent: (data: unknown) => CalendarActionResult<unknown>;
   updateEvent: (id: string, data: unknown) => CalendarActionResult<unknown>;
   deleteEvent: (id: string) => CalendarActionResult<unknown>;
@@ -60,7 +60,7 @@ const defaultActionHandlers: CalendarActionHandlers = {
   deleteEvent: deleteGolfEvent,
 };
 
-export interface PremiumCalendarClientProps {
+interface PremiumCalendarClientProps {
   initialEvents: CalendarEvent[];
   teamMembers: TeamMember[];
   isCoach?: boolean;

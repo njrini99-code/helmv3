@@ -52,7 +52,7 @@ function dbToReview(row: Record<string, unknown>): RoundReview {
   };
 }
 
-export interface UseRoundReviewResult {
+interface UseRoundReviewResult {
   // Standard review data (always available)
   review: RoundReview | null;
 
@@ -79,9 +79,9 @@ export interface UseRoundReviewResult {
 }
 
 // Backwards compatible type alias
-export type UseRoundReviewV2Result = UseRoundReviewResult;
+type UseRoundReviewV2Result = UseRoundReviewResult;
 
-export function useRoundReview(roundId: string | null, isCoach?: boolean): UseRoundReviewResult {
+function useRoundReview(roundId: string | null, isCoach?: boolean): UseRoundReviewResult {
   const [review, setReview] = useState<RoundReview | null>(null);
   const [ruleBasedContent, setRuleBasedContent] = useState<RoundReviewContent | null>(null);
   const [intelligentReview, setIntelligentReview] = useState<IntelligentRoundReview | null>(null);

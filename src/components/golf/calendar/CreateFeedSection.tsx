@@ -25,7 +25,7 @@ import { Calendar, Users, Trophy, Globe, Sparkles } from 'lucide-react';
 import { type FeedType } from './CalendarFeedManager';
 import '@/styles/calendar-tokens.css';
 
-export interface CreateFeedSectionProps {
+interface CreateFeedSectionProps {
   onCreate: (type: FeedType, name: string) => Promise<void>;
   onCancel: () => void;
   loading?: boolean;
@@ -279,38 +279,3 @@ export function CreateFeedSection({
   );
 }
 
-/**
- * Quick Create Feed Button (inline variant)
- */
-export function QuickCreateFeed({
-  onSelect,
-}: {
-  onSelect: (type: FeedType) => void;
-}) {
-  return (
-    <div className="pills-scroll pb-2">
-      {FEED_TYPE_OPTIONS.map((option) => {
-        const Icon = option.icon;
-        return (
-          <button
-            key={option.type}
-            type="button"
-            onClick={() => onSelect(option.type)}
-            className={cn(
-              'shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg',
-              'border-2 transition-all active:scale-95',
-              option.bgClass,
-              option.borderClass,
-              'hover:shadow-md'
-            )}
-          >
-            <Icon className={cn('w-4 h-4', option.colorClass)} />
-            <span className={cn('text-sm font-medium', option.colorClass)}>
-              {option.label}
-            </span>
-          </button>
-        );
-      })}
-    </div>
-  );
-}

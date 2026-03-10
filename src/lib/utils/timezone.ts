@@ -2,17 +2,6 @@
  * Timezone utilities for displaying dates/times in a team's timezone.
  */
 
-/** Format an ISO date string using team timezone with custom options. */
-export function formatInTeamTz(
-  iso: string,
-  tz: string,
-  opts?: Intl.DateTimeFormatOptions
-): string {
-  return new Intl.DateTimeFormat('en-US', { timeZone: tz, ...opts }).format(
-    new Date(iso)
-  );
-}
-
 /** Get the start and end of "today" in the given timezone as local ISO strings. */
 export function getTodayRangeForTz(tz: string): { start: string; end: string } {
   const now = new Date();

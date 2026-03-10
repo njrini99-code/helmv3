@@ -9,7 +9,7 @@ import { useSidebarSafe } from '@/contexts/sidebar-context';
 
 export type CalendarView = 'day' | 'week' | 'month';
 
-export interface CalendarHeaderProps {
+interface CalendarHeaderProps {
   view: CalendarView;
   onViewChange: (view: CalendarView) => void;
   currentDate: Date;

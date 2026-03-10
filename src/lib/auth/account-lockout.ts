@@ -10,7 +10,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 const MAX_FAILED_ATTEMPTS = 10;
 const LOCKOUT_DURATION_MS = 30 * 60 * 1000; // 30 minutes
 
-export type LoginAttemptResult = {
+type LoginAttemptResult = {
   locked: boolean;
   attempts: number;
   lockedUntil?: Date;

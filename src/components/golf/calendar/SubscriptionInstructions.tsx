@@ -30,7 +30,7 @@ import {
 } from 'lucide-react';
 import '@/styles/calendar-tokens.css';
 
-export interface SubscriptionInstructionsProps {
+interface SubscriptionInstructionsProps {
   feedUrl: string;
   compact?: boolean;
   className?: string;
@@ -367,40 +367,3 @@ function OutlookInstructions({ compact }: { compact?: boolean }) {
   );
 }
 
-/**
- * Compact Instructions (inline variant)
- */
-export function CompactSubscriptionHelp({ feedUrl }: { feedUrl: string }) {
-  const [copied, setCopied] = useState(false);
-
-  async function handleCopy() {
-    try {
-      await navigator.clipboard.writeText(feedUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Copy failed - button will remain in default state
-    }
-  }
-
-  return (
-    <div className="flex items-center gap-2 p-2 rounded-lg bg-warm-50">
-      <ExternalLink className="w-4 h-4 text-warm-400 shrink-0" />
-      <p className="text-xs text-warm-600 flex-1">
-        Add to Calendar → From URL → Paste link
-      </p>
-      <button
-        type="button"
-        onClick={handleCopy}
-        className={cn(
-          'shrink-0 px-2 py-1 rounded text-xs font-medium transition-colors',
-          copied
-            ? 'bg-primary-100 text-primary-700'
-            : 'bg-white text-warm-600 hover:bg-warm-100 active:bg-warm-200'
-        )}
-      >
-        {copied ? 'Copied!' : 'Copy URL'}
-      </button>
-    </div>
-  );
-}

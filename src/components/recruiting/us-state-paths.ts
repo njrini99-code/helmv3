@@ -1,7 +1,7 @@
 // Auto-generated US state SVG paths using Albers USA projection
 // Generated from US Census Bureau TopoJSON data
 
-export interface StatePath {
+interface StatePath {
   name: string;
   d: string;
 }

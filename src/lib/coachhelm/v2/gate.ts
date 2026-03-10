@@ -28,7 +28,7 @@ interface TeamCoachHelmSettingsRow {
  *
  * @returns Whether CoachHelm V2 is enabled globally
  */
-export function isCoachHelmEnabled(): boolean {
+function isCoachHelmEnabled(): boolean {
   // Could be controlled by environment variable or feature flag
   const envFlag = process.env.NEXT_PUBLIC_COACHHELM_ENABLED;
   return envFlag !== 'false'; // Enabled by default unless explicitly disabled
@@ -40,7 +40,7 @@ export function isCoachHelmEnabled(): boolean {
  * @param userId - The user's UUID (from users.id / auth.uid)
  * @returns Settings or null if not found
  */
-export async function getCoachHelmSettings(
+async function getCoachHelmSettings(
   userId: string
 ): Promise<CoachHelmSettings | null> {
   const supabase = await createClient();
@@ -78,7 +78,7 @@ export async function getCoachHelmSettings(
  * @param teamId - The team's UUID
  * @returns Whether team has CoachHelm enabled
  */
-export async function getTeamCoachHelmSettings(
+async function getTeamCoachHelmSettings(
   teamId: string
 ): Promise<{ enabled: boolean; disabledReason: string | null } | null> {
   const supabase = await createClient();
@@ -282,7 +282,7 @@ export async function isCoachHelmEnabledForPlayer(
  *
  * @param userId - The user's UUID (from auth)
  */
-export async function enableCoachHelm(userId: string): Promise<boolean> {
+async function enableCoachHelm(userId: string): Promise<boolean> {
   const supabase = await createClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -301,7 +301,7 @@ export async function enableCoachHelm(userId: string): Promise<boolean> {
  * @param userId - The user's UUID (from auth)
  * @param reason - Optional reason for disabling
  */
-export async function disableCoachHelm(
+async function disableCoachHelm(
   userId: string,
   reason?: string
 ): Promise<boolean> {
@@ -324,7 +324,7 @@ export async function disableCoachHelm(
  *
  * @param teamId - The team's UUID
  */
-export async function enableTeamCoachHelm(teamId: string): Promise<boolean> {
+async function enableTeamCoachHelm(teamId: string): Promise<boolean> {
   const supabase = await createClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -347,7 +347,7 @@ export async function enableTeamCoachHelm(teamId: string): Promise<boolean> {
  * @param disabledBy - The user who disabled it
  * @param reason - Optional reason for disabling
  */
-export async function disableTeamCoachHelm(
+async function disableTeamCoachHelm(
   teamId: string,
   disabledBy: string,
   reason?: string

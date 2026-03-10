@@ -37,7 +37,7 @@ export interface ConflictResult {
   suggestedTimes: Array<{ start: Date; end: Date }>;
 }
 
-export interface ConflictCheckOptions {
+interface ConflictCheckOptions {
   /** When editing an event, exclude it from conflict detection */
   excludeEventId?: string;
   /** Number of suggested alternative times to return */
@@ -171,7 +171,7 @@ export async function checkEventConflicts(
  * Quick check if a specific user has a conflict at a proposed time
  * Useful for real-time validation in forms
  */
-export async function checkUserConflict(
+async function checkUserConflict(
   userId: string,
   proposedStart: Date,
   proposedEnd: Date,
@@ -200,7 +200,7 @@ export async function checkUserConflict(
  * Batch check conflicts for multiple potential attendees
  * Returns a map of playerId -> conflict status
  */
-export async function batchCheckConflicts(
+async function batchCheckConflicts(
   proposedStart: Date,
   proposedEnd: Date,
   playerIds: string[],
@@ -261,7 +261,7 @@ function isSameTimeSlot(a: TimeSlot, b: TimeSlot): boolean {
 /**
  * Format conflict message for display
  */
-export function formatConflictMessage(conflict: ConflictResult['conflicts'][0]): string {
+function formatConflictMessage(conflict: ConflictResult['conflicts'][0]): string {
   const eventType = conflict.conflictingEvent.type === 'class' ? 'class' : 'event';
   return `${conflict.userName} has a ${eventType} (${conflict.conflictingEvent.title}) at this time`;
 }
@@ -287,7 +287,7 @@ export function formatSuggestedTime(slot: TimeSlot): string {
 /**
  * Get conflict severity level based on number of conflicts
  */
-export function getConflictSeverity(
+function getConflictSeverity(
   conflictCount: number,
   totalAttendees: number
 ): 'none' | 'low' | 'medium' | 'high' {
@@ -303,7 +303,7 @@ export function getConflictSeverity(
 /**
  * Group conflicts by type (event vs class)
  */
-export function groupConflictsByType(conflicts: ConflictResult['conflicts']) {
+function groupConflictsByType(conflicts: ConflictResult['conflicts']) {
   return {
     events: conflicts.filter(c => c.conflictingEvent.type === 'event'),
     classes: conflicts.filter(c => c.conflictingEvent.type === 'class'),

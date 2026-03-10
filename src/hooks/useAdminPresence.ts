@@ -27,7 +27,7 @@ export interface AdminPresenceInfo {
   presence_ref: string;
 }
 
-export interface UseAdminPresenceOptions {
+interface UseAdminPresenceOptions {
   /** Channel name for presence */
   channelName?: string;
   /** How often to sync presence state */

@@ -302,4 +302,3 @@ export function QualifierBracket({
   );
 }
 
-export default QualifierBracket;

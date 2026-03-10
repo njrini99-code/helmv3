@@ -18,7 +18,7 @@ export interface BusyPeriod {
   ownerType?: 'coach' | 'player';
 }
 
-export interface AvailabilityDayViewProps {
+interface AvailabilityDayViewProps {
   date: Date;
   coachBusyPeriods: BusyPeriod[]; // Coach's blocked time
   playerBusyPeriods: BusyPeriod[]; // Selected player's blocked time

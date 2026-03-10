@@ -72,7 +72,7 @@ export interface SyncConflict {
   fieldDifferences: SyncFieldDifference[];
 }
 
-export interface SyncFieldDifference {
+interface SyncFieldDifference {
   field: string;
   label: string;
   localValue: unknown;
@@ -82,7 +82,7 @@ export interface SyncFieldDifference {
 /**
  * Result of manual conflict resolution
  */
-export interface ManualConflictResolution {
+interface ManualConflictResolution {
   offlineId: string;
   resolution: 'local' | 'server' | 'merge';
   mergedData?: Record<string, unknown>;
@@ -96,7 +96,7 @@ export interface SyncProgress {
   percentComplete: number;
 }
 
-export interface SyncEngineConfig {
+interface SyncEngineConfig {
   /** Auto-sync interval in milliseconds (default: 30000 = 30s) */
   autoSyncInterval: number;
   /** Whether to sync immediately when online status changes (default: true) */
@@ -115,7 +115,7 @@ export interface SyncEngineConfig {
   enableManualConflictResolution?: boolean;
 }
 
-export interface SyncEngineState {
+interface SyncEngineState {
   isOnline: boolean;
   isSyncing: boolean;
   /** Pending conflicts awaiting manual resolution */
@@ -133,7 +133,7 @@ export interface SyncEngineState {
   currentProgress: SyncProgress | null;
 }
 
-export type ConflictResolution = 'server_wins' | 'client_wins' | 'merge';
+type ConflictResolution = 'server_wins' | 'client_wins' | 'merge';
 
 // ============================================================================
 // SYNC ENGINE CLASS
@@ -1022,7 +1022,7 @@ export function getSyncEngine(config?: Partial<SyncEngineConfig>): SyncEngine {
 /**
  * Reset the sync engine (useful for testing)
  */
-export function resetSyncEngine(): void {
+function resetSyncEngine(): void {
   if (syncEngineInstance) {
     syncEngineInstance.destroy();
     syncEngineInstance = null;

@@ -81,7 +81,7 @@ function firstOrNull<T>(value: MaybeArray<T>): T | null {
  * Get RSVP summary for an event
  * Shows attendance status breakdown and attendee list
  */
-export async function getEventRSVPSummary(
+async function getEventRSVPSummary(
   eventId: string,
   supabase: SupabaseClient
 ): Promise<RSVPSummary> {
@@ -271,7 +271,7 @@ export async function notifyEventUpdate(
 /**
  * Cancel an event and notify all attendees
  */
-export async function cancelEventAndNotify(
+async function cancelEventAndNotify(
   eventId: string,
   supabase: SupabaseClient,
   reason?: string
@@ -398,7 +398,7 @@ export async function updateRSVP(
  * Batch update RSVPs for multiple players
  * Useful for "accept all" or "decline all" scenarios
  */
-export async function batchUpdateRSVPs(
+async function batchUpdateRSVPs(
   updates: Array<{ eventId: string; playerId: string; status: RSVPStatus }>,
   supabase: SupabaseClient
 ): Promise<void> {
@@ -460,7 +460,7 @@ export async function getPlayerPendingInvitations(
  * Get all upcoming events for a player (any status)
  * Includes events they've RSVP'd to
  */
-export async function getPlayerUpcomingEvents(
+async function getPlayerUpcomingEvents(
   playerId: string,
   supabase: SupabaseClient
 ): Promise<EventInvitation[]> {
@@ -509,7 +509,7 @@ export async function getPlayerUpcomingEvents(
  * Send RSVP reminder to players who haven't responded
  * Typically called by a scheduled job before the deadline
  */
-export async function sendRSVPReminders(
+async function sendRSVPReminders(
   eventId: string,
   supabase: SupabaseClient
 ): Promise<number> {
@@ -591,7 +591,7 @@ function formatEventDate(event: EventDateInput): string {
 /**
  * Check if RSVP deadline has passed
  */
-export function isRSVPDeadlinePassed(rsvpDeadline: string | null): boolean {
+function isRSVPDeadlinePassed(rsvpDeadline: string | null): boolean {
   if (!rsvpDeadline) return false;
   return new Date(rsvpDeadline) < new Date();
 }
@@ -599,7 +599,7 @@ export function isRSVPDeadlinePassed(rsvpDeadline: string | null): boolean {
 /**
  * Get RSVP status color for UI
  */
-export function getRSVPStatusColor(status: RSVPStatus): {
+function getRSVPStatusColor(status: RSVPStatus): {
   bg: string;
   text: string;
   border: string;
@@ -636,7 +636,7 @@ export function getRSVPStatusColor(status: RSVPStatus): {
 /**
  * Get RSVP status label
  */
-export function getRSVPStatusLabel(status: RSVPStatus): string {
+function getRSVPStatusLabel(status: RSVPStatus): string {
   switch (status) {
     case 'accepted':
       return 'Going';

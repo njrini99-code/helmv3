@@ -94,7 +94,7 @@ interface AnimatedListProps {
   staggerDelay?: number;
 }
 
-export function AnimatedList({ children, className, staggerDelay = 0.04 }: AnimatedListProps) {
+function AnimatedList({ children, className, staggerDelay = 0.04 }: AnimatedListProps) {
   const prefersReducedMotion = useReducedMotion();
 
   if (prefersReducedMotion) {

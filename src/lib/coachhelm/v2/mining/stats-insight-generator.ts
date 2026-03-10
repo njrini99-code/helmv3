@@ -130,7 +130,7 @@ interface EvidenceMetric {
 /**
  * Historical stats snapshot for trend analysis
  */
-export interface HistoricalStats {
+interface HistoricalStats {
   periodStart: Date;
   periodEnd: Date;
   stats: Partial<GolfStats>;
@@ -139,7 +139,7 @@ export interface HistoricalStats {
 /**
  * Team stats aggregation for comparison
  */
-export interface TeamStatsAggregate {
+interface TeamStatsAggregate {
   teamId: string;
   playerStats: Map<string, Partial<GolfStats>>;
   aggregates: {

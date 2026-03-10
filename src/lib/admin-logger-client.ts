@@ -13,7 +13,7 @@ import type { AdminEventType, AdminEventSeverity } from './admin-logger';
 // TYPES
 // ============================================
 
-export interface ClientEventInput {
+interface ClientEventInput {
   eventType: AdminEventType;
   title: string;
   severity?: AdminEventSeverity;
@@ -90,7 +90,7 @@ async function sendToAPI(event: ClientEventInput & { browserInfo: BrowserInfo })
 /**
  * Log an event from the client
  */
-export async function logClientEvent(input: ClientEventInput): Promise<boolean> {
+async function logClientEvent(input: ClientEventInput): Promise<boolean> {
   const browserInfo = getBrowserInfo();
   const url = input.url ?? window.location.href;
   
@@ -108,7 +108,7 @@ export async function logClientEvent(input: ClientEventInput): Promise<boolean> 
 /**
  * Log a client-side error
  */
-export async function logClientError(
+async function logClientError(
   error: Error | unknown,
   context: {
     title?: string;
@@ -135,7 +135,7 @@ export async function logClientError(
 /**
  * Log a critical client-side error
  */
-export async function logCriticalClientError(
+async function logCriticalClientError(
   error: Error | unknown,
   context: {
     title?: string;
@@ -152,7 +152,7 @@ export async function logCriticalClientError(
 /**
  * Log feature usage from the client
  */
-export async function logClientFeatureUse(
+async function logClientFeatureUse(
   featureName: string,
   metadata?: Record<string, unknown>
 ): Promise<boolean> {
@@ -279,7 +279,7 @@ export function setupGlobalErrorHandler() {
  * Log error from a React Error Boundary
  * Use in componentDidCatch or error boundary component
  */
-export async function logReactError(
+async function logReactError(
   error: Error,
   errorInfo: { componentStack?: string }
 ): Promise<boolean> {
@@ -300,7 +300,7 @@ export async function logReactError(
 /**
  * Log slow page load
  */
-export async function logSlowPageLoad(
+async function logSlowPageLoad(
   loadTimeMs: number,
   metadata?: Record<string, unknown>
 ): Promise<boolean> {

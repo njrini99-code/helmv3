@@ -71,7 +71,7 @@ export async function cached<T>(
 /**
  * Invalidate cache by key
  */
-export async function invalidate(key: string): Promise<void> {
+async function invalidate(key: string): Promise<void> {
   const client = getRedis();
   if (!client) return;
 
@@ -85,7 +85,7 @@ export async function invalidate(key: string): Promise<void> {
 /**
  * Invalidate multiple keys by pattern
  */
-export async function invalidatePattern(pattern: string): Promise<void> {
+async function invalidatePattern(pattern: string): Promise<void> {
   const client = getRedis();
   if (!client) return;
 
@@ -146,7 +146,7 @@ export const golfCache = {
 // BASEBALL CACHE HELPERS
 // ============================================================================
 
-export const baseballCache = {
+const baseballCache = {
   // Player discovery - filtered results
   discover: {
     key: (filters: string) => `baseball:discover:${filters}`,
@@ -205,7 +205,7 @@ export const invalidateGolf = {
     invalidatePattern(`golf:*:${teamId}*`),
 };
 
-export const invalidateBaseball = {
+const invalidateBaseball = {
   watchlist: (coachId: string) =>
     invalidate(baseballCache.watchlist.key(coachId)),
 
@@ -216,4 +216,3 @@ export const invalidateBaseball = {
     invalidatePattern(`baseball:discover:*`),
 };
 
-export { TTL };

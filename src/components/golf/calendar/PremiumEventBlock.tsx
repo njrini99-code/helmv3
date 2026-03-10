@@ -24,7 +24,7 @@ import {
   XCircle,
 } from 'lucide-react';
 
-export interface PremiumEventBlockProps {
+interface PremiumEventBlockProps {
   event: {
     id: string;
     title: string;

@@ -29,7 +29,7 @@ export const PLAYER_COLORS = [
   { bg: '#06b6d4', light: 'rgba(6, 182, 212, 0.15)', border: 'rgba(6, 182, 212, 0.4)', name: 'Cyan' },
 ];
 
-export interface CalendarAvatarSidebarProps {
+interface CalendarAvatarSidebarProps {
   teamMembers: TeamMember[];
   selectedPlayerIds: string[]; // Multi-selection
   onPlayerSelect: (playerIds: string[]) => void;

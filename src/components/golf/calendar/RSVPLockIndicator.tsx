@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils';
 import { Lock, Clock, AlertTriangle } from 'lucide-react';
 import { differenceInMinutes, differenceInHours } from 'date-fns';
 
-export interface RSVPLockIndicatorProps {
+interface RSVPLockIndicatorProps {
   lockTime: string; // ISO datetime when RSVP locks
   className?: string;
   compact?: boolean;
@@ -234,40 +234,3 @@ export function InlineRSVPLock({
   );
 }
 
-/**
- * Badge variant (minimal)
- */
-export function RSVPLockBadge({ lockTime }: Pick<RSVPLockIndicatorProps, 'lockTime'>) {
-  const countdown = calculateCountdown(lockTime);
-
-  if (countdown.isLocked) {
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-warm-100 text-warm-600 text-xs font-medium">
-        <Lock className="w-3 h-3" />
-        Closed
-      </span>
-    );
-  }
-
-  const isUrgent = countdown.minutesRemaining <= 60;
-  const isWarning = countdown.minutesRemaining <= 240;
-
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium',
-        isUrgent && 'bg-rose-100 text-rose-700',
-        isUrgent && countdown.minutesRemaining <= 10 && 'animate-pulse',
-        isWarning && !isUrgent && 'bg-amber-100 text-amber-700',
-        !isUrgent && !isWarning && 'bg-warm-100 text-warm-600'
-      )}
-    >
-      <Clock className="w-3 h-3" />
-      {countdown.minutesRemaining < 60
-        ? `${countdown.minutesRemaining}m`
-        : countdown.minutesRemaining < 1440
-        ? `${Math.floor(countdown.minutesRemaining / 60)}h`
-        : `${Math.floor(countdown.minutesRemaining / 1440)}d`}
-    </span>
-  );
-}

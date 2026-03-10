@@ -6,11 +6,6 @@
 
 import type { ExtractedFeatures } from '../types';
 
-export { extractTemporalFeatures } from './temporal';
-export { extractSequenceFeatures } from './sequence';
-export { extractContextualFeatures } from './contextual';
-
-// Re-export for convenience
 import { extractTemporalFeatures } from './temporal';
 import { extractSequenceFeatures } from './sequence';
 import { extractContextualFeatures } from './contextual';
