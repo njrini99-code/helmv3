@@ -407,13 +407,14 @@ export async function getStatsSummary(
     };
   }
 
-  // Fetch scrambling data from golf_holes for these rounds
+  // Fetch scrambling data from golf_holes — only missed-GIR holes count as scramble attempts
   const roundIds = filteredRounds.map(r => r.id);
   const { data: holesWithScrambling } = await supabase
     .from('golf_holes')
     .select('up_and_down')
     .in('round_id', roundIds)
-    .not('up_and_down', 'is', null);
+    .not('up_and_down', 'is', null)
+    .eq('gir', false);
 
   let scramblingAttempts = 0;
   let scramblingMade = 0;
@@ -1040,7 +1041,12 @@ export async function getTeamComparison(
     .select('id, first_name, last_name')
     .in('id', playerIds);
 
-  // Get all rounds for team members
+  // Get rounds for team members — bounded to current season (last 12 months)
+  // to prevent unbounded queries on teams with years of historical data
+  const seasonStart = new Date();
+  seasonStart.setFullYear(seasonStart.getFullYear() - 1);
+  const seasonStartDate = seasonStart.toISOString().split('T')[0]!;
+
   const { data: roundsData } = await supabase
     .from('golf_rounds')
     .select(`
@@ -1057,7 +1063,8 @@ export async function getTeamComparison(
     `)
     .in('player_id', playerIds)
     .eq('status', 'completed')
-    .not('total_score', 'is', null);
+    .not('total_score', 'is', null)
+    .gte('round_date', seasonStartDate);
 
   if (!roundsData || roundsData.length === 0 || !playersData) {
     return {
@@ -1068,13 +1075,14 @@ export async function getTeamComparison(
     };
   }
 
-  // Fetch scrambling data from golf_holes for all team rounds
+  // Fetch scrambling data from golf_holes — only missed-GIR holes count as scramble attempts
   const teamRoundIds = roundsData.map(r => r.id);
   const { data: teamScramblingData } = await supabase
     .from('golf_holes')
     .select('round_id, up_and_down')
     .in('round_id', teamRoundIds)
-    .not('up_and_down', 'is', null);
+    .not('up_and_down', 'is', null)
+    .eq('gir', false);
 
   // Build a map of round_id -> player_id for scrambling aggregation
   const roundToPlayer = new Map<string, string>();
@@ -1131,10 +1139,15 @@ export async function getTeamComparison(
       stats.roundCount++;
       stats.normalizedScores.push(Math.round(round.total_score * (18 / hp)));
     }
-    if (round.total_gir !== null) stats.girs.push(round.total_gir);
-    if (round.total_gir_possible !== null) stats.girOpps.push(round.total_gir_possible);
-    if (round.total_fairways_hit !== null) stats.fairways.push(round.total_fairways_hit);
-    if (round.total_fairways !== null) stats.fairwayOpps.push(round.total_fairways);
+    // Only push GIR/fairway pairs together to prevent array misalignment
+    if (round.total_gir !== null && round.total_gir_possible !== null) {
+      stats.girs.push(round.total_gir);
+      stats.girOpps.push(round.total_gir_possible);
+    }
+    if (round.total_fairways_hit !== null && round.total_fairways !== null) {
+      stats.fairways.push(round.total_fairways_hit);
+      stats.fairwayOpps.push(round.total_fairways);
+    }
     if (round.total_putts !== null) {
       stats.totalPutts += round.total_putts;
       stats.totalPuttsHoles += hp;

@@ -198,6 +198,7 @@ export async function refreshStatsCacheAction(
             .select('id')
             .eq('team_id', team.id)
             .eq('player_id', targetPlayerId)
+            .eq('status', 'active')
             .single();
 
           if (!membership) {
@@ -473,6 +474,12 @@ export async function getPlayerStatsDirectAction(
         return { success: false, error: 'Player profile not found' };
       }
       targetPlayerId = player.id;
+    } else {
+      // Verify the caller owns this player or is their coach
+      const authorized = await verifyPlayerOwnershipOrCoach(supabase, user.id, targetPlayerId);
+      if (!authorized) {
+        return { success: false, error: 'Not authorized to view this player\'s stats' };
+      }
     }
 
     // Get all completed rounds

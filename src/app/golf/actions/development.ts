@@ -80,10 +80,11 @@ export async function createFocusArea(
         .select('id')
         .eq('team_id', orgTeam.id)
         .eq('player_id', data.player_id)
+        .eq('status', 'active')
         .maybeSingle();
 
       if (!membership) {
-        return { success: false, error: 'Player is not on your team' };
+        return { success: false, error: 'Player is not an active member on your team' };
       }
     }
   }

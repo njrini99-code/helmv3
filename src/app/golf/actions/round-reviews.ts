@@ -539,9 +539,9 @@ export async function generateRoundReview(
       }
 
       // 8. Revalidate paths
-      revalidatePath('/golf/rounds');
-      revalidatePath(`/golf/rounds/${roundId}`);
-      revalidatePath('/golf/reviews');
+      revalidatePath('/golf/dashboard/rounds');
+      revalidatePath(`/golf/dashboard/rounds/${roundId}/review`);
+      revalidatePath('/golf/dashboard');
 
       return {
         success: true,
@@ -636,6 +636,10 @@ export async function getReviewByRoundId(roundId: string): Promise<{
   review?: GolfRoundReview;
   error?: string;
 }> {
+  if (!isValidUuid(roundId)) {
+    return { success: false, error: 'Invalid round ID' };
+  }
+
   const supabase = await createClient();
 
   try {
@@ -673,6 +677,10 @@ export async function saveCoachFeedback(
   feedback: CoachFeedbackInput,
   approve: boolean = false
 ): Promise<{ success: boolean; error?: string }> {
+  if (!isValidUuid(reviewId)) {
+    return { success: false, error: 'Invalid review ID' };
+  }
+
   const supabase = await createClient();
 
   try {
@@ -776,9 +784,13 @@ export async function saveCoachFeedback(
  */
 export async function shareReviewWithPlayer(
   reviewId: string,
-   
+
   _includeCoachNotes: boolean = true
 ): Promise<{ success: boolean; error?: string }> {
+  if (!isValidUuid(reviewId)) {
+    return { success: false, error: 'Invalid review ID' };
+  }
+
   const supabase = await createClient();
 
   try {
@@ -820,7 +832,6 @@ export async function shareReviewWithPlayer(
     const { error: updateError } = await supabase
       .from('golf_round_reviews')
       .update({
-        shared_with_player: true,
         shared_at: new Date().toISOString(),
         patterns_detected: updatedExtData as Json,
       })
@@ -858,10 +869,41 @@ export async function getTeamReviews(
   total?: number;
   error?: string;
 }> {
+  if (!isValidUuid(teamId)) {
+    return { success: false, error: 'Invalid team ID' };
+  }
+
   const supabase = await createClient();
   const { limit = 20, offset = 0 } = options;
 
   try {
+    // Verify caller is a coach on this team
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const { data: coach } = await supabase
+      .from('golf_coaches')
+      .select('id, organization_id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (!coach?.organization_id) {
+      return { success: false, error: 'Only coaches can view team reviews' };
+    }
+
+    const { data: team } = await supabase
+      .from('golf_teams')
+      .select('id')
+      .eq('id', teamId)
+      .eq('organization_id', coach.organization_id)
+      .maybeSingle();
+
+    if (!team) {
+      return { success: false, error: 'Team not found or not authorized' };
+    }
+
     const { data: reviews, error, count } = await supabase
       .from('golf_round_reviews')
       .select(`
@@ -1154,17 +1196,27 @@ export async function addPlayerFeedback(
  * Retry failed review generation
  */
 export async function retryReviewGeneration(reviewId: string): Promise<GenerateReviewResponse> {
+  if (!isValidUuid(reviewId)) {
+    return { success: false, error: 'Invalid review ID' };
+  }
+
   const supabase = await createClient();
 
   try {
     const { data: review, error } = await supabase
       .from('golf_round_reviews')
-      .select('round_id, patterns_detected')
+      .select('round_id, player_id, patterns_detected')
       .eq('id', reviewId)
       .single();
 
     if (error || !review) {
       return { success: false, error: 'Review not found' };
+    }
+
+    // Verify the caller owns this review or is a coach
+    const access = await verifyReviewAccess(supabase, review.player_id, 'player_or_coach');
+    if (!access.authorized) {
+      return { success: false, error: 'Not authorized to retry this review' };
     }
 
     const extData = review.patterns_detected as ReviewExtendedData | null;
@@ -1457,6 +1509,10 @@ export async function acknowledgeReview(
   reviewId: string,
   acknowledgement?: string
 ): Promise<{ success: boolean; error?: string }> {
+  if (!isValidUuid(reviewId)) {
+    return { success: false, error: 'Invalid review ID' };
+  }
+
   const supabase = await createClient();
 
   try {
@@ -1479,7 +1535,7 @@ export async function acknowledgeReview(
     // Verify the review belongs to this player
     const { data: review } = await supabase
       .from('golf_round_reviews')
-      .select('player_id')
+      .select('player_id, patterns_detected')
       .eq('id', reviewId)
       .single();
 
@@ -1488,14 +1544,18 @@ export async function acknowledgeReview(
     }
 
     // Build update object - only include acknowledgement if provided
-    const updateData: Record<string, string> = {
+    const updateData: Record<string, unknown> = {
       player_acknowledged_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
 
-    // Store acknowledgement text in a notes field if provided
+    // Store acknowledgement text in patterns_detected JSONB (not coach_feedback_text which is coach-only)
     if (acknowledgement) {
-      updateData.coach_feedback_text = acknowledgement;
+      const existingExt = (review as unknown as { patterns_detected: Record<string, unknown> | null }).patterns_detected;
+      updateData.patterns_detected = {
+        ...(typeof existingExt === 'object' && existingExt !== null ? existingExt : {}),
+        player_acknowledgement: acknowledgement,
+      };
     }
 
     const { error } = await supabase

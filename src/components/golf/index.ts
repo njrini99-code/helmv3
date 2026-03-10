@@ -8,7 +8,4 @@ export { KeyboardShortcutHint } from './KeyboardShortcutHint';
 
 // Offline support
 export { OfflineIndicator } from './OfflineIndicator';
-export { default as ShotTrackingWithOffline } from './ShotTrackingWithOffline';
-export { OfflineSyncStatus } from './OfflineSyncStatus';
 export { OfflineWarningBanner } from './OfflineWarningBanner';
-export { OfflineProvider, useOffline } from './OfflineProvider';

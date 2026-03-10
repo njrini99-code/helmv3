@@ -10,6 +10,3 @@ export type { } from './ReviewInsightCard';
 export { FocusAreaCard } from './FocusAreaCard';
 export type { FocusArea, ProgressNote } from './FocusAreaCard';
 
-export { RoundReviewEditor } from './RoundReviewEditor';
-
-export { RoundReviewPlayerView } from './RoundReviewPlayerView';

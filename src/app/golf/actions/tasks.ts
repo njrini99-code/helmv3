@@ -134,12 +134,13 @@ export async function completeTask(
       }
     } else {
       // If no assignment exists but player is on the team, create one and mark complete
-      // Verify player is on the same team
+      // Verify player is an active member on the same team
       const { data: membership } = await supabase
         .from('golf_team_members')
         .select('id')
         .eq('player_id', player.id)
         .eq('team_id', task.team_id)
+        .eq('status', 'active')
         .single();
 
       if (!membership) {
@@ -1100,11 +1101,12 @@ export async function createTaskFromTemplate(
     let playerIds = assignToPlayerIds || [];
 
     if (playerIds.length === 0 && template.default_assignee_type === 'all_players') {
-      // Get all team players
+      // Get all active team players
       const { data: teamMembers } = await supabase
         .from('golf_team_members')
         .select('player_id')
-        .eq('team_id', teamId);
+        .eq('team_id', teamId)
+        .eq('status', 'active');
 
       playerIds = (teamMembers || []).map(tm => tm.player_id);
     }

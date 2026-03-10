@@ -608,11 +608,12 @@ export async function getInsightFilterOptions(
       return { success: false, error: 'Team not found' };
     }
 
-    // Get players on the team
+    // Get active players on the team
     const { data: teamMembers } = await supabase
       .from('golf_team_members')
       .select('player_id')
-      .eq('team_id', team.id);
+      .eq('team_id', team.id)
+      .eq('status', 'active');
 
     const playerIds = (teamMembers || []).map((m) => m.player_id);
 

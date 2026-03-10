@@ -75,12 +75,13 @@ export async function acknowledgeAnnouncement(
       return { success: false, error: 'Announcement not found' };
     }
 
-    // Verify player is on the same team (via golf_team_members)
+    // Verify player is an active member on the same team (via golf_team_members)
     const { data: membership } = await supabase
       .from('golf_team_members')
       .select('id')
       .eq('player_id', player.id)
       .eq('team_id', announcement.team_id)
+      .eq('status', 'active')
       .single();
 
     if (!membership) {

@@ -202,11 +202,12 @@ export async function getTeamPatterns(
       return { success: false, error: 'No team assigned' };
     }
 
-    // Get team player IDs
+    // Get active team player IDs
     const { data: teamMembers } = await supabase
       .from('golf_team_members')
       .select('player_id')
-      .eq('team_id', teamId);
+      .eq('team_id', teamId)
+      .eq('status', 'active');
 
     const playerIds = (teamMembers || []).map(m => m.player_id);
     if (playerIds.length === 0) {
@@ -702,11 +703,12 @@ export async function getPatternStats(): Promise<{
       return { success: false, error: 'No team assigned' };
     }
 
-    // Get team player IDs
+    // Get active team player IDs
     const { data: teamMembers } = await supabase
       .from('golf_team_members')
       .select('player_id')
-      .eq('team_id', teamId);
+      .eq('team_id', teamId)
+      .eq('status', 'active');
 
     const playerIds = (teamMembers || []).map(m => m.player_id);
     if (playerIds.length === 0) {

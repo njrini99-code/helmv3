@@ -19,7 +19,6 @@ import {
 } from '@/app/golf/actions/player-profile-stats';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { KeyMetricsGrid } from './KeyMetricsGrid';
-import ShotDispersionChart from '@/components/golf/stats/ShotDispersionChart';
 import {
   IconChevronDown,
   IconTrendingUp,
@@ -541,14 +540,6 @@ export const PlayerStatsSection = memo(function PlayerStatsSection({
       {/* Stats Content (when loaded) */}
       {!loading && stats && stats.holesPlayed > 0 && (
         <>
-          {/* Spray Charts Section */}
-          {stats.fairwayOpportunities > 0 && (
-            <div>
-              <h3 className="text-base font-semibold text-warm-900 mb-3">Shot Dispersion</h3>
-              <ShotDispersionChart stats={stats} />
-            </div>
-          )}
-
           {/* Trends Section */}
           {rounds.length >= 2 && selectedRoundId === 'overall' && (
             <div>

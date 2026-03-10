@@ -219,7 +219,7 @@ interface HoleParRow {
   score: number | null;
   putts: number | null;
   fairway_hit: boolean | null;
-  green_in_regulation: boolean | null;
+  gir: boolean | null;
 }
 
 // Shot row from golf_shots table
@@ -288,7 +288,7 @@ function buildHoleBreakdowns(shots: ShotRow[], round: RoundData, holePars?: Hole
       const scoreToPar = score - par;
       const puttCount = knownHole.putts ?? 2;
       const fairwayHit = par >= 4 ? (knownHole.fairway_hit ?? null) : null;
-      const gir = knownHole.green_in_regulation ?? false;
+      const gir = knownHole.gir ?? false;
       holes.push({
         hole: h, par, score, scoreToPar,
         putts: puttCount, fairwayHit, gir,
@@ -1137,6 +1137,12 @@ export async function generateAndStoreRoundReview(
       return { success: false, error: 'Not authenticated' };
     }
 
+    // Verify the caller owns this player or is their coach
+    const access = await verifyReviewAccess(supabase, playerId, 'player_or_coach');
+    if (!access.authorized) {
+      return { success: false, error: access.error || 'Not authorized to generate review for this player' };
+    }
+
     const { data: round, error: roundError } = await supabase
       .from('golf_rounds')
       .select('id, player_id, course_name, round_date, total_score, score_to_par, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible, status')
@@ -1164,7 +1170,7 @@ export async function generateAndStoreRoundReview(
     // par values and scores when shot data is incomplete
     const { data: holeRows } = await supabase
       .from('golf_holes')
-      .select('hole_number, par, score, putts, fairway_hit, green_in_regulation')
+      .select('hole_number, par, score, putts, fairway_hit, gir')
       .eq('round_id', roundId)
       .order('hole_number', { ascending: true });
 
@@ -1323,25 +1329,6 @@ export async function generateAndStoreRoundReview(
   }
 }
 
-export async function regenerateRoundReview(roundId: string): Promise<{
-  success: boolean;
-  review?: RoundReviewWithRound;
-  error?: string;
-}> {
-  const supabase = await createClient();
-  try {
-    const { data: round, error: roundError } = await supabase
-      .from('golf_rounds')
-      .select('player_id')
-      .eq('id', roundId)
-      .single();
-    if (roundError || !round) return { success: false, error: 'Round not found' };
-    return generateAndStoreRoundReview(roundId, round.player_id);
-  } catch {
-    return { success: false, error: 'An unexpected error occurred' };
-  }
-}
-
 export async function shareRoundReviewWithCoach(reviewId: string): Promise<{
   success: boolean;
   error?: string;
@@ -1432,7 +1419,8 @@ export async function getStatAverages(
       const { data: teamMembers } = await supabase
         .from('golf_team_members')
         .select('player_id')
-        .eq('team_id', teamId);
+        .eq('team_id', teamId)
+        .eq('status', 'active');
 
       if (teamMembers && teamMembers.length > 0) {
         const playerIds = teamMembers.map(m => m.player_id);

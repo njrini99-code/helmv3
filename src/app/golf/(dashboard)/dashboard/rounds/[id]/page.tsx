@@ -7,7 +7,6 @@ import { IconArrowLeft, IconChartBar } from '@/components/icons';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
 import { RoundReviewViewer } from '@/components/golf/coachhelm/RoundReviewViewer';
-import { ShotByShot } from '@/components/golf/rounds';
 import { PremiumRoundHeader } from '@/components/golf/rounds/PremiumRoundHeader';
 
 export async function generateMetadata({
@@ -205,10 +204,6 @@ export default async function RoundDetailPage({
       <RoundReviewViewer roundId={id} isCoach={isCoach} className="mt-6" />
       </AnimatedItem>
 
-      {/* Shot-by-Shot Review */}
-      <AnimatedItem>
-      <ShotByShot roundId={id} className="mt-6" />
-      </AnimatedItem>
     </AnimatedPage>
   );
 }

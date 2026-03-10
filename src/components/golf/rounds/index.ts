@@ -5,5 +5,4 @@
  * including shot-by-shot breakdowns.
  */
 
-export { ShotByShot } from './ShotByShot';
 export { PremiumRoundHeader } from './PremiumRoundHeader';

@@ -313,11 +313,12 @@ export async function generateAlerts(
   }
 
   try {
-    // Get all players on the team
+    // Get active players on the team
     const { data: teamMembers } = await supabase
       .from('golf_team_members')
       .select('player_id')
-      .eq('team_id', teamId);
+      .eq('team_id', teamId)
+      .eq('status', 'active');
 
     const playerIds = (teamMembers || []).map((m) => m.player_id);
 

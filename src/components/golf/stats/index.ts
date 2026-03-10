@@ -22,10 +22,8 @@ export { DataCompletenessCard, computeCompleteness } from './DataCompletenessCar
 export { default as StatComparisonCard, StatComparisonGrid, PeriodComparisonCard } from './StatComparisonCard';
 
 // Dispersion Charts
-export { PuttingDispersionPremium } from './PuttingDispersionPremium';
 export { ApproachDispersionPremium } from './ApproachDispersionPremium';
 export { DrivingDispersionPremium } from './DrivingDispersionPremium';
-export { ShotDispersionChart } from './ShotDispersionChart';
 
 // Display & Analysis
 export { default as GolfStatsDisplay, Sparkline } from './GolfStatsDisplay';

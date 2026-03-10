@@ -3,7 +3,6 @@
 import { randomInt } from 'crypto';
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
-import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath, updateTag } from 'next/cache';
 import { CACHE_TAGS } from '@/lib/cache/tags';
 import type { HoleStats, ShotRecord } from '@/lib/types/golf';
@@ -21,7 +20,6 @@ import { notifyQualifierCreated } from '@/lib/notifications';
 import type { RSVPStatus } from '@/lib/calendar/rsvp';
 import { invalidateOnRoundComplete } from '@/lib/cache/golf-stats-calculator';
 import { triggerPlayerInsightsAfterRound } from '@/app/golf/actions/insights';
-import { generateRoundReview } from '@/app/golf/actions/round-reviews';
 import { logRoundSubmitted } from '@/lib/admin-logger';
 import { logCritical, logError } from '@/lib/error-monitoring';
 import { deriveLieAfterFromResult, deriveLieAfter } from '@/lib/utils/shot-helpers';
@@ -199,121 +197,9 @@ export interface BlockedTimePeriod {
   updated_at: string | null;
 }
 
-/** In-progress round summary */
-export interface InProgressRound {
-  id: string;
-  course_name: string | null;
-  round_date: string;
-  round_type: string | null;
-  current_hole: number | null;
-  holes_played: number | null;
-  created_at: string | null;
-  updated_at: string | null;
-}
-
-/** Shot data from golf_shots table */
-interface ShotData {
-  id: string;
-  hole_id: string;
-  round_id: string;
-  shot_number: number;
-  shot_type: string;
-  club_type: string | null;
-  result: string;
-  distance_to_hole_before: number | null;
-  distance_to_hole_after: number | null;
-  lie_before: string | null;
-  lie_after: string | null;
-  notes: string | null;
-}
-
-/** Hole data with associated shots */
-interface HoleWithShots {
-  id: string;
-  round_id: string;
-  hole_number: number;
-  par: number;
-  score: number | null;
-  putts: number | null;
-  fairway_hit: boolean | null;
-  penalty_strokes: number | null;
-  gir: boolean | null;
-  sand_save: boolean | null;
-  up_and_down: boolean | null;
-  notes: string | null;
-  shots: ShotData[];
-}
-
-/** Round record from golf_rounds table */
-interface RoundRecord {
-  id: string;
-  player_id: string;
-  team_id: string | null;
-  course_id: string | null;
-  course_name: string;
-  course_city: string | null;
-  course_state: string | null;
-  round_date: string;
-  round_type: string | null;
-  holes_played: number | null;
-  current_hole: number | null;
-  status: string | null;
-  course_rating: number | null;
-  course_slope: number | null;
-  tees_played: string | null;
-  total_score: number | null;
-  score_to_par: number | null;
-  total_putts: number | null;
-  total_fairways_hit: number | null;
-  total_fairways: number | null;
-  total_gir: number | null;
-  total_gir_possible: number | null;
-  front_nine: number | null;
-  back_nine: number | null;
-  notes: string | null;
-  weather_conditions: string | null;
-  created_at: string | null;
-  updated_at: string | null;
-}
-
-/** Full round data for loading in-progress round */
-export interface FullRoundData {
-  round: RoundRecord;
-  holes: HoleWithShots[];
-}
-
 // ============================================================================
 // VALIDATION SCHEMAS (Zod)
 // ============================================================================
-
-const holeSchema = z.object({
-  holeNumber: z.number().int().min(1).max(18),
-  par: z.number().int().min(3).max(6),
-  yardage: z.number().min(0).optional(),
-  score: z.number().int().min(1).max(20),
-  putts: z.number().int().min(0).max(10).optional(),
-  fairwayHit: z.boolean().optional(),
-  greenInRegulation: z.boolean().optional(),
-  penalties: z.number().int().min(0).max(5).optional(),
-  notes: z.string().max(500).optional(),
-});
-
-const golfRoundSchema = z.object({
-  qualifierId: z.string().uuid().optional(),
-  courseName: z.string().min(1).max(200),
-  courseCity: z.string().max(100).optional(),
-  courseState: z.string().length(2).regex(/^[A-Z]{2}$/, 'Must be a valid 2-letter state code (e.g. TX, CA)').optional(),
-  courseRating: z.number().min(60).max(80).optional(),
-  courseSlope: z.number().int().min(55).max(155).optional(),
-  teesPlayed: z.string().max(50).optional(),
-  courseId: z.string().uuid().optional(),
-  roundType: z.enum(['practice', 'tournament', 'qualifier']),
-  roundDate: z.string().refine(d => {
-    const date = new Date(d);
-    return !isNaN(date.getTime()) && date <= new Date();
-  }, 'Round date cannot be in the future'),
-  holes: z.array(holeSchema).min(1).max(18),
-});
 
 const comprehensiveShotSchema = z.object({
   shotNumber: z.number().int().min(1),
@@ -382,9 +268,13 @@ const golfRoundComprehensiveSchema = z.object({
   roundType: z.enum(['practice', 'tournament', 'qualifier']),
   roundDate: z.string().refine(d => {
     const date = new Date(d);
-    return !isNaN(date.getTime()) && date <= new Date();
+    if (isNaN(date.getTime())) return false;
+    // Allow up to 1 day ahead to handle timezone differences (e.g. UTC+14)
+    const tomorrow = new Date();
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+    return date <= tomorrow;
   }, 'Round date cannot be in the future'),
-  holes: z.array(comprehensiveHoleSchema).min(1).max(18),
+  holes: z.array(comprehensiveHoleSchema).min(9).max(18),
   qualifierId: z.string().uuid().optional(),
   qualifierRoundNumber: z.number().int().min(1).optional(),
 });
@@ -544,29 +434,6 @@ async function getPlayerTeamId(
 // INPUT TYPES
 // ============================================================================
 
-interface GolfRoundInput {
-  qualifierId?: string;
-  courseName: string;
-  courseCity?: string;
-  courseState?: string;
-  courseRating?: number;
-  courseSlope?: number;
-  teesPlayed?: string;
-  courseId?: string;
-  roundType: 'practice' | 'tournament' | 'qualifier';
-  roundDate: string;
-  holes: Array<{
-    holeNumber: number;
-    par: number;
-    score: number;
-    putts?: number;
-    fairwayHit?: boolean;
-    greenInRegulation?: boolean;
-    penalties?: number;
-    notes?: string;
-  }>;
-}
-
 // Comprehensive input with full stats
 interface GolfRoundInputComprehensive {
   courseName: string;
@@ -710,18 +577,22 @@ export async function submitGolfRoundComprehensive(
       return { success: false, error: 'Player profile not found' };
     }
 
-    // If updating an existing round, verify ownership (old data cleanup happens AFTER successful insert)
+    // If updating an existing round, verify ownership and that it's not already completed
     if (existingRoundId) {
-      // SECURITY: Verify the round belongs to this player before modifying
+      // SECURITY: Verify the round belongs to this player and is not already completed
       const { data: existingRound, error: verifyError } = await supabase
         .from('golf_rounds')
-        .select('id, player_id')
+        .select('id, player_id, status')
         .eq('id', existingRoundId)
         .eq('player_id', player.id)
         .single();
 
       if (verifyError || !existingRound) {
         return { success: false, error: 'Round not found or you do not have permission to update it.' };
+      }
+
+      if (existingRound.status === 'completed') {
+        return { success: false, error: 'This round has already been submitted. It cannot be submitted again.' };
       }
     }
 
@@ -1012,10 +883,9 @@ export async function submitGolfRoundComprehensive(
     // Fire-and-forget: trigger CoachHelm insight generation for this player
     triggerPlayerInsightsAfterRound(player.id).catch(() => {});
 
-    // Fire-and-forget: start AI round review generation in the background
-    // The review page also has lazy generation as a fallback, but starting
-    // it here means it's likely ready by the time the player navigates there.
-    generateRoundReview(round.id).catch(() => {});
+    // Note: Round review generation is handled lazily by the review page
+    // via generateAndStoreRoundReview (V2). Removed the fire-and-forget V1
+    // call here to prevent race conditions where V1 overwrites V2 content.
 
     // Log round submission event (fire-and-forget)
     logRoundSubmitted(user.id, user.email || '', round.id, {
@@ -1033,284 +903,6 @@ export async function submitGolfRoundComprehensive(
       return { success: false, error: 'Invalid round data. Please check your inputs.' };
     }
     return formatSafeErrorResponse(error);
-  }
-}
-
-/**
- * Submit a golf round with basic stats (legacy support)
- */
-export async function submitGolfRound(data: GolfRoundInput): Promise<ActionResult<{ roundId: string }>> {
-  try {
-    // Validate input
-    const validatedData = golfRoundSchema.parse(data);
-
-    const supabase = await createClient();
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return { success: false, error: 'You must be signed in to submit rounds' };
-    }
-
-    // Get player record
-    const { data: player } = await supabase
-      .from('golf_players')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!player) {
-      return { success: false, error: 'Player profile not found' };
-    }
-
-  // Calculate totals from holes
-  const totalScore = validatedData.holes.reduce((sum, h) => sum + h.score, 0);
-  const totalPar = validatedData.holes.reduce((sum, h) => sum + h.par, 0);
-  const totalToPar = totalScore - totalPar;
-  const totalPutts = validatedData.holes.reduce((sum, h) => sum + (h.putts || 0), 0);
-  const fairwaysHit = validatedData.holes.filter(h => h.fairwayHit && h.par > 3).length;
-  const fairwaysTotal = validatedData.holes.filter(h => h.par > 3).length;
-  // Sanity-check client-supplied GIR: require that shots-to-green (score - putts) <= (par - 2)
-  // This prevents inflated GIR without shot data (legacy path has no individual shots)
-  const greensInReg = validatedData.holes.filter(h => {
-    if (!h.greenInRegulation) return false;
-    const shotsToGreen = h.score - (h.putts ?? 2); // assume 2 putts if not provided
-    return shotsToGreen <= h.par - 2 && shotsToGreen >= 1;
-  }).length;
-
-  // Convert frontend round type to database format
-  const teamId = await getPlayerTeamId(supabase, player.id);
-
-  // Calculate front nine / back nine splits
-  const legacyFrontNineHoles = validatedData.holes.filter(h => h.holeNumber <= 9);
-  const legacyBackNineHoles = validatedData.holes.filter(h => h.holeNumber > 9);
-  const legacyFrontNine = legacyFrontNineHoles.length > 0 ? legacyFrontNineHoles.reduce((sum, h) => sum + h.score, 0) : null;
-  const legacyBackNine = legacyBackNineHoles.length > 0 ? legacyBackNineHoles.reduce((sum, h) => sum + h.score, 0) : null;
-
-  // Insert round
-  const { data: round, error: roundError } = await supabase
-    .from('golf_rounds')
-    .insert({
-      player_id: player.id,
-      course_name: validatedData.courseName,
-      course_city: validatedData.courseCity || null,
-      course_state: validatedData.courseState || null,
-      course_rating: validatedData.courseRating || null,
-      course_slope: validatedData.courseSlope || null,
-      tees_played: validatedData.teesPlayed || null,
-      team_id: teamId,
-      course_id: validatedData.courseId || null,
-      round_type: validatedData.roundType,
-      round_date: validatedData.roundDate,
-      holes_played: validatedData.holes.length,
-      total_score: totalScore,
-      score_to_par: totalToPar,
-      total_putts: totalPutts,
-      total_fairways_hit: fairwaysHit,
-      total_fairways: fairwaysTotal,
-      total_gir: greensInReg,
-      total_gir_possible: validatedData.holes.length,
-      front_nine: legacyFrontNine,
-      back_nine: legacyBackNine,
-      status: 'completed' as const,
-    })
-    .select()
-    .single();
-
-    if (roundError) {
-      return { success: false, error: 'Failed to save round. Please try again.' };
-    }
-
-    // Insert holes
-    const holesData = validatedData.holes.map(hole => ({
-      round_id: round.id,
-      hole_number: hole.holeNumber,
-      par: hole.par,
-      yardage: hole.yardage ?? null,
-      score: hole.score,
-      putts: hole.putts || null,
-      fairway_hit: hole.fairwayHit || null,
-      gir: hole.greenInRegulation || null,
-      penalty_strokes: hole.penalties || null,
-      notes: hole.notes || null,
-      up_and_down: null,
-      sand_save: null,
-    }));
-
-    const { error: holesError } = await supabase
-      .from('golf_holes')
-      .insert(holesData);
-
-    if (holesError) {
-      return { success: false, error: 'Failed to save hole data. Please try again.' };
-    }
-
-    // Invalidate stats cache BEFORE revalidating paths
-    await invalidateOnRoundComplete(player.id, round.id).catch(() => {});
-
-    revalidatePath('/golf/dashboard');
-    revalidatePath('/golf/dashboard/rounds');
-    revalidatePath('/golf/dashboard/stats');
-    updateTag(CACHE_TAGS.DASHBOARD);
-    updateTag(CACHE_TAGS.ROUNDS);
-    updateTag(CACHE_TAGS.STATS);
-
-    // Fire-and-forget: trigger CoachHelm insight generation
-    triggerPlayerInsightsAfterRound(player.id).catch(() => {});
-
-    // Fire-and-forget: start AI round review generation
-    generateRoundReview(round.id).catch(() => {});
-
-    // Log round submission event (fire-and-forget)
-    logRoundSubmitted(user.id, user.email || '', round.id, {
-      courseName: validatedData.courseName,
-      totalScore,
-      scoreToPar: totalToPar,
-      roundType: validatedData.roundType,
-      holesPlayed: validatedData.holes.length,
-    }).catch(() => {});
-
-    return { success: true, data: { roundId: round.id } };
-
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return { success: false, error: 'Invalid round data. Please check your inputs.' };
-    }
-    return formatSafeErrorResponse(error);
-  }
-}
-
-export async function deleteGolfRound(roundId: string): Promise<ActionResult> {
-  try {
-    const supabase = await createClient();
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return { success: false, error: 'You must be signed in to delete rounds' };
-    }
-
-    // Verify ownership and that the round is not completed
-    const { data: round } = await supabase
-      .from('golf_rounds')
-      .select('player_id, status, player:golf_players(user_id)')
-      .eq('id', roundId)
-      .single();
-
-    if (!round || !round.player || round.player.user_id !== user.id) {
-      return { success: false, error: 'Round not found or you do not have permission to delete it' };
-    }
-
-    // Prevent deletion of completed rounds — this is irreversible
-    if (round.status === 'completed') {
-      return { success: false, error: 'Completed rounds cannot be deleted' };
-    }
-
-    // Delete shots first — check for errors
-    const { error: shotsError } = await supabase.from('golf_shots').delete().eq('round_id', roundId);
-    if (shotsError) {
-      return { success: false, error: 'Failed to delete round data. Please try again.' };
-    }
-
-    // Delete holes — check for errors
-    const { error: holesError } = await supabase.from('golf_holes').delete().eq('round_id', roundId);
-    if (holesError) {
-      return { success: false, error: 'Failed to delete round data. Please try again.' };
-    }
-
-    // Delete round — only if still not completed (race condition guard)
-    const { error } = await supabase
-      .from('golf_rounds')
-      .delete()
-      .eq('id', roundId)
-      .neq('status', 'completed');
-
-    if (error) {
-      return { success: false, error: 'Failed to delete round. Please try again.' };
-    }
-
-    revalidatePath('/golf/dashboard');
-    revalidatePath('/golf/dashboard/rounds');
-    revalidatePath('/golf/dashboard/stats');
-    updateTag(CACHE_TAGS.DASHBOARD);
-    updateTag(CACHE_TAGS.ROUNDS);
-    updateTag(CACHE_TAGS.STATS);
-
-    // Invalidate stats cache when round is deleted
-    await invalidateOnRoundComplete(round.player_id, roundId);
-
-    return { success: true, data: undefined };
-
-  } catch {
-    return {
-      success: false,
-      error: 'An unexpected error occurred'
-    };
-  }
-}
-
-/**
- * Verify a golf round (coach only)
- * Sets is_verified=true, verified_by=coach.id, verified_at=NOW()
- */
-export async function verifyRound(roundId: string): Promise<ActionResult<void>> {
-  try {
-    const { supabase, coach } = await requireGolfCoach();
-
-    if (!coach.team_id) {
-      return { success: false, error: 'Coach is not associated with a team' };
-    }
-
-    // Get the round and verify it belongs to a player on the coach's team
-    const { data: round, error: roundError } = await supabase
-      .from('golf_rounds')
-      .select('id, player_id')
-      .eq('id', roundId)
-      .single();
-
-    if (roundError || !round) {
-      return { success: false, error: 'Round not found' };
-    }
-
-    // Verify the player is on the coach's team
-    const { data: membership, error: membershipError } = await supabase
-      .from('golf_team_members')
-      .select('player_id')
-      .eq('player_id', round.player_id)
-      .eq('team_id', coach.team_id)
-      .maybeSingle();
-
-    if (membershipError || !membership) {
-      return { success: false, error: 'You can only verify rounds for players on your team' };
-    }
-
-    // Update the round with verification info
-    // Note: is_verified, verified_by, verified_at columns exist in DB (see migration 021)
-    // but may not be in generated types yet. Using type assertion as workaround.
-    const { error: updateError } = await supabase
-      .from('golf_rounds')
-      .update({
-        is_verified: true,
-        verified_by: coach.id,
-        verified_at: new Date().toISOString(),
-      } as Record<string, unknown>)
-      .eq('id', roundId);
-
-    if (updateError) {
-      return { success: false, error: 'Failed to verify round. Please try again.' };
-    }
-
-    revalidatePath('/golf/dashboard');
-    revalidatePath('/golf/dashboard/rounds');
-    revalidatePath(`/golf/dashboard/rounds/${roundId}`);
-    updateTag(CACHE_TAGS.DASHBOARD);
-    updateTag(CACHE_TAGS.ROUNDS);
-
-    return { success: true, data: undefined };
-
-  } catch (error) {
-    if (error instanceof AuthorizationError) {
-      return { success: false, error: error.message };
-    }
-    return { success: false, error: 'An unexpected error occurred' };
   }
 }
 
@@ -3170,123 +2762,6 @@ export async function savePartialRound(
 }
 
 /**
- * Get all in-progress rounds for current player
- */
-export async function getInProgressRounds(): Promise<ActionResult<InProgressRound[]>> {
-  try {
-    const supabase = await createClient();
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return { success: false, error: 'You must be signed in' };
-    }
-
-    const { data: player } = await supabase
-      .from('golf_players')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!player) {
-      return { success: false, error: 'Player profile not found' };
-    }
-
-    const { data: rounds, error } = await supabase
-      .from('golf_rounds')
-      .select(`
-        id,
-        course_name,
-        round_date,
-        round_type,
-        current_hole,
-        holes_played,
-        created_at,
-        updated_at
-      `)
-      .eq('player_id', player.id)
-      .eq('status', 'in_progress')
-      .order('updated_at', { ascending: false });
-
-    if (error) {
-      return { success: false, error: 'Failed to fetch rounds' };
-    }
-
-    return { success: true, data: rounds || [] };
-
-  } catch {
-    return {
-      success: false,
-      error: 'Failed to fetch rounds. Please try again.'
-    };
-  }
-}
-
-/**
- * Load an in-progress round with all data
- */
-export async function loadInProgressRound(roundId: string): Promise<ActionResult<FullRoundData>> {
-  try {
-    const supabase = await createClient();
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return { success: false, error: 'You must be signed in' };
-    }
-
-    const { data: player } = await supabase
-      .from('golf_players')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!player) {
-      return { success: false, error: 'Player profile not found' };
-    }
-
-    // Get round data
-    const { data: round, error: roundError } = await supabase
-      .from('golf_rounds')
-      .select('*')
-      .eq('id', roundId)
-      .eq('player_id', player.id)
-      .eq('status', 'in_progress')
-      .single();
-
-    if (roundError || !round) {
-      return { success: false, error: 'Round not found' };
-    }
-
-    // Get holes with shots
-    const { data: holes, error: holesError } = await supabase
-      .from('golf_holes')
-      .select(`
-        *,
-        shots:golf_shots(*)
-      `)
-      .eq('round_id', roundId)
-      .order('hole_number', { ascending: true });
-
-    if (holesError) {
-      // Continue with empty holes array - round data is still valid
-    }
-
-    return {
-      success: true,
-      data: {
-        round: round as unknown as RoundRecord,
-        holes: (holes || []) as unknown as HoleWithShots[],
-      }
-    };
-
-  } catch {
-    return {
-      success: false,
-      error: 'Failed to load round. Please try again.'
-    };
-  }
-}
-
-/**
  * Delete an in-progress round
  */
 export async function deleteInProgressRound(roundId: string): Promise<ActionResult<void>> {
@@ -4082,30 +3557,6 @@ export async function touchSavedCourse(courseId: string): Promise<ActionResult<v
   return { success: true, data: undefined };
 }
 
-/**
- * Delete a saved course configuration
- */
-export async function deletePlayerCourse(courseId: string): Promise<ActionResult<void>> {
-  const supabase = await createClient();
-
-  // Get the current user
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return { success: false, error: 'You must be logged in' };
-  }
-
-  // Delete the course (RLS will ensure ownership)
-  const { error } = await supabase.from('golf_player_courses')
-    .delete()
-    .eq('id', courseId);
-
-  if (error) {
-    return { success: false, error: 'Failed to delete course' };
-  }
-
-  return { success: true, data: undefined };
-}
-
 // ============================================================================
 // SHOT MANAGEMENT ACTIONS
 // ============================================================================
@@ -4151,16 +3602,21 @@ export async function deleteShot(shotId: string): Promise<ActionResult<void>> {
       return { success: false, error: 'Shot not found' };
     }
 
-    // Verify the round belongs to this player
+    // Verify the round belongs to this player and is still in progress
     const { data: round, error: roundError } = await supabase
       .from('golf_rounds')
-      .select('id, player_id')
+      .select('id, player_id, status')
       .eq('id', shot.round_id)
       .eq('player_id', player.id)
       .single();
 
     if (roundError || !round) {
       return { success: false, error: 'You do not have permission to delete this shot' };
+    }
+
+    // Prevent score tampering on completed/verified rounds
+    if (round.status !== 'in_progress') {
+      return { success: false, error: 'Cannot delete shots from a completed or verified round' };
     }
 
     // Delete the shot - the database trigger will resequence remaining shots
@@ -4446,6 +3902,11 @@ export async function getRoundShotDetails(
   roundId: string
 ): Promise<ActionResult<RoundShotReviewData>> {
   try {
+    const validId = CommonSchemas.uuid.safeParse(roundId);
+    if (!validId.success) {
+      return { success: false, error: 'Invalid round ID' };
+    }
+
     const supabase = await createClient();
 
     // Verify user is authenticated
@@ -4502,6 +3963,7 @@ export async function getRoundShotDetails(
           .select('id')
           .eq('team_id', orgTeam.id)
           .eq('player_id', round.player_id)
+          .eq('status', 'active')
           .maybeSingle();
         isCoach = !!teamMembership;
       }
@@ -4698,607 +4160,3 @@ export async function getRoundShotDetails(
   }
 }
 
-// ============================================================================
-// SEED TEST SHOT DATA (Development Only)
-// ============================================================================
-
-// ============================================================================
-// REVERT COMPLETED ROUND — Coach-only action to uncomplete a round
-// ============================================================================
-
-/**
- * Revert a completed round back to in_progress so it can be re-edited.
- * Only the team's coach can perform this action.
- *
- * - Changes status from 'completed' to 'in_progress'
- * - Nulls aggregate stat columns (will be recalculated on re-submit)
- * - Deletes the round's entry from golf_round_stats_cache
- * - Refreshes the player's aggregate stats cache
- * - Updates qualifier standings if applicable
- */
-export async function revertCompletedRound(roundId: string): Promise<ActionResult<void>> {
-  try {
-    const supabase = await createClient();
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return { success: false, error: 'You must be signed in' };
-    }
-
-    // Verify the user is a coach
-    const { data: coach } = await supabase
-      .from('golf_coaches')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!coach) {
-      return { success: false, error: 'Only coaches can revert completed rounds' };
-    }
-
-    // Get the round and verify it belongs to a player on this coach's team
-    const { data: round } = await supabase
-      .from('golf_rounds')
-      .select('id, player_id, status, qualifier_id, team_id')
-      .eq('id', roundId)
-      .single();
-
-    if (!round) {
-      return { success: false, error: 'Round not found' };
-    }
-
-    if (round.status !== 'completed') {
-      return { success: false, error: 'Round is not completed — cannot revert' };
-    }
-
-    // Verify the coach owns the team this round belongs to
-    if (round.team_id) {
-      const { data: team } = await supabase
-        .from('golf_teams')
-        .select('id')
-        .eq('id', round.team_id)
-        .eq('coach_id', coach.id)
-        .single();
-
-      if (!team) {
-        return { success: false, error: 'You do not have permission to revert this round' };
-      }
-    } else {
-      // Round has no team_id — verify player is on one of this coach's teams
-      const { data: membership } = await supabase
-        .from('golf_team_members')
-        .select('team_id, golf_teams!inner(coach_id)')
-        .eq('player_id', round.player_id)
-        .eq('status', 'active')
-        .eq('golf_teams.coach_id', coach.id)
-        .limit(1)
-        .maybeSingle();
-
-      if (!membership) {
-        return { success: false, error: 'You do not have permission to revert this round' };
-      }
-    }
-
-    // Revert the round: set status to in_progress, null out aggregate stats, and clear qualifier refs
-    const { error: updateError } = await supabase
-      .from('golf_rounds')
-      .update({
-        status: 'in_progress',
-        total_score: null,
-        score_to_par: null,
-        total_putts: null,
-        total_fairways_hit: null,
-        total_fairways: null,
-        total_gir: null,
-        total_gir_possible: null,
-        total_penalties: null,
-        front_nine: null,
-        back_nine: null,
-        qualifier_id: null,
-        qualifier_round_number: null,
-      })
-      .eq('id', roundId)
-      .eq('status', 'completed');
-
-    if (updateError) {
-      logError(new Error(updateError.message), undefined, { action: 'revertCompletedRound.update' });
-      return { success: false, error: 'Failed to revert round' };
-    }
-
-    // Delete the round's entry from the stats cache
-    await supabase
-      .from('golf_round_stats_cache')
-      .delete()
-      .eq('round_id', roundId);
-
-    // Refresh the player's aggregate stats cache
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any)
-      .rpc('refresh_player_stats_cache', { p_player_id: round.player_id })
-      .catch((err: unknown) => {
-        console.error('[revertCompletedRound] Failed to refresh stats cache:', err);
-      });
-
-    // If this was a qualifier round, update qualifier entry stats
-    if (round.qualifier_id) {
-      await updateQualifierEntryStats(supabase, round.qualifier_id, round.player_id);
-    }
-
-    // Revalidate all relevant paths
-    revalidatePath('/golf/dashboard');
-    revalidatePath('/golf/dashboard/rounds');
-    revalidatePath('/golf/dashboard/stats');
-    revalidatePath(`/golf/dashboard/rounds/${roundId}`);
-    updateTag(CACHE_TAGS.DASHBOARD);
-    updateTag(CACHE_TAGS.ROUNDS);
-    updateTag(CACHE_TAGS.STATS);
-
-    if (round.qualifier_id) {
-      revalidatePath('/golf/dashboard/qualifiers');
-      revalidatePath(`/golf/dashboard/qualifiers/${round.qualifier_id}`);
-    }
-
-    return { success: true, data: undefined };
-
-  } catch (error) {
-    logError(error instanceof Error ? error : new Error(String(error)), undefined, { action: 'revertCompletedRound' });
-    return { success: false, error: 'Failed to revert round. Please try again.' };
-  }
-}
-
-// ============================================================================
-// SEED TEST DATA
-// ============================================================================
-
-/**
- * Seeds shot data for testing. Creates realistic shots for all existing holes.
- * This is for development/testing purposes only.
- */
-export async function seedTestShotData(): Promise<ActionResult<{ shotsCreated: number }>> {
-  try {
-    // Auth gate: admin only
-    const supabase_auth = await createClient();
-    const { data: { user } } = await supabase_auth.auth.getUser();
-    if (!user) return { success: false, error: 'Unauthorized' };
-    const { data: userData } = await supabase_auth.from('users').select('role').eq('id', user.id).single();
-    if (userData?.role !== 'admin') return { success: false, error: 'Admin access required' };
-
-    // Use admin client to bypass RLS for seeding
-    const supabase = createAdminClient();
-
-    // Get all holes that don't have shots yet
-    const { data: holes, error: holesError } = await supabase
-      .from('golf_holes')
-      .select('id, round_id, hole_number, par, score')
-      .order('round_id')
-      .order('hole_number');
-
-    if (holesError) throw holesError;
-    if (!holes || holes.length === 0) {
-      return { success: false, error: 'No holes found to seed shots for' };
-    }
-
-    // Check which holes already have shots
-    const { data: existingShots } = await supabase
-      .from('golf_shots')
-      .select('hole_id')
-      .not('hole_id', 'is', null);
-
-    const holesWithShots = new Set((existingShots || []).map(s => s.hole_id));
-    const holesNeedingShots = holes.filter(h => !holesWithShots.has(h.id));
-
-    if (holesNeedingShots.length === 0) {
-      return { success: true, data: { shotsCreated: 0 } };
-    }
-
-    // Generate shots for each hole
-    const allShots: Array<{
-      hole_id: string;
-      round_id: string;
-      hole_number: number;
-      shot_number: number;
-      shot_type: string;
-      club_type: string;
-      club_used: string;
-      lie_before: string;
-      result: string;
-      distance_to_hole_before: number;
-      distance_unit_before: string;
-      distance_to_hole_after: number;
-      distance_unit_after: string;
-      shot_distance: number;
-      is_penalty: boolean;
-      miss_direction?: string | null;
-      putt_made?: boolean;
-      putt_distance_feet?: number;
-      putt_break?: string;
-    }> = [];
-
-    const clubs = {
-      driver: 'Driver',
-      wood3: '3 Wood',
-      hybrid: 'Hybrid',
-      iron4: '4 Iron',
-      iron5: '5 Iron',
-      iron6: '6 Iron',
-      iron7: '7 Iron',
-      iron8: '8 Iron',
-      iron9: '9 Iron',
-      pw: 'PW',
-      gw: 'GW',
-      sw: 'SW',
-      lw: 'LW',
-      putter: 'Putter',
-    };
-
-    const puttBreaks: Array<'left_to_right' | 'right_to_left' | 'straight' | 'multiple'> =
-      ['left_to_right', 'right_to_left', 'straight', 'multiple'];
-
-    for (const hole of holesNeedingShots) {
-      const par = hole.par || 4;
-      const score = hole.score || par;
-      // Use standard yardages based on par (no yardage column in golf_holes)
-      const yardage = par === 3 ? 165 : par === 4 ? 400 : 530;
-
-      let currentDistance = yardage;
-      let shotNumber = 0;
-      let currentLie: 'tee' | 'fairway' | 'rough' | 'sand' | 'green' | 'other' = 'tee';
-
-      // Generate shots until we're in the hole
-      while (shotNumber < score && currentDistance > 0) {
-        shotNumber++;
-
-        // Capture lie BEFORE this shot (before mutations)
-        const lieBefore = shotNumber === 1 ? 'tee' : currentLie;
-
-        // Determine shot type based on current position
-        let shotType: 'tee' | 'approach' | 'around_green' | 'putting' | 'penalty';
-        let clubType: 'driver' | 'non_driver' | 'putter';
-        let clubUsed: string;
-        let result: 'fairway' | 'rough' | 'sand' | 'green' | 'hole' | 'other' | 'penalty';
-        let shotDistance: number;
-        let distanceAfter: number;
-        const distanceBefore = shotNumber === 1 ? yardage : currentDistance;
-        let distanceUnitBefore: 'yards' | 'feet' = currentLie === 'green' ? 'feet' : 'yards';
-        let distanceUnitAfter: 'yards' | 'feet';
-        const isPenalty = false;
-        let shotMissDirection: string | null = null;
-        let puttMade: boolean | undefined;
-        let puttDistanceFeet: number | undefined;
-        let puttBreak: 'left_to_right' | 'right_to_left' | 'straight' | 'multiple' | undefined;
-
-        if (currentLie === 'green') {
-          // Putting — only when actually on the green
-          shotType = 'putting';
-          clubType = 'putter';
-          clubUsed = clubs.putter;
-          distanceUnitBefore = 'feet';
-          const puttDistBefore = Math.min(currentDistance, 30);
-
-          if (shotNumber === score) {
-            // Final putt - must be holed
-            result = 'hole';
-            distanceAfter = 0;
-            puttMade = true;
-          } else {
-            // Missed putt
-            result = 'green';
-            distanceAfter = Math.max(1, Math.floor(puttDistBefore * (0.1 + Math.random() * 0.3)));
-            puttMade = false;
-            // Generate miss_direction for missed putts
-            const puttMissRoll = Math.random() * 100;
-            if (puttMissRoll < 40) shotMissDirection = 'short';
-            else if (puttMissRoll < 65) shotMissDirection = 'low';
-            else if (puttMissRoll < 85) shotMissDirection = 'high';
-            else if (puttMissRoll < 93) shotMissDirection = 'left';
-            else shotMissDirection = 'right';
-          }
-
-          shotDistance = puttDistBefore - distanceAfter;
-          distanceUnitAfter = 'feet';
-          puttDistanceFeet = puttDistBefore;
-          puttBreak = puttBreaks[Math.floor(Math.random() * puttBreaks.length)];
-          currentDistance = distanceAfter;
-          currentLie = distanceAfter === 0 ? 'green' : 'green';
-
-        } else if (shotNumber === 1) {
-          // Tee shot
-          shotType = 'tee';
-
-          if (par >= 4) {
-            // Use driver or 3 wood
-            clubType = 'driver';
-            clubUsed = Math.random() > 0.3 ? clubs.driver : clubs.wood3;
-            shotDistance = 220 + Math.floor(Math.random() * 60); // 220-280 yards
-          } else {
-            // Par 3 - use iron
-            clubType = 'non_driver';
-            const dist = yardage;
-            if (dist > 200) clubUsed = clubs.hybrid;
-            else if (dist > 180) clubUsed = clubs.iron4;
-            else if (dist > 170) clubUsed = clubs.iron5;
-            else if (dist > 160) clubUsed = clubs.iron6;
-            else if (dist > 150) clubUsed = clubs.iron7;
-            else if (dist > 140) clubUsed = clubs.iron8;
-            else clubUsed = clubs.iron9;
-            shotDistance = dist - Math.floor(Math.random() * 20);
-          }
-
-          distanceAfter = Math.max(0, currentDistance - shotDistance);
-          distanceUnitAfter = distanceAfter <= 30 ? 'feet' : 'yards';
-
-          // Determine result based on randomness
-          // Par 3 tee shots: ~55% GIR rate (realistic for amateur golfers)
-          // Par 4/5 tee shots: hit fairway ~65% of time
-          const hitGreen = par === 3 ? Math.random() > 0.45 : false; // 55% GIR for par 3s
-          const hitFairway = Math.random() > 0.35;
-
-          if (distanceAfter <= 30 && hitGreen) {
-            // Par 3: hit the green
-            result = 'green';
-            currentLie = 'green';
-            distanceUnitAfter = 'feet';
-            distanceAfter = Math.floor(Math.random() * 25) + 5; // 5-30 feet from pin
-          } else if (distanceAfter <= 30 && par === 3) {
-            // Par 3: missed the green (around the green)
-            const missResult = Math.random();
-            if (missResult < 0.5) {
-              result = 'rough';
-              currentLie = 'rough';
-              distanceAfter = Math.floor(Math.random() * 15) + 10; // 10-25 yards from pin
-            } else if (missResult < 0.8) {
-              result = 'sand';
-              currentLie = 'sand';
-              distanceAfter = Math.floor(Math.random() * 10) + 15; // 15-25 yards from pin
-            } else {
-              result = 'fairway';
-              currentLie = 'fairway';
-              distanceAfter = Math.floor(Math.random() * 20) + 10; // 10-30 yards from pin
-            }
-            distanceUnitAfter = 'yards';
-          } else if (hitFairway) {
-            result = 'fairway';
-            currentLie = 'fairway';
-          } else {
-            const missResult = Math.random();
-            if (missResult < 0.6) {
-              result = 'rough';
-              currentLie = 'rough';
-            } else if (missResult < 0.85) {
-              result = 'sand';
-              currentLie = 'sand';
-            } else {
-              result = 'other';
-              currentLie = 'other';
-            }
-          }
-          currentDistance = distanceAfter;
-
-          // Generate miss_direction for tee shots that missed the fairway
-          // Realistic pattern: ~55% left, ~45% right (slight left bias common in golf)
-          if (result !== 'fairway' && result !== 'green' && par >= 4) {
-            shotMissDirection = Math.random() < 0.55 ? 'left' : 'right';
-          }
-
-        } else if (currentDistance > 100) {
-          // Approach shot (far from green)
-          shotType = 'approach';
-          clubType = 'non_driver';
-
-          // Select club based on distance
-          if (currentDistance > 200) clubUsed = clubs.hybrid;
-          else if (currentDistance > 180) clubUsed = clubs.iron4;
-          else if (currentDistance > 170) clubUsed = clubs.iron5;
-          else if (currentDistance > 160) clubUsed = clubs.iron6;
-          else if (currentDistance > 150) clubUsed = clubs.iron7;
-          else if (currentDistance > 140) clubUsed = clubs.iron8;
-          else if (currentDistance > 125) clubUsed = clubs.iron9;
-          else clubUsed = clubs.pw;
-
-          // Calculate shot distance (aim for the green)
-          const targetDist = currentDistance;
-          const variance = Math.random() * 30 - 15; // -15 to +15 yards variance
-          shotDistance = Math.max(50, targetDist - Math.abs(variance));
-          distanceAfter = Math.max(0, currentDistance - shotDistance + Math.floor(Math.random() * 20));
-
-          // Determine result
-          const hitGreen = Math.random() > 0.4;
-          if (hitGreen && distanceAfter <= 30) {
-            result = 'green';
-            currentLie = 'green';
-            distanceUnitAfter = 'feet';
-            distanceAfter = Math.floor(Math.random() * 25) + 5; // 5-30 feet
-          } else {
-            const missResult = Math.random();
-            if (missResult < 0.5) {
-              result = 'rough';
-              currentLie = 'rough';
-              distanceAfter = Math.floor(Math.random() * 20) + 10;
-            } else if (missResult < 0.8) {
-              result = 'fairway';
-              currentLie = 'fairway';
-            } else {
-              result = 'sand';
-              currentLie = 'sand';
-              distanceAfter = Math.floor(Math.random() * 15) + 10;
-            }
-            distanceUnitAfter = 'yards';
-
-            // Generate miss_direction for approach shots that missed the green
-            // Realistic distribution: short 30%, right 20%, left 15%, long 12%, short_right 8%, short_left 7%, long_right 5%, long_left 3%
-            const approachMissRoll = Math.random() * 100;
-            if (approachMissRoll < 30) shotMissDirection = 'short';
-            else if (approachMissRoll < 50) shotMissDirection = 'right';
-            else if (approachMissRoll < 65) shotMissDirection = 'left';
-            else if (approachMissRoll < 77) shotMissDirection = 'long';
-            else if (approachMissRoll < 85) shotMissDirection = 'short_right';
-            else if (approachMissRoll < 92) shotMissDirection = 'short_left';
-            else if (approachMissRoll < 97) shotMissDirection = 'long_right';
-            else shotMissDirection = 'long_left';
-          }
-          currentDistance = distanceAfter;
-
-        } else {
-          // Around the green shot (chip/pitch)
-          shotType = 'around_green';
-          clubType = 'non_driver';
-
-          if (currentLie === 'sand') {
-            clubUsed = clubs.sw;
-          } else if (currentDistance > 50) {
-            clubUsed = clubs.pw;
-          } else if (currentDistance > 30) {
-            clubUsed = clubs.gw;
-          } else {
-            clubUsed = Math.random() > 0.5 ? clubs.sw : clubs.lw;
-          }
-
-          shotDistance = currentDistance;
-
-          // Determine result - around-the-green shots have ~75% success rate
-          // Better from fairway (~85%), worse from sand (~60%)
-          const chipSuccessRate = currentLie === 'sand' ? 0.60 : currentLie === 'rough' ? 0.70 : 0.85;
-          const hitGreenFromChip = Math.random() < chipSuccessRate;
-
-          if (shotNumber === score - 1 && Math.random() > 0.92) {
-            // Chip in! (~8% chance on final chip)
-            result = 'hole';
-            distanceAfter = 0;
-            distanceUnitAfter = 'feet';
-            currentLie = 'green';
-          } else if (hitGreenFromChip) {
-            // Successfully chipped onto green
-            result = 'green';
-            distanceAfter = Math.floor(Math.random() * 15) + 3; // 3-18 feet left
-            distanceUnitAfter = 'feet';
-            currentLie = 'green';
-          } else {
-            // Missed chip - chunk, blade, or poor contact
-            const missResult = Math.random();
-            if (missResult < 0.4) {
-              // Chunked it - still short
-              result = currentLie === 'sand' ? 'sand' : 'rough';
-              currentLie = result as 'rough' | 'sand';
-              distanceAfter = Math.floor(Math.random() * 15) + 5; // 5-20 yards
-              distanceUnitAfter = 'yards';
-              shotMissDirection = Math.random() < 0.5 ? 'short' : (Math.random() < 0.5 ? 'short_left' : 'short_right');
-            } else if (missResult < 0.7) {
-              // Thin/bladed - went too far
-              result = 'rough';
-              currentLie = 'rough';
-              distanceAfter = Math.floor(Math.random() * 20) + 10; // 10-30 yards through green
-              distanceUnitAfter = 'yards';
-              shotMissDirection = Math.random() < 0.5 ? 'long' : (Math.random() < 0.5 ? 'long_left' : 'long_right');
-            } else {
-              // Landed on green but rolled off
-              result = 'rough';
-              currentLie = 'rough';
-              distanceAfter = Math.floor(Math.random() * 10) + 8; // 8-18 yards
-              distanceUnitAfter = 'yards';
-              const rollDir = Math.random();
-              if (rollDir < 0.33) shotMissDirection = 'long';
-              else if (rollDir < 0.66) shotMissDirection = 'right';
-              else shotMissDirection = 'left';
-            }
-          }
-          currentDistance = distanceAfter;
-        }
-
-        // Derive lie_after from result
-        const resultStr = result as string;
-        const lieAfter = resultStr === 'fairway' ? 'fairway'
-          : resultStr === 'rough' ? 'rough'
-          : resultStr === 'sand' ? 'sand'
-          : resultStr === 'green' || resultStr === 'hole' ? 'green'
-          : resultStr === 'penalty' ? 'penalty'
-          : 'rough';
-
-        const shotData: {
-          hole_id: string;
-          round_id: string;
-          hole_number: number;
-          shot_number: number;
-          shot_type: string;
-          club_type: string;
-          club_used: string;
-          lie_before: string;
-          lie_after: string;
-          result: string;
-          distance_to_hole_before: number;
-          distance_unit_before: string;
-          distance_to_hole_after: number;
-          distance_unit_after: string;
-          shot_distance: number;
-          is_penalty: boolean;
-          miss_direction?: string | null;
-          putt_made?: boolean;
-          putt_distance_feet?: number;
-          putt_break?: string;
-        } = {
-          hole_id: hole.id,
-          round_id: hole.round_id,
-          hole_number: hole.hole_number,
-          shot_number: shotNumber,
-          shot_type: shotType,
-          club_type: clubType,
-          club_used: clubUsed,
-          lie_before: lieBefore,
-          lie_after: lieAfter,
-          result: result,
-          distance_to_hole_before: distanceBefore,
-          distance_unit_before: distanceUnitBefore,
-          distance_to_hole_after: distanceAfter,
-          distance_unit_after: distanceUnitAfter,
-          shot_distance: shotDistance,
-          is_penalty: isPenalty,
-        };
-
-        // Add putt-specific fields if putting
-        if (shotType === 'putting') {
-          shotData.putt_made = puttMade;
-          shotData.putt_distance_feet = puttDistanceFeet;
-          shotData.putt_break = puttBreak;
-        }
-
-        // Add miss_direction for any shots that missed their target
-        if (shotMissDirection) {
-          shotData.miss_direction = shotMissDirection;
-        }
-
-        // Fix lie_before for first shot
-        if (shotNumber === 1) {
-          shotData.lie_before = 'tee';
-        }
-
-        allShots.push(shotData);
-      }
-    }
-
-    // Insert shots in batches of 500
-    const batchSize = 500;
-    let totalInserted = 0;
-
-    for (let i = 0; i < allShots.length; i += batchSize) {
-      const batch = allShots.slice(i, i + batchSize);
-      const { error: insertError } = await supabase
-        .from('golf_shots')
-        .insert(batch);
-
-      if (insertError) {
-        throw insertError;
-      }
-      totalInserted += batch.length;
-    }
-
-    revalidatePath('/golf/dashboard');
-    updateTag(CACHE_TAGS.DASHBOARD);
-    updateTag(CACHE_TAGS.ROUNDS);
-
-    return {
-      success: true,
-      data: { shotsCreated: totalInserted },
-    };
-  } catch (error) {
-    return formatSafeErrorResponse(error);
-  }
-}

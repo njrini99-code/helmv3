@@ -57,6 +57,27 @@ export async function getPlayerProfileStats(
     return { success: false, error: 'Unauthorized', stats: null, rounds: [] };
   }
 
+  // Verify the caller owns this player or is their coach
+  const isOwner = await supabase
+    .from('golf_players').select('id').eq('id', playerId).eq('user_id', user.id).maybeSingle();
+  if (!isOwner.data) {
+    const coach = await supabase
+      .from('golf_coaches').select('id, organization_id').eq('user_id', user.id).maybeSingle();
+    if (!coach.data?.organization_id) {
+      return { success: false, error: 'Unauthorized', stats: null, rounds: [] };
+    }
+    const team = await supabase
+      .from('golf_teams').select('id').eq('organization_id', coach.data.organization_id).maybeSingle();
+    if (!team.data) {
+      return { success: false, error: 'Unauthorized', stats: null, rounds: [] };
+    }
+    const membership = await supabase
+      .from('golf_team_members').select('id').eq('team_id', team.data.id).eq('player_id', playerId).eq('status', 'active').maybeSingle();
+    if (!membership.data) {
+      return { success: false, error: 'Unauthorized', stats: null, rounds: [] };
+    }
+  }
+
   try {
     // 1. Get all completed rounds for this player
     const { data: roundsData, error: roundsError } = await supabase
@@ -266,6 +287,27 @@ export async function getPlayerQuickSummary(playerId: string): Promise<QuickSumm
     return { success: false, error: 'Unauthorized' };
   }
 
+  // Verify the caller owns this player or is their coach
+  const isOwner = await supabase
+    .from('golf_players').select('id').eq('id', playerId).eq('user_id', user.id).maybeSingle();
+  if (!isOwner.data) {
+    const coach = await supabase
+      .from('golf_coaches').select('id, organization_id').eq('user_id', user.id).maybeSingle();
+    if (!coach.data?.organization_id) {
+      return { success: false, error: 'Unauthorized' };
+    }
+    const team = await supabase
+      .from('golf_teams').select('id').eq('organization_id', coach.data.organization_id).maybeSingle();
+    if (!team.data) {
+      return { success: false, error: 'Unauthorized' };
+    }
+    const membership = await supabase
+      .from('golf_team_members').select('id').eq('team_id', team.data.id).eq('player_id', playerId).eq('status', 'active').maybeSingle();
+    if (!membership.data) {
+      return { success: false, error: 'Unauthorized' };
+    }
+  }
+
   const { data: roundsData, error } = await supabase
     .from('golf_rounds')
     .select(`
@@ -336,14 +378,14 @@ export async function getPlayerQuickSummary(playerId: string): Promise<QuickSumm
     data: {
       roundsPlayed: rounds.length,
       scoringAverage: totalHoles > 0
-        ? (totalStrokes / totalHoles) * 18
+        ? Math.round((totalStrokes / totalHoles) * 18 * 100) / 100
         : null,
       avgScoreToPar: normalizedToParScores.length > 0
-        ? normalizedToParScores.reduce((a, b) => a + b, 0) / normalizedToParScores.length
+        ? Math.round((normalizedToParScores.reduce((a, b) => a + b, 0) / normalizedToParScores.length) * 100) / 100
         : null,
       bestRound: normalizedScores.length > 0 ? Math.min(...normalizedScores) : null,
-      girPercentage: totalGirOpps > 0 ? (totalGir / totalGirOpps) * 100 : null,
-      fairwayPercentage: totalFairwayOpps > 0 ? (totalFairwaysHit / totalFairwayOpps) * 100 : null,
+      girPercentage: totalGirOpps > 0 ? Math.round((totalGir / totalGirOpps) * 100 * 10) / 10 : null,
+      fairwayPercentage: totalFairwayOpps > 0 ? Math.round((totalFairwaysHit / totalFairwayOpps) * 100 * 10) / 10 : null,
     },
   };
 }

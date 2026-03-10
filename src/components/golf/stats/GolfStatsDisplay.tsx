@@ -6,7 +6,6 @@ import { IconTrendingUp, IconTarget, IconFlag, IconGolf, IconAward, IconChartBar
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { StatisticalStrengthWeakness } from '@/lib/golf/strokes-gained';
 import ProgressStats from './ProgressStats';
-import ShotDispersionChart from './ShotDispersionChart';
 import { tabContentVariants, FormatToggle } from './sections/shared-primitives';
 import type { HoleFormat } from './sections/shared-primitives';
 import {
@@ -239,7 +238,7 @@ export default function GolfStatsDisplay({
           <motion.div key={activeCategory} variants={tabContentVariants} initial="initial" animate="animate" exit="exit" transition={{ type: 'spring', stiffness: 300, damping: 30 }}>
             {activeCategory === 'overview' && <OverviewStats stats={stats} playerName={playerName} playerProfile={playerProfile} trendData={trendData} statisticalStrengths={statisticalStrengths} statisticalWeaknesses={statisticalWeaknesses} holeFormat={holeFormat} />}
             {activeCategory === 'progress' && <ProgressStats stats={stats} rounds={rounds} />}
-            {activeCategory === 'dispersion' && <ShotDispersionChart stats={stats} />}
+            {activeCategory === 'dispersion' && <div className="text-center py-8 text-warm-500">Spray charts coming soon</div>}
             {activeCategory === 'scoring' && <ScoringStats stats={stats} holeFormat={holeFormat} />}
             {activeCategory === 'driving' && <DrivingStats stats={stats} />}
             {activeCategory === 'approach' && <ApproachStats stats={stats} />}

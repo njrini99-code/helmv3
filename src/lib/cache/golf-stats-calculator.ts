@@ -360,11 +360,12 @@ export async function invalidateOnRoundComplete(playerId: string, roundId: strin
 export async function getTeamPlayerStats(teamId: string): Promise<Map<string, PlayerStatsSummary>> {
   const supabase = await createClient();
 
-  // Get all player IDs on team
+  // Get active player IDs on team
   const { data: members } = await supabase
     .from('golf_team_members')
     .select('player_id')
-    .eq('team_id', teamId);
+    .eq('team_id', teamId)
+    .eq('status', 'active');
 
   if (!members || members.length === 0) {
     return new Map();
@@ -396,14 +397,15 @@ export async function getTeamTopPlayers(
 ): Promise<Array<{ playerId: string; name: string; avgScore: number; rounds: number }>> {
   const supabase = await createClient();
 
-  // Get team members with player info
+  // Get active team members with player info
   const { data: members } = await supabase
     .from('golf_team_members')
     .select(`
       player_id,
       golf_players (first_name, last_name)
     `)
-    .eq('team_id', teamId);
+    .eq('team_id', teamId)
+    .eq('status', 'active');
 
   if (!members || members.length === 0) {
     return [];
