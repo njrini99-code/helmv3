@@ -2329,6 +2329,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                       </button>
                       <button
                         onClick={async () => {
+                          if (!pendingFinalStats) return;
                           setShowFinishConfirm(false);
                           await handleRoundSubmit(pendingFinalStats);
                         }}
@@ -2357,8 +2358,8 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
           setError('');
           isSubmittingRef.current = false;
           setStep('tracking');
+          // Always re-show the finish confirm so user can submit again
           if (pendingFinalStats) {
-            setPendingFinalStats(pendingFinalStats);
             setShowFinishConfirm(true);
           }
         }}

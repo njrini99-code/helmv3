@@ -988,6 +988,7 @@ export default function ContinueRoundClient({
                       </button>
                       <button
                         onClick={async () => {
+                          if (!pendingFinalStats) return;
                           setShowFinishConfirm(false);
                           await handleRoundSubmit(pendingFinalStats);
                         }}
@@ -1016,6 +1017,7 @@ export default function ContinueRoundClient({
           setSubmitting(false);
           setError('');
           isSubmittingRef.current = false;
+          // Always re-show the finish confirm so user can submit again
           if (pendingFinalStats) {
             setShowFinishConfirm(true);
           }
