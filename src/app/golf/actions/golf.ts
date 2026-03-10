@@ -252,16 +252,13 @@ const comprehensiveHoleSchema = z.object({
   firstPuttMissDirection: z.string().nullable().optional(),
   holedOutDistance: z.number().nullable().optional(),
   holedOutType: z.string().nullable().optional(),
-}).refine(
-  (hole) => !(hole.score === 1 && (hole.par === 4 || hole.par === 5)),
-  { message: 'A score of 1 on a par 4 or par 5 hole is not allowed.' }
-);
+});
 
 const golfRoundComprehensiveSchema = z.object({
   courseName: z.string().min(1).max(200),
   courseCity: z.string().max(100).optional(),
   courseState: z.string().max(2).optional(),
-  courseRating: z.number().min(60).max(80).optional(),
+  courseRating: z.number().min(50).max(85).optional(),
   courseSlope: z.number().int().min(55).max(155).optional(),
   teesPlayed: z.string().max(50).optional(),
   courseId: z.string().uuid().optional(),
@@ -283,7 +280,7 @@ const partialRoundSchema = z.object({
   courseName: z.string().min(1).max(200),
   courseCity: z.string().max(100).optional(),
   courseState: z.string().max(2).optional(),
-  courseRating: z.number().min(60).max(80).optional().nullable(),
+  courseRating: z.number().min(50).max(85).optional().nullable(),
   courseSlope: z.number().int().min(55).max(155).optional().nullable(),
   teesPlayed: z.string().max(50).optional(),
   courseId: z.string().uuid().optional().nullable(),
@@ -552,7 +549,7 @@ export async function submitGolfRoundComprehensive(
 
     // Reject impossibly low scores
     const validationTotalScore = data.holes.reduce((sum, h) => sum + h.score, 0);
-    if (validationTotalScore < data.holes.length * 2) {
+    if (validationTotalScore < data.holes.length) {
       return { success: false, error: 'Total score appears invalid. Please check your scorecard.' };
     }
     if (data.holes.every(h => h.putts === 0)) {
@@ -855,7 +852,11 @@ export async function submitGolfRoundComprehensive(
 
     // If this is a qualifier round, update the qualifier entry stats
     if (data.qualifierId) {
-      await updateQualifierEntryStats(supabase, data.qualifierId, player.id);
+      try {
+        await updateQualifierEntryStats(supabase, data.qualifierId, player.id);
+      } catch (err) {
+        console.error('[Golf] Failed to update qualifier entry stats:', err);
+      }
     }
 
     // Invalidate stats cache BEFORE revalidating paths so Next.js regeneration
@@ -1162,7 +1163,10 @@ export async function updateGolfEvent(
         ? `${validatedData.startDate}T00:00:00+00:00`
         : buildDateTimeString(validatedData.startDate, validatedData.startTime, tz);
     }
-    if (validatedData.endDate !== undefined || validatedData.endTime !== undefined || isAllDay) {
+    // Only recalculate end_time when an end-related field was explicitly provided.
+    // Previously, `|| isAllDay` caused end_time to be recomputed even when no end
+    // fields changed, collapsing multi-day events to a single day.
+    if (validatedData.endDate !== undefined || validatedData.endTime !== undefined) {
       const endDate = validatedData.endDate || validatedData.startDate;
       if (isAllDay) {
         updateData.end_time = endDate ? `${endDate}T00:00:00+00:00` : null;
@@ -2379,7 +2383,7 @@ export interface PartialRoundData {
 export async function savePartialRound(
   data: PartialRoundData,
   existingRoundId?: string
-): Promise<ActionResult<{ roundId: string }>> {
+): Promise<ActionResult<{ roundId: string; updatedAt?: string }>> {
   try {
     // Validate input with Zod
     const validated = partialRoundSchema.safeParse(data);
@@ -2617,6 +2621,16 @@ export async function savePartialRound(
       }
 
       roundId = existingRoundId;
+
+      // Extract updated_at from RPC result for optimistic locking
+      const rpcUpdatedAt = rpcResult?.updated_at as string | undefined;
+      if (rpcUpdatedAt) {
+        revalidatePath('/golf/dashboard/rounds');
+        updateTag(CACHE_TAGS.DASHBOARD);
+        updateTag(CACHE_TAGS.ROUNDS);
+        updateTag(CACHE_TAGS.STATS);
+        return { success: true, data: { roundId, updatedAt: rpcUpdatedAt } };
+      }
     } else {
       // Check for existing in_progress round to avoid creating duplicates
       const { data: existingRound } = await supabase
@@ -2750,7 +2764,7 @@ export async function savePartialRound(
     updateTag(CACHE_TAGS.ROUNDS);
     updateTag(CACHE_TAGS.STATS);
 
-    return { success: true, data: { roundId } };
+    return { success: true, data: { roundId, updatedAt: undefined as string | undefined } };
 
   } catch (err) {
     logCritical(err instanceof Error ? err : new Error(String(err)), { action: 'savePartialRound' });
@@ -3365,20 +3379,27 @@ export interface SavedCourse {
   createdAt: string;
 }
 
-/** DB row shape for golf_player_courses (not yet in generated types) */
+/** DB row shape for golf_player_courses.
+ *  Extended fields (city, state, rating, slope, tees, holeConfigs) are stored
+ *  as JSON inside the `notes` column because those columns don't exist on the table.
+ */
 interface SavedCourseRow {
   id: string;
   course_name: string;
-  course_city: string | null;
-  course_state: string | null;
-  course_rating: string | null;
-  course_slope: number | null;
-  tees_played: string | null;
-  holes_per_round: number;
-  hole_configs: SavedCourseHoleConfig[];
-  last_used_at: string;
+  notes: string | null;
   last_played_at: string | null;
   created_at: string;
+}
+
+/** Shape of the JSON stored in the notes column */
+interface SavedCourseNotes {
+  city?: string | null;
+  state?: string | null;
+  rating?: number | null;
+  slope?: number | null;
+  tees?: string | null;
+  holesPerRound?: number;
+  holeConfigs?: SavedCourseHoleConfig[];
 }
 
 /** Input for saving a course configuration */
@@ -3428,20 +3449,26 @@ export async function getPlayerSavedCourses(): Promise<ActionResult<SavedCourse[
     return { success: false, error: 'Failed to load saved courses' };
   }
 
-  // Transform to client format
-  const savedCourses: SavedCourse[] = ((courses || []) as SavedCourseRow[]).map((course) => ({
-    id: course.id,
-    courseName: course.course_name,
-    courseCity: course.course_city,
-    courseState: course.course_state,
-    courseRating: course.course_rating ? parseFloat(course.course_rating) : null,
-    courseSlope: course.course_slope,
-    teesPlayed: course.tees_played,
-    holesPerRound: course.holes_per_round ?? 18,
-    holeConfigs: course.hole_configs || [],
-    lastUsedAt: course.last_used_at ?? '',
-    createdAt: course.created_at ?? '',
-  }));
+  // Transform to client format — extended fields are stored in the `notes` JSON column
+  const savedCourses: SavedCourse[] = ((courses || []) as SavedCourseRow[]).map((course) => {
+    let parsed: SavedCourseNotes = {};
+    if (course.notes) {
+      try { parsed = JSON.parse(course.notes) as SavedCourseNotes; } catch { /* ignore */ }
+    }
+    return {
+      id: course.id,
+      courseName: course.course_name,
+      courseCity: parsed.city ?? null,
+      courseState: parsed.state ?? null,
+      courseRating: parsed.rating ?? null,
+      courseSlope: parsed.slope ?? null,
+      teesPlayed: parsed.tees ?? null,
+      holesPerRound: parsed.holesPerRound ?? 18,
+      holeConfigs: parsed.holeConfigs || [],
+      lastUsedAt: course.last_played_at ?? '',
+      createdAt: course.created_at ?? '',
+    };
+  });
 
   return { success: true, data: savedCourses };
 }
@@ -3515,17 +3542,21 @@ export async function savePlayerCourse(input: SaveCourseInput): Promise<ActionRe
   }
 
   const course = result.data as unknown as SavedCourseRow;
+  let parsed: SavedCourseNotes = {};
+  if (course.notes) {
+    try { parsed = JSON.parse(course.notes) as SavedCourseNotes; } catch { /* ignore */ }
+  }
   const savedCourse: SavedCourse = {
     id: course.id,
     courseName: course.course_name,
-    courseCity: course.course_city,
-    courseState: course.course_state,
-    courseRating: course.course_rating ? parseFloat(course.course_rating) : null,
-    courseSlope: course.course_slope,
-    teesPlayed: course.tees_played,
-    holesPerRound: course.holes_per_round ?? 18,
-    holeConfigs: course.hole_configs || [],
-    lastUsedAt: course.last_used_at ?? '',
+    courseCity: parsed.city ?? null,
+    courseState: parsed.state ?? null,
+    courseRating: parsed.rating ?? null,
+    courseSlope: parsed.slope ?? null,
+    teesPlayed: parsed.tees ?? null,
+    holesPerRound: parsed.holesPerRound ?? 18,
+    holeConfigs: parsed.holeConfigs || [],
+    lastUsedAt: course.last_played_at ?? '',
     createdAt: course.created_at ?? '',
   };
 

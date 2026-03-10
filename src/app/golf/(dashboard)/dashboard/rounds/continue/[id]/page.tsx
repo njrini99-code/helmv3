@@ -264,7 +264,7 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
     const holeConfig = {
       number: hole.hole_number,
       par: hole.par,
-      yardage: courseYardageMap.get(hole.hole_number) ?? 0,
+      yardage: courseYardageMap.get(hole.hole_number) ?? hole.yardage ?? 0,
     };
 
     // Re-derive full detailed stats from the shot data

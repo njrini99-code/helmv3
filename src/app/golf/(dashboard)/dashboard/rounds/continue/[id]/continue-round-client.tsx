@@ -9,9 +9,12 @@ import { deleteOfflineRound } from '@/lib/offline/indexed-db';
 import { emergencySave, loadEmergencySave, clearEmergencySave, type EmergencySaveData } from '@/lib/utils/emergency-save';
 
 import { SaveRoundModal } from '@/components/golf/SaveRoundModal';
+import { RoundSubmitOverlay } from '@/components/golf/RoundSubmitOverlay';
 import { useOfflineSync } from '@/hooks/golf/use-offline-sync';
 import { OfflineIndicator } from '@/components/golf/OfflineIndicator';
 import { useToast } from '@/components/ui/toast';
+import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
+import { IconFlag } from '@/components/icons';
 
 type Hole = RoundHole;
 
@@ -84,6 +87,7 @@ export default function ContinueRoundClient({
 
   const [pendingFinalStats, setPendingFinalStats] = useState<HoleStats[] | null>(null);
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);
+  const [completedRoundId, setCompletedRoundId] = useState<string | null>(null);
 
   // Concurrency lock for background server saves
   const serverSaveInProgressRef = useRef(false);
@@ -91,6 +95,8 @@ export default function ContinueRoundClient({
   const pendingServerSaveRef = useRef<{ shots: ShotRecord[]; holeIndex: number; roundData?: any } | null>(null);
   const consecutiveSaveFailuresRef = useRef(0);
   const isSubmittingRef = useRef(false);
+  // Optimistic locking: tracks the last server-side updated_at for conflict detection
+  const lastServerUpdatedAtRef = useRef<string | undefined>(serverDataTimestamp);
   // Track the furthest hole the player has naturally progressed to (for re-edit navigation)
   const activeProgressHoleRef = useRef(startHoleIndex);
   // Ref for stale closure prevention in async saves
@@ -257,6 +263,7 @@ export default function ContinueRoundClient({
         par: hole.par,
         yardage: hole.yardage,
       })),
+      expectedUpdatedAt: lastServerUpdatedAtRef.current,
     };
   }, [completedHoleStats, currentHoleIndex, inProgressShotsByHole, holes, setupData]);
 
@@ -316,6 +323,9 @@ export default function ContinueRoundClient({
         const result = await savePartialRound(saveData, roundId);
         if (result.success) {
           consecutiveSaveFailuresRef.current = 0;
+          if (result.data.updatedAt) lastServerUpdatedAtRef.current = result.data.updatedAt;
+        } else if (result.error === 'conflict') {
+          showToast('This round was updated on another device. Please reload.', 'error');
         } else {
           consecutiveSaveFailuresRef.current++;
           if (consecutiveSaveFailuresRef.current >= 2) {
@@ -338,7 +348,12 @@ export default function ContinueRoundClient({
             serverSaveInProgressRef.current = true;
             try {
               const r = await savePartialRound(pendingData, roundId);
-              if (r.success) consecutiveSaveFailuresRef.current = 0;
+              if (r.success) {
+                consecutiveSaveFailuresRef.current = 0;
+                if (r.data.updatedAt) lastServerUpdatedAtRef.current = r.data.updatedAt;
+              } else if (r.error === 'conflict') {
+                showToast('This round was updated on another device. Please reload.', 'error');
+              }
             } catch { /* non-critical */ } finally {
               serverSaveInProgressRef.current = false;
             }
@@ -469,6 +484,9 @@ export default function ContinueRoundClient({
             );
             if (result.success) {
               consecutiveSaveFailuresRef.current = 0;
+              if (result.data.updatedAt) lastServerUpdatedAtRef.current = result.data.updatedAt;
+            } else if (result.error === 'conflict') {
+              showToast('This round was updated on another device. Please reload.', 'error');
             } else {
               consecutiveSaveFailuresRef.current++;
               if (consecutiveSaveFailuresRef.current >= 2) {
@@ -492,7 +510,12 @@ export default function ContinueRoundClient({
                   serverSaveInProgressRef.current = true;
                   try {
                     const r = await savePartialRound(pending.roundData, roundId);
-                    if (r.success) consecutiveSaveFailuresRef.current = 0;
+                    if (r.success) {
+                      consecutiveSaveFailuresRef.current = 0;
+                      if (r.data.updatedAt) lastServerUpdatedAtRef.current = r.data.updatedAt;
+                    } else if (r.error === 'conflict') {
+                      showToast('This round was updated on another device. Please reload.', 'error');
+                    }
                   } catch { /* non-critical */ } finally {
                     serverSaveInProgressRef.current = false;
                   }
@@ -523,6 +546,8 @@ export default function ContinueRoundClient({
     isSubmittingRef.current = true;
     setSubmitting(true);
     setError('');
+    // Clear any queued auto-save to prevent race conditions during submit
+    pendingServerSaveRef.current = null;
 
     try {
       // Save pre-submit snapshot to localStorage as insurance
@@ -548,8 +573,9 @@ export default function ContinueRoundClient({
             }
           };
           check();
-          // Safety timeout — don't wait forever
-          setTimeout(resolve, 3000);
+          // Extended timeout — must wait for in-flight save to fully complete
+          // to avoid concurrent database transactions
+          setTimeout(resolve, 10000);
         });
       }
 
@@ -580,17 +606,12 @@ export default function ContinueRoundClient({
         // Non-critical — round is already saved
       }
 
-      // Navigate to round detail page for full review
-      const completedRoundId = result.data.roundId || roundId;
-      router.push(`/golf/dashboard/rounds/${completedRoundId}`);
+      // Show success celebration — the overlay auto-navigates to round review
+      setCompletedRoundId(result.data.roundId || roundId);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to submit round');
       isSubmittingRef.current = false;
-      setSubmitting(false);
-      // Re-arm the finish confirmation so "Go Back" returns to it instead of
-      // dumping the user back on hole 18 with no way to retry submission
-      setPendingFinalStats(allHoleStats);
-      setShowFinishConfirm(true);
+      // Stay in submitting state so the overlay shows the error
     }
   };
 
@@ -630,68 +651,11 @@ export default function ContinueRoundClient({
     }
   };
 
-  // ============================================================================
-  // SUBMITTING STATE
-  // ============================================================================
-  if (submitting) {
-    const definedStats = completedHoleStats.filter((h): h is HoleStats => h != null);
-    const totalScore = definedStats.reduce((sum, h) => sum + h.score, 0);
-    const totalPar = definedStats.reduce((sum, h) => sum + h.par, 0);
-    const toPar = totalScore - totalPar;
-
-    return (
-      <div className="min-h-dvh bg-transparent flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto p-8">
-          <div className="flex items-center justify-center gap-2 mx-auto mb-6">
-            <span className="w-3 h-3 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
-            <span className="w-3 h-3 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
-            <span className="w-3 h-3 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
-          </div>
-          <h2 className="text-2xl font-bold text-warm-900 mb-2">
-            Completing Round...
-          </h2>
-          <p className="text-warm-600 mb-4">
-            Score: {totalScore} ({toPar >= 0 ? '+' : ''}{toPar})
-          </p>
-          <p className="text-sm text-warm-500">
-            Calculating your 50+ statistics...
-          </p>
-          {error && (
-            <div className="mt-4">
-              <p className="text-sm text-red-600 mb-3">{error}</p>
-              <div className="flex gap-3 justify-center">
-                <button
-                  onClick={() => {
-                    setSubmitting(false);
-                    setError('');
-                    // Re-show the finish confirmation so the user can retry
-                    if (pendingFinalStats) {
-                      setShowFinishConfirm(true);
-                    }
-                  }}
-                  className="px-4 py-2 bg-warm-100 text-warm-700 rounded-lg text-sm font-medium hover:bg-warm-200 transition-colors"
-                >
-                  Go Back
-                </button>
-                {pendingFinalStats && (
-                  <button
-                    onClick={async () => {
-                      setError('');
-                      isSubmittingRef.current = false;
-                      await handleRoundSubmit(pendingFinalStats);
-                    }}
-                    className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
-                  >
-                    Retry
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
+  // Submitting overlay stats (computed once, used by overlay)
+  const submittingDefinedStats = completedHoleStats.filter((h): h is HoleStats => h != null);
+  const submittingTotalScore = submittingDefinedStats.reduce((sum, h) => sum + h.score, 0);
+  const submittingTotalPar = submittingDefinedStats.reduce((sum, h) => sum + h.par, 0);
+  const submittingToPar = submittingTotalScore - submittingTotalPar;
 
   // ============================================================================
   // TRACKING VIEW
@@ -837,35 +801,218 @@ export default function ContinueRoundClient({
         </div>
       )}
 
-      {/* Finish Round Confirmation */}
-      {showFinishConfirm && pendingFinalStats && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm" onClick={() => setShowFinishConfirm(false)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center">
-            <h3 className="text-lg font-semibold text-warm-900 mb-2">Submit Round?</h3>
-            <p className="text-sm text-warm-500 mb-6">
-              All {holes.length} holes are complete. Submit your round for scoring?
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowFinishConfirm(false)}
-                className="flex-1 py-3 rounded-xl bg-warm-100 text-warm-700 font-medium hover:bg-warm-200 transition-colors"
+      {/* Finish Round — Premium Round Summary */}
+      <LazyMotion features={domAnimation}>
+        <AnimatePresence>
+          {showFinishConfirm && pendingFinalStats && (() => {
+            const fs = pendingFinalStats;
+            const totalScore = fs.reduce((sum, h) => sum + (h?.score ?? 0), 0);
+            const totalPar = fs.reduce((sum, h) => sum + (h?.par ?? 0), 0);
+            const toPar = totalScore - totalPar;
+            const totalPutts = fs.reduce((sum, h) => sum + (h?.putts ?? 0), 0);
+            const fairwaysHit = fs.filter(h => h?.fairwayHit === true).length;
+            const fairwayEligible = fs.filter(h => h?.fairwayHit !== null).length;
+            const girCount = fs.filter(h => h?.greenInRegulation === true).length;
+            const colCount = Math.min(fs.length, 9);
+
+            const ScoreCell = ({ h }: { h: HoleStats }) => {
+              const diff = (h?.score ?? 0) - (h?.par ?? 0);
+              const cls = diff <= -2 ? 'text-primary-700 bg-primary-100 font-bold'
+                : diff === -1 ? 'text-primary-600 bg-primary-50/70 font-semibold'
+                : diff === 0 ? 'text-warm-700 bg-white font-medium'
+                : diff === 1 ? 'text-amber-700 bg-amber-50/70 font-semibold'
+                : 'text-red-600 bg-red-50/70 font-bold';
+              return (
+                <div className={`text-center py-1.5 ${cls}`}>
+                  <span className="text-xs">{h?.score}</span>
+                </div>
+              );
+            };
+
+            const toParLabel = toPar === 0 ? 'E' : `${toPar > 0 ? '+' : ''}${toPar}`;
+
+            return (
+              <m.div
+                key="round-summary-overlay"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="fixed inset-0 z-50 flex items-center justify-center p-4"
               >
-                Review
-              </button>
-              <button
-                onClick={async () => {
-                  setShowFinishConfirm(false);
-                  await handleRoundSubmit(pendingFinalStats);
-                }}
-                className="flex-1 py-3 rounded-xl bg-primary-600 text-white font-medium hover:bg-primary-700 transition-colors"
-              >
-                Submit
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+                <div className="fixed inset-0 bg-warm-900/60 backdrop-blur-md" />
+                <m.div
+                  initial={{ opacity: 0, scale: 0.92, y: 12 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 8 }}
+                  transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                  className="relative glass-prominent rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+                >
+                  {/* Celebration Header */}
+                  <div className="relative overflow-hidden rounded-t-2xl bg-gradient-to-br from-primary-600 via-primary-500 to-primary-700 px-6 pt-6 pb-5 text-center">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.15),transparent_60%)]" />
+                    <m.div
+                      initial={{ opacity: 0, scale: 0.5 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.15, duration: 0.4, type: 'spring', stiffness: 200, damping: 15 }}
+                      className="relative"
+                    >
+                      <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center mx-auto mb-3">
+                        <IconFlag size={24} className="text-white" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-white/90 mb-1">Round Complete</h3>
+                      <div className="flex items-baseline justify-center gap-2">
+                        <m.span
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.25, duration: 0.3 }}
+                          className="text-5xl font-bold text-white tabular-nums"
+                        >
+                          {totalScore}
+                        </m.span>
+                        <m.span
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: 0.35 }}
+                          className={`text-lg font-semibold ${toPar === 0 ? 'text-white/70' : toPar < 0 ? 'text-primary-100' : 'text-red-200'}`}
+                        >
+                          ({toParLabel})
+                        </m.span>
+                      </div>
+                      <p className="text-sm text-white/70 mt-1">{setupData.courseName}</p>
+                    </m.div>
+                  </div>
+
+                  <div className="p-6">
+                    {/* Key Stats */}
+                    <m.div
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2, duration: 0.3 }}
+                      className="grid grid-cols-3 gap-3 mb-5"
+                    >
+                      <div className="text-center p-3 rounded-xl bg-warm-50/80 border border-warm-100">
+                        <p className="text-xl font-bold text-warm-900 tabular-nums">{totalPutts}</p>
+                        <p className="text-xs text-warm-500 font-medium">Putts</p>
+                      </div>
+                      <div className="text-center p-3 rounded-xl bg-warm-50/80 border border-warm-100">
+                        <p className="text-xl font-bold text-warm-900 tabular-nums">{fairwaysHit}/{fairwayEligible}</p>
+                        <p className="text-xs text-warm-500 font-medium">Fairways</p>
+                      </div>
+                      <div className="text-center p-3 rounded-xl bg-warm-50/80 border border-warm-100">
+                        <p className="text-xl font-bold text-warm-900 tabular-nums">{girCount}/{fs.length}</p>
+                        <p className="text-xs text-warm-500 font-medium">GIR</p>
+                      </div>
+                    </m.div>
+
+                    {/* Mini Scorecard */}
+                    <m.div
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3, duration: 0.3 }}
+                      className="mb-6"
+                    >
+                      <p className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-2">Scorecard</p>
+                      <div className="rounded-xl border border-warm-200/60 overflow-x-auto overflow-hidden">
+                        <div className="grid gap-px bg-warm-200/60" style={{ gridTemplateColumns: `repeat(${colCount}, 1fr)` }}>
+                          {fs.slice(0, 9).map((_, i) => (
+                            <div key={`h${i}`} className="bg-warm-50 text-center py-1">
+                              <span className="text-[10px] font-medium text-warm-400">{i + 1}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="grid gap-px bg-warm-200/60" style={{ gridTemplateColumns: `repeat(${colCount}, 1fr)` }}>
+                          {fs.slice(0, 9).map((h, i) => (
+                            <div key={`p${i}`} className="bg-white text-center py-1">
+                              <span className="text-[10px] text-warm-400">{h?.par}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="grid gap-px bg-warm-200/60" style={{ gridTemplateColumns: `repeat(${colCount}, 1fr)` }}>
+                          {fs.slice(0, 9).map((h, i) => (
+                            <ScoreCell key={`s${i}`} h={h} />
+                          ))}
+                        </div>
+                        {fs.length > 9 && (
+                          <>
+                            <div className="h-px bg-warm-300/40" />
+                            <div className="grid gap-px bg-warm-200/60" style={{ gridTemplateColumns: 'repeat(9, 1fr)' }}>
+                              {fs.slice(9, 18).map((_, i) => (
+                                <div key={`h2${i}`} className="bg-warm-50 text-center py-1">
+                                  <span className="text-[10px] font-medium text-warm-400">{i + 10}</span>
+                                </div>
+                              ))}
+                            </div>
+                            <div className="grid gap-px bg-warm-200/60" style={{ gridTemplateColumns: 'repeat(9, 1fr)' }}>
+                              {fs.slice(9, 18).map((h, i) => (
+                                <div key={`p2${i}`} className="bg-white text-center py-1">
+                                  <span className="text-[10px] text-warm-400">{h?.par}</span>
+                                </div>
+                              ))}
+                            </div>
+                            <div className="grid gap-px bg-warm-200/60" style={{ gridTemplateColumns: 'repeat(9, 1fr)' }}>
+                              {fs.slice(9, 18).map((h, i) => (
+                                <ScoreCell key={`s2${i}`} h={h} />
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </m.div>
+
+                    {/* Action Buttons */}
+                    <m.div
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.4, duration: 0.3 }}
+                      className="flex gap-3"
+                    >
+                      <button
+                        onClick={() => setShowFinishConfirm(false)}
+                        className="flex-1 py-3 rounded-xl bg-warm-100 text-warm-700 font-medium hover:bg-warm-200 active:bg-warm-300 transition-colors"
+                      >
+                        Review Holes
+                      </button>
+                      <button
+                        onClick={async () => {
+                          setShowFinishConfirm(false);
+                          await handleRoundSubmit(pendingFinalStats);
+                        }}
+                        className="flex-1 py-3 rounded-xl bg-primary-600 text-white font-medium hover:bg-primary-700 active:bg-primary-800 transition-colors shadow-sm shadow-primary-950/10"
+                      >
+                        Submit Round
+                      </button>
+                    </m.div>
+                  </div>
+                </m.div>
+              </m.div>
+            );
+          })()}
+        </AnimatePresence>
+      </LazyMotion>
+
+      {/* Submit Overlay — shows during submission, success celebration, and errors */}
+      <RoundSubmitOverlay
+        isVisible={submitting}
+        totalScore={submittingTotalScore}
+        toPar={submittingToPar}
+        courseName={setupData.courseName}
+        error={error || undefined}
+        completedRoundId={completedRoundId ?? undefined}
+        onGoBack={() => {
+          setSubmitting(false);
+          setError('');
+          isSubmittingRef.current = false;
+          if (pendingFinalStats) {
+            setShowFinishConfirm(true);
+          }
+        }}
+        onRetry={pendingFinalStats ? () => {
+          setError('');
+          isSubmittingRef.current = false;
+          void handleRoundSubmit(pendingFinalStats);
+        } : undefined}
+      />
 
     </>
   );

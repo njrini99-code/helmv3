@@ -14,6 +14,1249 @@ export type Database = {
   }
   public: {
     Tables: {
+      _deprecated_baseball_academics: {
+        Row: {
+          created_at: string | null
+          credits_attempted: number | null
+          credits_earned: number | null
+          eligibility_status: string | null
+          gpa: number | null
+          id: string
+          notes: string | null
+          player_id: string
+          team_id: string | null
+          term: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          credits_attempted?: number | null
+          credits_earned?: number | null
+          eligibility_status?: string | null
+          gpa?: number | null
+          id?: string
+          notes?: string | null
+          player_id: string
+          team_id?: string | null
+          term?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          credits_attempted?: number | null
+          credits_earned?: number | null
+          eligibility_status?: string | null
+          gpa?: number | null
+          id?: string
+          notes?: string | null
+          player_id?: string
+          team_id?: string | null
+          term?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "baseball_academics_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseball_academics_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      _deprecated_baseball_announcement_documents: {
+        Row: {
+          announcement_id: string
+          document_id: string
+          id: string
+        }
+        Insert: {
+          announcement_id: string
+          document_id: string
+          id?: string
+        }
+        Update: {
+          announcement_id?: string
+          document_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "baseball_announcement_documents_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_announcements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseball_announcement_documents_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      _deprecated_baseball_announcement_tasks: {
+        Row: {
+          announcement_id: string
+          id: string
+          task_id: string
+        }
+        Insert: {
+          announcement_id: string
+          id?: string
+          task_id: string
+        }
+        Update: {
+          announcement_id?: string
+          id?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "baseball_announcement_tasks_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_announcements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseball_announcement_tasks_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      _deprecated_baseball_coach_settings: {
+        Row: {
+          coach_id: string
+          created_at: string | null
+          default_view: string | null
+          email_notifications: boolean | null
+          id: string
+          notify_messages: boolean | null
+          notify_profile_views: boolean | null
+          notify_team_activity: boolean | null
+          push_notifications: boolean | null
+          timezone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          coach_id: string
+          created_at?: string | null
+          default_view?: string | null
+          email_notifications?: boolean | null
+          id?: string
+          notify_messages?: boolean | null
+          notify_profile_views?: boolean | null
+          notify_team_activity?: boolean | null
+          push_notifications?: boolean | null
+          timezone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          coach_id?: string
+          created_at?: string | null
+          default_view?: string | null
+          email_notifications?: boolean | null
+          id?: string
+          notify_messages?: boolean | null
+          notify_profile_views?: boolean | null
+          notify_team_activity?: boolean | null
+          push_notifications?: boolean | null
+          timezone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "baseball_coach_settings_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: true
+            referencedRelation: "baseball_coaches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      _deprecated_baseball_dream_schools: {
+        Row: {
+          created_at: string | null
+          display_on_profile: boolean | null
+          id: string
+          organization_id: string
+          player_id: string
+          rank: number
+        }
+        Insert: {
+          created_at?: string | null
+          display_on_profile?: boolean | null
+          id?: string
+          organization_id: string
+          player_id: string
+          rank: number
+        }
+        Update: {
+          created_at?: string | null
+          display_on_profile?: boolean | null
+          id?: string
+          organization_id?: string
+          player_id?: string
+          rank?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "baseball_dream_schools_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "baseball_dream_schools_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      _deprecated_feature_flags: {
+        Row: {
+          allowed_roles: Json | null
+          allowed_users: Json | null
+          created_at: string | null
+          description: string | null
+          flag_key: string
+          flag_name: string
+          id: string
+          is_enabled: boolean | null
+          metadata: Json | null
+          rollout_percentage: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          allowed_roles?: Json | null
+          allowed_users?: Json | null
+          created_at?: string | null
+          description?: string | null
+          flag_key: string
+          flag_name: string
+          id?: string
+          is_enabled?: boolean | null
+          metadata?: Json | null
+          rollout_percentage?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          allowed_roles?: Json | null
+          allowed_users?: Json | null
+          created_at?: string | null
+          description?: string | null
+          flag_key?: string
+          flag_name?: string
+          id?: string
+          is_enabled?: boolean | null
+          metadata?: Json | null
+          rollout_percentage?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      _deprecated_golf_availability_polls: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          date_options: Json
+          deadline: string | null
+          description: string | null
+          duration_minutes: number | null
+          id: string
+          status: string | null
+          team_id: string
+          time_options: Json | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          date_options?: Json
+          deadline?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          status?: string | null
+          team_id: string
+          time_options?: Json | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          date_options?: Json
+          deadline?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          status?: string | null
+          team_id?: string
+          time_options?: Json | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_availability_polls_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "golf_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_availability_polls_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "golf_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      _deprecated_golf_calendar_sync_log: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          error_message: string | null
+          events_created: number | null
+          events_deleted: number | null
+          events_synced: number | null
+          events_updated: number | null
+          id: string
+          started_at: string | null
+          status: string
+          sync_state_id: string | null
+          sync_type: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          events_created?: number | null
+          events_deleted?: number | null
+          events_synced?: number | null
+          events_updated?: number | null
+          id?: string
+          started_at?: string | null
+          status: string
+          sync_state_id?: string | null
+          sync_type: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          events_created?: number | null
+          events_deleted?: number | null
+          events_synced?: number | null
+          events_updated?: number | null
+          id?: string
+          started_at?: string | null
+          status?: string
+          sync_state_id?: string | null
+          sync_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_calendar_sync_log_sync_state_id_fkey"
+            columns: ["sync_state_id"]
+            isOneToOne: false
+            referencedRelation: "_deprecated_golf_calendar_sync_state"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_calendar_sync_log_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      _deprecated_golf_calendar_sync_state: {
+        Row: {
+          created_at: string | null
+          external_calendar_id: string | null
+          id: string
+          last_sync_at: string | null
+          provider: string
+          sync_direction: string | null
+          sync_enabled: boolean | null
+          sync_token: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          external_calendar_id?: string | null
+          id?: string
+          last_sync_at?: string | null
+          provider: string
+          sync_direction?: string | null
+          sync_enabled?: boolean | null
+          sync_token?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          external_calendar_id?: string | null
+          id?: string
+          last_sync_at?: string | null
+          provider?: string
+          sync_direction?: string | null
+          sync_enabled?: boolean | null
+          sync_token?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_calendar_sync_state_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      _deprecated_golf_coach_settings: {
+        Row: {
+          coach_id: string
+          created_at: string | null
+          default_view: string | null
+          email_notifications: boolean | null
+          id: string
+          notify_messages: boolean | null
+          notify_round_completed: boolean | null
+          notify_team_activity: boolean | null
+          push_notifications: boolean | null
+          timezone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          coach_id: string
+          created_at?: string | null
+          default_view?: string | null
+          email_notifications?: boolean | null
+          id?: string
+          notify_messages?: boolean | null
+          notify_round_completed?: boolean | null
+          notify_team_activity?: boolean | null
+          push_notifications?: boolean | null
+          timezone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          coach_id?: string
+          created_at?: string | null
+          default_view?: string | null
+          email_notifications?: boolean | null
+          id?: string
+          notify_messages?: boolean | null
+          notify_round_completed?: boolean | null
+          notify_team_activity?: boolean | null
+          push_notifications?: boolean | null
+          timezone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_coach_settings_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: true
+            referencedRelation: "golf_coaches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      _deprecated_golf_event_exclusions: {
+        Row: {
+          created_at: string | null
+          event_id: string
+          excluded_by: string | null
+          id: string
+          player_id: string
+          reason: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          event_id: string
+          excluded_by?: string | null
+          id?: string
+          player_id: string
+          reason?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          event_id?: string
+          excluded_by?: string | null
+          id?: string
+          player_id?: string
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_event_exclusions_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "golf_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_event_exclusions_excluded_by_fkey"
+            columns: ["excluded_by"]
+            isOneToOne: false
+            referencedRelation: "golf_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_event_exclusions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      _deprecated_golf_event_status_log: {
+        Row: {
+          change_reason: string | null
+          changed_at: string | null
+          changed_by: string | null
+          event_id: string
+          id: string
+          new_status: string
+          old_status: string | null
+        }
+        Insert: {
+          change_reason?: string | null
+          changed_at?: string | null
+          changed_by?: string | null
+          event_id: string
+          id?: string
+          new_status: string
+          old_status?: string | null
+        }
+        Update: {
+          change_reason?: string | null
+          changed_at?: string | null
+          changed_by?: string | null
+          event_id?: string
+          id?: string
+          new_status?: string
+          old_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_event_status_log_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "golf_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_event_status_log_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "golf_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      _deprecated_golf_external_calendars: {
+        Row: {
+          calendar_name: string | null
+          created_at: string | null
+          id: string
+          is_synced: boolean | null
+          player_id: string
+          provider: string
+          provider_calendar_id: string | null
+          sync_enabled: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          calendar_name?: string | null
+          created_at?: string | null
+          id?: string
+          is_synced?: boolean | null
+          player_id: string
+          provider: string
+          provider_calendar_id?: string | null
+          sync_enabled?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          calendar_name?: string | null
+          created_at?: string | null
+          id?: string
+          is_synced?: boolean | null
+          player_id?: string
+          provider?: string
+          provider_calendar_id?: string | null
+          sync_enabled?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_external_calendars_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      _deprecated_golf_insight_feedback: {
+        Row: {
+          accuracy: string
+          actual_assessment: string | null
+          coach_id: string
+          created_at: string | null
+          error_category: string | null
+          feedback_text: string | null
+          id: string
+          insight_id: string
+          insight_type: string
+          metric_name: string | null
+          predicted_value: number | null
+          review_id: string
+          was_overconfident: boolean | null
+          was_underconfident: boolean | null
+        }
+        Insert: {
+          accuracy: string
+          actual_assessment?: string | null
+          coach_id: string
+          created_at?: string | null
+          error_category?: string | null
+          feedback_text?: string | null
+          id?: string
+          insight_id: string
+          insight_type: string
+          metric_name?: string | null
+          predicted_value?: number | null
+          review_id: string
+          was_overconfident?: boolean | null
+          was_underconfident?: boolean | null
+        }
+        Update: {
+          accuracy?: string
+          actual_assessment?: string | null
+          coach_id?: string
+          created_at?: string | null
+          error_category?: string | null
+          feedback_text?: string | null
+          id?: string
+          insight_id?: string
+          insight_type?: string
+          metric_name?: string | null
+          predicted_value?: number | null
+          review_id?: string
+          was_overconfident?: boolean | null
+          was_underconfident?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_insight_feedback_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "golf_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_insight_feedback_insight_id_fkey"
+            columns: ["insight_id"]
+            isOneToOne: false
+            referencedRelation: "golf_review_insights"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_insight_feedback_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "golf_round_reviews"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      _deprecated_golf_insight_weights: {
+        Row: {
+          accuracy_rate: number | null
+          base_weight: number | null
+          coach_adjustment: number | null
+          coach_id: string | null
+          id: string
+          insight_type: string
+          last_updated_at: string | null
+          metric_name: string | null
+          sample_size: number | null
+          team_id: string | null
+          threshold_multiplier: number | null
+        }
+        Insert: {
+          accuracy_rate?: number | null
+          base_weight?: number | null
+          coach_adjustment?: number | null
+          coach_id?: string | null
+          id?: string
+          insight_type: string
+          last_updated_at?: string | null
+          metric_name?: string | null
+          sample_size?: number | null
+          team_id?: string | null
+          threshold_multiplier?: number | null
+        }
+        Update: {
+          accuracy_rate?: number | null
+          base_weight?: number | null
+          coach_adjustment?: number | null
+          coach_id?: string | null
+          id?: string
+          insight_type?: string
+          last_updated_at?: string | null
+          metric_name?: string | null
+          sample_size?: number | null
+          team_id?: string | null
+          threshold_multiplier?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_insight_weights_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "golf_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_insight_weights_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "golf_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      _deprecated_golf_player_availability_blocks: {
+        Row: {
+          created_at: string | null
+          end_date: string
+          end_time: string | null
+          id: string
+          is_recurring: boolean | null
+          player_id: string
+          reason: string | null
+          recurrence_rule: string | null
+          start_date: string
+          start_time: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          end_date: string
+          end_time?: string | null
+          id?: string
+          is_recurring?: boolean | null
+          player_id: string
+          reason?: string | null
+          recurrence_rule?: string | null
+          start_date: string
+          start_time?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          end_date?: string
+          end_time?: string | null
+          id?: string
+          is_recurring?: boolean | null
+          player_id?: string
+          reason?: string | null
+          recurrence_rule?: string | null
+          start_date?: string
+          start_time?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_player_availability_blocks_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      _deprecated_golf_player_insight_preferences: {
+        Row: {
+          created_at: string | null
+          enabled_insight_types: string[] | null
+          id: string
+          max_insights_per_week: number | null
+          min_severity_level: string | null
+          notify_improvement_detected: boolean | null
+          notify_pattern_found: boolean | null
+          notify_performance_decline: boolean | null
+          notify_practice_suggestion: boolean | null
+          player_id: string
+          preferred_verbosity: string | null
+          show_comparison_to_team: boolean | null
+          show_strokes_impact: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          enabled_insight_types?: string[] | null
+          id?: string
+          max_insights_per_week?: number | null
+          min_severity_level?: string | null
+          notify_improvement_detected?: boolean | null
+          notify_pattern_found?: boolean | null
+          notify_performance_decline?: boolean | null
+          notify_practice_suggestion?: boolean | null
+          player_id: string
+          preferred_verbosity?: string | null
+          show_comparison_to_team?: boolean | null
+          show_strokes_impact?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          enabled_insight_types?: string[] | null
+          id?: string
+          max_insights_per_week?: number | null
+          min_severity_level?: string | null
+          notify_improvement_detected?: boolean | null
+          notify_pattern_found?: boolean | null
+          notify_performance_decline?: boolean | null
+          notify_practice_suggestion?: boolean | null
+          player_id?: string
+          preferred_verbosity?: string | null
+          show_comparison_to_team?: boolean | null
+          show_strokes_impact?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_player_insight_preferences_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: true
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      _deprecated_golf_player_settings: {
+        Row: {
+          created_at: string | null
+          default_tees: string | null
+          email_notifications: boolean | null
+          id: string
+          notify_event_reminder: boolean | null
+          notify_messages: boolean | null
+          notify_task_assigned: boolean | null
+          player_id: string
+          push_notifications: boolean | null
+          timezone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          default_tees?: string | null
+          email_notifications?: boolean | null
+          id?: string
+          notify_event_reminder?: boolean | null
+          notify_messages?: boolean | null
+          notify_task_assigned?: boolean | null
+          player_id: string
+          push_notifications?: boolean | null
+          timezone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          default_tees?: string | null
+          email_notifications?: boolean | null
+          id?: string
+          notify_event_reminder?: boolean | null
+          notify_messages?: boolean | null
+          notify_task_assigned?: boolean | null
+          player_id?: string
+          push_notifications?: boolean | null
+          timezone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_player_settings_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: true
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      _deprecated_golf_poll_responses: {
+        Row: {
+          created_at: string | null
+          date_option: string
+          id: string
+          is_available: boolean
+          notes: string | null
+          player_id: string
+          poll_id: string
+          preference_level: number | null
+          time_option: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          date_option: string
+          id?: string
+          is_available: boolean
+          notes?: string | null
+          player_id: string
+          poll_id: string
+          preference_level?: number | null
+          time_option?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          date_option?: string
+          id?: string
+          is_available?: boolean
+          notes?: string | null
+          player_id?: string
+          poll_id?: string
+          preference_level?: number | null
+          time_option?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_poll_responses_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_poll_responses_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "_deprecated_golf_availability_polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      _deprecated_golf_putting_tendencies: {
+        Row: {
+          avg_distance_on_makes_ft: number | null
+          avg_distance_on_misses_ft: number | null
+          created_at: string | null
+          id: string
+          last_calculated: string | null
+          left_to_right_attempts: number | null
+          left_to_right_made: number | null
+          left_to_right_pct: number | null
+          make_percentage_overall: number | null
+          miss_left_percentage: number | null
+          miss_long_percentage: number | null
+          miss_right_percentage: number | null
+          miss_short_percentage: number | null
+          player_id: string
+          right_to_left_attempts: number | null
+          right_to_left_made: number | null
+          right_to_left_pct: number | null
+          rounds_in_sample: number | null
+          short_putt_attempts: number | null
+          short_putt_made: number | null
+          short_putt_pct: number | null
+          straight_attempts: number | null
+          straight_made: number | null
+          straight_pct: number | null
+          total_putts_analyzed: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          avg_distance_on_makes_ft?: number | null
+          avg_distance_on_misses_ft?: number | null
+          created_at?: string | null
+          id?: string
+          last_calculated?: string | null
+          left_to_right_attempts?: number | null
+          left_to_right_made?: number | null
+          left_to_right_pct?: number | null
+          make_percentage_overall?: number | null
+          miss_left_percentage?: number | null
+          miss_long_percentage?: number | null
+          miss_right_percentage?: number | null
+          miss_short_percentage?: number | null
+          player_id: string
+          right_to_left_attempts?: number | null
+          right_to_left_made?: number | null
+          right_to_left_pct?: number | null
+          rounds_in_sample?: number | null
+          short_putt_attempts?: number | null
+          short_putt_made?: number | null
+          short_putt_pct?: number | null
+          straight_attempts?: number | null
+          straight_made?: number | null
+          straight_pct?: number | null
+          total_putts_analyzed?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          avg_distance_on_makes_ft?: number | null
+          avg_distance_on_misses_ft?: number | null
+          created_at?: string | null
+          id?: string
+          last_calculated?: string | null
+          left_to_right_attempts?: number | null
+          left_to_right_made?: number | null
+          left_to_right_pct?: number | null
+          make_percentage_overall?: number | null
+          miss_left_percentage?: number | null
+          miss_long_percentage?: number | null
+          miss_right_percentage?: number | null
+          miss_short_percentage?: number | null
+          player_id?: string
+          right_to_left_attempts?: number | null
+          right_to_left_made?: number | null
+          right_to_left_pct?: number | null
+          rounds_in_sample?: number | null
+          short_putt_attempts?: number | null
+          short_putt_made?: number | null
+          short_putt_pct?: number | null
+          straight_attempts?: number | null
+          straight_made?: number | null
+          straight_pct?: number | null
+          total_putts_analyzed?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_putting_tendencies_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: true
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      _deprecated_golf_travel_expense_splits: {
+        Row: {
+          amount: number
+          created_at: string | null
+          expense_id: string
+          id: string
+          paid: boolean | null
+          paid_at: string | null
+          player_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          expense_id: string
+          id?: string
+          paid?: boolean | null
+          paid_at?: string | null
+          player_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          expense_id?: string
+          id?: string
+          paid?: boolean | null
+          paid_at?: string | null
+          player_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_travel_expense_splits_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "golf_travel_expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_travel_expense_splits_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      _deprecated_organization_settings: {
+        Row: {
+          allow_player_messages: boolean | null
+          created_at: string | null
+          id: string
+          organization_id: string
+          require_verified_email: boolean | null
+          show_conference_info: boolean | null
+          show_description: boolean | null
+          show_email: boolean | null
+          show_facilities: boolean | null
+          show_phone: boolean | null
+          show_program_stats: boolean | null
+          show_recruiting_needs: boolean | null
+          show_roster_spots: boolean | null
+          show_social_links: boolean | null
+          show_staff_bios: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          allow_player_messages?: boolean | null
+          created_at?: string | null
+          id?: string
+          organization_id: string
+          require_verified_email?: boolean | null
+          show_conference_info?: boolean | null
+          show_description?: boolean | null
+          show_email?: boolean | null
+          show_facilities?: boolean | null
+          show_phone?: boolean | null
+          show_program_stats?: boolean | null
+          show_recruiting_needs?: boolean | null
+          show_roster_spots?: boolean | null
+          show_social_links?: boolean | null
+          show_staff_bios?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          allow_player_messages?: boolean | null
+          created_at?: string | null
+          id?: string
+          organization_id?: string
+          require_verified_email?: boolean | null
+          show_conference_info?: boolean | null
+          show_description?: boolean | null
+          show_email?: boolean | null
+          show_facilities?: boolean | null
+          show_phone?: boolean | null
+          show_program_stats?: boolean | null
+          show_recruiting_needs?: boolean | null
+          show_roster_spots?: boolean | null
+          show_social_links?: boolean | null
+          show_staff_bios?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      _deprecated_page_views: {
+        Row: {
+          created_at: string | null
+          id: string
+          path: string
+          referrer: string | null
+          sport: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          path: string
+          referrer?: string | null
+          sport?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          path?: string
+          referrer?: string | null
+          sport?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_views_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      _deprecated_player_dream_schools: {
+        Row: {
+          created_at: string | null
+          id: string
+          notes: string | null
+          organization_id: string
+          player_id: string
+          rank: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          organization_id: string
+          player_id: string
+          rank: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          organization_id?: string
+          player_id?: string
+          rank?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_dream_schools_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_dream_schools_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "baseball_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_analytics_events: {
         Row: {
           created_at: string
@@ -340,63 +1583,6 @@ export type Database = {
           },
         ]
       }
-      baseball_academics: {
-        Row: {
-          created_at: string | null
-          credits_attempted: number | null
-          credits_earned: number | null
-          eligibility_status: string | null
-          gpa: number | null
-          id: string
-          notes: string | null
-          player_id: string
-          team_id: string | null
-          term: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          credits_attempted?: number | null
-          credits_earned?: number | null
-          eligibility_status?: string | null
-          gpa?: number | null
-          id?: string
-          notes?: string | null
-          player_id: string
-          team_id?: string | null
-          term?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          credits_attempted?: number | null
-          credits_earned?: number | null
-          eligibility_status?: string | null
-          gpa?: number | null
-          id?: string
-          notes?: string | null
-          player_id?: string
-          team_id?: string | null
-          term?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "baseball_academics_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_players"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "baseball_academics_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_teams"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       baseball_announcement_acknowledgements: {
         Row: {
           acknowledged_at: string | null
@@ -433,39 +1619,6 @@ export type Database = {
           },
         ]
       }
-      baseball_announcement_documents: {
-        Row: {
-          announcement_id: string
-          document_id: string
-          id: string
-        }
-        Insert: {
-          announcement_id: string
-          document_id: string
-          id?: string
-        }
-        Update: {
-          announcement_id?: string
-          document_id?: string
-          id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "baseball_announcement_documents_announcement_id_fkey"
-            columns: ["announcement_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_announcements"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "baseball_announcement_documents_document_id_fkey"
-            columns: ["document_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_documents"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       baseball_announcement_recipients: {
         Row: {
           announcement_id: string
@@ -495,39 +1648,6 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "baseball_players"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      baseball_announcement_tasks: {
-        Row: {
-          announcement_id: string
-          id: string
-          task_id: string
-        }
-        Insert: {
-          announcement_id: string
-          id?: string
-          task_id: string
-        }
-        Update: {
-          announcement_id?: string
-          id?: string
-          task_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "baseball_announcement_tasks_announcement_id_fkey"
-            columns: ["announcement_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_announcements"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "baseball_announcement_tasks_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_tasks"
             referencedColumns: ["id"]
           },
         ]
@@ -1176,56 +2296,6 @@ export type Database = {
           },
         ]
       }
-      baseball_coach_settings: {
-        Row: {
-          coach_id: string
-          created_at: string | null
-          default_view: string | null
-          email_notifications: boolean | null
-          id: string
-          notify_messages: boolean | null
-          notify_profile_views: boolean | null
-          notify_team_activity: boolean | null
-          push_notifications: boolean | null
-          timezone: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          coach_id: string
-          created_at?: string | null
-          default_view?: string | null
-          email_notifications?: boolean | null
-          id?: string
-          notify_messages?: boolean | null
-          notify_profile_views?: boolean | null
-          notify_team_activity?: boolean | null
-          push_notifications?: boolean | null
-          timezone?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          coach_id?: string
-          created_at?: string | null
-          default_view?: string | null
-          email_notifications?: boolean | null
-          id?: string
-          notify_messages?: boolean | null
-          notify_profile_views?: boolean | null
-          notify_team_activity?: boolean | null
-          push_notifications?: boolean | null
-          timezone?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "baseball_coach_settings_coach_id_fkey"
-            columns: ["coach_id"]
-            isOneToOne: true
-            referencedRelation: "baseball_coaches"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       baseball_coaches: {
         Row: {
           avatar_url: string | null
@@ -1559,48 +2629,6 @@ export type Database = {
             columns: ["uploaded_by"]
             isOneToOne: false
             referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      baseball_dream_schools: {
-        Row: {
-          created_at: string | null
-          display_on_profile: boolean | null
-          id: string
-          organization_id: string
-          player_id: string
-          rank: number
-        }
-        Insert: {
-          created_at?: string | null
-          display_on_profile?: boolean | null
-          id?: string
-          organization_id: string
-          player_id: string
-          rank: number
-        }
-        Update: {
-          created_at?: string | null
-          display_on_profile?: boolean | null
-          id?: string
-          organization_id?: string
-          player_id?: string
-          rank?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "baseball_dream_schools_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "baseball_dream_schools_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_players"
             referencedColumns: ["id"]
           },
         ]
@@ -3996,48 +5024,6 @@ export type Database = {
           },
         ]
       }
-      feature_flags: {
-        Row: {
-          allowed_roles: Json | null
-          allowed_users: Json | null
-          created_at: string | null
-          description: string | null
-          flag_key: string
-          flag_name: string
-          id: string
-          is_enabled: boolean | null
-          metadata: Json | null
-          rollout_percentage: number | null
-          updated_at: string | null
-        }
-        Insert: {
-          allowed_roles?: Json | null
-          allowed_users?: Json | null
-          created_at?: string | null
-          description?: string | null
-          flag_key: string
-          flag_name: string
-          id?: string
-          is_enabled?: boolean | null
-          metadata?: Json | null
-          rollout_percentage?: number | null
-          updated_at?: string | null
-        }
-        Update: {
-          allowed_roles?: Json | null
-          allowed_users?: Json | null
-          created_at?: string | null
-          description?: string | null
-          flag_key?: string
-          flag_name?: string
-          id?: string
-          is_enabled?: boolean | null
-          metadata?: Json | null
-          rollout_percentage?: number | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       golf_academic_exclusions: {
         Row: {
           created_at: string | null
@@ -4359,66 +5345,6 @@ export type Database = {
           },
         ]
       }
-      golf_availability_polls: {
-        Row: {
-          created_at: string | null
-          created_by: string
-          date_options: Json
-          deadline: string | null
-          description: string | null
-          duration_minutes: number | null
-          id: string
-          status: string | null
-          team_id: string
-          time_options: Json | null
-          title: string
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          created_by: string
-          date_options?: Json
-          deadline?: string | null
-          description?: string | null
-          duration_minutes?: number | null
-          id?: string
-          status?: string | null
-          team_id: string
-          time_options?: Json | null
-          title: string
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          created_by?: string
-          date_options?: Json
-          deadline?: string | null
-          description?: string | null
-          duration_minutes?: number | null
-          id?: string
-          status?: string | null
-          team_id?: string
-          time_options?: Json | null
-          title?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "golf_availability_polls_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "golf_coaches"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "golf_availability_polls_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "golf_teams"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       golf_calendar_feeds: {
         Row: {
           created_at: string | null
@@ -4530,116 +5456,6 @@ export type Database = {
           },
           {
             foreignKeyName: "golf_calendar_notifications_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      golf_calendar_sync_log: {
-        Row: {
-          completed_at: string | null
-          created_at: string | null
-          error_message: string | null
-          events_created: number | null
-          events_deleted: number | null
-          events_synced: number | null
-          events_updated: number | null
-          id: string
-          started_at: string | null
-          status: string
-          sync_state_id: string | null
-          sync_type: string
-          user_id: string
-        }
-        Insert: {
-          completed_at?: string | null
-          created_at?: string | null
-          error_message?: string | null
-          events_created?: number | null
-          events_deleted?: number | null
-          events_synced?: number | null
-          events_updated?: number | null
-          id?: string
-          started_at?: string | null
-          status: string
-          sync_state_id?: string | null
-          sync_type: string
-          user_id: string
-        }
-        Update: {
-          completed_at?: string | null
-          created_at?: string | null
-          error_message?: string | null
-          events_created?: number | null
-          events_deleted?: number | null
-          events_synced?: number | null
-          events_updated?: number | null
-          id?: string
-          started_at?: string | null
-          status?: string
-          sync_state_id?: string | null
-          sync_type?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "golf_calendar_sync_log_sync_state_id_fkey"
-            columns: ["sync_state_id"]
-            isOneToOne: false
-            referencedRelation: "golf_calendar_sync_state"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "golf_calendar_sync_log_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      golf_calendar_sync_state: {
-        Row: {
-          created_at: string | null
-          external_calendar_id: string | null
-          id: string
-          last_sync_at: string | null
-          provider: string
-          sync_direction: string | null
-          sync_enabled: boolean | null
-          sync_token: string | null
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          external_calendar_id?: string | null
-          id?: string
-          last_sync_at?: string | null
-          provider: string
-          sync_direction?: string | null
-          sync_enabled?: boolean | null
-          sync_token?: string | null
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          external_calendar_id?: string | null
-          id?: string
-          last_sync_at?: string | null
-          provider?: string
-          sync_direction?: string | null
-          sync_enabled?: boolean | null
-          sync_token?: string | null
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "golf_calendar_sync_state_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
@@ -4918,56 +5734,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "golf_coach_philosophy_coach_id_fkey"
-            columns: ["coach_id"]
-            isOneToOne: true
-            referencedRelation: "golf_coaches"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      golf_coach_settings: {
-        Row: {
-          coach_id: string
-          created_at: string | null
-          default_view: string | null
-          email_notifications: boolean | null
-          id: string
-          notify_messages: boolean | null
-          notify_round_completed: boolean | null
-          notify_team_activity: boolean | null
-          push_notifications: boolean | null
-          timezone: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          coach_id: string
-          created_at?: string | null
-          default_view?: string | null
-          email_notifications?: boolean | null
-          id?: string
-          notify_messages?: boolean | null
-          notify_round_completed?: boolean | null
-          notify_team_activity?: boolean | null
-          push_notifications?: boolean | null
-          timezone?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          coach_id?: string
-          created_at?: string | null
-          default_view?: string | null
-          email_notifications?: boolean | null
-          id?: string
-          notify_messages?: boolean | null
-          notify_round_completed?: boolean | null
-          notify_team_activity?: boolean | null
-          push_notifications?: boolean | null
-          timezone?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "golf_coach_settings_coach_id_fkey"
             columns: ["coach_id"]
             isOneToOne: true
             referencedRelation: "golf_coaches"
@@ -5448,100 +6214,6 @@ export type Database = {
           },
         ]
       }
-      golf_event_exclusions: {
-        Row: {
-          created_at: string | null
-          event_id: string
-          excluded_by: string | null
-          id: string
-          player_id: string
-          reason: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          event_id: string
-          excluded_by?: string | null
-          id?: string
-          player_id: string
-          reason?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          event_id?: string
-          excluded_by?: string | null
-          id?: string
-          player_id?: string
-          reason?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "golf_event_exclusions_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "golf_events"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "golf_event_exclusions_excluded_by_fkey"
-            columns: ["excluded_by"]
-            isOneToOne: false
-            referencedRelation: "golf_coaches"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "golf_event_exclusions_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "golf_players"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      golf_event_status_log: {
-        Row: {
-          change_reason: string | null
-          changed_at: string | null
-          changed_by: string | null
-          event_id: string
-          id: string
-          new_status: string
-          old_status: string | null
-        }
-        Insert: {
-          change_reason?: string | null
-          changed_at?: string | null
-          changed_by?: string | null
-          event_id: string
-          id?: string
-          new_status: string
-          old_status?: string | null
-        }
-        Update: {
-          change_reason?: string | null
-          changed_at?: string | null
-          changed_by?: string | null
-          event_id?: string
-          id?: string
-          new_status?: string
-          old_status?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "golf_event_status_log_changed_by_fkey"
-            columns: ["changed_by"]
-            isOneToOne: false
-            referencedRelation: "golf_coaches"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "golf_event_status_log_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "golf_events"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       golf_events: {
         Row: {
           all_day: boolean | null
@@ -5645,50 +6317,6 @@ export type Database = {
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "golf_teams"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      golf_external_calendars: {
-        Row: {
-          calendar_name: string | null
-          created_at: string | null
-          id: string
-          is_synced: boolean | null
-          player_id: string
-          provider: string
-          provider_calendar_id: string | null
-          sync_enabled: boolean | null
-          updated_at: string | null
-        }
-        Insert: {
-          calendar_name?: string | null
-          created_at?: string | null
-          id?: string
-          is_synced?: boolean | null
-          player_id: string
-          provider: string
-          provider_calendar_id?: string | null
-          sync_enabled?: boolean | null
-          updated_at?: string | null
-        }
-        Update: {
-          calendar_name?: string | null
-          created_at?: string | null
-          id?: string
-          is_synced?: boolean | null
-          player_id?: string
-          provider?: string
-          provider_calendar_id?: string | null
-          sync_enabled?: boolean | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "golf_external_calendars_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "golf_players"
             referencedColumns: ["id"]
           },
         ]
@@ -5829,79 +6457,6 @@ export type Database = {
           },
         ]
       }
-      golf_insight_feedback: {
-        Row: {
-          accuracy: string
-          actual_assessment: string | null
-          coach_id: string
-          created_at: string | null
-          error_category: string | null
-          feedback_text: string | null
-          id: string
-          insight_id: string
-          insight_type: string
-          metric_name: string | null
-          predicted_value: number | null
-          review_id: string
-          was_overconfident: boolean | null
-          was_underconfident: boolean | null
-        }
-        Insert: {
-          accuracy: string
-          actual_assessment?: string | null
-          coach_id: string
-          created_at?: string | null
-          error_category?: string | null
-          feedback_text?: string | null
-          id?: string
-          insight_id: string
-          insight_type: string
-          metric_name?: string | null
-          predicted_value?: number | null
-          review_id: string
-          was_overconfident?: boolean | null
-          was_underconfident?: boolean | null
-        }
-        Update: {
-          accuracy?: string
-          actual_assessment?: string | null
-          coach_id?: string
-          created_at?: string | null
-          error_category?: string | null
-          feedback_text?: string | null
-          id?: string
-          insight_id?: string
-          insight_type?: string
-          metric_name?: string | null
-          predicted_value?: number | null
-          review_id?: string
-          was_overconfident?: boolean | null
-          was_underconfident?: boolean | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "golf_insight_feedback_coach_id_fkey"
-            columns: ["coach_id"]
-            isOneToOne: false
-            referencedRelation: "golf_coaches"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "golf_insight_feedback_insight_id_fkey"
-            columns: ["insight_id"]
-            isOneToOne: false
-            referencedRelation: "golf_review_insights"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "golf_insight_feedback_review_id_fkey"
-            columns: ["review_id"]
-            isOneToOne: false
-            referencedRelation: "golf_round_reviews"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       golf_insight_generation_log: {
         Row: {
           created_at: string | null
@@ -5946,63 +6501,6 @@ export type Database = {
           },
           {
             foreignKeyName: "golf_insight_generation_log_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "golf_teams"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      golf_insight_weights: {
-        Row: {
-          accuracy_rate: number | null
-          base_weight: number | null
-          coach_adjustment: number | null
-          coach_id: string | null
-          id: string
-          insight_type: string
-          last_updated_at: string | null
-          metric_name: string | null
-          sample_size: number | null
-          team_id: string | null
-          threshold_multiplier: number | null
-        }
-        Insert: {
-          accuracy_rate?: number | null
-          base_weight?: number | null
-          coach_adjustment?: number | null
-          coach_id?: string | null
-          id?: string
-          insight_type: string
-          last_updated_at?: string | null
-          metric_name?: string | null
-          sample_size?: number | null
-          team_id?: string | null
-          threshold_multiplier?: number | null
-        }
-        Update: {
-          accuracy_rate?: number | null
-          base_weight?: number | null
-          coach_adjustment?: number | null
-          coach_id?: string | null
-          id?: string
-          insight_type?: string
-          last_updated_at?: string | null
-          metric_name?: string | null
-          sample_size?: number | null
-          team_id?: string | null
-          threshold_multiplier?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "golf_insight_weights_coach_id_fkey"
-            columns: ["coach_id"]
-            isOneToOne: false
-            referencedRelation: "golf_coaches"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "golf_insight_weights_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "golf_teams"
@@ -6324,56 +6822,6 @@ export type Database = {
           },
         ]
       }
-      golf_player_availability_blocks: {
-        Row: {
-          created_at: string | null
-          end_date: string
-          end_time: string | null
-          id: string
-          is_recurring: boolean | null
-          player_id: string
-          reason: string | null
-          recurrence_rule: string | null
-          start_date: string
-          start_time: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          end_date: string
-          end_time?: string | null
-          id?: string
-          is_recurring?: boolean | null
-          player_id: string
-          reason?: string | null
-          recurrence_rule?: string | null
-          start_date: string
-          start_time?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          end_date?: string
-          end_time?: string | null
-          id?: string
-          is_recurring?: boolean | null
-          player_id?: string
-          reason?: string | null
-          recurrence_rule?: string | null
-          start_date?: string
-          start_time?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "golf_player_availability_blocks_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "golf_players"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       golf_player_classes: {
         Row: {
           building: string | null
@@ -6611,65 +7059,6 @@ export type Database = {
           },
         ]
       }
-      golf_player_insight_preferences: {
-        Row: {
-          created_at: string | null
-          enabled_insight_types: string[] | null
-          id: string
-          max_insights_per_week: number | null
-          min_severity_level: string | null
-          notify_improvement_detected: boolean | null
-          notify_pattern_found: boolean | null
-          notify_performance_decline: boolean | null
-          notify_practice_suggestion: boolean | null
-          player_id: string
-          preferred_verbosity: string | null
-          show_comparison_to_team: boolean | null
-          show_strokes_impact: boolean | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          enabled_insight_types?: string[] | null
-          id?: string
-          max_insights_per_week?: number | null
-          min_severity_level?: string | null
-          notify_improvement_detected?: boolean | null
-          notify_pattern_found?: boolean | null
-          notify_performance_decline?: boolean | null
-          notify_practice_suggestion?: boolean | null
-          player_id: string
-          preferred_verbosity?: string | null
-          show_comparison_to_team?: boolean | null
-          show_strokes_impact?: boolean | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          enabled_insight_types?: string[] | null
-          id?: string
-          max_insights_per_week?: number | null
-          min_severity_level?: string | null
-          notify_improvement_detected?: boolean | null
-          notify_pattern_found?: boolean | null
-          notify_performance_decline?: boolean | null
-          notify_practice_suggestion?: boolean | null
-          player_id?: string
-          preferred_verbosity?: string | null
-          show_comparison_to_team?: boolean | null
-          show_strokes_impact?: boolean | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "golf_player_insight_preferences_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: true
-            referencedRelation: "golf_players"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       golf_player_notification_state: {
         Row: {
           created_at: string | null
@@ -6698,56 +7087,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "golf_player_notification_state_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: true
-            referencedRelation: "golf_players"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      golf_player_settings: {
-        Row: {
-          created_at: string | null
-          default_tees: string | null
-          email_notifications: boolean | null
-          id: string
-          notify_event_reminder: boolean | null
-          notify_messages: boolean | null
-          notify_task_assigned: boolean | null
-          player_id: string
-          push_notifications: boolean | null
-          timezone: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          default_tees?: string | null
-          email_notifications?: boolean | null
-          id?: string
-          notify_event_reminder?: boolean | null
-          notify_messages?: boolean | null
-          notify_task_assigned?: boolean | null
-          player_id: string
-          push_notifications?: boolean | null
-          timezone?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          default_tees?: string | null
-          email_notifications?: boolean | null
-          id?: string
-          notify_event_reminder?: boolean | null
-          notify_messages?: boolean | null
-          notify_task_assigned?: boolean | null
-          player_id?: string
-          push_notifications?: boolean | null
-          timezone?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "golf_player_settings_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: true
             referencedRelation: "golf_players"
@@ -7074,57 +7413,6 @@ export type Database = {
           },
         ]
       }
-      golf_poll_responses: {
-        Row: {
-          created_at: string | null
-          date_option: string
-          id: string
-          is_available: boolean
-          notes: string | null
-          player_id: string
-          poll_id: string
-          preference_level: number | null
-          time_option: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          date_option: string
-          id?: string
-          is_available: boolean
-          notes?: string | null
-          player_id: string
-          poll_id: string
-          preference_level?: number | null
-          time_option?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          date_option?: string
-          id?: string
-          is_available?: boolean
-          notes?: string | null
-          player_id?: string
-          poll_id?: string
-          preference_level?: number | null
-          time_option?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "golf_poll_responses_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "golf_players"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "golf_poll_responses_poll_id_fkey"
-            columns: ["poll_id"]
-            isOneToOne: false
-            referencedRelation: "golf_availability_polls"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       golf_prediction_model_performance: {
         Row: {
           accuracy_by_confidence: Json | null
@@ -7304,101 +7592,6 @@ export type Database = {
             columns: ["related_round_id"]
             isOneToOne: false
             referencedRelation: "golf_rounds"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      golf_putting_tendencies: {
-        Row: {
-          avg_distance_on_makes_ft: number | null
-          avg_distance_on_misses_ft: number | null
-          created_at: string | null
-          id: string
-          last_calculated: string | null
-          left_to_right_attempts: number | null
-          left_to_right_made: number | null
-          left_to_right_pct: number | null
-          make_percentage_overall: number | null
-          miss_left_percentage: number | null
-          miss_long_percentage: number | null
-          miss_right_percentage: number | null
-          miss_short_percentage: number | null
-          player_id: string
-          right_to_left_attempts: number | null
-          right_to_left_made: number | null
-          right_to_left_pct: number | null
-          rounds_in_sample: number | null
-          short_putt_attempts: number | null
-          short_putt_made: number | null
-          short_putt_pct: number | null
-          straight_attempts: number | null
-          straight_made: number | null
-          straight_pct: number | null
-          total_putts_analyzed: number | null
-          updated_at: string | null
-        }
-        Insert: {
-          avg_distance_on_makes_ft?: number | null
-          avg_distance_on_misses_ft?: number | null
-          created_at?: string | null
-          id?: string
-          last_calculated?: string | null
-          left_to_right_attempts?: number | null
-          left_to_right_made?: number | null
-          left_to_right_pct?: number | null
-          make_percentage_overall?: number | null
-          miss_left_percentage?: number | null
-          miss_long_percentage?: number | null
-          miss_right_percentage?: number | null
-          miss_short_percentage?: number | null
-          player_id: string
-          right_to_left_attempts?: number | null
-          right_to_left_made?: number | null
-          right_to_left_pct?: number | null
-          rounds_in_sample?: number | null
-          short_putt_attempts?: number | null
-          short_putt_made?: number | null
-          short_putt_pct?: number | null
-          straight_attempts?: number | null
-          straight_made?: number | null
-          straight_pct?: number | null
-          total_putts_analyzed?: number | null
-          updated_at?: string | null
-        }
-        Update: {
-          avg_distance_on_makes_ft?: number | null
-          avg_distance_on_misses_ft?: number | null
-          created_at?: string | null
-          id?: string
-          last_calculated?: string | null
-          left_to_right_attempts?: number | null
-          left_to_right_made?: number | null
-          left_to_right_pct?: number | null
-          make_percentage_overall?: number | null
-          miss_left_percentage?: number | null
-          miss_long_percentage?: number | null
-          miss_right_percentage?: number | null
-          miss_short_percentage?: number | null
-          player_id?: string
-          right_to_left_attempts?: number | null
-          right_to_left_made?: number | null
-          right_to_left_pct?: number | null
-          rounds_in_sample?: number | null
-          short_putt_attempts?: number | null
-          short_putt_made?: number | null
-          short_putt_pct?: number | null
-          straight_attempts?: number | null
-          straight_made?: number | null
-          straight_pct?: number | null
-          total_putts_analyzed?: number | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "golf_putting_tendencies_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: true
-            referencedRelation: "golf_players"
             referencedColumns: ["id"]
           },
         ]
@@ -8833,51 +9026,6 @@ export type Database = {
           },
         ]
       }
-      golf_travel_expense_splits: {
-        Row: {
-          amount: number
-          created_at: string | null
-          expense_id: string
-          id: string
-          paid: boolean | null
-          paid_at: string | null
-          player_id: string
-        }
-        Insert: {
-          amount: number
-          created_at?: string | null
-          expense_id: string
-          id?: string
-          paid?: boolean | null
-          paid_at?: string | null
-          player_id: string
-        }
-        Update: {
-          amount?: number
-          created_at?: string | null
-          expense_id?: string
-          id?: string
-          paid?: boolean | null
-          paid_at?: string | null
-          player_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "golf_travel_expense_splits_expense_id_fkey"
-            columns: ["expense_id"]
-            isOneToOne: false
-            referencedRelation: "golf_travel_expenses"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "golf_travel_expense_splits_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "golf_players"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       golf_travel_expenses: {
         Row: {
           amount: number
@@ -9191,71 +9339,6 @@ export type Database = {
           },
         ]
       }
-      organization_settings: {
-        Row: {
-          allow_player_messages: boolean | null
-          created_at: string | null
-          id: string
-          organization_id: string
-          require_verified_email: boolean | null
-          show_conference_info: boolean | null
-          show_description: boolean | null
-          show_email: boolean | null
-          show_facilities: boolean | null
-          show_phone: boolean | null
-          show_program_stats: boolean | null
-          show_recruiting_needs: boolean | null
-          show_roster_spots: boolean | null
-          show_social_links: boolean | null
-          show_staff_bios: boolean | null
-          updated_at: string | null
-        }
-        Insert: {
-          allow_player_messages?: boolean | null
-          created_at?: string | null
-          id?: string
-          organization_id: string
-          require_verified_email?: boolean | null
-          show_conference_info?: boolean | null
-          show_description?: boolean | null
-          show_email?: boolean | null
-          show_facilities?: boolean | null
-          show_phone?: boolean | null
-          show_program_stats?: boolean | null
-          show_recruiting_needs?: boolean | null
-          show_roster_spots?: boolean | null
-          show_social_links?: boolean | null
-          show_staff_bios?: boolean | null
-          updated_at?: string | null
-        }
-        Update: {
-          allow_player_messages?: boolean | null
-          created_at?: string | null
-          id?: string
-          organization_id?: string
-          require_verified_email?: boolean | null
-          show_conference_info?: boolean | null
-          show_description?: boolean | null
-          show_email?: boolean | null
-          show_facilities?: boolean | null
-          show_phone?: boolean | null
-          show_program_stats?: boolean | null
-          show_recruiting_needs?: boolean | null
-          show_roster_spots?: boolean | null
-          show_social_links?: boolean | null
-          show_staff_bios?: boolean | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "organization_settings_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: true
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       organizations: {
         Row: {
           banner_url: string | null
@@ -9309,89 +9392,6 @@ export type Database = {
           website_url?: string | null
         }
         Relationships: []
-      }
-      page_views: {
-        Row: {
-          created_at: string | null
-          id: string
-          path: string
-          referrer: string | null
-          sport: string | null
-          user_agent: string | null
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          path: string
-          referrer?: string | null
-          sport?: string | null
-          user_agent?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          path?: string
-          referrer?: string | null
-          sport?: string | null
-          user_agent?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "page_views_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      player_dream_schools: {
-        Row: {
-          created_at: string | null
-          id: string
-          notes: string | null
-          organization_id: string
-          player_id: string
-          rank: number
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          notes?: string | null
-          organization_id: string
-          player_id: string
-          rank: number
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          notes?: string | null
-          organization_id?: string
-          player_id?: string
-          rank?: number
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "player_dream_schools_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "player_dream_schools_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "baseball_players"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       push_subscriptions: {
         Row: {
@@ -9519,55 +9519,7 @@ export type Database = {
       }
     }
     Views: {
-      player_putt_tendencies: {
-        Row: {
-          avg_distance_on_makes_ft: number | null
-          avg_distance_on_misses_ft: number | null
-          created_at: string | null
-          first_name: string | null
-          id: string | null
-          last_calculated: string | null
-          last_name: string | null
-          left_to_right_attempts: number | null
-          left_to_right_made: number | null
-          left_to_right_pct: number | null
-          make_percentage_overall: number | null
-          miss_left_percentage: number | null
-          miss_long_percentage: number | null
-          miss_right_percentage: number | null
-          miss_short_percentage: number | null
-          player_id: string | null
-          right_to_left_attempts: number | null
-          right_to_left_made: number | null
-          right_to_left_pct: number | null
-          rounds_in_sample: number | null
-          short_putt_attempts: number | null
-          short_putt_made: number | null
-          short_putt_pct: number | null
-          straight_attempts: number | null
-          straight_made: number | null
-          straight_pct: number | null
-          total_putts_analyzed: number | null
-          updated_at: string | null
-          user_id: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "golf_players_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "golf_putting_tendencies_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: true
-            referencedRelation: "golf_players"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Functions: {
       calculate_round_strokes_gained: {
@@ -9801,7 +9753,10 @@ export type Database = {
       }
       save_partial_round_atomic: {
         Args: {
+          p_approach_details?: Json
+          p_expected_updated_at?: string
           p_holes: Json
+          p_putt_details?: Json
           p_round_data: Json
           p_round_id: string
           p_shots: Json

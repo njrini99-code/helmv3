@@ -27,6 +27,7 @@ import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
 import { HoleConfigurationForm } from '@/components/golf/HoleConfigurationForm';
 
 import { SaveRoundModal } from '@/components/golf/SaveRoundModal';
+import { RoundSubmitOverlay } from '@/components/golf/RoundSubmitOverlay';
 import { useToast } from '@/components/ui/toast';
 // DraftIndicator removed - was too noisy
 import type { HoleConfig } from '@/lib/types/golf-course';
@@ -75,6 +76,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
     scheduleSave,
     stopSaving: stopDraftAutoSave,
     clearDraft,
+    clearLocalDraft,
     roundId: draftRoundId,
     setRoundId: setDraftRoundId,
   } = useAutoSaveRound(null);
@@ -190,9 +192,12 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
   const consecutiveSaveFailuresRef = useRef(0);
   const savedRoundIdRef = useRef<string | null>(null);
   const [isStartingRound, setIsStartingRound] = useState(false);
+  // Optimistic locking: tracks the last server-side updated_at for conflict detection
+  const lastServerUpdatedAtRef = useRef<string | undefined>(undefined);
   const [pendingFinalStats, setPendingFinalStats] = useState<HoleStats[] | null>(null);
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);
   const [showBackToSetupModal, setShowBackToSetupModal] = useState(false);
+  const [completedRoundId, setCompletedRoundId] = useState<string | null>(null);
 
   // Ref to track the furthest hole the player has naturally progressed to.
   // Used to navigate back correctly after re-editing a completed hole (#21).
@@ -241,9 +246,9 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
   const stepRef = useRef(step);
   stepRef.current = step;
   useEffect(() => {
-    // Warn before closing tab/navigating away during active tracking
+    // Warn before closing tab/navigating away if there's any data to lose
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (stepRef.current === 'tracking') {
+      if (stepRef.current !== 'setup' || setupDataRef.current.courseName) {
         e.preventDefault();
         e.returnValue = '';
       }
@@ -268,11 +273,10 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
 
     // Trigger SYNCHRONOUS localStorage save + async server save when app goes to background
     const handlePageHide = () => {
-      if (stepRef.current !== 'tracking') return;
-
       const { currentHole, holesSnapshot, statsSnapshot, mergedInProgress, setup } = buildEmergencyPayload();
 
       // 1. SYNCHRONOUS localStorage write — guaranteed to complete before page freeze
+      // Fires on ALL steps so setup/holes data is preserved, not just tracking
       emergencySave({
         roundId: savedRoundIdRef.current,
         timestamp: Date.now(),
@@ -284,7 +288,9 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
         holesPerRound: holesPerRoundRef.current,
       });
 
-      // 2. Best-effort async server save (may be killed by browser on mobile)
+      // 2. Best-effort async server save — only during tracking (needs shot data)
+      if (stepRef.current !== 'tracking') return;
+
       const inProgressArr = Object.entries(mergedInProgress)
         .filter(([, shots]) => shots.length > 0)
         .map(([idx, shots]) => ({
@@ -604,8 +610,8 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
     // Validate courseRating and courseSlope ranges (must match server Zod schema in golf.ts)
     if (setupData.courseRating) {
       const rating = parseFloat(setupData.courseRating);
-      if (isNaN(rating) || rating < 60 || rating > 80) {
-        setError('Course rating must be between 60.0 and 80.0');
+      if (isNaN(rating) || rating < 50 || rating > 85) {
+        setError('Course rating must be between 50.0 and 85.0');
         setIsStartingRound(false);
         return;
       }
@@ -724,6 +730,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
         par: hole.par,
         yardage: hole.yardage,
       })),
+      expectedUpdatedAt: lastServerUpdatedAtRef.current,
     };
   }, [completedHoleStats, currentHoleIndex, inProgressShotsByHole, holes, setupData, selectedQualifierId, selectedRoundNumber]);
 
@@ -787,11 +794,14 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
         );
         if (result.success) {
           consecutiveSaveFailuresRef.current = 0;
+          if (result.data.updatedAt) lastServerUpdatedAtRef.current = result.data.updatedAt;
           if (!savedRoundIdRef.current) {
             savedRoundIdRef.current = result.data.roundId;
             setSavedRoundId(result.data.roundId);
             setDraftRoundId(result.data.roundId);
           }
+        } else if (result.error === 'conflict') {
+          showToast('This round was updated on another device. Please reload.', 'error');
         } else {
           consecutiveSaveFailuresRef.current++;
           if (consecutiveSaveFailuresRef.current >= 2) {
@@ -817,11 +827,14 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                 const r = await savePartialRound(pending.roundData!, savedRoundIdRef.current ?? undefined);
                 if (r.success) {
                   consecutiveSaveFailuresRef.current = 0;
+                  if (r.data.updatedAt) lastServerUpdatedAtRef.current = r.data.updatedAt;
                   if (!savedRoundIdRef.current) {
                     savedRoundIdRef.current = r.data.roundId;
                     setSavedRoundId(r.data.roundId);
                     setDraftRoundId(r.data.roundId);
                   }
+                } else if (r.error === 'conflict') {
+                  showToast('This round was updated on another device. Please reload.', 'error');
                 }
               } catch { /* non-critical */ } finally {
                 serverSaveInProgressRef.current = false;
@@ -836,11 +849,14 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                 const r = await savePartialRound(autoSaveData, savedRoundIdRef.current ?? undefined);
                 if (r.success) {
                   consecutiveSaveFailuresRef.current = 0;
+                  if (r.data.updatedAt) lastServerUpdatedAtRef.current = r.data.updatedAt;
                   if (!savedRoundIdRef.current) {
                     savedRoundIdRef.current = r.data.roundId;
                     setSavedRoundId(r.data.roundId);
                     setDraftRoundId(r.data.roundId);
                   }
+                } else if (r.error === 'conflict') {
+                  showToast('This round was updated on another device. Please reload.', 'error');
                 }
               } catch { /* non-critical */ } finally {
                 serverSaveInProgressRef.current = false;
@@ -852,7 +868,14 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
     })();
 
     // Navigate after completion
-    if (isReEdit) {
+    // Check if every hole now has a score (all completed)
+    const allHolesScored = updatedStats.length === holes.length && updatedStats.every(s => s?.score != null);
+
+    if (allHolesScored && holeIndex === holes.length - 1) {
+      // Last hole (re-)completed and all holes scored — always show finish confirmation
+      setPendingFinalStats(updatedStats);
+      setShowFinishConfirm(true);
+    } else if (isReEdit) {
       // Re-editing a previously completed hole — return to the active frontier
       setCurrentHoleIndex(activeProgressHoleRef.current);
     } else if (holeIndex < holes.length - 1) {
@@ -942,11 +965,14 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
             );
             if (result.success) {
               consecutiveSaveFailuresRef.current = 0;
+              if (result.data.updatedAt) lastServerUpdatedAtRef.current = result.data.updatedAt;
               if (!savedRoundIdRef.current) {
                 savedRoundIdRef.current = result.data.roundId;
                 setSavedRoundId(result.data.roundId);
                 setDraftRoundId(result.data.roundId);
               }
+            } else if (result.error === 'conflict') {
+              showToast('This round was updated on another device. Please reload.', 'error');
             } else {
               consecutiveSaveFailuresRef.current++;
               if (consecutiveSaveFailuresRef.current >= 2) {
@@ -1050,17 +1076,12 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
       clearDraft();
       clearEmergencySave(savedRoundIdRef.current);
 
-      // Navigate to round detail page for full review
-      const roundId = result.data.roundId;
-      router.push(`/golf/dashboard/rounds/${roundId}`);
+      // Show success celebration — the overlay auto-navigates to round review
+      setCompletedRoundId(result.data.roundId);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to submit round');
       isSubmittingRef.current = false;
-      setStep('tracking');
-      // Re-arm the finish confirmation so the user can retry instead of being
-      // stuck on the last hole with no way to re-submit
-      setPendingFinalStats(allHoleStats);
-      setShowFinishConfirm(true);
+      // Stay on submitting step so the overlay can show the error state
     }
   };
 
@@ -1074,12 +1095,10 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
     savedRoundIdRef.current = result.data.roundId;
     setSavedRoundId(result.data.roundId);
 
-    // Clear local draft since it's saved to database
-    try {
-      clearDraft();
-    } catch {
-      // Draft cleanup failure is non-critical - round is already saved to DB
-    }
+    // Clear local draft state only — do NOT call clearDraft() here because it
+    // deletes the in_progress round from the database via clearRoundDraft(),
+    // which would immediately destroy the round we just saved.
+    clearLocalDraft();
     setShowExitModal(false);
 
     router.push('/golf/dashboard/rounds');
@@ -1943,49 +1962,10 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
     );
   }
 
-  // ============================================================================
-  // SUBMITTING STEP
-  // ============================================================================
-  if (step === 'submitting') {
-    const totalScore = completedHoleStats.reduce((sum, h) => sum + (h?.score ?? 0), 0);
-    const totalPar = completedHoleStats.reduce((sum, h) => sum + (h?.par ?? 0), 0);
-    const toPar = totalScore - totalPar;
-
-    return (
-      <div className="min-h-dvh bg-transparent flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <div className="relative glass-standard rounded-2xl overflow-clip p-8 text-center">
-            <ShineEffect />
-            <div className="flex items-center justify-center gap-2 mx-auto mb-6">
-              <span className="w-3 h-3 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
-              <span className="w-3 h-3 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
-              <span className="w-3 h-3 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
-            </div>
-            <h2 className="text-2xl font-bold text-warm-900 mb-2">
-              Saving Round...
-            </h2>
-            <p className="text-warm-600 mb-4">
-              Score: {totalScore} ({toPar >= 0 ? '+' : ''}{toPar})
-            </p>
-            <p className="text-sm text-warm-500">
-              Calculating your 50+ statistics...
-            </p>
-            {error && (
-              <div className="mt-4">
-                <p className="text-sm text-red-600 mb-3">{error}</p>
-                <button
-                  onClick={() => setStep('tracking')}
-                  className="px-4 py-2 bg-warm-100 text-warm-700 rounded-lg text-sm font-medium hover:bg-warm-200 transition-colors"
-                >
-                  Go Back
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Submitting overlay stats (computed once, used by overlay)
+  const submittingTotalScore = completedHoleStats.reduce((sum, h) => sum + (h?.score ?? 0), 0);
+  const submittingTotalPar = completedHoleStats.reduce((sum, h) => sum + (h?.par ?? 0), 0);
+  const submittingToPar = submittingTotalScore - submittingTotalPar;
 
   // ============================================================================
   // TRACKING STEP
@@ -2197,7 +2177,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                 transition={{ duration: 0.2 }}
                 className="fixed inset-0 z-50 flex items-center justify-center p-4"
               >
-                <div className="fixed inset-0 bg-warm-900/60 backdrop-blur-md" onClick={() => setShowFinishConfirm(false)} />
+                <div className="fixed inset-0 bg-warm-900/60 backdrop-blur-md" />
                 <m.div
                   initial={{ opacity: 0, scale: 0.92, y: 12 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -2350,6 +2330,30 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
           })()}
         </AnimatePresence>
       </LazyMotion>
+
+      {/* Submit Overlay — shows during submission, success celebration, and errors */}
+      <RoundSubmitOverlay
+        isVisible={step === 'submitting'}
+        totalScore={submittingTotalScore}
+        toPar={submittingToPar}
+        courseName={setupData.courseName}
+        error={error || undefined}
+        completedRoundId={completedRoundId ?? undefined}
+        onGoBack={() => {
+          setError('');
+          isSubmittingRef.current = false;
+          setStep('tracking');
+          if (pendingFinalStats) {
+            setPendingFinalStats(pendingFinalStats);
+            setShowFinishConfirm(true);
+          }
+        }}
+        onRetry={pendingFinalStats ? () => {
+          setError('');
+          isSubmittingRef.current = false;
+          void handleRoundSubmit(pendingFinalStats);
+        } : undefined}
+      />
 
     </>
   );
