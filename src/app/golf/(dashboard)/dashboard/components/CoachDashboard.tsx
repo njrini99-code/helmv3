@@ -1,7 +1,8 @@
 'use client';
 
-import { useMemo, useState, useEffect, useRef, memo } from 'react';
+import { useState, useEffect, useRef, memo, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { m, AnimatePresence } from 'framer-motion';
 import {
@@ -35,7 +36,7 @@ import {
     itemVariants
 } from '@/components/golf/dashboard';
 import { JoinRequestAlert } from '@/components/golf/roster/JoinRequestAlert';
-import type { CoachDashboardPayload, TodayEvent, ActionItem, TeamPulseData } from '@/app/golf/actions/dashboard-data';
+import type { CoachDashboardPayload, TodayEvent, ActionItem, TeamPulseData, DashboardDateRange } from '@/app/golf/actions/dashboard-data';
 import type { CalendarEvent } from '@/lib/types/calendar';
 
 const TrendChart = dynamic(() => import('./TrendChart').then(mod => ({ default: mod.TrendChart })), {
@@ -276,11 +277,20 @@ const DateRangeSelector = memo(function DateRangeSelector({
 interface CoachDashboardProps {
     data: CoachDashboardData;
     enhancedData?: CoachDashboardPayload | null;
+    dateRange?: DashboardDateRange;
 }
 
-export function CoachDashboard({ data, enhancedData }: CoachDashboardProps) {
+export function CoachDashboard({ data, enhancedData, dateRange: initialRange = 'all' }: CoachDashboardProps) {
     const { coach, team, stats, recentRounds, topPlayers, teamScoringTrend } = data;
-    const [dateRange, setDateRange] = useState<DateRange>('all');
+    const router = useRouter();
+    const [dateRange, setDateRange] = useState<DateRange>(initialRange);
+
+    const handleDateRangeChange = useCallback((range: DateRange) => {
+        setDateRange(range);
+        // Navigate with search param to trigger server re-fetch
+        const url = range === 'all' ? '/golf/dashboard' : `/golf/dashboard?range=${range}`;
+        router.push(url);
+    }, [router]);
 
     // Defer time-dependent values to client to avoid hydration mismatch
     // (server timezone differs from browser timezone)
@@ -292,24 +302,8 @@ export function CoachDashboard({ data, enhancedData }: CoachDashboardProps) {
 
     const firstName = coach.full_name?.split(' ')[0] || 'Coach';
 
-    const filteredRounds = useMemo(() => {
-        if (dateRange === 'all') return recentRounds;
-        const now = new Date();
-        let cutoff: Date;
-        switch (dateRange) {
-            case '7d': cutoff = new Date(now.getTime() - 7 * 86400000); break;
-            case '30d': cutoff = new Date(now.getTime() - 30 * 86400000); break;
-            case '90d': cutoff = new Date(now.getTime() - 90 * 86400000); break;
-            case 'season': {
-                const month = now.getMonth();
-                const year = month >= 7 ? now.getFullYear() : now.getFullYear() - 1;
-                cutoff = new Date(year, 7, 1);
-                break;
-            }
-            default: cutoff = new Date(0);
-        }
-        return recentRounds.filter(r => new Date(r.round_date) >= cutoff);
-    }, [recentRounds, dateRange]);
+    // Rounds are now filtered server-side based on dateRange URL param
+    const filteredRounds = recentRounds;
 
     const hasTrendData = teamScoringTrend && teamScoringTrend.length >= 2;
 
@@ -343,7 +337,7 @@ export function CoachDashboard({ data, enhancedData }: CoachDashboardProps) {
                             </div>
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
-                            <DateRangeSelector value={dateRange} onChange={setDateRange} />
+                            <DateRangeSelector value={dateRange} onChange={handleDateRangeChange} />
                             <div className={cn(
                                 'hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg',
                                 'bg-warm-50/80 border border-warm-200/40',

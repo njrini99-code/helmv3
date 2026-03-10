@@ -680,7 +680,14 @@ export function useShotStateMachine({
         (isPutting && state.resultOfShot !== null);
 
       if (!needsMissDirection || state.missDirection) {
-        setTimeout(() => distanceInputRef.current?.focus(), 100);
+        // Delay to let the distance section render, then smooth-scroll + focus
+        setTimeout(() => {
+          const el = distanceInputRef.current;
+          if (!el) return;
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Focus after scroll animation settles
+          setTimeout(() => el.focus({ preventScroll: true }), 350);
+        }, 150);
       }
     }
   }, [state.resultOfShot, state.missDirection, isTeeShot, isApproachOrAroundGreen, isPutting]);

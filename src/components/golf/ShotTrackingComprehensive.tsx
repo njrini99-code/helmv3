@@ -1073,6 +1073,7 @@ export default function ShotTrackingComprehensive({
                       aria-label={isPutting ? 'Leave distance in feet or yards' : 'Distance remaining to hole'}
                       value={distanceAfterShot}
                       onChange={(e) => dispatch({ type: 'SET_DISTANCE_AFTER', payload: e.target.value })}
+                      onWheel={(e) => (e.target as HTMLInputElement).blur()}
                       placeholder="Enter distance"
                       className={`w-full h-14 px-5 rounded-xl text-3xl font-bold text-primary-900 text-center bg-white border-2 focus:ring-4 focus:outline-none transition-colors placeholder:text-warm-300 ${
                         distanceAfterShot && (!Number.isFinite(parseFloat(distanceAfterShot)) || parseFloat(distanceAfterShot) < 0)
@@ -1689,6 +1690,7 @@ export default function ShotTrackingComprehensive({
                             aria-label="Distance to hole before shot"
                             value={editFormData.distanceToHoleBefore}
                             onChange={(e) => updateEditForm({ distanceToHoleBefore: e.target.value })}
+                            onWheel={(e) => (e.target as HTMLInputElement).blur()}
                             className="flex-1 h-12 px-4 rounded-lg text-lg font-semibold text-warm-900 text-center bg-white border-2 border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 focus:outline-none transition-colors"
                           />
                           <div className="inline-flex bg-warm-100 rounded-lg p-1">
@@ -1817,6 +1819,7 @@ export default function ShotTrackingComprehensive({
                               aria-label="Distance to hole after shot"
                               value={editFormData.distanceToHoleAfter}
                               onChange={(e) => updateEditForm({ distanceToHoleAfter: e.target.value })}
+                              onWheel={(e) => (e.target as HTMLInputElement).blur()}
                               className="flex-1 h-12 px-4 rounded-lg text-lg font-semibold text-warm-900 text-center bg-white border-2 border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 focus:outline-none transition-colors"
                             />
                             <div className="inline-flex bg-warm-100 rounded-lg p-1">

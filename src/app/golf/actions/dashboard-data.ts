@@ -169,23 +169,35 @@ function getTodayRange(tz?: string): { start: string; end: string } {
     return { start: start.toISOString(), end: end.toISOString() };
 }
 
-/** Trend for metrics where lower is better (scoring avg, putts) */
+/** Trend for metrics where lower is better (scoring avg, putts).
+ *  Uses split-half of last 5 values with 1.0-stroke threshold
+ *  — aligned with stats page algorithm for consistency. */
 function computeTrend(scores: number[]): 'improving' | 'declining' | 'stable' {
-    if (scores.length < 6) return 'stable';
-    const recent5 = scores.slice(0, 5).reduce((a, b) => a + b, 0) / 5;
-    const prev5 = scores.slice(5, 10).reduce((a, b) => a + b, 0) / Math.min(5, scores.length - 5);
-    if (recent5 < prev5 - 0.5) return 'improving';
-    if (recent5 > prev5 + 0.5) return 'declining';
+    if (scores.length < 3) return 'stable';
+    const recent = scores.slice(0, 5); // newest first, up to 5
+    const mid = Math.floor(recent.length / 2);
+    const recentHalf = recent.slice(0, mid); // most recent
+    const olderHalf = recent.slice(mid);     // older
+    if (recentHalf.length === 0 || olderHalf.length === 0) return 'stable';
+    const recentAvg = recentHalf.reduce((a, b) => a + b, 0) / recentHalf.length;
+    const olderAvg = olderHalf.reduce((a, b) => a + b, 0) / olderHalf.length;
+    if (recentAvg < olderAvg - 1) return 'improving';  // lower is better
+    if (recentAvg > olderAvg + 1) return 'declining';
     return 'stable';
 }
 
 /** Trend for metrics where higher is better (GIR%, FIR%) */
-function computeTrendHigherIsBetter(values: number[], threshold = 1.5): 'improving' | 'declining' | 'stable' {
-    if (values.length < 6) return 'stable';
-    const recent5 = values.slice(0, 5).reduce((a, b) => a + b, 0) / 5;
-    const prev5 = values.slice(5, 10).reduce((a, b) => a + b, 0) / Math.min(5, values.length - 5);
-    if (recent5 > prev5 + threshold) return 'improving';  // GIR went UP = good
-    if (recent5 < prev5 - threshold) return 'declining';   // GIR went DOWN = bad
+function computeTrendHigherIsBetter(values: number[], threshold = 2): 'improving' | 'declining' | 'stable' {
+    if (values.length < 3) return 'stable';
+    const recent = values.slice(0, 5);
+    const mid = Math.floor(recent.length / 2);
+    const recentHalf = recent.slice(0, mid);
+    const olderHalf = recent.slice(mid);
+    if (recentHalf.length === 0 || olderHalf.length === 0) return 'stable';
+    const recentAvg = recentHalf.reduce((a, b) => a + b, 0) / recentHalf.length;
+    const olderAvg = olderHalf.reduce((a, b) => a + b, 0) / olderHalf.length;
+    if (recentAvg > olderAvg + threshold) return 'improving';  // GIR went UP = good
+    if (recentAvg < olderAvg - threshold) return 'declining';  // GIR went DOWN = bad
     return 'stable';
 }
 
@@ -207,10 +219,13 @@ function buildSparkline(
 // COACH DASHBOARD DATA
 // ============================================================================
 
+export type DashboardDateRange = '7d' | '30d' | '90d' | 'season' | 'all';
+
 export async function getCoachDashboardData(
     _coachId: string,
     userId: string,
-    teamId: string
+    teamId: string,
+    dateRange: DashboardDateRange = 'all'
 ): Promise<CoachDashboardPayload> {
     const supabase = await createClient();
 
@@ -232,6 +247,23 @@ export async function getCoachDashboardData(
     const { start: todayStart, end: todayEnd } = getTodayRange(teamTimezone);
     const now = new Date().toISOString();
     const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+
+    // Compute date cutoff for the selected range
+    let dateCutoff: string | null = null;
+    if (dateRange !== 'all') {
+        const nowMs = Date.now();
+        switch (dateRange) {
+            case '7d': dateCutoff = new Date(nowMs - 7 * 86400000).toISOString().split('T')[0]!; break;
+            case '30d': dateCutoff = new Date(nowMs - 30 * 86400000).toISOString().split('T')[0]!; break;
+            case '90d': dateCutoff = new Date(nowMs - 90 * 86400000).toISOString().split('T')[0]!; break;
+            case 'season': {
+                const d = new Date();
+                const yr = d.getMonth() >= 7 ? d.getFullYear() : d.getFullYear() - 1;
+                dateCutoff = `${yr}-08-01`;
+                break;
+            }
+        }
+    }
 
     // ── Parallel batch 1: Team info + roster + events + qualifiers + today's events + tasks + announcements + calendar ──
     const [
@@ -349,23 +381,29 @@ export async function getCoachDashboardData(
     const teamPulse: TeamPulseData = { improving: 0, stable: 0, declining: 0, roundsThisWeek: 0 };
 
     if (playerIds.length > 0) {
+        // Build recent rounds query with optional date filter
+        let recentRoundsQ = supabase
+            .from('golf_rounds')
+            .select('id, player_id, course_name, total_score, score_to_par, round_date, round_type, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible, player:golf_players(first_name, last_name, avatar_url)')
+            .in('player_id', playerIds)
+            .eq('status', 'completed')
+            .not('total_score', 'is', null);
+        if (dateCutoff) recentRoundsQ = recentRoundsQ.gte('round_date', dateCutoff);
+        recentRoundsQ = recentRoundsQ.order('round_date', { ascending: false }).limit(50);
+
+        // Build all rounds query with optional date filter + holes_played for normalization
+        let allRoundsQ = supabase
+            .from('golf_rounds')
+            .select('player_id, total_score, score_to_par, round_date, holes_played, total_putts, total_gir, total_gir_possible')
+            .in('player_id', playerIds)
+            .eq('status', 'completed')
+            .not('total_score', 'is', null);
+        if (dateCutoff) allRoundsQ = allRoundsQ.gte('round_date', dateCutoff);
+        allRoundsQ = allRoundsQ.order('round_date', { ascending: false }).limit(200);
+
         const [recentRoundsResult, allRoundsResult, weekRoundsResult] = await Promise.all([
-            supabase
-                .from('golf_rounds')
-                .select('id, player_id, course_name, total_score, score_to_par, round_date, round_type, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible, player:golf_players(first_name, last_name, avatar_url)')
-                .in('player_id', playerIds)
-                .eq('status', 'completed')
-                .not('total_score', 'is', null)
-                .order('round_date', { ascending: false })
-                .limit(50),
-            supabase
-                .from('golf_rounds')
-                .select('player_id, total_score, score_to_par, round_date, total_putts, total_gir, total_gir_possible')
-                .in('player_id', playerIds)
-                .eq('status', 'completed')
-                .not('total_score', 'is', null)
-                .order('round_date', { ascending: false })
-                .limit(200),
+            recentRoundsQ,
+            allRoundsQ,
             // Rounds this week
             supabase
                 .from('golf_rounds')
@@ -511,23 +549,33 @@ export async function getCoachDashboardData(
                 },
             };
 
-            // Team pulse — per-player trend (only count players with 6+ rounds for meaningful trends)
+            // Team pulse — per-player trend using normalized 18-hole equivalents
+            // (aligned with stats page algorithm: 3+ rounds, split-half, 1.0 threshold)
             let bestDelta = 0;
             let bestMoverName = '';
             players.forEach(p => {
                 const pRounds = allRounds.filter(r => r.player_id === p.id);
-                const pScores = pRounds.map(r => r.total_score).filter((s): s is number => s !== null);
-                if (pScores.length < 6) return; // Skip players without enough data for trend
-                const trend = computeTrend(pScores);
+                // Normalize to 18-hole equivalents (matches stats page)
+                const pNormalized = pRounds
+                    .map(r => {
+                        if (r.total_score === null) return null;
+                        const hp = (r as { holes_played?: number | null }).holes_played ?? 18;
+                        return Math.round(r.total_score * (18 / hp));
+                    })
+                    .filter((s): s is number => s !== null);
+                if (pNormalized.length < 3) return; // Need 3+ rounds for trend
+                const trend = computeTrend(pNormalized);
                 if (trend === 'improving') teamPulse.improving++;
                 else if (trend === 'declining') teamPulse.declining++;
                 else teamPulse.stable++;
 
                 // Top mover
-                if (pScores.length >= 6) {
-                    const recent = pScores.slice(0, 5).reduce((a, b) => a + b, 0) / 5;
-                    const prev = pScores.slice(5, 10).reduce((a, b) => a + b, 0) / Math.min(5, pScores.length - 5);
-                    const delta = prev - recent; // positive = improvement (lower scores)
+                if (pNormalized.length >= 3) {
+                    const recent5 = pNormalized.slice(0, 5);
+                    const mid = Math.floor(recent5.length / 2);
+                    const recentAvg = recent5.slice(0, mid).reduce((a, b) => a + b, 0) / mid;
+                    const olderAvg = recent5.slice(mid).reduce((a, b) => a + b, 0) / (recent5.length - mid);
+                    const delta = olderAvg - recentAvg; // positive = improvement
                     if (delta > bestDelta) {
                         bestDelta = delta;
                         bestMoverName = `${p.first_name || ''} ${p.last_name || ''}`.trim();

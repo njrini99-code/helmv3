@@ -711,6 +711,19 @@ export default function ContinueRoundClient({
         />
       </div>
 
+      {/* Submit banner — shown when all holes are done but finish confirm was dismissed */}
+      {pendingFinalStats && !showFinishConfirm && !submitting && (
+        <div className="sticky top-[49px] z-20 bg-primary-600 text-white px-4 py-3 flex items-center justify-between gap-3">
+          <p className="text-sm font-medium">All holes completed — ready to submit!</p>
+          <button
+            onClick={() => setShowFinishConfirm(true)}
+            className="px-4 py-2 rounded-lg bg-white text-primary-700 text-sm font-semibold hover:bg-primary-50 active:bg-primary-100 transition-colors flex-shrink-0"
+          >
+            Submit Round
+          </button>
+        </div>
+      )}
+
       {/* Shot Tracking */}
       <ShotTrackingComprehensive
         holes={holes}
@@ -971,7 +984,7 @@ export default function ContinueRoundClient({
                         onClick={() => setShowFinishConfirm(false)}
                         className="flex-1 py-3 rounded-xl bg-warm-100 text-warm-700 font-medium hover:bg-warm-200 active:bg-warm-300 transition-colors"
                       >
-                        Review Holes
+                        Go Back
                       </button>
                       <button
                         onClick={async () => {

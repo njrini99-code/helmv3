@@ -1574,6 +1574,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                           enterKeyHint="next"
                           value={setupData.courseRating}
                           onChange={(e) => setSetupData({ ...setupData, courseRating: e.target.value })}
+                          onWheel={(e) => (e.target as HTMLInputElement).blur()}
                           className="w-full px-4 py-2.5 rounded-lg border border-warm-200 bg-white/80 focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none transition-colors"
                           placeholder="72.1"
                         />
@@ -1589,6 +1590,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                           enterKeyHint="next"
                           value={setupData.courseSlope}
                           onChange={(e) => setSetupData({ ...setupData, courseSlope: e.target.value })}
+                          onWheel={(e) => (e.target as HTMLInputElement).blur()}
                           className="w-full px-4 py-2.5 rounded-lg border border-warm-200 bg-white/80 focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none transition-colors"
                           placeholder="133"
                           aria-label="Course slope rating"
@@ -1976,6 +1978,19 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
 
   return (
     <>
+      {/* Submit banner — shown when all holes are done but finish confirm was dismissed */}
+      {pendingFinalStats && !showFinishConfirm && step === 'tracking' && (
+        <div className="sticky top-[49px] z-20 bg-primary-600 text-white px-4 py-3 flex items-center justify-between gap-3">
+          <p className="text-sm font-medium">All holes completed — ready to submit!</p>
+          <button
+            onClick={() => setShowFinishConfirm(true)}
+            className="px-4 py-2 rounded-lg bg-white text-primary-700 text-sm font-semibold hover:bg-primary-50 active:bg-primary-100 transition-colors flex-shrink-0"
+          >
+            Submit Round
+          </button>
+        </div>
+      )}
+
       <ShotTrackingComprehensive
         holes={holes}
         currentHoleIndex={currentHoleIndex}
@@ -2310,7 +2325,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                         onClick={() => setShowFinishConfirm(false)}
                         className="flex-1 py-3 rounded-xl bg-warm-100 text-warm-700 font-medium hover:bg-warm-200 active:bg-warm-300 transition-colors"
                       >
-                        Review Holes
+                        Go Back
                       </button>
                       <button
                         onClick={async () => {

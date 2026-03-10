@@ -4,6 +4,7 @@ import { getGolfSessionProfile } from '@/lib/auth/session';
 import {
     getCachedCoachDashboardData,
     getCachedPlayerDashboardData,
+    type DashboardDateRange,
 } from '@/app/golf/actions/dashboard-data';
 import { CoachDashboard, type CoachDashboardData } from './components/CoachDashboard';
 import { PlayerDashboard, type PlayerDashboardData } from './components/PlayerDashboard';
@@ -12,7 +13,16 @@ import type { CalendarEvent } from '@/lib/types/calendar';
 
 export const dynamic = 'force-dynamic';
 
-export default async function GolfDashboardPage() {
+const VALID_RANGES = new Set(['7d', '30d', '90d', 'season', 'all']);
+
+export default async function GolfDashboardPage({
+    searchParams,
+}: {
+    searchParams: Promise<{ range?: string }>;
+}) {
+    const params = await searchParams;
+    const dateRange: DashboardDateRange = VALID_RANGES.has(params.range ?? '') ? (params.range as DashboardDateRange) : 'all';
+
     // React.cache() dedupes getUser() + profile queries across render tree
     // Eliminates 4-6 redundant Supabase round-trips vs ad-hoc getUser()
     const session = await getGolfSessionProfile();
@@ -40,7 +50,7 @@ export default async function GolfDashboardPage() {
         }
 
         if (teamId) {
-            const payload = await getCachedCoachDashboardData(coach.id, userId, teamId);
+            const payload = await getCachedCoachDashboardData(coach.id, userId, teamId, dateRange);
 
             const data: CoachDashboardData = {
                 coach: {
@@ -61,7 +71,7 @@ export default async function GolfDashboardPage() {
                 teamScoringTrend: payload.teamScoringTrend.length > 0 ? payload.teamScoringTrend : undefined,
             };
 
-            return <CoachDashboard data={data} enhancedData={payload} />;
+            return <CoachDashboard data={data} enhancedData={payload} dateRange={dateRange} />;
         }
 
         // Coach without team — empty state
@@ -82,7 +92,7 @@ export default async function GolfDashboardPage() {
             teamScoringTrend: undefined,
         };
 
-        return <CoachDashboard data={emptyData} />;
+        return <CoachDashboard data={emptyData} dateRange={dateRange} />;
     }
 
     // ── Player dashboard ──
