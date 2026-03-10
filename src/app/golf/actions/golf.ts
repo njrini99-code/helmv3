@@ -791,11 +791,13 @@ export async function submitGolfRoundComprehensive(
         if ((shot.shotType === 'approach' || shot.shotType === 'around_green') &&
             shot.approachMissDirection &&
             shot.result !== 'green' && shot.result !== 'hole') {
+          // Map 'bunker' → 'sand' to match DB check constraint
+          const dbLieType = shot.approachMissLieType === 'bunker' ? 'sand' : (shot.approachMissLieType || null);
           approachDetailsPayload.push({
             hole_number: hole.holeNumber,
             shot_number: shot.shotNumber,
             miss_direction: shot.approachMissDirection,
-            lie_type: shot.approachMissLieType || null,
+            lie_type: dbLieType,
             distance_from_green_yards: shot.distanceToHoleAfter != null
               ? (shot.distanceUnitAfter === 'feet'
                 ? Math.round(shot.distanceToHoleAfter / 3)
@@ -2686,11 +2688,13 @@ export async function savePartialRound(
         if ((shot.shotType === 'approach' || shot.shotType === 'around_green') &&
             shot.approachMissDirection &&
             shot.result !== 'green' && shot.result !== 'hole') {
+          // Map 'bunker' → 'sand' to match DB check constraint
+          const dbLieType = shot.approachMissLieType === 'bunker' ? 'sand' : (shot.approachMissLieType || null);
           approachDetailsPayload.push({
             hole_number: holeNumber,
             shot_number: shot.shotNumber,
             miss_direction: shot.approachMissDirection,
-            lie_type: shot.approachMissLieType || null,
+            lie_type: dbLieType,
             distance_from_green_yards: shot.distanceToHoleAfter != null
               ? (shot.distanceUnitAfter === 'feet'
                 ? Math.round(shot.distanceToHoleAfter / 3)
