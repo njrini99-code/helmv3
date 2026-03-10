@@ -29,7 +29,7 @@ export type GolfShot = Tables<'golf_shots'>; // Using golf_shots instead of golf
 export type GolfEvent = Tables<'golf_events'>;
 export type GolfEventAttendance = Tables<'golf_event_attendance'>;
 export type GolfTask = Tables<'golf_tasks'>;
-export type GolfAnnouncement = Tables<'golf_announcements'>;
+type GolfAnnouncement = Tables<'golf_announcements'>;
 // GolfAnnouncementAcknowledgement - table doesn't exist, define manually
 export interface GolfAnnouncementAcknowledgement {
   id: string;
@@ -56,12 +56,6 @@ export type GolfPlayerClass = Tables<'golf_player_classes'>;
 // ============================================================================
 // COACH NOTES
 // ============================================================================
-
-// ============================================================================
-// ENUMS (manually defined - not in database schema)
-// ============================================================================
-
-export type GolfEventType = 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other';
 
 // Enriched announcement with all relations (used by detail views)
 export interface GolfAnnouncementEnriched extends GolfAnnouncement {
@@ -118,69 +112,6 @@ export interface GolfAnnouncementMeta extends GolfAnnouncement {
     last_name: string | null;
     avatar_url: string | null;
   }>;
-}
-
-// ============================================================================
-// STATISTICS TYPES
-// ============================================================================
-
-/**
- * Strokes Gained breakdown for PlayerStats
- */
-export interface PlayerStrokesGained {
-  sg_total: number;
-  sg_off_tee: number;
-  sg_approach: number;
-  sg_around_green: number;
-  sg_putting: number;
-}
-
-export interface PlayerStats {
-  // Player identifier
-  player_id?: string;
-
-  // Round count (both names supported for compatibility)
-  rounds_played: number;
-  total_rounds: number;
-
-  // Scoring (both names supported for compatibility)
-  scoring_average: number;
-  scoring_avg: number;
-
-  // Best/worst rounds
-  best_round: number;
-  worst_round: number;
-
-  // Putting stats (both names supported for compatibility)
-  putts_per_round: number;
-  avg_putts: number;
-
-  // Fairway stats (both names supported for compatibility)
-  fairways_hit_percentage: number;
-  fairway_percentage: number;
-
-  // GIR stats (both names supported for compatibility)
-  greens_in_regulation_percentage: number;
-  gir_percentage: number;
-
-  // Short game stats
-  up_and_down_percentage: number;
-
-  // Strokes gained breakdown
-  strokes_gained: PlayerStrokesGained;
-
-  // Optional handicap
-  handicap_index?: number;
-}
-
-// Alias for consistency
-export interface TeamStats {
-  total_players: number;
-  active_players: number;
-  total_rounds: number;
-  team_scoring_average: number;
-  upcoming_events: number;
-  pending_tasks: number;
 }
 
 // ============================================================================
@@ -412,7 +343,7 @@ export function formatFileSize(bytes: number): string {
  * - 'iframe': Office documents - rendered via Google Docs Viewer
  * - 'download': Unsupported types - show download option only
  */
-export type PreviewStrategy = 'custom' | 'native' | 'iframe' | 'download';
+type PreviewStrategy = 'custom' | 'native' | 'iframe' | 'download';
 
 /**
  * Get preview strategy based on mime type
@@ -464,7 +395,7 @@ export const REMINDER_PRESETS: ReminderPreset[] = [
   { label: 'Custom', value: 'custom' },
 ];
 
-export interface TaskReminder {
+interface TaskReminder {
   id: string;
   task_id: string;
   scheduled_for: string;
@@ -503,48 +434,6 @@ export interface TaskTemplate {
   created_by: string;
   created_at?: string;
   updated_at?: string;
-}
-
-// ============================================================================
-// STROKES GAINED & STATISTICS TYPES
-// ============================================================================
-
-export interface StrokesGainedBreakdown {
-  tee: number;
-  approach: number;
-  around_green: number;
-  putting: number;
-}
-
-export interface StrokesGainedResult {
-  total: number;
-  breakdown: StrokesGainedBreakdown;
-  roundsAnalyzed: number;
-  benchmarkType: 'pga' | 'scratch' | 'team';
-}
-
-export type TrendDirection = 'improving' | 'declining' | 'stable' | 'insufficient_data';
-
-export interface TrendPoint {
-  date: string;
-  value: number;
-  label?: string;
-}
-
-export interface TrendAnalysis {
-  direction: TrendDirection;
-  changePercent: number;
-  dataPoints: TrendPoint[];
-  periodLabel: string;
-}
-
-export interface StatCardProps {
-  label: string;
-  value: string | number;
-  trend?: TrendDirection;
-  trendValue?: string;
-  description?: string;
-  icon?: React.ReactNode;
 }
 
 // ============================================================================
@@ -708,12 +597,6 @@ export interface RoundReviewWithDetails extends GolfRoundReview {
 }
 
 // ============================================================================
-// ADVANCED STATISTICS TYPES
-// ============================================================================
-
-export type RoundType = 'practice' | 'qualifier' | 'tournament' | 'all';
-
-// ============================================================================
 // TASK TEMPLATE DATA TYPES
 // ============================================================================
 
@@ -745,44 +628,4 @@ export interface CreateTaskFromTemplate {
   custom_description?: string;
 }
 
-// ============================================================================
-// UI UTILITY FUNCTIONS
-// ============================================================================
-
-/**
- * Get human-readable label for review status
- */
-export function getStatusLabel(status: ReviewStatus): string {
-  switch (status) {
-    case 'pending':
-      return 'Pending';
-    case 'generating':
-      return 'Generating';
-    case 'draft':
-      return 'Draft';
-    case 'coach_review':
-      return 'Coach Review';
-    case 'approved':
-      return 'Approved';
-    case 'shared':
-      return 'Shared';
-    case 'failed':
-      return 'Failed';
-    default:
-      return 'Unknown';
-  }
-}
-
-/**
- * Get color class for score display based on relation to par
- */
-export function getScoreColor(score: number, par: number): string {
-  const diff = score - par;
-  if (diff <= -2) return 'text-amber-600'; // Eagle or better
-  if (diff === -1) return 'text-red-600'; // Birdie
-  if (diff === 0) return 'text-gray-900'; // Par
-  if (diff === 1) return 'text-blue-600'; // Bogey
-  if (diff === 2) return 'text-blue-700'; // Double bogey
-  return 'text-blue-800'; // Triple+
-}
 

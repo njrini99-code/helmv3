@@ -4,7 +4,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { User, CoachWithOrganization, Player } from '@/lib/types';
 
-export type CoachMode = 'recruiting' | 'team';
+type CoachMode = 'recruiting' | 'team';
 
 /**
  * Sync coach mode to a cookie for middleware access

@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
 import { DocumentsClient } from './documents-client';
@@ -13,25 +14,12 @@ export const metadata: Metadata = {
 export const revalidate = 300;
 
 export default async function GolfDocumentsPage() {
-  const supabase = await createClient();
+  const session = await getGolfSessionProfile();
+  if (!session) redirect('/golf/login');
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/golf/login');
-
-  // Determine user role
-  const { data: coach } = await supabase
-    .from('golf_coaches')
-    .select('id, organization_id')
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  const { data: player } = await supabase
-    .from('golf_players')
-    .select('id')
-    .eq('user_id', user.id)
-    .maybeSingle();
-
+  const { coach, player } = session;
   const isCoach = !!coach;
+  const supabase = await createClient();
 
   // Get team_id: for coaches, look up via organization; for players, look up via team_members
   let teamId: string | null = null;

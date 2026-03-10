@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { TeamStatsTable } from './team-stats-table';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
@@ -39,22 +40,13 @@ export interface TeamPlayerStats {
 }
 
 export default async function TeamStatsPage() {
+  const session = await getGolfSessionProfile();
+  if (!session) redirect('/golf/login');
+
+  const { coach } = session;
+  if (!coach) redirect('/golf/dashboard/stats'); // coach-only page
+
   const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/golf/login');
-
-  // Check if user is a coach - this page is COACH ONLY
-  const { data: coach } = await supabase
-    .from('golf_coaches')
-    .select('id, organization_id')
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  // If not a coach, redirect to regular stats page
-  if (!coach) {
-    redirect('/golf/dashboard/stats');
-  }
 
   // Get team_id from golf_teams via organization_id
   let teamId: string | null = null;

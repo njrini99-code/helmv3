@@ -397,22 +397,40 @@ export function MobileEventSheet({
           {/* Date & Time Card */}
           <div className="px-5 pb-4">
             <div className="bg-warm-50 rounded-2xl p-4 space-y-3">
-              {/* Date Row */}
+              {/* Date Row — Start & End */}
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-white shadow-sm flex items-center justify-center flex-shrink-0">
                   <Calendar className="w-4.5 h-4.5 text-warm-500" />
                 </div>
-                <input
-                  type="date"
-                  value={formData.startDate}
-                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                  disabled={isViewMode || isSaving}
-                  aria-label="Event date"
-                  className={cn(
-                    'flex-1 bg-transparent text-base text-warm-900 border-0 outline-none',
-                    'disabled:text-warm-600 min-h-[40px]'
-                  )}
-                />
+                <div className="flex-1 flex items-center gap-2">
+                  <input
+                    type="date"
+                    value={formData.startDate}
+                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                    disabled={isViewMode || isSaving}
+                    aria-label="Start date"
+                    className={cn(
+                      'flex-1 bg-white rounded-xl px-3 py-2 text-base text-warm-900',
+                      'border border-warm-200 outline-none min-h-[40px]',
+                      'focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:border-primary-300',
+                      'disabled:text-warm-600 disabled:bg-warm-50'
+                    )}
+                  />
+                  <span className="text-warm-400 text-sm" aria-hidden="true">to</span>
+                  <input
+                    type="date"
+                    value={formData.endDate || ''}
+                    onChange={(e) => setFormData({ ...formData, endDate: e.target.value || null })}
+                    disabled={isViewMode || isSaving}
+                    aria-label="End date"
+                    className={cn(
+                      'flex-1 bg-white rounded-xl px-3 py-2 text-base text-warm-900',
+                      'border border-warm-200 outline-none min-h-[40px]',
+                      'focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:border-primary-300',
+                      'disabled:text-warm-600 disabled:bg-warm-50'
+                    )}
+                  />
+                </div>
               </div>
 
               {/* All Day Toggle */}

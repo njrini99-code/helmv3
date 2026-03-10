@@ -13,7 +13,7 @@
  * - Shot data pages: Stale-while-revalidate
  */
 
-const CACHE_VERSION = 'golfhelm-ve13c33b';
+const CACHE_VERSION = 'golfhelm-v90f3d369';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const API_CACHE = `${CACHE_VERSION}-api`;

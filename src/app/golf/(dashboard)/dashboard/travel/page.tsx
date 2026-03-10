@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
 import { TravelClient } from './travel-client';
@@ -13,19 +14,11 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic';
 
 export default async function GolfTravelPage() {
+  const session = await getGolfSessionProfile();
+  if (!session) redirect('/golf/login');
+
+  const { coach, player } = session;
   const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/golf/login');
-
-  // Coach + player profiles in parallel
-  const [coachResult, playerResult] = await Promise.all([
-    supabase.from('golf_coaches').select('id, organization_id').eq('user_id', user.id).maybeSingle(),
-    supabase.from('golf_players').select('id').eq('user_id', user.id).maybeSingle(),
-  ]);
-
-  const coach = coachResult.data;
-  const player = playerResult.data;
 
   // Team lookups in parallel (coach via org, player via membership)
   const [coachTeamResult, playerTeamResult] = await Promise.all([

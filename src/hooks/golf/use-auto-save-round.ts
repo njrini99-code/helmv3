@@ -352,12 +352,25 @@ export function useAutoSaveRound(
   }, [loadFromLocalStorage]);
 
   /**
-   * Clear draft from both database and localStorage
+   * Clear local draft state only (localStorage + hook state).
+   * Does NOT delete the round from the database.
+   * Use this when the round should be preserved in the DB (e.g., save-for-later).
    */
-  const clearDraft = useCallback(async () => {
+  const clearLocalDraft = useCallback(() => {
     clearLocalStorage();
     lastDataRef.current = null;
     pendingSaveRef.current = null;
+    setCurrentRoundId(null);
+    setSaveStatus({ status: 'idle', lastSaved: null, error: null });
+  }, [clearLocalStorage]);
+
+  /**
+   * Clear draft from both database and localStorage.
+   * WARNING: This DELETES the in_progress round from the database.
+   * Only use after successful submission (round is 'completed') or intentional delete.
+   */
+  const clearDraft = useCallback(async () => {
+    clearLocalDraft();
 
     if (currentRoundId) {
       try {
@@ -366,10 +379,7 @@ export function useAutoSaveRound(
         // Silently fail - draft may already be deleted
       }
     }
-
-    setCurrentRoundId(null);
-    setSaveStatus({ status: 'idle', lastSaved: null, error: null });
-  }, [currentRoundId, clearLocalStorage]);
+  }, [currentRoundId, clearLocalDraft]);
 
   /**
    * Format time since last save for display
@@ -395,6 +405,7 @@ export function useAutoSaveRound(
     stopSaving,
     loadDraft,
     clearDraft,
+    clearLocalDraft,
 
     // Status
     saveStatus,

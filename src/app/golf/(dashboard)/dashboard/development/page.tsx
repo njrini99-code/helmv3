@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { DevelopmentPlansClient } from './development-client';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
@@ -12,23 +13,13 @@ export const metadata: Metadata = {
 export const revalidate = 60;
 
 export default async function DevelopmentPlansPage() {
+  const session = await getGolfSessionProfile();
+  if (!session) redirect('/golf/login');
+
+  const { coach } = session;
+  if (!coach) redirect('/golf/dashboard?message=Development+plans+is+a+coach-only+feature');
+
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect('/golf/login');
-  }
-
-  // Verify user is a coach
-  const { data: coach } = await supabase
-    .from('golf_coaches')
-    .select('id, organization_id')
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  if (!coach) {
-    redirect('/golf/dashboard?message=Development+plans+is+a+coach-only+feature');
-  }
 
   // Get team_id from organization
   let teamId: string | null = null;

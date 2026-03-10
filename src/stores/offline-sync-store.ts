@@ -38,7 +38,7 @@ import {
 // TYPES
 // ============================================================================
 
-export type SyncStatus = 'idle' | 'syncing' | 'success' | 'error' | 'offline';
+type SyncStatus = 'idle' | 'syncing' | 'success' | 'error' | 'offline';
 
 interface SyncHistoryEntry {
   id: string;
@@ -50,7 +50,7 @@ interface SyncHistoryEntry {
   errors: string[];
 }
 
-export interface OfflineSyncState {
+interface OfflineSyncState {
   // Connection
   isOnline: boolean;
   isSlowConnection: boolean;
@@ -141,7 +141,7 @@ interface OfflineSyncActions {
   cleanup: () => void;
 }
 
-export type OfflineSyncStore = OfflineSyncState & OfflineSyncActions;
+type OfflineSyncStore = OfflineSyncState & OfflineSyncActions;
 
 // ============================================================================
 // INITIAL STATE

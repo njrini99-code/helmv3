@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { getGolfSessionProfile } from '@/lib/auth/session';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { redirect } from 'next/navigation';
 import { TeamSettingsClient } from './team-settings-client';
@@ -29,19 +30,13 @@ interface CoachWithTeam {
 }
 
 export default async function TeamSettingsPage() {
+  const session = await getGolfSessionProfile();
+  if (!session) redirect('/golf/login');
+
+  const { coach, player } = session;
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/golf/login');
-
-  // Check if user is a coach
-  const { data: coach } = await supabase
-    .from('golf_coaches')
-    .select('id, organization_id, full_name')
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  // If coach, get team via organization_id
+  // Build coachData (still need team lookup via supabase)
   let coachData: CoachWithTeam | null = null;
   if (coach?.organization_id) {
     const { data: orgTeam } = await supabase
@@ -90,16 +85,7 @@ export default async function TeamSettingsPage() {
     );
   }
 
-  // Check if user is a player - get team via golf_team_members
-  const { data: player } = await supabase
-    .from('golf_players')
-    .select('id')
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  if (!player) {
-    redirect('/golf/dashboard'); // No player profile - redirect to dashboard
-  }
+  if (!player) redirect('/golf/dashboard');
 
   // Get team_id via golf_team_members
   const { data: teamMember } = await supabase

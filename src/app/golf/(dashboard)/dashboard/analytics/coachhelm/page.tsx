@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { CoachHelmAnalyticsDashboard } from '@/components/golf/coachhelm/analytics/CoachHelmAnalyticsDashboard';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
@@ -15,27 +16,13 @@ export const metadata = {
 };
 
 export default async function CoachHelmAnalyticsPage() {
+  const session = await getGolfSessionProfile();
+  if (!session) redirect('/golf/login');
+
+  const { coach } = session;
+  if (!coach) redirect('/golf/dashboard');
+
   const supabase = await createClient();
-
-  // Get authenticated user
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect('/golf/login');
-  }
-
-  // Get coach record
-  const { data: coach } = await supabase
-    .from('golf_coaches')
-    .select('id, organization_id')
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  if (!coach) {
-    redirect('/golf/dashboard');
-  }
 
   // Get team ID from organization
   let teamId: string | null = null;

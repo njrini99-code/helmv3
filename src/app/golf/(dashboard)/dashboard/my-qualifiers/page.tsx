@@ -1,25 +1,16 @@
 import { createClient } from '@/lib/supabase/server';
+import { getGolfSessionProfile } from '@/lib/auth/session';
 import type { PlayerQualifierInfo } from '@/app/golf/actions/golf';
 import { MyQualifiersClient } from './my-qualifiers-client';
 
 export default async function MyQualifiersPage() {
+  const session = await getGolfSessionProfile();
+  if (!session) return <MyQualifiersClient qualifiers={[]} error="You must be signed in" />;
+
+  const { player } = session;
+  if (!player) return <MyQualifiersClient qualifiers={[]} error="Player profile not found" />;
+
   const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return <MyQualifiersClient qualifiers={[]} error="You must be signed in" />;
-  }
-
-  // Get player record
-  const { data: player } = await supabase
-    .from('golf_players')
-    .select('id')
-    .eq('user_id', user.id)
-    .single();
-
-  if (!player) {
-    return <MyQualifiersClient qualifiers={[]} error="Player profile not found" />;
-  }
 
   // Get all qualifier entries for this player
   const { data: entries, error: entriesError } = await supabase

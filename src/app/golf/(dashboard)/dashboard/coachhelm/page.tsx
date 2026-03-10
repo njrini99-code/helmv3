@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
+import { getGolfSessionProfile } from '@/lib/auth/session';
 import { GlassCard } from '@/components/ui/glass-card';
 import { IconInfo, IconSparkles } from '@/components/icons';
 import { getPlayerCoachHelmDashboard } from '@/app/golf/actions/insights';
@@ -115,36 +115,13 @@ function CoachHelmDisabledState({ reason }: { reason: string }) {
  * 4. Renders the client dashboard component
  */
 export default async function PlayerCoachHelmPage() {
-  const supabase = await createClient();
+  const session = await getGolfSessionProfile();
+  if (!session) redirect('/golf/login');
 
-  // Get authenticated user
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect('/golf/login');
-  }
-
-  // Get player record - this is a player-only page
-  const { data: player } = await supabase
-    .from('golf_players')
-    .select('id, first_name, last_name')
-    .eq('user_id', user.id)
-    .maybeSingle();
+  const { coach, player } = session;
 
   if (!player) {
-    // Check if user is a coach
-    const { data: coach } = await supabase
-      .from('golf_coaches')
-      .select('id')
-      .eq('user_id', user.id)
-      .maybeSingle();
-
-    if (coach) {
-      // User is a coach, not a player
-      return <NotPlayerState />;
-    }
-
-    // No player or coach record found
+    if (coach) return <NotPlayerState />;
     return <ErrorState error="Player profile not found. Please complete onboarding first." />;
   }
 

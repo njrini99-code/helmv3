@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { getGolfSessionProfile } from '@/lib/auth/session';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
@@ -69,31 +70,13 @@ function formatRelativeDate(dateStr: string): string {
 }
 
 export default async function RoundsPage() {
+  const session = await getGolfSessionProfile();
+  if (!session) redirect('/golf/login');
+
+  const { role: userRole, coach, player } = session;
+  if (!userRole) redirect('/golf/login');
+
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect('/golf/login');
-  }
-
-  // Check if user is a coach or player
-  const { data: coach } = await supabase
-    .from('golf_coaches')
-    .select('id, organization_id')
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  const { data: player } = await supabase
-    .from('golf_players')
-    .select('id, first_name, last_name')
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  const userRole = coach ? 'coach' : player ? 'player' : null;
-
-  if (!userRole) {
-    redirect('/golf/login');
-  }
 
   // Fetch rounds based on role
   let rounds: RoundWithPlayer[] = [];

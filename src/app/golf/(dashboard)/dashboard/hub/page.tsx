@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
 import { PlayerHubWrapper } from '@/components/golf/player-hub/PlayerHubWrapper';
@@ -31,22 +32,13 @@ interface RawAttendance {
 }
 
 export default async function PlayerHubPage() {
+  const session = await getGolfSessionProfile();
+  if (!session) redirect('/golf/login');
+
+  const { player } = session;
+  if (!player) redirect('/golf/dashboard'); // coaches redirect to main dashboard
+
   const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/golf/login');
-
-  // Get player profile
-  const { data: player } = await supabase
-    .from('golf_players')
-    .select('id, first_name, last_name')
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  if (!player) {
-    // Coaches get redirected to normal dashboard
-    redirect('/golf/dashboard');
-  }
 
   // Get player's team
   const { data: teamMember } = await supabase

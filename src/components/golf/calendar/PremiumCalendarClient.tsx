@@ -465,7 +465,9 @@ export function PremiumCalendarClient({
           title: data.title,
           eventType: data.eventType,
           startDate: data.startDate,
-          endDate: data.endDate || undefined,
+          // Always send endDate so the server preserves the date range.
+          // Default to startDate for single-day events (when end date field is empty).
+          endDate: data.endDate || data.startDate,
           startTime: data.allDay ? undefined : (data.startTime || undefined),
           endTime: data.allDay ? undefined : (data.endTime || undefined),
           allDay: data.allDay,
@@ -890,7 +892,7 @@ export function PremiumCalendarClient({
                 title: data.title,
                 eventType: data.eventType,
                 startDate: data.startDate,
-                endDate: data.endDate || undefined,
+                endDate: data.endDate || data.startDate,
                 startTime: data.allDay ? undefined : (data.startTime || undefined),
                 endTime: data.allDay ? undefined : (data.endTime || undefined),
                 allDay: data.allDay,

@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -56,39 +57,14 @@ function formatHandicap(handicap: number | null): string {
 }
 
 export default async function GolfRosterPage() {
+  const session = await getGolfSessionProfile();
+  if (!session) redirect('/golf/login');
+
+  const { coach, player } = session;
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/golf/login');
-
-  // Get coach — use maybeSingle() to avoid PGRST116 if user is not a coach
-  const { data: coach, error: coachError } = await supabase
-    .from('golf_coaches')
-    .select('id, organization_id')
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  if (coachError) {
-    return (
-      <div className="p-6">
-        <div className="max-w-md mx-auto text-center">
-          <h2 className="text-lg font-semibold text-warm-900 mb-2">Coach Profile Not Found</h2>
-          <p className="text-warm-500 mb-4">
-            Unable to load your coach profile. Please contact support if this persists.
-          </p>
-          <p className="text-xs text-warm-400">Error: {coachError.message}</p>
-        </div>
-      </div>
-    );
-  }
-
   if (!coach) {
-    // Not a coach — check if user is a player on a team
-    const { data: player } = await supabase
-      .from('golf_players')
-      .select('id')
-      .eq('user_id', user.id)
-      .maybeSingle();
+    // Not a coach — check player path
 
     if (!player) {
       return (

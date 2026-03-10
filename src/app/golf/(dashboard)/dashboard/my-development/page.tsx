@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
@@ -60,23 +61,13 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; borderColor:
 };
 
 export default async function MyDevelopmentPage() {
+  const session = await getGolfSessionProfile();
+  if (!session) redirect('/golf/login');
+
+  const { player } = session;
+  if (!player) redirect('/golf/dashboard');
+
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect('/golf/login');
-  }
-
-  // Verify user is a player
-  const { data: player } = await supabase
-    .from('golf_players')
-    .select('id, first_name, last_name')
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  if (!player) {
-    redirect('/golf/dashboard');
-  }
 
   // Fetch focus areas for this player
   const { data: focusAreas } = await supabase

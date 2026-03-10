@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { getGolfSessionProfile } from '@/lib/auth/session';
 import { GlassCard } from '@/components/ui/glass-card';
 import { IconInfo, IconSparkles } from '@/components/icons';
 import { getTeamPatterns, getPatternStats } from '@/app/golf/actions/pattern-management';

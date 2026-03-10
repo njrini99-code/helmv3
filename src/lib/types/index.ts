@@ -18,76 +18,14 @@ export type College = Tables['organizations']['Row'];
 // NOTE: Player is from baseball_players table (not 'players' which doesn't exist)
 export type Organization = Tables['organizations']['Row'];
 export type Team = Tables['baseball_teams']['Row'];
-export type TeamMember = Tables['baseball_team_members']['Row'];
-
-// Player related
-export type PlayerSettings = Tables['baseball_player_settings']['Row'];
-// PlayerMetric and PlayerAchievement tables don't exist - define manually if needed
-export interface PlayerMetric {
-  id: string;
-  player_id: string;
-  metric_label: string;
-  metric_value: string | number;
-  created_at?: string;
-}
-export interface PlayerAchievement {
-  id: string;
-  player_id: string;
-  title: string;
-  description?: string;
-  date?: string;
-  created_at?: string;
-}
-export type RecruitingInterest = Tables['baseball_recruiting_interests']['Row'];
-export type PlayerEngagementEvent = Tables['baseball_player_engagement_events']['Row'];
-
-// Events & Camps
-export type CampRegistration = Tables['baseball_camp_registrations']['Row'];
 
 // Recruiting
 export type Watchlist = Tables['baseball_watchlists']['Row'];
 export type Video = Tables['baseball_videos']['Row'];
 
-// Player Comparisons (manually added until types are regenerated)
-export interface ComparisonData {
-  players: PlayerComparisonItem[];
-  metrics: ComparisonMetric[];
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface PlayerComparisonItem {
-  playerId: string;
-  name: string;
-  position: string;
-  gradYear: number;
-  stats: Record<string, number | string>;
-  notes?: string;
-}
-
-export interface ComparisonMetric {
-  key: string;
-  label: string;
-  values: Record<string, number | string>; // playerId -> value
-  unit?: string;
-}
-
-export interface PlayerComparison {
-  id: string;
-  coach_id: string;
-  name: string;
-  description: string | null;
-  player_ids: string[];
-  comparison_data: ComparisonData;
-  created_at: string;
-  updated_at: string;
-}
-
 // Messaging (using generated types from database)
 export type Message = Tables['baseball_messages']['Row'];
 export type Conversation = Tables['baseball_conversations']['Row'];
-export type Notification = Tables['notifications']['Row'];
-
 // Golf Messaging types
 export type GolfMessageRow = Tables['golf_messages']['Row'];
 
@@ -95,7 +33,6 @@ export type GolfMessageRow = Tables['golf_messages']['Row'];
 // ENUM TYPES
 // ============================================
 
-export type UserRole = Enums['user_role'];
 export type CoachType = Enums['baseball_coach_type'];
 export type PlayerType = Enums['baseball_player_type'];
 export type PipelineStage = Enums['baseball_pipeline_stage'];
@@ -108,112 +45,9 @@ export type CoachWithOrganization = Coach & {
   organization?: { id: string; name: string } | null;
 };
 
-// Full player profile with all related data
-export type PlayerProfile = Player & {
-  user?: User;
-  settings?: PlayerSettings;
-  metrics?: PlayerMetric[];
-  achievements?: PlayerAchievement[];
-  teams?: (TeamMember & { team: Team })[];
-  high_school_org?: Organization;
-  showcase_org?: Organization;
-  college_org?: Organization;
-};
-
-// Full coach profile with all related data
-export type CoachProfile = Coach & {
-  user?: User;
-  organization?: Organization;
-  teams?: Team[];
-};
-
-// Player for discover page (optimized for list view)
-export type DiscoverPlayer = Pick<
-  Player,
-  | 'id'
-  | 'first_name'
-  | 'last_name'
-  | 'avatar_url'
-  | 'city'
-  | 'state'
-  | 'primary_position'
-  | 'secondary_position'
-  | 'grad_year'
-  | 'bats'
-  | 'throws'
-  | 'gpa'
-> & {
-  full_name?: string;
-  high_school_org?: Pick<Organization, 'id' | 'name' | 'location_city' | 'location_state'>;
-  primary_video?: Pick<Video, 'id' | 'thumbnail_url' | 'url'>;
-  metrics?: PlayerMetric[];
-};
-
 // Watchlist item with player data
 export type WatchlistWithPlayer = Watchlist & {
   player?: Player;
-};
-
-// ============================================
-// TYPE GUARDS
-// ============================================
-
-export function isPlayer(user: User): boolean {
-  return user.role === 'player';
-}
-
-export function isCoach(user: User): boolean {
-  return user.role === 'coach';
-}
-
-export function isCollegePlayer(player: Player): boolean {
-  return player.player_type === 'college';
-}
-
-export function isRecruitingActivated(player: Player): boolean {
-  return player.recruiting_activated === true;
-}
-
-// ============================================
-// UTILITY TYPES
-// ============================================
-
-// Pagination params
-export type PaginationParams = {
-  page: number;
-  limit: number;
-  offset: number;
-};
-
-// Filter params for discover
-export type DiscoverFilters = {
-  gradYear?: number;
-  position?: string;
-  state?: string;
-  division?: string;
-  minGPA?: number;
-  minExitVelo?: number;
-  minPitchVelo?: number;
-  bats?: 'R' | 'L' | 'S';
-  throws?: 'R' | 'L';
-  search?: string;
-};
-
-// Onboarding steps
-export type OnboardingStep = {
-  step: number;
-  title: string;
-  description: string;
-  completed: boolean;
-};
-
-// Dashboard stats (for coach/player)
-export type DashboardStats = {
-  totalViews?: number;
-  weeklyViews?: number;
-  watchlistAdds?: number;
-  messages?: number;
-  profileCompletion?: number;
 };
 
 // ============================================
@@ -232,14 +66,6 @@ export const POSITIONS = [
   'UTL',
 ] as const;
 
-export const DIVISIONS = [
-  'D1',
-  'D2',
-  'D3',
-  'NAIA',
-  'JUCO',
-] as const;
-
 export const STATES = [
   'AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA',
   'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD',
@@ -251,56 +77,6 @@ export const STATES = [
 export const GRAD_YEARS = [
   2025, 2026, 2027, 2028, 2029, 2030, 2031, 2032,
 ] as const;
-
-// ============================================
-// HELPER FUNCTIONS
-// ============================================
-
-/**
- * Calculate profile completion percentage
- */
-export function calculateProfileCompletion(player: Partial<Player>): number {
-  const fields = [
-    player.first_name,
-    player.last_name,
-    player.email,
-    player.phone,
-    player.city,
-    player.state,
-    player.primary_position,
-    player.grad_year,
-    player.bats,
-    player.throws,
-    player.height_feet,
-    player.weight_lbs,
-    player.high_school_name,
-    player.gpa,
-    player.about_me,
-    player.avatar_url,
-  ];
-
-  const completed = fields.filter((field) => field != null && field !== '').length;
-  return Math.round((completed / fields.length) * 100);
-}
-
-/**
- * Format player name
- */
-export function formatPlayerName(player: Pick<Player, 'first_name' | 'last_name'>): string {
-  if (player.first_name && player.last_name) {
-    return `${player.first_name} ${player.last_name}`;
-  }
-  return player.first_name || player.last_name || 'Unknown Player';
-}
-
-/**
- * Format time (seconds)
- */
-export function formatTime(time?: number | string | null): string {
-  if (!time) return 'N/A';
-  const numTime = typeof time === 'string' ? parseFloat(time) : time;
-  return `${numTime.toFixed(2)}s`;
-}
 
 // ============================================
 // BASEBALL TEAM MANAGEMENT TYPES
