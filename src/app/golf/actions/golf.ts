@@ -869,16 +869,20 @@ export async function submitGolfRoundComprehensive(
       console.warn('[Golf] Stats warnings after round submit:', cacheResult.warnings);
     }
 
-    revalidatePath('/golf/dashboard');
-    revalidatePath('/golf/dashboard/rounds');
-    revalidatePath('/golf/dashboard/stats');
-    updateTag(CACHE_TAGS.DASHBOARD);
-    updateTag(CACHE_TAGS.ROUNDS);
-    updateTag(CACHE_TAGS.STATS);
+    try {
+      revalidatePath('/golf/dashboard');
+      revalidatePath('/golf/dashboard/rounds');
+      revalidatePath('/golf/dashboard/stats');
+      updateTag(CACHE_TAGS.DASHBOARD);
+      updateTag(CACHE_TAGS.ROUNDS);
+      updateTag(CACHE_TAGS.STATS);
 
-    if (data.qualifierId) {
-      revalidatePath('/golf/dashboard/qualifiers');
-      revalidatePath(`/golf/dashboard/qualifiers/${data.qualifierId}`);
+      if (data.qualifierId) {
+        revalidatePath('/golf/dashboard/qualifiers');
+        revalidatePath(`/golf/dashboard/qualifiers/${data.qualifierId}`);
+      }
+    } catch (cacheErr) {
+      console.error('[Golf] Cache revalidation failed after successful submit:', cacheErr);
     }
 
     // Fire-and-forget: trigger CoachHelm insight generation for this player

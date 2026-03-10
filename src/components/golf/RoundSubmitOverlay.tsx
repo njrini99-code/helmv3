@@ -34,7 +34,7 @@ interface RoundSubmitOverlayProps {
  *
  * The player can NEVER get stuck:
  * - 15s safety timeout shows a "Continue anyway" link
- * - Success auto-navigates after 2.5s
+ * - Success auto-navigates after 3s, with 8s fallback escape
  * - Error always shows escape buttons
  */
 export function RoundSubmitOverlay({
@@ -49,8 +49,10 @@ export function RoundSubmitOverlay({
 }: RoundSubmitOverlayProps) {
   const router = useRouter();
   const [showSafetyEscape, setShowSafetyEscape] = useState(false);
+  const [showSuccessEscape, setShowSuccessEscape] = useState(false);
   const [successCountdown, setSuccessCountdown] = useState(3);
   const safetyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const successEscapeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const hasNavigatedRef = useRef(false);
 
@@ -85,8 +87,10 @@ export function RoundSubmitOverlay({
   useEffect(() => {
     if (!isSuccess) {
       setSuccessCountdown(3);
+      setShowSuccessEscape(false);
       hasNavigatedRef.current = false;
       if (countdownRef.current) clearInterval(countdownRef.current);
+      if (successEscapeTimerRef.current) clearTimeout(successEscapeTimerRef.current);
       return;
     }
     setSuccessCountdown(3);
@@ -100,8 +104,13 @@ export function RoundSubmitOverlay({
         return prev - 1;
       });
     }, 1000);
+    // Safety: if navigation hangs, show escape after 8s
+    successEscapeTimerRef.current = setTimeout(() => {
+      setShowSuccessEscape(true);
+    }, 8000);
     return () => {
       if (countdownRef.current) clearInterval(countdownRef.current);
+      if (successEscapeTimerRef.current) clearTimeout(successEscapeTimerRef.current);
     };
   }, [isSuccess, navigateToRound]);
 
@@ -194,11 +203,33 @@ export function RoundSubmitOverlay({
                     Loading your round review{successCountdown > 0 ? ` in ${successCountdown}s` : ''}...
                   </p>
                   <button
-                    onClick={navigateToRound}
+                    onClick={() => {
+                      hasNavigatedRef.current = false;
+                      navigateToRound();
+                    }}
                     className="w-full py-3 rounded-xl bg-primary-600 text-white font-medium hover:bg-primary-700 active:bg-primary-800 transition-colors shadow-sm"
                   >
                     View Round Review
                   </button>
+
+                  {/* Escape hatch if navigation hangs */}
+                  <AnimatePresence>
+                    {showSuccessEscape && (
+                      <m.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="mt-3"
+                      >
+                        <button
+                          onClick={() => router.push('/golf/dashboard/rounds')}
+                          className="w-full py-2.5 rounded-xl bg-warm-100 text-warm-600 text-sm font-medium hover:bg-warm-200 transition-colors"
+                        >
+                          Go to All Rounds
+                        </button>
+                      </m.div>
+                    )}
+                  </AnimatePresence>
                 </m.div>
               </div>
             </m.div>
