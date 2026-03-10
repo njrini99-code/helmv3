@@ -8,6 +8,7 @@ import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { GolfSignInForm } from '@/components/auth/golf-sign-in-form';
 import { createClient } from '@/lib/supabase/client';
 import { isNativeApp } from '@/lib/utils/capacitor';
+import { IconChevronLeft } from '@/components/icons';
 
 function LoginContent() {
   const searchParams = useSearchParams();
@@ -145,6 +146,22 @@ function LoginContent() {
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="auth-glass-card rounded-3xl p-8 sm:p-10"
         >
+          {/* Back to landing */}
+          <m.div
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.15, duration: 0.4 }}
+            className="mb-4"
+          >
+            <Link
+              href="/golf"
+              className="inline-flex items-center gap-1.5 text-sm text-warm-500 hover:text-warm-700 transition-colors px-2 py-1.5 -ml-2 rounded-lg hover:bg-warm-100/50"
+            >
+              <IconChevronLeft size={16} />
+              Back
+            </Link>
+          </m.div>
+
           {/* Logo with glow effect */}
           <m.div
             className="flex flex-col items-center mb-8"

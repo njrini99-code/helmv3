@@ -248,25 +248,27 @@ export default function GolfSettingsPage() {
   if (!profile) return null;
 
   return (
-    <AnimatedPage className="min-h-full">
+    <AnimatedPage className="min-h-full" key={profile.userId}>
       {/* Header */}
-      <div className="border-b border-warm-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-2xl mx-auto px-4 md:px-6 py-4 md:py-5">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={toggleMobile}
-              className="lg:hidden p-2 -ml-2 rounded-xl text-warm-500 hover:text-warm-700 hover:bg-warm-100/80 transition-colors active:scale-95"
-              aria-label="Open navigation menu"
-            >
-              <IconMenu size={22} />
-            </button>
-            <div>
-              <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">Settings</h1>
-              <p className="text-warm-500 mt-0.5 text-sm">Manage your account and preferences</p>
+      <AnimatedItem>
+        <div className="border-b border-warm-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+          <div className="max-w-2xl mx-auto px-4 md:px-6 py-4 md:py-5">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={toggleMobile}
+                className="lg:hidden p-2 -ml-2 rounded-xl text-warm-500 hover:text-warm-700 hover:bg-warm-100/80 transition-colors active:scale-95"
+                aria-label="Open navigation menu"
+              >
+                <IconMenu size={22} />
+              </button>
+              <div>
+                <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">Settings</h1>
+                <p className="text-warm-500 mt-0.5 text-sm">Manage your account and preferences</p>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </AnimatedItem>
 
       {/* Content */}
       <div className="max-w-2xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6">

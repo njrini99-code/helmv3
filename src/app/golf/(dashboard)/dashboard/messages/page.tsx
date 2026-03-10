@@ -499,10 +499,10 @@ export default function GolfMessagesPage() {
                           !isLastInGroup && 'mb-0.5' // Tighter spacing within groups
                         )}
                       >
-                        {/* Avatar (only for first message in group) */}
+                        {/* Avatar + sender name for incoming messages */}
                         {!isOwn && (
-                          <div className="w-8 shrink-0">
-                            {isFirstInGroup && (
+                          <div className="w-8 shrink-0 flex flex-col items-center">
+                            {isFirstInGroup ? (
                               selectedConversation?.is_group ? (
                                 <Avatar
                                   name={msg.sender_id.slice(0, 8)}
@@ -515,12 +515,18 @@ export default function GolfMessagesPage() {
                                   size="sm"
                                 />
                               )
-                            )}
+                            ) : null}
                           </div>
                         )}
 
                         {/* Message bubble with edit/delete controls */}
-                        <div className="group relative flex flex-col items-end gap-1 max-w-[70%]">
+                        <div className={cn('group relative flex flex-col gap-1 max-w-[70%]', isOwn ? 'items-end' : 'items-start')}>
+                          {/* Sender name above first incoming message in group */}
+                          {!isOwn && isFirstInGroup && (
+                            <span className="text-[11px] font-medium text-warm-500 ml-1 mb-0.5">
+                              {selectedConversation?.other_participant?.name || 'User'}
+                            </span>
+                          )}
                           {/* Edit/Delete buttons for own messages — desktop: hover, mobile: tap row below bubble */}
                           {isOwn && editingMessageId !== msg.id && deleteConfirmId !== msg.id && (
                             <>

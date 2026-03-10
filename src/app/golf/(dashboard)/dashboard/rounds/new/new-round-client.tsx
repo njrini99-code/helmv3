@@ -22,7 +22,7 @@ import { useConnectionStatus } from '@/hooks/golf/use-connection-status';
 import { useOfflineSyncStore, useOfflineSyncStatus } from '@/stores/offline-sync-store';
 import { getSyncEngine } from '@/lib/offline/sync-engine';
 import { OfflineWarningBanner } from '@/components/golf';
-import { IconBookmark, IconCheck, IconChartBar, IconFlag, IconMapPin, IconPlus, IconTrophy, IconWarning } from '@/components/icons';
+import { IconBookmark, IconCheck, IconChartBar, IconFlag, IconMapPin, IconPlus, IconSearch, IconTrophy, IconWarning } from '@/components/icons';
 import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
 import { HoleConfigurationForm } from '@/components/golf/HoleConfigurationForm';
 
@@ -625,8 +625,9 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
       }
     }
 
-    // If using a saved course with hole configs, skip the hole configuration step
-    if (preloadedHoleConfigs && preloadedHoleConfigs.length > 0) {
+    // If using a saved course with hole configs AND at least one valid yardage, skip the hole configuration step
+    const hasValidYardages = preloadedHoleConfigs?.some(h => h.yardage > 0) ?? false;
+    if (preloadedHoleConfigs && preloadedHoleConfigs.length > 0 && hasValidYardages) {
       // Slice to match selected hole count (e.g. user picks 9 on a saved 18-hole course)
       let configs: SavedCourseHoleConfig[];
       if (holesPerRound === 9 && preloadedHoleConfigs.length >= 18 && nineSelection === 'back') {
@@ -645,7 +646,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
       setIsStartingRound(false);
       setStep('tracking');
     } else {
-      // Go to hole configuration step for new courses
+      // Go to hole configuration step — pre-fill pars from saved config if available
       setIsStartingRound(false);
       setStep('holes');
     }
@@ -1350,9 +1351,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                       {/* Search bar — only if 4+ courses */}
                       {savedCourses.length >= 4 && (
                         <div className="relative">
-                          <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-warm-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                          </svg>
+                          <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
                           <input
                             type="search"
                             value={courseSearchQuery}

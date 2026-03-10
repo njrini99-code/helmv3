@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShineEffect } from '@/components/ui/shine-effect';
-import { IconCalendar, IconChevronRight } from '@/components/icons';
+import { IconEdit } from '@/components/icons';
 import { UnfinishedRoundModal } from '@/components/golf/UnfinishedRoundModal';
 import type { GolfRound } from '@/lib/types/golf';
 
@@ -32,11 +32,9 @@ export function UnfinishedRoundsSection({ rounds }: UnfinishedRoundsSectionProps
   };
 
   const handleDeleted = () => {
-    // Remove the deleted round from local state
     if (selectedRound) {
       setLocalRounds(localRounds.filter(r => r.id !== selectedRound.id));
     }
-    // Refresh the page to update the list
     router.refresh();
   };
 
@@ -46,21 +44,23 @@ export function UnfinishedRoundsSection({ rounds }: UnfinishedRoundsSectionProps
 
   return (
     <>
-      <div className="mb-8">
+      <div>
         <div className="flex items-center gap-2 mb-4">
           <h2 className="text-lg font-semibold text-warm-900">Unfinished Rounds</h2>
           <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-amber-100 text-amber-700">
-            {localRounds.length} unfinished
+            {localRounds.length}
           </span>
         </div>
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 gap-3">
           {localRounds.map((round) => {
             const timeSince = new Date().getTime() - new Date(round.updated_at || round.created_at || new Date().toISOString()).getTime();
             const hoursSince = Math.floor(timeSince / (1000 * 60 * 60));
             const daysSince = Math.floor(hoursSince / 24);
             const timeAgo = daysSince > 0
-              ? `${daysSince} day${daysSince > 1 ? 's' : ''} ago`
-              : `${hoursSince} hour${hoursSince !== 1 ? 's' : ''} ago`;
+              ? `${daysSince}d ago`
+              : `${hoursSince}h ago`;
+            const holesTarget = round.holes_played || 18;
+            const isSetup = !round.current_hole || round.current_hole === 0;
 
             return (
               <button
@@ -68,54 +68,44 @@ export function UnfinishedRoundsSection({ rounds }: UnfinishedRoundsSectionProps
                 onClick={() => handleRoundClick(round)}
                 className="w-full text-left"
               >
-                <div className="relative glass-standard rounded-2xl overflow-clip hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 border-2 border-amber-200">
+                <div className="relative glass-standard rounded-2xl overflow-clip hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 border-2 border-amber-200 bg-amber-50/30 p-4 flex flex-col">
                   <ShineEffect />
-                  <div className="flex items-center gap-4 p-4">
-                    {/* Progress Indicator */}
-                    <div className="w-14 h-14 rounded-xl bg-amber-50 flex flex-col items-center justify-center flex-shrink-0">
-                      {(!round.current_hole || round.current_hole === 0) ? (
-                        <>
-                          <svg className="w-6 h-6 text-amber-500 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                          <span className="text-[10px] font-medium text-amber-500">Setup</span>
-                        </>
+                  <div className="relative z-10 flex flex-col">
+                    {/* Top row: type + time since */}
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full capitalize border bg-warm-50 text-warm-600 border-warm-200">
+                        {round.round_type || 'Round'}
+                      </span>
+                      <span className="text-xs text-warm-400">{timeAgo}</span>
+                    </div>
+
+                    {/* Center: Progress */}
+                    <div className="flex items-center justify-center py-3">
+                      {isSetup ? (
+                        <div className="flex items-center gap-2 text-amber-600">
+                          <IconEdit size={20} />
+                          <span className="text-lg font-bold">Setup</span>
+                        </div>
                       ) : (
-                        <>
-                          <span className="text-2xl font-bold text-amber-600">
-                            {round.current_hole}
-                          </span>
-                          <span className="text-xs font-medium text-amber-500">
-                            of {round.holes_played || 18} holes
-                          </span>
-                        </>
+                        <div className="text-center">
+                          <p className="text-2xl font-bold text-amber-600 tabular-nums">
+                            {round.current_hole} <span className="text-base font-medium text-amber-400">/ {holesTarget}</span>
+                          </p>
+                        </div>
                       )}
                     </div>
 
-                    {/* Details */}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-warm-900 mb-1">
-                        {round.course_name}
-                      </h3>
-                      <div className="flex items-center gap-3 text-sm text-warm-500">
-                        <span className="flex items-center gap-1">
-                          <IconCalendar size={14} />
-                          {new Date(round.round_date).toLocaleDateString()}
-                        </span>
-                        <span className="text-xs">•</span>
-                        <span>Last updated {timeAgo}</span>
-                      </div>
+                    {/* Bottom: course name + CTA */}
+                    <div className="mt-2">
+                      <p className="text-sm font-medium text-warm-700 truncate">{round.course_name}</p>
+                      <p className="text-xs text-warm-400 mt-0.5">Tap to continue</p>
                     </div>
-
-                    {/* Arrow */}
-                    <IconChevronRight size={20} className="text-warm-400" />
                   </div>
                 </div>
               </button>
             );
           })}
         </div>
-
       </div>
 
       {/* Modal */}
