@@ -515,20 +515,22 @@ export async function getPlayerStatsDirectAction(
 
     const roundsPlayed = rounds.length;
 
-    // Normalize scoring to 18-hole equivalents using per-hole average
-    let totalStrokes = 0;
-    let totalHoles = 0;
+    // Scoring average: 18-hole rounds only (NCAA-style)
     const normalizedScores: number[] = [];
+    let totalStrokes18 = 0;
+    let roundCount18 = 0;
     for (const r of rounds) {
       if (r.total_score !== null) {
         const hp = r.holes_played ?? 18;
-        totalStrokes += r.total_score;
-        totalHoles += hp;
         normalizedScores.push(Math.round(r.total_score * (18 / hp)));
+        if (hp === 18) {
+          totalStrokes18 += r.total_score;
+          roundCount18++;
+        }
       }
     }
-    const scoringAverage = totalHoles > 0
-      ? Math.round((totalStrokes / totalHoles) * 18 * 100) / 100
+    const scoringAverage = roundCount18 > 0
+      ? Math.round((totalStrokes18 / roundCount18) * 100) / 100
       : null;
 
     const bestRound = normalizedScores.length > 0 ? Math.min(...normalizedScores) : null;

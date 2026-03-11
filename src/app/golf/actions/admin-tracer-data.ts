@@ -877,6 +877,20 @@ export async function fixRoundData(
 
       if (error) return { success: false, fix_type: fixType, round_id: roundId, player_id: playerId || null, message: `SG recalc failed: ${error.message}` };
 
+      // Sync the cached SG total back to golf_rounds so the data quality check sees it
+      const { data: cached } = await adminDb
+        .from('golf_round_stats_cache')
+        .select('strokes_gained_total')
+        .eq('round_id', roundId)
+        .single();
+
+      if (cached?.strokes_gained_total != null) {
+        await adminDb
+          .from('golf_rounds')
+          .update({ strokes_gained_total: cached.strokes_gained_total })
+          .eq('id', roundId);
+      }
+
       revalidatePath('/golf/admin');
       return {
         success: true,

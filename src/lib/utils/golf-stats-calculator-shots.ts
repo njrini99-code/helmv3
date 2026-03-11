@@ -1731,10 +1731,8 @@ function aggregateRoundStats(rounds: Array<{
   stats.scoringAverage18 = safeAverage(totalScore18, stats.roundsPlayed18);
   stats.scoringAverage9 = safeAverage(totalScore9, stats.roundsPlayed9);
 
-  // Blended scoring average: normalize to 18-hole equivalent
-  stats.scoringAverage = stats.holesPlayed > 0
-    ? Math.round(((totalScore / stats.holesPlayed) * 18) * 100) / 100
-    : null;
+  // Scoring average: 18-hole rounds only (NCAA-style), fallback to 9-hole normalized
+  stats.scoringAverage = stats.scoringAverage18 ?? stats.scoringAverage9;
 
   // Best/worst: prefer 18-hole, fallback to 9-hole
   stats.bestRound = stats.bestRound18 ?? stats.bestRound9;

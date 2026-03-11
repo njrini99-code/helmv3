@@ -13,7 +13,6 @@ import {
   LayoutDashboard,
   Users,
   Cpu,
-  TrendingUp,
   Crosshair,
   Target,
   RefreshCw,
@@ -22,13 +21,16 @@ import {
   ChevronRight,
   Menu,
   X,
+  BarChart3,
 } from 'lucide-react';
 
 // Tab components
 import { OverviewTab } from './components/OverviewTab';
 import { PeopleTab } from './components/PeopleTab';
 import { SystemTab } from './components/SystemTab';
-import { GrowthTab } from './components/GrowthTab';
+// GrowthTab preserved for reference — replaced by BusinessIntelligenceTab
+// import { GrowthTab } from './components/GrowthTab';
+import { BusinessIntelligenceTab } from './components/BusinessIntelligenceTab';
 import { TracerTab } from './components/TracerTab';
 
 // Real-time components
@@ -74,11 +76,11 @@ const TABS = [
     description: 'System health & errors',
   },
   {
-    id: 'growth',
-    label: 'Growth',
-    Icon: TrendingUp,
+    id: 'bi',
+    label: 'Intelligence',
+    Icon: BarChart3,
     shortcut: '4',
-    description: 'Growth & engagement',
+    description: 'Business Intelligence',
   },
   {
     id: 'tracer',
@@ -152,11 +154,12 @@ function AdminDashboardContent() {
     command: 'overview',
     users: 'people',
     health: 'system',
-    analytics: 'growth',
+    analytics: 'bi',
     overview: 'overview',
     people: 'people',
     system: 'system',
-    growth: 'growth',
+    growth: 'bi',
+    bi: 'bi',
     tracer: 'tracer',
   };
   const activeTab: TabId = tabMapping[urlTab ?? ''] ?? 'overview';
@@ -680,7 +683,7 @@ function AdminDashboardContent() {
               )}
               {activeTab === 'people' && <PeopleTab data={data} />}
               {activeTab === 'system' && <SystemTab data={data} />}
-              {activeTab === 'growth' && <GrowthTab data={data} />}
+              {activeTab === 'bi' && <BusinessIntelligenceTab data={data} />}
               {activeTab === 'tracer' && <TracerTab />}
             </div>
           ) : null}

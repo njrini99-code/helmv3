@@ -73,6 +73,7 @@ export interface RoundTrendData {
   toPar: number;
   courseName: string;
   roundType: string | null;
+  holesPlayed: number;
   girPct: number | null;
   fairwayPct: number | null;
   putts: number | null;

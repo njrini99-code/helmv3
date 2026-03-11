@@ -510,6 +510,109 @@ export interface AdminDashboardData {
     lastErrorAt: string | null;
     allClear: boolean;
   };
+  // BI Dashboard
+  bi: BIDashboardData;
+}
+
+// ============================================
+// BI DASHBOARD TYPES
+// ============================================
+
+export interface BIDashboardData {
+  growth: {
+    signupsByDay: { date: string; count: number }[];
+    signupsByWeek: { week: string; count: number }[];
+    activatedPlayers: number;
+    activatedCoaches: number;
+    playerActivationRate: number;
+    coachActivationRate: number;
+    overallActivationRate: number;
+    medianTTFVDays: number | null;
+    activationFunnel: BIFunnelStep[];
+    userGrowthRateWoW: number;
+    roundGrowthRateWoW: number;
+  };
+  retention: {
+    d1: { retained: number; total: number; rate: number };
+    d7: { retained: number; total: number; rate: number };
+    d30: { retained: number; total: number; rate: number };
+    cohortMatrix: { cohortWeek: string; cohortSize: number; retentionByWeek: number[] }[];
+    dauRounds: number;
+    wauRounds: number;
+    mauRounds: number;
+    dauLogins: number;
+    wauLogins: number;
+    mauLogins: number;
+    stickinessRounds: number;
+    stickinessLogins: number;
+    coachWeeklyRetention: number;
+    playerWeeklyRetention: number;
+  };
+  usage: {
+    featureAdoption: { feature: string; allTime: number; last30d: number; category: string }[];
+    deadFeatures: string[];
+    featureRetentionCorrelation: { feature: string; retentionWith: number; retentionWithout: number; lift: number }[];
+    objectCreationByWeek: { week: string; rounds: number; events: number; messages: number }[];
+  };
+  funnel: {
+    playerOnboarding: BIFunnelStep[];
+    coachOnboarding: BIFunnelStep[];
+    biggestPlayerDropoff: { from: string; to: string; dropoff: number; pct: number } | null;
+    biggestCoachDropoff: { from: string; to: string; dropoff: number; pct: number } | null;
+    errorsByFeatureArea: { area: string; count: number; critical: number }[];
+  };
+  health: {
+    teamHealthScores: BITeamHealth[];
+    powerUsers: { count: number; pct: number; ids: string[] };
+    atRiskAccounts: BIAtRiskAccount[];
+    conversionProxies: BIConversionProxy[];
+  };
+  vercel: { visitors24h: number; visitors7d: number; visitors30d: number } | null;
+}
+
+export interface BIFunnelStep {
+  step: string;
+  count: number;
+  pctOfTop: number;
+  conversionFromPrev: number;
+  dropoff: number;
+  dropoffPct: number;
+}
+
+export interface BITeamHealth {
+  teamId: string;
+  teamName: string;
+  orgName: string | null;
+  score: number;
+  grade: 'A' | 'B' | 'C' | 'D' | 'F';
+  playerCount: number;
+  activePlayerCount: number;
+  roundsThisMonth: number;
+  riskLevel: 'healthy' | 'at_risk' | 'critical';
+}
+
+export interface BIAtRiskAccount {
+  type: 'player' | 'coach' | 'team';
+  id: string;
+  name: string;
+  teamName: string | null;
+  riskScore: number;
+  riskSignals: string[];
+  daysSinceLastActive: number;
+}
+
+export interface BIConversionProxy {
+  teamId: string;
+  teamName: string;
+  score: number;
+  tier: 'high' | 'medium' | 'low';
+  signals: {
+    playerCount: number;
+    activePlayerPct: number;
+    roundsPerWeek: number;
+    aiAdoption: boolean;
+    tenureDays: number;
+  };
 }
 
 // ============================================
@@ -588,6 +691,64 @@ function groupByDay(dates: string[], lastNDays: number): { date: string; count: 
   return Object.entries(days)
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([date, count]) => ({ date, count }));
+}
+
+// ============================================
+// VERCEL ANALYTICS HELPER
+// ============================================
+
+async function fetchVercelAnalytics(): Promise<{ visitors24h: number; visitors7d: number; visitors30d: number } | null> {
+  const token = process.env.VERCEL_API_TOKEN;
+  const projectId = process.env.VERCEL_PROJECT_ID;
+  if (!token || !projectId) return null;
+
+  try {
+    const teamId = process.env.VERCEL_TEAM_ID;
+    const baseUrl = 'https://api.vercel.com/v1/web/insights/stats';
+
+    const fetchPeriod = async (from: string, to: string) => {
+      const params = new URLSearchParams({ projectId, from, to });
+      if (teamId) params.set('teamId', teamId);
+      const res = await fetch(`${baseUrl}?${params}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        next: { revalidate: 900 },
+      });
+      if (!res.ok) return 0;
+      const data = await res.json();
+      return data?.data?.visitors ?? data?.visitors ?? 0;
+    };
+
+    const now = new Date().toISOString();
+    const [v24h, v7d, v30d] = await Promise.all([
+      fetchPeriod(daysAgo(1), now),
+      fetchPeriod(daysAgo(7), now),
+      fetchPeriod(daysAgo(30), now),
+    ]);
+    return { visitors24h: v24h, visitors7d: v7d, visitors30d: v30d };
+  } catch {
+    return null;
+  }
+}
+
+// ============================================
+// BI FUNNEL HELPER
+// ============================================
+
+function buildFunnelSteps(stages: { step: string; count: number }[]): BIFunnelStep[] {
+  if (stages.length === 0) return [];
+  const topCount = stages[0]!.count || 1;
+  return stages.map((s, i) => {
+    const prevCount = i === 0 ? s.count : stages[i - 1]!.count;
+    const dropoff = Math.max(prevCount - s.count, 0);
+    return {
+      step: s.step,
+      count: s.count,
+      pctOfTop: topCount > 0 ? Math.round((s.count / topCount) * 1000) / 10 : 0,
+      conversionFromPrev: prevCount > 0 ? Math.round((s.count / prevCount) * 1000) / 10 : 0,
+      dropoff,
+      dropoffPct: prevCount > 0 ? Math.round((dropoff / prevCount) * 1000) / 10 : 0,
+    };
+  });
 }
 
 // ============================================
@@ -2878,6 +3039,593 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     allClear: totalErrors7d === 0 && unresolvedErrorCount === 0,
   };
 
+  // ============================================
+  // BI DASHBOARD COMPUTATION
+  // ============================================
+
+  // --- BI: Fetch Vercel analytics in parallel with computation ---
+  const vercelPromise = fetchVercelAnalytics();
+
+  // --- BI Growth: Signups by day (reuse signupsByDayResult) & by week (reuse signupsByWeek) ---
+  const biSignupsByDay = signupsByDayResult;
+  const biSignupsByWeek = signupsByWeek;
+
+  // Activated = onboarding_completed
+  const biActivatedPlayers = playerOnboarded;
+  const biActivatedCoaches = coachOnboarded;
+  const biPlayerActivationRate = totalPlayers > 0 ? Math.round((biActivatedPlayers / totalPlayers) * 1000) / 10 : 0;
+  const biCoachActivationRate = totalCoaches > 0 ? Math.round((biActivatedCoaches / totalCoaches) * 1000) / 10 : 0;
+  const totalUsersForActivation = totalPlayers + totalCoaches;
+  const biOverallActivationRate = totalUsersForActivation > 0
+    ? Math.round(((biActivatedPlayers + biActivatedCoaches) / totalUsersForActivation) * 1000) / 10
+    : 0;
+
+  // Median time-to-first-value (TTFV): days from signup to first round
+  // Uses allUsersRes, userIdToPlayerId, playerLastRound
+  const ttfvDays: number[] = [];
+  for (const u of (allUsersRes.data ?? [])) {
+    if (!u.created_at) continue;
+    const playerId = userIdToPlayerId.get(u.id);
+    if (!playerId) continue;
+    // Find earliest round date — playerLastRoundsRes was sorted desc, playerLastRound stores first-seen (latest)
+    // We need the earliest round. Use playerRoundCountsRes which has all rounds' player_id,
+    // but we don't have dates per player easily. Use allRoundsForCohort which has all rounds with dates.
+    // For efficiency, build a map of first round date per player if not already available.
+    // Since we iterate all users, let's build it lazily here.
+    const signupTs = new Date(u.created_at).getTime();
+    // We'll compute from playerFirstRound map built below
+    void signupTs; // placeholder
+  }
+  // Build first round date per player from allRoundsForCohort (already sorted desc)
+  const playerFirstRound = new Map<string, string>();
+  // Iterate in reverse order (oldest first) since allRoundsForCohort is sorted desc
+  for (let i = allRoundsForCohort.length - 1; i >= 0; i--) {
+    const r = allRoundsForCohort[i]!;
+    if (r.player_id && r.created_at) {
+      playerFirstRound.set(r.player_id, r.created_at);
+    }
+  }
+  // Now compute TTFV
+  for (const u of (allUsersRes.data ?? [])) {
+    if (!u.created_at) continue;
+    const playerId = userIdToPlayerId.get(u.id);
+    if (!playerId) continue;
+    const firstRound = playerFirstRound.get(playerId);
+    if (!firstRound) continue;
+    const days = (new Date(firstRound).getTime() - new Date(u.created_at).getTime()) / 86400000;
+    if (days >= 0 && days < 365) ttfvDays.push(days);
+  }
+  ttfvDays.sort((a, b) => a - b);
+  const biMedianTTFVDays = ttfvDays.length > 0
+    ? Math.round(ttfvDays[Math.floor(ttfvDays.length / 2)]! * 10) / 10
+    : null;
+
+  // Activation funnel
+  const biActivationFunnel = buildFunnelSteps([
+    { step: 'Signed Up', count: totalSignupCount },
+    { step: 'Completed Onboarding', count: completedOnboardingCount },
+    { step: 'Submitted First Round', count: submittedFirstRoundCount },
+    { step: 'Active This Week', count: activeThisWeekCount },
+    { step: 'Received AI Insights', count: receivedInsightsCount },
+  ]);
+
+  // WoW growth rates (reuse existing)
+  const biUserGrowthRateWoW = userGrowthRate;
+  const biRoundGrowthRateWoW = roundGrowthRate;
+
+  // --- BI Retention ---
+  // D1/D7/D30 retention: users who signed up N days ago and were active after day N
+  // D1: users who signed up 1-2 days ago, active after day 1
+  const computeDayRetention = (daysBack: number, windowDays: number = 1) => {
+    const windowStart = new Date();
+    windowStart.setDate(windowStart.getDate() - daysBack - windowDays);
+    const windowEnd = new Date();
+    windowEnd.setDate(windowEnd.getDate() - daysBack);
+    const cohortUsers = (allUsersRes.data ?? []).filter(u => {
+      if (!u.created_at) return false;
+      const ts = new Date(u.created_at);
+      return ts >= windowStart && ts < windowEnd;
+    });
+    const total = cohortUsers.length;
+    if (total === 0) return { retained: 0, total: 0, rate: 0 };
+    // Check if any of these users were active after their signup + daysBack period
+    let retained = 0;
+    for (const u of cohortUsers) {
+      const playerId = userIdToPlayerId.get(u.id);
+      // Check login-based retention via userLastActive
+      const lastActive = userLastActive.get(u.id);
+      const signupDate = new Date(u.created_at!);
+      const retentionDate = new Date(signupDate);
+      retentionDate.setDate(retentionDate.getDate() + daysBack);
+
+      const wasActiveAfterDay = (lastActive && new Date(lastActive) >= retentionDate) ||
+        (playerId && playerLastRound.has(playerId) && new Date(playerLastRound.get(playerId)!) >= retentionDate);
+      if (wasActiveAfterDay) retained++;
+    }
+    return { retained, total, rate: total > 0 ? Math.round((retained / total) * 1000) / 10 : 0 };
+  };
+
+  const biD1 = computeDayRetention(1, 7);
+  const biD7 = computeDayRetention(7, 7);
+  const biD30 = computeDayRetention(30, 14);
+
+  // DAU/WAU/MAU for rounds (reuse existing stickiness)
+  const biDauRounds = dauCount;
+  const biWauRounds = wauCount;
+  const biMauRounds = mauCount;
+
+  // DAU/WAU/MAU for logins (from userLastActive)
+  const nowTs = new Date();
+  const ago24hTs = new Date(ago24h);
+  const ago7dTs = new Date(ago7d);
+  const ago30dTs = new Date(ago30d);
+  let biDauLogins = 0;
+  let biWauLogins = 0;
+  let biMauLogins = 0;
+  for (const [, lastSeen] of userLastActive) {
+    const ts = new Date(lastSeen);
+    if (ts >= ago24hTs && ts <= nowTs) biDauLogins++;
+    if (ts >= ago7dTs && ts <= nowTs) biWauLogins++;
+    if (ts >= ago30dTs && ts <= nowTs) biMauLogins++;
+  }
+
+  const biStickinessRounds = biMauRounds > 0 ? Math.round((biDauRounds / biMauRounds) * 1000) / 10 : 0;
+  const biStickinessLogins = biMauLogins > 0 ? Math.round((biDauLogins / biMauLogins) * 1000) / 10 : 0;
+
+  // Coach weekly retention: coaches active this week / coaches active last 30d
+  const coachUserIds = new Set<string>();
+  for (const [, c] of allCoachesMap) {
+    if (c.userId) coachUserIds.add(c.userId);
+  }
+  let coachesActiveLast30d = 0;
+  let coachesActiveThisWeek = 0;
+  for (const uid of coachUserIds) {
+    const ls = userLastActive.get(uid);
+    if (!ls) continue;
+    const lsDate = new Date(ls);
+    if (lsDate >= ago30dTs) coachesActiveLast30d++;
+    if (lsDate >= ago7dTs) coachesActiveThisWeek++;
+  }
+  const biCoachWeeklyRetention = coachesActiveLast30d > 0
+    ? Math.round((coachesActiveThisWeek / coachesActiveLast30d) * 1000) / 10
+    : 0;
+
+  // Player weekly retention (reuse existing weeklyRetention, already computed)
+  const biPlayerWeeklyRetention = Math.round(weeklyRetention * 10) / 10;
+
+  // --- BI Usage ---
+  // Feature adoption with all-time and last-30d counts + categories
+  // Reuse existing count queries and add 30d versions
+  // For 30d, filter from roundsData (allRoundsRes) and analyticsEvents
+  const roundsLast30d = roundsData.filter(r => r.created_at && new Date(r.created_at) >= ago30dTs);
+  const eventsCreatedLast30d = allRoundsForCohort.filter(r => r.created_at && new Date(r.created_at) >= ago30dTs);
+
+  // We don't have per-feature 30d counts from separate queries, so approximate from analytics events
+  const featureUseLast30dMap = new Map<string, number>();
+  for (const ev of analyticsEvents) {
+    if (ev.event_type === 'feature_use' && ev.feature_name) {
+      featureUseLast30dMap.set(ev.feature_name, (featureUseLast30dMap.get(ev.feature_name) ?? 0) + 1);
+    }
+  }
+
+  const biFeatureAdoption: BIDashboardData['usage']['featureAdoption'] = [
+    { feature: 'Rounds', allTime: totalRoundsCount, last30d: roundsLast30d.length, category: 'core' },
+    { feature: 'Qualifiers', allTime: qualifiersCountRes.count ?? 0, last30d: featureUseLast30dMap.get('Qualifiers') ?? 0, category: 'competition' },
+    { feature: 'Events', allTime: eventsCountRes.count ?? 0, last30d: featureUseLast30dMap.get('Events') ?? 0, category: 'team' },
+    { feature: 'Tasks', allTime: tasksCountRes.count ?? 0, last30d: featureUseLast30dMap.get('Tasks') ?? 0, category: 'team' },
+    { feature: 'Announcements', allTime: announcementsCountRes.count ?? 0, last30d: featureUseLast30dMap.get('Announcements') ?? 0, category: 'communication' },
+    { feature: 'Messages', allTime: messagesCountRes.count ?? 0, last30d: featureUseLast30dMap.get('Messages') ?? 0, category: 'communication' },
+    { feature: 'Documents', allTime: documentsCountRes.count ?? 0, last30d: featureUseLast30dMap.get('Documents') ?? 0, category: 'team' },
+    { feature: 'Travel', allTime: travelCountRes.count ?? 0, last30d: featureUseLast30dMap.get('Travel') ?? 0, category: 'team' },
+    { feature: 'Round Reviews', allTime: totalReviewsRes.count ?? 0, last30d: featureUseLast30dMap.get('Round Reviews') ?? 0, category: 'ai' },
+    { feature: 'AI Insights', allTime: totalInsightsGenerated, last30d: featureUseLast30dMap.get('AI Insights') ?? 0, category: 'ai' },
+    { feature: 'Patterns', allTime: totalPatternsRes.count ?? 0, last30d: featureUseLast30dMap.get('Patterns') ?? 0, category: 'ai' },
+    { feature: 'Predictions', allTime: totalPredictionsRes.count ?? 0, last30d: featureUseLast30dMap.get('Predictions') ?? 0, category: 'ai' },
+  ];
+
+  // Dead features: features with < 5% of max all-time usage
+  const maxAllTimeUsage = Math.max(...biFeatureAdoption.map(f => f.allTime), 1);
+  const biDeadFeatures = biFeatureAdoption
+    .filter(f => f.allTime / maxAllTimeUsage < 0.05 && f.allTime > 0)
+    .map(f => f.feature);
+  // Also include sessionHeatmap dead features
+  for (const df of deadFeatures) {
+    if (!biDeadFeatures.includes(df)) biDeadFeatures.push(df);
+  }
+
+  // Feature-retention correlation: for each feature, compare retention of users who used it vs not
+  // Approximate: players who used a feature (have rounds, reviews, etc.) vs those who didn't
+  const playerIdsWithReviews = new Set<string>();
+  for (const cr of coachReviewsData) {
+    const round = cr.golf_rounds as { player_id: string; created_at: string } | null;
+    if (round?.player_id) playerIdsWithReviews.add(round.player_id);
+  }
+  const playerIdsWithInsights = new Set((insightPlayerRoundsRes.data ?? []).map(r => r.player_id).filter((id): id is string => id != null));
+
+  const computeRetentionForGroup = (playerIds: Set<string>): number => {
+    if (playerIds.size === 0) return 0;
+    let activeCount = 0;
+    for (const pid of playerIds) {
+      if (playersActive30d.has(pid)) activeCount++;
+    }
+    return Math.round((activeCount / playerIds.size) * 1000) / 10;
+  };
+
+  const allPlayerIdsSet = new Set(allPlayersMap.keys());
+  const playerIdsWithoutReviews = new Set([...allPlayerIdsSet].filter(id => !playerIdsWithReviews.has(id)));
+  const playerIdsWithoutInsights = new Set([...allPlayerIdsSet].filter(id => !playerIdsWithInsights.has(id)));
+  const playerIdsWithRounds = allPlayerIds; // already a Set of player IDs with rounds
+  const playerIdsWithoutRounds = new Set([...allPlayerIdsSet].filter(id => !playerIdsWithRounds.has(id)));
+
+  const retRounds = computeRetentionForGroup(playerIdsWithRounds);
+  const retNoRounds = computeRetentionForGroup(playerIdsWithoutRounds);
+  const retReviews = computeRetentionForGroup(playerIdsWithReviews);
+  const retNoReviews = computeRetentionForGroup(playerIdsWithoutReviews);
+  const retInsights = computeRetentionForGroup(playerIdsWithInsights);
+  const retNoInsights = computeRetentionForGroup(playerIdsWithoutInsights);
+
+  const biFeatureRetentionCorrelation: BIDashboardData['usage']['featureRetentionCorrelation'] = [
+    { feature: 'Submitted Rounds', retentionWith: retRounds, retentionWithout: retNoRounds, lift: retNoRounds > 0 ? Math.round((retRounds / retNoRounds - 1) * 1000) / 10 : 0 },
+    { feature: 'Received Reviews', retentionWith: retReviews, retentionWithout: retNoReviews, lift: retNoReviews > 0 ? Math.round((retReviews / retNoReviews - 1) * 1000) / 10 : 0 },
+    { feature: 'Received AI Insights', retentionWith: retInsights, retentionWithout: retNoInsights, lift: retNoInsights > 0 ? Math.round((retInsights / retNoInsights - 1) * 1000) / 10 : 0 },
+  ];
+
+  // Object creation by week: rounds, events, messages
+  // Rounds by week already computed. Build events and messages by week.
+  const roundWeekMap = new Map<string, number>();
+  for (const r of roundsData) {
+    if (!r.created_at) continue;
+    const d = new Date(r.created_at);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(d);
+    monday.setDate(diff);
+    const key = monday.toISOString().slice(0, 10);
+    roundWeekMap.set(key, (roundWeekMap.get(key) ?? 0) + 1);
+  }
+
+  // Collect all unique week keys from rounds for the object creation chart
+  const allWeekKeys = new Set<string>();
+  for (const [k] of roundWeekMap) allWeekKeys.add(k);
+  // We don't have event/message creation dates broken out, so use 0 as default
+  const biObjectCreationByWeek = [...allWeekKeys].sort().map(week => ({
+    week,
+    rounds: roundWeekMap.get(week) ?? 0,
+    events: 0, // would need golf_events with created_at filtered per week
+    messages: 0, // would need golf_messages with created_at filtered per week
+  }));
+
+  // --- BI Funnel ---
+  // Player onboarding funnel
+  const playerSignups = (allUsersRes.data ?? []).filter(u => {
+    const p = userIdToPlayerDetail.get(u.id);
+    return !!p;
+  }).length;
+  const playerOnboardingComplete = biActivatedPlayers;
+  const playersJoinedTeam = [...allPlayersMap.values()].filter(p => {
+    const teamInfo = playerToTeamInfo.get(p.id);
+    return !!teamInfo;
+  }).length;
+  const playersSubmittedRound = allPlayerIds.size;
+  const playersReceivedInsight = uniqueInsightPlayers;
+
+  const biPlayerOnboarding = buildFunnelSteps([
+    { step: 'Signed Up', count: playerSignups },
+    { step: 'Completed Onboarding', count: playerOnboardingComplete },
+    { step: 'Joined Team', count: playersJoinedTeam },
+    { step: 'Submitted Round', count: playersSubmittedRound },
+    { step: 'Received AI Insight', count: playersReceivedInsight },
+  ]);
+
+  // Coach onboarding funnel
+  const coachSignups = (allUsersRes.data ?? []).filter(u => {
+    const c = userIdToCoachDetail.get(u.id);
+    return !!c;
+  }).length;
+  const coachOnboardingComplete = biActivatedCoaches;
+  const coachesWithPhilosophy = aiCoachIds.size;
+  const coachesReviewedRound = coachReviewCounts.size;
+  const coachesViewedInsights = coachInsightCounts.size;
+
+  const biCoachOnboarding = buildFunnelSteps([
+    { step: 'Signed Up', count: coachSignups },
+    { step: 'Completed Onboarding', count: coachOnboardingComplete },
+    { step: 'Set Philosophy', count: coachesWithPhilosophy },
+    { step: 'Reviewed a Round', count: coachesReviewedRound },
+    { step: 'Viewed Insights', count: coachesViewedInsights },
+  ]);
+
+  // Biggest dropoff
+  const findBiggestDropoff = (steps: BIFunnelStep[]): { from: string; to: string; dropoff: number; pct: number } | null => {
+    if (steps.length < 2) return null;
+    let maxDropoff = -1;
+    let result: { from: string; to: string; dropoff: number; pct: number } | null = null;
+    for (let i = 1; i < steps.length; i++) {
+      if (steps[i]!.dropoff > maxDropoff) {
+        maxDropoff = steps[i]!.dropoff;
+        result = {
+          from: steps[i - 1]!.step,
+          to: steps[i]!.step,
+          dropoff: steps[i]!.dropoff,
+          pct: steps[i]!.dropoffPct,
+        };
+      }
+    }
+    return result;
+  };
+
+  const biBiggestPlayerDropoff = findBiggestDropoff(biPlayerOnboarding);
+  const biBiggestCoachDropoff = findBiggestDropoff(biCoachOnboarding);
+
+  // Errors by feature area: classify errors by URL/message into feature areas
+  const areaErrorCounts = new Map<string, { count: number; critical: number }>();
+  for (const e of rawErrorLogs) {
+    let area = 'Other';
+    const url = (e.url ?? '').toLowerCase();
+    const msg = (e.message ?? '').toLowerCase();
+    if (url.includes('/rounds') || msg.includes('round')) area = 'Rounds';
+    else if (url.includes('/calendar') || url.includes('/events') || msg.includes('event')) area = 'Calendar/Events';
+    else if (url.includes('/messages') || msg.includes('message')) area = 'Messaging';
+    else if (url.includes('/coachhelm') || url.includes('/insights') || url.includes('/intelligence') || msg.includes('insight') || msg.includes('prediction')) area = 'CoachHelm AI';
+    else if (url.includes('/roster') || msg.includes('roster') || msg.includes('team_member')) area = 'Roster';
+    else if (url.includes('/stats') || msg.includes('stats')) area = 'Stats';
+    else if (url.includes('/qualifiers') || msg.includes('qualifier')) area = 'Qualifiers';
+    else if (url.includes('/onboarding') || msg.includes('onboarding')) area = 'Onboarding';
+    else if (url.includes('/auth') || url.includes('/login') || msg.includes('auth')) area = 'Auth';
+    else if (url.includes('/dashboard')) area = 'Dashboard';
+
+    const entry = areaErrorCounts.get(area) ?? { count: 0, critical: 0 };
+    entry.count++;
+    if ((e.severity ?? '').toLowerCase() === 'critical') entry.critical++;
+    areaErrorCounts.set(area, entry);
+  }
+  const biErrorsByFeatureArea = [...areaErrorCounts.entries()]
+    .map(([area, d]) => ({ area, count: d.count, critical: d.critical }))
+    .sort((a, b) => b.count - a.count);
+
+  // --- BI Health ---
+  // Team health scores
+  const monthAgoForBI = new Date();
+  monthAgoForBI.setDate(monthAgoForBI.getDate() - 30);
+
+  const biTeamHealthScores: BITeamHealth[] = teams.map(t => {
+    const teamMembers = (teamMembersRes.data ?? []).filter(m => m.team_id === t.id);
+    const teamPlayerIds = teamMembers.map(m => m.player_id);
+    const activeCount = teamPlayerIds.filter(pid => playersActive30d.has(pid)).length;
+    const playerCount = t.playerCount;
+
+    // Rounds this month
+    const roundsMonth = allRoundsForCohort.filter(r =>
+      r.team_id === t.id && r.created_at && new Date(r.created_at) >= monthAgoForBI
+    ).length;
+
+    // Score: weighted composite (0-100)
+    const activePct = playerCount > 0 ? activeCount / playerCount : 0;
+    const roundsScore = Math.min(roundsMonth / Math.max(playerCount, 1) * 20, 40); // up to 40 pts
+    const activeScore = activePct * 40; // up to 40 pts
+    const sizeScore = Math.min(playerCount * 2, 20); // up to 20 pts
+    const score = Math.round(roundsScore + activeScore + sizeScore);
+
+    const grade: BITeamHealth['grade'] = score >= 80 ? 'A' : score >= 60 ? 'B' : score >= 40 ? 'C' : score >= 20 ? 'D' : 'F';
+    const riskLevel: BITeamHealth['riskLevel'] = score >= 50 ? 'healthy' : score >= 25 ? 'at_risk' : 'critical';
+
+    return {
+      teamId: t.id,
+      teamName: t.name,
+      orgName: t.orgName,
+      score,
+      grade,
+      playerCount,
+      activePlayerCount: activeCount,
+      roundsThisMonth: roundsMonth,
+      riskLevel,
+    };
+  }).sort((a, b) => a.score - b.score); // worst first
+
+  // Power users: top 10% by activity (rounds in last 30d)
+  const playerRoundsLast30d = new Map<string, number>();
+  for (const r of eventsCreatedLast30d) {
+    if (r.player_id) {
+      playerRoundsLast30d.set(r.player_id, (playerRoundsLast30d.get(r.player_id) ?? 0) + 1);
+    }
+  }
+  const sortedByActivity = [...playerRoundsLast30d.entries()].sort((a, b) => b[1] - a[1]);
+  const powerUserThreshold = Math.max(Math.ceil(sortedByActivity.length * 0.1), 1);
+  const powerUserIds = sortedByActivity.slice(0, powerUserThreshold).map(([id]) => id);
+  const biPowerUsers = {
+    count: powerUserIds.length,
+    pct: allPlayersMap.size > 0 ? Math.round((powerUserIds.length / allPlayersMap.size) * 1000) / 10 : 0,
+    ids: powerUserIds.slice(0, 50), // cap at 50 IDs
+  };
+
+  // At-risk accounts
+  const biAtRiskAccounts: BIAtRiskAccount[] = [];
+
+  // At-risk players: had rounds but inactive 7+ days
+  for (const [pid, lastRound] of playerLastRound) {
+    const daysSince = Math.floor((Date.now() - new Date(lastRound).getTime()) / 86400000);
+    if (daysSince < 7) continue;
+    const player = allPlayersMap.get(pid);
+    if (!player) continue;
+    const signals: string[] = [];
+    if (daysSince >= 30) signals.push('No round in 30+ days');
+    else if (daysSince >= 14) signals.push('No round in 14+ days');
+    else signals.push('No round in 7+ days');
+    const totalRnds = playerRoundCounts.get(pid) ?? 0;
+    if (totalRnds <= 1) signals.push('Only 1 round ever');
+    if (!player.onboardingCompleted) signals.push('Onboarding incomplete');
+    const riskScore = Math.min(daysSince * 2 + (totalRnds <= 1 ? 20 : 0), 100);
+    if (riskScore >= 30) {
+      biAtRiskAccounts.push({
+        type: 'player',
+        id: pid,
+        name: `${player.firstName} ${player.lastName}`.trim() || 'Unknown',
+        teamName: playerTeamNameMap.get(pid) ?? null,
+        riskScore,
+        riskSignals: signals,
+        daysSinceLastActive: daysSince,
+      });
+    }
+  }
+
+  // At-risk coaches: no login in 14+ days
+  for (const [, c] of allCoachesMap) {
+    if (!c.userId) continue;
+    const lastActive = userLastActive.get(c.userId);
+    const daysSince = lastActive ? Math.floor((Date.now() - new Date(lastActive).getTime()) / 86400000) : 999;
+    if (daysSince < 14) continue;
+    const signals: string[] = [];
+    if (daysSince >= 30) signals.push('No login in 30+ days');
+    else signals.push('No login in 14+ days');
+    if (!c.onboardingCompleted) signals.push('Onboarding incomplete');
+    const insightCount = coachInsightCounts.get(c.id) ?? 0;
+    if (insightCount === 0) signals.push('Never viewed insights');
+    let coachTeamName: string | null = null;
+    if (c.orgId) {
+      for (const t of (teamsDataRes.data ?? [])) {
+        if (t.organization_id === c.orgId) {
+          coachTeamName = teamsMap.get(t.id)?.name ?? null;
+          break;
+        }
+      }
+    }
+    biAtRiskAccounts.push({
+      type: 'coach',
+      id: c.id,
+      name: `${c.firstName} ${c.lastName}`.trim() || 'Unknown',
+      teamName: coachTeamName,
+      riskScore: Math.min(daysSince * 2, 100),
+      riskSignals: signals,
+      daysSinceLastActive: daysSince,
+    });
+  }
+
+  // At-risk teams
+  for (const t of biTeamHealthScores) {
+    if (t.riskLevel !== 'critical') continue;
+    biAtRiskAccounts.push({
+      type: 'team',
+      id: t.teamId,
+      name: t.teamName,
+      teamName: t.teamName,
+      riskScore: 100 - t.score,
+      riskSignals: [
+        t.activePlayerCount === 0 ? 'No active players' : `Only ${t.activePlayerCount} active players`,
+        t.roundsThisMonth === 0 ? 'No rounds this month' : `Only ${t.roundsThisMonth} rounds this month`,
+      ],
+      daysSinceLastActive: 0, // would need team-level last activity tracking
+    });
+  }
+
+  biAtRiskAccounts.sort((a, b) => b.riskScore - a.riskScore);
+
+  // Conversion proxies (team-level conversion readiness scores)
+  const biConversionProxies: BIConversionProxy[] = teams.map(t => {
+    const teamMembersList = (teamMembersRes.data ?? []).filter(m => m.team_id === t.id);
+    const playerIds = teamMembersList.map(m => m.player_id);
+    const activeCount = playerIds.filter(pid => playersActive30d.has(pid)).length;
+    const activePct = playerIds.length > 0 ? activeCount / playerIds.length : 0;
+
+    // Rounds per week: approximate from this week's count
+    const roundsPerWeek = t.roundsThisWeek;
+
+    // AI adoption: team's org has a coach with philosophy
+    const teamDataEntry = (teamsDataRes.data ?? []).find(td => td.id === t.id);
+    const hasAI = teamDataEntry?.organization_id ? aiOrgIds.has(teamDataEntry.organization_id) : false;
+
+    // Tenure: days since team was created (approximate from earliest member signup)
+    const teamCreationDates = playerIds
+      .map(pid => {
+        const p = allPlayersMap.get(pid);
+        if (!p?.userId) return null;
+        const u = (allUsersRes.data ?? []).find(usr => usr.id === p.userId);
+        return u?.created_at ? new Date(u.created_at).getTime() : null;
+      })
+      .filter((d): d is number => d !== null);
+    const earliestSignup = teamCreationDates.length > 0 ? Math.min(...teamCreationDates) : Date.now();
+    const tenureDays = Math.floor((Date.now() - earliestSignup) / 86400000);
+
+    // Composite score (0-100)
+    const sizeScore = Math.min(playerIds.length * 5, 25);
+    const activeScore = activePct * 25;
+    const roundScore = Math.min(roundsPerWeek * 5, 25);
+    const aiScore = hasAI ? 15 : 0;
+    const tenureScore = Math.min(tenureDays / 10, 10);
+    const score = Math.round(sizeScore + activeScore + roundScore + aiScore + tenureScore);
+
+    const tier: BIConversionProxy['tier'] = score >= 60 ? 'high' : score >= 30 ? 'medium' : 'low';
+
+    return {
+      teamId: t.id,
+      teamName: t.name,
+      score,
+      tier,
+      signals: {
+        playerCount: playerIds.length,
+        activePlayerPct: Math.round(activePct * 1000) / 10,
+        roundsPerWeek,
+        aiAdoption: hasAI,
+        tenureDays,
+      },
+    };
+  }).sort((a, b) => b.score - a.score);
+
+  // Await Vercel analytics
+  const biVercel = await vercelPromise;
+
+  // --- Assemble BI data ---
+  const biData: BIDashboardData = {
+    growth: {
+      signupsByDay: biSignupsByDay,
+      signupsByWeek: biSignupsByWeek,
+      activatedPlayers: biActivatedPlayers,
+      activatedCoaches: biActivatedCoaches,
+      playerActivationRate: biPlayerActivationRate,
+      coachActivationRate: biCoachActivationRate,
+      overallActivationRate: biOverallActivationRate,
+      medianTTFVDays: biMedianTTFVDays,
+      activationFunnel: biActivationFunnel,
+      userGrowthRateWoW: biUserGrowthRateWoW,
+      roundGrowthRateWoW: biRoundGrowthRateWoW,
+    },
+    retention: {
+      d1: biD1,
+      d7: biD7,
+      d30: biD30,
+      cohortMatrix,
+      dauRounds: biDauRounds,
+      wauRounds: biWauRounds,
+      mauRounds: biMauRounds,
+      dauLogins: biDauLogins,
+      wauLogins: biWauLogins,
+      mauLogins: biMauLogins,
+      stickinessRounds: biStickinessRounds,
+      stickinessLogins: biStickinessLogins,
+      coachWeeklyRetention: biCoachWeeklyRetention,
+      playerWeeklyRetention: biPlayerWeeklyRetention,
+    },
+    usage: {
+      featureAdoption: biFeatureAdoption,
+      deadFeatures: biDeadFeatures,
+      featureRetentionCorrelation: biFeatureRetentionCorrelation,
+      objectCreationByWeek: biObjectCreationByWeek,
+    },
+    funnel: {
+      playerOnboarding: biPlayerOnboarding,
+      coachOnboarding: biCoachOnboarding,
+      biggestPlayerDropoff: biBiggestPlayerDropoff,
+      biggestCoachDropoff: biBiggestCoachDropoff,
+      errorsByFeatureArea: biErrorsByFeatureArea,
+    },
+    health: {
+      teamHealthScores: biTeamHealthScores,
+      powerUsers: biPowerUsers,
+      atRiskAccounts: biAtRiskAccounts.slice(0, 100),
+      conversionProxies: biConversionProxies,
+    },
+    vercel: biVercel,
+  };
+
   return {
     health: {
       activeUsers24h: new Set((activeUsers24hRes.data ?? []).map(r => r.player_id)).size,
@@ -3092,5 +3840,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     userActivity: userActivityData,
     // Error detection and classification
     errorDetection: errorDetectionData,
+    // BI Dashboard
+    bi: biData,
   };
 }

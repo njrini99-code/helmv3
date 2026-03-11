@@ -19,14 +19,14 @@ export function Navigation() {
     <nav className="relative z-[60] pointer-events-auto pt-1.5 pb-1 md:pt-2 md:pb-1">
       <div className="max-w-7xl mx-auto px-6 flex items-center justify-between md:grid md:grid-cols-[1fr_auto_1fr] md:gap-6">
         {/* Logo — scrolls away with page (relative, not fixed) */}
-        <div className="flex items-center gap-2 justify-self-start">
+        <div className="flex items-center gap-2 justify-self-start md:fixed md:top-4 md:left-6 md:z-[70]">
           <Link href="/" className="flex items-center gap-2">
             <Image
               src="/Helm-Logo-New-Main.png"
               alt="Helm"
               width={72}
               height={72}
-              className="w-[40px] h-[40px] sm:w-[44px] sm:h-[44px] md:w-[48px] md:h-[48px] object-contain"
+              className="w-[40px] h-[40px] sm:w-[44px] sm:h-[44px] md:w-[36px] md:h-[36px] object-contain"
             />
             <span className={`font-semibold text-base sm:text-lg transition-colors duration-200 ${
               isHomePage ? 'text-white' : 'text-neutral-900'

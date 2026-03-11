@@ -218,16 +218,17 @@ function buildFallbackDetailedStats(roundsData: DetailedStatsRoundRow[]): GolfSt
   fallback.holesPlayed = completedRounds.reduce((sum, round) => sum + (round.holes_played ?? 18), 0);
 
   if (completedRounds.length > 0) {
-    const totalStrokes = completedRounds.reduce((sum, round) => sum + round.total_score, 0);
-    const totalHoles = completedRounds.reduce((sum, round) => sum + (round.holes_played ?? 18), 0);
     const normalizedScores = completedRounds.map((round) => {
       const holesPlayed = round.holes_played ?? 18;
       return Math.round(round.total_score * (18 / holesPlayed));
     });
 
-    fallback.scoringAverage = totalHoles > 0
-      ? Math.round((totalStrokes / totalHoles) * 18 * 100) / 100
-      : null;
+    // Scoring average: 18-hole rounds only (NCAA-style)
+    const rounds18 = completedRounds.filter(r => (r.holes_played ?? 18) === 18);
+    if (rounds18.length > 0) {
+      const totalStrokes18 = rounds18.reduce((sum, r) => sum + r.total_score, 0);
+      fallback.scoringAverage = Math.round((totalStrokes18 / rounds18.length) * 100) / 100;
+    }
     fallback.bestRound = normalizedScores.length > 0 ? Math.min(...normalizedScores) : null;
     fallback.worstRound = normalizedScores.length > 0 ? Math.max(...normalizedScores) : null;
   }
@@ -461,14 +462,12 @@ export async function getStatsSummary(
     }
   }
 
-  // Compute per-hole scoring average, then express as 18-hole equivalent
-  // This correctly handles mixed 9-hole and 18-hole rounds
+  // Scoring average: 18-hole rounds only (NCAA-style)
   let scoringAverage: number | null = null;
-  if (roundScores.length > 0) {
-    const totalHolesScored = roundScores.reduce((sum, r) => sum + r.holesPlayed, 0);
-    const totalStrokes = roundScores.reduce((sum, r) => sum + r.score, 0);
-    const perHoleAvg = totalStrokes / totalHolesScored;
-    scoringAverage = Math.round(perHoleAvg * 18 * 100) / 100;
+  const rounds18 = roundScores.filter(r => r.holesPlayed === 18);
+  if (rounds18.length > 0) {
+    const totalStrokes18 = rounds18.reduce((sum, r) => sum + r.score, 0);
+    scoringAverage = Math.round((totalStrokes18 / rounds18.length) * 100) / 100;
   }
 
   // For best/worst round, normalize to 18-hole equivalent
@@ -789,7 +788,7 @@ export async function getTrendAnalysis(playerId: string): Promise<TrendAnalysisR
     };
   }
 
-  // Transform rounds data — normalize 9-hole rounds to 18-hole equivalents
+  // Transform rounds data — normalize 9-hole rounds to 18-hole equivalents for display
   const rounds: RoundTrendData[] = roundsData.map(r => {
     const hp = r.holes_played ?? 18;
     const normalizedScore = Math.round(r.total_score! * (18 / hp));
@@ -801,6 +800,7 @@ export async function getTrendAnalysis(playerId: string): Promise<TrendAnalysisR
       toPar: r.score_to_par ?? 0,
       courseName: r.course_name || 'Unknown Course',
       roundType: r.round_type ? roundTypeFromDb(r.round_type) : null,
+      holesPlayed: hp,
       girPct: r.total_gir !== null && r.total_gir_possible !== null && r.total_gir_possible > 0
         ? Math.round((r.total_gir / r.total_gir_possible) * 1000) / 10
         : null,
@@ -820,13 +820,31 @@ export async function getTrendAnalysis(playerId: string): Promise<TrendAnalysisR
     putts: rounds.filter(r => r.putts !== null).map(r => ({ date: r.date, value: r.putts!, roundId: r.id, courseName: r.courseName })),
   };
 
-  // Calculate rolling averages for scores
-  const scores = rounds.map(r => r.score);
-  const rollingAverages = {
-    score5: calculateRollingAvg(scores, 5),
-    score10: calculateRollingAvg(scores, 10),
-    score20: calculateRollingAvg(scores, 20),
-  };
+  // Calculate rolling averages for scores — 18-hole rounds only
+  const scores18 = rounds.filter(r => r.holesPlayed === 18).map(r => r.score);
+  const rollingAvg5 = calculateRollingAvg(scores18, 5);
+  const rollingAvg10 = calculateRollingAvg(scores18, 10);
+  const rollingAvg20 = calculateRollingAvg(scores18, 20);
+
+  // Map rolling averages back to full rounds array (null for 9-hole rounds)
+  let idx18 = 0;
+  const score5: (number | null)[] = [];
+  const score10: (number | null)[] = [];
+  const score20: (number | null)[] = [];
+  for (const r of rounds) {
+    if (r.holesPlayed === 18) {
+      score5.push(rollingAvg5[idx18] ?? null);
+      score10.push(rollingAvg10[idx18] ?? null);
+      score20.push(rollingAvg20[idx18] ?? null);
+      idx18++;
+    } else {
+      score5.push(null);
+      score10.push(null);
+      score20.push(null);
+    }
+  }
+
+  const rollingAverages = { score5, score10, score20 };
 
   // Period comparison (last 30 days vs previous 30 days)
   const now = new Date();
@@ -892,14 +910,11 @@ function calculatePeriodStats(rounds: {
     return { roundCount: 0, scoringAvg: null, girPct: null, fairwayPct: null, puttsPerRound: null };
   }
 
-  // Normalize scoring to 18-hole equivalents using per-hole average
-  const scoredRounds = rounds.filter(r => r.total_score !== null);
-  let totalHolesScored = 0;
-  let totalStrokes = 0;
-  for (const r of scoredRounds) {
-    const hp = r.holes_played ?? 18;
-    totalHolesScored += hp;
-    totalStrokes += r.total_score!;
+  // Scoring average: 18-hole rounds only (NCAA-style)
+  const rounds18 = rounds.filter(r => r.total_score !== null && (r.holes_played ?? 18) === 18);
+  let totalStrokes18 = 0;
+  for (const r of rounds18) {
+    totalStrokes18 += r.total_score!;
   }
 
   let totalGir = 0, totalGirOpp = 0;
@@ -923,7 +938,7 @@ function calculatePeriodStats(rounds: {
 
   return {
     roundCount: rounds.length,
-    scoringAvg: totalHolesScored > 0 ? Math.round((totalStrokes / totalHolesScored) * 18 * 10) / 10 : null,
+    scoringAvg: rounds18.length > 0 ? Math.round((totalStrokes18 / rounds18.length) * 10) / 10 : null,
     girPct: totalGirOpp > 0 ? Math.round((totalGir / totalGirOpp) * 1000) / 10 : null,
     fairwayPct: totalFairwayOpp > 0 ? Math.round((totalFairways / totalFairwayOpp) * 1000) / 10 : null,
     puttsPerRound: totalPuttsHoles > 0 ? Math.round((totalPutts / totalPuttsHoles) * 18 * 10) / 10 : null,
@@ -1108,10 +1123,10 @@ export async function getTeamComparison(
     }
   }
 
-  // Calculate stats per player — track holes for normalization
+  // Calculate stats per player — track 18-hole scoring separately
   const playerStatsMap = new Map<string, {
-    totalStrokes: number;
-    totalHoles: number;
+    totalStrokes18: number;
+    roundCount18: number;
     roundCount: number;
     normalizedScores: number[];
     girs: number[];
@@ -1125,23 +1140,25 @@ export async function getTeamComparison(
   // Initialize map
   playerIds.forEach(id => {
     playerStatsMap.set(id, {
-      totalStrokes: 0, totalHoles: 0, roundCount: 0, normalizedScores: [],
+      totalStrokes18: 0, roundCount18: 0, roundCount: 0, normalizedScores: [],
       girs: [], girOpps: [], fairways: [], fairwayOpps: [],
       totalPutts: 0, totalPuttsHoles: 0,
     });
   });
 
-  // Aggregate stats with 9-hole normalization
+  // Aggregate stats — scoring average uses 18-hole rounds only
   roundsData.forEach(round => {
     const stats = playerStatsMap.get(round.player_id);
     if (!stats) return;
     const hp = round.holes_played ?? 18;
 
     if (round.total_score !== null) {
-      stats.totalStrokes += round.total_score;
-      stats.totalHoles += hp;
       stats.roundCount++;
       stats.normalizedScores.push(Math.round(round.total_score * (18 / hp)));
+      if (hp === 18) {
+        stats.totalStrokes18 += round.total_score;
+        stats.roundCount18++;
+      }
     }
     // Only push GIR/fairway pairs together to prevent array misalignment
     if (round.total_gir !== null && round.total_gir_possible !== null) {
@@ -1172,8 +1189,8 @@ export async function getTeamComparison(
       playerId: id,
       playerName: player ? `${player.first_name} ${player.last_name}` : 'Unknown',
       roundCount: stats.roundCount,
-      scoringAverage: stats.totalHoles > 0
-        ? Math.round((stats.totalStrokes / stats.totalHoles) * 18 * 10) / 10
+      scoringAverage: stats.roundCount18 > 0
+        ? Math.round((stats.totalStrokes18 / stats.roundCount18) * 10) / 10
         : null,
       bestRound: stats.normalizedScores.length > 0 ? Math.min(...stats.normalizedScores) : null,
       girPct: totalGirOpps > 0 ? Math.round((totalGirs / totalGirOpps) * 1000) / 10 : null,
@@ -1192,7 +1209,7 @@ export async function getTeamComparison(
 
   // Calculate team averages weighted by rounds played (avoids Simpson's paradox)
   // Aggregate raw numerators/denominators across all players instead of averaging per-player averages
-  let teamTotalStrokes = 0, teamTotalHoles = 0;
+  let teamTotalStrokes18 = 0, teamRoundCount18 = 0;
   let teamTotalGirs = 0, teamTotalGirOpps = 0;
   let teamTotalFairways = 0, teamTotalFairwayOpps = 0;
   let teamTotalPutts = 0, teamTotalPuttsHoles = 0;
@@ -1202,8 +1219,8 @@ export async function getTeamComparison(
     const stats = playerStatsMap.get(id);
     if (!stats || stats.roundCount === 0) continue;
 
-    teamTotalStrokes += stats.totalStrokes;
-    teamTotalHoles += stats.totalHoles;
+    teamTotalStrokes18 += stats.totalStrokes18;
+    teamRoundCount18 += stats.roundCount18;
     teamTotalGirs += stats.girs.reduce((a, b) => a + b, 0);
     teamTotalGirOpps += stats.girOpps.reduce((a, b) => a + b, 0);
     teamTotalFairways += stats.fairways.reduce((a, b) => a + b, 0);
@@ -1219,8 +1236,8 @@ export async function getTeamComparison(
   }
 
   const teamAverages = {
-    scoringAverage: teamTotalHoles > 0
-      ? Math.round((teamTotalStrokes / teamTotalHoles) * 18 * 10) / 10
+    scoringAverage: teamRoundCount18 > 0
+      ? Math.round((teamTotalStrokes18 / teamRoundCount18) * 10) / 10
       : null,
     girPct: teamTotalGirOpps > 0
       ? Math.round((teamTotalGirs / teamTotalGirOpps) * 1000) / 10
@@ -1365,21 +1382,23 @@ export async function getCourseBreakdown(playerId: string): Promise<CourseBreakd
     courseMap.set(round.course_name, existing);
   }
 
-  // Calculate stats per course with 9-hole normalization
+  // Calculate stats per course — scoring average uses 18-hole rounds only
   const courses: CourseStats[] = [];
   for (const [courseName, rounds] of courseMap) {
     let totalGir = 0, totalGirOpp = 0;
     let totalFairways = 0, totalFairwayOpp = 0;
     let totalPutts = 0, totalPuttsHoles = 0;
-    let totalStrokes = 0, totalHolesScored = 0;
+    let totalStrokes18 = 0, roundCount18 = 0;
     const normalizedScores: number[] = [];
 
     for (const round of rounds) {
       const hp = round.holes_played ?? 18;
       if (round.total_score !== null) {
-        totalStrokes += round.total_score;
-        totalHolesScored += hp;
         normalizedScores.push(Math.round(round.total_score * (18 / hp)));
+        if (hp === 18) {
+          totalStrokes18 += round.total_score;
+          roundCount18++;
+        }
       }
       if (round.total_gir !== null && round.total_gir_possible !== null) {
         totalGir += round.total_gir;
@@ -1398,8 +1417,8 @@ export async function getCourseBreakdown(playerId: string): Promise<CourseBreakd
     courses.push({
       courseName,
       roundCount: rounds.length,
-      scoringAverage: totalHolesScored > 0
-        ? Math.round((totalStrokes / totalHolesScored) * 18 * 10) / 10
+      scoringAverage: roundCount18 > 0
+        ? Math.round((totalStrokes18 / roundCount18) * 10) / 10
         : null,
       bestRound: normalizedScores.length > 0 ? Math.min(...normalizedScores) : null,
       girPct: totalGirOpp > 0 ? Math.round((totalGir / totalGirOpp) * 1000) / 10 : null,
