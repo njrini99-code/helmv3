@@ -1,6 +1,6 @@
 .scene {
   width: 100%;
-  min-height: 240px;
+  min-height: 200px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -11,8 +11,8 @@
     radial-gradient(ellipse 80% 70% at 50% 60%, rgba(21, 128, 61, 0.06), transparent),
     radial-gradient(ellipse 60% 50% at 30% 40%, rgba(217, 179, 60, 0.05), transparent),
     rgba(237, 232, 221, 0.45);
-  backdrop-filter: blur(48px);
-  -webkit-backdrop-filter: blur(48px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.6);
   box-shadow:
     0 12px 40px rgba(0, 0, 0, 0.12),
@@ -27,6 +27,8 @@
   .scene {
     min-height: 340px;
     padding: 2.5rem 1.5rem 2.5rem;
+    backdrop-filter: blur(48px);
+    -webkit-backdrop-filter: blur(48px);
   }
 }
 
@@ -59,7 +61,7 @@
   display: inline-flex;
   height: 1.15em;
   overflow: hidden;
-  font-size: clamp(42px, 8.5vw, 88px);
+  font-size: clamp(28px, 8.5vw, 88px);
   text-align: right;
   will-change: width, opacity;
   transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1),
@@ -111,7 +113,7 @@
 
 /* Helm text */
 .helm {
-  font-size: clamp(42px, 8.5vw, 88px);
+  font-size: clamp(28px, 8.5vw, 88px);
   font-weight: 900;
   letter-spacing: -0.03em;
   color: #1B7D2F;
@@ -123,7 +125,7 @@
 /* Sports Labs SVG wrap */
 .slWrap {
   position: relative;
-  font-size: clamp(42px, 8.5vw, 88px);
+  font-size: clamp(28px, 8.5vw, 88px);
   margin-left: 0.15em;
   display: none;
   align-items: center;
@@ -142,7 +144,7 @@
   transform: translate(calc(100% + 0.2em), -50%);
   height: 1.05em;
   width: 1.05em;
-  font-size: clamp(42px, 8.5vw, 88px);
+  font-size: clamp(28px, 8.5vw, 88px);
   flex-shrink: 0;
   will-change: opacity;
   opacity: 0;

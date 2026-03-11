@@ -412,7 +412,7 @@ function PlayerTaskCard({
             disabled={isCompleted || completing}
             aria-label={isCompleted ? 'Task completed' : 'Mark task complete'}
             className={cn(
-              'w-7 h-7 rounded-lg border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors duration-200',
+              'w-9 h-9 rounded-lg border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors duration-200 touch-manipulation',
               isCompleted
                 ? 'bg-primary-600 border-primary-600 text-white'
                 : 'border-warm-300 hover:border-primary-500 hover:bg-primary-50 active:scale-90',
@@ -564,7 +564,7 @@ function EventRSVPCard({
                   onClick={() => handleRSVP('accepted')}
                   disabled={submitting !== null}
                   className={cn(
-                    'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors duration-200',
+                    'px-3.5 py-2 rounded-lg text-xs font-medium transition-colors duration-200 touch-manipulation min-h-[36px]',
                     event.rsvp_status === 'accepted'
                       ? 'bg-primary-600 text-white shadow-sm'
                       : 'bg-primary-50 text-primary-700 hover:bg-primary-100 active:scale-95',
@@ -577,7 +577,7 @@ function EventRSVPCard({
                   onClick={() => handleRSVP('tentative')}
                   disabled={submitting !== null}
                   className={cn(
-                    'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors duration-200',
+                    'px-3.5 py-2 rounded-lg text-xs font-medium transition-colors duration-200 touch-manipulation min-h-[36px]',
                     event.rsvp_status === 'tentative'
                       ? 'bg-amber-500 text-white shadow-sm'
                       : 'bg-amber-50 text-amber-700 hover:bg-amber-100 active:scale-95',
@@ -590,7 +590,7 @@ function EventRSVPCard({
                   onClick={() => handleRSVP('declined')}
                   disabled={submitting !== null}
                   className={cn(
-                    'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors duration-200',
+                    'px-3.5 py-2 rounded-lg text-xs font-medium transition-colors duration-200 touch-manipulation min-h-[36px]',
                     event.rsvp_status === 'declined'
                       ? 'bg-warm-600 text-white shadow-sm'
                       : 'bg-warm-100 text-warm-600 hover:bg-warm-200 active:scale-95',
@@ -697,7 +697,7 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-        className="border-b border-warm-200/60 bg-white/80 backdrop-blur-xl sticky top-0 z-10"
+        className="border-b border-warm-200/60 bg-white/80 backdrop-blur-sm md:backdrop-blur-xl sticky top-0 z-10"
       >
         <div className="max-w-3xl mx-auto px-4 md:px-6 py-4 md:py-5">
           <div className="flex items-center gap-3">
@@ -730,7 +730,7 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
       </m.div>
 
       {/* Tab navigation */}
-      <div className="sticky top-[65px] md:top-[73px] z-[9] bg-white/80 backdrop-blur-xl border-b border-warm-100">
+      <div className="sticky top-[65px] md:top-[73px] z-[9] bg-white/80 backdrop-blur-sm md:backdrop-blur-xl border-b border-warm-100">
         <div className="max-w-3xl mx-auto px-4 md:px-6">
           <div className="relative">
             <div className="flex gap-1 -mb-px overflow-x-auto pills-scroll">

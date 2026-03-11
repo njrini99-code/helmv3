@@ -23,7 +23,7 @@ import type {
 import Image from 'next/image';
 import GolfStatsDisplay, { Sparkline } from '@/components/golf/stats/GolfStatsDisplay';
 import { generateStatisticalStrengthsWeaknesses } from '@/lib/golf/strokes-gained';
-import { DetailedStatsSkeleton } from '@/components/golf/GolfSkeletons';
+import { DetailedStatsSkeleton, StatsPageSkeleton } from '@/components/golf/GolfSkeletons';
 import {
   IconChevronLeft,
   IconUser,
@@ -798,6 +798,7 @@ export default function StatsClient({
     setSelectedPlayer(player);
     setPlayerName(`${player.first_name} ${player.last_name}`);
     setDetailedStats(null);
+    setLoadingDetailed(true); // Show skeleton immediately — prevents empty state flash
     setActiveFilter(null);
     setCourseBreakdown(null);
     setWorstHoleData(null);
@@ -812,6 +813,7 @@ export default function StatsClient({
     setSelectedPlayerId(null);
     setSelectedPlayer(null);
     setDetailedStats(null);
+    setLoadingDetailed(false);
     setRounds([]);
     setActiveFilter(null);
     setCourseBreakdown(null);
@@ -843,15 +845,12 @@ export default function StatsClient({
   // ============================================================================
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-full">
-        <div className="space-y-3 w-48">
-          <div className="h-4 w-full bg-warm-200 rounded skeleton-shimmer" />
-          <div className="h-4 w-3/4 bg-warm-200 rounded skeleton-shimmer" />
-          <div className="h-4 w-1/2 bg-warm-200 rounded skeleton-shimmer" />
-        </div>
-      </div>
-    );
+    // Show the same skeleton that matches the view the user will see,
+    // so there's no position jump when content loads
+    if (golfUser.role === 'coach') {
+      return <StatsPageSkeleton />;
+    }
+    return <DetailedStatsSkeleton />;
   }
 
   // Coach view - show roster with premium design

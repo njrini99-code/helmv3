@@ -7,10 +7,6 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { submitDemoRequest } from '@/app/actions/demo-request'
 
-interface MobileNavProps {
-  isProductsPage?: boolean
-}
-
 const navLinks = [
   { name: 'Home', href: '/' },
   { name: 'About', href: '/about' },
@@ -21,7 +17,7 @@ const navLinks = [
 // Smooth spring-like ease — no bounce, no jank
 const smooth = [0.32, 0.72, 0, 1] as const
 
-export function MobileNav({ isProductsPage = false }: MobileNavProps) {
+export function MobileNav() {
   const [isOpen, setIsOpen] = useState(false)
   const [showDemoForm, setShowDemoForm] = useState(false)
   const [email, setEmail] = useState('')
@@ -94,12 +90,7 @@ export function MobileNav({ isProductsPage = false }: MobileNavProps) {
         onClick={() => setIsOpen(!isOpen)}
         className={`md:hidden relative z-[70] w-10 h-10 flex items-center justify-center
                    rounded-xl transition-all duration-200 active:scale-90
-                   ${isOpen
-                     ? 'bg-transparent'
-                     : isProductsPage
-                       ? 'bg-warm-900/5'
-                       : 'bg-white/10'
-                   }`}
+                   ${isOpen ? 'bg-transparent' : 'bg-warm-900/5'}`}
         aria-label={isOpen ? 'Close menu' : 'Open menu'}
       >
         <div className="w-[18px] h-3.5 relative flex flex-col justify-center items-center">
@@ -107,27 +98,21 @@ export function MobileNav({ isProductsPage = false }: MobileNavProps) {
             className={`absolute h-[1.5px] rounded-full transition-all duration-300 ease-out
               ${isOpen
                 ? 'bg-warm-700 rotate-45 w-full'
-                : isProductsPage
-                  ? 'bg-warm-800 -translate-y-[5px] w-full'
-                  : 'bg-white -translate-y-[5px] w-full'
+                : 'bg-warm-800 -translate-y-[5px] w-full'
               }`}
           />
           <span
             className={`absolute h-[1.5px] rounded-full transition-all duration-200 ease-out
               ${isOpen
                 ? 'bg-warm-700 opacity-0 scale-x-0'
-                : isProductsPage
-                  ? 'bg-warm-800 opacity-100 w-3/4 -translate-x-[2px]'
-                  : 'bg-white opacity-100 w-3/4 -translate-x-[2px]'
+                : 'bg-warm-800 opacity-100 w-3/4 -translate-x-[2px]'
               }`}
           />
           <span
             className={`absolute h-[1.5px] rounded-full transition-all duration-300 ease-out
               ${isOpen
                 ? 'bg-warm-700 -rotate-45 w-full'
-                : isProductsPage
-                  ? 'bg-warm-800 translate-y-[5px] w-full'
-                  : 'bg-white translate-y-[5px] w-full'
+                : 'bg-warm-800 translate-y-[5px] w-full'
               }`}
           />
         </div>
@@ -144,6 +129,7 @@ export function MobileNav({ isProductsPage = false }: MobileNavProps) {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3, ease: smooth }}
               className="fixed inset-0 z-[9999] md:hidden bg-[#F5F0E6]"
+              style={{ WebkitOverflowScrolling: 'touch' }}
             >
               {/* Gradient enhancement layer */}
               <div

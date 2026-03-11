@@ -133,6 +133,9 @@ export function TodayTimeline({ events, role, timezone }: TodayTimelineProps) {
         );
     }
 
+    // Find the first upcoming event index
+    const nextIdx = events.findIndex(e => toDecimalHourInTz(e.start_time, tz) > currentHour);
+
     return (
         <div
             role="region"
@@ -162,14 +165,92 @@ export function TodayTimeline({ events, role, timezone }: TodayTimelineProps) {
                 </Link>
             </div>
 
-            {/* Horizontal scrolling timeline */}
+            {/* ── Mobile: compact event list ── */}
+            <div className="md:hidden px-4 pb-4 space-y-2">
+                {events.map((event, i) => {
+                    const config = EVENT_TYPE_CONFIG[event.event_type] ?? EVENT_TYPE_CONFIG['other']!;
+                    const startH = toDecimalHourInTz(event.start_time, tz);
+                    const endH = event.end_time ? toDecimalHourInTz(event.end_time, tz) : startH + 1;
+                    const isPast = endH < currentHour;
+                    const isCurrent = currentHour >= startH && currentHour <= endH;
+                    const isNext = !isCurrent && i === nextIdx;
+
+                    return (
+                        <m.div
+                            key={event.id}
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: i * 0.05, duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                            className={cn(
+                                'rounded-xl border p-3.5 transition-all duration-200',
+                                config.border,
+                                isCurrent
+                                    ? 'bg-white/90 shadow-[0_2px_12px_rgba(0,0,0,0.08)] ring-1 ring-primary-200'
+                                    : isPast
+                                        ? 'bg-warm-50/60 opacity-50'
+                                        : 'bg-white/70',
+                            )}
+                        >
+                            <div className="flex items-start justify-between gap-2 mb-1.5">
+                                <p className={cn(
+                                    'text-sm font-semibold',
+                                    isCurrent ? 'text-warm-900' : 'text-warm-700'
+                                )}>
+                                    {event.title}
+                                </p>
+                                {isCurrent && (
+                                    <span className="flex-shrink-0 flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-primary-50 text-primary-600 border border-primary-200/60">
+                                        <span className="w-1 h-1 rounded-full bg-primary-500 animate-pulse" />
+                                        Live
+                                    </span>
+                                )}
+                            </div>
+
+                            <div className="flex items-center gap-3 text-xs text-warm-400">
+                                <span className="flex items-center gap-1 tabular-nums">
+                                    <IconClock size={11} className="text-warm-300" />
+                                    {formatTimeInTz(event.start_time, tz)}
+                                    {event.end_time && ` – ${formatTimeInTz(event.end_time, tz)}`}
+                                </span>
+                                {event.location && (
+                                    <span className="flex items-center gap-1 truncate">
+                                        <IconMapPin size={11} className="text-warm-300" />
+                                        <span className="truncate">{event.location}</span>
+                                    </span>
+                                )}
+                            </div>
+
+                            <div className="flex items-center gap-2 mt-2">
+                                <span className={cn(
+                                    'px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider',
+                                    config.bg, config.text
+                                )}>
+                                    {config.label}
+                                </span>
+                                {isNext && (
+                                    <span className="text-xs text-primary-600 font-medium tabular-nums">
+                                        {getTimeUntil(event.start_time)}
+                                    </span>
+                                )}
+                                {role === 'coach' && event.rsvp_total !== undefined && (
+                                    <span className="text-xs text-warm-400 tabular-nums">
+                                        {event.rsvp_yes}/{event.rsvp_total} confirmed
+                                    </span>
+                                )}
+                            </div>
+                        </m.div>
+                    );
+                })}
+            </div>
+
+            {/* ── Desktop: horizontal scrolling timeline ── */}
             <div
                 ref={scrollRef}
                 tabIndex={0}
                 role="group"
                 aria-label="Timeline events, use left and right arrow keys to scroll"
                 onKeyDown={handleKeyDown}
-                className="overflow-x-auto overflow-y-hidden scrollbar-thin scrollbar-thumb-warm-200 scrollbar-track-transparent pb-4 px-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 rounded-lg"
+                className="hidden md:block overflow-x-auto overflow-y-hidden scrollbar-thin scrollbar-thumb-warm-200 scrollbar-track-transparent pb-4 px-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 rounded-lg"
             >
                 <div className="relative" style={{ width: totalWidth + 40, height: TIMELINE_HEIGHT }}>
                     {/* Hour markers */}
@@ -213,23 +294,22 @@ export function TodayTimeline({ events, role, timezone }: TodayTimelineProps) {
                         </div>
                     </div>
 
-                    {/* Event blocks - positioned by time, stacked into rows to avoid overlap */}
+                    {/* Event blocks */}
                     {(() => {
-                        const ROW_HEIGHT = 76; // px per row
+                        const ROW_HEIGHT = 76;
                         const ROW_GAP = 4;
-                        // Assign events to rows using a greedy algorithm
-                        const rowEnds: number[] = []; // tracks the rightmost pixel end of each row
+                        const rowEnds: number[] = [];
                         const eventRows: number[] = [];
                         for (const event of events) {
-                            const startH = toDecimalHourInTz(event.start_time, tz);
-                            const endH = event.end_time ? toDecimalHourInTz(event.end_time, tz) : startH + 1;
-                            const leftPx = hourToX(startH);
-                            const widthPx = Math.max((endH - startH) / totalHours * totalWidth, 100);
+                            const sH = toDecimalHourInTz(event.start_time, tz);
+                            const eH = event.end_time ? toDecimalHourInTz(event.end_time, tz) : sH + 1;
+                            const leftPx = hourToX(sH);
+                            const widthPx = Math.max((eH - sH) / totalHours * totalWidth, 100);
                             const rightPx = leftPx + widthPx;
 
                             let assignedRow = -1;
                             for (let r = 0; r < rowEnds.length; r++) {
-                                if (leftPx >= (rowEnds[r] ?? 0) + 4) { // 4px gap between events
+                                if (leftPx >= (rowEnds[r] ?? 0) + 4) {
                                     assignedRow = r;
                                     break;
                                 }
@@ -244,22 +324,19 @@ export function TodayTimeline({ events, role, timezone }: TodayTimelineProps) {
                         const totalRows = Math.max(rowEnds.length, 1);
                         const containerHeight = totalRows * ROW_HEIGHT + (totalRows - 1) * ROW_GAP;
 
-                        // Find the first upcoming event index
-                        const nextIdx = events.findIndex(e => toDecimalHourInTz(e.start_time, tz) > currentHour);
-
                         return (
                             <div className="relative" style={{ marginTop: 8, paddingLeft: 20, paddingRight: 20, height: containerHeight }}>
                                 {events.map((event, i) => {
                                     const config = EVENT_TYPE_CONFIG[event.event_type] ?? EVENT_TYPE_CONFIG['other']!;
-                                    const startH = toDecimalHourInTz(event.start_time, tz);
-                                    const endH = event.end_time ? toDecimalHourInTz(event.end_time, tz) : startH + 1;
-                                    const leftPx = hourToX(startH);
-                                    const widthPx = Math.max((endH - startH) / totalHours * totalWidth, 100);
+                                    const sH = toDecimalHourInTz(event.start_time, tz);
+                                    const eH = event.end_time ? toDecimalHourInTz(event.end_time, tz) : sH + 1;
+                                    const leftPx = hourToX(sH);
+                                    const widthPx = Math.max((eH - sH) / totalHours * totalWidth, 100);
                                     const row = eventRows[i] ?? 0;
                                     const topPx = row * (ROW_HEIGHT + ROW_GAP);
 
-                                    const isPast = endH < currentHour;
-                                    const isCurrent = currentHour >= startH && currentHour <= endH;
+                                    const isPast = eH < currentHour;
+                                    const isCurrent = currentHour >= sH && currentHour <= eH;
                                     const isNext = !isCurrent && i === nextIdx;
 
                                     const eventLabel = `${event.title}, ${config.label}, ${formatTimeInTz(event.start_time, tz)}${event.end_time ? ` to ${formatTimeInTz(event.end_time, tz)}` : ''}${event.location ? `, ${event.location}` : ''}${isCurrent ? ', happening now' : ''}`;

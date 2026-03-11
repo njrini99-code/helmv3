@@ -92,8 +92,8 @@ export default function ProductsPage() {
                            focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:ring-offset-2"
                   style={{
                     background: 'radial-gradient(ellipse 80% 70% at 50% 60%, rgba(21,128,61,0.04), transparent), rgba(237,232,221,0.5)',
-                    backdropFilter: 'blur(60px)',
-                    WebkitBackdropFilter: 'blur(60px)',
+                    backdropFilter: 'blur(20px)',
+                    WebkitBackdropFilter: 'blur(20px)',
                   }}
                 >
                   <div className="w-10 h-10 relative flex-shrink-0">
@@ -119,8 +119,8 @@ export default function ProductsPage() {
                            focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:ring-offset-2"
                   style={{
                     background: 'radial-gradient(ellipse 80% 70% at 50% 60%, rgba(21,128,61,0.04), transparent), rgba(237,232,221,0.5)',
-                    backdropFilter: 'blur(60px)',
-                    WebkitBackdropFilter: 'blur(60px)',
+                    backdropFilter: 'blur(20px)',
+                    WebkitBackdropFilter: 'blur(20px)',
                   }}
                 >
                   <div className="w-10 h-10 relative flex-shrink-0">

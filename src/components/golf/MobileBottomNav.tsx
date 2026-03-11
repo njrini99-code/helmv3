@@ -48,7 +48,7 @@ export function MobileBottomNav({ isCoach = true }: MobileBottomNavProps) {
       aria-label="Mobile navigation"
       className={cn(
         'fixed bottom-0 left-0 right-0 z-40 lg:hidden',
-        'bg-white/95 backdrop-blur-md',
+        'bg-white/95 backdrop-blur-sm md:backdrop-blur-md',
         'border-t border-warm-200/60',
         'shadow-[0_-4px_20px_rgba(0,0,0,0.08)]',
         'will-change-transform',
@@ -74,7 +74,7 @@ export function MobileBottomNav({ isCoach = true }: MobileBottomNavProps) {
                 }
               }}
               className={cn(
-                'flex flex-col items-center justify-center gap-0.5 py-2 rounded-xl transition-all duration-200',
+                'flex flex-col items-center justify-center gap-0.5 py-2 rounded-xl transition-colors duration-200',
                 'min-w-[60px] min-h-[48px]',
                 'active:scale-95 touch-manipulation',
                 isActive
@@ -84,7 +84,7 @@ export function MobileBottomNav({ isCoach = true }: MobileBottomNavProps) {
               aria-current={isActive ? 'page' : undefined}
             >
               <div className={cn(
-                'relative p-1.5 rounded-xl transition-all duration-200',
+                'relative p-1.5 rounded-xl transition-colors duration-200',
                 isActive
                   ? 'bg-primary-100/80 text-primary-600 shadow-sm'
                   : 'text-warm-400'

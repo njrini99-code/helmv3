@@ -3,47 +3,50 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { useRef } from 'react';
-import { ArrowRight } from 'lucide-react';
-import { MobileNav } from '@/components/landing/MobileNav';
+import { Navigation } from '@/components/landing/Navigation';
+import { Footer } from '@/components/landing/Footer';
+import { SmoothScroll } from '@/components/landing/SmoothScroll';
 
-const ambitions = [
+const pillars = [
   {
-    title: 'Make talent visible',
-    description: 'Surface athletes on merit, not connections, with trusted performance data and real context.',
+    title: 'Roster & Communication',
+    description: 'Centralize your roster, messaging, announcements, and documents in a single hub your whole team can access.',
   },
   {
-    title: 'Guide better decisions',
-    description: 'Give coaches a clear, unbiased view of fit, readiness, and trajectory across every level.',
+    title: 'Scheduling & Travel',
+    description: 'Manage practices, tournaments, travel itineraries, and attendance without juggling calendars and group chats.',
   },
   {
-    title: 'Unify the workflow',
-    description: 'Replace scattered tools with one system that connects recruiting, development, and communication.',
+    title: 'Stats & Development',
+    description: 'Track every round, monitor performance trends, and build individualized development plans backed by real data.',
+  },
+  {
+    title: 'AI-Powered Coaching',
+    description: 'CoachHelm surfaces patterns, flags at-risk players, and delivers insights so nothing falls through the cracks.',
   },
 ];
 
-const principles = [
+const values = [
   {
     title: 'Clarity over noise',
-    description: 'We focus on the signal that matters most to athletes and programs.',
+    description: 'We cut through the clutter so coaches can focus on what actually moves the needle.',
   },
   {
-    title: 'Athlete-centered',
-    description: 'Every workflow should help players improve, get seen, and land in the right environment.',
+    title: 'Built for the day-to-day',
+    description: 'Every feature exists because a coach or player needed it — not because it looked good on a feature list.',
   },
   {
-    title: 'Trust and accountability',
-    description: 'We build with integrity, privacy, and long-term outcomes as the baseline.',
+    title: 'Premium by default',
+    description: 'College programs deserve software that matches their standards. No compromises on quality or experience.',
   },
 ];
 
-// Optimized animation variants - faster, snappier
 const fadeInUp = {
   hidden: { opacity: 0, y: 16 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] as const }
+    transition: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1] as const }
   }
 };
 
@@ -51,136 +54,110 @@ const staggerContainer = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.05, delayChildren: 0.05 }
+    transition: { staggerChildren: 0.08, delayChildren: 0.1 }
   }
 };
 
 export default function AboutPage() {
-  const heroRef = useRef(null);
-
   return (
-    <div className="min-h-screen bg-[#FAFAF8] overflow-x-hidden">
+    <main className="min-h-screen bg-background overflow-x-hidden">
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary-600 focus:text-white focus:rounded-lg focus:shadow-lg">
         Skip to main content
       </a>
+      <SmoothScroll />
+
       {/* Navigation */}
-      <header className="relative z-10 border-b border-warm-200/50 bg-[#FAFAF8]">
-        <div className="max-w-5xl mx-auto px-5 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
-            <Image
-              src="/Helm-Logo-New-Main.png"
-              alt="Helm Sports Labs"
-              width={36}
-              height={36}
-              className="w-9 h-9 object-contain"
-            />
-            <span className="font-semibold text-warm-900 text-base tracking-tight">
-              Helm Sports Labs
-            </span>
-          </Link>
+      <div className="relative z-10">
+        <Navigation />
+      </div>
 
-          {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-1">
-            <Link
-              href="/"
-              className="px-4 py-2 text-warm-500 hover:text-warm-900 rounded-lg transition-colors text-sm font-medium"
-            >
-              Home
-            </Link>
-            <Link
-              href="/products"
-              className="px-4 py-2 text-warm-500 hover:text-warm-900 rounded-lg transition-colors text-sm font-medium"
-            >
-              Products
-            </Link>
-            <span className="px-4 py-2 text-warm-900 text-sm font-medium">
-              About
-            </span>
-            <Link
-              href="/golf/login"
-              className="ml-3 px-5 py-2 bg-warm-900 text-white font-medium rounded-lg
-                       hover:bg-warm-800 active:scale-[0.98] transition-all text-sm"
-            >
-              Sign In
-            </Link>
-          </nav>
-
-          {/* Mobile Nav */}
-          <div className="md:hidden">
-            <MobileNav isProductsPage />
-          </div>
-        </div>
-      </header>
-
-      {/* Hero Section */}
+      {/* Hero */}
       <section
         id="main-content"
-        ref={heroRef}
-        className="relative pt-12 pb-16 md:pt-16 md:pb-20 px-5"
+        className="relative pt-24 md:pt-32 pb-16 md:pb-24"
+        style={{
+          background: `
+            radial-gradient(ellipse 80% 60% at 50% 40%, rgba(21, 128, 61, 0.12), transparent),
+            linear-gradient(180deg, #FFFEFA 0%, #EDE8DD 100%)
+          `
+        }}
       >
         <motion.div
-          className="relative max-w-3xl mx-auto text-center"
+          className="relative max-w-3xl mx-auto px-5 sm:px-6 text-center"
           initial="hidden"
           animate="visible"
           variants={staggerContainer}
         >
           <motion.p
             variants={fadeInUp}
-            className="text-sm font-medium text-primary-600 tracking-wide uppercase mb-4"
+            className="text-sm font-medium text-primary-600 tracking-[0.2em] uppercase mb-5"
           >
-            Our Mission
+            Our Story
           </motion.p>
 
           <motion.h1
             variants={fadeInUp}
-            className="text-4xl sm:text-5xl md:text-6xl font-bold text-warm-900 tracking-tight leading-[1.1] mb-6"
+            className="text-4xl sm:text-5xl md:text-[3.5rem] font-bold text-warm-900 tracking-tight leading-[1.1] mb-7"
           >
-            Build a recruiting system athletes can trust
+            There has to be a better way
           </motion.h1>
 
           <motion.p
             variants={fadeInUp}
-            className="text-lg text-warm-600 leading-relaxed max-w-2xl mx-auto"
+            className="text-lg md:text-xl text-warm-600 leading-relaxed max-w-2xl mx-auto"
           >
-            Recruiting should reward talent, effort, and fit. We're creating the platform
-            that gives athletes visibility and gives coaches the confidence to make the right call.
+            Helm Sports Labs was created by two former collegiate athletes who were tired of
+            spreadsheets and group chats and thought &ldquo;there has to be a better way.&rdquo;
           </motion.p>
         </motion.div>
       </section>
 
-      {/* Why Section */}
-      <section className="py-16 md:py-20 px-5">
+      {/* Origin Story */}
+      <section
+        className="relative py-16 md:py-24 px-5 sm:px-6"
+        style={{
+          background: `
+            radial-gradient(ellipse 60% 50% at 20% 50%, rgba(21, 128, 61, 0.06), transparent),
+            linear-gradient(180deg, #EDE8DD 0%, #FFFEFA 100%)
+          `
+        }}
+      >
         <motion.div
           className="max-w-5xl mx-auto"
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
+          viewport={{ once: true, margin: "-80px" }}
           variants={staggerContainer}
         >
-          <div className="grid md:grid-cols-2 gap-12 md:gap-16 items-start">
+          <div className="grid md:grid-cols-2 gap-10 md:gap-16 items-center">
             <motion.div variants={fadeInUp}>
-              <p className="text-sm font-medium text-warm-500 uppercase tracking-wide mb-3">
+              <p className="text-sm font-medium text-warm-500 uppercase tracking-[0.15em] mb-3">
                 The Problem
               </p>
               <h2 className="text-3xl md:text-4xl font-bold text-warm-900 mb-6 tracking-tight">
-                Why we exist
+                Managing a college team shouldn&apos;t feel like a second job
               </h2>
-              <p className="text-lg text-warm-600 leading-relaxed mb-5">
-                The recruiting process is fragmented. Athletes have to prove themselves
-                across disconnected platforms, and coaches are forced to make decisions
-                without a complete picture of performance or potential.
+              <p className="text-base md:text-lg text-warm-600 leading-relaxed mb-5">
+                Coaches juggle spreadsheets for stats, group chats for communication, separate
+                apps for scheduling, and notebooks for player development. Players never know
+                where to look for what they need. Important details get buried.
               </p>
-              <p className="text-lg text-warm-600 leading-relaxed">
-                Helm exists to bring transparency and structure to that journey, so the
-                right athletes and programs can find each other with confidence.
+              <p className="text-base md:text-lg text-warm-600 leading-relaxed">
+                We built Helm to unify everything into one premium platform — so coaches
+                can focus on coaching and players can focus on improving.
               </p>
             </motion.div>
 
-            <motion.div
-              variants={fadeInUp}
-              className="relative"
-            >
-              <div className="bg-white rounded-2xl border border-warm-200 p-8 shadow-sm">
+            <motion.div variants={fadeInUp}>
+              <div
+                className="rounded-2xl p-7 md:p-8 border border-white/60"
+                style={{
+                  background: 'radial-gradient(ellipse 80% 70% at 50% 60%, rgba(21,128,61,0.05), transparent), rgba(255,255,250,0.7)',
+                  backdropFilter: 'blur(20px)',
+                  WebkitBackdropFilter: 'blur(20px)',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.03), inset 0 1px 0 rgba(255,255,255,0.5)',
+                }}
+              >
                 <div className="flex items-center gap-4 mb-5">
                   <Image
                     src="/Helm-Logo-New-Main.png"
@@ -190,13 +167,14 @@ export default function AboutPage() {
                     className="w-11 h-11 object-contain"
                   />
                   <div>
-                    <p className="text-xs font-medium text-warm-500 uppercase tracking-wide">Our Belief</p>
-                    <p className="text-lg font-semibold text-warm-900">Opportunity should be earned</p>
+                    <p className="text-xs font-medium text-warm-500 uppercase tracking-[0.15em]">Our Belief</p>
+                    <p className="text-lg font-semibold text-warm-900">Coaches deserve better tools</p>
                   </div>
                 </div>
                 <p className="text-warm-600 leading-relaxed">
-                  We're building a recruiting system that values consistency, growth, and fit—
-                  giving every athlete a real chance to be discovered.
+                  Every decision a coach makes impacts their players&apos; growth. Those decisions
+                  shouldn&apos;t be slowed down by disconnected tools and lost information. Helm
+                  gives you the clarity to lead with confidence.
                 </p>
               </div>
             </motion.div>
@@ -204,36 +182,50 @@ export default function AboutPage() {
         </motion.div>
       </section>
 
-      {/* Ambitions Section */}
-      <section className="py-16 md:py-20 px-5 bg-white">
+      {/* What Helm Unifies */}
+      <section
+        className="relative py-16 md:py-24 px-5 sm:px-6"
+        style={{
+          background: `
+            radial-gradient(ellipse 70% 50% at 80% 40%, rgba(21, 128, 61, 0.08), transparent),
+            linear-gradient(180deg, #FFFEFA 0%, #F5F0E6 100%)
+          `
+        }}
+      >
         <motion.div
           className="max-w-5xl mx-auto"
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
+          viewport={{ once: true, margin: "-80px" }}
           variants={staggerContainer}
         >
-          <motion.div variants={fadeInUp} className="text-center mb-12">
-            <p className="text-sm font-medium text-warm-500 uppercase tracking-wide mb-3">
-              What We're Building
+          <motion.div variants={fadeInUp} className="text-center mb-12 md:mb-14">
+            <p className="text-sm font-medium text-warm-500 uppercase tracking-[0.15em] mb-3">
+              What We&apos;re Building
             </p>
             <h2 className="text-3xl md:text-4xl font-bold text-warm-900 mb-4 tracking-tight">
-              Our ambitions
+              One platform, everything unified
             </h2>
-            <p className="text-lg text-warm-600 max-w-xl mx-auto">
-              A modern platform that aligns athlete development with recruiting outcomes.
+            <p className="text-lg text-warm-600 max-w-xl mx-auto leading-relaxed">
+              Helm replaces the patchwork of tools that slow your program down.
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-6">
-            {ambitions.map((item, index) => (
+          <div className="grid sm:grid-cols-2 gap-4 md:gap-5">
+            {pillars.map((item, index) => (
               <motion.div
                 key={item.title}
                 variants={fadeInUp}
-                className="group"
               >
-                <div className="h-full bg-[#FAFAF8] rounded-xl p-6 border border-warm-100
-                              hover:border-warm-200 hover:shadow-sm transition-all duration-200">
+                <div
+                  className="h-full rounded-2xl p-6 md:p-7 border border-white/60 transition-all duration-200 hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]"
+                  style={{
+                    background: 'radial-gradient(ellipse 80% 70% at 50% 60%, rgba(21,128,61,0.04), transparent), rgba(255,255,250,0.6)',
+                    backdropFilter: 'blur(20px)',
+                    WebkitBackdropFilter: 'blur(20px)',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.05), 0 2px 8px rgba(0,0,0,0.03), 0 0 0 1px rgba(0,0,0,0.02), inset 0 1px 0 rgba(255,255,255,0.5)',
+                  }}
+                >
                   <div className="w-8 h-8 rounded-full bg-primary-50 text-primary-600
                                 flex items-center justify-center text-sm font-semibold mb-4">
                     {index + 1}
@@ -251,36 +243,50 @@ export default function AboutPage() {
         </motion.div>
       </section>
 
-      {/* Principles Section */}
-      <section className="py-16 md:py-20 px-5">
+      {/* Values */}
+      <section
+        className="relative py-16 md:py-24 px-5 sm:px-6"
+        style={{
+          background: `
+            radial-gradient(ellipse 60% 50% at 50% 60%, rgba(21, 128, 61, 0.1), transparent),
+            linear-gradient(180deg, #F5F0E6 0%, #EDE8DD 100%)
+          `
+        }}
+      >
         <motion.div
           className="max-w-5xl mx-auto"
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
+          viewport={{ once: true, margin: "-80px" }}
           variants={staggerContainer}
         >
-          <motion.div variants={fadeInUp} className="text-center mb-12">
-            <p className="text-sm font-medium text-warm-500 uppercase tracking-wide mb-3">
+          <motion.div variants={fadeInUp} className="text-center mb-12 md:mb-14">
+            <p className="text-sm font-medium text-warm-500 uppercase tracking-[0.15em] mb-3">
               How We Work
             </p>
             <h2 className="text-3xl md:text-4xl font-bold text-warm-900 mb-4 tracking-tight">
               Our principles
             </h2>
-            <p className="text-lg text-warm-600 max-w-xl mx-auto">
-              Values that keep us honest and focused on outcomes.
+            <p className="text-lg text-warm-600 max-w-xl mx-auto leading-relaxed">
+              Values that shape every feature we ship.
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-6">
-            {principles.map((item) => (
+          <div className="grid md:grid-cols-3 gap-4 md:gap-5">
+            {values.map((item) => (
               <motion.div
                 key={item.title}
                 variants={fadeInUp}
-                className="group"
               >
-                <div className="h-full bg-white rounded-xl p-6 border border-warm-200
-                              hover:border-primary-200 hover:shadow-sm transition-all duration-200">
+                <div
+                  className="h-full rounded-2xl p-6 md:p-7 border border-white/60 transition-all duration-200 hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)]"
+                  style={{
+                    background: 'radial-gradient(ellipse 80% 70% at 50% 60%, rgba(21,128,61,0.03), transparent), rgba(255,255,250,0.6)',
+                    backdropFilter: 'blur(20px)',
+                    WebkitBackdropFilter: 'blur(20px)',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.05), 0 2px 8px rgba(0,0,0,0.03), 0 0 0 1px rgba(0,0,0,0.02), inset 0 1px 0 rgba(255,255,255,0.5)',
+                  }}
+                >
                   <div className="w-1 h-8 bg-primary-500 rounded-full mb-4" />
                   <h3 className="font-semibold text-warm-900 text-lg mb-2">
                     {item.title}
@@ -295,41 +301,58 @@ export default function AboutPage() {
         </motion.div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-16 md:py-20 px-5">
+      {/* CTA */}
+      <section
+        className="relative py-16 md:py-24 px-5 sm:px-6"
+        style={{
+          background: `
+            radial-gradient(ellipse 80% 60% at 50% 50%, rgba(21, 128, 61, 0.08), transparent),
+            linear-gradient(180deg, #EDE8DD 0%, #FFFEFA 100%)
+          `
+        }}
+      >
         <motion.div
           className="max-w-3xl mx-auto"
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
+          viewport={{ once: true, margin: "-80px" }}
           variants={fadeInUp}
         >
-          <div className="bg-warm-900 rounded-2xl p-8 md:p-12 text-center">
+          <div
+            className="rounded-2xl p-8 md:p-12 text-center"
+            style={{
+              background: 'linear-gradient(135deg, #1c1917 0%, #292524 100%)',
+              boxShadow: '0 24px 64px rgba(0,0,0,0.2), 0 8px 24px rgba(0,0,0,0.1)',
+            }}
+          >
             <h2 className="text-2xl md:text-3xl font-bold text-white mb-4 tracking-tight">
-              Ready to get started?
+              Ready to streamline your program?
             </h2>
-            <p className="text-warm-400 text-lg mb-8 max-w-lg mx-auto">
-              Start building a clearer recruiting process for your program or your athletes.
+            <p className="text-warm-400 text-lg mb-8 max-w-lg mx-auto leading-relaxed">
+              Join coaches who are replacing spreadsheets and group chats with one unified platform.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link href="/golf/signup">
                 <button
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3
-                           bg-white text-warm-900 font-semibold rounded-lg
-                           hover:bg-warm-100 active:scale-[0.98] transition-all"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5
+                           bg-white text-warm-900 font-semibold rounded-xl
+                           hover:bg-warm-50 active:scale-[0.98] transition-all text-sm
+                           shadow-[0_0_20px_rgba(255,255,255,0.1)]"
                 >
                   Create Free Account
-                  <ArrowRight size={18} />
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
                 </button>
               </Link>
-              <Link href="/#demo">
+              <Link href="/products">
                 <button
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3
-                           text-white font-medium rounded-lg border border-white/20
-                           hover:bg-white/10 active:scale-[0.98] transition-all"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5
+                           text-white font-medium rounded-xl border border-white/20
+                           hover:bg-white/10 active:scale-[0.98] transition-all text-sm"
                 >
-                  Request Demo
+                  View Products
                 </button>
               </Link>
             </div>
@@ -337,47 +360,7 @@ export default function AboutPage() {
         </motion.div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-10 px-5 border-t border-warm-200">
-        <div className="max-w-5xl mx-auto">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-3">
-              <Image
-                src="/Helm-Logo-New-Main.png"
-                alt="Helm Sports Labs"
-                width={28}
-                height={28}
-                className="w-7 h-7 object-contain"
-              />
-              <span className="text-sm font-medium text-warm-600">
-                Helm Sports Labs
-              </span>
-            </div>
-
-            <p className="text-warm-500 text-sm">
-              © {new Date().getFullYear()} Helm Sports Labs. All rights reserved.
-            </p>
-
-            <div className="flex items-center gap-6">
-              {['Privacy', 'Terms'].map((item) => (
-                <Link
-                  key={item}
-                  href={`/${item.toLowerCase()}`}
-                  className="text-warm-500 hover:text-warm-900 text-sm transition-colors"
-                >
-                  {item}
-                </Link>
-              ))}
-              <a
-                href="mailto:support@helmsportslab.com"
-                className="text-warm-500 hover:text-warm-900 text-sm transition-colors"
-              >
-                Contact
-              </a>
-            </div>
-          </div>
-        </div>
-      </footer>
-    </div>
+      <Footer />
+    </main>
   );
 }

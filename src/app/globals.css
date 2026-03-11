@@ -152,6 +152,7 @@
       );
     background-attachment: scroll;
     min-height: 100dvh;
+    min-height: -webkit-fill-available;
     font-family: var(--font-family);
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
     letter-spacing: -0.011em;

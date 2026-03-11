@@ -91,9 +91,12 @@ function EmailCapture() {
 
 export function Hero() {
   const [isClient, setIsClient] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
   const shouldReduceMotion = useReducedMotion()
   useEffect(() => {
     setIsClient(true)
+    // Detect touch/mobile to disable parallax (causes jank on iOS Safari)
+    setIsMobile(window.matchMedia('(pointer: coarse)').matches)
   }, [])
 
   const containerRef = useRef<HTMLElement>(null)
@@ -102,9 +105,10 @@ export function Hero() {
     offset: ['start start', 'end start']
   })
 
-  const textY = useTransform(scrollYProgress, [0, 1], [0, -60])
-  const mockupY = useTransform(scrollYProgress, [0, 1], [0, 40])
-  const opacity = useTransform(scrollYProgress, [0, 0.6], [1, 0])
+  // Disable parallax transforms on mobile — they cause scroll jank on iOS Safari
+  const textY = useTransform(scrollYProgress, [0, 1], [0, isMobile ? 0 : -60])
+  const mockupY = useTransform(scrollYProgress, [0, 1], [0, isMobile ? 0 : 40])
+  const opacity = useTransform(scrollYProgress, [0, 0.6], [1, isMobile ? 1 : 0])
 
   const initial = (values: Record<string, number>) =>
     shouldReduceMotion ? false : isClient ? { opacity: 0, ...values } : false
@@ -112,7 +116,7 @@ export function Hero() {
   return (
     <section
       ref={containerRef}
-      className="relative min-h-[100svh] md:min-h-screen overflow-hidden bg-stone-950"
+      className="relative min-h-[100svh] min-h-[-webkit-fill-available] md:min-h-screen overflow-hidden bg-stone-950"
     >
       {/* Background image */}
       <div className="absolute inset-0 z-0">
@@ -120,7 +124,7 @@ export function Hero() {
           src="/hero-golf.jpg"
           alt=""
           fill
-          className="object-cover scale-105"
+          className="object-cover"
           priority
           quality={90}
           sizes="100vw"
@@ -156,7 +160,7 @@ export function Hero() {
         }}
       />
 
-      {/* Navigation */}
+      {/* Navigation — renders over the hero image, scrolls away */}
       <div className="relative z-30">
         <Navigation />
       </div>
@@ -166,7 +170,7 @@ export function Hero() {
         style={{ opacity }}
         className="relative z-20 max-w-[90rem] mx-auto px-6 lg:px-14 xl:px-20"
       >
-        <div className="grid grid-cols-1 lg:grid-cols-2 items-center min-h-[calc(100svh-64px)] md:min-h-[calc(100vh-64px)] gap-0 lg:gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 items-center min-h-[calc(100svh-64px)] min-h-[calc(-webkit-fill-available-64px)] md:min-h-[calc(100vh-64px)] gap-0 lg:gap-4">
 
           {/* ─── Left: Typography + CTA ─── */}
           <motion.div
@@ -366,7 +370,7 @@ export function Hero() {
         animate={{ opacity: 1 }}
         transition={{ delay: 1.8, duration: 1 }}
         style={{ opacity }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2"
+        className="absolute bottom-8 pb-safe left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 hidden md:flex"
       >
         <span className="text-white/15 text-[10px] tracking-[0.3em] uppercase font-medium">
           Scroll

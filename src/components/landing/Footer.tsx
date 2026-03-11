@@ -28,45 +28,59 @@ export function Footer() {
     }}>
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-warm-300 to-transparent" />
 
-      <div className="relative max-w-7xl mx-auto px-6 py-6">
-        {/* Main row: brand + links + social */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="relative max-w-7xl mx-auto px-6 py-10 md:py-14">
+        {/* Top row: brand + columns */}
+        <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr_1fr_auto] gap-8 md:gap-12 mb-8 md:mb-10">
           {/* Brand */}
-          <div className="flex items-center gap-2.5">
-            <Image
-              src="/Helm-Logo-New-Main.png"
-              alt="Helm Sports Labs"
-              width={36}
-              height={36}
-              className="h-8 w-8 object-contain"
-            />
-            <span className="text-base font-semibold tracking-tight text-warm-900">Helm Sports Labs</span>
+          <div>
+            <div className="flex items-center gap-3">
+              <Image
+                src="/Helm-Logo-New-Main.png"
+                alt="Helm Sports Labs"
+                width={44}
+                height={44}
+                className="h-9 w-9 object-contain"
+              />
+              <span className="text-lg font-semibold tracking-tight text-warm-900">Helm Sports Labs</span>
+            </div>
+            <p className="mt-3 text-sm text-warm-500 leading-relaxed max-w-xs">
+              Premium tools for coaches who care about performance and clarity.
+            </p>
           </div>
 
-          {/* Links */}
-          <nav className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-warm-600">
-            {footerLinks.products.map((link) => (
-              <Link key={link.name} href={link.href} className="hover:text-warm-900 transition-colors">
-                {link.name}
-              </Link>
-            ))}
-            <span className="hidden md:inline text-warm-300">|</span>
-            {footerLinks.login.map((link) => (
-              <Link key={link.name} href={link.href} className="hover:text-warm-900 transition-colors">
-                {link.name}
-              </Link>
-            ))}
-            <span className="hidden md:inline text-warm-300">|</span>
-            <a href="mailto:admin@helmsportslabs.com" className="hover:text-warm-900 transition-colors">
-              Contact
-            </a>
-          </nav>
+          {/* Products */}
+          <div>
+            <h4 className="text-xs font-semibold uppercase tracking-[0.2em] text-warm-500 mb-3">Products</h4>
+            <ul className="space-y-2.5">
+              {footerLinks.products.map((link) => (
+                <li key={link.name}>
+                  <Link href={link.href} className="text-sm text-warm-600 hover:text-warm-900 transition-colors">
+                    {link.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Login */}
+          <div>
+            <h4 className="text-xs font-semibold uppercase tracking-[0.2em] text-warm-500 mb-3">Login</h4>
+            <ul className="space-y-2.5">
+              {footerLinks.login.map((link) => (
+                <li key={link.name}>
+                  <Link href={link.href} className="text-sm text-warm-600 hover:text-warm-900 transition-colors">
+                    {link.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
 
           {/* Social */}
-          <div className="flex items-center gap-3">
+          <div className="flex md:flex-col items-start gap-3">
             <a
               href="https://twitter.com/helmsportslabs"
-              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-warm-300 text-warm-500 hover:text-warm-900 hover:border-warm-400 hover:bg-warm-100 transition-colors"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-warm-300 text-warm-500 hover:text-warm-900 hover:border-warm-400 hover:bg-warm-100 transition-colors"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Helm Sports Labs on X"
@@ -77,7 +91,7 @@ export function Footer() {
             </a>
             <a
               href="https://linkedin.com/company/helmsportslabs"
-              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-warm-300 text-warm-500 hover:text-warm-900 hover:border-warm-400 hover:bg-warm-100 transition-colors"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-warm-300 text-warm-500 hover:text-warm-900 hover:border-warm-400 hover:bg-warm-100 transition-colors"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Helm Sports Labs on LinkedIn"
@@ -89,10 +103,10 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Bottom line */}
-        <div className="mt-4 pt-4 border-t border-warm-300 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-warm-400">
+        {/* Bottom bar */}
+        <div className="pt-6 border-t border-warm-300 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-warm-400">
           <p>© {new Date().getFullYear()} Helm Sports Labs. All rights reserved.</p>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-5">
             <Link href="/privacy" className="text-warm-500 hover:text-warm-900 transition-colors">Privacy</Link>
             <Link href="/terms" className="text-warm-500 hover:text-warm-900 transition-colors">Terms</Link>
           </div>
