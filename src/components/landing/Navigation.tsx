@@ -63,7 +63,7 @@ export function Navigation() {
           >
             Log in
           </Link>
-          <MobileNav />
+          <MobileNav isDarkBg={isHomePage} />
         </div>
       </div>
     </nav>

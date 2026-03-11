@@ -329,7 +329,7 @@ BEGIN
   );
 
   -- Count rounds this season
-  SELECT COUNT(*), ARRAY_AGG(round_id ORDER BY created_at DESC)
+  SELECT COUNT(*), ARRAY_AGG(rsc.round_id ORDER BY r.round_date DESC)
   INTO v_rounds_this_season, v_round_ids
   FROM golf_round_stats_cache rsc
   JOIN golf_rounds r ON r.id = rsc.round_id

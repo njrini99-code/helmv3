@@ -17,14 +17,17 @@ const navLinks = [
 // Smooth spring-like ease — no bounce, no jank
 const smooth = [0.32, 0.72, 0, 1] as const
 
-export function MobileNav() {
+export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
   const [isOpen, setIsOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const [showDemoForm, setShowDemoForm] = useState(false)
   const [email, setEmail] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
   const emailInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => { setMounted(true) }, [])
 
   const close = useCallback(() => setIsOpen(false), [])
 
@@ -90,7 +93,7 @@ export function MobileNav() {
         onClick={() => setIsOpen(!isOpen)}
         className={`md:hidden relative z-[70] w-10 h-10 flex items-center justify-center
                    rounded-xl transition-all duration-200 active:scale-90
-                   ${isOpen ? 'bg-transparent' : 'bg-warm-900/5'}`}
+                   ${isOpen ? 'bg-transparent' : isDarkBg ? 'bg-white/10' : 'bg-warm-900/5'}`}
         aria-label={isOpen ? 'Close menu' : 'Open menu'}
       >
         <div className="w-[18px] h-3.5 relative flex flex-col justify-center items-center">
@@ -98,28 +101,28 @@ export function MobileNav() {
             className={`absolute h-[1.5px] rounded-full transition-all duration-300 ease-out
               ${isOpen
                 ? 'bg-warm-700 rotate-45 w-full'
-                : 'bg-warm-800 -translate-y-[5px] w-full'
+                : `${isDarkBg ? 'bg-white' : 'bg-warm-800'} -translate-y-[5px] w-full`
               }`}
           />
           <span
             className={`absolute h-[1.5px] rounded-full transition-all duration-200 ease-out
               ${isOpen
                 ? 'bg-warm-700 opacity-0 scale-x-0'
-                : 'bg-warm-800 opacity-100 w-3/4 -translate-x-[2px]'
+                : `${isDarkBg ? 'bg-white' : 'bg-warm-800'} opacity-100 w-3/4 -translate-x-[2px]`
               }`}
           />
           <span
             className={`absolute h-[1.5px] rounded-full transition-all duration-300 ease-out
               ${isOpen
                 ? 'bg-warm-700 -rotate-45 w-full'
-                : 'bg-warm-800 translate-y-[5px] w-full'
+                : `${isDarkBg ? 'bg-white' : 'bg-warm-800'} translate-y-[5px] w-full`
               }`}
           />
         </div>
       </button>
 
       {/* Full-screen overlay — portaled to body to escape backdrop-filter containing block */}
-      {typeof document !== 'undefined' && createPortal(
+      {mounted && createPortal(
         <AnimatePresence>
           {isOpen && (
             <motion.div

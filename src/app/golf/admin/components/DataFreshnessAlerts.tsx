@@ -31,8 +31,8 @@ interface DataFreshnessAlertsProps {
 
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return 'Never';
-  const date = new Date(dateStr);
-  return date.toLocaleDateString('en-US', {
+  const d = dateStr.includes('T') ? dateStr : `${dateStr}T00:00:00`;
+  return new Date(d).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',

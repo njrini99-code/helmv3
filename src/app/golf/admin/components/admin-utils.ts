@@ -19,7 +19,9 @@ export function timeAgo(dateStr: string | null): string {
 
 export function formatDate(dateStr: string | null): string {
   if (!dateStr) return '\u2014';
-  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  // Append T00:00:00 for date-only strings to prevent UTC midnight → local timezone shift
+  const d = dateStr.includes('T') ? dateStr : `${dateStr}T00:00:00`;
+  return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 export function formatBytes(bytes: number): string {
