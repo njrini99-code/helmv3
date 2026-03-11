@@ -1,5 +1,8 @@
 # Dependencies
 node_modules/
+
+# Git worktrees
+.worktrees/
 .pnp
 .pnp.js
 
