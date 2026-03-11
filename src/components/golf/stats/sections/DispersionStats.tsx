@@ -9,16 +9,12 @@ import type {
   SprayChartShotFamily,
   SprayChartShotGroup,
 } from '@/app/golf/actions/stats-data-types';
-import { containerVariants, StatCard, StatSection } from './shared-primitives';
+import { GolfTabBar } from '@/components/golf/GolfTabBar';
+import { containerVariants, StatCard, StatRow, StatSection } from './shared-primitives';
 
 const FAMILY_LABELS: Record<SprayChartShotFamily, string> = {
   driving: 'Driving',
   approach: 'Approach',
-};
-
-const MODE_LABELS: Record<SprayChartMode, string> = {
-  'point-cloud': 'Point Cloud',
-  summary: 'Directional Summary',
 };
 
 const SECTOR_GRID: SprayChartSector[][] = [
@@ -45,6 +41,12 @@ const OUTCOME_STYLES = {
   penalty: { fill: '#ef4444', stroke: '#b91c1c', label: 'Penalty / Severe' },
 } as const;
 
+const OUTCOME_SURFACE_STYLES = {
+  playable: 'border-primary-200/80 bg-primary-50/90 text-primary-700',
+  trouble: 'border-amber-200/80 bg-amber-50/90 text-amber-700',
+  penalty: 'border-red-200/80 bg-red-50/90 text-red-700',
+} as const;
+
 function formatDistance(value: number | null, suffix = 'y') {
   return value === null ? '-' : `${Math.round(value)}${suffix}`;
 }
@@ -57,38 +59,6 @@ function getCoverageLabel(group: SprayChartShotGroup) {
   if (group.totalShots === 0) return 'No qualifying shots';
   if (group.plottedShots === group.totalShots) return `${group.plottedShots} plotted shots`;
   return `${group.plottedShots}/${group.totalShots} shots plotted`;
-}
-
-function SegmentToggle<T extends string>({
-  options,
-  value,
-  onChange,
-}: {
-  options: readonly T[];
-  value: T;
-  onChange: (value: T) => void;
-}) {
-  return (
-    <div className="inline-flex items-center rounded-xl border border-warm-200 bg-warm-100/80 p-1">
-      {options.map((option) => {
-        const active = option === value;
-        return (
-          <button
-            key={option}
-            type="button"
-            onClick={() => onChange(option)}
-            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-              active
-                ? 'bg-white text-warm-900 shadow-sm'
-                : 'text-warm-500 hover:text-warm-700'
-            }`}
-          >
-            {option}
-          </button>
-        );
-      })}
-    </div>
-  );
 }
 
 function DispersionEmptyState({ family }: { family: SprayChartShotFamily }) {
@@ -115,6 +85,99 @@ function LoadingState() {
   );
 }
 
+function getDominantLabel(group: SprayChartShotGroup) {
+  return group.dominantSector ? SECTOR_LABELS[group.dominantSector] : 'Mixed';
+}
+
+function buildSummary(group: SprayChartShotGroup, family: SprayChartShotFamily) {
+  const dominantLabel = getDominantLabel(group);
+  const playablePct = group.plottedShots > 0 ? Math.round((group.playableCount / group.plottedShots) * 100) : 0;
+  const penaltyPct = group.plottedShots > 0 ? Math.round((group.penaltyCount / group.plottedShots) * 100) : 0;
+  const distanceLabel = family === 'driving'
+    ? formatDistance(group.averageForwardDistance)
+    : formatDistance(group.averageRemainingDistance);
+
+  if (group.dominantSector === 'center') {
+    return `${playablePct}% of ${FAMILY_LABELS[family].toLowerCase()} shots finish in a playable spot. Typical ${family === 'driving' ? 'distance' : 'leave'} is ${distanceLabel}.`;
+  }
+
+  return `${dominantLabel} is the primary pattern. ${playablePct}% finish playable and ${penaltyPct}% turn severe. Typical ${family === 'driving' ? 'distance' : 'leave'} is ${distanceLabel}.`;
+}
+
+function SummaryChip({
+  label,
+  value,
+  tone = 'neutral',
+}: {
+  label: string;
+  value: string;
+  tone?: 'neutral' | 'primary' | 'warm';
+}) {
+  const toneClass = tone === 'primary'
+    ? 'border-primary-200/80 bg-primary-100/80 text-primary-700'
+    : tone === 'warm'
+      ? 'border-amber-200/80 bg-amber-100/80 text-amber-800'
+      : 'border-white/70 bg-white/70 text-warm-700';
+
+  return (
+    <motion.div
+      className={`rounded-2xl border px-3 py-2 shadow-sm backdrop-blur-sm ${toneClass}`}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ type: 'spring', stiffness: 280, damping: 24 }}
+    >
+      <div className="text-[10px] font-semibold uppercase tracking-[0.16em] opacity-70">{label}</div>
+      <div className="mt-1 text-sm font-semibold">{value}</div>
+    </motion.div>
+  );
+}
+
+function OutcomeStrip({ group }: { group: SprayChartShotGroup }) {
+  const items = [
+    {
+      key: 'playable',
+      label: 'Playable',
+      count: group.playableCount,
+      percentage: group.plottedShots > 0 ? formatPercentage((group.playableCount / group.plottedShots) * 100) : '0%',
+      className: OUTCOME_SURFACE_STYLES.playable,
+    },
+    {
+      key: 'trouble',
+      label: 'Trouble',
+      count: group.troubleCount,
+      percentage: group.plottedShots > 0 ? formatPercentage((group.troubleCount / group.plottedShots) * 100) : '0%',
+      className: OUTCOME_SURFACE_STYLES.trouble,
+    },
+    {
+      key: 'penalty',
+      label: 'Severe',
+      count: group.penaltyCount,
+      percentage: group.plottedShots > 0 ? formatPercentage((group.penaltyCount / group.plottedShots) * 100) : '0%',
+      className: OUTCOME_SURFACE_STYLES.penalty,
+    },
+  ] as const;
+
+  return (
+    <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+      {items.map((item, index) => (
+        <motion.div
+          key={item.key}
+          className={`rounded-2xl border px-4 py-3 shadow-sm ${item.className}`}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.04 * index, type: 'spring', stiffness: 260, damping: 22 }}
+        >
+          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] opacity-75">{item.label}</div>
+          <div className="mt-1 flex items-end justify-between gap-3">
+            <div className="text-2xl font-bold tabular-nums">{item.count}</div>
+            <div className="text-xs font-medium opacity-80">{item.percentage}</div>
+          </div>
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
 function DrivingPointCloud({ group }: { group: SprayChartShotGroup }) {
   const width = 360;
   const height = 320;
@@ -126,7 +189,7 @@ function DrivingPointCloud({ group }: { group: SprayChartShotGroup }) {
   const yScale = (value: number) => height - padding - (value / yMax) * (height - padding * 2);
 
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="h-[22rem] w-full overflow-visible">
+    <svg viewBox={`0 0 ${width} ${height}`} className="h-[19rem] w-full overflow-visible sm:h-[21rem]">
       <defs>
         <linearGradient id="fairwayGradient" x1="0" y1="1" x2="0" y2="0">
           <stop offset="0%" stopColor="#dcfce7" stopOpacity="0.95" />
@@ -134,21 +197,38 @@ function DrivingPointCloud({ group }: { group: SprayChartShotGroup }) {
         </linearGradient>
       </defs>
       <rect x={0} y={0} width={width} height={height} rx={20} fill="#fafaf9" />
-      <polygon
+      <motion.polygon
         points={`${width / 2},${height - padding} ${width * 0.28},${padding + 16} ${width * 0.72},${padding + 16}`}
         fill="url(#fairwayGradient)"
         stroke="#bbf7d0"
         strokeWidth="1.5"
+        initial={{ opacity: 0.78 }}
+        animate={{ opacity: [0.78, 1, 0.82] }}
+        transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
       />
       <line x1={width / 2} y1={height - padding} x2={width / 2} y2={padding + 8} stroke="#d6d3d1" strokeDasharray="4 6" />
       <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} stroke="#d6d3d1" />
+      <motion.circle
+        cx={width / 2}
+        cy={padding + 28}
+        r={14}
+        fill="#dcfce7"
+        fillOpacity={0.35}
+        animate={{ r: [12, 18, 12], opacity: [0.45, 0.18, 0.45] }}
+        transition={{ duration: 3.6, repeat: Infinity, ease: 'easeInOut' }}
+      />
       <text x={width / 2} y={height - 8} textAnchor="middle" className="fill-warm-500 text-[10px]">Tee</text>
       <text x={width / 2} y={padding} textAnchor="middle" className="fill-warm-500 text-[10px]">Landing area</text>
 
       {group.points.map((point) => {
         const style = OUTCOME_STYLES[point.outcomeBucket];
         return (
-          <g key={point.id}>
+          <motion.g
+            key={point.id}
+            initial={{ opacity: 0, scale: 0.75 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.22 }}
+          >
             <title>{point.tooltip}</title>
             <circle
               cx={xScale(point.x)}
@@ -159,7 +239,7 @@ function DrivingPointCloud({ group }: { group: SprayChartShotGroup }) {
               stroke={style.stroke}
               strokeWidth={1.25}
             />
-          </g>
+          </motion.g>
         );
       })}
     </svg>
@@ -179,10 +259,10 @@ function ApproachPointCloud({ group }: { group: SprayChartShotGroup }) {
   const yScale = (value: number) => height / 2 - (value / maxMagnitude) * ((height / 2) - padding);
 
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="h-[22rem] w-full overflow-visible">
+    <svg viewBox={`0 0 ${width} ${height}`} className="h-[19rem] w-full overflow-visible sm:h-[21rem]">
       <rect x={0} y={0} width={width} height={height} rx={20} fill="#fafaf9" />
       {[0.3, 0.55, 0.85].map((ratio) => (
-        <circle
+        <motion.circle
           key={ratio}
           cx={width / 2}
           cy={height / 2}
@@ -190,11 +270,22 @@ function ApproachPointCloud({ group }: { group: SprayChartShotGroup }) {
           fill="none"
           stroke="#e7e5e4"
           strokeDasharray="5 5"
+          animate={{ opacity: [0.45, 0.7, 0.45] }}
+          transition={{ duration: 4 + ratio, repeat: Infinity, ease: 'easeInOut' }}
         />
       ))}
       <line x1={padding} y1={height / 2} x2={width - padding} y2={height / 2} stroke="#d6d3d1" />
       <line x1={width / 2} y1={padding} x2={width / 2} y2={height - padding} stroke="#d6d3d1" />
-      <circle cx={width / 2} cy={height / 2} r={10} fill="#dcfce7" stroke="#16a34a" strokeWidth="2" />
+      <motion.circle
+        cx={width / 2}
+        cy={height / 2}
+        r={10}
+        fill="#dcfce7"
+        stroke="#16a34a"
+        strokeWidth="2"
+        animate={{ r: [9, 13, 9], opacity: [0.9, 0.65, 0.9] }}
+        transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
+      />
       <text x={width / 2} y={padding - 4} textAnchor="middle" className="fill-warm-500 text-[10px]">Long</text>
       <text x={width / 2} y={height - 10} textAnchor="middle" className="fill-warm-500 text-[10px]">Short</text>
       <text x={padding - 2} y={height / 2 - 6} textAnchor="start" className="fill-warm-500 text-[10px]">Left</text>
@@ -203,7 +294,12 @@ function ApproachPointCloud({ group }: { group: SprayChartShotGroup }) {
       {group.points.map((point) => {
         const style = OUTCOME_STYLES[point.outcomeBucket];
         return (
-          <g key={point.id}>
+          <motion.g
+            key={point.id}
+            initial={{ opacity: 0, scale: 0.75 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.22 }}
+          >
             <title>{point.tooltip}</title>
             <circle
               cx={xScale(point.x)}
@@ -214,7 +310,7 @@ function ApproachPointCloud({ group }: { group: SprayChartShotGroup }) {
               stroke={style.stroke}
               strokeWidth={1.25}
             />
-          </g>
+          </motion.g>
         );
       })}
     </svg>
@@ -269,10 +365,16 @@ function PointCloudLegend() {
   return (
     <div className="flex flex-wrap items-center gap-3 text-xs text-warm-500">
       {Object.entries(OUTCOME_STYLES).map(([key, style]) => (
-        <div key={key} className="inline-flex items-center gap-2">
-          <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: style.fill }} />
+        <motion.div
+          key={key}
+          className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 ${OUTCOME_SURFACE_STYLES[key as keyof typeof OUTCOME_SURFACE_STYLES]}`}
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.08 }}
+        >
+          <span className="inline-block h-2.5 w-2.5 rounded-full shadow-sm" style={{ backgroundColor: style.fill }} />
           <span>{style.label}</span>
-        </div>
+        </motion.div>
       ))}
     </div>
   );
@@ -292,8 +394,7 @@ export function DispersionStats({
   const playablePct = currentGroup && currentGroup.plottedShots > 0
     ? Math.round((currentGroup.playableCount / currentGroup.plottedShots) * 100)
     : 0;
-
-  const dominantLabel = currentGroup?.dominantSector ? SECTOR_LABELS[currentGroup.dominantSector] : '-';
+  const dominantLabel = currentGroup ? getDominantLabel(currentGroup) : '-';
 
   if (loading && !data) {
     return <LoadingState />;
@@ -302,11 +403,20 @@ export function DispersionStats({
   if (!currentGroup || currentGroup.totalShots === 0) {
     return (
       <motion.div className="space-y-4" variants={containerVariants} initial="hidden" animate="visible">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <SegmentToggle
-            options={['Driving', 'Approach'] as const}
-            value={FAMILY_LABELS[family]}
-            onChange={(value) => setFamily(value === 'Driving' ? 'driving' : 'approach')}
+        <div className="space-y-3">
+          <div>
+            <h3 className="text-base font-semibold text-warm-900">Spray Charts</h3>
+            <p className="mt-1 text-sm text-warm-500">Visualize real shot dispersion from tracked tee and approach shots.</p>
+          </div>
+          <GolfTabBar
+            tabs={[
+              { id: 'driving', label: 'Driving' },
+              { id: 'approach', label: 'Approach' },
+            ]}
+            value={family}
+            onChange={setFamily}
+            ariaLabel="Spray chart family"
+            compact
           />
         </div>
         <DispersionEmptyState family={family} />
@@ -316,40 +426,69 @@ export function DispersionStats({
 
   return (
     <motion.div className="space-y-4" variants={containerVariants} initial="hidden" animate="visible">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <SegmentToggle
-              options={['Driving', 'Approach'] as const}
-              value={FAMILY_LABELS[family]}
-              onChange={(value) => setFamily(value === 'Driving' ? 'driving' : 'approach')}
-            />
-            <SegmentToggle
-              options={['Point Cloud', 'Directional Summary'] as const}
-              value={MODE_LABELS[mode]}
-              onChange={(value) => setMode(value === 'Point Cloud' ? 'point-cloud' : 'summary')}
-            />
-          </div>
-          <p className="text-sm text-warm-500">
+      <motion.div
+        className="space-y-3 rounded-3xl border border-white/70 bg-gradient-to-br from-white via-primary-50/40 to-amber-50/50 p-4 shadow-sm"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: 'spring', stiffness: 260, damping: 24 }}
+      >
+        <div className="space-y-1">
+          <h3 className="text-base font-semibold text-warm-900">{FAMILY_LABELS[family]} spray summary</h3>
+          <p className="text-sm text-warm-600">
+            {buildSummary(currentGroup, family)}
+          </p>
+          <p className="text-xs text-warm-500">
             {getCoverageLabel(currentGroup)} across {data?.scope.roundsIncluded ?? 0} round{(data?.scope.roundsIncluded ?? 0) === 1 ? '' : 's'}.
           </p>
         </div>
-        <PointCloudLegend />
-      </div>
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+          <GolfTabBar
+            tabs={[
+              { id: 'driving', label: 'Driving' },
+              { id: 'approach', label: 'Approach' },
+            ]}
+            value={family}
+            onChange={setFamily}
+            ariaLabel="Spray chart family"
+            compact
+            scrollable
+          />
+          <GolfTabBar
+            tabs={[
+              { id: 'point-cloud', label: 'Point Cloud' },
+              { id: 'summary', label: 'Directional Summary' },
+            ]}
+            value={mode}
+            onChange={setMode}
+            ariaLabel="Spray chart mode"
+            compact
+            scrollable
+          />
+        </div>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <SummaryChip label="Sample" value={`${currentGroup.totalShots} tracked shots`} tone="primary" />
+          <SummaryChip label="Pattern" value={dominantLabel} tone="warm" />
+          <SummaryChip
+            label="Context"
+            value={family === 'driving'
+              ? `${formatDistance(currentGroup.averageForwardDistance)} typical distance`
+              : `${formatDistance(currentGroup.averageRemainingDistance)} typical leave`}
+          />
+        </div>
+      </motion.div>
 
-      <motion.div className="grid grid-cols-2 gap-3 md:grid-cols-4" variants={containerVariants}>
+      <motion.div className="grid grid-cols-1 gap-3 sm:grid-cols-3" variants={containerVariants}>
         <StatCard
-          label="Sample Size"
+          label="Sample"
           value={String(currentGroup.totalShots)}
           numericValue={currentGroup.totalShots}
           decimals={0}
           subValue="qualifying shots"
           highlight
-          large
           index={0}
         />
         <StatCard
-          label={family === 'driving' ? 'Avg Shot' : 'Avg Leave'}
+          label={family === 'driving' ? 'Typical Distance' : 'Typical Leave'}
           value={family === 'driving'
             ? formatDistance(currentGroup.averageForwardDistance)
             : formatDistance(currentGroup.averageRemainingDistance)}
@@ -361,45 +500,59 @@ export function DispersionStats({
           index={1}
         />
         <StatCard
-          label="Playable %"
-          value={`${playablePct}%`}
-          numericValue={playablePct}
-          decimals={0}
-          subValue={`${currentGroup.playableCount} playable`}
-          index={2}
-        />
-        <StatCard
-          label="Dominant Miss"
+          label="Primary Pattern"
           value={dominantLabel}
-          subValue={`${currentGroup.penaltyCount} severe outcomes`}
-          index={3}
+          subValue={`${playablePct}% playable`}
+          index={2}
         />
       </motion.div>
 
       <StatSection title={`${FAMILY_LABELS[family]} Spray Chart`}>
-        {mode === 'point-cloud' ? (
-          family === 'driving' ? <DrivingPointCloud group={currentGroup} /> : <ApproachPointCloud group={currentGroup} />
-        ) : (
-          <DirectionalSummary group={currentGroup} />
-        )}
+        <div className="space-y-3">
+          <motion.div
+            className="rounded-3xl border border-white/70 bg-gradient-to-b from-white to-warm-50/70 p-3 shadow-inner"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05, type: 'spring', stiffness: 240, damping: 22 }}
+          >
+            {mode === 'point-cloud' ? (
+              family === 'driving' ? <DrivingPointCloud group={currentGroup} /> : <ApproachPointCloud group={currentGroup} />
+            ) : (
+              <DirectionalSummary group={currentGroup} />
+            )}
+          </motion.div>
+          <PointCloudLegend />
+        </div>
       </StatSection>
 
       <StatSection title="Outcome Mix">
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-          {([
-            ['Playable', currentGroup.playableCount, 'bg-primary-50 text-primary-700 border-primary-100'],
-            ['Rough / Sand', currentGroup.troubleCount, 'bg-amber-50 text-amber-700 border-amber-100'],
-            ['Penalty / Severe', currentGroup.penaltyCount, 'bg-red-50 text-red-700 border-red-100'],
-          ] as const).map(([label, count, className]) => (
-            <div key={label} className={`rounded-xl border px-4 py-3 ${className}`}>
-              <div className="text-xs font-semibold uppercase tracking-wide">{label}</div>
-              <div className="mt-1 text-2xl font-bold tabular-nums">{count}</div>
-              <div className="text-xs opacity-80">
-                {currentGroup.plottedShots > 0 ? formatPercentage((count / currentGroup.plottedShots) * 100) : '0%'}
-              </div>
-            </div>
-          ))}
-        </div>
+        <OutcomeStrip group={currentGroup} />
+      </StatSection>
+
+      <StatSection title="Quick Read">
+        <StatRow label="Most common pattern" value={dominantLabel} index={0} />
+        <StatRow
+          label="Playable finishes"
+          value={`${playablePct}%`}
+          index={1}
+        />
+        <StatRow
+          label="Trouble / sand finishes"
+          value={`${currentGroup.troubleCount} (${currentGroup.plottedShots > 0 ? formatPercentage((currentGroup.troubleCount / currentGroup.plottedShots) * 100) : '0%'})`}
+          index={2}
+        />
+        <StatRow
+          label="Penalty / severe misses"
+          value={`${currentGroup.penaltyCount} (${currentGroup.plottedShots > 0 ? formatPercentage((currentGroup.penaltyCount / currentGroup.plottedShots) * 100) : '0%'})`}
+          index={3}
+        />
+        <StatRow
+          label={family === 'driving' ? 'Average shot distance' : 'Average leave after miss'}
+          value={family === 'driving'
+            ? formatDistance(currentGroup.averageForwardDistance)
+            : formatDistance(currentGroup.averageRemainingDistance)}
+          index={4}
+        />
       </StatSection>
     </motion.div>
   );
