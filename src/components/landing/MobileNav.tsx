@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -132,250 +133,266 @@ export function MobileNav({ isProductsPage = false }: MobileNavProps) {
         </div>
       </button>
 
-      {/* Full-screen overlay */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            key="mobile-nav-overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3, ease: smooth }}
-            className="fixed inset-0 z-[60] md:hidden bg-[#F5F0E6]"
-          >
-            {/* Gradient enhancement layer */}
-            <div
-              className="absolute inset-0 pointer-events-none"
-              style={{
-                background: `
-                  radial-gradient(ellipse 90% 50% at 50% 30%, rgba(21, 128, 61, 0.1), transparent),
-                  linear-gradient(180deg, #FFFEFA 0%, #F5F0E6 50%, #EDE8DD 100%)
-                `,
-              }}
-            />
-            {/* Subtle top glow */}
-            <div
-              className="absolute top-0 left-0 right-0 h-[40vh] pointer-events-none"
-              style={{
-                background: 'radial-gradient(ellipse 70% 60% at 50% 0%, rgba(21, 128, 61, 0.06), transparent)',
-              }}
-            />
-
-            <nav
-              className="relative h-full flex flex-col px-7"
-              style={{
-                paddingTop: 'calc(max(env(safe-area-inset-top, 0px), 12px) + 64px)',
-                paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 24px)',
-              }}
+      {/* Full-screen overlay — portaled to body to escape backdrop-filter containing block */}
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              key="mobile-nav-overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3, ease: smooth }}
+              className="fixed inset-0 z-[9999] md:hidden bg-[#F5F0E6]"
             >
-              {/* Navigation links */}
-              <div className="flex-1 flex flex-col justify-center -mt-8">
-                <motion.div
-                  initial="closed"
-                  animate="open"
-                  exit="closed"
-                  variants={{
-                    closed: { transition: { duration: 0.15 } },
-                    open: { transition: { staggerChildren: 0.06, delayChildren: 0.1 } },
-                  }}
-                  className="space-y-1"
-                >
-                  {navLinks.map((link) => (
-                    <motion.div
-                      key={link.name}
-                      variants={{
-                        closed: {
-                          opacity: 0,
-                          y: 20,
-                          filter: 'blur(8px)',
-                          transition: { duration: 0.12 },
-                        },
-                        open: {
-                          opacity: 1,
-                          y: 0,
-                          filter: 'blur(0px)',
-                          transition: { duration: 0.5, ease: smooth },
-                        },
-                      }}
-                    >
-                      <Link
-                        href={link.href}
-                        onClick={close}
-                        className="group flex items-center justify-between py-4
-                                   active:opacity-60 transition-opacity duration-100"
-                      >
-                        <span className="text-[28px] font-semibold tracking-tight text-warm-900">
-                          {link.name}
-                        </span>
-                        <svg
-                          className="w-5 h-5 text-warm-300 group-active:translate-x-1 transition-transform duration-150"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={2}
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                        </svg>
-                      </Link>
-                    </motion.div>
-                  ))}
-                </motion.div>
-              </div>
+              {/* Gradient enhancement layer */}
+              <div
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  background: `
+                    radial-gradient(ellipse 90% 50% at 50% 30%, rgba(21, 128, 61, 0.1), transparent),
+                    linear-gradient(180deg, #FFFEFA 0%, #F5F0E6 50%, #EDE8DD 100%)
+                  `,
+                }}
+              />
+              {/* Subtle top glow */}
+              <div
+                className="absolute top-0 left-0 right-0 h-[40vh] pointer-events-none"
+                style={{
+                  background: 'radial-gradient(ellipse 70% 60% at 50% 0%, rgba(21, 128, 61, 0.06), transparent)',
+                }}
+              />
 
-              {/* Bottom CTA */}
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.5, ease: smooth, delay: 0.35 }}
-                className="shrink-0 pb-4"
+              {/* Close button */}
+              <button
+                onClick={close}
+                className="absolute top-4 right-5 z-10 w-10 h-10 flex items-center justify-center rounded-xl
+                           active:scale-90 transition-transform duration-150"
+                style={{ top: 'max(env(safe-area-inset-top, 16px), 16px)' }}
+                aria-label="Close menu"
               >
-                <AnimatePresence mode="wait">
-                  {!showDemoForm && !submitted && (
-                    <motion.div
-                      key="cta"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0, transition: { duration: 0.12 } }}
-                      className="space-y-3"
-                    >
-                      <button
-                        onClick={() => setShowDemoForm(true)}
-                        className="w-full py-4 rounded-2xl text-white font-semibold text-[15px] tracking-wide
-                                   active:scale-[0.98] transition-transform duration-150"
-                        style={{
-                          background: 'linear-gradient(135deg, #1c1917 0%, #292524 100%)',
-                          boxShadow: '0 4px 24px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.1)',
+                <svg className="w-6 h-6 text-warm-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+
+              <nav
+                className="relative h-full flex flex-col px-7"
+                style={{
+                  paddingTop: 'calc(max(env(safe-area-inset-top, 0px), 12px) + 64px)',
+                  paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 24px)',
+                }}
+              >
+                {/* Navigation links */}
+                <div className="flex-1 flex flex-col justify-center -mt-8">
+                  <motion.div
+                    initial="closed"
+                    animate="open"
+                    exit="closed"
+                    variants={{
+                      closed: { transition: { duration: 0.15 } },
+                      open: { transition: { staggerChildren: 0.06, delayChildren: 0.1 } },
+                    }}
+                    className="space-y-1"
+                  >
+                    {navLinks.map((link) => (
+                      <motion.div
+                        key={link.name}
+                        variants={{
+                          closed: {
+                            opacity: 0,
+                            y: 20,
+                            filter: 'blur(8px)',
+                            transition: { duration: 0.12 },
+                          },
+                          open: {
+                            opacity: 1,
+                            y: 0,
+                            filter: 'blur(0px)',
+                            transition: { duration: 0.5, ease: smooth },
+                          },
                         }}
                       >
-                        Get Early Access
-                      </button>
-                      <p className="text-center text-xs text-warm-400 tracking-wide">
-                        BaseballHelm & GolfHelm
-                      </p>
-                    </motion.div>
-                  )}
-
-                  {showDemoForm && !submitted && (
-                    <motion.form
-                      key="form"
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, transition: { duration: 0.12 } }}
-                      transition={{ duration: 0.3, ease: smooth }}
-                      onSubmit={handleDemoSubmit}
-                      className="rounded-2xl p-5 space-y-4"
-                      style={{
-                        background: 'rgba(255,255,255,0.6)',
-                        backdropFilter: 'blur(40px)',
-                        WebkitBackdropFilter: 'blur(40px)',
-                        border: '1px solid rgba(255,255,255,0.7)',
-                        boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
-                      }}
-                    >
-                      <div>
-                        <label htmlFor="mobile-email" className="block text-[13px] font-medium text-warm-600 mb-2">
-                          Email address
-                        </label>
-                        <input
-                          ref={emailInputRef}
-                          id="mobile-email"
-                          type="email"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          placeholder="you@example.com"
-                          required
-                          className="w-full px-4 py-3.5 rounded-xl border border-warm-200/80 bg-white/80
-                                   text-warm-900 placeholder:text-warm-300 text-[15px]
-                                   focus:outline-none focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600/30
-                                   transition-all duration-200"
-                        />
-                      </div>
-                      {error && (
-                        <p className="text-[13px] text-red-600 font-medium">{error}</p>
-                      )}
-                      <div className="flex gap-3">
-                        <button
-                          type="button"
-                          onClick={() => setShowDemoForm(false)}
-                          className="flex-1 py-3.5 rounded-xl border border-warm-200
-                                   text-warm-500 font-medium text-[14px]
-                                   active:scale-[0.98] transition-all duration-150"
+                        <Link
+                          href={link.href}
+                          onClick={close}
+                          className="group flex items-center justify-between py-4
+                                     active:opacity-60 transition-opacity duration-100"
                         >
-                          Cancel
-                        </button>
+                          <span className="text-[28px] font-semibold tracking-tight text-warm-900">
+                            {link.name}
+                          </span>
+                          <svg
+                            className="w-5 h-5 text-warm-300 group-active:translate-x-1 transition-transform duration-150"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                          </svg>
+                        </Link>
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                </div>
+
+                {/* Bottom CTA */}
+                <motion.div
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.5, ease: smooth, delay: 0.35 }}
+                  className="shrink-0 pb-4"
+                >
+                  <AnimatePresence mode="wait">
+                    {!showDemoForm && !submitted && (
+                      <motion.div
+                        key="cta"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0, transition: { duration: 0.12 } }}
+                        className="space-y-3"
+                      >
                         <button
-                          type="submit"
-                          disabled={isSubmitting || !email.trim()}
-                          className="flex-1 py-3.5 rounded-xl text-white font-semibold text-[14px]
-                                   disabled:opacity-40 disabled:cursor-not-allowed
-                                   active:scale-[0.98] transition-all duration-150"
+                          onClick={() => setShowDemoForm(true)}
+                          className="w-full py-4 rounded-2xl text-white font-semibold text-[15px] tracking-wide
+                                     active:scale-[0.98] transition-transform duration-150"
                           style={{
                             background: 'linear-gradient(135deg, #1c1917 0%, #292524 100%)',
+                            boxShadow: '0 4px 24px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.1)',
                           }}
                         >
-                          {isSubmitting ? (
-                            <span className="inline-flex items-center gap-2">
-                              <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
-                                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="32" strokeDashoffset="8" strokeLinecap="round" />
-                              </svg>
-                              Sending
-                            </span>
-                          ) : 'Submit'}
+                          Get Early Access
                         </button>
-                      </div>
-                    </motion.form>
-                  )}
+                        <p className="text-center text-xs text-warm-400 tracking-wide">
+                          BaseballHelm & GolfHelm
+                        </p>
+                      </motion.div>
+                    )}
 
-                  {submitted && (
-                    <motion.div
-                      key="success"
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.35, ease: smooth }}
-                      className="text-center space-y-4 py-2"
-                    >
-                      <div className="w-14 h-14 mx-auto rounded-2xl bg-primary-500/10 flex items-center justify-center">
-                        <svg className="w-6 h-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-semibold text-warm-900 mb-1">You&apos;re in</h3>
-                        <p className="text-sm text-warm-500">We&apos;ll reach out shortly.</p>
-                      </div>
-                      <button
-                        onClick={close}
-                        className="w-full py-3.5 rounded-xl bg-warm-100 text-warm-700
-                                 font-medium text-[14px] active:scale-[0.98] transition-transform duration-150"
+                    {showDemoForm && !submitted && (
+                      <motion.form
+                        key="form"
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, transition: { duration: 0.12 } }}
+                        transition={{ duration: 0.3, ease: smooth }}
+                        onSubmit={handleDemoSubmit}
+                        className="rounded-2xl p-5 space-y-4"
+                        style={{
+                          background: 'rgba(255,255,255,0.6)',
+                          backdropFilter: 'blur(40px)',
+                          WebkitBackdropFilter: 'blur(40px)',
+                          border: '1px solid rgba(255,255,255,0.7)',
+                          boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
+                        }}
                       >
-                        Back to Home
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
+                        <div>
+                          <label htmlFor="mobile-email" className="block text-[13px] font-medium text-warm-600 mb-2">
+                            Email address
+                          </label>
+                          <input
+                            ref={emailInputRef}
+                            id="mobile-email"
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="you@example.com"
+                            required
+                            className="w-full px-4 py-3.5 rounded-xl border border-warm-200/80 bg-white/80
+                                     text-warm-900 placeholder:text-warm-300 text-[15px]
+                                     focus:outline-none focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600/30
+                                     transition-all duration-200"
+                          />
+                        </div>
+                        {error && (
+                          <p className="text-[13px] text-red-600 font-medium">{error}</p>
+                        )}
+                        <div className="flex gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setShowDemoForm(false)}
+                            className="flex-1 py-3.5 rounded-xl border border-warm-200
+                                     text-warm-500 font-medium text-[14px]
+                                     active:scale-[0.98] transition-all duration-150"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            disabled={isSubmitting || !email.trim()}
+                            className="flex-1 py-3.5 rounded-xl text-white font-semibold text-[14px]
+                                     disabled:opacity-40 disabled:cursor-not-allowed
+                                     active:scale-[0.98] transition-all duration-150"
+                            style={{
+                              background: 'linear-gradient(135deg, #1c1917 0%, #292524 100%)',
+                            }}
+                          >
+                            {isSubmitting ? (
+                              <span className="inline-flex items-center gap-2">
+                                <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="32" strokeDashoffset="8" strokeLinecap="round" />
+                                </svg>
+                                Sending
+                              </span>
+                            ) : 'Submit'}
+                          </button>
+                        </div>
+                      </motion.form>
+                    )}
 
-              {/* Logo at very bottom */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.5, delay: 0.45 }}
-                className="shrink-0 flex items-center justify-center gap-2.5 pb-2 pt-3 border-t border-warm-200/50"
-              >
-                <Image
-                  src="/Helm-Logo-New-Main.png"
-                  alt="Helm"
-                  width={24}
-                  height={24}
-                  className="w-6 h-6 object-contain opacity-40"
-                />
-                <span className="text-xs text-warm-400 tracking-wide">Helm Sports Labs</span>
-              </motion.div>
-            </nav>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                    {submitted && (
+                      <motion.div
+                        key="success"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.35, ease: smooth }}
+                        className="text-center space-y-4 py-2"
+                      >
+                        <div className="w-14 h-14 mx-auto rounded-2xl bg-primary-500/10 flex items-center justify-center">
+                          <svg className="w-6 h-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-semibold text-warm-900 mb-1">You&apos;re in</h3>
+                          <p className="text-sm text-warm-500">We&apos;ll reach out shortly.</p>
+                        </div>
+                        <button
+                          onClick={close}
+                          className="w-full py-3.5 rounded-xl bg-warm-100 text-warm-700
+                                   font-medium text-[14px] active:scale-[0.98] transition-transform duration-150"
+                        >
+                          Back to Home
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+
+                {/* Logo at very bottom */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.5, delay: 0.45 }}
+                  className="shrink-0 flex items-center justify-center gap-2.5 pb-2 pt-3 border-t border-warm-200/50"
+                >
+                  <Image
+                    src="/Helm-Logo-New-Main.png"
+                    alt="Helm"
+                    width={24}
+                    height={24}
+                    className="w-6 h-6 object-contain opacity-40"
+                  />
+                  <span className="text-xs text-warm-400 tracking-wide">Helm Sports Labs</span>
+                </motion.div>
+              </nav>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </>
   )
 }
