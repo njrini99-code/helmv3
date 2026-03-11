@@ -636,7 +636,7 @@ export interface IntelligentRoundReview {
   // V2 enhancements
   patternsApplied: MinedPattern[];
   causalInsights: CausalRelationship[];
-  prediction: PerformancePrediction;
+  prediction: PerformancePrediction | null;
   reasoning: ReasoningResult;
 
   // Composed output

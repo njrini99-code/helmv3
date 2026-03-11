@@ -208,13 +208,10 @@ class CoachHelmIntelligence {
     const causalEngine = new CausalEngine(playerId);
     const causalInsights = await causalEngine.discoverCausalRelationships();
 
-    // Get prediction
+    // Get prediction when available, but do not block round-review generation
+    // if the predictive layer has not produced a record for this player yet.
     const predictor = new PerformancePredictor(playerId);
     const prediction = await predictor.predictPerformance();
-
-    if (!prediction) {
-      return null;
-    }
 
     // Pull the same evidence-rich layers used in full player analysis so
     // round reviews are grounded in shot data, stats, and root causes.
@@ -229,7 +226,7 @@ class CoachHelmIntelligence {
       features,
       patterns,
       causalInsights,
-      [prediction],
+      prediction ? [prediction] : [],
       shotPatterns,
       stats,
       lieAnalysis,
@@ -282,7 +279,7 @@ class CoachHelmIntelligence {
       primaryTakeaway: primaryReviewInsight?.headline ?? composedReview.headline,
       patternsApplied: patterns.filter((p) => p.isActive).slice(0, 3),
       causalInsights: causalInsights.slice(0, 2),
-      prediction,
+      prediction: prediction ?? null,
       reasoning,
       composedReview,
       focusAreas,
@@ -721,15 +718,18 @@ class CoachHelmIntelligence {
 
   private buildRoundReviewSummary(
     insights: ComposedInsight[],
-    prediction: PerformancePrediction,
+    prediction: PerformancePrediction | null,
     features: ExtractedFeatures
   ): string {
     const topInsights = insights.slice(0, 3);
 
     if (topInsights.length === 0) {
       const form = this.inferRecentPerformance(features);
-      const forecast = this.formatScoreToPar(prediction.predictedValue);
-      return `Recent form is ${form}. Current forecast is ${forecast}, so the next practice block should stay focused on scoring stability.`;
+      if (prediction) {
+        const forecast = this.formatScoreToPar(prediction.predictedValue);
+        return `Recent form is ${form}. Current forecast is ${forecast}, so the next practice block should stay focused on scoring stability.`;
+      }
+      return `Recent form is ${form}. Current practice block should stay focused on scoring stability and the highest-confidence shot patterns from recent rounds.`;
     }
 
     const summaryParts: string[] = [topInsights[0]!.body];
