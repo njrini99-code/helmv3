@@ -11,7 +11,8 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-import { generateRoundReview as generateAIRoundReview } from '@/app/golf/actions/insights';
+import { coachHelmIntelligence, isCoachHelmEnabledForPlayer } from '@/lib/coachhelm/v2';
+import type { ComposedInsight, InsightEvidenceMetric, IntelligentRoundReview } from '@/lib/coachhelm/v2';
 import type { Json } from '@/lib/types/database';
 
 // UUID format validation
@@ -68,6 +69,15 @@ export interface StrokesToGainItem {
   category: string;
   potentialStrokes: number;
   description: string;
+}
+
+export interface CoachHelmReviewInsight {
+  headline: string;
+  body: string;
+  tone: ComposedInsight['tone'];
+  confidence: number;
+  strokeImpact?: number;
+  evidenceMetrics?: InsightEvidenceMetric[];
 }
 
 // Per-hole analysis computed from shots — exported for UI use
@@ -161,6 +171,17 @@ export interface RoundReviewContent {
   // Where to improve most
   strokesToGain: StrokesToGainItem[];
 
+  // CoachHelm V2 overlay
+  coachHelm?: {
+    summary: string;
+    primaryTakeaway: string;
+    practicePriority: string;
+    focusAreas: string[];
+    tone: ComposedInsight['tone'];
+    confidence: number;
+  };
+  deepInsights?: CoachHelmReviewInsight[];
+
   // Full hole-by-hole data for scorecard rendering
   holeByHole: HoleBreakdown[];
 }
@@ -222,6 +243,17 @@ interface HoleParRow {
   gir: boolean | null;
 }
 
+interface ComparisonRoundRow {
+  total_score: number | null;
+  score_to_par: number | null;
+  total_putts: number | null;
+  total_gir: number | null;
+  total_gir_possible: number | null;
+  total_fairways_hit: number | null;
+  total_fairways: number | null;
+  holes_played?: number | null;
+}
+
 // Shot row from golf_shots table
 interface ShotRow {
   hole_number: number;
@@ -243,6 +275,47 @@ interface ShotRow {
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
+
+function calculateComparisonAverages(rounds: ComparisonRoundRow[]): {
+  avgScore: number;
+  avgScoreToPar: number;
+  avgPutts: number;
+  avgGirPct: number;
+  avgFairwayPct: number;
+} | null {
+  const valid = rounds.filter(r => r.total_score !== null);
+  if (valid.length < 3) return null;
+
+  const rounds18 = valid.filter(r => (r.holes_played ?? 18) === 18);
+  const avgScore = rounds18.length > 0
+    ? rounds18.reduce((sum, round) => sum + (round.total_score ?? 0), 0) / rounds18.length
+    : 72;
+
+  const roundsWithToPar = valid.filter(r => r.score_to_par !== null);
+  const avgScoreToPar = roundsWithToPar.length > 0
+    ? roundsWithToPar.reduce((sum, round) => {
+      const holesPlayed = round.holes_played ?? 18;
+      return sum + ((round.score_to_par ?? 0) * (18 / holesPlayed));
+    }, 0) / roundsWithToPar.length
+    : avgScore - 72;
+
+  const puttRounds = valid.filter(r => r.total_putts !== null);
+  const puttHoles = puttRounds.reduce((sum, round) => sum + (round.holes_played ?? 18), 0);
+  const totalPutts = puttRounds.reduce((sum, round) => sum + (round.total_putts ?? 0), 0);
+  const avgPutts = puttHoles > 0 ? (totalPutts / puttHoles) * 18 : 32;
+
+  const girRounds = valid.filter(r => r.total_gir !== null && r.total_gir_possible);
+  const avgGirPct = girRounds.length > 0
+    ? girRounds.reduce((sum, round) => sum + ((round.total_gir ?? 0) / (round.total_gir_possible ?? 18)) * 100, 0) / girRounds.length
+    : 50;
+
+  const fwRounds = valid.filter(r => r.total_fairways_hit !== null && r.total_fairways);
+  const avgFairwayPct = fwRounds.length > 0
+    ? fwRounds.reduce((sum, round) => sum + ((round.total_fairways_hit ?? 0) / (round.total_fairways ?? 14)) * 100, 0) / fwRounds.length
+    : 50;
+
+  return { avgScore, avgScoreToPar, avgPutts, avgGirPct, avgFairwayPct };
+}
 
 /**
  * Build per-hole breakdowns from shot-level data.
@@ -326,7 +399,7 @@ function buildHoleBreakdowns(shots: ShotRow[], round: RoundData, holePars?: Hole
     // 2. If shot data shows ball holed out, use shot count
     // 3. Otherwise estimate from shots + likely remaining
     let score: number;
-    if (knownHole?.score) {
+    if (knownHole?.score != null) {
       score = knownHole.score;
     } else if (holedOut) {
       score = holeShots.length;
@@ -347,7 +420,9 @@ function buildHoleBreakdowns(shots: ShotRow[], round: RoundData, holePars?: Hole
 
     const scoreToPar = score - par;
 
-    const fairwayHit = par >= 4 && teeShot ? (teeShot.lie_after === 'fairway') : null;
+    const fairwayHit = par >= 4
+      ? (knownHole?.fairway_hit ?? (teeShot ? teeShot.lie_after === 'fairway' : null))
+      : null;
 
     // GIR: reached green within par-2 shots. Also counts chip-ins from
     // approach distance and par 3 tee shots hitting the green.
@@ -360,7 +435,7 @@ function buildHoleBreakdowns(shots: ShotRow[], round: RoundData, holePars?: Hole
         break;
       }
     }
-    const gir = greenReachedAt > 0 && greenReachedAt <= girShotLimit;
+    const gir = knownHole?.gir ?? (greenReachedAt > 0 && greenReachedAt <= girShotLimit);
 
     const scrambleAttempt = !gir;
     const scrambleSuccess = scrambleAttempt && scoreToPar <= 0;
@@ -387,8 +462,8 @@ function buildHoleBreakdowns(shots: ShotRow[], round: RoundData, holePars?: Hole
 
     holes.push({
       hole: h, par, score, scoreToPar,
-      putts: putts.length, fairwayHit, gir,
-      threePutt: putts.length >= 3, onePutt: putts.length === 1,
+      putts: knownHole?.putts ?? putts.length, fairwayHit, gir,
+      threePutt: (knownHole?.putts ?? putts.length) >= 3, onePutt: (knownHole?.putts ?? putts.length) === 1,
       penalties, scrambleAttempt, scrambleSuccess,
       sandSaveAttempt, sandSaveSuccess,
       driveClub,
@@ -481,6 +556,128 @@ function isValidReviewContent(obj: unknown): obj is RoundReviewContent {
   );
 }
 
+function missMatches(direction: string | null | undefined, side: 'left' | 'right' | 'short' | 'long'): boolean {
+  if (!direction) return false;
+  return direction === side || direction.startsWith(`${side}_`) || direction.endsWith(`_${side}`);
+}
+
+function isNarrativeCoachHelmSummary(summary: string | null | undefined): summary is string {
+  if (!summary) return false;
+  if (summary.length < 40) return false;
+  return !/expected score|prediction|forecast|range:/i.test(summary) && !/\bNaN\b/.test(summary);
+}
+
+function dedupeStrings(items: Array<string | null | undefined>, limit: number): string[] {
+  return Array.from(
+    new Set(
+      items
+        .map((item) => item?.trim())
+        .filter((item): item is string => Boolean(item))
+    )
+  ).slice(0, limit);
+}
+
+function dedupeByKey<T>(items: T[], keyFn: (item: T) => string, limit: number): T[] {
+  const seen = new Set<string>();
+  const deduped: T[] = [];
+
+  for (const item of items) {
+    const key = keyFn(item).trim().toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    deduped.push(item);
+    if (deduped.length >= limit) break;
+  }
+
+  return deduped;
+}
+
+function toCoachHelmInsight(insight: ComposedInsight): CoachHelmReviewInsight {
+  return {
+    headline: insight.headline,
+    body: insight.body,
+    tone: insight.tone,
+    confidence: insight.confidence,
+    strokeImpact: insight.strokeImpact,
+    evidenceMetrics: insight.evidenceMetrics,
+  };
+}
+
+function buildCoachHelmHighlight(review: IntelligentRoundReview): RoundReviewHighlight {
+  const impact = review.composedReview.strokeImpact != null
+    ? ` Estimated impact: ${review.composedReview.strokeImpact.toFixed(1)} strokes.`
+    : '';
+
+  return {
+    title: review.primaryTakeaway || review.composedReview.headline,
+    description: `${review.composedReview.body}${impact}`.trim(),
+  };
+}
+
+function buildCoachHelmImprovementAreas(review: IntelligentRoundReview): RoundReviewImprovementArea[] {
+  const focusArea = review.focusAreas[0] ?? review.primaryTakeaway;
+  const practiceArea = review.focusAreas[1];
+  const primaryRecommendation = review.practicePriority || review.composedReview.callToAction || review.composedReview.body;
+
+  const areas: RoundReviewImprovementArea[] = [
+    {
+      area: focusArea,
+      recommendation: primaryRecommendation,
+    },
+  ];
+
+  if (practiceArea && practiceArea !== focusArea) {
+    areas.push({
+      area: practiceArea,
+      recommendation: review.composedReview.body,
+    });
+  }
+
+  return areas;
+}
+
+function mergeCoachHelmReviewContent(
+  base: RoundReviewContent,
+  review: IntelligentRoundReview
+): RoundReviewContent {
+  const coachHelmHighlight = buildCoachHelmHighlight(review);
+  const coachHelmAreas = buildCoachHelmImprovementAreas(review);
+  const deepInsights = [toCoachHelmInsight(review.composedReview)];
+
+  return {
+    ...base,
+    summary: isNarrativeCoachHelmSummary(review.summary) ? review.summary : base.summary,
+    highlights: dedupeByKey(
+      [coachHelmHighlight, ...base.highlights],
+      (item) => item.title,
+      4
+    ),
+    areasForImprovement: dedupeByKey(
+      [...coachHelmAreas, ...base.areasForImprovement],
+      (item) => item.area,
+      4
+    ),
+    recommendations: dedupeStrings(
+      [
+        review.practicePriority,
+        review.composedReview.callToAction,
+        review.primaryTakeaway,
+        ...base.recommendations,
+      ],
+      6
+    ),
+    coachHelm: {
+      summary: review.summary,
+      primaryTakeaway: review.primaryTakeaway,
+      practicePriority: review.practicePriority,
+      focusAreas: review.focusAreas,
+      tone: review.composedReview.tone,
+      confidence: review.composedReview.confidence,
+    },
+    deepInsights,
+  };
+}
+
 function determineSentiment(scoreToPar: number): ReviewSentiment {
   if (scoreToPar <= -1) return 'positive';
   if (scoreToPar <= 3) return 'neutral';
@@ -565,7 +762,8 @@ function determineGrade(
 function generateReviewContent(
   round: RoundData,
   holes: HoleBreakdown[],
-  playerAvgs: { avgScore: number; avgScoreToPar: number; avgPutts: number; avgGirPct: number; avgFairwayPct: number } | null
+  playerAvgs: { avgScore: number; avgScoreToPar: number; avgPutts: number; avgGirPct: number; avgFairwayPct: number } | null,
+  shotRows: ShotRow[] = []
 ): RoundReviewContent {
   const highlights: RoundReviewHighlight[] = [];
   const areasForImprovement: RoundReviewImprovementArea[] = [];
@@ -613,23 +811,26 @@ function generateReviewContent(
 
   // Driving miss pattern — use exact match or startsWith/endsWith to avoid
   // double-counting compound values like "left_short"
-  const driveMisses = holes.filter(h => h.driveMiss && h.fairwayHit === false);
-  const leftMisses = driveMisses.filter(h =>
-    h.driveMiss === 'left' || h.driveMiss?.startsWith('left_') || h.driveMiss?.endsWith('_left')
-  ).length;
-  const rightMisses = driveMisses.filter(h =>
-    h.driveMiss === 'right' || h.driveMiss?.startsWith('right_') || h.driveMiss?.endsWith('_right')
-  ).length;
+  const teeShots = shotRows.filter((shot) => shot.shot_type === 'tee');
+  const shotLevelDriveMisses = teeShots.filter((shot) =>
+    shot.lie_after !== 'fairway' && shot.lie_after !== 'green' && shot.result !== 'fairway'
+  );
+  const driveMisses = shotLevelDriveMisses.length > 0
+    ? shotLevelDriveMisses.map((shot) => ({ driveMiss: shot.miss_direction }))
+    : holes.filter(h => h.driveMiss && h.fairwayHit === false);
+  const leftMisses = driveMisses.filter(h => missMatches(h.driveMiss, 'left')).length;
+  const rightMisses = driveMisses.filter(h => missMatches(h.driveMiss, 'right')).length;
   const dominantMiss = leftMisses > rightMisses ? 'left' : rightMisses > leftMisses ? 'right' : null;
 
-  // Approach miss pattern — same exact/startsWith/endsWith logic
-  const approachMisses = holes.filter(h => !h.gir && h.approachMiss);
-  const approachShort = approachMisses.filter(h =>
-    h.approachMiss === 'short' || h.approachMiss?.startsWith('short_') || h.approachMiss?.endsWith('_short')
-  ).length;
-  const approachLong = approachMisses.filter(h =>
-    h.approachMiss === 'long' || h.approachMiss?.startsWith('long_') || h.approachMiss?.endsWith('_long')
-  ).length;
+  // Approach miss pattern — prefer shot-level misses when available
+  const shotLevelApproachMisses = shotRows.filter((shot) =>
+    shot.shot_type === 'approach' && shot.miss_direction
+  );
+  const approachMisses = shotLevelApproachMisses.length > 0
+    ? shotLevelApproachMisses.map((shot) => ({ approachMiss: shot.miss_direction }))
+    : holes.filter(h => !h.gir && h.approachMiss);
+  const approachShort = approachMisses.filter(h => missMatches(h.approachMiss, 'short')).length;
+  const approachLong = approachMisses.filter(h => missMatches(h.approachMiss, 'long')).length;
 
   // First putt distances
   const firstPuttDists = holes.filter(h => h.firstPuttFeet !== null).map(h => h.firstPuttFeet!);
@@ -859,7 +1060,7 @@ function generateReviewContent(
 
   // ===== HIGHLIGHTS =====
   if (bestHoles.length > 0) {
-    const desc = bestHoles.slice(0, 3).map(h => {
+    const desc = bestHoles.map(h => {
       const parts: string[] = [`Hole ${h.hole} (par ${h.par})`];
       if (h.firstPuttFeet && h.onePutt) parts.push(`sank a ${Math.round(h.firstPuttFeet)}ft putt`);
       else if (h.gir && h.putts === 2) parts.push(`solid GIR and 2-putt`);
@@ -873,7 +1074,7 @@ function generateReviewContent(
   if (onePutts.length >= 4) {
     highlights.push({
       title: `${onePutts.length} One-Putts`,
-      description: `Converted on holes ${onePutts.slice(0, 5).map(h => `#${h.hole}`).join(', ')}.`,
+      description: `Converted on holes ${onePutts.map(h => `#${h.hole}`).join(', ')}.`,
     });
   }
   if (scramblePct !== null && scramblePct >= 50) {
@@ -1093,17 +1294,16 @@ export async function getRoundReview(roundId: string): Promise<{
       return { success: true, review: undefined };
     }
 
+    if (!isValidReviewContent(existingReview.round_stats)) {
+      return { success: true, review: undefined };
+    }
+
     const roundData = existingReview.round as RoundData;
     const review: RoundReviewWithRound = {
       id: existingReview.id,
       player_id: existingReview.player_id,
       round_id: existingReview.round_id,
-      // round_stats stores the full RoundReviewContent. If it's missing or an
-      // older format (e.g. V1 ReviewKeyStats), return undefined so the UI can
-      // trigger a regeneration rather than showing an empty/broken review.
-      review_content: isValidReviewContent(existingReview.round_stats)
-        ? (existingReview.round_stats as unknown as RoundReviewContent)
-        : generateReviewContent(roundData, [], null),
+      review_content: existingReview.round_stats as unknown as RoundReviewContent,
       generated_at: existingReview.created_at ?? new Date().toISOString(),
       ai_model_version: existingReview.engine_version ?? 'v1.0',
       shared_with_coach: existingReview.shared_with_coach ?? false,
@@ -1184,7 +1384,7 @@ export async function generateAndStoreRoundReview(
 
     const { data: playerRounds } = await supabase
       .from('golf_rounds')
-      .select('total_score, score_to_par, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways')
+      .select('total_score, score_to_par, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways, holes_played')
       .eq('player_id', playerId)
       .eq('status', 'completed')
       .not('total_score', 'is', null)
@@ -1192,64 +1392,27 @@ export async function generateAndStoreRoundReview(
       .order('round_date', { ascending: false })
       .limit(20);
 
-    let playerAvgs = null;
-    if (playerRounds && playerRounds.length >= 3) {
-      const valid = playerRounds.filter(r => r.total_score !== null);
-      const avgScore = valid.reduce((s, r) => s + (r.total_score ?? 0), 0) / valid.length;
-      const stpRounds = valid.filter(r => r.score_to_par !== null);
-      const avgScoreToPar = stpRounds.length > 0
-        ? stpRounds.reduce((s, r) => s + (r.score_to_par ?? 0), 0) / stpRounds.length
-        : avgScore - 72;
-      const puttRounds = valid.filter(r => r.total_putts !== null);
-      const avgPutts = puttRounds.length > 0 ? puttRounds.reduce((s, r) => s + (r.total_putts ?? 0), 0) / puttRounds.length : 32;
-      const girRounds = valid.filter(r => r.total_gir !== null && r.total_gir_possible);
-      const avgGirPct = girRounds.length > 0
-        ? girRounds.reduce((s, r) => s + ((r.total_gir ?? 0) / (r.total_gir_possible ?? 18)) * 100, 0) / girRounds.length
-        : 50;
-      const fwRounds = valid.filter(r => r.total_fairways_hit !== null && r.total_fairways);
-      const avgFairwayPct = fwRounds.length > 0
-        ? fwRounds.reduce((s, r) => s + ((r.total_fairways_hit ?? 0) / (r.total_fairways ?? 14)) * 100, 0) / fwRounds.length
-        : 50;
-      playerAvgs = { avgScore, avgScoreToPar, avgPutts, avgGirPct, avgFairwayPct };
-    }
+    const playerAvgs = calculateComparisonAverages((playerRounds ?? []) as ComparisonRoundRow[]);
 
-    const reviewContent = generateReviewContent(roundData, holeBreakdowns, playerAvgs);
+    let reviewContent = generateReviewContent(roundData, holeBreakdowns, playerAvgs, shotRows);
 
-    // Optional AI enhancement — never overwrite the rule-based summary.
-    // AI predictions (e.g. "Expected score: +0.6") are NOT round summaries.
-    // The AI review is stored separately and displayed in its own section.
-    let aiEnhanced = false;
-    try {
-      const aiResult = await generateAIRoundReview(roundId, playerId);
-      if (aiResult.success && aiResult.review) {
-        // Extract prediction for the recommendations list, but guard against
-        // prediction-style strings replacing the descriptive round summary.
-        const aiSummary = aiResult.review.summary ?? '';
-        const isPredictionText = /expected score|range:|key factor/i.test(aiSummary);
+    let coachHelmReview: IntelligentRoundReview | null = null;
+    let coachHelmEnhanced = false;
 
-        // Only use AI summary if it's a genuine narrative (not a prediction) and clean
-        const hasNaN = /\bNaN\b/.test(aiSummary) || /—%/.test(aiSummary);
-        if (aiSummary && !hasNaN && aiSummary.length > 40 && !isPredictionText) {
-          reviewContent.summary = aiSummary;
-        }
+    if (shotRows.length > 0) {
+      try {
+        const coachHelmStatus = await isCoachHelmEnabledForPlayer(playerId);
+        if (coachHelmStatus.effectivelyEnabled) {
+          coachHelmReview = await coachHelmIntelligence.generateRoundReview(roundId, playerId);
 
-        // Add AI primary takeaway to recommendations if it's actionable
-        if (aiResult.review.primaryTakeaway && !/\bNaN\b/.test(aiResult.review.primaryTakeaway)) {
-          const takeaway = aiResult.review.primaryTakeaway;
-          const isPredTakeaway = /expected score|range:|forecast/i.test(takeaway);
-          if (!isPredTakeaway) {
-            reviewContent.recommendations.unshift(takeaway);
+          if (coachHelmReview) {
+            reviewContent = mergeCoachHelmReviewContent(reviewContent, coachHelmReview);
+            coachHelmEnhanced = true;
           }
         }
-
-        // Note: AI prediction is displayed separately via V2PredictionCard.
-        // Do NOT inject forecast into recommendations — it's not actionable advice
-        // and would be confusing mixed in with practice tips.
-
-        aiEnhanced = true;
+      } catch (error) {
+        console.error('[RoundReview] CoachHelm V2 enhancement failed:', error);
       }
-    } catch {
-      // AI enhancement failed, rule-based review is sufficient
     }
 
     const { data: existingReview } = await supabase
@@ -1266,9 +1429,11 @@ export async function generateAndStoreRoundReview(
         .update({
           round_stats: reviewContent as unknown as Json,
           summary: reviewContent.summary,
+          primary_takeaway: coachHelmReview?.primaryTakeaway ?? null,
+          next_practice_priority: coachHelmReview?.practicePriority ?? null,
           highlights: reviewContent.highlights as unknown as Json,
           areas_to_review: reviewContent.areasForImprovement as unknown as Json,
-          engine_version: aiEnhanced ? 'coachhelm-v2' : 'rule-based-v2',
+          engine_version: coachHelmEnhanced ? 'coachhelm-v2' : 'rule-based-v2',
           updated_at: new Date().toISOString(),
         })
         .eq('id', existingReview.id);
@@ -1283,11 +1448,13 @@ export async function generateAndStoreRoundReview(
           player_id: playerId,
           round_stats: reviewContent as unknown as Json,
           summary: reviewContent.summary,
+          primary_takeaway: coachHelmReview?.primaryTakeaway ?? null,
+          next_practice_priority: coachHelmReview?.practicePriority ?? null,
           highlights: reviewContent.highlights as unknown as Json,
           areas_to_review: reviewContent.areasForImprovement as unknown as Json,
           round_score: roundData.total_score,
           round_score_to_par: roundData.score_to_par,
-          engine_version: aiEnhanced ? 'coachhelm-v2' : 'rule-based-v2',
+          engine_version: coachHelmEnhanced ? 'coachhelm-v2' : 'rule-based-v2',
         })
         .select('id')
         .single();
@@ -1306,7 +1473,7 @@ export async function generateAndStoreRoundReview(
       round_id: roundId,
       review_content: reviewContent,
       generated_at: new Date().toISOString(),
-      ai_model_version: aiEnhanced ? 'coachhelm-v2' : 'rule-based-v2',
+      ai_model_version: coachHelmEnhanced ? 'coachhelm-v2' : 'rule-based-v2',
       shared_with_coach: false,
       shared_at: null,
       coach_notes: null,
@@ -1384,7 +1551,7 @@ export async function getStatAverages(
 
     const { data: playerRounds, error: playerError } = await supabase
       .from('golf_rounds')
-      .select('total_score, score_to_par, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways')
+      .select('total_score, score_to_par, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways, holes_played')
       .eq('player_id', playerId)
       .eq('status', 'completed')
       .not('total_score', 'is', null)
@@ -1393,26 +1560,7 @@ export async function getStatAverages(
 
     if (playerError) return { success: false, error: 'Failed to fetch player stats' };
 
-    let playerAvg = undefined;
-    if (playerRounds && playerRounds.length >= 3) {
-      const valid = playerRounds.filter(r => r.total_score !== null);
-      const avgScore = valid.reduce((s, r) => s + (r.total_score ?? 0), 0) / valid.length;
-      const stpRounds = valid.filter(r => r.score_to_par !== null);
-      const avgScoreToPar = stpRounds.length > 0
-        ? stpRounds.reduce((s, r) => s + (r.score_to_par ?? 0), 0) / stpRounds.length
-        : avgScore - 72;
-      const puttRounds = valid.filter(r => r.total_putts !== null);
-      const avgPutts = puttRounds.length > 0 ? puttRounds.reduce((s, r) => s + (r.total_putts ?? 0), 0) / puttRounds.length : 32;
-      const girRounds = valid.filter(r => r.total_gir !== null && r.total_gir_possible);
-      const avgGirPct = girRounds.length > 0
-        ? girRounds.reduce((s, r) => s + ((r.total_gir ?? 0) / (r.total_gir_possible ?? 18)) * 100, 0) / girRounds.length
-        : 50;
-      const fwRounds = valid.filter(r => r.total_fairways_hit !== null && r.total_fairways);
-      const avgFairwayPct = fwRounds.length > 0
-        ? fwRounds.reduce((s, r) => s + ((r.total_fairways_hit ?? 0) / (r.total_fairways ?? 14)) * 100, 0) / fwRounds.length
-        : 50;
-      playerAvg = { avgScore, avgScoreToPar, avgPutts, avgGirPct, avgFairwayPct };
-    }
+    const playerAvg = calculateComparisonAverages((playerRounds ?? []) as ComparisonRoundRow[]) ?? undefined;
 
     let teamAvg = undefined;
     if (teamId) {
@@ -1426,7 +1574,7 @@ export async function getStatAverages(
         const playerIds = teamMembers.map(m => m.player_id);
         const { data: teamRounds } = await supabase
           .from('golf_rounds')
-          .select('total_score, score_to_par, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways')
+          .select('total_score, score_to_par, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways, holes_played')
           .in('player_id', playerIds)
           .eq('status', 'completed')
           .not('total_score', 'is', null)
@@ -1434,23 +1582,7 @@ export async function getStatAverages(
           .limit(100);
 
         if (teamRounds && teamRounds.length >= 5) {
-          const valid = teamRounds.filter(r => r.total_score !== null);
-          const avgScore = valid.reduce((s, r) => s + (r.total_score ?? 0), 0) / valid.length;
-          const teamStpRounds = valid.filter(r => r.score_to_par !== null);
-          const avgScoreToPar = teamStpRounds.length > 0
-            ? teamStpRounds.reduce((s, r) => s + (r.score_to_par ?? 0), 0) / teamStpRounds.length
-            : avgScore - 72;
-          const puttRounds = valid.filter(r => r.total_putts !== null);
-          const avgPutts = puttRounds.length > 0 ? puttRounds.reduce((s, r) => s + (r.total_putts ?? 0), 0) / puttRounds.length : 32;
-          const girRounds = valid.filter(r => r.total_gir !== null && r.total_gir_possible);
-          const avgGirPct = girRounds.length > 0
-            ? girRounds.reduce((s, r) => s + ((r.total_gir ?? 0) / (r.total_gir_possible ?? 18)) * 100, 0) / girRounds.length
-            : 50;
-          const fwRounds = valid.filter(r => r.total_fairways_hit !== null && r.total_fairways);
-          const avgFairwayPct = fwRounds.length > 0
-            ? fwRounds.reduce((s, r) => s + ((r.total_fairways_hit ?? 0) / (r.total_fairways ?? 14)) * 100, 0) / fwRounds.length
-            : 50;
-          teamAvg = { avgScore, avgScoreToPar, avgPutts, avgGirPct, avgFairwayPct };
+          teamAvg = calculateComparisonAverages((teamRounds ?? []) as ComparisonRoundRow[]) ?? undefined;
         }
       }
     }
