@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import ShotTrackingComprehensive from '@/components/golf/ShotTrackingComprehensive';
 import type { HoleStats, ShotRecord, RoundHole } from '@/lib/types/golf';
 import { submitGolfRoundComprehensive, savePartialRound, deleteInProgressRound } from '@/app/golf/actions/golf';
+import { checkRoundStaleness } from '@/app/golf/actions/round-drafts';
 import { deleteOfflineRound } from '@/lib/offline/indexed-db';
 import { emergencySave, loadEmergencySave, clearEmergencySave, type EmergencySaveData } from '@/lib/utils/emergency-save';
 
@@ -603,6 +604,24 @@ export default function ContinueRoundClient({
           // to avoid concurrent database transactions
           setTimeout(resolve, 10000);
         });
+      }
+
+      // Multi-device conflict check: verify round hasn't been modified on another device
+      if (lastServerUpdatedAtRef.current) {
+        try {
+          const stalenessResult = await checkRoundStaleness(roundId, lastServerUpdatedAtRef.current);
+          if (stalenessResult.success && stalenessResult.data.isStale) {
+            setError(
+              'This round was modified on another device or browser tab. ' +
+              'Please reload the page to get the latest data before submitting.'
+            );
+            isSubmittingRef.current = false;
+            setSubmitting(false);
+            return;
+          }
+        } catch {
+          // Non-critical — proceed with submission if check fails
+        }
       }
 
       const roundData = {

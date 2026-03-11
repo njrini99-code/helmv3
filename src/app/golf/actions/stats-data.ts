@@ -407,13 +407,14 @@ export async function getStatsSummary(
     };
   }
 
-  // Fetch scrambling data from golf_holes — only missed-GIR holes count as scramble attempts
+  // Fetch scrambling data from golf_holes — missed GIR + made par or better = scramble
+  // Uses (score - par) <= 0 to match the DB trigger definition exactly
   const roundIds = filteredRounds.map(r => r.id);
   const { data: holesWithScrambling } = await supabase
     .from('golf_holes')
-    .select('up_and_down')
+    .select('score, par')
     .in('round_id', roundIds)
-    .not('up_and_down', 'is', null)
+    .not('score', 'is', null)
     .eq('gir', false);
 
   let scramblingAttempts = 0;
@@ -421,7 +422,9 @@ export async function getStatsSummary(
   if (holesWithScrambling) {
     for (const hole of holesWithScrambling) {
       scramblingAttempts++;
-      if (hole.up_and_down === true) scramblingMade++;
+      if (hole.score !== null && hole.par !== null && (hole.score - hole.par) <= 0) {
+        scramblingMade++;
+      }
     }
   }
 
@@ -1075,13 +1078,14 @@ export async function getTeamComparison(
     };
   }
 
-  // Fetch scrambling data from golf_holes — only missed-GIR holes count as scramble attempts
+  // Fetch scrambling data from golf_holes — missed GIR + made par or better = scramble
+  // Uses (score - par) <= 0 to match the DB trigger definition exactly
   const teamRoundIds = roundsData.map(r => r.id);
   const { data: teamScramblingData } = await supabase
     .from('golf_holes')
-    .select('round_id, up_and_down')
+    .select('round_id, score, par')
     .in('round_id', teamRoundIds)
-    .not('up_and_down', 'is', null)
+    .not('score', 'is', null)
     .eq('gir', false);
 
   // Build a map of round_id -> player_id for scrambling aggregation
@@ -1099,7 +1103,7 @@ export async function getTeamComparison(
       if (pId) {
         const scrambling = playerScramblingMap.get(pId)!;
         scrambling.attempts++;
-        if (hole.up_and_down === true) scrambling.made++;
+        if (hole.score !== null && hole.par !== null && (hole.score - hole.par) <= 0) scrambling.made++;
       }
     }
   }

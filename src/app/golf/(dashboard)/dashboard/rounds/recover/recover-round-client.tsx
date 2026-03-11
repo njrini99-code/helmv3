@@ -10,6 +10,10 @@ import type { HoleStats } from '@/lib/types/golf';
 const DB_NAME = 'golf_offline_db';
 const ROUNDS_STORE = 'offline_rounds';
 
+// Emergency save localStorage key prefix (must match emergency-save.ts)
+const EMERGENCY_SAVE_PREFIX = 'golf_emergency_save';
+const EMERGENCY_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
+
 interface OfflineRoundData {
   id: string;
   playerId: string;
@@ -63,6 +67,55 @@ async function deleteOfflineRoundById(roundId: string): Promise<void> {
   });
 }
 
+/**
+ * Scan localStorage for emergency saves and convert them to OfflineRoundData format.
+ * This is a fallback for when IndexedDB data is unavailable (e.g. cleared by browser,
+ * different storage partition) but the synchronous localStorage emergency save survived.
+ */
+function getEmergencySavesFromLocalStorage(): OfflineRoundData[] {
+  const results: OfflineRoundData[] = [];
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key?.startsWith(EMERGENCY_SAVE_PREFIX)) continue;
+      try {
+        const raw = localStorage.getItem(key);
+        if (!raw) continue;
+        const parsed = JSON.parse(raw);
+        // Skip expired saves
+        if (Date.now() - parsed.timestamp > EMERGENCY_MAX_AGE_MS) continue;
+        // Must have completed hole stats with actual scores
+        if (!parsed.completedHoleStats || !Array.isArray(parsed.completedHoleStats)) continue;
+        const completedCount = parsed.completedHoleStats.filter(
+          (h: HoleStats | null) => h != null && typeof h === 'object' && 'score' in h && h.score > 0
+        ).length;
+        if (completedCount === 0) continue;
+
+        // Convert to OfflineRoundData format
+        const roundId = key.replace(`${EMERGENCY_SAVE_PREFIX}_`, '') || `ls_${Date.now()}_${i}`;
+        results.push({
+          id: `localStorage_${roundId}`,
+          playerId: '',
+          draftData: {
+            step: 'tracking',
+            setupData: parsed.setupData,
+            holes: parsed.holes || [],
+            completedHoleStats: parsed.completedHoleStats,
+            currentHoleIndex: parsed.currentHoleIndex ?? 0,
+            inProgressShots: parsed.inProgressShotsByHole,
+          },
+          timestamp: parsed.timestamp,
+        });
+      } catch {
+        // Skip malformed entries
+      }
+    }
+  } catch {
+    // localStorage unavailable
+  }
+  return results;
+}
+
 export default function RecoverRoundClient({ playerId }: { playerId: string }) {
   const router = useRouter();
   const { showToast } = useToast();
@@ -83,9 +136,24 @@ export default function RecoverRoundClient({ playerId }: { playerId: string }) {
           ).length;
           return completedCount > 0;
         });
-        setRounds(recoverable);
+
+        // Also check localStorage emergency saves as a fallback source
+        const emergencySaves = getEmergencySavesFromLocalStorage();
+        // Deduplicate: only add localStorage saves that don't already exist in IndexedDB
+        const indexedDbIds = new Set(recoverable.map(r => r.id));
+        const uniqueEmergencySaves = emergencySaves.filter(es => !indexedDbIds.has(es.id));
+
+        setRounds([...recoverable, ...uniqueEmergencySaves]);
       })
-      .catch(() => setError('Could not access offline storage. Make sure you are using the same browser and device.'))
+      .catch(() => {
+        // IndexedDB failed — fall back to localStorage-only recovery
+        const emergencySaves = getEmergencySavesFromLocalStorage();
+        if (emergencySaves.length > 0) {
+          setRounds(emergencySaves);
+        } else {
+          setError('Could not access offline storage. Make sure you are using the same browser and device.');
+        }
+      })
       .finally(() => setLoading(false));
   }, [playerId]);
 
@@ -128,7 +196,13 @@ export default function RecoverRoundClient({ playerId }: { playerId: string }) {
 
       // Clean up the offline data
       try {
-        await deleteOfflineRoundById(round.id);
+        if (round.id.startsWith('localStorage_')) {
+          // This was a localStorage emergency save — clean up the localStorage key
+          const lsKey = round.id.replace('localStorage_', '');
+          try { localStorage.removeItem(`${EMERGENCY_SAVE_PREFIX}_${lsKey}`); } catch { /* ignore */ }
+        } else {
+          await deleteOfflineRoundById(round.id);
+        }
       } catch {
         // Non-critical
       }

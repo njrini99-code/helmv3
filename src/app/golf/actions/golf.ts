@@ -231,7 +231,7 @@ const comprehensiveShotSchema = z.object({
   shotType: z.enum(['tee', 'approach', 'around_green', 'putting', 'penalty']),
   clubType: z.string().min(1),
   lieBefore: z.enum(['tee', 'fairway', 'rough', 'sand', 'green', 'other']),
-  distanceToHoleBefore: z.number().min(0),
+  distanceToHoleBefore: z.number().min(0).max(1000),
   distanceUnitBefore: z.enum(['yards', 'feet']),
   result: z.enum(['fairway', 'rough', 'sand', 'green', 'hole', 'other', 'penalty']),
   distanceToHoleAfter: z.number().min(0),
@@ -256,7 +256,7 @@ const comprehensiveHoleSchema = z.object({
   putts: z.number().int().min(0).max(10),
   fairwayHit: z.boolean().nullable(),
   greenInRegulation: z.boolean(),
-  penaltyStrokes: z.number().int().min(0),
+  penaltyStrokes: z.number().int().min(0).max(10),
   scrambleAttempt: z.boolean(),
   scrambleMade: z.boolean(),
   sandSaveAttempt: z.boolean(),
@@ -319,8 +319,8 @@ const partialRoundSchema = z.object({
     holeNumber: z.number().int().min(1).max(18),
     par: z.number().int().min(3).max(6),
     yardage: z.number().min(0),
-    score: z.number().int().min(1).max(30).optional().nullable(),
-    putts: z.number().int().min(0).max(15).optional().nullable(),
+    score: z.number().int().min(1).max(20).optional().nullable(),
+    putts: z.number().int().min(0).max(10).optional().nullable(),
     fairwayHit: z.boolean().optional().nullable(),
     greenInRegulation: z.boolean().optional().nullable(),
     penaltyStrokes: z.number().int().min(0).max(10).optional().nullable(),
@@ -346,7 +346,7 @@ const shotUpdateSchema = z.object({
   club_type: z.enum(['driver', 'non_driver', 'putter']).optional(),
   lie_before: z.enum(['tee', 'fairway', 'rough', 'sand', 'green', 'other']).optional(),
   lie_after: z.enum(['tee', 'fairway', 'rough', 'sand', 'green', 'other', 'penalty']).nullable().optional(),
-  distance_to_hole_before: z.number().min(0).optional(),
+  distance_to_hole_before: z.number().min(0).max(1000).optional(),
   distance_unit_before: z.enum(['yards', 'feet']).optional(),
   result: z.enum(['fairway', 'rough', 'sand', 'green', 'hole', 'other', 'penalty']).optional(),
   distance_to_hole_after: z.number().min(0).optional(),
@@ -515,17 +515,16 @@ function derivePuttDistanceFeet(shot: ShotRecord): number | null {
   const distance = shot.distanceToHoleBefore;
   if (!Number.isFinite(distance)) return null;
   const feet = shot.distanceUnitBefore === 'yards' ? distance * 3 : distance;
-  // Clamp to DB CHECK constraint max (200 feet) — yards×3 can exceed this
-  return Math.min(feet, 200);
+  // Clamp to DB CHECK constraint max (500 feet) — yards×3 can exceed this
+  return Math.min(feet, 500);
 }
 
 /** Allowed lie_type values for approach_miss_details CHECK constraint */
 const VALID_APPROACH_LIE_TYPES = new Set(['fairway', 'rough', 'sand', 'bunker', 'hazard']);
 
-/** Map client approachMissLieType to a DB-safe lie_type value */
+/** Validate client approachMissLieType against DB-safe lie_type values */
 function toDbLieType(lieType: string | undefined | null): string | null {
   if (!lieType) return null;
-  if (lieType === 'bunker') return 'sand';
   return VALID_APPROACH_LIE_TYPES.has(lieType) ? lieType : null;
 }
 
@@ -579,7 +578,7 @@ type GolfEventUpdateData = {
 export async function submitGolfRoundComprehensive(
   data: GolfRoundInputComprehensive,
   existingRoundId?: string
-): Promise<ActionResult<{ roundId: string }>> {
+): Promise<ActionResult<{ roundId: string; warnings?: string[] }>> {
   try {
     // Validate input
     golfRoundComprehensiveSchema.parse(data);
@@ -782,7 +781,7 @@ export async function submitGolfRoundComprehensive(
     const approachDetailsPayload: Array<{
       hole_number: number;
       shot_number: number;
-      miss_direction: string;
+      miss_direction: string | null;
       lie_type: string | null;
       distance_from_green_yards: number | null;
     }> = [];
@@ -796,18 +795,22 @@ export async function submitGolfRoundComprehensive(
             shot_number: shot.shotNumber,
             miss_tags: shot.puttMissTags || [],
             break_direction: shot.puttBreak || null,
-            distance_feet: rawDist != null ? Math.min(rawDist, 200) : null,
+            distance_feet: rawDist != null ? Math.min(rawDist, 500) : null,
             made: shot.result === 'hole',
           });
         }
 
-        if ((shot.shotType === 'approach' || shot.shotType === 'around_green') &&
-            shot.approachMissDirection &&
+        // Include tee shots on par-3s as approach shots (they ARE the approach)
+        const isApproachShot = shot.shotType === 'approach' ||
+          shot.shotType === 'around_green' ||
+          (shot.shotType === 'tee' && hole.par === 3);
+
+        if (isApproachShot &&
             shot.result !== 'green' && shot.result !== 'hole') {
           approachDetailsPayload.push({
             hole_number: hole.holeNumber,
             shot_number: shot.shotNumber,
-            miss_direction: shot.approachMissDirection,
+            miss_direction: shot.approachMissDirection || null,
             lie_type: toDbLieType(shot.approachMissLieType),
             distance_from_green_yards: shot.distanceToHoleAfter != null
               ? (shot.distanceUnitAfter === 'feet'
@@ -820,6 +823,7 @@ export async function submitGolfRoundComprehensive(
     }
 
     let round: { id: string };
+    let detailWarnings: string[] | undefined;
 
     if (existingRoundId) {
       // Use atomic RPC — wraps entire submit in a single transaction
@@ -882,6 +886,7 @@ export async function submitGolfRoundComprehensive(
 
       // Log warnings from resilient detail inserts (round saved successfully)
       if (rpcResult?.warnings?.length > 0) {
+        detailWarnings = rpcResult.warnings as string[];
         await logServerError(
           `Round submitted with ${rpcResult.warnings.length} detail warning(s)`,
           {
@@ -985,6 +990,7 @@ export async function submitGolfRoundComprehensive(
 
       // Log warnings from resilient detail inserts (round saved successfully)
       if (rpcResult?.warnings?.length > 0) {
+        detailWarnings = rpcResult.warnings as string[];
         await logServerError(
           `Round submitted with ${rpcResult.warnings.length} detail warning(s)`,
           {
@@ -1053,7 +1059,7 @@ export async function submitGolfRoundComprehensive(
       holesPlayed: data.holes.length,
     }).catch(() => {});
 
-    return { success: true, data: { roundId: round.id } };
+    return { success: true, data: { roundId: round.id, warnings: detailWarnings } };
 
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -2547,7 +2553,7 @@ export interface PartialRoundData {
 export async function savePartialRound(
   data: PartialRoundData,
   existingRoundId?: string
-): Promise<ActionResult<{ roundId: string; updatedAt?: string }>> {
+): Promise<ActionResult<{ roundId: string; updatedAt?: string; warnings?: string[] }>> {
   try {
     // Validate input with Zod
     const validated = partialRoundSchema.safeParse(data);
@@ -2710,7 +2716,7 @@ export async function savePartialRound(
     const approachDetailsPayload: Array<{
       hole_number: number;
       shot_number: number;
-      miss_direction: string;
+      miss_direction: string | null;
       lie_type: string | null;
       distance_from_green_yards: number | null;
     }> = [];
@@ -2724,18 +2730,23 @@ export async function savePartialRound(
             shot_number: shot.shotNumber,
             miss_tags: shot.puttMissTags || [],
             break_direction: shot.puttBreak || null,
-            distance_feet: rawDist != null ? Math.min(rawDist, 200) : null,
+            distance_feet: rawDist != null ? Math.min(rawDist, 500) : null,
             made: shot.result === 'hole',
           });
         }
 
-        if ((shot.shotType === 'approach' || shot.shotType === 'around_green') &&
-            shot.approachMissDirection &&
+        // Include tee shots on par-3s as approach shots (they ARE the approach)
+        const holeData = completedHolesByNumber.get(holeNumber);
+        const isApproachShot = shot.shotType === 'approach' ||
+          shot.shotType === 'around_green' ||
+          (shot.shotType === 'tee' && holeData?.par === 3);
+
+        if (isApproachShot &&
             shot.result !== 'green' && shot.result !== 'hole') {
           approachDetailsPayload.push({
             hole_number: holeNumber,
             shot_number: shot.shotNumber,
-            miss_direction: shot.approachMissDirection,
+            miss_direction: shot.approachMissDirection || null,
             lie_type: toDbLieType(shot.approachMissLieType),
             distance_from_green_yards: shot.distanceToHoleAfter != null
               ? (shot.distanceUnitAfter === 'feet'
@@ -2800,16 +2811,19 @@ export async function savePartialRound(
       }
 
       // Log warnings from resilient detail inserts (round saved successfully)
-      if (rpcResult?.warnings?.length > 0) {
+      const partialWarnings = rpcResult?.warnings?.length > 0
+        ? (rpcResult.warnings as string[])
+        : undefined;
+      if (partialWarnings) {
         await logServerError(
-          `Partial round saved with ${rpcResult.warnings.length} detail warning(s)`,
+          `Partial round saved with ${partialWarnings.length} detail warning(s)`,
           {
             action: 'savePartialRound',
             roundId: existingRoundId,
             playerId: player.id,
             userId: user.id,
             userEmail: user.email,
-            extra: { warnings: rpcResult.warnings, courseName: data.courseName },
+            extra: { warnings: partialWarnings, courseName: data.courseName },
           },
           'warning'
         );
@@ -2824,7 +2838,7 @@ export async function savePartialRound(
         updateTag(CACHE_TAGS.DASHBOARD);
         updateTag(CACHE_TAGS.ROUNDS);
         updateTag(CACHE_TAGS.STATS);
-        return { success: true, data: { roundId, updatedAt: rpcUpdatedAt } };
+        return { success: true, data: { roundId, updatedAt: rpcUpdatedAt, warnings: partialWarnings } };
       }
     } else {
       // Check for existing in_progress round to avoid creating duplicates
@@ -4054,7 +4068,7 @@ export async function updateShot(
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const sb = supabase as any;
-        const clampedDist = data.putt_distance_feet != null ? Math.min(data.putt_distance_feet, 200) : null;
+        const clampedDist = data.putt_distance_feet != null ? Math.min(data.putt_distance_feet, 500) : null;
         if (data.putt_miss_tags && data.putt_miss_tags.length > 0) {
           await sb.from('putt_details').upsert({
             shot_id: shotId,

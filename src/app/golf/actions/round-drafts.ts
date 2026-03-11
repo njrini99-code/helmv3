@@ -373,3 +373,111 @@ export async function clearRoundDraft(roundId: string): Promise<ActionResult<voi
   }
 }
 
+// ============================================================================
+// CLEANUP ORPHANED DRAFTS
+// ============================================================================
+
+/**
+ * Delete draft rounds (status='in_progress') older than 24 hours for the current player.
+ * Called automatically when starting a new round to prevent orphaned drafts from accumulating.
+ * Returns the number of deleted drafts.
+ */
+export async function cleanupOrphanedDrafts(): Promise<ActionResult<{ deletedCount: number }>> {
+  try {
+    const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'You must be signed in' };
+    }
+
+    const { data: player } = await supabase
+      .from('golf_players')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!player) {
+      return { success: false, error: 'Player profile not found' };
+    }
+
+    // Calculate 24 hours ago
+    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+    // Delete orphaned drafts older than 24 hours
+    const { data: deleted, error } = await supabase
+      .from('golf_rounds')
+      .delete()
+      .eq('player_id', player.id)
+      .eq('status', 'in_progress')
+      .lt('updated_at', cutoff)
+      .select('id');
+
+    if (error) {
+      console.error('cleanupOrphanedDrafts error:', error);
+      return { success: false, error: 'Failed to clean up old drafts' };
+    }
+
+    return { success: true, data: { deletedCount: deleted?.length ?? 0 } };
+  } catch (error) {
+    console.error('cleanupOrphanedDrafts error:', error);
+    return { success: false, error: 'Failed to clean up old drafts' };
+  }
+}
+
+// ============================================================================
+// CHECK ROUND STALENESS (Multi-Device Conflict Detection)
+// ============================================================================
+
+/**
+ * Check if a round has been modified since the client last fetched it.
+ * Used before final submission to detect multi-device conflicts.
+ * Returns the current updated_at from the DB so the client can compare.
+ */
+export async function checkRoundStaleness(
+  roundId: string,
+  expectedUpdatedAt: string
+): Promise<ActionResult<{ isStale: boolean; currentUpdatedAt: string | null }>> {
+  try {
+    if (!isValidUuid(roundId)) {
+      return { success: false, error: 'Invalid round ID format' };
+    }
+
+    const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'You must be signed in' };
+    }
+
+    const { data: player } = await supabase
+      .from('golf_players')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!player) {
+      return { success: false, error: 'Player profile not found' };
+    }
+
+    const { data: round, error } = await supabase
+      .from('golf_rounds')
+      .select('updated_at')
+      .eq('id', roundId)
+      .eq('player_id', player.id)
+      .single();
+
+    if (error || !round) {
+      return { success: false, error: 'Round not found' };
+    }
+
+    const currentUpdatedAt = round.updated_at;
+    const isStale = currentUpdatedAt !== expectedUpdatedAt;
+
+    return { success: true, data: { isStale, currentUpdatedAt } };
+  } catch (error) {
+    console.error('checkRoundStaleness error:', error);
+    return { success: false, error: 'Failed to check round status' };
+  }
+}
+

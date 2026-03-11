@@ -3,6 +3,7 @@ import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import NewRoundClient from './new-round-client';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
+import { cleanupOrphanedDrafts } from '@/app/golf/actions/round-drafts';
 
 export default async function NewRoundPage() {
   const session = await getGolfSessionProfile();
@@ -12,6 +13,9 @@ export default async function NewRoundPage() {
   if (!player) redirect('/golf/dashboard?message=Only players can submit rounds');
 
   const supabase = await createClient();
+
+  // Clean up orphaned drafts (older than 24h) before showing the new round UI
+  void cleanupOrphanedDrafts();
 
   // Check for in-progress rounds so we can prompt the player to resume
   // Show ANY in_progress round (including setup-only drafts without shots)

@@ -86,7 +86,7 @@ export function useEditShotModal({
       const isPuttingShot = editingShot.shotType === 'putting';
       const isApproachType = editingShot.shotType === 'approach' || editingShot.shotType === 'around_green';
       const puttDistanceFeet = isPuttingShot
-        ? (editFormData.distanceUnitBefore === 'yards' ? parsedBefore * 3 : parsedBefore)
+        ? Math.min(500, Math.max(0, editFormData.distanceUnitBefore === 'yards' ? parsedBefore * 3 : parsedBefore))
         : undefined;
 
       const updatedShot: ShotRecord = {
