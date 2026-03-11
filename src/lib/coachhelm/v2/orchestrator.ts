@@ -38,6 +38,45 @@ import type {
   ReasoningResult,
 } from './types';
 
+interface RoundReviewShotRow {
+  hole_number: number;
+  shot_number: number;
+  shot_type: string | null;
+  distance_to_hole_before: number | null;
+  distance_to_hole_after: number | null;
+  distance_unit_before: string | null;
+  distance_unit_after: string | null;
+  lie_before: string | null;
+  lie_after: string | null;
+  result: string | null;
+  miss_direction: string | null;
+}
+
+interface RoundReviewHoleRow {
+  hole_number: number;
+  par: number | null;
+  score: number | null;
+  gir: boolean | null;
+  up_and_down: boolean | null;
+  fairway_hit: boolean | null;
+  penalty_strokes: number | null;
+}
+
+interface RoundSpecificBracketStats {
+  label: string;
+  sampleSize: number;
+  severeCount: number;
+  severeRate: number;
+  avgAfterYards: number;
+}
+
+const ROUND_REVIEW_APPROACH_BRACKETS = [
+  { label: '50-100 yards', min: 50, max: 100 },
+  { label: '100-150 yards', min: 100, max: 150 },
+  { label: '150-200 yards', min: 150, max: 200 },
+  { label: '200+ yards', min: 200, max: Number.POSITIVE_INFINITY },
+];
+
 /**
  * Main CoachHelm Intelligence class that orchestrates all V2 components
  */
@@ -221,7 +260,7 @@ class CoachHelmIntelligence {
     const shotStateAnalysis = (await new ShotStateIntelligence(playerId).analyze()) ?? undefined;
     const stats = await this.fetchPlayerStats(playerId);
 
-    const prioritizedInsights = this.prioritizeInsights(await this.generateInsights(
+    const playerLevelInsights = this.prioritizeInsights(await this.generateInsights(
       playerId,
       features,
       patterns,
@@ -232,6 +271,11 @@ class CoachHelmIntelligence {
       lieAnalysis,
       shotStateAnalysis
     ));
+    const roundSpecificInsights = await this.buildRoundSpecificInsights(roundId);
+    const prioritizedInsights = this.mergeRoundSpecificInsights(
+      roundSpecificInsights,
+      playerLevelInsights
+    );
 
     const primaryReviewInsight = prioritizedInsights[0];
 
@@ -744,6 +788,256 @@ class CoachHelmIntelligence {
     }
 
     return summaryParts.join(' ');
+  }
+
+  private async buildRoundSpecificInsights(roundId: string): Promise<ComposedInsight[]> {
+    const supabase = await createClient();
+
+    const [{ data: shots }, { data: holes }] = await Promise.all([
+      supabase
+        .from('golf_shots')
+        .select('hole_number, shot_number, shot_type, distance_to_hole_before, distance_to_hole_after, distance_unit_before, distance_unit_after, lie_before, lie_after, result, miss_direction')
+        .eq('round_id', roundId)
+        .order('hole_number', { ascending: true })
+        .order('shot_number', { ascending: true }),
+      supabase
+        .from('golf_holes')
+        .select('hole_number, par, score, gir, up_and_down, fairway_hit, penalty_strokes')
+        .eq('round_id', roundId)
+        .order('hole_number', { ascending: true }),
+    ]);
+
+    const roundShots = (shots ?? []) as RoundReviewShotRow[];
+    const roundHoles = (holes ?? []) as RoundReviewHoleRow[];
+
+    if (roundShots.length === 0 && roundHoles.length === 0) {
+      return [];
+    }
+
+    const insights: ComposedInsight[] = [];
+
+    const severeApproachInsight = this.buildRoundSevereApproachInsight(roundShots);
+    if (severeApproachInsight) insights.push(severeApproachInsight);
+
+    const liePenaltyInsight = this.buildRoundLiePenaltyInsight(roundShots);
+    if (liePenaltyInsight) insights.push(liePenaltyInsight);
+
+    const teeMissInsight = this.buildRoundTeeMissInsight(roundShots);
+    if (teeMissInsight) insights.push(teeMissInsight);
+
+    const scrambleInsight = this.buildRoundScrambleInsight(roundHoles);
+    if (scrambleInsight) insights.push(scrambleInsight);
+
+    return insights.sort((a, b) => (b.strokeImpact ?? 0) - (a.strokeImpact ?? 0));
+  }
+
+  private mergeRoundSpecificInsights(
+    roundSpecificInsights: ComposedInsight[],
+    playerLevelInsights: ComposedInsight[]
+  ): ComposedInsight[] {
+    const merged: ComposedInsight[] = [];
+    const seen = new Set<string>();
+
+    for (const insight of [...roundSpecificInsights, ...playerLevelInsights]) {
+      const key = `${insight.headline}|${insight.body}`.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      merged.push(insight);
+    }
+
+    return merged;
+  }
+
+  private buildRoundSevereApproachInsight(shots: RoundReviewShotRow[]): ComposedInsight | null {
+    const missedApproaches = shots.filter((shot) => {
+      if (shot.shot_type !== 'approach' || shot.distance_to_hole_before == null) return false;
+      return shot.result !== 'green' && shot.result !== 'hole' && shot.lie_after !== 'green';
+    });
+
+    if (missedApproaches.length < 2) return null;
+
+    const bracketStats = ROUND_REVIEW_APPROACH_BRACKETS.map((bracket): RoundSpecificBracketStats | null => {
+      const inBracket = missedApproaches.filter((shot) => {
+        const beforeYards = this.toRoundReviewYards(shot.distance_to_hole_before, shot.distance_unit_before);
+        return beforeYards != null && beforeYards >= bracket.min && beforeYards < bracket.max;
+      });
+
+      if (inBracket.length < 2) return null;
+
+      const severeShots = inBracket.filter((shot) => this.isSevereRoundApproachMiss(shot));
+      const afterYards = inBracket
+        .map((shot) => this.toRoundReviewYards(shot.distance_to_hole_after, shot.distance_unit_after))
+        .filter((value): value is number => value != null);
+
+      return {
+        label: bracket.label,
+        sampleSize: inBracket.length,
+        severeCount: severeShots.length,
+        severeRate: severeShots.length / inBracket.length,
+        avgAfterYards: afterYards.length > 0
+          ? afterYards.reduce((sum, value) => sum + value, 0) / afterYards.length
+          : 0,
+      };
+    }).filter((item): item is RoundSpecificBracketStats => item != null);
+
+    const topBracket = bracketStats
+      .filter((item) => item.severeRate >= 0.5)
+      .sort((a, b) => {
+        const byRate = b.severeRate - a.severeRate;
+        if (Math.abs(byRate) > 0.001) return byRate;
+        return b.sampleSize - a.sampleSize;
+      })[0];
+
+    if (!topBracket) return null;
+
+    const severePct = Math.round(topBracket.severeRate * 100);
+
+    return {
+      headline: `Round Approach Check: ${topBracket.label} produced the biggest misses`,
+      body: `${topBracket.severeCount} of ${topBracket.sampleSize} missed approaches from ${topBracket.label} finished more than 25 yards away or in a penalty state in this round.`,
+      callToAction: severePct >= 75
+        ? 'Play to the safe side of the target and favor solid contact over chasing a perfect shot from this yardage.'
+        : 'Keep the target wider from this yardage window and prioritize finishing inside a playable leave.',
+      tone: severePct >= 75 ? 'urgent' : 'cautionary',
+      confidence: Math.min(0.9, 0.55 + topBracket.sampleSize * 0.08),
+      strokeImpact: Number((topBracket.severeRate * Math.max(1, topBracket.sampleSize / 2)).toFixed(1)),
+      evidenceMetrics: [
+        { label: 'Yardage window', value: topBracket.label },
+        { label: 'Severe misses', value: `${topBracket.severeCount}/${topBracket.sampleSize}` },
+        { label: 'Severe miss rate', value: `${severePct}%` },
+        { label: 'Average leave', value: `${Math.round(topBracket.avgAfterYards)}y` },
+      ],
+    };
+  }
+
+  private buildRoundLiePenaltyInsight(shots: RoundReviewShotRow[]): ComposedInsight | null {
+    const approachShots = shots.filter((shot) => shot.shot_type === 'approach');
+    if (approachShots.length < 4) return null;
+
+    let bestInsight: ComposedInsight | null = null;
+    let bestGap = 0;
+
+    for (const bracket of ROUND_REVIEW_APPROACH_BRACKETS) {
+      const fairwayShots = approachShots.filter((shot) => {
+        const beforeYards = this.toRoundReviewYards(shot.distance_to_hole_before, shot.distance_unit_before);
+        return beforeYards != null
+          && beforeYards >= bracket.min
+          && beforeYards < bracket.max
+          && shot.lie_before === 'fairway'
+          && shot.distance_to_hole_after != null;
+      });
+      const roughShots = approachShots.filter((shot) => {
+        const beforeYards = this.toRoundReviewYards(shot.distance_to_hole_before, shot.distance_unit_before);
+        return beforeYards != null
+          && beforeYards >= bracket.min
+          && beforeYards < bracket.max
+          && shot.lie_before === 'rough'
+          && shot.distance_to_hole_after != null;
+      });
+
+      if (fairwayShots.length < 2 || roughShots.length < 2) continue;
+
+      const fairwayAvg = this.averageRoundReviewAfterYards(fairwayShots);
+      const roughAvg = this.averageRoundReviewAfterYards(roughShots);
+      if (fairwayAvg == null || roughAvg == null) continue;
+
+      const gap = roughAvg - fairwayAvg;
+      if (gap <= 6 || gap <= bestGap) continue;
+
+      bestGap = gap;
+      bestInsight = {
+        headline: `Round Lie Penalty: rough from ${bracket.label} cost you the next shot`,
+        body: `From ${bracket.label}, fairway approaches finished ${Math.round(fairwayAvg)} yards away on average versus ${Math.round(roughAvg)} yards from rough in this round.`,
+        callToAction: 'When you miss the fairway into this yardage window, shift to a safer target and protect against the expensive leave.',
+        tone: gap >= 12 ? 'urgent' : 'cautionary',
+        confidence: Math.min(0.88, 0.55 + (fairwayShots.length + roughShots.length) * 0.05),
+        strokeImpact: Number((Math.max(0.8, gap / 10)).toFixed(1)),
+        evidenceMetrics: [
+          { label: 'Window', value: bracket.label },
+          { label: 'Fairway leave', value: `${Math.round(fairwayAvg)}y` },
+          { label: 'Rough leave', value: `${Math.round(roughAvg)}y` },
+          { label: 'Gap', value: `${Math.round(gap)}y` },
+        ],
+      };
+    }
+
+    return bestInsight;
+  }
+
+  private buildRoundTeeMissInsight(shots: RoundReviewShotRow[]): ComposedInsight | null {
+    const teeShots = shots.filter((shot) => shot.shot_type === 'tee');
+    const missedFairways = teeShots.filter((shot) => shot.lie_after && shot.lie_after !== 'fairway' && shot.lie_after !== 'green');
+
+    if (missedFairways.length < 3) return null;
+
+    const rightMisses = missedFairways.filter((shot) => {
+      const direction = shot.miss_direction ?? '';
+      return direction === 'right' || direction.endsWith('_right') || direction.startsWith('right_');
+    }).length;
+    const leftMisses = missedFairways.filter((shot) => {
+      const direction = shot.miss_direction ?? '';
+      return direction === 'left' || direction.endsWith('_left') || direction.startsWith('left_');
+    }).length;
+
+    const dominantDirection = rightMisses >= leftMisses ? 'right' : 'left';
+    const dominantCount = dominantDirection === 'right' ? rightMisses : leftMisses;
+
+    if (dominantCount / missedFairways.length < 0.75) return null;
+
+    return {
+      headline: `Round Driving Pattern: missed fairways piled up ${dominantDirection}`,
+      body: `${dominantCount} of ${missedFairways.length} missed fairways finished ${dominantDirection} in this round, which repeatedly pushed the next shot into a worse lie.`,
+      callToAction: `Start the ball a touch ${dominantDirection === 'right' ? 'left' : 'right'} of the final target and commit to the playable side.`,
+      tone: 'cautionary',
+      confidence: Math.min(0.84, 0.55 + missedFairways.length * 0.06),
+      strokeImpact: Number((missedFairways.length * 0.3).toFixed(1)),
+      evidenceMetrics: [
+        { label: 'Missed fairways', value: missedFairways.length },
+        { label: 'Dominant side', value: dominantDirection },
+        { label: 'Directional share', value: `${Math.round((dominantCount / missedFairways.length) * 100)}%` },
+      ],
+    };
+  }
+
+  private buildRoundScrambleInsight(holes: RoundReviewHoleRow[]): ComposedInsight | null {
+    const missedGreens = holes.filter((hole) => hole.gir === false);
+    if (missedGreens.length < 5) return null;
+
+    const scrambleFails = missedGreens.filter((hole) => hole.up_and_down === false && hole.score != null && hole.par != null && hole.score > hole.par);
+    if (scrambleFails.length < 4) return null;
+
+    return {
+      headline: 'Round Damage Pattern: missed greens kept turning into bogeys',
+      body: `${scrambleFails.length} of ${missedGreens.length} missed greens became bogey or worse in this round, so the scoring damage kept happening after the first miss.`,
+      callToAction: 'Treat the first recovery shot as a scoring save: leave uphill, favor center green, and remove the big miss after the miss.',
+      tone: 'cautionary',
+      confidence: Math.min(0.86, 0.55 + missedGreens.length * 0.04),
+      strokeImpact: Number(((scrambleFails.length / missedGreens.length) * 2).toFixed(1)),
+      evidenceMetrics: [
+        { label: 'Missed greens', value: missedGreens.length },
+        { label: 'Bogeys after miss', value: scrambleFails.length },
+        { label: 'Failure rate', value: `${Math.round((scrambleFails.length / missedGreens.length) * 100)}%` },
+      ],
+    };
+  }
+
+  private toRoundReviewYards(distance: number | null, unit: string | null): number | null {
+    if (distance == null) return null;
+    return unit === 'feet' ? distance / 3 : distance;
+  }
+
+  private isSevereRoundApproachMiss(shot: RoundReviewShotRow): boolean {
+    const afterYards = this.toRoundReviewYards(shot.distance_to_hole_after, shot.distance_unit_after);
+    return shot.lie_after === 'penalty' || (afterYards != null && afterYards > 25);
+  }
+
+  private averageRoundReviewAfterYards(shots: RoundReviewShotRow[]): number | null {
+    const values = shots
+      .map((shot) => this.toRoundReviewYards(shot.distance_to_hole_after, shot.distance_unit_after))
+      .filter((value): value is number => value != null);
+
+    if (values.length === 0) return null;
+    return values.reduce((sum, value) => sum + value, 0) / values.length;
   }
 
   private formatScoreToPar(value: number): string {
