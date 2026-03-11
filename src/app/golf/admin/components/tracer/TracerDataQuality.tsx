@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
   ArrowUpDown,
@@ -341,7 +342,23 @@ export function TracerDataQuality({
     if (!onFixIssue) return noOp;
     setFixingIssues(prev => new Set(prev).add(issue.id));
     try {
-      return await onFixIssue(issue);
+      const result = await onFixIssue(issue);
+      if (result.success) {
+        toast.success(result.message);
+      } else {
+        toast.error(result.message);
+      }
+      return result;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Fix failed';
+      toast.error(message);
+      return {
+        success: false,
+        fix_type: issue.fix_type || '',
+        round_id: issue.round_id,
+        player_id: issue.player_id,
+        message,
+      };
     } finally {
       setFixingIssues(prev => {
         const next = new Set(prev);

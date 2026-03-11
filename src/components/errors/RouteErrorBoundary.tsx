@@ -64,6 +64,11 @@ function isTransientError(error: Error): boolean {
   );
 }
 
+function isGenericLoadFailure(error: Error): boolean {
+  const msg = error.message?.toLowerCase() || '';
+  return msg === 'load failed' || msg === 'failed to fetch';
+}
+
 /**
  * Reusable Route Error Boundary Component
  *
@@ -111,6 +116,7 @@ export function RouteErrorBoundary({
   const isChunk = isChunkLoadError(error);
   const isStaleAction = isStaleActionError(error);
   const isTransient = isTransientError(error);
+  const isGenericLoad = isGenericLoadFailure(error);
 
   // For chunk load or stale server action errors, a full page reload is the only real fix
   useEffect(() => {
@@ -142,8 +148,27 @@ export function RouteErrorBoundary({
       component: component || route,
       route,
       digest: error.digest,
+      boundary: 'route',
+      errorKind: isChunk
+        ? 'chunk-load'
+        : isStaleAction
+          ? 'stale-server-action'
+          : isTransient
+            ? 'transient-network'
+            : isGenericLoad
+              ? 'generic-load-failure'
+              : 'unknown-route-error',
+      isChunkLoadError: isChunk,
+      isStaleActionError: isStaleAction,
+      isTransientError: isTransient,
+      isGenericLoadFailure: isGenericLoad,
+      retryCount,
+      sessionReloadFlags: {
+        chunkErrorReloaded: typeof window !== 'undefined' ? sessionStorage.getItem('chunk-error-reload') : null,
+        staleActionReloaded: typeof window !== 'undefined' ? sessionStorage.getItem('stale-action-reload') : null,
+      },
     }, 'high');
-  }, [error, route, component]);
+  }, [error, route, component, isChunk, isStaleAction, isTransient, isGenericLoad, retryCount]);
 
   // Auto-retry once for transient errors
   useEffect(() => {
@@ -163,6 +188,9 @@ export function RouteErrorBoundary({
     }
     if (isTransient) {
       return 'Our servers are temporarily busy. This usually resolves quickly.';
+    }
+    if (isGenericLoad) {
+      return 'Your browser could not load this page data. Please try again or refresh the page.';
     }
     return error.message || 'An unexpected error occurred. Please try refreshing the page.';
   };

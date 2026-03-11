@@ -6,3 +6,4 @@ export { ScramblingStats } from './ScramblingStats';
 export { StrokesGainedStats } from './StrokesGainedStats';
 export { OverviewStats } from './OverviewStats';
 export { AnalysisStats } from './AnalysisStats';
+export { DispersionStats } from './DispersionStats';

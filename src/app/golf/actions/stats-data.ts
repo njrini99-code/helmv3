@@ -27,6 +27,13 @@ import type {
   CourseBreakdownResponse,
   HoleAnalysis,
   WorstHoleResponse,
+  SprayChartPoint,
+  SprayChartResponse,
+  SprayChartSector,
+  SprayChartShotFamily,
+  SprayChartShotGroup,
+  SprayChartSummaryBand,
+  SprayChartOutcomeBucket,
 } from './stats-data-types';
 
 
@@ -107,6 +114,36 @@ type DetailedStatsRoundRow = {
   total_gir?: number | null;
   total_gir_possible?: number | null;
   total_putts?: number | null;
+};
+
+type SprayChartShotRow = {
+  id: string;
+  round_id: string;
+  hole_id: string | null;
+  hole_number: number;
+  shot_number: number;
+  shot_type: string | null;
+  club_type: string | null;
+  lie_before: string | null;
+  lie_after: string | null;
+  distance_to_hole_before: number | null;
+  distance_unit_before: string | null;
+  result: string | null;
+  distance_to_hole_after: number | null;
+  distance_unit_after: string | null;
+  shot_distance: number | null;
+  miss_direction: string | null;
+  is_penalty: boolean | null;
+  penalty_type: string | null;
+  approach_miss_details: {
+    miss_direction: string | null;
+    lie_type: string | null;
+    distance_from_green_yards: number | null;
+  } | Array<{
+    miss_direction: string | null;
+    lie_type: string | null;
+    distance_from_green_yards: number | null;
+  }> | null;
 };
 
 // ============================================================================
@@ -252,7 +289,8 @@ function buildFallbackDetailedStats(roundsData: DetailedStatsRoundRow[]): GolfSt
     if (!normalizedType) continue;
 
     const holesPlayed = round.holes_played ?? 18;
-    const normalizedScore = Math.round(round.total_score * (18 / holesPlayed) * 100) / 100;
+    if (holesPlayed !== 18) continue;
+    const normalizedScore = Math.round(round.total_score * 100) / 100;
 
     if (normalizedType === 'practice') roundTypeBuckets.practice.push(normalizedScore);
     if (normalizedType === 'qualifier') roundTypeBuckets.qualifier.push(normalizedScore);
@@ -315,6 +353,214 @@ function buildFallbackDetailedStats(roundsData: DetailedStatsRoundRow[]): GolfSt
     : null;
 
   return fallback;
+}
+
+const SPRAY_SECTOR_ORDER: SprayChartSector[] = [
+  'long_left',
+  'long',
+  'long_right',
+  'left',
+  'center',
+  'right',
+  'short_left',
+  'short',
+  'short_right',
+];
+
+const SPRAY_SECTOR_LABELS: Record<SprayChartSector, string> = {
+  center: 'Center',
+  left: 'Left',
+  right: 'Right',
+  short: 'Short',
+  long: 'Long',
+  short_left: 'Short Left',
+  short_right: 'Short Right',
+  long_left: 'Long Left',
+  long_right: 'Long Right',
+};
+
+const SPRAY_VECTOR_MAP: Record<SprayChartSector, { x: number; y: number }> = {
+  center: { x: 0, y: 0 },
+  left: { x: -1, y: 0 },
+  right: { x: 1, y: 0 },
+  short: { x: 0, y: -1 },
+  long: { x: 0, y: 1 },
+  short_left: { x: -0.72, y: -0.72 },
+  short_right: { x: 0.72, y: -0.72 },
+  long_left: { x: -0.72, y: 0.72 },
+  long_right: { x: 0.72, y: 0.72 },
+};
+
+function normalizeDistanceToYards(value: number | null, unit: string | null | undefined): number | null {
+  if (value === null || Number.isNaN(value)) return null;
+  return unit === 'feet' ? Math.round((value / 3) * 10) / 10 : value;
+}
+
+function roundStat(value: number | null): number | null {
+  if (value === null || Number.isNaN(value)) return null;
+  return Math.round(value * 10) / 10;
+}
+
+function normalizeSpraySector(
+  rawDirection: string | null | undefined,
+  fallback: {
+    result?: string | null;
+    lieAfter?: string | null;
+    isPenalty?: boolean | null;
+  }
+): SprayChartSector {
+  const direction = rawDirection?.trim().toLowerCase().replace(/\s+/g, '_');
+
+  if (direction === 'center' || direction === 'middle') return 'center';
+  if (direction === 'left') return 'left';
+  if (direction === 'right') return 'right';
+  if (direction === 'short') return 'short';
+  if (direction === 'long') return 'long';
+  if (direction === 'short_left' || direction === 'left_short') return 'short_left';
+  if (direction === 'short_right' || direction === 'right_short') return 'short_right';
+  if (direction === 'long_left' || direction === 'left_long') return 'long_left';
+  if (direction === 'long_right' || direction === 'right_long') return 'long_right';
+
+  if (fallback.isPenalty || fallback.result === 'penalty') {
+    return 'center';
+  }
+
+  if (fallback.result === 'fairway' || fallback.result === 'green' || fallback.result === 'hole' || fallback.lieAfter === 'fairway' || fallback.lieAfter === 'green') {
+    return 'center';
+  }
+
+  return 'center';
+}
+
+function getSprayOutcomeBucket(input: {
+  isPenalty?: boolean | null;
+  result?: string | null;
+  lieAfter?: string | null;
+  approachLieType?: string | null;
+}): SprayChartOutcomeBucket {
+  if (input.isPenalty || input.result === 'penalty') {
+    return 'penalty';
+  }
+
+  const finishLie = input.approachLieType ?? input.lieAfter;
+  if (finishLie === 'rough' || finishLie === 'sand' || finishLie === 'bunker' || input.result === 'rough' || input.result === 'sand') {
+    return 'trouble';
+  }
+
+  return 'playable';
+}
+
+function buildDrivingCoordinates(sector: SprayChartSector, forwardDistance: number | null): { x: number; y: number } {
+  const vector = SPRAY_VECTOR_MAP[sector];
+  if (!vector || forwardDistance === null) {
+    return { x: 0, y: 0 };
+  }
+
+  const lateralMagnitude = Math.max(10, Math.min(forwardDistance * 0.22, 75));
+  const forwardFactor = sector.startsWith('short') ? 0.82 : sector.startsWith('long') ? 1.05 : 1;
+
+  return {
+    x: roundStat(vector.x * lateralMagnitude) ?? 0,
+    y: roundStat(forwardDistance * forwardFactor) ?? 0,
+  };
+}
+
+function buildApproachCoordinates(
+  sector: SprayChartSector,
+  remainingDistance: number | null
+): { x: number; y: number } {
+  const vector = SPRAY_VECTOR_MAP[sector];
+  if (!vector || remainingDistance === null) {
+    return { x: 0, y: 0 };
+  }
+
+  const magnitude = Math.max(3, Math.min(remainingDistance, 60));
+  return {
+    x: roundStat(vector.x * magnitude) ?? 0,
+    y: roundStat(vector.y * magnitude) ?? 0,
+  };
+}
+
+function formatSprayTooltip(point: {
+  family: SprayChartShotFamily;
+  holeNumber: number;
+  shotNumber: number;
+  sector: SprayChartSector;
+  outcomeBucket: SprayChartOutcomeBucket;
+  shotDistance: number | null;
+  distanceBefore: number | null;
+  distanceAfter: number | null;
+}): string {
+  const segments = [
+    `Hole ${point.holeNumber}, Shot ${point.shotNumber}`,
+    `${point.family === 'driving' ? 'Tee' : 'Approach'}: ${SPRAY_SECTOR_LABELS[point.sector]}`,
+  ];
+
+  if (point.distanceBefore !== null) {
+    segments.push(`Before: ${Math.round(point.distanceBefore)}y`);
+  }
+  if (point.shotDistance !== null) {
+    segments.push(`Shot: ${Math.round(point.shotDistance)}y`);
+  }
+  if (point.distanceAfter !== null) {
+    segments.push(`Remaining: ${Math.round(point.distanceAfter)}y`);
+  }
+
+  segments.push(
+    point.outcomeBucket === 'penalty'
+      ? 'Penalty / severe'
+      : point.outcomeBucket === 'trouble'
+        ? 'Rough / sand'
+        : 'Playable'
+  );
+
+  return segments.join(' • ');
+}
+
+function buildSprayChartGroup(
+  family: SprayChartShotFamily,
+  points: SprayChartPoint[],
+  totalShots: number
+): SprayChartShotGroup {
+  const summaryBands: SprayChartSummaryBand[] = SPRAY_SECTOR_ORDER.map((sector) => {
+    const sectorPoints = points.filter((point) => point.sector === sector);
+    const avgForward = sectorPoints.length > 0
+      ? sectorPoints.reduce((sum, point) => sum + (point.shotDistance ?? 0), 0) / sectorPoints.filter((point) => point.shotDistance !== null).length
+      : null;
+    const avgRemaining = sectorPoints.length > 0
+      ? sectorPoints.reduce((sum, point) => sum + (point.distanceAfter ?? 0), 0) / sectorPoints.filter((point) => point.distanceAfter !== null).length
+      : null;
+
+    return {
+      sector,
+      label: SPRAY_SECTOR_LABELS[sector],
+      count: sectorPoints.length,
+      percentage: points.length > 0 ? Math.round((sectorPoints.length / points.length) * 1000) / 10 : 0,
+      avgForwardDistance: roundStat(Number.isFinite(avgForward ?? NaN) ? avgForward : null),
+      avgRemainingDistance: roundStat(Number.isFinite(avgRemaining ?? NaN) ? avgRemaining : null),
+    };
+  });
+
+  const dominantSector = summaryBands
+    .filter((band) => band.count > 0)
+    .sort((a, b) => b.count - a.count)[0]?.sector ?? null;
+
+  const forwardValues = points.map((point) => point.shotDistance).filter((value): value is number => value !== null);
+  const remainingValues = points.map((point) => point.distanceAfter).filter((value): value is number => value !== null);
+
+  return {
+    family,
+    totalShots,
+    plottedShots: points.length,
+    averageForwardDistance: forwardValues.length > 0 ? roundStat(forwardValues.reduce((sum, value) => sum + value, 0) / forwardValues.length) : null,
+    averageRemainingDistance: remainingValues.length > 0 ? roundStat(remainingValues.reduce((sum, value) => sum + value, 0) / remainingValues.length) : null,
+    playableCount: points.filter((point) => point.outcomeBucket === 'playable').length,
+    troubleCount: points.filter((point) => point.outcomeBucket === 'trouble').length,
+    penaltyCount: points.filter((point) => point.outcomeBucket === 'penalty').length,
+    dominantSector,
+    points,
+    summaryBands,
+  };
 }
 
 // ============================================================================
@@ -591,7 +837,7 @@ export async function getDetailedStats(
     const [{ data: holesData, error: holesError }, { data: shotsData, error: shotsError }] = await Promise.all([
       supabase
         .from('golf_holes')
-        .select('id, round_id, hole_number, par, yardage')
+        .select('id, round_id, hole_number, par, yardage, score, putts, fairway_hit, gir')
         .in('round_id', roundIds),
       supabase
         .from('golf_shots')
@@ -652,6 +898,10 @@ export async function getDetailedStats(
       hole_number: h.hole_number,
       par: h.par,
       yardage: h.yardage ?? null,
+      score: h.score ?? null,
+      putts: h.putts ?? null,
+      fairway_hit: h.fairway_hit ?? null,
+      gir: h.gir ?? null,
     }));
 
     // Map all shots - don't filter out shots with missing distances as they're still
@@ -713,6 +963,255 @@ export async function getDetailedStats(
   } catch (outerError) {
     console.error('[Stats] getDetailedStats failed:', outerError instanceof Error ? outerError.message : outerError);
     return serializeDetailedStats(calculateStatsFromShots([], [], []));
+  }
+}
+
+export async function getSprayChartData(
+  playerId: string,
+  roundId?: string | 'overall',
+  filter?: StatsFilter
+): Promise<SprayChartResponse> {
+  const emptyGroup = (family: SprayChartShotFamily): SprayChartShotGroup => ({
+    family,
+    totalShots: 0,
+    plottedShots: 0,
+    averageForwardDistance: null,
+    averageRemainingDistance: null,
+    playableCount: 0,
+    troubleCount: 0,
+    penaltyCount: 0,
+    dominantSector: null,
+    points: [],
+    summaryBands: SPRAY_SECTOR_ORDER.map((sector) => ({
+      sector,
+      label: SPRAY_SECTOR_LABELS[sector],
+      count: 0,
+      percentage: 0,
+      avgForwardDistance: null,
+      avgRemainingDistance: null,
+    })),
+  });
+
+  const emptyResponse = (): SprayChartResponse => ({
+    driving: emptyGroup('driving'),
+    approach: emptyGroup('approach'),
+    scope: {
+      roundId: roundId ?? 'overall',
+      roundsIncluded: 0,
+      filterApplied: Boolean(filter),
+    },
+  });
+
+  try {
+    const { supabase, user } = await requireAuth();
+
+    if (!(await verifyPlayerAccess(supabase, user.id, playerId))) {
+      return emptyResponse();
+    }
+
+    const conditions = getFilterConditions(filter);
+    let query = supabase
+      .from('golf_rounds')
+      .select('id, round_date, course_name, round_type, total_score, score_to_par, holes_played')
+      .eq('player_id', playerId)
+      .eq('status', 'completed');
+
+    if (conditions.startDate) {
+      query = query.gte('round_date', conditions.startDate);
+    }
+    if (conditions.endDate) {
+      query = query.lte('round_date', conditions.endDate);
+    }
+    query = applyRoundTypeFilter(query, conditions.roundType);
+    if (conditions.courseName) {
+      query = query.eq('course_name', conditions.courseName);
+    }
+
+    query = query.order('round_date', { ascending: false });
+
+    const { data: fetchedRounds, error: roundsError } = await query;
+    if (roundsError) {
+      console.error('[Stats] Spray rounds query error:', roundsError);
+      return emptyResponse();
+    }
+
+    const roundsData = applyPresetLimit(fetchedRounds || [], filter);
+    if (roundsData.length === 0) {
+      return emptyResponse();
+    }
+
+    const roundIds = roundId && roundId !== 'overall'
+      ? [roundId]
+      : roundsData.map((round) => round.id);
+
+    const [{ data: holesData, error: holesError }, { data: shotsData, error: shotsError }] = await Promise.all([
+      supabase
+        .from('golf_holes')
+        .select('id, round_id, hole_number, par')
+        .in('round_id', roundIds),
+      supabase
+        .from('golf_shots')
+        .select(`
+          id,
+          round_id,
+          hole_id,
+          hole_number,
+          shot_number,
+          shot_type,
+          club_type,
+          lie_before,
+          lie_after,
+          distance_to_hole_before,
+          distance_unit_before,
+          result,
+          distance_to_hole_after,
+          distance_unit_after,
+          shot_distance,
+          miss_direction,
+          is_penalty,
+          penalty_type,
+          approach_miss_details(miss_direction, lie_type, distance_from_green_yards)
+        `)
+        .in('round_id', roundIds)
+        .in('shot_type', ['tee', 'approach'])
+        .order('hole_number')
+        .order('shot_number'),
+    ]);
+
+    if (holesError) throw holesError;
+    if (shotsError) throw shotsError;
+
+    const holeParByKey = new Map<string, number>();
+    for (const hole of holesData || []) {
+      holeParByKey.set(`${hole.round_id}:${hole.hole_number}`, hole.par);
+    }
+
+    const drivingPoints: SprayChartPoint[] = [];
+    const approachPoints: SprayChartPoint[] = [];
+    let drivingTotalShots = 0;
+    let approachTotalShots = 0;
+
+    for (const shot of (shotsData || []) as SprayChartShotRow[]) {
+      const holePar = holeParByKey.get(`${shot.round_id}:${shot.hole_number}`) ?? null;
+      const approachMissDetails = Array.isArray(shot.approach_miss_details)
+        ? shot.approach_miss_details[0]
+        : shot.approach_miss_details;
+      const distanceBefore = normalizeDistanceToYards(shot.distance_to_hole_before, shot.distance_unit_before);
+      const distanceAfterFromShot = normalizeDistanceToYards(shot.distance_to_hole_after, shot.distance_unit_after);
+      const shotDistance = shot.shot_distance ?? (
+        distanceBefore !== null && distanceAfterFromShot !== null
+          ? Math.max(0, roundStat(distanceBefore - distanceAfterFromShot) ?? 0)
+          : null
+      );
+
+      if (shot.shot_type === 'tee') {
+        if (holePar === 3) continue;
+        drivingTotalShots += 1;
+
+        const sector = normalizeSpraySector(shot.miss_direction, {
+          result: shot.result,
+          lieAfter: shot.lie_after,
+          isPenalty: shot.is_penalty,
+        });
+        const outcomeBucket = getSprayOutcomeBucket({
+          isPenalty: shot.is_penalty,
+          result: shot.result,
+          lieAfter: shot.lie_after,
+        });
+        const coords = buildDrivingCoordinates(sector, shotDistance);
+
+        drivingPoints.push({
+          id: shot.id,
+          roundId: shot.round_id,
+          holeNumber: shot.hole_number,
+          shotNumber: shot.shot_number,
+          family: 'driving',
+          sector,
+          x: coords.x,
+          y: coords.y,
+          outcomeBucket,
+          shotDistance,
+          distanceBefore,
+          distanceAfter: distanceAfterFromShot,
+          lieBefore: shot.lie_before,
+          lieAfter: shot.lie_after,
+          result: shot.result,
+          tooltip: formatSprayTooltip({
+            family: 'driving',
+            holeNumber: shot.hole_number,
+            shotNumber: shot.shot_number,
+            sector,
+            outcomeBucket,
+            shotDistance,
+            distanceBefore,
+            distanceAfter: distanceAfterFromShot,
+          }),
+        });
+        continue;
+      }
+
+      if (shot.shot_type !== 'approach') continue;
+      approachTotalShots += 1;
+
+      const remainingDistance = approachMissDetails?.distance_from_green_yards ?? distanceAfterFromShot;
+      const sector = normalizeSpraySector(approachMissDetails?.miss_direction ?? shot.miss_direction, {
+        result: shot.result,
+        lieAfter: shot.lie_after,
+        isPenalty: shot.is_penalty,
+      });
+      const outcomeBucket = getSprayOutcomeBucket({
+        isPenalty: shot.is_penalty,
+        result: shot.result,
+        lieAfter: shot.lie_after,
+        approachLieType: approachMissDetails?.lie_type,
+      });
+      const coords = buildApproachCoordinates(sector, remainingDistance);
+
+      approachPoints.push({
+        id: shot.id,
+        roundId: shot.round_id,
+        holeNumber: shot.hole_number,
+        shotNumber: shot.shot_number,
+        family: 'approach',
+        sector,
+        x: coords.x,
+        y: coords.y,
+        outcomeBucket,
+        shotDistance,
+        distanceBefore,
+        distanceAfter: remainingDistance,
+        lieBefore: shot.lie_before,
+        lieAfter: shot.lie_after,
+        result: shot.result,
+        tooltip: formatSprayTooltip({
+          family: 'approach',
+          holeNumber: shot.hole_number,
+          shotNumber: shot.shot_number,
+          sector,
+          outcomeBucket,
+          shotDistance,
+          distanceBefore,
+          distanceAfter: remainingDistance,
+        }),
+      });
+    }
+
+    const includedRounds = roundId && roundId !== 'overall'
+      ? roundsData.filter((round) => round.id === roundId).length
+      : roundsData.length;
+
+    return {
+      driving: buildSprayChartGroup('driving', drivingPoints, drivingTotalShots),
+      approach: buildSprayChartGroup('approach', approachPoints, approachTotalShots),
+      scope: {
+        roundId: roundId ?? 'overall',
+        roundsIncluded: includedRounds,
+        filterApplied: Boolean(filter),
+      },
+    };
+  } catch (error) {
+    console.error('[Stats] getSprayChartData failed:', error instanceof Error ? error.message : error);
+    return emptyResponse();
   }
 }
 

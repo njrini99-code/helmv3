@@ -5,12 +5,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { IconTrendingUp, IconTarget, IconFlag, IconGolf, IconAward, IconChartBar, IconCrosshair, IconFilter, IconChevronDown, IconDownload, IconPrinter, IconHome } from '@/components/icons';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { StatisticalStrengthWeakness } from '@/lib/golf/strokes-gained';
+import type { SprayChartResponse } from '@/app/golf/actions/stats-data-types';
 import ProgressStats from './ProgressStats';
 import { tabContentVariants, FormatToggle } from './sections/shared-primitives';
 import type { HoleFormat } from './sections/shared-primitives';
 import {
   ScoringStats, DrivingStats, ApproachStats, PuttingStats,
-  ScramblingStats, StrokesGainedStats, OverviewStats, AnalysisStats,
+  ScramblingStats, StrokesGainedStats, OverviewStats, AnalysisStats, DispersionStats,
 } from './sections';
 import type { CourseBreakdownResponse, WorstHoleResponse, TrendAnalysisResponse, PlayerProfile } from './sections/types';
 import { generateStatsPDF } from './exportPdf';
@@ -64,6 +65,10 @@ interface StatsDisplayProps {
   trendData?: TrendAnalysisResponse | null;
   statisticalStrengths?: StatisticalStrengthWeakness[];
   statisticalWeaknesses?: StatisticalStrengthWeakness[];
+  sprayChartData?: SprayChartResponse | null;
+  sprayChartLoading?: boolean;
+  activeCategory?: StatsCategory;
+  onCategoryChange?: (category: StatsCategory) => void;
 }
 
 // ============================================================================
@@ -90,8 +95,19 @@ export default function GolfStatsDisplay({
   activeFilter, onFilterChange, filterOptions,
   courseBreakdown, worstHoleData, trendData,
   statisticalStrengths, statisticalWeaknesses,
+  sprayChartData = null, sprayChartLoading = false,
+  activeCategory: controlledCategory,
+  onCategoryChange,
 }: StatsDisplayProps) {
-  const [activeCategory, setActiveCategory] = useState<StatsCategory>(isCoachView ? 'overview' : 'scoring');
+  const [internalCategory, setInternalCategory] = useState<StatsCategory>(isCoachView ? 'overview' : 'scoring');
+  const activeCategory = controlledCategory ?? internalCategory;
+  const handleCategoryChange = (category: StatsCategory) => {
+    if (onCategoryChange) {
+      onCategoryChange(category);
+      return;
+    }
+    setInternalCategory(category);
+  };
   const [holeFormat, setHoleFormat] = useState<HoleFormat>('all');
   const [showFilters, setShowFilters] = useState(false);
   const [showCourseDropdown, setShowCourseDropdown] = useState(false);
@@ -229,7 +245,7 @@ export default function GolfStatsDisplay({
           <GolfTabBar
             tabs={categories}
             value={activeCategory}
-            onChange={setActiveCategory}
+            onChange={handleCategoryChange}
             ariaLabel="Stats categories"
             scrollable
           />
@@ -245,7 +261,7 @@ export default function GolfStatsDisplay({
           <motion.div key={activeCategory} variants={tabContentVariants} initial="initial" animate="animate" exit="exit" transition={{ type: 'spring', stiffness: 300, damping: 30 }}>
             {activeCategory === 'overview' && <OverviewStats stats={stats} playerName={playerName} playerProfile={playerProfile} trendData={trendData} statisticalStrengths={statisticalStrengths} statisticalWeaknesses={statisticalWeaknesses} holeFormat={holeFormat} />}
             {activeCategory === 'progress' && <ProgressStats stats={stats} rounds={rounds} />}
-            {activeCategory === 'dispersion' && <div className="text-center py-8 text-warm-500">Spray charts coming soon</div>}
+            {activeCategory === 'dispersion' && <DispersionStats data={sprayChartData} loading={sprayChartLoading} />}
             {activeCategory === 'scoring' && <ScoringStats stats={stats} holeFormat={holeFormat} />}
             {activeCategory === 'driving' && <DrivingStats stats={stats} />}
             {activeCategory === 'approach' && <ApproachStats stats={stats} />}

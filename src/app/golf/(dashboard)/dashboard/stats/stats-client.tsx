@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import {
   getDetailedStats,
+  getSprayChartData,
   getFilterOptions,
   getCourseBreakdown,
   getWorstHoleAnalysis,
@@ -19,6 +20,7 @@ import type {
   CourseBreakdownResponse,
   WorstHoleResponse,
   TrendAnalysisResponse,
+  SprayChartResponse,
 } from '@/app/golf/actions/stats-data-types';
 import Image from 'next/image';
 import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
@@ -50,7 +52,7 @@ import type { HoleFormat } from '@/components/golf/stats/sections/shared-primiti
 // TYPES
 // ============================================================================
 
-type StatsCategory = 'overview' | 'scoring' | 'driving' | 'approach' | 'putting' | 'scrambling' | 'strokes-gained' | 'progress';
+type StatsCategory = 'overview' | 'scoring' | 'driving' | 'approach' | 'putting' | 'scrambling' | 'strokes-gained' | 'progress' | 'dispersion' | 'analysis';
 
 interface Player {
   id: string;
@@ -318,14 +320,16 @@ export default function StatsClient({
   // Stats state
   const [rounds, setRounds] = useState<RoundSummary[]>(initialRounds);
   const [detailedStats, setDetailedStats] = useState<GolfStats | null>(null);
+  const [sprayChartData, setSprayChartData] = useState<SprayChartResponse | null>(null);
   const [selectedRoundId, setSelectedRoundId] = useState<string | 'overall'>('overall');
 
   // Loading states — context is always available, but we still load player data
   const [loading, setLoading] = useState(!initialUserRole);
   const [loadingDetailed, setLoadingDetailed] = useState(false);
+  const [loadingSprayChart, setLoadingSprayChart] = useState(false);
   const [statsError, setStatsError] = useState<string | null>(null);
    
-  const [activeTab, _setActiveTab] = useState<StatsCategory>('scoring');
+  const [activeTab, setActiveTab] = useState<StatsCategory>('scoring');
 
   // Filter state
   const [activeFilter, setActiveFilter] = useState<StatsFilter | null>(null);
@@ -338,6 +342,7 @@ export default function StatsClient({
 
   // Cache for detailed stats
   const detailedStatsCache = useRef<Map<string, GolfStats>>(new Map());
+  const sprayChartCache = useRef<Map<string, SprayChartResponse>>(new Map());
   const lastFetchedPlayerId = useRef<string | null>(null);
   const lastFetchedRoundId = useRef<string | 'overall'>('overall');
 
@@ -743,6 +748,42 @@ export default function StatsClient({
   const handleFilterChange = useCallback((filter: StatsFilter | null) => {
     setActiveFilter(filter);
     setDetailedStats(null);
+    setSprayChartData(null);
+  }, []);
+
+  const latestSprayChartRequest = useRef<string | null>(null);
+
+  const loadSprayChart = useCallback(async (
+    playerId: string,
+    roundId: string | 'overall' = 'overall',
+    filter?: StatsFilter | null
+  ) => {
+    const filterKey = filter ? JSON.stringify(filter) : 'none';
+    const cacheKey = `${playerId}-${roundId}-${filterKey}`;
+
+    if (sprayChartCache.current.has(cacheKey)) {
+      setSprayChartData(sprayChartCache.current.get(cacheKey)!);
+      return;
+    }
+
+    latestSprayChartRequest.current = cacheKey;
+    setLoadingSprayChart(true);
+    try {
+      const response = await getSprayChartData(playerId, roundId, filter || undefined);
+      sprayChartCache.current.set(cacheKey, response);
+      if (latestSprayChartRequest.current === cacheKey) {
+        setSprayChartData(response);
+      }
+    } catch (error) {
+      console.error('Failed to load spray chart data:', error);
+      if (latestSprayChartRequest.current === cacheKey) {
+        setSprayChartData(null);
+      }
+    } finally {
+      if (latestSprayChartRequest.current === cacheKey) {
+        setLoadingSprayChart(false);
+      }
+    }
   }, []);
 
   // Resolve the active player ID — for coaches it's the selected player,
@@ -753,11 +794,25 @@ export default function StatsClient({
   useEffect(() => {
     if (!resolvedPlayerId) return;
 
-    const detailedTabs: StatsCategory[] = ['scoring', 'driving', 'approach', 'putting', 'scrambling', 'strokes-gained', 'progress'];
+    const detailedTabs: StatsCategory[] = ['scoring', 'driving', 'approach', 'putting', 'scrambling', 'strokes-gained', 'progress', 'dispersion', 'analysis'];
     if (detailedTabs.includes(activeTab) && !detailedStats) {
       loadDetailedStats(resolvedPlayerId, selectedRoundId, activeFilter);
     }
   }, [activeTab, resolvedPlayerId, selectedRoundId, detailedStats, loadDetailedStats, activeFilter]);
+
+  useEffect(() => {
+    if (!resolvedPlayerId || activeTab !== 'dispersion') return;
+
+    const filterKey = activeFilter ? JSON.stringify(activeFilter) : 'none';
+    const cacheKey = `${resolvedPlayerId}-${selectedRoundId}-${filterKey}`;
+
+    if (sprayChartCache.current.has(cacheKey)) {
+      setSprayChartData(sprayChartCache.current.get(cacheKey)!);
+      return;
+    }
+
+    loadSprayChart(resolvedPlayerId, selectedRoundId, activeFilter);
+  }, [activeTab, resolvedPlayerId, selectedRoundId, activeFilter, loadSprayChart]);
 
   useEffect(() => {
     if (!resolvedPlayerId) return;
@@ -771,6 +826,19 @@ export default function StatsClient({
       loadDetailedStats(resolvedPlayerId, selectedRoundId, activeFilter);
     }
   }, [selectedRoundId, activeFilter, resolvedPlayerId, detailedStats, loadDetailedStats]);
+
+  useEffect(() => {
+    if (!resolvedPlayerId || activeTab !== 'dispersion') return;
+
+    const filterKey = activeFilter ? JSON.stringify(activeFilter) : 'none';
+    const cacheKey = `${resolvedPlayerId}-${selectedRoundId}-${filterKey}`;
+
+    if (sprayChartCache.current.has(cacheKey)) {
+      setSprayChartData(sprayChartCache.current.get(cacheKey)!);
+    } else {
+      loadSprayChart(resolvedPlayerId, selectedRoundId, activeFilter);
+    }
+  }, [selectedRoundId, activeFilter, resolvedPlayerId, activeTab, loadSprayChart]);
 
   // Defer analytics loading — only fetch after detailed stats are ready
   // This prevents 4 heavy queries from firing on initial page load
@@ -794,6 +862,7 @@ export default function StatsClient({
     setSelectedPlayer(player);
     setPlayerName(`${player.first_name} ${player.last_name}`);
     setDetailedStats(null);
+    setSprayChartData(null);
     setLoadingDetailed(true); // Show skeleton immediately — prevents empty state flash
     setActiveFilter(null);
     setCourseBreakdown(null);
@@ -809,6 +878,7 @@ export default function StatsClient({
     setSelectedPlayerId(null);
     setSelectedPlayer(null);
     setDetailedStats(null);
+    setSprayChartData(null);
     setLoadingDetailed(false);
     setRounds([]);
     setActiveFilter(null);
@@ -828,11 +898,20 @@ export default function StatsClient({
         detailedStatsCache.current.delete(key);
       }
     }
+    for (const key of sprayChartCache.current.keys()) {
+      if (key.startsWith(playerId)) {
+        sprayChartCache.current.delete(key);
+      }
+    }
 
     setDetailedStats(null);
+    setSprayChartData(null);
     analyticsLoadedForRef.current = null;
     loadPlayerSummary(playerId);
     loadDetailedStats(playerId, selectedRoundId, activeFilter);
+    if (activeTab === 'dispersion') {
+      loadSprayChart(playerId, selectedRoundId, activeFilter);
+    }
     loadPlayerAnalytics(playerId);
   }
 
@@ -1149,6 +1228,10 @@ export default function StatsClient({
           trendData={trendData}
           statisticalStrengths={strengthsWeaknesses?.strengths}
           statisticalWeaknesses={strengthsWeaknesses?.weaknesses}
+          sprayChartData={sprayChartData}
+          sprayChartLoading={loadingSprayChart}
+          activeCategory={activeTab}
+          onCategoryChange={setActiveTab}
         />
       ) : statsError ? (
         /* Error state when server action fails */

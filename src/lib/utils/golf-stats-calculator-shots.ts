@@ -52,6 +52,10 @@ export interface HoleInfo {
   hole_number: number;
   par: number;
   yardage: number | null;
+  score?: number | null;
+  putts?: number | null;
+  fairway_hit?: boolean | null;
+  gir?: boolean | null;
 }
 
 export interface RoundInfo {
@@ -639,12 +643,52 @@ interface CalculatedHoleStats {
   shots: RawShot[];
 }
 
+function createHoleStatsFromKnownHole(hole: HoleInfo): CalculatedHoleStats {
+  const score = hole.score ?? hole.par;
+  const putts = hole.putts ?? 2;
+  const greenInRegulation = hole.gir ?? false;
+  const fairwayHit = hole.par < 4 ? null : (hole.fairway_hit ?? null);
+
+  return {
+    holeNumber: hole.hole_number,
+    par: hole.par,
+    score,
+    putts,
+    fairwayHit,
+    usedDriver: null,
+    drivingDistance: null,
+    driveMissDirection: null,
+    greenInRegulation,
+    approachShotNumber: null,
+    approachDistance: null,
+    approachLie: null,
+    approachProximity: null,
+    approachMissDirection: null,
+    chipLie: null,
+    chipDistance: null,
+    firstPuttDistance: null,
+    firstPuttLeave: null,
+    firstPuttBreak: null,
+    firstPuttSlope: null,
+    scrambleAttempt: !greenInRegulation,
+    scrambleMade: !greenInRegulation && score <= hole.par,
+    sandSaveAttempt: false,
+    sandSaveMade: false,
+    penalties: 0,
+    threePutts: putts >= 3,
+    shots: [],
+  };
+}
+
 /**
  * Calculate hole statistics from raw shots
  * This is where all hole-level stats are DERIVED from individual shots
  */
 /** @internal - exported for testing */
-export function calculateHoleStatsFromShots(shots: RawShot[], par: number): CalculatedHoleStats {
+export function calculateHoleStatsFromShots(
+  shots: RawShot[],
+  holeInfo: Pick<HoleInfo, 'hole_number' | 'par' | 'score' | 'putts' | 'fairway_hit' | 'gir'>
+): CalculatedHoleStats {
   // Sort shots by shot number
   const sortedShots = [...shots].sort((a, b) => a.shot_number - b.shot_number);
   const normalizedShots = sortedShots.map((shot) => ({
@@ -653,15 +697,17 @@ export function calculateHoleStatsFromShots(shots: RawShot[], par: number): Calc
   }));
 
   // Score = number of shots
-  const score = normalizedShots.length;
+  const score = holeInfo.score ?? normalizedShots.length;
 
   // Putts = shots where shot_type is 'putting'
   const puttingShots = normalizedShots.filter(s => s.shot_type === 'putting');
-  const putts = puttingShots.length;
+  const putts = holeInfo.putts ?? puttingShots.length;
 
   // Tee shot analysis
   const teeShot = normalizedShots.find(s => s.shot_type === 'tee');
-  const fairwayHit = par < 4 ? null : (teeShot ? teeShot.result === 'fairway' : null);
+  const fairwayHit = holeInfo.par < 4
+    ? null
+    : (holeInfo.fairway_hit ?? (teeShot ? teeShot.result === 'fairway' : null));
   const usedDriver = teeShot ? teeShot.club_type === 'driver' : null;
   // shot_distance is already stored in yards, no conversion needed
   const drivingDistance = teeShot?.shot_distance ?? null;
@@ -672,9 +718,10 @@ export function calculateHoleStatsFromShots(shots: RawShot[], par: number): Calc
   // GIR = shot that lands on green has shot_number <= par - 2
   // Use isGreenHit to handle multiple result values: 'green', 'gir', 'hole'
   const shotToGreen = normalizedShots.find(s => isGreenHit(s.result));
-  const greenInRegulation = shotToGreen
-    ? shotToGreen.shot_number <= (par - 2)
+  const derivedGir = shotToGreen
+    ? shotToGreen.shot_number <= (holeInfo.par - 2)
     : false;
+  const greenInRegulation = holeInfo.gir ?? derivedGir;
 
   // APPROACH SHOT IDENTIFICATION
   // The "approach shot" is the GIR attempt - the shot trying to reach the green in regulation:
@@ -684,7 +731,7 @@ export function calculateHoleStatsFromShots(shots: RawShot[], par: number): Calc
   //
   // For stats purposes, we use: shot_number === par - 2 (the regulation attempt)
   // If that shot doesn't exist, fall back to shotToGreen
-  const girAttemptShotNumber = par - 2 + 1; // par 3 → shot 1, par 4 → shot 2, par 5 → shot 3
+  const girAttemptShotNumber = holeInfo.par - 2 + 1; // par 3 → shot 1, par 4 → shot 2, par 5 → shot 3
 
   // Find the GIR attempt shot (the approach)
   // Priority: 1) Shot at GIR attempt number, 2) Shot that landed on green (if earlier)
@@ -742,7 +789,7 @@ export function calculateHoleStatsFromShots(shots: RawShot[], par: number): Calc
 
   // Scrambling = missed GIR but made par or better
   const scrambleAttempt = !greenInRegulation;
-  const scrambleMade = scrambleAttempt && (score <= par);
+  const scrambleMade = scrambleAttempt && (score <= holeInfo.par);
 
   // Find the around-green shot for scrambling stats
   // This is the shot that actually tries to get up-and-down (chip/pitch), not the approach
@@ -773,7 +820,7 @@ export function calculateHoleStatsFromShots(shots: RawShot[], par: number): Calc
   // FIXED: Previously checked lastShotBeforeGreen which could be the approach shot
   // Now correctly checks if the actual chip shot (around_green) was from a bunker
   const sandSaveAttempt = !greenInRegulation && aroundGreenShot?.lie_before === 'sand';
-  const sandSaveMade = sandSaveAttempt && (score <= par);
+  const sandSaveMade = sandSaveAttempt && (score <= holeInfo.par);
 
   // Penalties
   const penalties = normalizedShots.filter(s => s.is_penalty).length;
@@ -782,8 +829,8 @@ export function calculateHoleStatsFromShots(shots: RawShot[], par: number): Calc
   const threePutts = putts >= 3;
 
   return {
-    holeNumber: shots[0]?.hole_number || 0,
-    par,
+    holeNumber: holeInfo.hole_number,
+    par: holeInfo.par,
     score,
     putts,
     fairwayHit,
@@ -866,8 +913,10 @@ export function calculateStatsFromShots(
     for (const hole of roundHoles) {
       const holeShots = shotsByHole.get(hole.hole_number) || [];
       if (holeShots.length > 0) {
-        const stats = calculateHoleStatsFromShots(holeShots, hole.par);
+        const stats = calculateHoleStatsFromShots(holeShots, hole);
         holeStats.push(stats);
+      } else {
+        holeStats.push(createHoleStatsFromKnownHole(hole));
       }
     }
 
@@ -1302,13 +1351,13 @@ function aggregateRoundStats(rounds: Array<{
 
     // Round type scoring
     const roundType = normalizeRoundType(round.roundInfo.round_type);
-    if (roundType === 'practice') {
+    if (!is9Hole && roundType === 'practice') {
       practiceScore += round.totalScore;
       stats.practiceRounds++;
-    } else if (roundType === 'qualifier') {
+    } else if (!is9Hole && roundType === 'qualifier') {
       qualifyingScore += round.totalScore;
       stats.qualifyingRounds++;
-    } else if (roundType === 'tournament') {
+    } else if (!is9Hole && roundType === 'tournament') {
       tournamentScore += round.totalScore;
       stats.tournamentRounds++;
     }
@@ -1361,8 +1410,10 @@ function aggregateRoundStats(rounds: Array<{
         }
       }
 
-      // Fairway stats - only count par 4s and par 5s (par 3s have no fairway to hit)
-      if (hole.fairwayHit !== null && hole.par !== 3) {
+      // Fairway stats - every par 4/par 5 is an opportunity, even if tee-shot
+      // detail is incomplete. Missing hit data should count as an opportunity,
+      // not silently shrink the denominator.
+      if (hole.par !== 3) {
         stats.fairwayOpportunities++;
         if (hole.fairwayHit) stats.fairwaysHit++;
 
@@ -1374,10 +1425,10 @@ function aggregateRoundStats(rounds: Array<{
           if (hole.fairwayHit) fairwaysPar5.hit++;
         }
 
-        if (hole.usedDriver) {
+        if (hole.usedDriver === true) {
           fairwaysDriver.total++;
           if (hole.fairwayHit) fairwaysDriver.hit++;
-        } else {
+        } else if (hole.usedDriver === false) {
           fairwaysNonDriver.total++;
           if (hole.fairwayHit) fairwaysNonDriver.hit++;
         }
@@ -1731,8 +1782,8 @@ function aggregateRoundStats(rounds: Array<{
   stats.scoringAverage18 = safeAverage(totalScore18, stats.roundsPlayed18);
   stats.scoringAverage9 = safeAverage(totalScore9, stats.roundsPlayed9);
 
-  // Scoring average: 18-hole rounds only (NCAA-style), fallback to 9-hole normalized
-  stats.scoringAverage = stats.scoringAverage18 ?? stats.scoringAverage9;
+  // Scoring average: 18-hole rounds only (NCAA-style)
+  stats.scoringAverage = stats.scoringAverage18;
 
   // Best/worst: prefer 18-hole, fallback to 9-hole
   stats.bestRound = stats.bestRound18 ?? stats.bestRound9;
@@ -1778,10 +1829,14 @@ function aggregateRoundStats(rounds: Array<{
   stats.girPctPar4 = safePercent(girPar4.made, girPar4.total);
   stats.girPctPar5 = safePercent(girPar5.made, girPar5.total);
 
-  stats.puttsPerRound = safeAverage(stats.totalPutts, rounds.length);
+  stats.puttsPerRound = stats.holesPlayed > 0
+    ? Math.round(((stats.totalPutts / stats.holesPlayed) * 18) * 100) / 100
+    : null;
   stats.puttsPerHole = safeAverage(stats.totalPutts, stats.holesPlayed);
   stats.puttsPerGir = safeAverage(puttsOnGir, stats.girTotal);
-  stats.threePuttsPerRound = safeAverage(stats.threePuttsTotal, rounds.length);
+  stats.threePuttsPerRound = stats.holesPlayed > 0
+    ? Math.round(((stats.threePuttsTotal / stats.holesPlayed) * 18) * 100) / 100
+    : null;
 
   // Putt make %
   stats.puttMakePct0_3 = safePercent(puttMake['0_3']?.made || 0, puttMake['0_3']?.total || 0);

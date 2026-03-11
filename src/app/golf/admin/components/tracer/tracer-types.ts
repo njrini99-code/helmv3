@@ -188,7 +188,8 @@ export type FixType =
   | 'recalculate_round_totals'
   | 'recalculate_round_gir'
   | 'refresh_player_stats_cache'
-  | 'recalculate_strokes_gained';
+  | 'recalculate_strokes_gained'
+  | 'resolve_stuck_round';
 
 export interface DataQualityIssue {
   id: string;

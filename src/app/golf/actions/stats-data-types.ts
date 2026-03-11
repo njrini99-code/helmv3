@@ -198,3 +198,73 @@ export interface WorstHoleResponse {
   par5Average: number | null;
   closingHolesAverage: number | null;
 }
+
+// ============================================================================
+// SPRAY CHART TYPES
+// ============================================================================
+
+export type SprayChartMode = 'point-cloud' | 'summary';
+export type SprayChartShotFamily = 'driving' | 'approach';
+export type SprayChartSector =
+  | 'center'
+  | 'left'
+  | 'right'
+  | 'short'
+  | 'long'
+  | 'short_left'
+  | 'short_right'
+  | 'long_left'
+  | 'long_right';
+export type SprayChartOutcomeBucket = 'playable' | 'trouble' | 'penalty';
+
+export interface SprayChartPoint {
+  id: string;
+  roundId: string;
+  holeNumber: number;
+  shotNumber: number;
+  family: SprayChartShotFamily;
+  sector: SprayChartSector;
+  x: number;
+  y: number;
+  outcomeBucket: SprayChartOutcomeBucket;
+  shotDistance: number | null;
+  distanceBefore: number | null;
+  distanceAfter: number | null;
+  lieBefore: string | null;
+  lieAfter: string | null;
+  result: string | null;
+  tooltip: string;
+}
+
+export interface SprayChartSummaryBand {
+  sector: SprayChartSector;
+  label: string;
+  count: number;
+  percentage: number;
+  avgForwardDistance: number | null;
+  avgRemainingDistance: number | null;
+}
+
+export interface SprayChartShotGroup {
+  family: SprayChartShotFamily;
+  totalShots: number;
+  plottedShots: number;
+  averageForwardDistance: number | null;
+  averageRemainingDistance: number | null;
+  playableCount: number;
+  troubleCount: number;
+  penaltyCount: number;
+  dominantSector: SprayChartSector | null;
+  points: SprayChartPoint[];
+  summaryBands: SprayChartSummaryBand[];
+}
+
+export interface SprayChartResponse {
+  driving: SprayChartShotGroup;
+  approach: SprayChartShotGroup;
+  scope: {
+    roundId: string | 'overall';
+    roundsIncluded: number;
+    filterApplied: boolean;
+  };
+}

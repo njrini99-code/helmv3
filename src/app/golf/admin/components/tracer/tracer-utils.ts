@@ -91,7 +91,7 @@ export function flattenRounds(data: TracerData): FlatRound[] {
 export function isStuckRound(round: TracerRoundDetail): boolean {
   if (round.status !== 'in_progress') return false;
   if (!round.updated_at) return false;
-  const twoHoursAgo = Date.now() - 2 * 60 * 60 * 1000;
+  const twoHoursAgo = Date.now() - STUCK_ROUND_WARNING_HOURS * 60 * 60 * 1000;
   return new Date(round.updated_at).getTime() < twoHoursAgo;
 }
 
@@ -183,6 +183,8 @@ const THRESHOLDS = {
   18: { maxScore: 120, maxShots: 150, maxPutts: 45, minScore: 55, minPutts: 18, expectedHoles: 18 },
   9: { maxScore: 65, maxShots: 80, maxPutts: 27, minScore: 28, minPutts: 9, expectedHoles: 9 },
 } as const;
+const STUCK_ROUND_WARNING_HOURS = 2;
+const STUCK_ROUND_FIXABLE_HOURS = 24;
 
 function getThresholds(holesPlayed: number) {
   return holesPlayed === 9 ? THRESHOLDS[9] : THRESHOLDS[18];
@@ -438,12 +440,13 @@ export function detectDataQualityIssues(data: TracerData): DataQualityIssue[] {
     for (const round of playerRounds.filter(r => r.status === 'in_progress')) {
       if (round.updated_at) {
         const hoursStuck = (Date.now() - new Date(round.updated_at).getTime()) / (1000 * 60 * 60);
-        if (hoursStuck >= 2) {
+        if (hoursStuck >= STUCK_ROUND_WARNING_HOURS) {
+          const canAutoResolve = hoursStuck >= STUCK_ROUND_FIXABLE_HOURS;
           issues.push(issue(
             'stuck-round', 'Stuck Round',
             `In-progress for ${Math.round(hoursStuck)} hours`,
             'warning', 'stuck_round', player.player_id, playerName, round.round_id, round.course_name, round.round_date,
-            `${Math.round(hoursStuck)}h`, '< 2h', false, null
+            `${Math.round(hoursStuck)}h`, `< ${STUCK_ROUND_WARNING_HOURS}h`, canAutoResolve, canAutoResolve ? 'resolve_stuck_round' : null
           ));
         }
       }

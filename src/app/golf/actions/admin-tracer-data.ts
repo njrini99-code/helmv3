@@ -431,7 +431,7 @@ export async function getTracerData(): Promise<TracerData> {
     }
   }
 
-  // Build stats accuracy with full live computation
+  // Build stats accuracy with the same 18-hole normalization used by the cache.
   const statsAccuracy: TracerStatsAccuracy[] = [];
   for (const cached of statsAccuracyResult.data || []) {
     const player = playerMap.get(cached.player_id);
@@ -441,8 +441,9 @@ export async function getTracerData(): Promise<TracerData> {
       (r) => r.player_id === cached.player_id && r.status === 'completed'
     );
     const liveRounds = completedRounds.length;
-    const scores = completedRounds.map((r) => r.total_score).filter((s): s is number => s != null);
-    const putts = completedRounds.map((r) => r.total_putts).filter((s): s is number => s != null);
+    const totalHolesPlayed = completedRounds.reduce((sum, r) => sum + Math.max(r.holes_played || 18, 1), 0);
+    const totalScore = completedRounds.reduce((sum, r) => sum + (r.total_score || 0), 0);
+    const totalPutts = completedRounds.reduce((sum, r) => sum + (r.total_putts || 0), 0);
     const totalFairwaysHit = completedRounds.reduce((sum, r) => sum + (r.total_fairways_hit || 0), 0);
     const totalFairways = completedRounds.reduce((sum, r) => sum + (r.total_fairways || 0), 0);
     const totalGir = completedRounds.reduce((sum, r) => sum + (r.total_gir || 0), 0);
@@ -455,12 +456,12 @@ export async function getTracerData(): Promise<TracerData> {
       cached_rounds: cached.rounds_played || 0,
       live_rounds: liveRounds,
       cached_scoring_avg: cached.scoring_average ? Number(cached.scoring_average) : null,
-      live_scoring_avg: scores.length > 0
-        ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10
+      live_scoring_avg: totalHolesPlayed > 0
+        ? Math.round(((totalScore / totalHolesPlayed) * 18) * 10) / 10
         : null,
       cached_putts_per_round: cached.putts_per_round ? Number(cached.putts_per_round) : null,
-      live_putts_per_round: putts.length > 0
-        ? Math.round((putts.reduce((a, b) => a + b, 0) / putts.length) * 10) / 10
+      live_putts_per_round: totalHolesPlayed > 0
+        ? Math.round(((totalPutts / totalHolesPlayed) * 18) * 10) / 10
         : null,
       cached_fairway_pct: cached.driving_accuracy_percentage ? Number(cached.driving_accuracy_percentage) : null,
       live_fairway_pct: totalFairways > 0
@@ -577,7 +578,7 @@ export async function getTracerEnrichedData(): Promise<TracerEnrichedData> {
   // Resolve player names for stuck rounds
   const stuckData = stuckResult.data || [];
   const stuckPlayerIds = [...new Set(stuckData.map((r) => r.player_id))];
-  let playerNameMap = new Map<string, string>();
+  const playerNameMap = new Map<string, string>();
   if (stuckPlayerIds.length > 0) {
     const { data: players } = await adminDb
       .from('golf_players')
@@ -719,7 +720,7 @@ export async function getTracerRoundDiagnostic(roundId: string): Promise<TracerR
 
 export async function fixRoundData(
   roundId: string,
-  fixType: 'recalculate_round_totals' | 'recalculate_round_gir' | 'refresh_player_stats_cache' | 'recalculate_strokes_gained',
+  fixType: 'recalculate_round_totals' | 'recalculate_round_gir' | 'refresh_player_stats_cache' | 'recalculate_strokes_gained' | 'resolve_stuck_round',
   playerId?: string
 ): Promise<{
   success: boolean;
@@ -858,9 +859,36 @@ export async function fixRoundData(
     case 'refresh_player_stats_cache': {
       if (!playerId) return { success: false, fix_type: fixType, round_id: null, player_id: null, message: 'playerId required' };
 
+      const { data: beforeCache } = await adminDb
+        .from('golf_player_stats_cache')
+        .select('rounds_played, scoring_average, putts_per_round, driving_accuracy_percentage, gir_percentage, is_stale, updated_at')
+        .eq('player_id', playerId)
+        .maybeSingle();
+
       const { error } = await adminDb.rpc('refresh_player_stats_cache', { p_player_id: playerId });
 
       if (error) return { success: false, fix_type: fixType, round_id: null, player_id: playerId, message: `Cache refresh failed: ${error.message}` };
+
+      const { data: afterCache } = await adminDb
+        .from('golf_player_stats_cache')
+        .select('rounds_played, scoring_average, putts_per_round, driving_accuracy_percentage, gir_percentage, is_stale, updated_at')
+        .eq('player_id', playerId)
+        .maybeSingle();
+
+      const changes: Record<string, { before: string | number | null; after: string | number | null }> = {};
+      const comparisons = [
+        ['rounds_played', beforeCache?.rounds_played ?? null, afterCache?.rounds_played ?? null],
+        ['scoring_average', beforeCache?.scoring_average != null ? Number(beforeCache.scoring_average) : null, afterCache?.scoring_average != null ? Number(afterCache.scoring_average) : null],
+        ['putts_per_round', beforeCache?.putts_per_round != null ? Number(beforeCache.putts_per_round) : null, afterCache?.putts_per_round != null ? Number(afterCache.putts_per_round) : null],
+        ['driving_accuracy_percentage', beforeCache?.driving_accuracy_percentage != null ? Number(beforeCache.driving_accuracy_percentage) : null, afterCache?.driving_accuracy_percentage != null ? Number(afterCache.driving_accuracy_percentage) : null],
+        ['gir_percentage', beforeCache?.gir_percentage != null ? Number(beforeCache.gir_percentage) : null, afterCache?.gir_percentage != null ? Number(afterCache.gir_percentage) : null],
+        ['is_stale', beforeCache?.is_stale ? 'stale' : 'fresh', afterCache?.is_stale ? 'stale' : 'fresh'],
+      ] as const;
+      for (const [field, before, after] of comparisons) {
+        if (before !== after) {
+          changes[field] = { before, after };
+        }
+      }
 
       revalidatePath('/golf/admin');
       return {
@@ -868,7 +896,10 @@ export async function fixRoundData(
         fix_type: fixType,
         round_id: null,
         player_id: playerId,
-        message: 'Stats cache refreshed successfully',
+        message: Object.keys(changes).length > 0
+          ? `Stats cache refreshed (${Object.keys(changes).length} field${Object.keys(changes).length === 1 ? '' : 's'} updated)`
+          : 'Stats cache refreshed; no cache fields changed',
+        changes: Object.keys(changes).length > 0 ? changes : undefined,
       };
     }
 
@@ -898,6 +929,83 @@ export async function fixRoundData(
         round_id: roundId,
         player_id: playerId || null,
         message: 'Strokes gained recalculated for round',
+      };
+    }
+
+    case 'resolve_stuck_round': {
+      const { data: round } = await adminDb
+        .from('golf_rounds')
+        .select('id, player_id, status, updated_at, course_name')
+        .eq('id', roundId)
+        .maybeSingle();
+
+      if (!round) {
+        return { success: false, fix_type: fixType, round_id: roundId, player_id: playerId || null, message: 'Round not found' };
+      }
+
+      if (round.status !== 'in_progress') {
+        return { success: false, fix_type: fixType, round_id: roundId, player_id: round.player_id, message: `Round status is ${round.status}, not in_progress` };
+      }
+
+      if (!round.updated_at) {
+        return { success: false, fix_type: fixType, round_id: roundId, player_id: round.player_id, message: 'Round has no updated_at timestamp' };
+      }
+
+      const hoursStale = (Date.now() - new Date(round.updated_at).getTime()) / (1000 * 60 * 60);
+      if (hoursStale < 24) {
+        return {
+          success: false,
+          fix_type: fixType,
+          round_id: roundId,
+          player_id: round.player_id,
+          message: `Round was updated ${hoursStale.toFixed(1)} hours ago; only rounds stale for 24+ hours can be auto-resolved`,
+        };
+      }
+
+      const [{ count: scoredHoleCount }, { count: shotCount }] = await Promise.all([
+        adminDb
+          .from('golf_holes')
+          .select('id', { count: 'exact', head: true })
+          .eq('round_id', roundId)
+          .not('score', 'is', null),
+        adminDb
+          .from('golf_shots')
+          .select('id', { count: 'exact', head: true })
+          .eq('round_id', roundId),
+      ]);
+
+      if ((scoredHoleCount || 0) > 1 || (shotCount || 0) > 8) {
+        return {
+          success: false,
+          fix_type: fixType,
+          round_id: roundId,
+          player_id: round.player_id,
+          message: 'Round has too much recorded activity for auto-resolution; review manually before deleting it',
+        };
+      }
+
+      const { error } = await adminDb
+        .from('golf_rounds')
+        .delete()
+        .eq('id', roundId)
+        .eq('status', 'in_progress');
+
+      if (error) {
+        return { success: false, fix_type: fixType, round_id: roundId, player_id: round.player_id, message: `Failed to remove stale round: ${error.message}` };
+      }
+
+      revalidatePath('/golf/admin');
+      return {
+        success: true,
+        fix_type: fixType,
+        round_id: roundId,
+        player_id: round.player_id,
+        message: `Removed stale in-progress round from ${round.course_name || 'unknown course'}`,
+        changes: {
+          round_status: { before: 'in_progress', after: 'deleted' },
+          scored_holes: { before: scoredHoleCount || 0, after: 0 },
+          shots: { before: shotCount || 0, after: 0 },
+        },
       };
     }
 
