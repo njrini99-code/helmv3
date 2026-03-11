@@ -71,14 +71,14 @@ export default function ProductsPage() {
 
         {/* Content below animation */}
         <motion.div
-          className="relative px-5 sm:px-6 pt-10 pb-16 md:pt-14 md:pb-24 max-w-5xl mx-auto"
+          className="relative px-5 sm:px-6 pt-7 pb-12 sm:pt-10 sm:pb-16 md:pt-14 md:pb-24 max-w-5xl mx-auto"
           initial="hidden"
           animate="visible"
           variants={staggerContainer}
         >
           {/* Tagline + CTA */}
-          <motion.div className="text-center mb-12" variants={fadeInUp}>
-            <p className="text-lg sm:text-xl text-muted-foreground max-w-xl mx-auto leading-relaxed mb-8">
+          <motion.div className="text-center mb-8 sm:mb-12" variants={fadeInUp}>
+            <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-xl mx-auto leading-relaxed mb-6 sm:mb-8">
               The ultimate platform to manage your team with precision and clarity.
             </p>
 

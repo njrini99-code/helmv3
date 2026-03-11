@@ -127,42 +127,32 @@ export function Hero() {
         />
       </div>
 
-      {/* Overlay — only on left side for text readability, no edge darkening */}
+      {/* Overlay — narrow left-side gradient for text readability only */}
       <div
         className="absolute inset-0 z-[1]"
         style={{
           background: `
             linear-gradient(
               to right,
-              rgba(0,0,0,0.82) 0%,
-              rgba(0,0,0,0.6) 40%,
-              rgba(0,0,0,0.15) 70%,
-              transparent 100%
+              rgba(0,0,0,0.7) 0%,
+              rgba(0,0,0,0.4) 30%,
+              transparent 50%
             )
           `,
         }}
       />
-
-      {/* Green ambient glow behind mockup */}
+      {/* Mobile overlay — light, just enough for text readability */}
       <div
-        className="absolute z-[2] hidden lg:block pointer-events-none"
+        className="absolute inset-0 z-[1] lg:hidden"
         style={{
-          right: '-5%',
-          top: '15%',
-          width: '55%',
-          height: '70%',
-          background: 'radial-gradient(ellipse at 60% 50%, rgba(22,163,74,0.06), transparent 70%)',
-          filter: 'blur(60px)',
-        }}
-      />
-
-      {/* Film grain texture */}
-      <div
-        className="absolute inset-0 z-[3] pointer-events-none mix-blend-overlay"
-        style={{
-          opacity: 0.035,
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
-          backgroundSize: '128px',
+          background: `
+            linear-gradient(
+              to bottom,
+              rgba(0,0,0,0.3) 0%,
+              rgba(0,0,0,0.1) 50%,
+              transparent 100%
+            )
+          `,
         }}
       />
 
@@ -176,19 +166,19 @@ export function Hero() {
         style={{ opacity }}
         className="relative z-20 max-w-[90rem] mx-auto px-6 lg:px-14 xl:px-20"
       >
-        <div className="grid grid-cols-1 lg:grid-cols-2 items-center min-h-[calc(100svh-64px)] md:min-h-[calc(100vh-64px)] gap-8 lg:gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 items-center min-h-[calc(100svh-64px)] md:min-h-[calc(100vh-64px)] gap-0 lg:gap-4">
 
           {/* ─── Left: Typography + CTA ─── */}
           <motion.div
             style={{ y: textY }}
-            className="pt-24 lg:pt-0 pb-4 lg:pb-0"
+            className="pt-10 sm:pt-16 lg:pt-0 pb-8 lg:pb-0"
           >
             {/* Eyebrow */}
             <motion.div
               initial={initial({ y: 20 })}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.15, ease: [0.25, 0.1, 0.25, 1] }}
-              className="flex items-center gap-4 mb-8"
+              className="flex items-center gap-4 mb-5 lg:mb-8"
             >
               <div className="w-8 h-px bg-primary-600/70" />
               <span className="text-primary-500/70 tracking-[0.25em] uppercase text-[11px] font-medium">
@@ -215,7 +205,7 @@ export function Hero() {
               initial={initial({ y: 25 })}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.45, ease: [0.25, 0.1, 0.25, 1] }}
-              className="text-white/35 text-base lg:text-lg mt-7 max-w-md leading-relaxed"
+              className="text-white text-[15px] lg:text-lg mt-5 lg:mt-7 max-w-md leading-relaxed"
             >
               The platform built for college golf coaches who demand
               clarity, precision, and a competitive edge.
@@ -226,7 +216,7 @@ export function Hero() {
               initial={initial({ y: 25 })}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
-              className="mt-10"
+              className="mt-7 lg:mt-10"
             >
               <EmailCapture />
             </motion.div>
@@ -236,7 +226,7 @@ export function Hero() {
               initial={initial({ y: 15 })}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
-              className="mt-10"
+              className="mt-7 lg:mt-10"
             >
               <Link href="/products#golfhelm" className="group inline-flex">
                 <div
@@ -270,7 +260,7 @@ export function Hero() {
             initial={initial({ x: 80, scale: 0.96 })}
             animate={{ opacity: 1, x: 0, scale: 1 }}
             transition={{ duration: 1.1, delay: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
-            className="relative pb-12 lg:pb-0"
+            className="relative pb-16 lg:pb-0 hidden lg:block"
           >
             <div className="lg:-mr-[25%]">
               {/* Glow behind frame */}
@@ -282,7 +272,7 @@ export function Hero() {
                 }}
               />
 
-              {/* Browser frame */}
+              {/* Browser frame — desktop only */}
               <div
                 className="relative z-10 rounded-2xl overflow-hidden max-h-[70vh]"
                 style={{

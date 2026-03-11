@@ -29,7 +29,7 @@ export function GolfHelmSection() {
   return (
     <section
       id="golfhelm"
-      className="relative py-20 md:py-28 overflow-hidden scroll-mt-20 bg-[#F5F0E8]"
+      className="relative py-14 sm:py-20 md:py-28 overflow-hidden scroll-mt-20 bg-[#F5F0E8]"
     >
       <motion.div
         className="relative max-w-5xl mx-auto px-5 sm:px-6"
@@ -39,9 +39,9 @@ export function GolfHelmSection() {
         viewport={{ once: true, margin: "-50px" }}
       >
         {/* Hero Intro */}
-        <motion.div variants={itemVariants} className="text-center max-w-2xl mx-auto mb-16 md:mb-20">
-          <div className="flex flex-col items-center justify-center gap-4 mb-6">
-            <div className="w-20 h-20 sm:w-24 sm:h-24 relative">
+        <motion.div variants={itemVariants} className="text-center max-w-2xl mx-auto mb-12 sm:mb-16 md:mb-20">
+          <div className="flex flex-col items-center justify-center gap-3 sm:gap-4 mb-5 sm:mb-6">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 relative">
               <Image
                 src="/anim/helm-golf-icon.png"
                 alt="GolfHelm"
@@ -50,16 +50,16 @@ export function GolfHelmSection() {
                 sizes="96px"
               />
             </div>
-            <span className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">GolfHelm</span>
+            <span className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">GolfHelm</span>
           </div>
 
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-slate-900 leading-[1.1] tracking-tight mb-5">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 leading-[1.1] tracking-tight mb-4 sm:mb-5">
             Track every shot.
             <br />
             <span className="text-emerald-600">Develop every player.</span>
           </h2>
 
-          <p className="text-lg text-slate-600 mb-8 leading-relaxed">
+          <p className="text-base sm:text-lg text-slate-600 mb-6 sm:mb-8 leading-relaxed">
             Complete team management system with comprehensive round tracking. Everything you need to build a winning program!
           </p>
 
@@ -68,7 +68,7 @@ export function GolfHelmSection() {
         {/* Feature 1: Live Round Tracking */}
         <motion.div
           variants={itemVariants}
-          className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center mb-20 md:mb-28"
+          className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center mb-14 sm:mb-20 md:mb-28"
         >
           <div className="order-2 lg:order-1">
             <LiveRoundMockup />
@@ -98,7 +98,7 @@ export function GolfHelmSection() {
         {/* Feature 2: Qualifiers */}
         <motion.div
           variants={itemVariants}
-          className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center mb-20 md:mb-28"
+          className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center mb-14 sm:mb-20 md:mb-28"
         >
           <div>
             <p className="text-sm font-medium text-amber-600 uppercase tracking-wide mb-3">
@@ -128,7 +128,7 @@ export function GolfHelmSection() {
         {/* Feature 3: Stats & Analytics */}
         <motion.div
           variants={itemVariants}
-          className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center mb-20 md:mb-28"
+          className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center mb-14 sm:mb-20 md:mb-28"
         >
           <div className="order-2 lg:order-1">
             <StatsMockup />
@@ -157,7 +157,7 @@ export function GolfHelmSection() {
 
         {/* Feature 4: CoachHelm AI */}
         <motion.div variants={itemVariants} className="relative">
-          <div className="bg-gradient-to-b from-[#0c0c10] via-[#0e0f14] to-[#0a0a0e] rounded-2xl p-8 md:p-12 overflow-hidden relative">
+          <div className="bg-gradient-to-b from-[#0c0c10] via-[#0e0f14] to-[#0a0a0e] rounded-2xl p-5 sm:p-8 md:p-12 overflow-hidden relative">
             {/* Subtle dot grid */}
             <div className="absolute inset-0 opacity-[0.025]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '28px 28px' }} />
             {/* Soft warm glow top center */}
@@ -165,7 +165,7 @@ export function GolfHelmSection() {
 
             <div className="relative">
               {/* Header — centered */}
-              <div className="text-center mb-12">
+              <div className="text-center mb-8 sm:mb-12">
                 <div className="flex flex-col items-center gap-4 mb-6">
                   <div className="w-16 h-16 sm:w-20 sm:h-20 relative">
                     <Image src="/anim/helm-coach-icon.png" alt="CoachHelm" fill className="object-contain" sizes="80px" unoptimized />

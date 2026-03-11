@@ -1,6 +1,6 @@
 .scene {
   width: 100%;
-  min-height: 340px;
+  min-height: 240px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -20,7 +20,14 @@
     0 0 0 1px rgba(0, 0, 0, 0.04),
     inset 0 1px 0 rgba(255, 255, 255, 0.6),
     inset 0 -1px 0 rgba(0, 0, 0, 0.03);
-  padding: 2.5rem 1.5rem 2.5rem;
+  padding: 1.75rem 1rem 1.75rem;
+}
+
+@media (min-width: 640px) {
+  .scene {
+    min-height: 340px;
+    padding: 2.5rem 1.5rem 2.5rem;
+  }
 }
 
 
@@ -162,12 +169,12 @@
 /* Tagline */
 .tagline {
   position: absolute;
-  bottom: 1.25rem;
+  bottom: 0.75rem;
   left: 0;
   right: 0;
   text-align: center;
-  font-size: 14px;
-  letter-spacing: 0.35em;
+  font-size: 11px;
+  letter-spacing: 0.3em;
   text-transform: uppercase;
   color: rgba(28, 25, 23, 0.35);
   font-weight: 800;
@@ -175,6 +182,14 @@
   opacity: 0;
   transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1);
   font-family: 'DM Sans', var(--font-sans), system-ui, sans-serif;
+}
+
+@media (min-width: 640px) {
+  .tagline {
+    bottom: 1.25rem;
+    font-size: 14px;
+    letter-spacing: 0.35em;
+  }
 }
 
 .taglineVisible {
