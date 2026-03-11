@@ -14,6 +14,7 @@ import {
   Users,
   Cpu,
   TrendingUp,
+  Crosshair,
   Target,
   RefreshCw,
   LogOut,
@@ -28,6 +29,7 @@ import { OverviewTab } from './components/OverviewTab';
 import { PeopleTab } from './components/PeopleTab';
 import { SystemTab } from './components/SystemTab';
 import { GrowthTab } from './components/GrowthTab';
+import { TracerTab } from './components/TracerTab';
 
 // Real-time components
 import { AdminRealtimeProvider, useAdminRealtimeContext } from './components/AdminRealtimeProvider';
@@ -77,6 +79,13 @@ const TABS = [
     Icon: TrendingUp,
     shortcut: '4',
     description: 'Growth & engagement',
+  },
+  {
+    id: 'tracer',
+    label: 'Tracer',
+    Icon: Crosshair,
+    shortcut: '5',
+    description: 'Shot tracking & error tracing',
   },
 ] as const;
 
@@ -148,6 +157,7 @@ function AdminDashboardContent() {
     people: 'people',
     system: 'system',
     growth: 'growth',
+    tracer: 'tracer',
   };
   const activeTab: TabId = tabMapping[urlTab ?? ''] ?? 'overview';
 
@@ -671,6 +681,7 @@ function AdminDashboardContent() {
               {activeTab === 'people' && <PeopleTab data={data} />}
               {activeTab === 'system' && <SystemTab data={data} />}
               {activeTab === 'growth' && <GrowthTab data={data} />}
+              {activeTab === 'tracer' && <TracerTab />}
             </div>
           ) : null}
         </div>
