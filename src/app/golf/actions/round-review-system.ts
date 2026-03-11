@@ -561,12 +561,6 @@ function missMatches(direction: string | null | undefined, side: 'left' | 'right
   return direction === side || direction.startsWith(`${side}_`) || direction.endsWith(`_${side}`);
 }
 
-function isNarrativeCoachHelmSummary(summary: string | null | undefined): summary is string {
-  if (!summary) return false;
-  if (summary.length < 40) return false;
-  return !/expected score|prediction|forecast|range:/i.test(summary) && !/\bNaN\b/.test(summary);
-}
-
 function dedupeStrings(items: Array<string | null | undefined>, limit: number): string[] {
   return Array.from(
     new Set(
@@ -646,7 +640,7 @@ function mergeCoachHelmReviewContent(
 
   return {
     ...base,
-    summary: isNarrativeCoachHelmSummary(review.summary) ? review.summary : base.summary,
+    summary: base.summary,
     highlights: dedupeByKey(
       [coachHelmHighlight, ...base.highlights],
       (item) => item.title,
