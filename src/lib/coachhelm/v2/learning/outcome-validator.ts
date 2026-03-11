@@ -7,7 +7,7 @@
  * - Track calibration
  */
 
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import type {
   ValidationResult,
   CalibrationBucket,
@@ -17,11 +17,10 @@ import type {
 interface PredictionRow {
   id: string;
   player_id: string;
-  prediction_type: string;
   metric: string;
   predicted_value: number;
-  predicted_range_low: number | null;
-  predicted_range_high: number | null;
+  predicted_low: number | null;
+  predicted_high: number | null;
   confidence: number;
   due_date: string;
 }
@@ -29,7 +28,7 @@ interface PredictionRow {
 interface ValidationRow {
   stated_confidence: number;
   was_correct: boolean;
-  absolute_error: number | null;
+  error_margin: number | null;
 }
 
 interface CalibrationRow {
@@ -50,7 +49,7 @@ export class OutcomeValidator {
    * Validates pending predictions against actual outcomes
    */
   async validatePredictions(): Promise<ValidationResult[]> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Get predictions that are due and not yet validated
     const today = new Date().toISOString().split('T')[0];
@@ -90,7 +89,7 @@ export class OutcomeValidator {
   private async validateSinglePrediction(
     prediction: PredictionRow
   ): Promise<ValidationResult | null> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Get actual outcome
     const actualValue = await this.getActualOutcome(
@@ -107,8 +106,8 @@ export class OutcomeValidator {
     const accuracy = this.calculateAccuracy(
       prediction.predicted_value,
       actualValue,
-      prediction.predicted_range_low,
-      prediction.predicted_range_high
+      prediction.predicted_low,
+      prediction.predicted_high
     );
 
     // Determine if prediction was correct
@@ -138,11 +137,14 @@ export class OutcomeValidator {
       .update({
         actual_value: actualValue,
         validated_at: new Date().toISOString(),
-        was_correct: wasCorrect,
-        error_absolute: accuracy.absoluteError,
-        error_relative: accuracy.relativeError,
-        within_interval: accuracy.withinInterval,
-        direction_correct: accuracy.directionCorrect,
+        was_accurate: wasCorrect,
+        error_category: this.classifyError(prediction.confidence, wasCorrect),
+        error_analysis: {
+          absolute_error: accuracy.absoluteError,
+          relative_error: accuracy.relativeError,
+          within_interval: accuracy.withinInterval,
+          direction_correct: accuracy.directionCorrect,
+        },
       })
       .eq('id', prediction.id);
 
@@ -150,14 +152,14 @@ export class OutcomeValidator {
     await validationsTable.insert({
       id: result.id,
       prediction_id: result.predictionId,
+      player_id: prediction.player_id,
       stated_confidence: result.statedConfidence,
-      actual_confidence_bucket: Math.round(result.statedConfidence * 10) / 10,
+      actual_value: actualValue,
+      predicted_value: prediction.predicted_value,
       was_correct: result.wasCorrect,
-      absolute_error: result.absoluteError,
-      relative_error: result.relativeError,
-      within_confidence_interval: result.withinConfidenceInterval,
-      direction_correct: result.directionCorrect,
-      learning_signals: result.learningSignals,
+      error_margin: result.absoluteError,
+      calibration_bucket: this.getCalibrationBucket(result.statedConfidence),
+      validated_at: new Date().toISOString(),
     });
 
     return result;
@@ -171,7 +173,7 @@ export class OutcomeValidator {
     metric: string,
     dueDate: string
   ): Promise<number | null> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Look for a round on or near the due date
     const dueDateObj = new Date(dueDate);
@@ -272,7 +274,7 @@ export class OutcomeValidator {
    * Updates calibration buckets
    */
   private async updateCalibration(): Promise<void> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Type assertion for new table
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -333,7 +335,7 @@ export class OutcomeValidator {
     byConfidenceBucket: CalibrationBucket[];
     bias: number;
   }> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Type assertions for new tables
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -343,7 +345,7 @@ export class OutcomeValidator {
 
     // Get all validations
     const { data: validations } = await validationsTable
-      .select('stated_confidence, was_correct, absolute_error') as { data: ValidationRow[] | null };
+      .select('stated_confidence, was_correct, error_margin') as { data: ValidationRow[] | null };
 
     if (!validations || validations.length === 0) {
       return {
@@ -377,8 +379,8 @@ export class OutcomeValidator {
     let biasSum = 0;
     let biasCount = 0;
     for (const v of validations) {
-      if (v.absolute_error !== null) {
-        biasSum += v.absolute_error * (v.was_correct ? -1 : 1);
+      if (v.error_margin !== null) {
+        biasSum += v.error_margin * (v.was_correct ? -1 : 1);
         biasCount++;
       }
     }
@@ -390,5 +392,20 @@ export class OutcomeValidator {
       byConfidenceBucket,
       bias,
     };
+  }
+
+  private classifyError(
+    confidence: number,
+    wasCorrect: boolean
+  ): 'overconfident' | 'underconfident' | 'well_calibrated' {
+    if (!wasCorrect && confidence >= 0.7) return 'overconfident';
+    if (wasCorrect && confidence <= 0.4) return 'underconfident';
+    return 'well_calibrated';
+  }
+
+  private getCalibrationBucket(confidence: number): string {
+    const lower = Math.floor(confidence * 5) * 20;
+    const upper = Math.min(100, lower + 20);
+    return `${lower}-${upper}%`;
   }
 }

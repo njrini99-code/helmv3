@@ -13,8 +13,8 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { extractAllFeatures } from './features';
-import { PatternMiner, CausalEngine, ShotPatternMiner, StatsInsightGenerator, CorrelationDiscovery, analyzeLieSpecificMissPatterns } from './mining';
-import type { StatsInsight, MetricCorrelation, LieMissAnalysis, ShotCategoryInsight, DispersionInsight, RootCauseInsight } from './mining';
+import { PatternMiner, CausalEngine, ShotPatternMiner, ShotStateIntelligence, StatsInsightGenerator, CorrelationDiscovery, analyzeLieSpecificMissPatterns } from './mining';
+import type { StatsInsight, MetricCorrelation, LieMissAnalysis, ShotCategoryInsight, DispersionInsight, RootCauseInsight, ShotStateAnalysis, ShotStateInsight } from './mining';
 import { PerformancePredictor, TrajectoryForecaster } from './prediction';
 import { BehaviorLearner, OutcomeValidator, CrossLearner } from './learning';
 import { ReasoningEngine, ConfidenceCalibrator } from './reasoning';
@@ -100,6 +100,9 @@ class CoachHelmIntelligence {
       lieAnalysis = (await analyzeLieSpecificMissPatterns(playerId)) ?? undefined;
     }
 
+    // Shot-state intelligence (par/lie/yardage/miss sector engine)
+    const shotStateAnalysis = await new ShotStateIntelligence(playerId).analyze();
+
     // Discover causal relationships
     let causalRelationships: CausalRelationship[] = [];
     if (includeCausal) {
@@ -132,7 +135,7 @@ class CoachHelmIntelligence {
     const stats = await this.fetchPlayerStats(playerId);
 
     // Generate insights (including shot patterns, stats-based, and lie-specific)
-    const insights = await this.generateInsights(
+    const insights = this.prioritizeInsights(await this.generateInsights(
       playerId,
       features,
       patterns,
@@ -140,8 +143,9 @@ class CoachHelmIntelligence {
       predictions,
       shotPatterns,
       stats,
-      lieAnalysis
-    );
+      lieAnalysis,
+      shotStateAnalysis ?? undefined
+    ));
 
     // Determine alert level
     const alertLevel = this.determineAlertLevel(patterns, predictions, features);
@@ -155,7 +159,7 @@ class CoachHelmIntelligence {
 
     // Get primary insight
     const primaryInsight = insights.length > 0
-      ? insights.reduce((a, b) => (a.confidence > b.confidence ? a : b))
+      ? insights[0]!
       : {
           headline: 'Analysis Complete',
           body: 'No significant insights at this time.',
@@ -212,6 +216,28 @@ class CoachHelmIntelligence {
       return null;
     }
 
+    // Pull the same evidence-rich layers used in full player analysis so
+    // round reviews are grounded in shot data, stats, and root causes.
+    const shotMiner = new ShotPatternMiner(playerId);
+    const shotPatterns = (await shotMiner.analyzeShotPatterns()) ?? undefined;
+    const lieAnalysis = (await analyzeLieSpecificMissPatterns(playerId)) ?? undefined;
+    const shotStateAnalysis = (await new ShotStateIntelligence(playerId).analyze()) ?? undefined;
+    const stats = await this.fetchPlayerStats(playerId);
+
+    const prioritizedInsights = this.prioritizeInsights(await this.generateInsights(
+      playerId,
+      features,
+      patterns,
+      causalInsights,
+      [prediction],
+      shotPatterns,
+      stats,
+      lieAnalysis,
+      shotStateAnalysis
+    ));
+
+    const primaryReviewInsight = prioritizedInsights[0];
+
     // Apply reasoning
     const reasoning = this.reasoningEngine.reason(
       {
@@ -231,41 +257,29 @@ class CoachHelmIntelligence {
       reasoning.confidence
     );
 
-    // Compose review
-    const context: InsightContext = {
-      playerId,
-      isForCoach: false,
-      verbosity: 'balanced',
-      playerState: this.inferPlayerState(features),
-      recentPerformance: this.inferRecentPerformance(features),
+    const composedReview = primaryReviewInsight ?? {
+      headline: 'Round Review Ready',
+      body: 'The round has been analyzed, but there is not yet enough evidence to surface a high-confidence takeaway.',
+      tone: 'neutral' as const,
+      confidence: reasoning.calibratedConfidence,
+      reasoning,
     };
 
-    // Only compose from patterns if we have valid pattern data
-    const primaryPattern = patterns.length > 0 ? patterns[0] : null;
-    const composedReview = this.insightComposer.compose(
-      {
-        type: primaryPattern ? 'pattern' : 'prediction',
-        data: (primaryPattern ?? prediction ?? {}) as unknown as Record<string, unknown>,
-        reasoning,
-        features,
-      },
-      context
-    );
-
     // Generate focus areas
-    const focusAreas = this.identifyFocusAreas(patterns, causalInsights);
+    const focusAreas = this.identifyFocusAreas(patterns, causalInsights, prioritizedInsights);
 
     // Determine practice priority
     const practicePriority = this.determinePracticePriority(
       patterns,
-      causalInsights
+      causalInsights,
+      prioritizedInsights
     );
 
     return {
       roundId,
       playerId,
-      summary: composedReview.body,
-      primaryTakeaway: composedReview.headline,
+      summary: this.buildRoundReviewSummary(prioritizedInsights, prediction, features),
+      primaryTakeaway: primaryReviewInsight?.headline ?? composedReview.headline,
       patternsApplied: patterns.filter((p) => p.isActive).slice(0, 3),
       causalInsights: causalInsights.slice(0, 2),
       prediction,
@@ -438,15 +452,20 @@ class CoachHelmIntelligence {
       // Filter to patterns affecting multiple team players
       const teamWidePatterns = globalPatterns.filter(
         (gp) => gp.playerCount >= 2 && gp.confidence >= 0.6
-      );
+      ).sort((a, b) => {
+        const aScore = a.playerCount * Math.abs(a.averageImpact) * a.confidence;
+        const bScore = b.playerCount * Math.abs(b.averageImpact) * b.confidence;
+        return bScore - aScore;
+      });
 
       for (const gp of teamWidePatterns.slice(0, 5)) {
         const isPositive = gp.averageImpact < 0; // negative stroke impact = good
         const tone = isPositive ? 'encouraging' : gp.averageImpact > 1.5 ? 'urgent' : 'cautionary';
+        const teamStrokeSwing = gp.averageImpact * gp.playerCount;
 
         const headline = isPositive
-          ? `Team Strength: ${gp.patternType.replace(/_/g, ' ')}`
-          : `Team-Wide Area: ${gp.patternType.replace(/_/g, ' ')}`;
+          ? `Team Strength: ${gp.patternType.replace(/_/g, ' ')} across ${gp.playerCount} players`
+          : `Team Priority: ${gp.patternType.replace(/_/g, ' ')} affecting ${gp.playerCount} players`;
 
         const bodyParts: string[] = [];
         bodyParts.push(
@@ -454,6 +473,9 @@ class CoachHelmIntelligence {
         );
         bodyParts.push(
           `Average impact: ${gp.averageImpact > 0 ? '+' : ''}${gp.averageImpact.toFixed(1)} strokes per round across ${gp.instanceCount} observed instances.`
+        );
+        bodyParts.push(
+          `${teamStrokeSwing > 0 ? 'Estimated team cost' : 'Estimated team edge'}: ${teamStrokeSwing > 0 ? '+' : ''}${teamStrokeSwing.toFixed(1)} strokes per competitive round.`
         );
         if (!isPositive) {
           bodyParts.push(
@@ -465,10 +487,11 @@ class CoachHelmIntelligence {
           headline,
           body: bodyParts.join(' '),
           callToAction: isPositive
-            ? 'Reinforce this in team practice to maintain the advantage.'
-            : 'Design a team drill session to address this shared weakness.',
+            ? 'Protect this edge in team practice and document the habits the best performers are repeating.'
+            : `Build the next team session around this weakness first; it is affecting ${gp.playerCount} players and roughly ${teamStrokeSwing.toFixed(1)} team strokes.`,
           tone,
           confidence: gp.confidence,
+          strokeImpact: Math.abs(teamStrokeSwing),
           reasoning: {
             conclusion: `Cross-player analysis found ${gp.playerCount} players with the same ${gp.patternType} pattern`,
             confidence: gp.confidence,
@@ -524,7 +547,8 @@ class CoachHelmIntelligence {
     predictions: PerformancePrediction[],
     shotPatterns?: ShotPatternAnalysis,
     stats?: GolfStats,
-    lieAnalysis?: LieMissAnalysis
+    lieAnalysis?: LieMissAnalysis,
+    shotStateAnalysis?: ShotStateAnalysis
   ): Promise<ComposedInsight[]> {
     const insights: ComposedInsight[] = [];
 
@@ -540,6 +564,14 @@ class CoachHelmIntelligence {
     if (stats && stats.roundsPlayed >= 3) {
       const statsInsights = await this.generateStatsInsights(playerId, stats);
       insights.push(...statsInsights);
+    }
+
+    // Shot-state intelligence insights (par + lie + before/after yardage)
+    if (shotStateAnalysis) {
+      const shotStateInsights = shotStateAnalysis.insights.map((insight) =>
+        this.convertShotStateInsightToComposed(insight)
+      );
+      insights.push(...shotStateInsights);
     }
 
     // Cross-metric correlation insights (pressure, scoring patterns)
@@ -634,6 +666,89 @@ class CoachHelmIntelligence {
     }
 
     return insights;
+  }
+
+  /**
+   * Prioritizes insights by scoring value, confidence, and evidence density.
+   * This prevents low-impact but high-confidence observations from outranking
+   * the truly useful coaching takeaways.
+   */
+  private prioritizeInsights(insights: ComposedInsight[]): ComposedInsight[] {
+    const deduped = new Map<string, { insight: ComposedInsight; score: number }>();
+
+    for (const insight of insights) {
+      const key = this.getInsightDedupKey(insight);
+      const score = this.scoreInsight(insight);
+      const existing = deduped.get(key);
+
+      if (!existing || score > existing.score) {
+        deduped.set(key, { insight, score });
+      }
+    }
+
+    return [...deduped.values()]
+      .sort((a, b) => b.score - a.score)
+      .map((entry) => entry.insight)
+      .slice(0, 12);
+  }
+
+  private scoreInsight(insight: ComposedInsight): number {
+    const toneWeight: Record<ComposedInsight['tone'], number> = {
+      urgent: 0.18,
+      cautionary: 0.14,
+      neutral: 0.08,
+      encouraging: 0.06,
+      celebratory: 0.04,
+    };
+
+    const strokeComponent = Math.min(1, (insight.strokeImpact ?? 0) / 2.5) * 0.45;
+    const confidenceComponent = Math.max(0, Math.min(1, insight.confidence)) * 0.3;
+    const evidenceCount =
+      insight.evidenceMetrics?.length
+      ?? insight.reasoning?.reasoningChain.length
+      ?? 0;
+    const evidenceComponent = Math.min(1, evidenceCount / 4) * 0.17;
+
+    return strokeComponent + confidenceComponent + evidenceComponent + (toneWeight[insight.tone] ?? 0);
+  }
+
+  private getInsightDedupKey(insight: ComposedInsight): string {
+    return `${insight.headline}|${insight.body}`
+      .toLowerCase()
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  private buildRoundReviewSummary(
+    insights: ComposedInsight[],
+    prediction: PerformancePrediction,
+    features: ExtractedFeatures
+  ): string {
+    const topInsights = insights.slice(0, 3);
+
+    if (topInsights.length === 0) {
+      const form = this.inferRecentPerformance(features);
+      const forecast = this.formatScoreToPar(prediction.predictedValue);
+      return `Recent form is ${form}. Current forecast is ${forecast}, so the next practice block should stay focused on scoring stability.`;
+    }
+
+    const summaryParts: string[] = [topInsights[0]!.body];
+
+    if (topInsights[1]) {
+      summaryParts.push(`Secondary theme: ${topInsights[1]!.body}`);
+    }
+
+    const mostActionable = topInsights.find((insight) => insight.callToAction);
+    if (mostActionable?.callToAction) {
+      summaryParts.push(`Next step: ${mostActionable.callToAction}`);
+    }
+
+    return summaryParts.join(' ');
+  }
+
+  private formatScoreToPar(value: number): string {
+    if (Math.abs(value) < 0.05) return 'E';
+    return value > 0 ? `+${value.toFixed(1)}` : value.toFixed(1);
   }
 
   /**
@@ -752,9 +867,17 @@ class CoachHelmIntelligence {
    */
   private identifyFocusAreas(
     patterns: MinedPattern[],
-    causal: CausalRelationship[]
+    causal: CausalRelationship[],
+    insights: ComposedInsight[] = []
   ): string[] {
     const areas: string[] = [];
+
+    for (const insight of insights.filter((item) => item.tone === 'urgent' || item.tone === 'cautionary')) {
+      const area = this.extractFocusAreaFromInsight(insight);
+      if (area) {
+        areas.push(area);
+      }
+    }
 
     // From patterns with negative impact
     for (const pattern of patterns.filter((p) => p.strokeImpact > 0.5)) {
@@ -772,13 +895,39 @@ class CoachHelmIntelligence {
     return Array.from(new Set(areas)).slice(0, 3);
   }
 
+  private extractFocusAreaFromInsight(insight: ComposedInsight): string | null {
+    const headline = insight.headline.trim();
+    if (!headline) return null;
+
+    const normalized = headline.toLowerCase();
+    if (normalized.includes('putt')) return 'Putting';
+    if (normalized.includes('approach')) return 'Approach Play';
+    if (normalized.includes('driving') || normalized.includes('fairway')) return 'Driving';
+    if (normalized.includes('short game') || normalized.includes('scrambl')) return 'Short Game';
+    if (normalized.includes('pressure')) return 'Pressure Performance';
+    if (normalized.includes('dispersion')) return 'Shot Dispersion';
+    if (normalized.includes('par 5')) return 'Par 5 Scoring';
+    if (normalized.includes('par 3')) return 'Par 3 Scoring';
+
+    return headline.split(':')[0]?.trim() ?? null;
+  }
+
   /**
    * Determines practice priority
    */
   private determinePracticePriority(
     patterns: MinedPattern[],
-    causal: CausalRelationship[]
+    causal: CausalRelationship[],
+    insights: ComposedInsight[] = []
   ): string {
+    const topActionableInsight = insights.find(
+      (insight) => (insight.tone === 'urgent' || insight.tone === 'cautionary') && insight.callToAction
+    );
+
+    if (topActionableInsight?.callToAction) {
+      return topActionableInsight.callToAction;
+    }
+
     // Find highest impact actionable pattern
     const actionablePatterns = patterns
       .filter((p) => p.actionability > 0.5 && p.strokeImpact > 0.3)
@@ -1229,6 +1378,72 @@ class CoachHelmIntelligence {
   }
 
   /**
+   * Converts a ShotStateInsight into a composed insight.
+   * These insights are built from par/lie/yardage baselines and use
+   * both before- and after-shot yardage to surface hidden scoring leaks.
+   */
+  private convertShotStateInsightToComposed(insight: ShotStateInsight): ComposedInsight {
+    const toneMap: Record<ShotStateInsight['type'], ComposedInsight['tone']> = {
+      state_leak: 'cautionary',
+      danger_side: 'urgent',
+      lie_penalty: 'cautionary',
+    };
+
+    type ReasoningType = 'inductive' | 'deductive' | 'abductive';
+    const reasoningChain: Array<{
+      stepNumber: number;
+      type: ReasoningType;
+      premise: string;
+      inference: string;
+      conclusion: string;
+      confidence: number;
+      evidence: string[];
+    }> = [
+      {
+        stepNumber: 1,
+        type: 'inductive' as ReasoningType,
+        premise: 'Compared shot states by par, lie, and yardage window using distance before and after the shot',
+        inference: insight.evidence[0] ?? 'A state-specific scoring leak was detected',
+        conclusion: insight.headline,
+        confidence: insight.confidence,
+        evidence: insight.evidence,
+      },
+      {
+        stepNumber: 2,
+        type: 'deductive' as ReasoningType,
+        premise: `Estimated impact is ${insight.strokeImpact.toFixed(2)} strokes per round`,
+        inference: insight.strokeImpact > 0.6
+          ? 'This state is a major driver of scoring inefficiency'
+          : 'This state creates a measurable but contained scoring tax',
+        conclusion: insight.recommendation,
+        confidence: insight.confidence,
+        evidence: [`Stroke impact: ${insight.strokeImpact.toFixed(2)}`],
+      },
+    ];
+
+    return {
+      headline: insight.headline,
+      body: insight.body,
+      callToAction: insight.recommendation,
+      tone: toneMap[insight.type] ?? 'neutral',
+      confidence: insight.confidence,
+      strokeImpact: insight.strokeImpact,
+      evidenceMetrics: insight.evidence.map((item, index) => ({
+        label: index === 0 ? 'Primary evidence' : `Evidence ${index + 1}`,
+        value: item,
+      })),
+      reasoning: {
+        conclusion: insight.body,
+        confidence: insight.confidence,
+        calibratedConfidence: insight.confidence,
+        reasoningChain,
+        alternatives: [],
+        sensitivities: [],
+      },
+    };
+  }
+
+  /**
    * Generates insights from lie-specific analysis (shot category & dispersion)
    * Converts ShotCategoryInsight[] and DispersionInsight[] to ComposedInsight[]
    */
@@ -1317,6 +1532,7 @@ class CoachHelmIntelligence {
       callToAction: insight.recommendation,
       tone: toneMap[insight.severity] ?? 'neutral',
       confidence,
+      strokeImpact: insight.strokeImpact > 0 ? insight.strokeImpact : undefined,
       reasoning: {
         conclusion: insight.body,
         confidence,
@@ -1381,6 +1597,7 @@ class CoachHelmIntelligence {
       callToAction: insight.recommendation,
       tone,
       confidence: 0.8,
+      strokeImpact: insight.strokeImpact > 0 ? insight.strokeImpact : undefined,
       reasoning: {
         conclusion: insight.body,
         confidence: 0.8,
@@ -1452,6 +1669,7 @@ class CoachHelmIntelligence {
       callToAction: insight.recommendation,
       tone,
       confidence: insight.confidence,
+      strokeImpact: insight.strokeImpact > 0 ? insight.strokeImpact : undefined,
       reasoning: {
         conclusion: insight.body,
         confidence: insight.confidence,

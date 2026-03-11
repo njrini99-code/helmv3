@@ -10,6 +10,7 @@
  * Example insight: "From 140-160 yards, you miss long_right 67% of the time"
  */
 
+import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import type {
   ShotPattern,
@@ -640,18 +641,18 @@ export class ShotPatternMiner {
   private async savePatterns(patterns: ShotPattern[]): Promise<void> {
     if (patterns.length === 0) return;
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Store in golf_patterns_v2 with shot-level flag
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const table = supabase.from('golf_patterns_v2' as any) as any;
 
     for (const pattern of patterns) {
-      await table.upsert(
+      const { error } = await table.upsert(
         {
           id: pattern.id,
           player_id: pattern.playerId,
-          pattern_type: 'shot_dispersion',
+          pattern_type: 'contextual',
           conditions: [
             {
               field: 'distance_range',
@@ -686,7 +687,7 @@ export class ShotPatternMiner {
           trend: 'new',
           is_active: true,
           metadata: {
-            patternSubType: 'shot_level',
+            pattern_subtype: 'shot_dispersion',
             situation: pattern.situation,
             tendencies: pattern.tendencies,
             dispersionPattern: pattern.dispersionPattern,
@@ -698,6 +699,10 @@ export class ShotPatternMiner {
         },
         { onConflict: 'id' }
       );
+
+      if (error) {
+        throw new Error(`Failed to save CoachHelm shot pattern: ${error.message}`);
+      }
     }
   }
 }

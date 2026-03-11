@@ -18,6 +18,7 @@
 // ============================================================================
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import {
   coachHelmIntelligence,
@@ -39,6 +40,7 @@ import type { CoachPhilosophy } from '@/lib/coachhelm/types';
 import { PHILOSOPHY_DEFAULTS } from '@/lib/coachhelm/constants';
 import { generateTeamPatterns } from '@/lib/coachhelm/v2/mining/team-pattern-generator';
 import { generateTeamForecasts } from '@/lib/coachhelm/v2/prediction/team-forecaster';
+import { logServerError } from '@/lib/server-error-logger';
 
 // ============================================================================
 // TYPES
@@ -187,8 +189,11 @@ interface PhilosophyDbRow {
 /**
  * Fetches coach philosophy from database, returns defaults if not found
  */
-async function getCoachPhilosophy(coachId: string): Promise<CoachPhilosophy> {
-  const supabase = await createClient();
+async function getCoachPhilosophy(
+  coachId: string,
+  client?: Awaited<ReturnType<typeof createClient>> | ReturnType<typeof createAdminClient>
+): Promise<CoachPhilosophy> {
+  const supabase = client ?? await createClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data } = await (supabase as any)
@@ -897,7 +902,7 @@ export async function generateTeamInsights() {
         const record: InsightRecord = {
           coach_id: coach.id,
           team_id: teamId,
-          insight_type: 'team_pattern',
+          insight_type: 'team_trend',
           priority: tpi.tone === 'urgent' ? 'high' : tpi.tone === 'cautionary' ? 'medium' : 'low',
           player_id: players[0]?.id ?? '', // Team-level, attributed to first player
           title: tpi.headline,
@@ -2689,14 +2694,14 @@ export async function acknowledgeComposedInsight(
         insight_type: 'pattern_detected',  // maps to allowed DB type
         priority: mapToneToPriority(insight.tone, insight.confidence),
         title: insight.headline,
-        description: insight.body,
-        recommendation: insight.callToAction || '',
+        content: insight.body,
         status: 'acknowledged',
         acknowledged_at: new Date().toISOString(),
         metadata: {
           confidence: insight.confidence,
           tone: insight.tone,
           v2_engine: true,
+          recommendation: insight.callToAction || '',
           reasoning_steps: insight.reasoning?.reasoningChain?.length ?? 0,
         },
       });
@@ -2779,8 +2784,7 @@ export async function dismissComposedInsight(
         insight_type: 'pattern_detected',  // maps to allowed DB type
         priority: mapToneToPriority(insight.tone, insight.confidence),
         title: insight.headline,
-        description: insight.body,
-        recommendation: insight.callToAction || '',
+        content: insight.body,
         status: 'dismissed',
         dismissed: true,
         dismissed_at: new Date().toISOString(),
@@ -2788,6 +2792,7 @@ export async function dismissComposedInsight(
           confidence: insight.confidence,
           tone: insight.tone,
           v2_engine: true,
+          recommendation: insight.callToAction || '',
           reasoning_steps: insight.reasoning?.reasoningChain?.length ?? 0,
         },
       });
@@ -2827,12 +2832,14 @@ export async function dismissComposedInsight(
  */
 export async function triggerPlayerInsightsAfterRound(
   playerId: string
-): Promise<{ success: boolean; insights_created?: number }> {
+): Promise<{ success: boolean; insights_created?: number; error?: string }> {
+  const startTime = Date.now();
+
   try {
-    const supabase = await createClient();
+    const admin = createAdminClient();
 
     // Look up the player's coach and team
-    const { data: membership } = await supabase
+    const { data: membership } = await admin
       .from('golf_team_members')
       .select('team_id, golf_teams(organization_id)')
       .eq('player_id', playerId)
@@ -2841,31 +2848,49 @@ export async function triggerPlayerInsightsAfterRound(
       .single();
 
     if (!membership?.team_id) {
-      return { success: false };
+      return { success: false, error: 'No active team membership for player' };
     }
 
     const teamId = membership.team_id;
     const orgId = (membership.golf_teams as { organization_id: string } | null)?.organization_id;
-    if (!orgId) return { success: false };
+    if (!orgId) return { success: false, error: 'Team organization not found' };
 
     // Find the coach for this organization
-    const { data: coach } = await supabase
+    const { data: coach } = await admin
       .from('golf_coaches')
       .select('id')
       .eq('organization_id', orgId)
       .limit(1)
       .single();
 
-    if (!coach) return { success: false };
+    if (!coach) return { success: false, error: 'Coach not found for team organization' };
 
-    // Check if CoachHelm V2 is enabled
-    const coachHelmStatus = await isCoachHelmEnabledForCoach(coach.id);
-    if (!coachHelmStatus.effectivelyEnabled) {
-      return { success: false };
+    const { data: coachSettings } = await admin
+      .from('golf_coachhelm_settings')
+      .select('enabled, disabled_reason')
+      .eq('coach_id', coach.id)
+      .maybeSingle();
+    if (coachSettings?.enabled === false) {
+      return {
+        success: false,
+        error: coachSettings.disabled_reason || 'CoachHelm disabled for coach',
+      };
+    }
+
+    const { data: teamSettings } = await admin
+      .from('golf_team_coachhelm_settings')
+      .select('enabled, disabled_reason')
+      .eq('team_id', teamId)
+      .maybeSingle();
+    if (teamSettings?.enabled === false) {
+      return {
+        success: false,
+        error: teamSettings.disabled_reason || 'CoachHelm disabled for team',
+      };
     }
 
     // Get coach philosophy
-    const philosophy = await getCoachPhilosophy(coach.id);
+    const philosophy = await getCoachPhilosophy(coach.id, admin);
     const confidenceThreshold = getConfidenceThreshold(philosophy.alertSensitivity);
 
     // Run analysis for this single player
@@ -2881,7 +2906,7 @@ export async function triggerPlayerInsightsAfterRound(
 
     // Check existing insights to avoid duplicates
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: existingInsights } = await (supabase as any)
+    const { data: existingInsights } = await (admin as any)
       .from('golf_coach_insights')
       .select('player_id, insight_type')
       .eq('coach_id', coach.id)
@@ -2964,13 +2989,43 @@ export async function triggerPlayerInsightsAfterRound(
       });
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any).from('golf_coach_insights').insert(cleanInsights);
+      const { error: insertError } = await (admin as any)
+        .from('golf_coach_insights')
+        .insert(cleanInsights);
+      if (insertError) {
+        throw new Error(`Failed to persist post-round CoachHelm insights: ${insertError.message}`);
+      }
     }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (admin as any).from('golf_insight_generation_log').insert({
+      team_id: teamId,
+      player_id: playerId,
+      insight_type: 'post_round_v2',
+      insights_generated: newInsights.length,
+      rounds_analyzed: 1,
+      engine_version: 'v2',
+      duration_ms: Date.now() - startTime,
+    });
 
     revalidatePath('/golf/dashboard');
     return { success: true, insights_created: newInsights.length };
   } catch (error) {
     console.error('[CoachHelm] Error in post-round insight trigger:', error);
-    return { success: false };
+    await logServerError(
+      `CoachHelm post-round trigger failed: ${error instanceof Error ? error.message : String(error)}`,
+      {
+        action: 'triggerPlayerInsightsAfterRound',
+        extra: {
+          playerId,
+          stack: error instanceof Error ? error.stack : undefined,
+        },
+      },
+      'error'
+    );
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'CoachHelm post-round trigger failed',
+    };
   }
 }

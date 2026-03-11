@@ -8,6 +8,7 @@
  * - Natural experiments (when X changed, did Y follow?)
  */
 
+import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import type {
   CausalRelationship,
@@ -458,14 +459,14 @@ export class CausalEngine {
   ): Promise<void> {
     if (relationships.length === 0) return;
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Type assertion for new table not in generated types
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const table = supabase.from('golf_causal_relationships' as any) as any;
 
     for (const rel of relationships) {
-      await table.upsert(
+      const { error } = await table.upsert(
         {
           id: rel.id,
           player_id: rel.playerId,
@@ -486,6 +487,12 @@ export class CausalEngine {
         },
         { onConflict: 'id' }
       );
+
+      if (error) {
+        throw new Error(
+          `Failed to save CoachHelm causal relationship: ${error.message}`
+        );
+      }
     }
   }
 }

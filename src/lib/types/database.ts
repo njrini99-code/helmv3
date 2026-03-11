@@ -5463,6 +5463,84 @@ export type Database = {
           },
         ]
       }
+      golf_causal_relationships: {
+        Row: {
+          cause: string
+          cause_metric: string | null
+          confidence: number
+          confounders: Json
+          created_at: string
+          dose_response: boolean
+          effect: string
+          effect_metric: string | null
+          evidence: Json
+          id: string
+          intervention_potential: number
+          mechanism: string
+          player_id: string | null
+          relationship_type: string
+          strength: number
+          team_id: string | null
+          updated_at: string
+          validation_count: number
+        }
+        Insert: {
+          cause: string
+          cause_metric?: string | null
+          confidence?: number
+          confounders?: Json
+          created_at?: string
+          dose_response?: boolean
+          effect: string
+          effect_metric?: string | null
+          evidence?: Json
+          id?: string
+          intervention_potential?: number
+          mechanism: string
+          player_id?: string | null
+          relationship_type: string
+          strength?: number
+          team_id?: string | null
+          updated_at?: string
+          validation_count?: number
+        }
+        Update: {
+          cause?: string
+          cause_metric?: string | null
+          confidence?: number
+          confounders?: Json
+          created_at?: string
+          dose_response?: boolean
+          effect?: string
+          effect_metric?: string | null
+          evidence?: Json
+          id?: string
+          intervention_potential?: number
+          mechanism?: string
+          player_id?: string | null
+          relationship_type?: string
+          strength?: number
+          team_id?: string | null
+          updated_at?: string
+          validation_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_causal_relationships_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_causal_relationships_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "golf_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_coach_blocked_time: {
         Row: {
           coach_id: string
@@ -5876,6 +5954,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      golf_confidence_calibration: {
+        Row: {
+          actual_accuracy: number
+          bucket: number
+          calibration_error: number
+          correct_count: number
+          created_at: string
+          prediction_type: string
+          predictions_count: number
+          sample_size: number
+          updated_at: string
+        }
+        Insert: {
+          actual_accuracy?: number
+          bucket: number
+          calibration_error?: number
+          correct_count?: number
+          created_at?: string
+          prediction_type: string
+          predictions_count?: number
+          sample_size?: number
+          updated_at?: string
+        }
+        Update: {
+          actual_accuracy?: number
+          bucket?: number
+          calibration_error?: number
+          correct_count?: number
+          created_at?: string
+          prediction_type?: string
+          predictions_count?: number
+          sample_size?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       golf_conversation_participants: {
         Row: {

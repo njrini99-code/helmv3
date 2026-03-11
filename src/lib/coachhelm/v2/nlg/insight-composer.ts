@@ -340,65 +340,67 @@ export class InsightComposer {
     insight: { type: string; data: Record<string, unknown> },
     context: InsightContext
   ): string | undefined {
-    const pick = <T>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)] ?? arr[0];
-
     if (insight.type === 'pattern') {
       const pattern = insight.data as unknown as MinedPattern;
-      if (pattern.strokeImpact > 0) {
-        return pick([
-          'Review practice focus to address this pattern.',
-          'Design a drill targeting this weakness.',
-          'Prioritize this in the next practice session.',
-          'Build this into the weekly development plan.',
-        ]);
+      if (pattern.recommendation) {
+        return pattern.recommendation;
       }
-      return pick([
-        'Discuss with coach to reinforce this positive pattern.',
-        'Keep doing what\'s working here.',
-        'Note this for the player\'s development report.',
-        'Consider sharing this with the player as encouragement.',
-      ]);
+
+      const focusArea = pattern.conditions?.[0]?.label ?? pattern.conditions?.[0]?.field ?? 'this scoring pattern';
+      const impact = Number.isFinite(pattern.strokeImpact)
+        ? `${Math.abs(pattern.strokeImpact).toFixed(1)} strokes per round`
+        : 'measurable scoring cost';
+
+      if (pattern.strokeImpact > 0) {
+        return `Build the next practice block around ${focusArea}; this pattern is costing about ${impact}.`;
+      }
+
+      return `Keep reinforcing ${focusArea}; it is currently helping scoring by about ${impact}.`;
     }
 
     if (insight.type === 'prediction') {
-      return pick([
-        'Check upcoming schedule and prepare accordingly.',
-        'Adjust practice plan to match the forecast.',
-        'Use this to set realistic goals for the next round.',
-        'Consider course management strategy based on this outlook.',
-      ]);
+      const pred = insight.data as unknown as PerformancePrediction;
+      const topFactors = (pred.keyFactors ?? [])
+        .slice(0, 2)
+        .map((factor) => factor.name.toLowerCase());
+      const factorSummary = topFactors.length > 0
+        ? ` with extra attention on ${topFactors.join(' and ')}`
+        : '';
+
+      if (pred.predictedValue > 0) {
+        return `Prepare the next round around score containment${factorSummary}; practice and course strategy should aim to protect the high side of the forecast range.`;
+      }
+
+      return `Use this forecast to press your advantage${factorSummary}; keep the pre-round plan aligned with what is driving the current form.`;
     }
 
     if (insight.type === 'alert') {
-      return pick([
-        'Review details and take appropriate action.',
-        'Check in with this player before the next event.',
-        'Add this to your coaching conversation priorities.',
-        'Monitor this over the next 2-3 rounds.',
-      ]);
+      const recommendation =
+        (insight.data.recommendation as string | undefined)
+        ?? (insight.data.callToAction as string | undefined);
+      if (recommendation) {
+        return recommendation;
+      }
+
+      return context.isForCoach
+        ? 'Move this into the next coach-player conversation and assign a concrete practice response.'
+        : 'Turn this alert into a specific practice goal before the next round.';
     }
 
     if (insight.type === 'causal') {
-      return pick([
-        'Use this knowledge to adjust the practice plan.',
-        'Address the root cause for lasting improvement.',
-        'Discuss this connection with the player.',
-        'Factor this into development plan updates.',
-      ]);
+      const cause = insight.data.cause as string | undefined;
+      const effect = insight.data.effect as string | undefined;
+      if (cause && effect) {
+        return `Address ${cause} directly in practice because it is driving ${effect}.`;
+      }
+
+      return 'Treat this as a root-cause issue and change the practice plan at the source, not just the symptom.';
     }
 
     if (insight.type === 'milestone') {
       return context.isForCoach
-        ? pick([
-            'Acknowledge this progress with the player.',
-            'Update the player\'s development goals.',
-            'Set the next milestone target.',
-          ])
-        : pick([
-            'Celebrate this achievement!',
-            'Set your next target to keep the momentum.',
-            'Share this progress with your coach.',
-          ]);
+        ? 'Acknowledge the progress, then set the next measurable target while momentum is strong.'
+        : 'Bank the progress and set the next measurable target immediately.';
     }
 
     return undefined;
@@ -424,7 +426,12 @@ export class InsightComposer {
       raw = pred.calibratedConfidence;
     }
 
-    return Number.isFinite(raw) ? raw! : 0.7; // Default confidence
+    if (Number.isFinite(raw)) {
+      return Math.max(0.35, Math.min(0.98, raw!));
+    }
+
+    const reasoningEvidence = insight.reasoning?.reasoningChain.length ?? 0;
+    return Math.min(0.7, 0.5 + reasoningEvidence * 0.04);
   }
 
   /**

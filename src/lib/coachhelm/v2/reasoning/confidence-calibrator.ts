@@ -6,7 +6,7 @@
  * - Tracks and adjusts based on historical accuracy
  */
 
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import type { CalibrationBucket, CalibrationReport } from '../types';
 
 interface ValidationRow {
@@ -61,7 +61,7 @@ export class ConfidenceCalibrator {
    * Updates calibration curve from validation data
    */
   async updateCalibrationCurve(): Promise<void> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Type assertion for new table not in generated types
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -123,7 +123,7 @@ export class ConfidenceCalibrator {
    * Gets confidence analysis report
    */
   async getConfidenceAnalysis(): Promise<CalibrationReport> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Type assertion for new table not in generated types
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -200,7 +200,7 @@ export class ConfidenceCalibrator {
   private async loadCalibrationCurve(): Promise<void> {
     if (this.loaded) return;
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Type assertion for new table not in generated types
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -227,7 +227,7 @@ export class ConfidenceCalibrator {
    * Gets confidence in the calibration based on sample size
    */
   private async getSampleSizeConfidence(bucket: number): Promise<number> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Type assertion for new table not in generated types
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

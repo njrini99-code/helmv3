@@ -1043,8 +1043,28 @@ export async function submitGolfRoundComprehensive(
       console.error('[Golf] Cache revalidation failed after successful submit:', cacheErr);
     }
 
-    // Fire-and-forget: trigger CoachHelm insight generation for this player
-    triggerPlayerInsightsAfterRound(player.id).catch(() => {});
+    // Run CoachHelm synchronously enough to guarantee completion, but never
+    // let analysis failures roll back the round itself.
+    const coachHelmResult = await triggerPlayerInsightsAfterRound(player.id).catch(async (err) => {
+      await logServerError(`CoachHelm trigger threw after round submit: ${err instanceof Error ? err.message : String(err)}`, {
+        action: 'submitGolfRoundComprehensive.coachhelm',
+        extra: {
+          playerId: player.id,
+          roundId: round.id,
+          stack: err instanceof Error ? err.stack : undefined,
+        },
+      }, 'error');
+      return { success: false, error: err instanceof Error ? err.message : 'CoachHelm trigger failed' };
+    });
+    if (!coachHelmResult.success) {
+      await logServerError(`CoachHelm trigger returned failure after round submit: ${coachHelmResult.error || 'unknown failure'}`, {
+        action: 'submitGolfRoundComprehensive.coachhelm.result',
+        extra: {
+          playerId: player.id,
+          roundId: round.id,
+        },
+      }, 'error');
+    }
 
     // Note: Round review generation is handled lazily by the review page
     // via generateAndStoreRoundReview (V2). Removed the fire-and-forget V1
@@ -4452,4 +4472,3 @@ export async function getRoundShotDetails(
     return formatSafeErrorResponse(error);
   }
 }
-

@@ -8,6 +8,7 @@
  * - Regression patterns (predictive correlations)
  */
 
+import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import type {
   MinedPattern,
@@ -604,14 +605,14 @@ export class PatternMiner {
   private async savePatterns(patterns: MinedPattern[]): Promise<void> {
     if (patterns.length === 0) return;
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Type assertion for new table not in generated types
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const table = supabase.from('golf_patterns_v2' as any) as any;
 
     for (const pattern of patterns) {
-      await table.upsert(
+      const { error } = await table.upsert(
         {
           id: pattern.id,
           player_id: pattern.playerId,
@@ -637,6 +638,10 @@ export class PatternMiner {
         },
         { onConflict: 'id' }
       );
+
+      if (error) {
+        throw new Error(`Failed to save CoachHelm pattern: ${error.message}`);
+      }
     }
   }
 }

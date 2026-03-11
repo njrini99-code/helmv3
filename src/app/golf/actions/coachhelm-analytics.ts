@@ -487,8 +487,9 @@ export async function getPatternImpact(
         const condition = pattern.conditions?.[0];
         topPatterns.push({
           id: pattern.id,
-          description: pattern.metadata?.description ||
-            `${condition?.label || 'Pattern'} affecting ${pattern.pattern_type || 'performance'}`,
+          description: typeof pattern.metadata?.description === 'string'
+            ? pattern.metadata.description
+            : `${condition?.label || 'Pattern'} affecting ${pattern.pattern_type || 'performance'}`,
           playerName: playerMap.get(pattern.player_id) || 'Unknown Player',
           strokesImpact: pattern.strokes_impact,
           lifecycleState: state,
@@ -641,14 +642,17 @@ export async function getCoachHelmOverview(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: predictions } = await (supabase as any)
       .from('golf_predictions')
-      .select('accuracy')
+      .select('was_accurate')
       .in('player_id', playerIds)
-      .not('accuracy', 'is', null)
+      .not('was_accurate', 'is', null)
       .gte('validated_at', thirtyDaysAgo.toISOString());
 
     const predictionAccuracy = predictions && predictions.length > 0
-      ? predictions.reduce((sum: number, p: { accuracy: number }) => sum + (p.accuracy || 0), 0) / predictions.length
-      : 0.72; // Default reasonable accuracy if no data
+      ? predictions.reduce(
+        (sum: number, p: { was_accurate: boolean | null }) => sum + (p.was_accurate ? 1 : 0),
+        0
+      ) / predictions.length
+      : 0;
 
     return {
       success: true,
@@ -883,7 +887,7 @@ async function calculatePredictionPerformanceFromPredictions(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: predictions, error } = await (supabase as any)
       .from('golf_predictions')
-      .select('*')
+      .select('created_at, validated_at, was_accurate, confidence, predicted_value, actual_value, error_category')
       .in('player_id', playerIds)
       .gte('created_at', start.toISOString())
       .lte('created_at', end.toISOString())
@@ -905,6 +909,7 @@ async function calculatePredictionPerformanceFromPredictions(
     let validatedPredictions = 0;
     let totalAccuracy = 0;
     let totalError = 0;
+    let errorSampleCount = 0;
     let overconfident = 0;
     let underconfident = 0;
 
@@ -917,16 +922,20 @@ async function calculatePredictionPerformanceFromPredictions(
       if (pred.validated_at) {
         existing.validated++;
         validatedPredictions++;
-        existing.accuracySum += pred.accuracy || 0;
-        totalAccuracy += pred.accuracy || 0;
-        totalError += Math.abs((pred.predicted_value || 0) - (pred.actual_value || 0));
+        const accuracy = pred.was_accurate ? 1 : 0;
+        existing.accuracySum += accuracy;
+        totalAccuracy += accuracy;
+        if (pred.actual_value !== null && pred.actual_value !== undefined) {
+          totalError += Math.abs((pred.predicted_value || 0) - pred.actual_value);
+          errorSampleCount++;
+        }
 
         // Confidence calibration
         const confidence = pred.confidence || 0.5;
-        const bucket = Math.floor(confidence * 5);
+        const bucket = Math.min(4, Math.max(0, Math.floor(confidence * 5)));
         const bucketData = confidenceBuckets.get(bucket) || { count: 0, accurateCount: 0 };
         bucketData.count++;
-        if ((pred.accuracy || 0) > 0.7) bucketData.accurateCount++;
+        if (pred.was_accurate) bucketData.accurateCount++;
         confidenceBuckets.set(bucket, bucketData);
 
         // Error categories
@@ -989,7 +998,7 @@ async function calculatePredictionPerformanceFromPredictions(
           totalPredictions,
           validatedPredictions,
           overallAccuracy: validatedPredictions > 0 ? totalAccuracy / validatedPredictions : 0,
-          meanAbsoluteError: validatedPredictions > 0 ? totalError / validatedPredictions : 0,
+          meanAbsoluteError: errorSampleCount > 0 ? totalError / errorSampleCount : 0,
           calibrationScore: 1 - calibrationScore,
           overconfidenceRate: validatedPredictions > 0 ? overconfident / validatedPredictions : 0,
           underconfidenceRate: validatedPredictions > 0 ? underconfident / validatedPredictions : 0,

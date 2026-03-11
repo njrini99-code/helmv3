@@ -35,22 +35,22 @@ function isCoachHelmEnabled(): boolean {
 }
 
 /**
- * Gets CoachHelm settings for a user (coach or player)
+ * Gets CoachHelm settings for a coach.
  *
- * @param userId - The user's UUID (from users.id / auth.uid)
- * @returns Settings or null if not found
+ * Production RLS on golf_coachhelm_settings is keyed off coach_id, so coach
+ * lookups must use the coach record rather than auth user_id.
  */
-async function getCoachHelmSettings(
-  userId: string
+async function getCoachHelmCoachSettings(
+  coachId: string
 ): Promise<CoachHelmSettings | null> {
   const supabase = await createClient();
 
   try {
-    // Type assertion for new table - uses user_id column per migration schema
+    // Type assertion for new table - live production schema is keyed by coach_id
     const { data, error } = await (supabase
       .from('golf_coachhelm_settings' as 'users')
       .select('enabled, disabled_at, disabled_reason')
-      .eq('user_id', userId)
+      .eq('coach_id', coachId)
       .maybeSingle() as unknown as Promise<{
       data: CoachHelmSettingsRow | null;
       error: Error | null;
@@ -66,8 +66,7 @@ async function getCoachHelmSettings(
       disabledReason: data.disabled_reason ?? null,
     };
   } catch (err) {
-    // Table doesn't exist yet - return null to use defaults (enabled)
-    console.error('[CoachHelm] Failed to fetch user CoachHelm settings:', err);
+    console.error('[CoachHelm] Failed to fetch coach CoachHelm settings:', err);
     return null;
   }
 }
@@ -150,8 +149,8 @@ export async function isCoachHelmEnabledForCoach(
     };
   }
 
-  // Check coach-level settings (using user_id from coach record)
-  const coachSettings = await getCoachHelmSettings(coach.user_id);
+  // Check coach-level settings using coach_id, which matches production RLS.
+  const coachSettings = await getCoachHelmCoachSettings(coachId);
   const userEnabled = coachSettings?.enabled ?? true;
 
   if (!userEnabled) {
@@ -236,20 +235,7 @@ export async function isCoachHelmEnabledForPlayer(
     };
   }
 
-  // Check user-level settings (user_id is required in schema)
-  const userSettings = await getCoachHelmSettings(player.user_id);
-  const userEnabled = userSettings?.enabled ?? true;
-
-  if (!userEnabled) {
-    return {
-      userEnabled: false,
-      teamEnabled: true,
-      effectivelyEnabled: false,
-      disabledReason: userSettings?.disabledReason ?? 'Disabled by user',
-      disabledBy: 'user',
-    };
-  }
-
+  // Player-specific CoachHelm rows are not part of the live production contract.
   // Check team-level settings if player has a team
   const teamMembership = Array.isArray(player.team) ? player.team[0] : player.team;
   const playerTeamId = teamMembership?.team_id;
@@ -275,94 +261,4 @@ export async function isCoachHelmEnabledForPlayer(
     disabledReason: null,
     disabledBy: null,
   };
-}
-
-/**
- * Enables CoachHelm for a user
- *
- * @param userId - The user's UUID (from auth)
- */
-async function enableCoachHelm(userId: string): Promise<boolean> {
-  const supabase = await createClient();
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const table = supabase.from('golf_coachhelm_settings' as any) as any;
-  const { error } = await table.upsert({
-    user_id: userId,
-    enabled: true,
-  });
-
-  return !error;
-}
-
-/**
- * Disables CoachHelm for a user
- *
- * @param userId - The user's UUID (from auth)
- * @param reason - Optional reason for disabling
- */
-async function disableCoachHelm(
-  userId: string,
-  reason?: string
-): Promise<boolean> {
-  const supabase = await createClient();
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const table = supabase.from('golf_coachhelm_settings' as any) as any;
-  const { error } = await table.upsert({
-    user_id: userId,
-    enabled: false,
-    disabled_at: new Date().toISOString(),
-    disabled_reason: reason ?? null,
-  });
-
-  return !error;
-}
-
-/**
- * Enables CoachHelm for a team
- *
- * @param teamId - The team's UUID
- */
-async function enableTeamCoachHelm(teamId: string): Promise<boolean> {
-  const supabase = await createClient();
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const table = supabase.from('golf_team_coachhelm_settings' as any) as any;
-  const { error } = await table.upsert({
-    team_id: teamId,
-    enabled: true,
-    disabled_at: null,
-    disabled_by: null,
-    disabled_reason: null,
-  });
-
-  return !error;
-}
-
-/**
- * Disables CoachHelm for a team
- *
- * @param teamId - The team's UUID
- * @param disabledBy - The user who disabled it
- * @param reason - Optional reason for disabling
- */
-async function disableTeamCoachHelm(
-  teamId: string,
-  disabledBy: string,
-  reason?: string
-): Promise<boolean> {
-  const supabase = await createClient();
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const table = supabase.from('golf_team_coachhelm_settings' as any) as any;
-  const { error } = await table.upsert({
-    team_id: teamId,
-    enabled: false,
-    disabled_at: new Date().toISOString(),
-    disabled_by: disabledBy,
-    disabled_reason: reason ?? null,
-  });
-
-  return !error;
 }

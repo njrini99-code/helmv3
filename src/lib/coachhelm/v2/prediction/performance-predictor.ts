@@ -8,6 +8,7 @@
  * - Tail risk (probability of blowup/great round)
  */
 
+import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
 import type {
   PerformancePrediction,
@@ -357,31 +358,54 @@ export class PerformancePredictor {
   private async savePrediction(
     prediction: PerformancePrediction
   ): Promise<void> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
+    const predictionWindowDays = Math.max(
+      1,
+      Math.ceil(
+        (new Date(`${prediction.dueDate}T00:00:00Z`).getTime() - Date.now()) /
+          (1000 * 60 * 60 * 24)
+      )
+    );
+    const trend =
+      prediction.predictedValue < this.baselineScore - 0.5
+        ? 'improving'
+        : prediction.predictedValue > this.baselineScore + 0.5
+          ? 'declining'
+          : 'stable';
 
     // Type assertion for new table not in generated types
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const table = supabase.from('golf_predictions' as any) as any;
 
-    await table.insert({
+    const { error } = await table.insert({
       id: prediction.id,
       player_id: prediction.playerId,
-      prediction_type: prediction.predictionType,
       metric: prediction.metric,
       predicted_value: prediction.predictedValue,
-      predicted_range_low: prediction.predictedRangeLow,
-      predicted_range_high: prediction.predictedRangeHigh,
       confidence: prediction.confidence,
-      calibrated_confidence: prediction.calibratedConfidence,
-      confidence_interval: {
-        low: prediction.predictedRangeLow,
-        high: prediction.predictedRangeHigh,
-      },
-      features_snapshot: this.features,
-      key_factors: prediction.keyFactors,
-      sensitivities: prediction.sensitivities,
-      context: prediction.context,
+      confidence_interval_low: prediction.predictedRangeLow,
+      confidence_interval_high: prediction.predictedRangeHigh,
+      predicted_low: prediction.predictedRangeLow,
+      predicted_high: prediction.predictedRangeHigh,
+      prediction_window_days: predictionWindowDays,
+      trend,
+      key_drivers: prediction.keyFactors,
+      input_features: this.features,
+      model_version: 'coachhelm-v2',
       due_date: prediction.dueDate,
+      prediction_context: {
+        prediction_type: prediction.predictionType,
+        context: prediction.context,
+      },
+      confidence_factors: {
+        raw_confidence: prediction.confidence,
+        calibrated_confidence: prediction.calibratedConfidence,
+        sensitivities: prediction.sensitivities,
+      },
     });
+
+    if (error) {
+      throw new Error(`Failed to save CoachHelm prediction: ${error.message}`);
+    }
   }
 }
