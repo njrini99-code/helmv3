@@ -29,7 +29,6 @@ import { MobileEventSheet, type MobileEventFormData } from '@/components/golf/ca
 import { CalendarDayViewSwipeable } from '@/components/golf/calendar/CalendarDayViewSwipeable';
 import { QuickAddEventFAB } from '@/components/golf/calendar/QuickAddEventFAB';
 import type { RSVPResponse } from '@/components/golf/calendar/MobileRSVPButtons';
-import { createGolfEvent, updateGolfEvent, deleteGolfEvent, respondToEvent } from '@/app/golf/actions/golf';
 import '@/styles/calendar-tokens.css';
 import { usePlayerEventRSVP, useEventRSVP } from '@/hooks/useRSVP';
 import { useCalendarKeyboard } from '@/hooks/golf/use-calendar-keyboard';
@@ -53,11 +52,24 @@ interface CalendarActionHandlers {
   deleteEvent: (id: string) => CalendarActionResult<unknown>;
 }
 
+async function loadGolfCalendarActions() {
+  return import('@/app/golf/actions/golf');
+}
+
 // Default golf action handlers - wrap to match CalendarActionHandlers signature
 const defaultActionHandlers: CalendarActionHandlers = {
-  createEvent: (data: unknown) => createGolfEvent(data as Parameters<typeof createGolfEvent>[0]),
-  updateEvent: (id: string, data: unknown) => updateGolfEvent(id, data as Parameters<typeof updateGolfEvent>[1]),
-  deleteEvent: deleteGolfEvent,
+  createEvent: async (data: unknown) => {
+    const { createGolfEvent } = await loadGolfCalendarActions();
+    return createGolfEvent(data as never);
+  },
+  updateEvent: async (id: string, data: unknown) => {
+    const { updateGolfEvent } = await loadGolfCalendarActions();
+    return updateGolfEvent(id, data as never);
+  },
+  deleteEvent: async (id: string) => {
+    const { deleteGolfEvent } = await loadGolfCalendarActions();
+    return deleteGolfEvent(id);
+  },
 };
 
 interface PremiumCalendarClientProps {
@@ -149,6 +161,7 @@ export function PremiumCalendarClient({
   // Handle RSVP for a specific event (used by mobile list view)
   const handleRsvp = useCallback(async (eventId: string, response: RSVPResponse): Promise<{ success: boolean; error?: string }> => {
     try {
+      const { respondToEvent } = await loadGolfCalendarActions();
       const result = await respondToEvent(eventId, response as 'accepted' | 'tentative' | 'declined' | 'pending');
       if (result.success) {
         // Update local state optimistically

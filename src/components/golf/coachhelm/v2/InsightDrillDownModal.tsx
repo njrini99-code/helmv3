@@ -15,6 +15,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { Modal } from '@/components/ui/modal';
 import { cn } from '@/lib/utils';
+import { GolfTabBar } from '@/components/golf/GolfTabBar';
 import {
   IconSparkles,
   IconTarget,
@@ -156,30 +157,13 @@ export function InsightDrillDownModal({
 
         {/* Tab navigation */}
         <div className="px-6 pt-4 pb-0">
-          <div className="flex gap-1 border-b border-warm-200">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={cn(
-                  'relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors',
-                  activeTab === tab.id
-                    ? 'text-primary-600'
-                    : 'text-warm-500 hover:text-warm-700'
-                )}
-              >
-                {tab.icon}
-                {tab.label}
-                {activeTab === tab.id && (
-                  <motion.div
-                    layoutId="insight-tab-indicator"
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600"
-                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                  />
-                )}
-              </button>
-            ))}
-          </div>
+          <GolfTabBar
+            tabs={tabs}
+            value={activeTab}
+            onChange={setActiveTab}
+            ariaLabel="Insight drill-down sections"
+            compact
+          />
         </div>
 
         {/* Tab content */}

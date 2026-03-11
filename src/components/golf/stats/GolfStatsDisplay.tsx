@@ -14,6 +14,7 @@ import {
 } from './sections';
 import type { CourseBreakdownResponse, WorstHoleResponse, TrendAnalysisResponse, PlayerProfile } from './sections/types';
 import { generateStatsPDF } from './exportPdf';
+import { GolfTabBar } from '@/components/golf/GolfTabBar';
 
 // Re-export Sparkline so existing imports continue to work
 export { Sparkline } from './sections/shared-primitives';
@@ -219,13 +220,19 @@ export default function GolfStatsDisplay({
         </div>
 
         {/* Category Pills */}
-        <motion.div className="pills-scroll pb-4 mb-4 -mx-4 px-4" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-          {categories.map((cat, idx) => (
-            <motion.button key={cat.id} onClick={() => setActiveCategory(cat.id)} className={`relative flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${activeCategory === cat.id ? 'bg-primary-600 text-white shadow-lg shadow-primary-600/25' : 'bg-white text-warm-600 border border-warm-200 hover:border-primary-300 hover:shadow-md'}`} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 + idx * 0.03 }} whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.98 }}>
-              {activeCategory === cat.id && <motion.div className="absolute inset-0 rounded-full bg-primary-400" initial={{ scale: 1 }} animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 0.3 }} style={{ zIndex: -1, opacity: 0.3 }} />}
-              {cat.icon}{cat.label}
-            </motion.button>
-          ))}
+        <motion.div
+          className="mb-4"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <GolfTabBar
+            tabs={categories}
+            value={activeCategory}
+            onChange={setActiveCategory}
+            ariaLabel="Stats categories"
+            scrollable
+          />
         </motion.div>
 
         <AnimatePresence mode="wait">

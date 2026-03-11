@@ -9,10 +9,10 @@ import { ShineEffect } from '@/components/ui/shine-effect';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
-import { useSidebar } from '@/contexts/sidebar-context';
+import { GolfTabBar } from '@/components/golf/GolfTabBar';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
+import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
 import {
-  IconMenu,
   IconAirplane,
   IconMapPin,
   IconCalendar,
@@ -657,7 +657,6 @@ function OverviewSection({
 // ============================================================================
 
 export function PlayerHub({ trips, tasks, events, announcements, playerName, onCompleteTask, onRSVP }: PlayerHubProps) {
-  const { toggleMobile } = useSidebar();
   const badges = useNotificationBadges();
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [selectedTrip, setSelectedTrip] = useState<TripData | null>(null);
@@ -697,22 +696,11 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-        className="border-b border-warm-200/60 bg-white/80 backdrop-blur-sm md:backdrop-blur-xl sticky top-0 z-10"
+        className="golf-mobile-page-header bg-white/80 md:backdrop-blur-xl"
       >
         <div className="max-w-3xl mx-auto px-4 md:px-6 py-4 md:py-5">
           <div className="flex items-center gap-3">
-            <button
-              onClick={toggleMobile}
-              className={cn(
-                'lg:hidden p-2.5 -ml-2 rounded-xl touch-manipulation',
-                'text-warm-500 hover:text-warm-700 hover:bg-warm-100/80',
-                'transition-colors duration-150 active:scale-95',
-                'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
-              )}
-              aria-label="Open navigation menu"
-            >
-              <IconMenu size={22} />
-            </button>
+            <MobileMenuButton />
             <div>
               <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">
                 {greeting}, {firstName}
@@ -730,39 +718,22 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
       </m.div>
 
       {/* Tab navigation */}
-      <div className="sticky top-[65px] md:top-[73px] z-[9] bg-white/80 backdrop-blur-sm md:backdrop-blur-xl border-b border-warm-100">
+      <div className="sticky top-[var(--golf-mobile-header-offset)] z-[9] border-b border-warm-100 bg-white/80 backdrop-blur-sm md:top-[73px] md:backdrop-blur-xl">
         <div className="max-w-3xl mx-auto px-4 md:px-6">
-          <div className="relative">
-            <div className="flex gap-1 -mb-px overflow-x-auto pills-scroll">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={cn(
-                    'relative px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors duration-200 touch-manipulation',
-                    activeTab === tab.id
-                      ? 'text-primary-600'
-                      : 'text-warm-500 hover:text-warm-700',
-                  )}
-                >
-                  <span className="flex items-center gap-1.5">
-                    {tab.label}
-                    {tab.urgentCount !== undefined && tab.urgentCount > 0 && activeTab !== tab.id && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                    )}
-                  </span>
-                  {activeTab === tab.id && (
-                    <m.div
-                      layoutId="tab-indicator"
-                      className="absolute bottom-0 left-2 right-2 h-0.5 bg-primary-600 rounded-full"
-                      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                    />
-                  )}
-                </button>
-              ))}
-            </div>
-            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white/80 to-transparent md:hidden" />
-          </div>
+          <GolfTabBar
+            tabs={tabs.map((tab) => ({
+              id: tab.id,
+              label: tab.label,
+              count: tab.count,
+              dot: Boolean(tab.urgentCount && tab.urgentCount > 0 && activeTab !== tab.id),
+            }))}
+            value={activeTab}
+            onChange={setActiveTab}
+            ariaLabel="Player hub sections"
+            stretch
+            compact
+            className="py-2"
+          />
         </div>
       </div>
 

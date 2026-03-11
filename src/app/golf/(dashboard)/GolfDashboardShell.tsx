@@ -173,7 +173,7 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
         id="main-content"
         className={cn(
           'flex-1 overflow-y-auto isolate',
-          'pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-0',
+          'pb-[var(--golf-mobile-bottom-nav-offset)] lg:pb-0',
           'transition-[padding-left] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
           collapsed ? 'lg:pl-[72px]' : 'lg:pl-64',
         )}

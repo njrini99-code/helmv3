@@ -1,8 +1,8 @@
 export default function Loading() {
   return (
     <div className="relative">
-      <div className="sticky top-0 z-10 border-b border-warm-200/60 bg-white/80 backdrop-blur-xl">
-        <div className="max-w-7xl mx-auto px-6 py-5">
+      <div className="golf-mobile-page-header">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 skeleton-shimmer rounded-xl" />
@@ -19,7 +19,7 @@ export default function Loading() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 space-y-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="glass-standard rounded-2xl p-5 space-y-2">

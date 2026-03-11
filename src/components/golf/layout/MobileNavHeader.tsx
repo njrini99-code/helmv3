@@ -14,7 +14,7 @@ interface MobileNavHeaderProps {
  */
 export function MobileNavHeader({ title, subtitle, children }: MobileNavHeaderProps) {
   return (
-    <div className="border-b border-warm-200/60 bg-white/80 backdrop-blur-xl sticky top-0 z-10">
+    <div className="golf-mobile-page-header">
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">

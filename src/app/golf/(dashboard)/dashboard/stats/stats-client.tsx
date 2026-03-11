@@ -21,6 +21,7 @@ import type {
   TrendAnalysisResponse,
 } from '@/app/golf/actions/stats-data-types';
 import Image from 'next/image';
+import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
 import GolfStatsDisplay, { Sparkline } from '@/components/golf/stats/GolfStatsDisplay';
 import { generateStatisticalStrengthsWeaknesses } from '@/lib/golf/strokes-gained';
 import { DetailedStatsSkeleton, StatsPageSkeleton } from '@/components/golf/GolfSkeletons';
@@ -36,12 +37,10 @@ import {
   IconTrendingUp,
   IconTrendingDown,
   IconTarget,
-  IconMenu,
   IconGolf,
   IconPlus,
 } from '@/components/icons';
 import { LazyMotion, domAnimation, m } from 'framer-motion';
-import { useSidebar } from '@/contexts/sidebar-context';
 import { useGolfUser } from '@/contexts/golf-user-context';
 import { cn } from '@/lib/utils';
 import { FormatToggle } from '@/components/golf/stats/sections/shared-primitives';
@@ -341,9 +340,6 @@ export default function StatsClient({
   const detailedStatsCache = useRef<Map<string, GolfStats>>(new Map());
   const lastFetchedPlayerId = useRef<string | null>(null);
   const lastFetchedRoundId = useRef<string | 'overall'>('overall');
-
-  // Mobile navigation
-  const { toggleMobile } = useSidebar();
 
   // Shared context — eliminates auth/role/team queries
   const golfUser = useGolfUser();
@@ -861,19 +857,7 @@ export default function StatsClient({
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              {/* Mobile hamburger menu */}
-              <button
-                onClick={toggleMobile}
-                className={cn(
-                  'lg:hidden p-2 -ml-2 rounded-xl',
-                  'text-warm-500 hover:text-warm-700 hover:bg-warm-100/80',
-                  'transition-colors duration-150 active:scale-95',
-                  'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
-                )}
-                aria-label="Open navigation menu"
-              >
-                <IconMenu size={22} />
-              </button>
+              <MobileMenuButton className="p-2 -ml-2" />
               <div>
                 <h1 className="text-xl md:text-2xl font-bold text-warm-900">Team Stats</h1>
                 <p className="text-warm-500 text-sm md:text-base">{players.length} players on your roster</p>
@@ -1063,26 +1047,52 @@ export default function StatsClient({
   // Player stats view
   return (
     <div className="relative">
-      {/* Floating Mobile Nav Button */}
-      <button
-        onClick={toggleMobile}
-        className={cn(
-          'fixed z-50 p-3 rounded-xl bg-white/90 backdrop-blur-sm border border-warm-200 shadow-lg hover:shadow-xl hover:bg-white transition-colors group',
-          'lg:hidden',
-          userRole === 'coach' ? 'left-20' : 'left-4'
-        )}
-        style={{ top: 'max(1rem, env(safe-area-inset-top, 0.5rem))' }}
-        aria-label="Open navigation menu"
-      >
-        <IconMenu size={20} className="text-warm-600 group-hover:text-primary-600 transition-colors" />
-      </button>
+      <div className="golf-mobile-page-header lg:hidden">
+        <div className="mx-auto px-4 py-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              {userRole === 'coach' ? (
+                <button
+                  onClick={handleBackClick}
+                  aria-label="Go back"
+                  className="flex h-11 w-11 items-center justify-center rounded-xl text-warm-500 transition-colors hover:bg-warm-100/80 hover:text-warm-700"
+                >
+                  <IconChevronLeft size={20} />
+                </button>
+              ) : (
+                <MobileMenuButton />
+              )}
+              <div className="min-w-0">
+                <h1 className="truncate text-lg font-semibold tracking-tight text-warm-900">
+                  {userRole === 'coach' ? (playerName ? `${playerName}'s Stats` : 'Player Stats') : 'My Stats'}
+                </h1>
+                <p className="truncate text-xs text-warm-500">
+                  {rounds.length > 0
+                    ? `${rounds.length} round${rounds.length === 1 ? '' : 's'} available`
+                    : 'Detailed performance view'}
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={handleRefresh}
+              disabled={loadingDetailed}
+              className="flex h-11 w-11 items-center justify-center rounded-xl border border-warm-200 bg-white/80 text-warm-600 shadow-sm transition-colors hover:border-primary-300 hover:text-primary-600 disabled:opacity-50"
+              title="Refresh stats"
+              aria-label="Refresh stats"
+            >
+              <IconRefresh size={18} className={loadingDetailed ? 'animate-spin' : undefined} />
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* Floating Back Button for Coaches */}
       {userRole === 'coach' && (
         <button
           onClick={handleBackClick}
           aria-label="Go back"
-          className="fixed left-4 z-50 p-3 rounded-xl bg-white/90 backdrop-blur-sm border border-warm-200 shadow-lg hover:shadow-xl hover:bg-white transition-colors group"
+          className="group fixed left-4 z-50 hidden h-12 w-12 items-center justify-center rounded-xl border border-warm-200 bg-white/90 backdrop-blur-sm shadow-lg transition-colors hover:bg-white hover:shadow-xl lg:flex"
           style={{ top: 'max(1rem, env(safe-area-inset-top, 0.5rem))' }}
         >
           <IconChevronLeft size={20} className="text-warm-600 group-hover:text-primary-600 transition-colors" />
@@ -1093,7 +1103,7 @@ export default function StatsClient({
       <button
         onClick={handleRefresh}
         disabled={loadingDetailed}
-        className="fixed right-4 z-50 p-3 rounded-xl bg-white/90 backdrop-blur-sm border border-warm-200 shadow-lg hover:shadow-xl hover:bg-white transition-colors group disabled:opacity-50"
+        className="group fixed right-4 z-50 hidden h-12 w-12 items-center justify-center rounded-xl border border-warm-200 bg-white/90 backdrop-blur-sm shadow-lg transition-colors hover:bg-white hover:shadow-xl disabled:opacity-50 lg:flex"
         style={{ top: 'max(1rem, env(safe-area-inset-top, 0.5rem))' }}
         title="Refresh stats"
         aria-label="Refresh stats"

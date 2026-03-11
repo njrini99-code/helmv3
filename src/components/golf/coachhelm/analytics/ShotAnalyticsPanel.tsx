@@ -15,7 +15,13 @@ import { IconSparkles, IconRefresh, IconTarget, IconChartRadar, IconChart, IconT
 import { MissPatternChart } from './MissPatternChart';
 import { ShotTypeBreakdown } from './ShotTypeBreakdown';
 import { TrendSummary } from './TrendIndicator';
-import { getPlayerShotAnalytics, type PlayerShotAnalytics } from '@/app/golf/actions/shot-analytics';
+import type { PlayerShotAnalytics } from '@/app/golf/actions/shot-analytics';
+import { GolfTabBar } from '@/components/golf/GolfTabBar';
+
+async function loadShotAnalyticsAction() {
+  const { getPlayerShotAnalytics } = await import('@/app/golf/actions/shot-analytics');
+  return getPlayerShotAnalytics;
+}
 
 interface ShotAnalyticsPanelProps {
   playerId: string;
@@ -43,6 +49,7 @@ export function ShotAnalyticsPanel({
   const handleRefresh = () => {
     startTransition(async () => {
       setError(null);
+      const getPlayerShotAnalytics = await loadShotAnalyticsAction();
       const result = await getPlayerShotAnalytics(playerId, selectedPeriod);
       if (result.success) {
         setData(result.data);
@@ -56,6 +63,7 @@ export function ShotAnalyticsPanel({
     setSelectedPeriod(days);
     startTransition(async () => {
       setError(null);
+      const getPlayerShotAnalytics = await loadShotAnalyticsAction();
       const result = await getPlayerShotAnalytics(playerId, days);
       if (result.success) {
         setData(result.data);
@@ -144,23 +152,14 @@ export function ShotAnalyticsPanel({
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 p-1 bg-warm-100 rounded-xl">
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              'flex-1 flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium rounded-lg transition-all',
-              activeTab === tab.id
-                ? 'bg-white text-warm-900 shadow-sm'
-                : 'text-warm-500 hover:text-warm-700'
-            )}
-          >
-            {tab.icon}
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <GolfTabBar
+        tabs={tabs}
+        value={activeTab}
+        onChange={setActiveTab}
+        ariaLabel="Shot analytics sections"
+        stretch
+        compact
+      />
 
       {/* Content */}
       <GlassCard className="p-0" padding="none">
@@ -452,4 +451,3 @@ function LoadingSkeleton() {
     </div>
   );
 }
-

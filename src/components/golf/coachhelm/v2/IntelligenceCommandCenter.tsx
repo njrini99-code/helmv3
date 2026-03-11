@@ -28,6 +28,7 @@ import {
   IconUsers,
   IconSettings,
 } from '@/components/icons';
+import { GolfTabBar } from '@/components/golf/GolfTabBar';
 import {
   generateTeamInsight,
   recordInteraction,
@@ -1460,37 +1461,14 @@ export function IntelligenceCommandCenter({
 
       {/* Tabs */}
       {hasData && (
-        <div className={cn(
-          'flex border border-white/50 bg-white/60 backdrop-blur-sm shadow-sm',
-          isPage ? 'gap-1 rounded-xl p-1' : 'gap-0.5 rounded-lg p-0.5'
-        )}>
-          {tabs.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={cn(
-                'flex-1 flex items-center justify-center gap-1 font-bold rounded-md transition-all uppercase tracking-wider',
-                isPage ? 'px-4 py-3 text-xs rounded-lg' : 'px-1.5 py-1.5 text-xs',
-                activeTab === tab.id
-                  ? 'bg-white text-warm-900 shadow-sm'
-                  : 'text-warm-400 hover:text-warm-600'
-              )}
-            >
-              <span className="truncate">{tab.label}</span>
-              {tab.count > 0 && (
-                <span className={cn(
-                  'flex items-center justify-center px-1 rounded-full',
-                  isPage ? 'text-xs min-w-[20px] h-5' : 'text-[8px] min-w-[16px] h-4',
-                  activeTab === tab.id
-                    ? 'bg-primary-100 text-primary-700'
-                    : 'bg-warm-200/60 text-warm-500'
-                )}>
-                  {tab.count}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
+        <GolfTabBar
+          tabs={tabs}
+          value={activeTab}
+          onChange={setActiveTab}
+          ariaLabel="CoachHelm command center sections"
+          stretch
+          compact={!isPage}
+        />
       )}
 
       {/* Tab Content */}

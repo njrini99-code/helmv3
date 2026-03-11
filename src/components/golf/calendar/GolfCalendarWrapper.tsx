@@ -12,12 +12,10 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useTeamContext } from '@/hooks/golf/use-team-context';
-import {
-  getCalendarFeeds,
-  createCalendarFeed,
-  regenerateCalendarFeed,
-  deleteCalendarFeed,
-} from '@/app/golf/actions/calendar-feeds';
+
+async function loadCalendarFeedActions() {
+  return import('@/app/golf/actions/calendar-feeds');
+}
 
 interface GolfCalendarWrapperProps {
   initialEvents: CalendarEvent[];
@@ -52,6 +50,7 @@ export function GolfCalendarWrapper({
     setFeedsLoading(true);
     setFeedsError(null);
 
+    const { getCalendarFeeds } = await loadCalendarFeedActions();
     const result = await getCalendarFeeds();
     if (result.success && result.data) {
       setFeeds(result.data);
@@ -75,6 +74,7 @@ export function GolfCalendarWrapper({
       setFeedsError('Only coaches can manage team feeds');
       throw new Error('Only coaches can manage team feeds');
     }
+    const { createCalendarFeed } = await loadCalendarFeedActions();
     const result = await createCalendarFeed(type as 'team' | 'personal');
     if (!result.success || !result.data) {
       setFeedsError(result.error || 'Failed to create feed');
@@ -100,6 +100,7 @@ export function GolfCalendarWrapper({
       return;
     }
 
+    const { regenerateCalendarFeed } = await loadCalendarFeedActions();
     const result = await regenerateCalendarFeed(target.type as 'team' | 'personal');
     if (!result.success || !result.data) {
       setFeedsError(result.error || 'Failed to regenerate feed');
@@ -116,6 +117,7 @@ export function GolfCalendarWrapper({
       return;
     }
 
+    const { deleteCalendarFeed } = await loadCalendarFeedActions();
     const result = await deleteCalendarFeed(target.type as 'team' | 'personal');
     if (!result.success) {
       setFeedsError(result.error || 'Failed to disable feed');

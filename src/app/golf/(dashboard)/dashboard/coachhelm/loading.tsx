@@ -171,8 +171,8 @@ export default function CoachHelmLoading() {
       <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-transparent to-transparent pointer-events-none" />
 
       {/* Header skeleton */}
-      <div className="relative border-b border-warm-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 py-5">
+      <div className="golf-mobile-page-header relative bg-white/50 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <SkeletonPulse className="w-12 h-12 rounded-xl" />
@@ -192,7 +192,7 @@ export default function CoachHelmLoading() {
       </div>
 
       {/* Main Content skeleton */}
-      <div className="relative max-w-7xl mx-auto px-6 py-8">
+      <div className="relative max-w-7xl mx-auto px-4 md:px-6 py-8">
         {/* Section toggle skeleton */}
         <m.div
           initial={{ opacity: 0 }}

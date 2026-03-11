@@ -114,6 +114,17 @@
   --glass-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
   --glass-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.06), 0 2px 4px rgba(0, 0, 0, 0.03);
   --glass-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.04);
+
+  /* Shared Golf mobile shell sizing */
+  --golf-mobile-header-offset: calc(4.5rem + env(safe-area-inset-top, 0px));
+  --golf-mobile-bottom-nav-offset: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --golf-mobile-header-offset: 0px;
+    --golf-mobile-bottom-nav-offset: 0px;
+  }
 }
 
 @layer base {
@@ -235,6 +246,16 @@
 }
 
 @layer components {
+  .golf-mobile-page-header {
+    @apply sticky top-0 z-10 border-b border-warm-200/60 bg-white/80 backdrop-blur-xl;
+    padding-top: max(0.25rem, env(safe-area-inset-top, 0px));
+  }
+
+  @media (min-width: 1024px) {
+    .golf-mobile-page-header {
+      padding-top: 0;
+    }
+  }
 
   /* ===== AURORA GRADIENT BACKGROUNDS ===== */
   .aurora-bg {
@@ -1793,8 +1814,11 @@
 .pills-scroll {
   display: flex;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
+  touch-action: pan-x pinch-zoom;
   gap: 0.5rem;
 }
 .pills-scroll::-webkit-scrollbar {

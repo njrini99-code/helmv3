@@ -17,13 +17,20 @@ import {
   RecentRoundReviews,
 } from '@/components/golf/coachhelm/player';
 import { ShotAnalyticsPanel } from '@/components/golf/coachhelm/analytics';
-import {
-  getPlayerCoachHelmDashboard,
-  type PlayerCoachHelmDashboardData,
-} from '@/app/golf/actions/insights';
-import { getPlayerShotAnalytics, type PlayerShotAnalytics } from '@/app/golf/actions/shot-analytics';
+import { GolfTabBar } from '@/components/golf/GolfTabBar';
+import type { PlayerCoachHelmDashboardData } from '@/app/golf/actions/insights';
+import type { PlayerShotAnalytics } from '@/app/golf/actions/shot-analytics';
 import { CoachHelmHeader } from './CoachHelmHeader';
 import { PlayerStateCard } from './PlayerStateCard';
+
+async function loadCoachHelmActions() {
+  const [{ getPlayerCoachHelmDashboard }, { getPlayerShotAnalytics }] = await Promise.all([
+    import('@/app/golf/actions/insights'),
+    import('@/app/golf/actions/shot-analytics'),
+  ]);
+
+  return { getPlayerCoachHelmDashboard, getPlayerShotAnalytics };
+}
 
 interface PlayerCoachHelmDashboardProps {
   data: PlayerCoachHelmDashboardData;
@@ -82,6 +89,10 @@ export function PlayerCoachHelmDashboard({
   const [shotAnalytics, setShotAnalytics] = useState<PlayerShotAnalytics | null>(initialShotAnalytics ?? null);
   const [refreshing, setRefreshing] = useState(false);
   const [activeSection, setActiveSection] = useState<'insights' | 'analytics'>('insights');
+  const sectionTabs = [
+    { id: 'insights' as const, label: 'AI Insights', icon: <IconSparkles size={16} /> },
+    { id: 'analytics' as const, label: 'Shot Analytics', icon: <IconChartRadar size={16} /> },
+  ];
 
   /**
    * Refresh dashboard data from server
@@ -90,6 +101,7 @@ export function PlayerCoachHelmDashboard({
     setRefreshing(true);
 
     try {
+      const { getPlayerCoachHelmDashboard, getPlayerShotAnalytics } = await loadCoachHelmActions();
       const [dashboardResult, analyticsResult] = await Promise.all([
         getPlayerCoachHelmDashboard(playerId),
         getPlayerShotAnalytics(playerId, 30),
@@ -154,32 +166,14 @@ export function PlayerCoachHelmDashboard({
             <m.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex gap-2 p-1 bg-warm-100/80 backdrop-blur-sm rounded-xl mb-6 w-fit"
+              className="mb-6"
             >
-              <button
-                onClick={() => setActiveSection('insights')}
-                className={cn(
-                  'flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all',
-                  activeSection === 'insights'
-                    ? 'bg-white text-warm-900 shadow-sm'
-                    : 'text-warm-500 hover:text-warm-700'
-                )}
-              >
-                <IconSparkles size={16} />
-                AI Insights
-              </button>
-              <button
-                onClick={() => setActiveSection('analytics')}
-                className={cn(
-                  'flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all',
-                  activeSection === 'analytics'
-                    ? 'bg-white text-warm-900 shadow-sm'
-                    : 'text-warm-500 hover:text-warm-700'
-                )}
-              >
-                <IconChartRadar size={16} />
-                Shot Analytics
-              </button>
+              <GolfTabBar
+                tabs={sectionTabs}
+                value={activeSection}
+                onChange={setActiveSection}
+                ariaLabel="CoachHelm sections"
+              />
             </m.div>
 
             {/* Insights Section */}

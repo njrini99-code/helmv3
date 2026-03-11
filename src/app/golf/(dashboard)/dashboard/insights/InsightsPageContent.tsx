@@ -276,7 +276,7 @@ export function InsightsPageContent({
   return (
     <div className="relative">
       {/* Header */}
-      <div className="sticky top-0 z-10 border-b border-warm-200/60 bg-white/80 backdrop-blur-xl">
+      <div className="golf-mobile-page-header">
         <div className="max-w-7xl mx-auto px-6 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -379,7 +379,7 @@ export function InsightsPageContent({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="sticky top-[89px] z-10 bg-white/60 backdrop-blur-xl -mx-6 px-6 py-4 mb-6"
+          className="sticky top-[var(--golf-mobile-header-offset)] z-10 bg-white/60 backdrop-blur-xl -mx-6 px-6 py-4 mb-6 lg:top-[89px]"
         >
           <div className="space-y-4">
             {/* Search Bar */}

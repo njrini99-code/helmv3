@@ -3,7 +3,7 @@ import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { GolfCalendarWrapper } from '@/components/golf/calendar/GolfCalendarWrapper';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
-import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
+import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { Metadata } from 'next';
 
@@ -173,18 +173,12 @@ export default async function GolfCalendarPage() {
     <AnimatedPage>
       <AnimatedItem>
         <div
-          className="h-[calc(100vh-64px-5.5rem-env(safe-area-inset-bottom))] md:h-[calc(100vh-64px)] flex flex-col"
+          className="min-h-full flex flex-col"
           style={{
             background: 'linear-gradient(180deg, #FFFEFA 0%, #FDF9F0 33%, #FAF5EB 66%, #F5F0E6 100%)',
           }}
         >
-          {/* Mobile Menu + Event Summary Strip */}
-          <div className="flex-shrink-0 px-4 md:px-6 pt-4 md:pt-6 pb-2">
-            <div className="flex items-center gap-3">
-              <MobileMenuButton />
-              <h1 className="text-xl font-semibold tracking-tight text-warm-900 lg:hidden">Calendar</h1>
-            </div>
-          </div>
+          <MobileNavHeader title="Calendar" />
           {events.length > 0 && (
             <div className="flex-shrink-0 px-4 md:px-6 pb-2">
               <div className="flex items-center gap-4 overflow-x-auto scrollbar-hide">

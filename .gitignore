@@ -3,6 +3,10 @@ node_modules/
 
 # Git worktrees
 .worktrees/
+
+# Full-stack-feature planning files
+.full-stack-feature/
+.full-stack-feature-archived-*/
 .pnp
 .pnp.js
 

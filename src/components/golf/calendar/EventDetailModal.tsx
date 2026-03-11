@@ -9,7 +9,6 @@ import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { RSVPStatusSection } from './RSVPStatusSection';
 import { PlayerRSVPCard } from './PlayerRSVPCard';
 import { ConflictWarning } from './ConflictWarning';
-import { checkScheduleConflicts } from '@/app/golf/actions/golf';
 import { useRSVP, usePlayerEventRSVP } from '@/hooks/useRSVP';
 import { m, useReducedMotion } from 'framer-motion';
 import { calendarSpring } from '@/lib/motion';
@@ -64,6 +63,10 @@ interface ConflictData {
     start: Date;
     end: Date;
   }>;
+}
+
+async function loadGolfCalendarActions() {
+  return import('@/app/golf/actions/golf');
 }
 
 // Transform conflicts from API format to ConflictWarning format
@@ -365,6 +368,7 @@ export function EventDetailModal({
       setCheckingConflicts(true);
 
       try {
+        const { checkScheduleConflicts } = await loadGolfCalendarActions();
         const result = await checkScheduleConflicts(
           formData.startDate,
           formData.startTime,

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { IconList, IconTarget } from '@/components/icons';
 import { QualifierBracket } from '@/components/golf/qualifiers/QualifierBracket';
+import { GolfTabBar } from '@/components/golf/GolfTabBar';
 
 interface LeaderboardEntry {
   playerId: string;
@@ -29,30 +30,16 @@ export function QualifierViewTabs({ leaderboard, numRounds = 1, showLiveLeaderbo
     <div>
       {/* View Toggle */}
       <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-1 p-1 bg-warm-100 rounded-lg">
-          <button
-            onClick={() => setViewMode('bracket')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-              viewMode === 'bracket'
-                ? 'bg-white text-warm-900 shadow-sm'
-                : 'text-warm-600 hover:text-warm-900'
-            }`}
-          >
-            <IconTarget size={16} />
-            Bracket
-          </button>
-          <button
-            onClick={() => setViewMode('table')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-              viewMode === 'table'
-                ? 'bg-white text-warm-900 shadow-sm'
-                : 'text-warm-600 hover:text-warm-900'
-            }`}
-          >
-            <IconList size={16} />
-            Table
-          </button>
-        </div>
+        <GolfTabBar
+          tabs={[
+            { id: 'bracket' as const, label: 'Bracket', icon: <IconTarget size={16} /> },
+            { id: 'table' as const, label: 'Table', icon: <IconList size={16} /> },
+          ]}
+          value={viewMode}
+          onChange={setViewMode}
+          ariaLabel="Qualifier views"
+          compact
+        />
         {showLiveLeaderboard && (
           <span className="inline-flex items-center gap-2 text-sm font-medium text-primary-600">
             <span className="relative flex h-2 w-2">

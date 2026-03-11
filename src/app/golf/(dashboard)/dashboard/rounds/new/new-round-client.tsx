@@ -1988,7 +1988,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
     <>
       {/* Submit banner — shown when all holes are done but finish confirm was dismissed */}
       {pendingFinalStats && !showFinishConfirm && step === 'tracking' && (
-        <div className="sticky top-[49px] z-20 bg-primary-600 text-white px-4 py-3 flex items-center justify-between gap-3">
+        <div className="sticky top-[var(--golf-mobile-header-offset)] z-20 bg-primary-600 px-4 py-3 text-white lg:top-[49px] flex items-center justify-between gap-3">
           <p className="text-sm font-medium">All holes completed — ready to submit!</p>
           <button
             onClick={() => setShowFinishConfirm(true)}
@@ -2029,7 +2029,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
       {/* Draft Auto-Save Indicator removed - was too noisy */}
 
       {/* Back to Setup - always available during tracking */}
-      <div className="fixed top-4 left-4 z-40">
+      <div className="fixed left-4 z-40 top-[max(1rem,env(safe-area-inset-top,0px))]">
         <button
           onClick={() => {
             const hasCompletedHoles = completedHoleStats.some(s => s?.score != null);

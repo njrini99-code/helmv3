@@ -330,7 +330,7 @@ export default function RoundReviewPage() {
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className="max-w-2xl mx-auto px-4 py-6 pb-24"
+      className="max-w-2xl mx-auto px-4 py-6 pb-[calc(var(--golf-mobile-bottom-nav-offset)+1rem)] lg:pb-6"
     >
       {/* Header */}
       <m.div variants={itemVariants} className="flex items-center justify-between mb-6">
@@ -431,7 +431,7 @@ export default function RoundReviewPage() {
       </m.div>
 
       {/* Bottom actions */}
-      <m.div variants={itemVariants} className="fixed bottom-0 left-0 right-0 z-30 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-gradient-to-t from-white via-white to-transparent lg:relative lg:z-auto lg:bg-none lg:p-0 lg:pb-0 lg:mt-6">
+      <m.div variants={itemVariants} className="fixed bottom-0 left-0 right-0 z-30 p-4 pb-[var(--golf-mobile-bottom-nav-offset)] bg-gradient-to-t from-white via-white to-transparent lg:relative lg:z-auto lg:bg-none lg:p-0 lg:pb-0 lg:mt-6">
         <div className="max-w-2xl mx-auto flex gap-3">
           <Link
             href={`/golf/dashboard/rounds/${roundId}`}

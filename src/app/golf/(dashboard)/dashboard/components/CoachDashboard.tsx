@@ -316,9 +316,9 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
         <div className="min-h-full bg-transparent">
             {/* HEADER — z-10 is sufficient inside the isolate main container */}
             <div className={cn(
-                'sticky top-0 z-10',
-                'bg-white/80 backdrop-blur-sm md:backdrop-blur-xl',
-                'border-b border-warm-200/40',
+                'golf-mobile-page-header',
+                'bg-white/80 md:backdrop-blur-xl',
+                'border-warm-200/40',
             )}>
                 <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-4">
                     <div className="flex items-center justify-between gap-3">

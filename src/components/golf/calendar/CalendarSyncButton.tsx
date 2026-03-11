@@ -32,10 +32,10 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Tooltip } from '@/components/ui/tooltip';
-import {
-  getOrCreateCalendarFeedToken,
-  regenerateCalendarFeedToken,
-} from '@/app/golf/actions/calendar-feeds';
+
+async function loadCalendarFeedActions() {
+  return import('@/app/golf/actions/calendar-feeds');
+}
 
 // Platform icons as simple SVG components
 function GoogleIcon({ className }: { className?: string }) {
@@ -90,6 +90,7 @@ export function CalendarSyncButton({
     setLoading(true);
     setError(null);
     try {
+      const { getOrCreateCalendarFeedToken } = await loadCalendarFeedActions();
       const result = await getOrCreateCalendarFeedToken();
       if (result.success && result.data) {
         setFeedUrl(result.data.url);
@@ -126,6 +127,7 @@ export function CalendarSyncButton({
     setRegenerating(true);
     setError(null);
     try {
+      const { regenerateCalendarFeedToken } = await loadCalendarFeedActions();
       const result = await regenerateCalendarFeedToken();
       if (result.success && result.data) {
         setFeedUrl(result.data.url);
@@ -394,4 +396,3 @@ export function CalendarSyncButton({
     </>
   );
 }
-

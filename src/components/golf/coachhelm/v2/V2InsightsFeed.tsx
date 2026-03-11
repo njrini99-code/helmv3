@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconSparkles, IconRefresh } from '@/components/icons';
 import { GlassCard } from '@/components/ui/glass-card';
+import { GolfTabBar } from '@/components/golf/GolfTabBar';
 import { InsightCard } from './V2InsightCard';
 import { PatternCard } from './PatternCard';
 import { PredictionCard } from './PredictionCard';
@@ -36,7 +37,7 @@ interface InsightsFeedProps {
 type TabType = 'insights' | 'patterns' | 'predictions';
 type TeamPrediction = PerformancePrediction & { playerName?: string };
 
-function InsightsFeed({
+export function InsightsFeed({
   teamId: _teamId, // Reserved for future use
   coachId,
   initialInsights = [],
@@ -180,34 +181,14 @@ function InsightsFeed({
       )}
 
       {/* Tabs - Compact */}
-      <div className="flex gap-0.5 rounded-lg border border-white/70 bg-white/70 p-0.5 shadow-glass-sm overflow-clip">
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              'flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs font-semibold rounded-md transition-all truncate',
-              activeTab === tab.id
-                ? 'bg-white text-warm-900 shadow-glass-sm'
-                : 'text-warm-500 hover:text-warm-700'
-            )}
-          >
-            <span className="truncate">{tab.label}</span>
-            {tab.count > 0 && (
-              <span
-                className={cn(
-                  'text-[9px] px-1 py-0.5 rounded-full flex-shrink-0',
-                  activeTab === tab.id
-                    ? 'bg-primary-100 text-primary-700'
-                    : 'bg-warm-200 text-warm-600'
-                )}
-              >
-                {tab.count}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
+      <GolfTabBar
+        tabs={tabs}
+        value={activeTab}
+        onChange={setActiveTab}
+        ariaLabel="CoachHelm feed sections"
+        stretch
+        compact
+      />
 
       {/* Content */}
       <GlassCard className="p-3" glow="subtle" variant="secondary">

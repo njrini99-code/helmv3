@@ -4,17 +4,16 @@ import { useState, useEffect, useTransition } from 'react';
 import { m, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { GolfTabBar } from '@/components/golf/GolfTabBar';
+import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
 import {
   IconBell,
-  IconFilter,
   IconCheck,
   IconX,
   IconRefresh,
   IconSparkles,
   IconChevronLeft,
-  IconMenu,
 } from '@/components/icons';
-import { useSidebar } from '@/contexts/sidebar-context';
 import { GlassCard } from '@/components/ui/glass-card';
 import { useGolfUser } from '@/contexts/golf-user-context';
 import { AlertCard, type CoachAlert, type AlertLevel } from '@/components/golf/coachhelm/alerts';
@@ -31,7 +30,6 @@ import { containerVariants, itemVariants } from '@/components/golf/dashboard/pre
 type FilterLevel = AlertLevel | 'all';
 
 export default function AlertsPage() {
-  const { toggleMobile } = useSidebar();
   const router = useRouter();
   const golfUser = useGolfUser();
   const [isPending, startTransition] = useTransition();
@@ -64,7 +62,7 @@ export default function AlertsPage() {
         } else {
           setError(result.error || 'Failed to load alerts.');
         }
-      } catch (err) {
+      } catch {
         setError('Something went wrong loading alerts. Please refresh.');
       } finally {
         setIsLoading(false);
@@ -90,7 +88,7 @@ export default function AlertsPage() {
         }
         setError('Failed to dismiss alert. It has been restored.');
       }
-    } catch (err) {
+    } catch {
       if (alertToRemove) {
         setAlerts(prev => [...prev, alertToRemove].sort((a, b) =>
           (b.createdAt ?? '').localeCompare(a.createdAt ?? '')
@@ -117,7 +115,7 @@ export default function AlertsPage() {
         ));
         setError('Failed to acknowledge alert.');
       }
-    } catch (err) {
+    } catch {
       setAlerts(prev => prev.map(a =>
         a.id === alertId ? { ...a, acknowledgedAt: previousAcknowledgedAt } : a
       ));
@@ -141,7 +139,7 @@ export default function AlertsPage() {
         } else {
           setError(result.error || 'Failed to dismiss all alerts.');
         }
-      } catch (err) {
+      } catch {
         setAlerts(previousAlerts);
         setError('Network error — dismiss all failed.');
       }
@@ -163,7 +161,7 @@ export default function AlertsPage() {
         } else {
           setError(result.error || 'Failed to acknowledge all alerts.');
         }
-      } catch (err) {
+      } catch {
         setAlerts(previousAlerts);
         setError('Network error — acknowledge all failed.');
       }
@@ -197,6 +195,16 @@ export default function AlertsPage() {
     info: alerts.filter(a => a.level === 'info' && !a.acknowledgedAt).length,
     suggestion: alerts.filter(a => a.level === 'suggestion' && !a.acknowledgedAt).length,
   };
+  const visibleAlertCount = showAcknowledged
+    ? alerts.length
+    : alerts.filter(a => !a.acknowledgedAt).length;
+  const filterTabs: { id: FilterLevel; label: string; count?: number }[] = [
+    { id: 'all', label: 'All', count: visibleAlertCount },
+    { id: 'critical', label: 'Critical', count: countByLevel.critical },
+    { id: 'warning', label: 'Warning', count: countByLevel.warning },
+    { id: 'info', label: 'Info', count: countByLevel.info },
+    { id: 'suggestion', label: 'Suggestions', count: countByLevel.suggestion },
+  ];
 
   if (isLoading) {
     return null;
@@ -211,26 +219,15 @@ export default function AlertsPage() {
     >
       {/* Header */}
       <m.div variants={itemVariants} className={cn(
-        'sticky top-0 z-10',
+        'golf-mobile-page-header',
         'glass-standard',
-        'border-b border-white/30',
+        'border-white/30',
         'shadow-[0_1px_3px_rgba(0,0,0,0.02)]'
       )}>
         <div className="max-w-4xl mx-auto px-4 md:px-6 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <button
-                onClick={toggleMobile}
-                className={cn(
-                  'lg:hidden p-2.5 -ml-2 rounded-xl',
-                  'text-warm-500 hover:text-warm-700 hover:bg-warm-100/80',
-                  'transition-colors duration-150 active:scale-95',
-                  'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
-                )}
-                aria-label="Open navigation menu"
-              >
-                <IconMenu size={22} />
-              </button>
+              <MobileMenuButton />
               <button
                 onClick={() => router.back()}
                 className="hidden lg:block p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-white/50 transition-colors"
@@ -302,35 +299,15 @@ export default function AlertsPage() {
         {/* Filters & Actions */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           {/* Level Filters */}
-          <div className="flex items-center gap-2">
-            <IconFilter size={16} className="text-warm-400" />
-            <div className="flex gap-1 p-1 bg-white/60 backdrop-blur-sm rounded-xl border border-white/30 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden flex-nowrap snap-x snap-mandatory">
-              {(['all', 'critical', 'warning', 'info', 'suggestion'] as FilterLevel[]).map((level) => (
-                <button
-                  key={level}
-                  onClick={() => setFilterLevel(level)}
-                  className={cn(
-                    'px-3 py-2.5 min-h-[44px] text-sm font-medium rounded-lg transition-all flex-shrink-0 snap-center',
-                    filterLevel === level
-                      ? 'bg-white text-warm-900 shadow-sm'
-                      : 'text-warm-500 hover:text-warm-700'
-                  )}
-                >
-                  {level === 'all' ? 'All' : level.charAt(0).toUpperCase() + level.slice(1)}
-                  {level !== 'all' && countByLevel[level] > 0 && (
-                    <span className={cn(
-                      'ml-1.5 px-1.5 py-0.5 text-xs rounded-full',
-                      level === 'critical' ? 'bg-red-100 text-red-700' :
-                      level === 'warning' ? 'bg-amber-100 text-amber-700' :
-                      level === 'info' ? 'bg-blue-100 text-blue-700' :
-                      'bg-primary-100 text-primary-700'
-                    )}>
-                      {countByLevel[level]}
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
+          <div className="min-w-0 flex-1">
+            <GolfTabBar
+              tabs={filterTabs}
+              value={filterLevel}
+              onChange={setFilterLevel}
+              ariaLabel="Alert levels"
+              compact
+              scrollable
+            />
           </div>
 
           {/* Bulk Actions */}

@@ -758,7 +758,7 @@ export default function ContinueRoundClient({
 
       {/* Submit banner — shown when all holes are done but finish confirm was dismissed */}
       {pendingFinalStats && !showFinishConfirm && !submitting && (
-        <div className="sticky top-[49px] z-20 bg-primary-600 text-white px-4 py-3 flex items-center justify-between gap-3">
+        <div className="sticky top-[var(--golf-mobile-header-offset)] z-20 bg-primary-600 px-4 py-3 text-white lg:top-[49px] flex items-center justify-between gap-3">
           <p className="text-sm font-medium">All holes completed — ready to submit!</p>
           <button
             onClick={() => setShowFinishConfirm(true)}

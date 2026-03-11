@@ -19,6 +19,7 @@ import {
 } from '@/app/golf/actions/player-profile-stats';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { KeyMetricsGrid } from './KeyMetricsGrid';
+import { GolfTabBar } from '@/components/golf/GolfTabBar';
 import {
   IconChevronDown,
   IconTrendingUp,
@@ -333,22 +334,16 @@ const DetailedStatsTabs = memo(function DetailedStatsTabs({ stats }: { stats: Go
       />
 
       {/* Tab Navigation */}
-      <div className="pills-scroll p-2 border-b border-warm-100">
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              'flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap transition-all',
-              activeTab === tab.id
-                ? 'bg-primary-600 text-white shadow-sm'
-                : 'text-warm-600 hover:bg-warm-100 active:bg-warm-200'
-            )}
-          >
-            {tab.icon}
-            {tab.label}
-          </button>
-        ))}
+      <div className="border-b border-warm-100 p-2">
+        <GolfTabBar
+          tabs={tabs}
+          value={activeTab}
+          onChange={setActiveTab}
+          ariaLabel="Detailed player stats"
+          scrollable
+          compact
+          className="-mx-2 px-2"
+        />
       </div>
 
       {/* Tab Content */}
@@ -561,4 +556,3 @@ export const PlayerStatsSection = memo(function PlayerStatsSection({
     </div>
   );
 });
-

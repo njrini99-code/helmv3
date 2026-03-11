@@ -35,6 +35,7 @@ import {
   type PredictionPerformanceData,
   type PatternImpactData,
 } from '@/app/golf/actions/coachhelm-analytics';
+import { GolfTabBar } from '@/components/golf/GolfTabBar';
 
 interface CoachHelmAnalyticsDashboardProps {
   teamId: string;
@@ -125,7 +126,7 @@ export function CoachHelmAnalyticsDashboard({
   return (
     <div className="min-h-full">
       {/* Header */}
-      <div className="border-b border-warm-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+      <div className="golf-mobile-page-header bg-white/50 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-5">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-4">
@@ -216,23 +217,14 @@ export function CoachHelmAnalyticsDashboard({
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex gap-1 p-1 bg-warm-100/80 backdrop-blur-sm rounded-xl mb-6 w-fit"
+          className="mb-6"
         >
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={cn(
-                'flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all',
-                activeTab === tab.id
-                  ? 'bg-white text-warm-900 shadow-sm'
-                  : 'text-warm-500 hover:text-warm-700'
-              )}
-            >
-              {tab.icon}
-              {tab.label}
-            </button>
-          ))}
+          <GolfTabBar
+            tabs={tabs}
+            value={activeTab}
+            onChange={setActiveTab}
+            ariaLabel="CoachHelm analytics sections"
+          />
         </motion.div>
 
         {/* Tab Content */}

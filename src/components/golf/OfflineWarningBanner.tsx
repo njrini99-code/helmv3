@@ -245,7 +245,8 @@ export function OfflineWarningBanner({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 50 }}
           className={cn(
-            'fixed bottom-4 left-4 right-4 z-50 md:left-auto md:w-96 md:right-4 pb-[env(safe-area-inset-bottom)]',
+            'fixed left-4 right-4 z-50 md:left-auto md:right-4 md:w-96',
+            'bottom-[var(--golf-mobile-bottom-nav-offset)] md:bottom-4',
             className
           )}
         >
@@ -354,4 +355,3 @@ export function OfflineWarningBanner({
 // ============================================================================
 // EXPORTS
 // ============================================================================
-

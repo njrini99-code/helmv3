@@ -79,7 +79,7 @@ export function FormatToggle({
 
   return (
     <motion.div
-      className="flex items-center gap-1 p-1 rounded-xl bg-warm-100/60 backdrop-blur-sm border border-warm-200/40"
+      className="inline-flex items-center gap-1 rounded-2xl border border-warm-200/70 bg-warm-100/80 p-1 shadow-sm backdrop-blur-sm"
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.15, type: 'spring', stiffness: 300, damping: 25 }}
@@ -90,25 +90,25 @@ export function FormatToggle({
           <motion.button
             key={opt.id}
             onClick={() => onChange(opt.id)}
-            className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+            className={`relative flex min-h-[38px] items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium transition-colors ${
               isActive
-                ? 'text-primary-700'
-                : 'text-warm-500 hover:text-warm-700'
+                ? 'text-warm-900'
+                : 'text-warm-500 hover:bg-white/60 hover:text-warm-700 active:bg-white/80'
             }`}
             whileTap={{ scale: 0.97 }}
           >
             {isActive && (
               <motion.div
-                className="absolute inset-0 rounded-lg bg-white shadow-sm border border-warm-200/60"
+                className="absolute inset-0 rounded-xl border border-white/80 bg-white shadow-sm"
                 layoutId="format-toggle-bg"
                 transition={{ type: 'spring', stiffness: 400, damping: 28 }}
               />
             )}
             <span className="relative z-10">{opt.label}</span>
-            <span className={`relative z-10 tabular-nums px-1.5 py-0.5 rounded-md text-[10px] font-bold ${
+            <span className={`relative z-10 rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ${
               isActive
-                ? 'bg-primary-100 text-primary-600'
-                : 'bg-warm-200/60 text-warm-400'
+                ? 'bg-primary-100 text-primary-700'
+                : 'bg-warm-200/80 text-warm-500'
             }`}>
               {opt.count}
             </span>
