@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { revalidatePath } from 'next/cache';
 
 // ============================================
 // TYPES
@@ -91,6 +92,20 @@ export interface TracerData {
     critical7d: number;
     warnings7d: number;
   };
+  /** Per-round integrity data from hole-level aggregation */
+  roundIntegrity?: Record<string, {
+    round_id: string;
+    hole_count: number;
+    holes_sum_score: number | null;
+    holes_sum_putts: number | null;
+    holes_sum_fairways_hit: number;
+    holes_sum_fairways_total: number;
+    holes_sum_gir: number;
+    holes_sum_gir_total: number;
+    null_score_count: number;
+    null_putts_count: number;
+    max_hole_score: number | null;
+  }>;
 }
 
 // ============================================
@@ -249,7 +264,7 @@ export async function getTracerData(): Promise<TracerData> {
     recentErrorsResult, errorTotal7d, errorCritical7d, errorWarnings7d,
   ] = await Promise.all([
     roundIds.length > 0
-      ? adminDb.from('golf_holes').select('round_id').in('round_id', roundIds)
+      ? adminDb.from('golf_holes').select('round_id, score, putts, fairway_hit, gir, par').in('round_id', roundIds)
       : Promise.resolve({ data: [] }),
     roundIds.length > 0
       ? adminDb.from('golf_shots').select('round_id').in('round_id', roundIds)
@@ -305,6 +320,64 @@ export async function getTracerData(): Promise<TracerData> {
   for (const h of (holeCounts as { data: { round_id: string }[] | null }).data || []) {
     holeCountMap.set(h.round_id, (holeCountMap.get(h.round_id) || 0) + 1);
   }
+
+  // Build round integrity map from raw hole data
+  interface RoundIntegrityEntry {
+    round_id: string;
+    hole_count: number;
+    holes_sum_score: number | null;
+    holes_sum_putts: number | null;
+    holes_sum_fairways_hit: number;
+    holes_sum_fairways_total: number;
+    holes_sum_gir: number;
+    holes_sum_gir_total: number;
+    null_score_count: number;
+    null_putts_count: number;
+    max_hole_score: number | null;
+  }
+  const roundIntegrity: Record<string, RoundIntegrityEntry> = {};
+  type HoleRow = { round_id: string; score: number | null; putts: number | null; fairway_hit: boolean | null; gir: boolean | null; par: number | null };
+  for (const h of (holeCounts as { data: HoleRow[] | null }).data || []) {
+    if (!roundIntegrity[h.round_id]) {
+      roundIntegrity[h.round_id] = {
+        round_id: h.round_id,
+        hole_count: 0,
+        holes_sum_score: null,
+        holes_sum_putts: null,
+        holes_sum_fairways_hit: 0,
+        holes_sum_fairways_total: 0,
+        holes_sum_gir: 0,
+        holes_sum_gir_total: 0,
+        null_score_count: 0,
+        null_putts_count: 0,
+        max_hole_score: null,
+      };
+    }
+    const ri = roundIntegrity[h.round_id]!;
+    ri.hole_count++;
+    if (h.score != null) {
+      ri.holes_sum_score = (ri.holes_sum_score ?? 0) + h.score;
+      if (ri.max_hole_score === null || h.score > ri.max_hole_score) {
+        ri.max_hole_score = h.score;
+      }
+    } else {
+      ri.null_score_count++;
+    }
+    if (h.putts != null) {
+      ri.holes_sum_putts = (ri.holes_sum_putts ?? 0) + h.putts;
+    } else {
+      ri.null_putts_count++;
+    }
+    if (h.fairway_hit != null) {
+      ri.holes_sum_fairways_total++;
+      if (h.fairway_hit) ri.holes_sum_fairways_hit++;
+    }
+    if (h.gir != null) {
+      ri.holes_sum_gir_total++;
+      if (h.gir) ri.holes_sum_gir++;
+    }
+  }
+
   for (const s of (shotCounts as { data: { round_id: string }[] | null }).data || []) {
     shotCountMap.set(s.round_id, (shotCountMap.get(s.round_id) || 0) + 1);
   }
@@ -421,6 +494,7 @@ export async function getTracerData(): Promise<TracerData> {
       critical7d: errorCritical7d.count || 0,
       warnings7d: errorWarnings7d.count || 0,
     },
+    roundIntegrity,
   };
 }
 
@@ -637,4 +711,183 @@ export async function getTracerRoundDiagnostic(roundId: string): Promise<TracerR
     errors: (errorsResult.data || []) as TracerErrorLog[],
     playerName,
   };
+}
+
+// ============================================
+// AUTO-FIX ACTIONS (admin only)
+// ============================================
+
+export async function fixRoundData(
+  roundId: string,
+  fixType: 'recalculate_round_totals' | 'recalculate_round_gir' | 'refresh_player_stats_cache' | 'recalculate_strokes_gained',
+  playerId?: string
+): Promise<{
+  success: boolean;
+  fix_type: string;
+  round_id: string | null;
+  player_id: string | null;
+  message: string;
+  changes?: Record<string, { before: string | number | null; after: string | number | null }>;
+}> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Unauthorized');
+
+  const { data: userData } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+  if (userData?.role !== 'admin') throw new Error('Forbidden');
+
+  const adminDb = createAdminClient();
+
+  switch (fixType) {
+    case 'recalculate_round_totals': {
+      const { data: round } = await adminDb
+        .from('golf_rounds')
+        .select('total_score, score_to_par, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible, player_id')
+        .eq('id', roundId)
+        .single();
+      if (!round) return { success: false, fix_type: fixType, round_id: roundId, player_id: null, message: 'Round not found' };
+
+      const { data: holes } = await adminDb
+        .from('golf_holes')
+        .select('score, putts, fairway_hit, gir, par')
+        .eq('round_id', roundId);
+
+      if (!holes || holes.length === 0) {
+        return { success: false, fix_type: fixType, round_id: roundId, player_id: round.player_id, message: 'No hole data found for this round' };
+      }
+
+      // Refuse to recalculate if any holes have null scores — would produce garbage totals
+      const holesWithNullScore = holes.filter(h => h.score == null);
+      if (holesWithNullScore.length > 0) {
+        return { success: false, fix_type: fixType, round_id: roundId, player_id: round.player_id, message: `Cannot recalculate: ${holesWithNullScore.length} of ${holes.length} holes have null scores` };
+      }
+
+      const newTotalScore = holes.reduce((sum, h) => sum + h.score!, 0);
+      const newScoreToPar = holes.reduce((sum, h) => sum + (h.score! - (h.par || 0)), 0);
+      const newTotalPutts = holes.reduce((sum, h) => sum + (h.putts || 0), 0);
+      const newFairwaysHit = holes.filter(h => h.fairway_hit === true).length;
+      const newFairwaysTotal = holes.filter(h => h.fairway_hit != null).length;
+      const newGir = holes.filter(h => h.gir === true).length;
+      const newGirTotal = holes.filter(h => h.gir != null).length;
+
+      const { error } = await adminDb
+        .from('golf_rounds')
+        .update({
+          total_score: newTotalScore,
+          score_to_par: newScoreToPar,
+          total_putts: newTotalPutts,
+          total_fairways_hit: newFairwaysHit,
+          total_fairways: newFairwaysTotal,
+          total_gir: newGir,
+          total_gir_possible: newGirTotal,
+        })
+        .eq('id', roundId);
+
+      if (error) return { success: false, fix_type: fixType, round_id: roundId, player_id: round.player_id, message: `DB update failed: ${error.message}` };
+
+      revalidatePath('/golf/admin');
+      return {
+        success: true,
+        fix_type: fixType,
+        round_id: roundId,
+        player_id: round.player_id,
+        message: 'Round totals recalculated from hole data',
+        changes: {
+          total_score: { before: round.total_score, after: newTotalScore },
+          total_putts: { before: round.total_putts, after: newTotalPutts },
+          total_fairways_hit: { before: round.total_fairways_hit, after: newFairwaysHit },
+          total_gir: { before: round.total_gir, after: newGir },
+        },
+      };
+    }
+
+    case 'recalculate_round_gir': {
+      const { data: holes } = await adminDb
+        .from('golf_holes')
+        .select('id, score, putts, par, gir')
+        .eq('round_id', roundId);
+
+      if (!holes || holes.length === 0) {
+        return { success: false, fix_type: fixType, round_id: roundId, player_id: playerId || null, message: 'No hole data found' };
+      }
+
+      // Batch GIR updates to avoid N+1 sequential writes
+      const toTrue: string[] = [];
+      const toFalse: string[] = [];
+      for (const hole of holes) {
+        if (hole.score == null || hole.putts == null || hole.par == null) continue;
+        const correctGir = (hole.score - hole.putts) <= (hole.par - 2);
+        if (hole.gir !== correctGir) {
+          (correctGir ? toTrue : toFalse).push(hole.id);
+        }
+      }
+      if (toTrue.length > 0) {
+        await adminDb.from('golf_holes').update({ gir: true }).in('id', toTrue);
+      }
+      if (toFalse.length > 0) {
+        await adminDb.from('golf_holes').update({ gir: false }).in('id', toFalse);
+      }
+      const fixedCount = toTrue.length + toFalse.length;
+
+      const { data: updatedHoles } = await adminDb
+        .from('golf_holes')
+        .select('gir')
+        .eq('round_id', roundId);
+      const newGir = (updatedHoles || []).filter(h => h.gir === true).length;
+      const newGirTotal = (updatedHoles || []).filter(h => h.gir != null).length;
+      await adminDb
+        .from('golf_rounds')
+        .update({ total_gir: newGir, total_gir_possible: newGirTotal })
+        .eq('id', roundId);
+
+      revalidatePath('/golf/admin');
+      return {
+        success: true,
+        fix_type: fixType,
+        round_id: roundId,
+        player_id: playerId || null,
+        message: `Recalculated GIR for ${holes.length} holes, fixed ${fixedCount}`,
+        changes: { gir_holes_fixed: { before: null, after: fixedCount } },
+      };
+    }
+
+    case 'refresh_player_stats_cache': {
+      if (!playerId) return { success: false, fix_type: fixType, round_id: null, player_id: null, message: 'playerId required' };
+
+      const { error } = await adminDb.rpc('refresh_player_stats_cache', { p_player_id: playerId });
+
+      if (error) return { success: false, fix_type: fixType, round_id: null, player_id: playerId, message: `Cache refresh failed: ${error.message}` };
+
+      revalidatePath('/golf/admin');
+      return {
+        success: true,
+        fix_type: fixType,
+        round_id: null,
+        player_id: playerId,
+        message: 'Stats cache refreshed successfully',
+      };
+    }
+
+    case 'recalculate_strokes_gained': {
+      const { error } = await adminDb.rpc('recalculate_round_strokes_gained', { p_round_id: roundId });
+
+      if (error) return { success: false, fix_type: fixType, round_id: roundId, player_id: playerId || null, message: `SG recalc failed: ${error.message}` };
+
+      revalidatePath('/golf/admin');
+      return {
+        success: true,
+        fix_type: fixType,
+        round_id: roundId,
+        player_id: playerId || null,
+        message: 'Strokes gained recalculated for round',
+      };
+    }
+
+    default:
+      return { success: false, fix_type: fixType, round_id: roundId, player_id: playerId || null, message: `Unknown fix type: ${fixType}` };
+  }
 }

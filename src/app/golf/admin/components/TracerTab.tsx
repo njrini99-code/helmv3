@@ -26,12 +26,15 @@ import {
   computeHealthScore,
   flattenRounds,
   computeCompleteness,
-  detectOutliers,
+  detectDataQualityIssues,
+  computePlayerQualityScores,
   generateAlerts,
   groupErrors,
   getMostAffectedPlayers,
   computeKPIs,
 } from './tracer/tracer-utils';
+import { fixRoundData } from '@/app/golf/actions/admin-tracer-data';
+import type { DataQualityIssue, FixResult } from './tracer/tracer-types';
 
 // ============================================================================
 // TRACER TAB (Command Center Orchestrator)
@@ -89,7 +92,25 @@ export function TracerTab() {
   const healthScore = useMemo(() => (data ? computeHealthScore(data) : null), [data]);
   const flatRounds = useMemo(() => (data ? flattenRounds(data) : []), [data]);
   const completeness = useMemo(() => (data ? computeCompleteness(data) : []), [data]);
-  const outliers = useMemo(() => (data ? detectOutliers(data) : []), [data]);
+  const dataQualityIssues = useMemo(() => (data ? detectDataQualityIssues(data) : []), [data]);
+  // Derive outliers from already-computed issues to avoid running the diagnostic engine twice
+  const outliers = useMemo(() => {
+    return dataQualityIssues
+      .filter(i => i.category === 'outlier')
+      .map(i => ({
+        player_id: i.player_id,
+        player_name: i.player_name,
+        round_id: i.round_id || '',
+        field: i.title,
+        value: typeof i.actual_value === 'number' ? i.actual_value : 0,
+        threshold: typeof i.expected_value === 'number' ? i.expected_value : 0,
+        course_name: i.course_name,
+      }));
+  }, [dataQualityIssues]);
+  const playerQualityScores = useMemo(
+    () => (data && dataQualityIssues ? computePlayerQualityScores(dataQualityIssues, data.playerSummaries) : []),
+    [data, dataQualityIssues]
+  );
   const alerts = useMemo(
     () => (data && enrichedData ? generateAlerts(data, enrichedData.stuckRounds) : []),
     [data, enrichedData]
@@ -111,6 +132,21 @@ export function TracerTab() {
       errors: enrichedData.dailyErrorCounts.map((d) => d.count),
     };
   }, [enrichedData]);
+
+  // Fix handler for data quality issues
+  const handleFixIssue = useCallback(async (issue: DataQualityIssue): Promise<FixResult> => {
+    if (!issue.fix_type) return { success: false, fix_type: '', round_id: null, player_id: null, message: 'No fix type specified' };
+    const result = await fixRoundData(
+      issue.round_id || '',
+      issue.fix_type,
+      issue.player_id
+    );
+    if (result.success) {
+      // Refresh data after successful fix
+      await loadData(true);
+    }
+    return result;
+  }, [loadData]);
 
   // Tab configs with badges
   const tabs: TracerSubTabConfig[] = useMemo(() => {
@@ -223,6 +259,12 @@ export function TracerTab() {
           statsAccuracy={data.statsAccuracy}
           completeness={completeness}
           outliers={outliers}
+          onRefreshCache={(playerId) => {
+            fixRoundData('', 'refresh_player_stats_cache', playerId).then(() => loadData(true));
+          }}
+          issues={dataQualityIssues}
+          playerScores={playerQualityScores}
+          onFixIssue={handleFixIssue}
         />
       )}
 

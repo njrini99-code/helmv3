@@ -6,13 +6,24 @@ import {
   ArrowUpDown,
   RefreshCw,
   CheckCircle2,
+  AlertTriangle,
+  AlertCircle,
+  Info,
 } from 'lucide-react';
 import { timeAgo } from '../admin-utils';
 import { DataCompletenessGrid } from './DataCompletenessGrid';
+import { DataQualityIssueRow } from './DataQualityIssueRow';
+import { PlayerQualityScoreCard } from './PlayerQualityScoreCard';
 import type {
   TracerStatsAccuracy,
   PlayerCompleteness,
   Outlier,
+  DataQualityIssue,
+  PlayerQualityScore,
+  FixResult,
+  IssueSeverity,
+  IssueCategory,
+  GroupByOption,
 } from './tracer-types';
 
 // ============================================================================
@@ -24,6 +35,10 @@ interface TracerDataQualityProps {
   completeness: PlayerCompleteness[];
   outliers: Outlier[];
   onRefreshCache?: (playerId: string) => void;
+  // New props
+  issues?: DataQualityIssue[];
+  playerScores?: PlayerQualityScore[];
+  onFixIssue?: (issue: DataQualityIssue) => Promise<FixResult>;
 }
 
 // ============================================================================
@@ -258,6 +273,19 @@ function OutlierRow({ outlier }: { outlier: Outlier }) {
 }
 
 // ============================================================================
+// CATEGORY LABELS
+// ============================================================================
+
+const CATEGORY_LABELS: Record<string, string> = {
+  missing_data: 'Missing Data',
+  outlier: 'Outlier',
+  integrity: 'Integrity',
+  cache_divergence: 'Cache Divergence',
+  completeness: 'Completeness',
+  stuck_round: 'Stuck Rounds',
+};
+
+// ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
@@ -266,10 +294,62 @@ export function TracerDataQuality({
   completeness,
   outliers,
   onRefreshCache,
+  issues,
+  playerScores,
+  onFixIssue,
 }: TracerDataQualityProps) {
   // Local sort state for stats accuracy table
   const [sortKey, setSortKey] = useState<StatsSortKey>('scoring');
   const [sortAsc, setSortAsc] = useState(true);
+
+  // Issue filter state
+  const [severityFilter, setSeverityFilter] = useState<IssueSeverity | 'all'>('all');
+  const [categoryFilter, setCategoryFilter] = useState<IssueCategory | 'all'>('all');
+  const [playerFilter, setPlayerFilter] = useState<string>('all');
+  const [groupBy, setGroupBy] = useState<GroupByOption>('category');
+  const [fixingIssues, setFixingIssues] = useState<Set<string>>(new Set());
+
+  // Filtered issues
+  const filteredIssues = useMemo(() => {
+    if (!issues) return [];
+    return issues.filter(i => {
+      if (severityFilter !== 'all' && i.severity !== severityFilter) return false;
+      if (categoryFilter !== 'all' && i.category !== categoryFilter) return false;
+      if (playerFilter !== 'all' && i.player_id !== playerFilter) return false;
+      return true;
+    });
+  }, [issues, severityFilter, categoryFilter, playerFilter]);
+
+  // Grouped issues
+  const groupedIssues = useMemo(() => {
+    if (groupBy === 'none') return { 'All Issues': filteredIssues };
+    const groups: Record<string, DataQualityIssue[]> = {};
+    for (const i of filteredIssues) {
+      const key = groupBy === 'category' ? (CATEGORY_LABELS[i.category] || i.category)
+        : groupBy === 'player' ? i.player_name
+        : groupBy === 'severity' ? i.severity
+        : 'All';
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(i);
+    }
+    return groups;
+  }, [filteredIssues, groupBy]);
+
+  // Handle fix
+  async function handleFix(issue: DataQualityIssue): Promise<FixResult> {
+    const noOp: FixResult = { success: false, fix_type: '', round_id: null, player_id: null, message: 'No fix handler' };
+    if (!onFixIssue) return noOp;
+    setFixingIssues(prev => new Set(prev).add(issue.id));
+    try {
+      return await onFixIssue(issue);
+    } finally {
+      setFixingIssues(prev => {
+        const next = new Set(prev);
+        next.delete(issue.id);
+        return next;
+      });
+    }
+  }
 
   function handleSort(key: StatsSortKey) {
     if (sortKey === key) {
@@ -312,6 +392,136 @@ export function TracerDataQuality({
 
   return (
     <div className="space-y-8">
+      {/* ================================================================ */}
+      {/* Section 0: Summary Bar & Issue List (NEW)                        */}
+      {/* ================================================================ */}
+      {issues && issues.length > 0 && (
+        <section>
+          <div className="bg-white/65 backdrop-blur-[16px] border border-white/30 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)] overflow-clip">
+            {/* Summary header */}
+            <div className="px-5 py-4 border-b border-warm-100/50 flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-3">
+                <h3 className="text-sm font-semibold text-warm-900">Data Quality Issues</h3>
+                <div className="flex items-center gap-2">
+                  {(() => {
+                    const crit = issues.filter(i => i.severity === 'critical').length;
+                    const warn = issues.filter(i => i.severity === 'warning').length;
+                    const info = issues.filter(i => i.severity === 'info').length;
+                    return (
+                      <>
+                        {crit > 0 && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700"><AlertCircle size={10} />{crit}</span>}
+                        {warn > 0 && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700"><AlertTriangle size={10} />{warn}</span>}
+                        {info > 0 && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700"><Info size={10} />{info}</span>}
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              {/* Filters */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <select
+                  value={severityFilter}
+                  onChange={(e) => setSeverityFilter(e.target.value as IssueSeverity | 'all')}
+                  className="text-[11px] px-2 py-1 rounded-lg border border-warm-200/50 bg-white/50 text-warm-600"
+                >
+                  <option value="all">All Severity</option>
+                  <option value="critical">Critical</option>
+                  <option value="warning">Warning</option>
+                  <option value="info">Info</option>
+                </select>
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value as IssueCategory | 'all')}
+                  className="text-[11px] px-2 py-1 rounded-lg border border-warm-200/50 bg-white/50 text-warm-600"
+                >
+                  <option value="all">All Categories</option>
+                  <option value="missing_data">Missing Data</option>
+                  <option value="outlier">Outlier</option>
+                  <option value="integrity">Integrity</option>
+                  <option value="cache_divergence">Cache</option>
+                  <option value="completeness">Completeness</option>
+                  <option value="stuck_round">Stuck</option>
+                </select>
+                <select
+                  value={groupBy}
+                  onChange={(e) => setGroupBy(e.target.value as GroupByOption)}
+                  className="text-[11px] px-2 py-1 rounded-lg border border-warm-200/50 bg-white/50 text-warm-600"
+                >
+                  <option value="category">Group: Category</option>
+                  <option value="player">Group: Player</option>
+                  <option value="severity">Group: Severity</option>
+                  <option value="none">No Grouping</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Grouped issue lists */}
+            <div className="max-h-[500px] overflow-y-auto">
+              {Object.entries(groupedIssues).map(([groupName, groupIssues]) => (
+                <div key={groupName}>
+                  {groupBy !== 'none' && (
+                    <div className="px-5 py-2 bg-warm-50/50 border-b border-warm-100/30 flex items-center justify-between">
+                      <span className="text-[11px] font-semibold text-warm-600 uppercase tracking-wider">{groupName}</span>
+                      <span className="text-[10px] font-medium text-warm-400">{groupIssues.length} issue{groupIssues.length !== 1 ? 's' : ''}</span>
+                    </div>
+                  )}
+                  {groupIssues.map((iss) => (
+                    <DataQualityIssueRow
+                      key={iss.id}
+                      issue={iss}
+                      onFix={onFixIssue ? handleFix : undefined}
+                      fixing={fixingIssues.has(iss.id)}
+                    />
+                  ))}
+                </div>
+              ))}
+            </div>
+
+            {filteredIssues.length === 0 && (
+              <div className="px-5 py-8 text-center text-sm text-warm-400">
+                No issues match the current filters
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* No issues celebration */}
+      {issues && issues.length === 0 && (
+        <section>
+          <div className="bg-white/65 backdrop-blur-[16px] border border-white/30 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)] p-8 text-center">
+            <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-3">
+              <CheckCircle2 className="text-green-500" size={24} />
+            </div>
+            <p className="text-sm font-semibold text-warm-900">All Data Quality Checks Passing</p>
+            <p className="text-xs text-warm-400 mt-1">All diagnostic checks passed across all players and rounds</p>
+          </div>
+        </section>
+      )}
+
+      {/* ================================================================ */}
+      {/* Section 0.5: Per-Player Quality Scores (NEW)                     */}
+      {/* ================================================================ */}
+      {playerScores && playerScores.length > 0 && (
+        <section>
+          <div className="bg-white/65 backdrop-blur-[16px] border border-white/30 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)] overflow-clip">
+            <div className="px-5 py-4 border-b border-warm-100/50">
+              <h3 className="text-sm font-semibold text-warm-900">Player Quality Scores</h3>
+            </div>
+            <div className="p-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {playerScores.map((s) => (
+                <PlayerQualityScoreCard
+                  key={s.player_id}
+                  score={s}
+                  onFilterPlayer={(pid) => setPlayerFilter(pid === playerFilter ? 'all' : pid)}
+                />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* ================================================================ */}
       {/* Section 1: Stats Accuracy Table                                  */}
       {/* ================================================================ */}
