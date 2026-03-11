@@ -85,9 +85,10 @@ export function TodayTimeline({ events, role, timezone }: TodayTimelineProps) {
     }, [events, tz]);
 
     const totalHours = endHour - startHour;
-    // Each hour = 120px for a nice spread
+    // Each hour = 120px for a nice spread on desktop, tighter on mobile
     const HOUR_WIDTH = 120;
     const totalWidth = totalHours * HOUR_WIDTH;
+    const TIMELINE_HEIGHT = 160;
 
     const hourToX = (h: number) => ((h - startHour) / totalHours) * totalWidth;
     const nowX = hourToX(currentHour);
@@ -168,9 +169,9 @@ export function TodayTimeline({ events, role, timezone }: TodayTimelineProps) {
                 role="group"
                 aria-label="Timeline events, use left and right arrow keys to scroll"
                 onKeyDown={handleKeyDown}
-                className="overflow-x-auto scrollbar-thin scrollbar-thumb-warm-200 scrollbar-track-transparent pb-4 px-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 rounded-lg"
+                className="overflow-x-auto overflow-y-hidden scrollbar-thin scrollbar-thumb-warm-200 scrollbar-track-transparent pb-4 px-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 rounded-lg"
             >
-                <div className="relative" style={{ width: totalWidth + 40, minHeight: 140 }}>
+                <div className="relative" style={{ width: totalWidth + 40, height: TIMELINE_HEIGHT }}>
                     {/* Hour markers */}
                     <div className="flex items-end" style={{ width: totalWidth + 40, height: 28 }}>
                         {hours.map(h => {
@@ -214,8 +215,8 @@ export function TodayTimeline({ events, role, timezone }: TodayTimelineProps) {
 
                     {/* Event blocks - positioned by time, stacked into rows to avoid overlap */}
                     {(() => {
-                        const ROW_HEIGHT = 82; // px per row
-                        const ROW_GAP = 6;
+                        const ROW_HEIGHT = 76; // px per row
+                        const ROW_GAP = 4;
                         // Assign events to rows using a greedy algorithm
                         const rowEnds: number[] = []; // tracks the rightmost pixel end of each row
                         const eventRows: number[] = [];

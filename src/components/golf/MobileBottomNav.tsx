@@ -29,7 +29,7 @@ const playerNavItems: NavItem[] = [
   { href: '/golf/dashboard/rounds', label: 'Rounds', icon: <IconGolf size={24} /> },
   { href: '/golf/dashboard/calendar', label: 'Calendar', icon: <IconCalendar size={24} /> },
   { href: '/golf/dashboard/messages', label: 'Messages', icon: <IconMessage size={24} /> },
-  { href: '/golf/dashboard/alerts', label: 'Alerts', icon: <IconBell size={24} /> },
+  { href: '/golf/dashboard/announcements', label: 'Alerts', icon: <IconBell size={24} /> },
 ];
 
 interface MobileBottomNavProps {
