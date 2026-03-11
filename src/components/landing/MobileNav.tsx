@@ -141,14 +141,18 @@ export function MobileNav({ isProductsPage = false }: MobileNavProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3, ease: smooth }}
-            className="fixed inset-0 z-[60] md:hidden"
-            style={{
-              background: `
-                radial-gradient(ellipse 90% 50% at 50% 30%, rgba(21, 128, 61, 0.1), transparent),
-                linear-gradient(180deg, #FFFEFA 0%, #F5F0E6 50%, #EDE8DD 100%)
-              `,
-            }}
+            className="fixed inset-0 z-[60] md:hidden bg-[#F5F0E6]"
           >
+            {/* Gradient enhancement layer */}
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background: `
+                  radial-gradient(ellipse 90% 50% at 50% 30%, rgba(21, 128, 61, 0.1), transparent),
+                  linear-gradient(180deg, #FFFEFA 0%, #F5F0E6 50%, #EDE8DD 100%)
+                `,
+              }}
+            />
             {/* Subtle top glow */}
             <div
               className="absolute top-0 left-0 right-0 h-[40vh] pointer-events-none"
