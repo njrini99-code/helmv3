@@ -20,6 +20,7 @@ export interface TracerPlayerSummary {
 
 export interface TracerRoundDetail {
   round_id: string;
+  player_id: string;
   status: string;
   course_name: string | null;
   round_date: string | null;
@@ -188,6 +189,7 @@ export async function getTracerData(): Promise<TracerData> {
     if (!roundsByPlayer[r.player_id]) roundsByPlayer[r.player_id] = [];
     roundsByPlayer[r.player_id]!.push({
       round_id: r.id,
+      player_id: r.player_id,
       status: r.status as string,
       course_name: r.course_name,
       round_date: r.round_date,
@@ -419,5 +421,220 @@ export async function getTracerData(): Promise<TracerData> {
       critical7d: errorCritical7d.count || 0,
       warnings7d: errorWarnings7d.count || 0,
     },
+  };
+}
+
+// ============================================
+// ENRICHED DATA (sparklines, trends, stuck rounds)
+// ============================================
+
+export interface TracerEnrichedData {
+  dailyRoundCounts: { date: string; count: number }[];
+  dailyErrorCounts: { date: string; count: number }[];
+  stuckRounds: {
+    round_id: string;
+    player_id: string;
+    player_name: string;
+    course_name: string | null;
+    updated_at: string;
+    hours_stuck: number;
+  }[];
+}
+
+export async function getTracerEnrichedData(): Promise<TracerEnrichedData> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Unauthorized');
+
+  const { data: userData } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+  if (userData?.role !== 'admin') throw new Error('Forbidden');
+
+  const adminDb = createAdminClient();
+  const ago30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+
+  const [roundsResult, errorsResult, stuckResult] = await Promise.all([
+    // Daily round counts (last 30 days)
+    adminDb
+      .from('golf_rounds')
+      .select('created_at')
+      .gte('created_at', ago30d)
+      .order('created_at', { ascending: true }),
+
+    // Daily error counts (last 30 days)
+    adminDb
+      .from('error_logs')
+      .select('created_at')
+      .gte('created_at', ago30d)
+      .or('context->>action.in.(submitGolfRoundComprehensive,savePartialRound),severity.eq.warning')
+      .order('created_at', { ascending: true }),
+
+    // Stuck rounds (in_progress with updated_at > 2 hours ago)
+    adminDb
+      .from('golf_rounds')
+      .select('id, player_id, course_name, updated_at')
+      .eq('status', 'in_progress')
+      .lt('updated_at', twoHoursAgo),
+  ]);
+
+  // Aggregate into daily counts
+  function toDailyCounts(rows: { created_at: string | null }[] | null): { date: string; count: number }[] {
+    const map = new Map<string, number>();
+    // Pre-fill last 30 days
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
+      const key = d.toISOString().slice(0, 10);
+      map.set(key, 0);
+    }
+    for (const row of rows || []) {
+      if (!row.created_at) continue;
+      const key = row.created_at.slice(0, 10);
+      if (map.has(key)) {
+        map.set(key, (map.get(key) || 0) + 1);
+      }
+    }
+    return Array.from(map.entries()).map(([date, count]) => ({ date, count }));
+  }
+
+  // Resolve player names for stuck rounds
+  const stuckData = stuckResult.data || [];
+  const stuckPlayerIds = [...new Set(stuckData.map((r) => r.player_id))];
+  let playerNameMap = new Map<string, string>();
+  if (stuckPlayerIds.length > 0) {
+    const { data: players } = await adminDb
+      .from('golf_players')
+      .select('id, first_name, last_name')
+      .in('id', stuckPlayerIds);
+    for (const p of players || []) {
+      playerNameMap.set(p.id, `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Unknown');
+    }
+  }
+
+  const stuckRounds = stuckData
+    .filter((r): r is typeof r & { updated_at: string } => r.updated_at != null)
+    .map((r) => ({
+      round_id: r.id,
+      player_id: r.player_id,
+      player_name: playerNameMap.get(r.player_id) || 'Unknown',
+      course_name: r.course_name,
+      updated_at: r.updated_at,
+      hours_stuck: (Date.now() - new Date(r.updated_at).getTime()) / (1000 * 60 * 60),
+    }));
+
+  return {
+    dailyRoundCounts: toDailyCounts(roundsResult.data),
+    dailyErrorCounts: toDailyCounts(errorsResult.data),
+    stuckRounds,
+  };
+}
+
+// ============================================
+// ROUND DIAGNOSTIC (lazy-loaded for drill-down modal)
+// ============================================
+
+export interface TracerHoleDiagnostic {
+  hole_number: number;
+  par: number | null;
+  score: number | null;
+  putts: number | null;
+  fairway_hit: boolean | null;
+  gir: boolean | null;
+}
+
+export interface TracerShotDiagnostic {
+  shot_number: number;
+  hole_number: number;
+  club: string | null;
+  shot_type: string | null;
+  distance: number | null;
+}
+
+export interface TracerRoundDiagnosticData {
+  holes: TracerHoleDiagnostic[];
+  shots: TracerShotDiagnostic[];
+  errors: TracerErrorLog[];
+  playerName: string;
+}
+
+export async function getTracerRoundDiagnostic(roundId: string): Promise<TracerRoundDiagnosticData> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Unauthorized');
+
+  const { data: userData } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+  if (userData?.role !== 'admin') throw new Error('Forbidden');
+
+  const adminDb = createAdminClient();
+
+  // Get round info to resolve player name
+  const { data: round } = await adminDb
+    .from('golf_rounds')
+    .select('player_id')
+    .eq('id', roundId)
+    .single();
+
+  let playerName = 'Unknown';
+  if (round?.player_id) {
+    const { data: player } = await adminDb
+      .from('golf_players')
+      .select('first_name, last_name')
+      .eq('id', round.player_id)
+      .single();
+    if (player) {
+      playerName = `${player.first_name || ''} ${player.last_name || ''}`.trim() || 'Unknown';
+    }
+  }
+
+  const [holesResult, shotsResult, errorsResult] = await Promise.all([
+    adminDb
+      .from('golf_holes')
+      .select('hole_number, par, score, putts, fairway_hit, gir')
+      .eq('round_id', roundId)
+      .order('hole_number', { ascending: true }),
+
+    adminDb
+      .from('golf_shots')
+      .select('shot_number, hole_number, club_used, shot_type, shot_distance')
+      .eq('round_id', roundId)
+      .order('hole_number', { ascending: true })
+      .order('shot_number', { ascending: true }),
+
+    adminDb
+      .from('error_logs')
+      .select('id, message, severity, context, created_at')
+      .eq('context->>roundId', roundId)
+      .order('created_at', { ascending: false }),
+  ]);
+
+  const holes: TracerHoleDiagnostic[] = (holesResult.data || []).map((h) => ({
+    hole_number: h.hole_number,
+    par: h.par,
+    score: h.score,
+    putts: h.putts,
+    fairway_hit: h.fairway_hit,
+    gir: h.gir,
+  }));
+
+  const shots: TracerShotDiagnostic[] = (shotsResult.data || []).map((s) => ({
+    shot_number: s.shot_number,
+    hole_number: s.hole_number,
+    club: s.club_used,
+    shot_type: s.shot_type,
+    distance: s.shot_distance != null ? Number(s.shot_distance) : null,
+  }));
+
+  return {
+    holes,
+    shots,
+    errors: (errorsResult.data || []) as TracerErrorLog[],
+    playerName,
   };
 }
