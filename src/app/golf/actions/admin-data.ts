@@ -819,6 +819,14 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     messagesCountRes,
     documentsCountRes,
     travelCountRes,
+    // Feature adoption 30d
+    qualifiers30dRes,
+    events30dRes,
+    tasks30dRes,
+    announcements30dRes,
+    messages30dRes,
+    documents30dRes,
+    travel30dRes,
     // CoachHelm
     modelPerfRes,
     insightEffRes,
@@ -827,6 +835,11 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     totalReviewsRes,
     insightGenLogRes,
     coachPhilosophyRes,
+    // CoachHelm 30d
+    reviews30dRes,
+    patterns30dRes,
+    predictions30dRes,
+    insightGenLog30dRes,
     // Activity
     latestSignupsRes,
     latestRoundsRes,
@@ -891,6 +904,14 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     adminDb.from('golf_messages').select('id', { count: 'exact', head: true }),
     adminDb.from('golf_documents').select('id', { count: 'exact', head: true }),
     adminDb.from('golf_travel_itineraries').select('id', { count: 'exact', head: true }),
+    // --- Feature adoption 30d counts ---
+    adminDb.from('golf_qualifiers').select('id', { count: 'exact', head: true }).gte('created_at', ago30d),
+    adminDb.from('golf_events').select('id', { count: 'exact', head: true }).gte('created_at', ago30d),
+    adminDb.from('golf_tasks').select('id', { count: 'exact', head: true }).gte('created_at', ago30d),
+    adminDb.from('golf_announcements').select('id', { count: 'exact', head: true }).gte('created_at', ago30d),
+    adminDb.from('golf_messages').select('id', { count: 'exact', head: true }).gte('created_at', ago30d),
+    adminDb.from('golf_documents').select('id', { count: 'exact', head: true }).gte('created_at', ago30d),
+    adminDb.from('golf_travel_itineraries').select('id', { count: 'exact', head: true }).gte('created_at', ago30d),
 
     // --- CoachHelm ---
     adminDb.from('golf_prediction_model_performance').select('model_type, accuracy_rate, calibration_score, predictions_made').order('period_end', { ascending: false }).limit(10),
@@ -900,6 +921,11 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     adminDb.from('golf_round_reviews').select('id', { count: 'exact', head: true }),
     adminDb.from('golf_insight_generation_log').select('insights_generated, created_at').gte('created_at', ago12w).order('created_at', { ascending: true }),
     adminDb.from('golf_coach_philosophy').select('id', { count: 'exact', head: true }),
+    // --- CoachHelm 30d counts ---
+    adminDb.from('golf_round_reviews').select('id', { count: 'exact', head: true }).gte('created_at', ago30d),
+    adminDb.from('golf_patterns_v2').select('id', { count: 'exact', head: true }).gte('created_at', ago30d),
+    adminDb.from('golf_predictions').select('id', { count: 'exact', head: true }).gte('created_at', ago30d),
+    adminDb.from('golf_insight_generation_log').select('insights_generated, created_at').gte('created_at', ago30d),
 
     // --- Activity ---
     adminDb.from('users').select('id, email, role, created_at').order('created_at', { ascending: false }).limit(10),
@@ -3200,27 +3226,22 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   const roundsLast30d = roundsData.filter(r => r.created_at && new Date(r.created_at) >= ago30dTs);
   const eventsCreatedLast30d = allRoundsForCohort.filter(r => r.created_at && new Date(r.created_at) >= ago30dTs);
 
-  // We don't have per-feature 30d counts from separate queries, so approximate from analytics events
-  const featureUseLast30dMap = new Map<string, number>();
-  for (const ev of analyticsEvents) {
-    if (ev.event_type === 'feature_use' && ev.feature_name) {
-      featureUseLast30dMap.set(ev.feature_name, (featureUseLast30dMap.get(ev.feature_name) ?? 0) + 1);
-    }
-  }
+  // Use direct DB counts for last 30d instead of unreliable analytics events
+  const insightsGenerated30d = (insightGenLog30dRes.data ?? []).reduce((sum, r) => sum + (r.insights_generated ?? 0), 0);
 
   const biFeatureAdoption: BIDashboardData['usage']['featureAdoption'] = [
     { feature: 'Rounds', allTime: totalRoundsCount, last30d: roundsLast30d.length, category: 'core' },
-    { feature: 'Qualifiers', allTime: qualifiersCountRes.count ?? 0, last30d: featureUseLast30dMap.get('Qualifiers') ?? 0, category: 'competition' },
-    { feature: 'Events', allTime: eventsCountRes.count ?? 0, last30d: featureUseLast30dMap.get('Events') ?? 0, category: 'team' },
-    { feature: 'Tasks', allTime: tasksCountRes.count ?? 0, last30d: featureUseLast30dMap.get('Tasks') ?? 0, category: 'team' },
-    { feature: 'Announcements', allTime: announcementsCountRes.count ?? 0, last30d: featureUseLast30dMap.get('Announcements') ?? 0, category: 'communication' },
-    { feature: 'Messages', allTime: messagesCountRes.count ?? 0, last30d: featureUseLast30dMap.get('Messages') ?? 0, category: 'communication' },
-    { feature: 'Documents', allTime: documentsCountRes.count ?? 0, last30d: featureUseLast30dMap.get('Documents') ?? 0, category: 'team' },
-    { feature: 'Travel', allTime: travelCountRes.count ?? 0, last30d: featureUseLast30dMap.get('Travel') ?? 0, category: 'team' },
-    { feature: 'Round Reviews', allTime: totalReviewsRes.count ?? 0, last30d: featureUseLast30dMap.get('Round Reviews') ?? 0, category: 'ai' },
-    { feature: 'AI Insights', allTime: totalInsightsGenerated, last30d: featureUseLast30dMap.get('AI Insights') ?? 0, category: 'ai' },
-    { feature: 'Patterns', allTime: totalPatternsRes.count ?? 0, last30d: featureUseLast30dMap.get('Patterns') ?? 0, category: 'ai' },
-    { feature: 'Predictions', allTime: totalPredictionsRes.count ?? 0, last30d: featureUseLast30dMap.get('Predictions') ?? 0, category: 'ai' },
+    { feature: 'Qualifiers', allTime: qualifiersCountRes.count ?? 0, last30d: qualifiers30dRes.count ?? 0, category: 'competition' },
+    { feature: 'Events', allTime: eventsCountRes.count ?? 0, last30d: events30dRes.count ?? 0, category: 'team' },
+    { feature: 'Tasks', allTime: tasksCountRes.count ?? 0, last30d: tasks30dRes.count ?? 0, category: 'team' },
+    { feature: 'Announcements', allTime: announcementsCountRes.count ?? 0, last30d: announcements30dRes.count ?? 0, category: 'communication' },
+    { feature: 'Messages', allTime: messagesCountRes.count ?? 0, last30d: messages30dRes.count ?? 0, category: 'communication' },
+    { feature: 'Documents', allTime: documentsCountRes.count ?? 0, last30d: documents30dRes.count ?? 0, category: 'team' },
+    { feature: 'Travel', allTime: travelCountRes.count ?? 0, last30d: travel30dRes.count ?? 0, category: 'team' },
+    { feature: 'Round Reviews', allTime: totalReviewsRes.count ?? 0, last30d: reviews30dRes.count ?? 0, category: 'ai' },
+    { feature: 'AI Insights', allTime: totalInsightsGenerated, last30d: insightsGenerated30d, category: 'ai' },
+    { feature: 'Patterns', allTime: totalPatternsRes.count ?? 0, last30d: patterns30dRes.count ?? 0, category: 'ai' },
+    { feature: 'Predictions', allTime: totalPredictionsRes.count ?? 0, last30d: predictions30dRes.count ?? 0, category: 'ai' },
   ];
 
   // Dead features: features with < 5% of max all-time usage
