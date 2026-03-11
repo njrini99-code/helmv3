@@ -845,37 +845,11 @@ function FunnelSection({ bi }: { bi: AdminDashboardData['bi'] }) {
         <BISectionHeader title="Errors by Feature Area" subtitle="Error counts and critical errors by area" />
         <GlassCard>
           {f.errorsByFeatureArea.length > 0 ? (
-            <ResponsiveContainer width="100%" height={Math.max(220, f.errorsByFeatureArea.length * 36)}>
-              <BarChart
-                data={[...f.errorsByFeatureArea].sort((a, b) => b.count - a.count)}
-                layout="vertical"
-                margin={{ top: 5, right: 40, left: 10, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" horizontal={false} />
-                <XAxis
-                  type="number"
-                  tick={{ fontSize: 11, fill: '#78716c' }}
-                  tickLine={false}
-                  axisLine={{ stroke: '#d6d3d1' }}
-                />
-                <YAxis
-                  type="category"
-                  dataKey="area"
-                  tick={{ fontSize: 11, fill: '#57534e' }}
-                  tickLine={false}
-                  axisLine={false}
-                  width={120}
-                />
-                <Tooltip content={<ChartTooltip />} />
-                <Legend
-                  iconType="circle"
-                  iconSize={8}
-                  wrapperStyle={{ fontSize: 12, color: '#78716c' }}
-                />
-                <Bar dataKey="count" name="Total Errors" fill={CHART_AMBER} radius={[0, 6, 6, 0]} maxBarSize={24} />
-                <Bar dataKey="critical" name="Critical" fill={CHART_RED} radius={[0, 6, 6, 0]} maxBarSize={24} />
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="space-y-0 divide-y divide-warm-100">
+              {[...f.errorsByFeatureArea].sort((a, b) => b.count - a.count).map((area) => (
+                <ErrorAreaRow key={area.area} area={area} maxCount={f.errorsByFeatureArea[0]?.count ?? 1} />
+              ))}
+            </div>
           ) : (
             <div className="text-center py-8 text-warm-400 text-sm">No error data available</div>
           )}
@@ -922,6 +896,71 @@ function DropoffCallout({
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// ERROR AREA ROW (expandable)
+// ============================================================================
+
+function ErrorAreaRow({ area, maxCount }: { area: { area: string; count: number; critical: number; recentErrors: { message: string; severity: string; created_at: string; url: string }[] }; maxCount: number }) {
+  const [expanded, setExpanded] = useState(false);
+  const barWidth = maxCount > 0 ? (area.count / maxCount) * 100 : 0;
+
+  const formatTime = (ts: string) => {
+    if (!ts) return '';
+    const d = new Date(ts);
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    const diffH = Math.floor(diffMs / 3600000);
+    if (diffH < 1) return `${Math.floor(diffMs / 60000)}m ago`;
+    if (diffH < 24) return `${diffH}h ago`;
+    return `${Math.floor(diffH / 24)}d ago`;
+  };
+
+  return (
+    <div>
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex items-center gap-3 py-3 px-1 hover:bg-warm-50/50 transition-colors text-left"
+      >
+        <span className="text-xs font-medium text-warm-600 w-[120px] shrink-0 text-right">{area.area}</span>
+        <div className="flex-1 flex items-center gap-2">
+          <div className="flex-1 h-5 bg-warm-50 rounded-full overflow-hidden relative">
+            <div className="h-full bg-amber-400 rounded-full" style={{ width: `${barWidth}%` }} />
+            {area.critical > 0 && (
+              <div className="absolute inset-y-0 left-0 h-full bg-red-400 rounded-full" style={{ width: `${(area.critical / maxCount) * 100}%` }} />
+            )}
+          </div>
+          <span className="text-xs font-semibold text-warm-700 w-8 text-right">{area.count}</span>
+          {area.critical > 0 && (
+            <span className="text-[10px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded-full">{area.critical} crit</span>
+          )}
+        </div>
+        {area.recentErrors.length > 0 && (
+          expanded ? <ChevronUp className="w-3.5 h-3.5 text-warm-400 shrink-0" /> : <ChevronDown className="w-3.5 h-3.5 text-warm-400 shrink-0" />
+        )}
+      </button>
+      {expanded && area.recentErrors.length > 0 && (
+        <div className="ml-[132px] mb-3 space-y-1.5">
+          {area.recentErrors.map((err, i) => (
+            <div key={i} className="flex items-start gap-2 text-xs bg-warm-50/80 rounded-lg px-3 py-2">
+              <span className={cn(
+                'shrink-0 mt-0.5 w-1.5 h-1.5 rounded-full',
+                err.severity === 'critical' ? 'bg-red-500' : 'bg-amber-400'
+              )} />
+              <div className="min-w-0 flex-1">
+                <p className="text-warm-700 break-words leading-snug">{err.message || 'No message'}</p>
+                <div className="flex items-center gap-2 mt-0.5 text-warm-400">
+                  <span>{formatTime(err.created_at)}</span>
+                  {err.url && <span className="truncate max-w-[200px]">{err.url}</span>}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

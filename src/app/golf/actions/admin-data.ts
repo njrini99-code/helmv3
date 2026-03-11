@@ -559,7 +559,7 @@ export interface BIDashboardData {
     coachOnboarding: BIFunnelStep[];
     biggestPlayerDropoff: { from: string; to: string; dropoff: number; pct: number } | null;
     biggestCoachDropoff: { from: string; to: string; dropoff: number; pct: number } | null;
-    errorsByFeatureArea: { area: string; count: number; critical: number }[];
+    errorsByFeatureArea: { area: string; count: number; critical: number; recentErrors: { message: string; severity: string; created_at: string; url: string }[] }[];
   };
   health: {
     teamHealthScores: BITeamHealth[];
@@ -3379,7 +3379,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   const biBiggestCoachDropoff = findBiggestDropoff(biCoachOnboarding);
 
   // Errors by feature area: classify errors by URL/message into feature areas
-  const areaErrorCounts = new Map<string, { count: number; critical: number }>();
+  const areaErrorData = new Map<string, { count: number; critical: number; recentErrors: { message: string; severity: string; created_at: string; url: string }[] }>();
   for (const e of rawErrorLogs) {
     let area = 'Other';
     const url = (e.url ?? '').toLowerCase();
@@ -3395,13 +3395,21 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     else if (url.includes('/auth') || url.includes('/login') || msg.includes('auth')) area = 'Auth';
     else if (url.includes('/dashboard')) area = 'Dashboard';
 
-    const entry = areaErrorCounts.get(area) ?? { count: 0, critical: 0 };
+    const entry = areaErrorData.get(area) ?? { count: 0, critical: 0, recentErrors: [] };
     entry.count++;
     if ((e.severity ?? '').toLowerCase() === 'critical') entry.critical++;
-    areaErrorCounts.set(area, entry);
+    if (entry.recentErrors.length < 5) {
+      entry.recentErrors.push({
+        message: (e.message ?? '').slice(0, 200),
+        severity: e.severity ?? 'error',
+        created_at: e.created_at ?? '',
+        url: (e.url ?? '').replace(/https?:\/\/[^/]+/, ''),
+      });
+    }
+    areaErrorData.set(area, entry);
   }
-  const biErrorsByFeatureArea = [...areaErrorCounts.entries()]
-    .map(([area, d]) => ({ area, count: d.count, critical: d.critical }))
+  const biErrorsByFeatureArea = [...areaErrorData.entries()]
+    .map(([area, d]) => ({ area, count: d.count, critical: d.critical, recentErrors: d.recentErrors }))
     .sort((a, b) => b.count - a.count);
 
   // --- BI Health ---
