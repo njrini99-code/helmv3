@@ -514,7 +514,19 @@ function derivePuttDistanceFeet(shot: ShotRecord): number | null {
   if (shot.puttDistanceFeet !== undefined) return shot.puttDistanceFeet ?? null;
   const distance = shot.distanceToHoleBefore;
   if (!Number.isFinite(distance)) return null;
-  return shot.distanceUnitBefore === 'yards' ? distance * 3 : distance;
+  const feet = shot.distanceUnitBefore === 'yards' ? distance * 3 : distance;
+  // Clamp to DB CHECK constraint max (200 feet) — yards×3 can exceed this
+  return Math.min(feet, 200);
+}
+
+/** Allowed lie_type values for approach_miss_details CHECK constraint */
+const VALID_APPROACH_LIE_TYPES = new Set(['fairway', 'rough', 'sand', 'bunker', 'hazard']);
+
+/** Map client approachMissLieType to a DB-safe lie_type value */
+function toDbLieType(lieType: string | undefined | null): string | null {
+  if (!lieType) return null;
+  if (lieType === 'bunker') return 'sand';
+  return VALID_APPROACH_LIE_TYPES.has(lieType) ? lieType : null;
 }
 
 function derivePuttMade(shot: ShotRecord): boolean | null {
@@ -778,12 +790,13 @@ export async function submitGolfRoundComprehensive(
     for (const hole of data.holes) {
       for (const shot of hole.shots) {
         if (shot.shotType === 'putting') {
+          const rawDist = shot.puttDistanceFeet ?? derivePuttDistanceFeet(shot);
           puttDetailsPayload.push({
             hole_number: hole.holeNumber,
             shot_number: shot.shotNumber,
             miss_tags: shot.puttMissTags || [],
             break_direction: shot.puttBreak || null,
-            distance_feet: shot.puttDistanceFeet ?? derivePuttDistanceFeet(shot),
+            distance_feet: rawDist != null ? Math.min(rawDist, 200) : null,
             made: shot.result === 'hole',
           });
         }
@@ -791,13 +804,11 @@ export async function submitGolfRoundComprehensive(
         if ((shot.shotType === 'approach' || shot.shotType === 'around_green') &&
             shot.approachMissDirection &&
             shot.result !== 'green' && shot.result !== 'hole') {
-          // Map 'bunker' → 'sand' to match DB check constraint
-          const dbLieType = shot.approachMissLieType === 'bunker' ? 'sand' : (shot.approachMissLieType || null);
           approachDetailsPayload.push({
             hole_number: hole.holeNumber,
             shot_number: shot.shotNumber,
             miss_direction: shot.approachMissDirection,
-            lie_type: dbLieType,
+            lie_type: toDbLieType(shot.approachMissLieType),
             distance_from_green_yards: shot.distanceToHoleAfter != null
               ? (shot.distanceUnitAfter === 'feet'
                 ? Math.round(shot.distanceToHoleAfter / 3)
@@ -867,6 +878,22 @@ export async function submitGolfRoundComprehensive(
           return { success: false, error: errMsg };
         }
         return { success: false, error: rpcResult.error || 'Failed to submit round.' };
+      }
+
+      // Log warnings from resilient detail inserts (round saved successfully)
+      if (rpcResult?.warnings?.length > 0) {
+        await logServerError(
+          `Round submitted with ${rpcResult.warnings.length} detail warning(s)`,
+          {
+            action: 'submitGolfRoundComprehensive',
+            roundId: existingRoundId,
+            playerId: player.id,
+            userId: user.id,
+            userEmail: user.email,
+            extra: { warnings: rpcResult.warnings, path: 'existing_round' },
+          },
+          'warning'
+        );
       }
 
       round = { id: existingRoundId };
@@ -954,6 +981,22 @@ export async function submitGolfRoundComprehensive(
           return { success: false, error: errMsg };
         }
         return { success: false, error: rpcResult.error || 'Failed to submit round.' };
+      }
+
+      // Log warnings from resilient detail inserts (round saved successfully)
+      if (rpcResult?.warnings?.length > 0) {
+        await logServerError(
+          `Round submitted with ${rpcResult.warnings.length} detail warning(s)`,
+          {
+            action: 'submitGolfRoundComprehensive',
+            roundId: newRound.id,
+            playerId: player.id,
+            userId: user.id,
+            userEmail: user.email,
+            extra: { warnings: rpcResult.warnings, path: 'new_round_rpc' },
+          },
+          'warning'
+        );
       }
 
       round = { id: newRound.id };
@@ -2675,12 +2718,13 @@ export async function savePartialRound(
     for (const [holeNumber, shots] of holesWithShotsByNumber) {
       for (const shot of shots) {
         if (shot.shotType === 'putting') {
+          const rawDist = shot.puttDistanceFeet ?? derivePuttDistanceFeet(shot);
           puttDetailsPayload.push({
             hole_number: holeNumber,
             shot_number: shot.shotNumber,
             miss_tags: shot.puttMissTags || [],
             break_direction: shot.puttBreak || null,
-            distance_feet: shot.puttDistanceFeet ?? derivePuttDistanceFeet(shot),
+            distance_feet: rawDist != null ? Math.min(rawDist, 200) : null,
             made: shot.result === 'hole',
           });
         }
@@ -2688,13 +2732,11 @@ export async function savePartialRound(
         if ((shot.shotType === 'approach' || shot.shotType === 'around_green') &&
             shot.approachMissDirection &&
             shot.result !== 'green' && shot.result !== 'hole') {
-          // Map 'bunker' → 'sand' to match DB check constraint
-          const dbLieType = shot.approachMissLieType === 'bunker' ? 'sand' : (shot.approachMissLieType || null);
           approachDetailsPayload.push({
             hole_number: holeNumber,
             shot_number: shot.shotNumber,
             miss_direction: shot.approachMissDirection,
-            lie_type: dbLieType,
+            lie_type: toDbLieType(shot.approachMissLieType),
             distance_from_green_yards: shot.distanceToHoleAfter != null
               ? (shot.distanceUnitAfter === 'feet'
                 ? Math.round(shot.distanceToHoleAfter / 3)
@@ -2755,6 +2797,22 @@ export async function savePartialRound(
           return { success: false, error: 'conflict', };
         }
         return { success: false, error: rpcResult.error || 'Failed to save round.' };
+      }
+
+      // Log warnings from resilient detail inserts (round saved successfully)
+      if (rpcResult?.warnings?.length > 0) {
+        await logServerError(
+          `Partial round saved with ${rpcResult.warnings.length} detail warning(s)`,
+          {
+            action: 'savePartialRound',
+            roundId: existingRoundId,
+            playerId: player.id,
+            userId: user.id,
+            userEmail: user.email,
+            extra: { warnings: rpcResult.warnings, courseName: data.courseName },
+          },
+          'warning'
+        );
       }
 
       roundId = existingRoundId;
@@ -3996,12 +4054,13 @@ export async function updateShot(
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const sb = supabase as any;
+        const clampedDist = data.putt_distance_feet != null ? Math.min(data.putt_distance_feet, 200) : null;
         if (data.putt_miss_tags && data.putt_miss_tags.length > 0) {
           await sb.from('putt_details').upsert({
             shot_id: shotId,
             miss_tags: data.putt_miss_tags,
             break_direction: data.putt_break ?? null,
-            distance_feet: data.putt_distance_feet ?? null,
+            distance_feet: clampedDist,
             made: data.putt_made ?? false,
           }, { onConflict: 'shot_id' });
         } else if (data.putt_made !== undefined) {
@@ -4010,7 +4069,7 @@ export async function updateShot(
             shot_id: shotId,
             miss_tags: [],
             break_direction: data.putt_break ?? null,
-            distance_feet: data.putt_distance_feet ?? null,
+            distance_feet: clampedDist,
             made: data.putt_made,
           }, { onConflict: 'shot_id' });
         }
@@ -4028,7 +4087,7 @@ export async function updateShot(
           await sb.from('approach_miss_details').upsert({
             shot_id: shotId,
             miss_direction: data.approach_miss_direction,
-            lie_type: data.approach_miss_lie_type ?? null,
+            lie_type: toDbLieType(data.approach_miss_lie_type),
           }, { onConflict: 'shot_id' });
         } else {
           // Clear approach miss details if direction was removed
