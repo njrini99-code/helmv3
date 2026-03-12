@@ -102,6 +102,7 @@ export default function ContinueRoundClient({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const pendingServerSaveRef = useRef<{ shots: ShotRecord[]; holeIndex: number; roundData?: any } | null>(null);
   const consecutiveSaveFailuresRef = useRef(0);
+  const lastAutoSaveWarningRef = useRef(0);
   const isSubmittingRef = useRef(false);
   // Optimistic locking: tracks the last server-side updated_at for conflict detection
   const lastServerUpdatedAtRef = useRef<string | undefined>(serverDataTimestamp);
@@ -162,6 +163,14 @@ export default function ContinueRoundClient({
     setError(fallbackMessage);
     showToast(fallbackMessage, 'error');
   }, [redirectToCompletedRound, roundId, showToast]);
+
+  // Throttle auto-save warning to at most once per 60s to avoid toast spam
+  const showAutoSaveWarning = useCallback(() => {
+    const now = Date.now();
+    if (now - lastAutoSaveWarningRef.current < 60_000) return;
+    lastAutoSaveWarningRef.current = now;
+    showToast('Auto-save is having trouble. Your data is cached locally.', 'warning');
+  }, [showToast]);
 
   const persistFailedSubmission = useCallback(async (allHoleStats: HoleStats[]) => {
     emergencySave({
@@ -430,13 +439,13 @@ export default function ContinueRoundClient({
         } else {
           consecutiveSaveFailuresRef.current++;
           if (consecutiveSaveFailuresRef.current >= 2) {
-            showToast('Auto-save is having trouble. Your data is cached locally.', 'warning');
+            showAutoSaveWarning();
           }
         }
       } catch {
         consecutiveSaveFailuresRef.current++;
         if (consecutiveSaveFailuresRef.current >= 2) {
-          showToast('Auto-save is having trouble. Your data is cached locally.', 'warning');
+          showAutoSaveWarning();
         }
       } finally {
         serverSaveInProgressRef.current = false;
@@ -608,13 +617,13 @@ export default function ContinueRoundClient({
             } else {
               consecutiveSaveFailuresRef.current++;
               if (consecutiveSaveFailuresRef.current >= 2) {
-                showToast('Auto-save is having trouble. Your data is cached locally.', 'warning');
+                showAutoSaveWarning();
               }
             }
           } catch {
             consecutiveSaveFailuresRef.current++;
             if (consecutiveSaveFailuresRef.current >= 2) {
-              showToast('Auto-save is having trouble. Your data is cached locally.', 'warning');
+              showAutoSaveWarning();
             }
           } finally {
             serverSaveInProgressRef.current = false;

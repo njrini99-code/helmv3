@@ -189,6 +189,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const pendingServerSaveRef = useRef<{ shots: ShotRecord[]; holeIndex: number; roundData?: any } | null>(null);
   const consecutiveSaveFailuresRef = useRef(0);
+  const lastAutoSaveWarningRef = useRef(0); // Timestamp to throttle warning toasts
   const savedRoundIdRef = useRef<string | null>(null);
   const [isStartingRound, setIsStartingRound] = useState(false);
   // Optimistic locking: tracks the last server-side updated_at for conflict detection
@@ -209,6 +210,14 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
   // Emergency save recovery state
   const [showNewRoundRecovery, setShowNewRoundRecovery] = useState(false);
   const [newRoundRecoveryData, setNewRoundRecoveryData] = useState<EmergencySaveData | null>(null);
+
+  // Throttle auto-save warning to at most once per 60s to avoid toast spam
+  const showAutoSaveWarning = useCallback(() => {
+    const now = Date.now();
+    if (now - lastAutoSaveWarningRef.current < 60_000) return;
+    lastAutoSaveWarningRef.current = now;
+    showToast('Auto-save is having trouble. Your draft is saved locally, but server sync may be delayed.', 'warning');
+  }, [showToast]);
 
   const redirectToCompletedRound = useCallback(() => {
     const targetRoundId = savedRoundIdRef.current;
@@ -915,13 +924,13 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
         } else {
           consecutiveSaveFailuresRef.current++;
           if (consecutiveSaveFailuresRef.current >= 2) {
-            showToast('Auto-save is having trouble. Your draft is saved locally, but server sync may be delayed.', 'warning');
+            showAutoSaveWarning();
           }
         }
       } catch {
         consecutiveSaveFailuresRef.current++;
         if (consecutiveSaveFailuresRef.current >= 2) {
-          showToast('Auto-save is having trouble. Your draft is saved locally, but server sync may be delayed.', 'warning');
+          showAutoSaveWarning();
         }
       } finally {
         serverSaveInProgressRef.current = false;
@@ -1089,19 +1098,13 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
             } else {
               consecutiveSaveFailuresRef.current++;
               if (consecutiveSaveFailuresRef.current >= 2) {
-                showToast(
-                  'Auto-save is having trouble. Your draft is saved locally, but server sync may be delayed.',
-                  'warning'
-                );
+                showAutoSaveWarning();
               }
             }
           } catch {
             consecutiveSaveFailuresRef.current++;
             if (consecutiveSaveFailuresRef.current >= 2) {
-              showToast(
-                'Auto-save is having trouble. Your draft is saved locally, but server sync may be delayed.',
-                'warning'
-              );
+              showAutoSaveWarning();
             }
           } finally {
             serverSaveInProgressRef.current = false;

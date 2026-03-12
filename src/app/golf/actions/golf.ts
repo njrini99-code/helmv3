@@ -3563,6 +3563,10 @@ export async function savePartialRound(
 
       // Insert holes and shots — clean up on failure to avoid orphaned data
       if (holesPayload.length > 0) {
+        // Delete existing holes (and cascading shots) to prevent duplicate key errors
+        // when a previous save partially completed (round+holes created but save returned failure)
+        await supabase.from('golf_holes').delete().eq('round_id', roundId);
+
         const holesData = holesPayload.map(h => ({ round_id: roundId, ...h }));
         const { data: insertedHoles, error: holesError } = await supabase
           .from('golf_holes')
@@ -3629,14 +3633,16 @@ export async function savePartialRound(
               for (const pd of holePuttDetails) {
                 const shotIdForPutt = shotIdMap.get(`${pd.hole_number}-${pd.shot_number}`);
                 if (shotIdForPutt) {
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  await (supabase as any).from('putt_details').insert({
-                    shot_id: shotIdForPutt,
-                    miss_tags: pd.miss_tags || [],
-                    break_direction: pd.break_direction,
-                    distance_feet: pd.distance_feet,
-                    made: pd.made,
-                  }).catch(() => { /* non-critical */ });
+                  try {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    await (supabase as any).from('putt_details').insert({
+                      shot_id: shotIdForPutt,
+                      miss_tags: pd.miss_tags || [],
+                      break_direction: pd.break_direction,
+                      distance_feet: pd.distance_feet,
+                      made: pd.made,
+                    });
+                  } catch { /* non-critical */ }
                 }
               }
 
@@ -3645,13 +3651,15 @@ export async function savePartialRound(
               for (const ad of holeApproachDetails) {
                 const shotIdForApproach = shotIdMap.get(`${ad.hole_number}-${ad.shot_number}`);
                 if (shotIdForApproach) {
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  await (supabase as any).from('approach_miss_details').insert({
-                    shot_id: shotIdForApproach,
-                    miss_direction: ad.miss_direction,
-                    lie_type: ad.lie_type,
-                    distance_from_green_yards: ad.distance_from_green_yards,
-                  }).catch(() => { /* non-critical */ });
+                  try {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    await (supabase as any).from('approach_miss_details').insert({
+                      shot_id: shotIdForApproach,
+                      miss_direction: ad.miss_direction,
+                      lie_type: ad.lie_type,
+                      distance_from_green_yards: ad.distance_from_green_yards,
+                    });
+                  } catch { /* non-critical */ }
                 }
               }
             }
