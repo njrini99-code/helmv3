@@ -31,7 +31,6 @@ import { RoundSubmitOverlay } from '@/components/golf/RoundSubmitOverlay';
 import { useToast } from '@/components/ui/toast';
 // DraftIndicator removed - was too noisy
 import type { HoleConfig } from '@/lib/types/golf-course';
-import { useAutoSaveRound, type RoundDraftData } from '@/hooks/golf/use-auto-save-round';
 import { useMobileNav } from '@/contexts/mobile-nav-context';
 import { emergencySave, loadEmergencySave, clearEmergencySave, type EmergencySaveData } from '@/lib/utils/emergency-save';
 
@@ -70,16 +69,6 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
     hideMobileNav();
     return () => showMobileNav();
   }, [hideMobileNav, showMobileNav]);
-
-  // Auto-save hook with database persistence
-  const {
-    scheduleSave,
-    stopSaving: stopDraftAutoSave,
-    clearDraft,
-    clearLocalDraft,
-    roundId: draftRoundId,
-    setRoundId: setDraftRoundId,
-  } = useAutoSaveRound(null);
 
   // New connection status hook
   const connectionStatus = useConnectionStatus();
@@ -206,14 +195,6 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
   // Ref for stale closure prevention in async auto-save (#20)
   const inProgressShotsByHoleRef = useRef(inProgressShotsByHole);
   inProgressShotsByHoleRef.current = inProgressShotsByHole;
-
-  // Sync draft auto-save round ID → tracking savedRoundIdRef to prevent orphan rounds
-  useEffect(() => {
-    if (draftRoundId && !savedRoundIdRef.current) {
-      savedRoundIdRef.current = draftRoundId;
-      setSavedRoundId(draftRoundId);
-    }
-  }, [draftRoundId]);
 
   // Emergency save recovery state
   const [showNewRoundRecovery, setShowNewRoundRecovery] = useState(false);
@@ -565,25 +546,27 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
       return;
     }
 
-    // During tracking, savePartialRound handles persistence — skip draft save
-    if (step === 'tracking') {
-      return;
-    }
+  // During tracking, savePartialRound handles persistence — use emergency local save only
+  if (step === 'tracking') {
+    return;
+  }
 
-    // Schedule save with debounce (include in-progress shots so tab kills don't lose mid-hole data)
-    const draftData: RoundDraftData = {
-      step,
-      setupData,
+    // Keep setup/hole-selection recovery local-only to avoid mixed draft/persisted round writes.
+    emergencySave({
+      roundId: savedRoundIdRef.current,
+      timestamp: Date.now(),
+      setupData: {
+        ...setupData,
+        qualifierId: selectedQualifierId ?? undefined,
+        qualifierRoundNumber: selectedRoundNumber ?? undefined,
+      },
       holes,
       completedHoleStats,
+      inProgressShotsByHole,
       currentHoleIndex,
-      selectedQualifierId,
-      selectedRoundNumber,
-      inProgressShots: inProgressShotsByHole,
       holesPerRound,
-    };
-    scheduleSave(draftData);
-  }, [step, setupData, holes, completedHoleStats, currentHoleIndex, selectedQualifierId, selectedRoundNumber, inProgressShotsByHole, holesPerRound, scheduleSave]);
+    });
+  }, [step, setupData, holes, completedHoleStats, currentHoleIndex, selectedQualifierId, selectedRoundNumber, inProgressShotsByHole, holesPerRound]);
 
 
   const handleSetupSubmit = async (e: React.FormEvent) => {
@@ -805,7 +788,6 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
           if (!savedRoundIdRef.current) {
             savedRoundIdRef.current = result.data.roundId;
             setSavedRoundId(result.data.roundId);
-            setDraftRoundId(result.data.roundId);
           }
         } else if (result.error === 'conflict') {
           showToast('This round was updated on another device. Please reload.', 'error');
@@ -838,7 +820,6 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                   if (!savedRoundIdRef.current) {
                     savedRoundIdRef.current = r.data.roundId;
                     setSavedRoundId(r.data.roundId);
-                    setDraftRoundId(r.data.roundId);
                   }
                 } else if (r.error === 'conflict') {
                   showToast('This round was updated on another device. Please reload.', 'error');
@@ -860,7 +841,6 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                   if (!savedRoundIdRef.current) {
                     savedRoundIdRef.current = r.data.roundId;
                     setSavedRoundId(r.data.roundId);
-                    setDraftRoundId(r.data.roundId);
                   }
                 } else if (r.error === 'conflict') {
                   showToast('This round was updated on another device. Please reload.', 'error');
@@ -976,7 +956,6 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
               if (!savedRoundIdRef.current) {
                 savedRoundIdRef.current = result.data.roundId;
                 setSavedRoundId(result.data.roundId);
-                setDraftRoundId(result.data.roundId);
               }
             } else if (result.error === 'conflict') {
               showToast('This round was updated on another device. Please reload.', 'error');
@@ -1013,7 +992,6 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
   }, [
     buildPartialRoundData,
     showToast,
-    setDraftRoundId,
   ]);
 
   const handleRoundSubmit = async (allHoleStats: HoleStats[]) => {
@@ -1022,10 +1000,6 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
     setStep('submitting');
     setError('');
 
-    // CRITICAL: Stop ALL auto-save systems before submitting.
-    // This prevents race conditions where auto-save fires during/after submit
-    // and reverts the round's status from 'completed' back to 'in_progress'.
-    stopDraftAutoSave();
     // Clear any queued shot-level auto-save
     pendingServerSaveRef.current = null;
 
@@ -1080,8 +1054,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
         throw new Error(result.error);
       }
 
-      // Clear draft and emergency save after successful submission
-      clearDraft();
+      // Clear local recovery state after successful submission
       clearEmergencySave(savedRoundIdRef.current);
 
       // Show success celebration — the overlay auto-navigates to round review
@@ -1103,10 +1076,8 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
     savedRoundIdRef.current = result.data.roundId;
     setSavedRoundId(result.data.roundId);
 
-    // Clear local draft state only — do NOT call clearDraft() here because it
-    // deletes the in_progress round from the database via clearRoundDraft(),
-    // which would immediately destroy the round we just saved.
-    clearLocalDraft();
+    // Clear local recovery state only — the round itself was intentionally kept in the DB.
+    clearEmergencySave(savedRoundIdRef.current);
     setShowExitModal(false);
 
     router.push('/golf/dashboard/rounds');
@@ -1124,8 +1095,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
       }
     }
 
-    // Clear local draft and emergency save after successful server delete (or no server round)
-    clearDraft();
+    // Clear local recovery state after successful server delete (or no server round)
     clearEmergencySave(savedRoundId);
     setShowExitModal(false);
 

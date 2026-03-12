@@ -583,6 +583,16 @@ export async function submitGolfRoundComprehensive(
     // Validate input
     golfRoundComprehensiveSchema.parse(data);
 
+    const incompleteHole = data.holes.find(
+      (hole) => hole == null || hole.score == null || hole.putts == null
+    );
+    if (incompleteHole) {
+      return {
+        success: false,
+        error: `Cannot submit round: hole ${incompleteHole.holeNumber} is missing score or putts.`,
+      };
+    }
+
     // Reject impossibly low scores
     const validationTotalScore = data.holes.reduce((sum, h) => sum + h.score, 0);
     if (validationTotalScore < data.holes.length) {
@@ -2779,7 +2789,6 @@ export async function savePartialRound(
     if (existingRoundId) {
       // Use atomic RPC — wraps delete+insert in a single transaction
       // RPC not in generated types yet — use type escape
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const rpcParams: Record<string, unknown> = {
         p_round_id: existingRoundId,
         p_round_data: roundData,

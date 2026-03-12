@@ -145,11 +145,33 @@ export async function saveRoundDraft(
       total_putts: null as null,
     };
 
+    const hasTrackedRoundData = async (roundId: string): Promise<boolean> => {
+      const [
+        { count: holeCount, error: holeCountError },
+        { count: shotCount, error: shotCountError },
+      ] = await Promise.all([
+        supabase.from('golf_holes').select('id', { count: 'exact', head: true }).eq('round_id', roundId),
+        supabase.from('golf_shots').select('id', { count: 'exact', head: true }).eq('round_id', roundId),
+      ]);
+
+      if (holeCountError || shotCountError) {
+        return false;
+      }
+
+      return (holeCount ?? 0) > 0 || (shotCount ?? 0) > 0;
+    };
+
     let roundId: string;
     // Use fromUntyped because draft_data column isn't in generated types yet
     const roundsTable = fromUntyped(supabase, 'golf_rounds');
 
     if (existingRoundId) {
+      if (await hasTrackedRoundData(existingRoundId)) {
+        // This round is now managed by the tracked-shot persistence flow.
+        // Do not let the legacy draft writer overlay draft_data onto it.
+        return { success: true, data: { roundId: existingRoundId, lastAutoSave: now } };
+      }
+
       // Update existing draft — ONLY if still in_progress (never revert a completed round)
       const { data: updated, error: updateError } = await roundsTable
         .update(roundRecord)
@@ -181,6 +203,10 @@ export async function saveRoundDraft(
         .single();
 
       if (existingDraft) {
+        if (await hasTrackedRoundData(existingDraft.id)) {
+          return { success: true, data: { roundId: existingDraft.id, lastAutoSave: now } };
+        }
+
         // Update existing draft — ONLY if still in_progress
         const { error: updateError } = await fromUntyped(supabase, 'golf_rounds')
           .update(roundRecord)
@@ -480,4 +506,3 @@ export async function checkRoundStaleness(
     return { success: false, error: 'Failed to check round status' };
   }
 }
-
