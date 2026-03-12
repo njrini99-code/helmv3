@@ -277,11 +277,11 @@ export function TracerRoundInspector({ rounds, onDiagnose }: TracerRoundInspecto
               <tr className="border-b border-warm-100/80">
                 <th className="w-10 px-3 py-3.5" />
                 <SortableTh label="Player" sortKey="player" currentKey={sortKey} asc={sortAsc} onSort={handleSort} align="left" />
-                <SortableTh label="Course" sortKey="course" currentKey={sortKey} asc={sortAsc} onSort={handleSort} align="left" />
-                <SortableTh label="Date" sortKey="date" currentKey={sortKey} asc={sortAsc} onSort={handleSort} />
-                <SortableTh label="Score" sortKey="score" currentKey={sortKey} asc={sortAsc} onSort={handleSort} />
+                <SortableTh label="Course" sortKey="course" currentKey={sortKey} asc={sortAsc} onSort={handleSort} align="left" className="hidden md:table-cell" />
+                <SortableTh label="Date" sortKey="date" currentKey={sortKey} asc={sortAsc} onSort={handleSort} className="hidden md:table-cell" />
+                <SortableTh label="Score" sortKey="score" currentKey={sortKey} asc={sortAsc} onSort={handleSort} className="hidden sm:table-cell" />
                 <SortableTh label="Status" sortKey="status" currentKey={sortKey} asc={sortAsc} onSort={handleSort} />
-                <SortableTh label="Holes" sortKey="holes" currentKey={sortKey} asc={sortAsc} onSort={handleSort} />
+                <SortableTh label="Holes" sortKey="holes" currentKey={sortKey} asc={sortAsc} onSort={handleSort} className="hidden md:table-cell" />
                 <SortableTh label="Issues" sortKey="issues" currentKey={sortKey} asc={sortAsc} onSort={handleSort} />
                 <th className="px-4 py-3.5 font-medium text-[11px] uppercase tracking-wider text-warm-400">Actions</th>
               </tr>
@@ -332,6 +332,7 @@ function SortableTh({
   asc: boolean;
   onSort: (key: SortKey) => void;
   align?: 'left' | 'center';
+  className?: string;
 }) {
   const active = currentKey === sortKey;
   return (
@@ -340,7 +341,8 @@ function SortableTh({
         'px-4 py-3.5 font-medium text-[11px] uppercase tracking-wider cursor-pointer select-none group/th',
         'transition-colors hover:text-warm-700',
         active ? 'text-warm-700' : 'text-warm-400',
-        align === 'left' && 'text-left'
+        align === 'left' && 'text-left',
+        className
       )}
       onClick={() => onSort(sortKey)}
     >
@@ -409,17 +411,17 @@ function RoundRow({
         </td>
 
         {/* Course */}
-        <td className="px-4 py-3.5 text-warm-600 max-w-[160px] truncate">
+        <td className="hidden md:table-cell px-4 py-3.5 text-warm-600 max-w-[160px] truncate">
           {round.course_name || <span className="text-warm-300">&mdash;</span>}
         </td>
 
         {/* Date */}
-        <td className="px-4 py-3.5 text-center text-warm-500 text-xs whitespace-nowrap">
+        <td className="hidden md:table-cell px-4 py-3.5 text-center text-warm-500 text-xs whitespace-nowrap">
           {round.round_date ? formatDate(round.round_date) : <span className="text-warm-300">&mdash;</span>}
         </td>
 
         {/* Score */}
-        <td className="px-4 py-3.5 text-center">
+        <td className="hidden sm:table-cell px-4 py-3.5 text-center">
           {round.total_score != null ? (
             <span className="tabular-nums">
               <span className="font-bold text-warm-800">{round.total_score}</span>
@@ -443,7 +445,7 @@ function RoundRow({
         </td>
 
         {/* Holes */}
-        <td className="px-4 py-3.5 text-center tabular-nums text-warm-600">
+        <td className="hidden md:table-cell px-4 py-3.5 text-center tabular-nums text-warm-600">
           {round.actual_holes}/{round.expected_holes}
         </td>
 
@@ -481,7 +483,7 @@ function RoundRow({
             )}
           >
             <Stethoscope size={12} />
-            Diagnose
+            <span className="hidden sm:inline">Diagnose</span>
           </button>
         </td>
       </tr>

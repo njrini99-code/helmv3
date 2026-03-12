@@ -16,7 +16,7 @@ interface TracerSubTabNavProps {
 
 export function TracerSubTabNav({ tabs, activeTab, onTabChange }: TracerSubTabNavProps) {
   return (
-    <div className="flex items-center gap-1 p-1 bg-warm-100/50 rounded-xl w-fit">
+    <div className="flex items-center gap-1 p-1 bg-warm-100/50 rounded-xl max-w-full overflow-x-auto w-fit">
       {tabs.map((tab) => {
         const isActive = tab.id === activeTab;
         const isErrorTab = tab.id === 'errors';

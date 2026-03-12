@@ -115,7 +115,7 @@ function SystemCommandCenter({ data }: { data: AdminDashboardData }) {
             <p className="mt-3 max-w-3xl text-sm leading-6 text-warm-600">
               This panel tracks whether the platform is failing right now, how quickly issues are getting closed, and whether the underlying golf telemetry is trustworthy enough to support the rest of the dashboard.
             </p>
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="mt-4 flex flex-wrap gap-2 break-words">
               <span className={cn('inline-flex items-center rounded-full border px-3 py-1 text-sm font-medium', commandStatusClasses[commandStatus])}>
                 {commandStatusLabel[commandStatus]}
               </span>
@@ -167,7 +167,7 @@ function SystemCommandCenter({ data }: { data: AdminDashboardData }) {
               <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-500">{tile.label}</p>
               <div className="mt-1 flex items-end gap-2">
                 <p className="text-xl font-semibold tracking-tight text-warm-900 tabular-nums">{tile.value}</p>
-                <p className="pb-1 text-xs text-warm-500">{tile.detail}</p>
+                <p className="pb-1 text-xs text-warm-500 break-words">{tile.detail}</p>
               </div>
             </div>
           ))}

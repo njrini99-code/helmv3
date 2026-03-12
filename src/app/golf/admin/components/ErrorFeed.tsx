@@ -325,7 +325,7 @@ export function ErrorFeed({ errorLogs }: Props) {
         </div>
       )}
 
-      <div className="mt-3 grid grid-cols-2 gap-2 xl:grid-cols-5">
+      <div className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-2 xl:grid-cols-5">
         <CompactStat label="Raw Errors" value={totalErrors7d} detail="7d rows" />
         <CompactStat label="Open Queue" value={incidentCounts.open} detail={`${incidentCounts.active} active`} tone={incidentCounts.open > 0 ? 'danger' : 'default'} />
         <CompactStat label="Resolved" value={incidentCounts.resolved} detail={`${incidentCounts.resolvedRecently} in 24h`} tone={incidentCounts.resolved > 0 ? 'success' : 'default'} />

@@ -157,7 +157,7 @@ function FunnelBars({ steps, maxCount }: { steps: BIFunnelStep[]; maxCount?: num
         const widthPct = top > 0 ? (step.count / top) * 100 : 0;
         return (
           <div key={step.step} className="flex items-center gap-3">
-            <div className="w-32 sm:w-40 text-right flex-shrink-0">
+            <div className="w-20 sm:w-32 md:w-40 text-right flex-shrink-0">
               <p className="text-sm font-medium text-warm-700 truncate">{step.step}</p>
             </div>
             <div className="flex-1 relative">
@@ -177,7 +177,7 @@ function FunnelBars({ steps, maxCount }: { steps: BIFunnelStep[]; maxCount?: num
                 />
               </div>
             </div>
-            <div className="w-24 text-right flex-shrink-0">
+            <div className="w-16 sm:w-24 text-right flex-shrink-0">
               <span className="text-sm font-bold text-warm-900 tabular-nums">{step.count}</span>
               <span className="text-xs text-warm-400 ml-1">({step.pctOfTop.toFixed(0)}%)</span>
             </div>
@@ -237,7 +237,7 @@ export function BusinessIntelligenceTab({ data }: Props) {
   return (
     <div className="space-y-6">
       {/* Sub-navigation pills */}
-      <div className="flex items-center gap-1 p-1 bg-white/50 backdrop-blur-sm border border-white/30 rounded-full w-fit overflow-x-auto">
+      <div className="flex items-center gap-1 p-1 bg-white/50 backdrop-blur-sm border border-white/30 rounded-full w-full sm:w-fit overflow-x-auto">
         {SUB_TABS.map((tab) => (
           <button
             key={tab.id}
@@ -925,7 +925,7 @@ function ErrorAreaRow({ area, maxCount }: { area: { area: string; count: number;
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center gap-3 py-3 px-1 hover:bg-warm-50/50 transition-colors text-left"
       >
-        <span className="text-xs font-medium text-warm-600 w-[120px] shrink-0 text-right">{area.area}</span>
+        <span className="text-xs font-medium text-warm-600 w-20 sm:w-[120px] shrink-0 text-right truncate">{area.area}</span>
         <div className="flex-1 flex items-center gap-2">
           <div className="flex-1 h-5 bg-warm-50 rounded-full overflow-hidden relative">
             <div className="h-full bg-amber-400 rounded-full" style={{ width: `${barWidth}%` }} />
@@ -943,7 +943,7 @@ function ErrorAreaRow({ area, maxCount }: { area: { area: string; count: number;
         )}
       </button>
       {expanded && area.recentErrors.length > 0 && (
-        <div className="ml-[132px] mb-3 space-y-1.5">
+        <div className="ml-8 sm:ml-[132px] mb-3 space-y-1.5">
           {area.recentErrors.map((err, i) => (
             <div key={i} className="flex items-start gap-2 text-xs bg-warm-50/80 rounded-lg px-3 py-2">
               <span className={cn(
@@ -1042,7 +1042,7 @@ function HealthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
               <thead>
                 <tr className="border-b border-white/20">
                   <th className="text-left text-warm-500 font-medium py-2 px-3">Team</th>
-                  <th className="text-left text-warm-500 font-medium py-2 px-3">Org</th>
+                  <th className="hidden md:table-cell text-left text-warm-500 font-medium py-2 px-3">Org</th>
                   <th
                     className="text-right text-warm-500 font-medium py-2 px-3 cursor-pointer hover:text-warm-700 select-none"
                     onClick={() => toggleSort('score')}
@@ -1056,12 +1056,12 @@ function HealthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
                   >
                     Players <SortIcon field="playerCount" />
                   </th>
-                  <th className="text-right text-warm-500 font-medium py-2 px-3">Active</th>
+                  <th className="hidden lg:table-cell text-right text-warm-500 font-medium py-2 px-3">Active</th>
                   <th
                     className="text-right text-warm-500 font-medium py-2 px-3 cursor-pointer hover:text-warm-700 select-none"
                     onClick={() => toggleSort('roundsThisMonth')}
                   >
-                    Rounds/Mo <SortIcon field="roundsThisMonth" />
+                    <span className="hidden md:inline">Rounds/Mo</span><span className="md:hidden">Rnds</span> <SortIcon field="roundsThisMonth" />
                   </th>
                   <th className="text-center text-warm-500 font-medium py-2 px-3">Risk</th>
                 </tr>
@@ -1070,7 +1070,7 @@ function HealthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
                 {sortedTeams.map((team) => (
                   <tr key={team.teamId} className="border-t border-white/10 hover:bg-white/30 transition-colors">
                     <td className="py-2 px-3 font-medium text-warm-800">{team.teamName}</td>
-                    <td className="py-2 px-3 text-warm-500 text-xs">{team.orgName || '--'}</td>
+                    <td className="hidden md:table-cell py-2 px-3 text-warm-500 text-xs">{team.orgName || '--'}</td>
                     <td className="py-2 px-3 text-right tabular-nums font-semibold text-warm-900">{team.score}</td>
                     <td className="py-2 px-3 text-center">
                       <span
@@ -1087,7 +1087,7 @@ function HealthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
                       </span>
                     </td>
                     <td className="py-2 px-3 text-right tabular-nums text-warm-700">{team.playerCount}</td>
-                    <td className="py-2 px-3 text-right tabular-nums text-warm-700">{team.activePlayerCount}</td>
+                    <td className="hidden lg:table-cell py-2 px-3 text-right tabular-nums text-warm-700">{team.activePlayerCount}</td>
                     <td className="py-2 px-3 text-right tabular-nums text-warm-700">{team.roundsThisMonth}</td>
                     <td className="py-2 px-3 text-center">
                       <span
@@ -1121,10 +1121,10 @@ function HealthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
                 <tr className="border-b border-white/20">
                   <th className="text-left text-warm-500 font-medium py-2 px-3">Name</th>
                   <th className="text-left text-warm-500 font-medium py-2 px-3">Type</th>
-                  <th className="text-left text-warm-500 font-medium py-2 px-3">Team</th>
+                  <th className="hidden md:table-cell text-left text-warm-500 font-medium py-2 px-3">Team</th>
                   <th className="text-right text-warm-500 font-medium py-2 px-3">Risk Score</th>
-                  <th className="text-right text-warm-500 font-medium py-2 px-3">Days Inactive</th>
-                  <th className="text-left text-warm-500 font-medium py-2 px-3">Signals</th>
+                  <th className="hidden md:table-cell text-right text-warm-500 font-medium py-2 px-3">Days Inactive</th>
+                  <th className="hidden md:table-cell text-left text-warm-500 font-medium py-2 px-3">Signals</th>
                 </tr>
               </thead>
               <tbody>
@@ -1143,7 +1143,7 @@ function HealthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
                         {acct.type}
                       </span>
                     </td>
-                    <td className="py-2 px-3 text-warm-500 text-xs">{acct.teamName || '--'}</td>
+                    <td className="hidden md:table-cell py-2 px-3 text-warm-500 text-xs">{acct.teamName || '--'}</td>
                     <td className="py-2 px-3 text-right">
                       <span
                         className={cn(
@@ -1154,8 +1154,8 @@ function HealthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
                         {acct.riskScore}
                       </span>
                     </td>
-                    <td className="py-2 px-3 text-right tabular-nums text-warm-600">{acct.daysSinceLastActive}d</td>
-                    <td className="py-2 px-3 max-w-[200px]">
+                    <td className="hidden md:table-cell py-2 px-3 text-right tabular-nums text-warm-600">{acct.daysSinceLastActive}d</td>
+                    <td className="hidden md:table-cell py-2 px-3 max-w-[200px]">
                       <div className="flex flex-wrap gap-1">
                         {acct.riskSignals.slice(0, 3).map((signal, i) => (
                           <span
@@ -1186,15 +1186,15 @@ function HealthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-white/20">
-                  <th className="text-left text-warm-500 font-medium py-2 px-3">#</th>
+                  <th className="hidden md:table-cell text-left text-warm-500 font-medium py-2 px-3">#</th>
                   <th className="text-left text-warm-500 font-medium py-2 px-3">Team</th>
                   <th className="text-right text-warm-500 font-medium py-2 px-3">Score</th>
                   <th className="text-center text-warm-500 font-medium py-2 px-3">Tier</th>
                   <th className="text-right text-warm-500 font-medium py-2 px-3">Players</th>
-                  <th className="text-right text-warm-500 font-medium py-2 px-3">Active %</th>
-                  <th className="text-right text-warm-500 font-medium py-2 px-3">Rnds/Wk</th>
-                  <th className="text-center text-warm-500 font-medium py-2 px-3">AI</th>
-                  <th className="text-right text-warm-500 font-medium py-2 px-3">Tenure</th>
+                  <th className="hidden md:table-cell text-right text-warm-500 font-medium py-2 px-3">Active %</th>
+                  <th className="hidden md:table-cell text-right text-warm-500 font-medium py-2 px-3">Rnds/Wk</th>
+                  <th className="hidden md:table-cell text-center text-warm-500 font-medium py-2 px-3">AI</th>
+                  <th className="hidden md:table-cell text-right text-warm-500 font-medium py-2 px-3">Tenure</th>
                 </tr>
               </thead>
               <tbody>
@@ -1202,7 +1202,7 @@ function HealthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
                   .sort((a, b) => b.score - a.score)
                   .map((proxy, i) => (
                     <tr key={proxy.teamId} className="border-t border-white/10 hover:bg-white/30 transition-colors">
-                      <td className="py-2 px-3 text-warm-400 tabular-nums text-xs">{i + 1}</td>
+                      <td className="hidden md:table-cell py-2 px-3 text-warm-400 tabular-nums text-xs">{i + 1}</td>
                       <td className="py-2 px-3 font-medium text-warm-800">{proxy.teamName}</td>
                       <td className="py-2 px-3 text-right tabular-nums font-semibold text-warm-900">{proxy.score}</td>
                       <td className="py-2 px-3 text-center">
@@ -1218,16 +1218,16 @@ function HealthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
                         </span>
                       </td>
                       <td className="py-2 px-3 text-right tabular-nums text-warm-700">{proxy.signals.playerCount}</td>
-                      <td className="py-2 px-3 text-right tabular-nums text-warm-700">{proxy.signals.activePlayerPct}%</td>
-                      <td className="py-2 px-3 text-right tabular-nums text-warm-700">{proxy.signals.roundsPerWeek.toFixed(1)}</td>
-                      <td className="py-2 px-3 text-center">
+                      <td className="hidden md:table-cell py-2 px-3 text-right tabular-nums text-warm-700">{proxy.signals.activePlayerPct}%</td>
+                      <td className="hidden md:table-cell py-2 px-3 text-right tabular-nums text-warm-700">{proxy.signals.roundsPerWeek.toFixed(1)}</td>
+                      <td className="hidden md:table-cell py-2 px-3 text-center">
                         {proxy.signals.aiAdoption ? (
                           <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary-100 text-primary-700 text-xs font-bold">Y</span>
                         ) : (
                           <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-warm-100 text-warm-400 text-xs">N</span>
                         )}
                       </td>
-                      <td className="py-2 px-3 text-right tabular-nums text-warm-600 text-xs">{proxy.signals.tenureDays}d</td>
+                      <td className="hidden md:table-cell py-2 px-3 text-right tabular-nums text-warm-600 text-xs">{proxy.signals.tenureDays}d</td>
                     </tr>
                   ))}
               </tbody>
