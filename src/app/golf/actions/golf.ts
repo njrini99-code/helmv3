@@ -1043,32 +1043,28 @@ export async function submitGolfRoundComprehensive(
       console.error('[Golf] Cache revalidation failed after successful submit:', cacheErr);
     }
 
-    // Run CoachHelm synchronously enough to guarantee completion, but never
-    // let analysis failures roll back the round itself.
-    const coachHelmResult = await triggerPlayerInsightsAfterRound(player.id).catch(async (err) => {
+    // Fire-and-forget: CoachHelm + logging run AFTER returning success to the
+    // client. These are non-critical and were causing client-side timeouts when
+    // awaited (the server action exceeded Next.js timeout limits).
+    const backgroundPlayerId = player.id;
+    const backgroundRoundId = round.id;
+    triggerPlayerInsightsAfterRound(backgroundPlayerId).catch(async (err) => {
       await logServerError(`CoachHelm trigger threw after round submit: ${err instanceof Error ? err.message : String(err)}`, {
         action: 'submitGolfRoundComprehensive.coachhelm',
         extra: {
-          playerId: player.id,
-          roundId: round.id,
+          playerId: backgroundPlayerId,
+          roundId: backgroundRoundId,
           stack: err instanceof Error ? err.stack : undefined,
         },
       }, 'error');
-      return { success: false, error: err instanceof Error ? err.message : 'CoachHelm trigger failed' };
-    });
-    if (!coachHelmResult.success) {
-      await logServerError(`CoachHelm trigger returned failure after round submit: ${coachHelmResult.error || 'unknown failure'}`, {
-        action: 'submitGolfRoundComprehensive.coachhelm.result',
-        extra: {
-          playerId: player.id,
-          roundId: round.id,
-        },
-      }, 'error');
-    }
-
-    // Note: Round review generation is handled lazily by the review page
-    // via generateAndStoreRoundReview (V2). Removed the fire-and-forget V1
-    // call here to prevent race conditions where V1 overwrites V2 content.
+    }).then(async (result) => {
+      if (result && !result.success) {
+        await logServerError(`CoachHelm trigger returned failure after round submit: ${result.error || 'unknown failure'}`, {
+          action: 'submitGolfRoundComprehensive.coachhelm.result',
+          extra: { playerId: backgroundPlayerId, roundId: backgroundRoundId },
+        }, 'error');
+      }
+    }).catch(() => {});
 
     // Log round submission event (fire-and-forget)
     logRoundSubmitted(user.id, user.email || '', round.id, {
