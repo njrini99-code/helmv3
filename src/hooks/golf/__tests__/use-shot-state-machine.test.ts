@@ -3,6 +3,8 @@ import {
   shotReducer,
   computeRestoredState,
   getShotTypeFromState,
+  shouldAutoAdvanceToDistanceInput,
+  shouldAutoScrollDistanceInput,
   type ShotTrackingState,
   type ShotAction,
 } from '../use-shot-state-machine';
@@ -148,6 +150,37 @@ describe('getShotTypeFromState', () => {
   it('returns putting when on green regardless of hole', () => {
     const state = makeInitialState({ currentLie: 'green', currentShot: 1 });
     expect(getShotTypeFromState(state, makeRoundHole({ par: 3 }))).toBe('putting');
+  });
+});
+
+// ============================================================================
+// distance input automation helpers
+// ============================================================================
+
+describe('distance input automation helpers', () => {
+  it('waits for tee miss direction before auto-advancing rough misses', () => {
+    const state = makeInitialState({ resultOfShot: 'rough', missDirection: null });
+    expect(shouldAutoAdvanceToDistanceInput(state, 'tee')).toBe(false);
+    expect(shouldAutoAdvanceToDistanceInput({ ...state, missDirection: 'left' }, 'tee')).toBe(true);
+  });
+
+  it('waits for approach miss direction before auto-advancing missed approaches', () => {
+    const state = makeInitialState({ resultOfShot: 'sand', approachMissDirection: null });
+    expect(shouldAutoAdvanceToDistanceInput(state, 'approach')).toBe(false);
+    expect(
+      shouldAutoAdvanceToDistanceInput({ ...state, approachMissDirection: 'short_right' }, 'approach')
+    ).toBe(true);
+  });
+
+  it('auto-advances putting without requiring miss tags', () => {
+    const state = makeInitialState({ resultOfShot: 'green', currentLie: 'green' });
+    expect(shouldAutoAdvanceToDistanceInput(state, 'putting')).toBe(true);
+  });
+
+  it('does not auto-scroll the distance input for putting', () => {
+    expect(shouldAutoScrollDistanceInput('putting')).toBe(false);
+    expect(shouldAutoScrollDistanceInput('tee')).toBe(true);
+    expect(shouldAutoScrollDistanceInput('approach')).toBe(true);
   });
 });
 

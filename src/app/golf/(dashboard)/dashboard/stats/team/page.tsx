@@ -224,7 +224,9 @@ export default async function TeamStatsPage() {
       const holes = holesByRound[round.id] || [];
       holes.forEach(hole => {
         // Fairway (only par 4s and 5s)
-        if (hole.par >= 4 && hole.fairway_hit !== null) {
+        // Match the player stats calculator: every par 4 / par 5 is a fairway
+        // opportunity, even if the explicit hole flag is missing.
+        if (hole.par >= 4) {
           totalFairwayOpps++;
           if (hole.fairway_hit) totalFairwayHits++;
         }

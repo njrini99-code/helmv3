@@ -671,26 +671,62 @@ export function useShotStateMachine({
   const isPutting = shotType === 'putting';
   const isTeeShot = shotType === 'tee';
   const isApproachOrAroundGreen = shotType === 'approach' || shotType === 'around_green';
+  const distanceAutoAdvanceKeyRef = useRef<string | null>(null);
+  const distanceScrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const distanceFocusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (state.resultOfShot && state.resultOfShot !== 'hole' && distanceInputRef.current) {
-      const needsMissDirection =
-        (isTeeShot && ['rough', 'sand', 'other'].includes(state.resultOfShot)) ||
-        (isApproachOrAroundGreen && state.resultOfShot && !['green', 'hole'].includes(state.resultOfShot)) ||
-        (isPutting && state.resultOfShot !== null);
+    if (distanceScrollTimeoutRef.current) clearTimeout(distanceScrollTimeoutRef.current);
+    if (distanceFocusTimeoutRef.current) clearTimeout(distanceFocusTimeoutRef.current);
 
-      if (!needsMissDirection || state.missDirection) {
-        // Delay to let the distance section render, then smooth-scroll + focus
-        setTimeout(() => {
-          const el = distanceInputRef.current;
-          if (!el) return;
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          // Focus after scroll animation settles
-          setTimeout(() => el.focus({ preventScroll: true }), 350);
-        }, 150);
+    if (!distanceInputRef.current) return;
+    if (!shouldAutoAdvanceToDistanceInput({
+      resultOfShot: state.resultOfShot,
+      missDirection: state.missDirection,
+      approachMissDirection: state.approachMissDirection,
+    }, shotType)) {
+      if (!state.resultOfShot) {
+        distanceAutoAdvanceKeyRef.current = null;
       }
+      return;
     }
-  }, [state.resultOfShot, state.missDirection, isTeeShot, isApproachOrAroundGreen, isPutting]);
+
+    const automationKey = [
+      currentHoleIndex,
+      state.currentShot,
+      shotType,
+      state.resultOfShot,
+    ].join(':');
+
+    if (distanceAutoAdvanceKeyRef.current === automationKey) {
+      return;
+    }
+    distanceAutoAdvanceKeyRef.current = automationKey;
+
+    distanceScrollTimeoutRef.current = setTimeout(() => {
+      const el = distanceInputRef.current;
+      if (!el) return;
+
+      if (shouldAutoScrollDistanceInput(shotType)) {
+        el.scrollIntoView({ behavior: 'auto', block: 'nearest' });
+        distanceFocusTimeoutRef.current = setTimeout(() => {
+          distanceInputRef.current?.focus({ preventScroll: true });
+        }, 0);
+      }
+    }, 0);
+
+    return () => {
+      if (distanceScrollTimeoutRef.current) clearTimeout(distanceScrollTimeoutRef.current);
+      if (distanceFocusTimeoutRef.current) clearTimeout(distanceFocusTimeoutRef.current);
+    };
+  }, [
+    currentHoleIndex,
+    shotType,
+    state.approachMissDirection,
+    state.currentShot,
+    state.missDirection,
+    state.resultOfShot,
+  ]);
 
   return {
     state,
@@ -720,4 +756,33 @@ export function getShotTypeFromState(
   const distanceInYards = state.distanceUnit === 'feet' ? state.distanceToHole / 3 : state.distanceToHole;
   if (distanceInYards <= 30) return 'around_green';
   return 'approach';
+}
+
+/** @internal - exported for testing */
+export function shouldAutoAdvanceToDistanceInput(
+  state: Pick<ShotTrackingState, 'resultOfShot' | 'missDirection' | 'approachMissDirection'>,
+  shotType: 'tee' | 'approach' | 'around_green' | 'putting',
+): boolean {
+  const result = state.resultOfShot;
+  if (!result || result === 'hole') return false;
+
+  if (shotType === 'tee') {
+    return !['rough', 'sand', 'other'].includes(result) || !!state.missDirection;
+  }
+
+  if (shotType === 'approach' || shotType === 'around_green') {
+    return ['green', 'hole'].includes(result) || !!state.approachMissDirection;
+  }
+
+  // Putting miss tags are optional; avoid blocking distance entry on them.
+  return true;
+}
+
+/** @internal - exported for testing */
+export function shouldAutoScrollDistanceInput(
+  shotType: 'tee' | 'approach' | 'around_green' | 'putting',
+): boolean {
+  // Putting is the most sensitive flow in replay sessions; avoid any forced
+  // programmatic scroll while players are still tagging the miss.
+  return shotType !== 'putting';
 }

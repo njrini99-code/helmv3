@@ -70,6 +70,7 @@ interface PlayerStats {
   recent_scores?: number[];
   trend?: 'up' | 'down' | 'stable';
   last_played?: string;
+  equivalent_rounds_all?: number;
   // Per-format stats
   rounds_played_18: number;
   rounds_played_9: number;
@@ -421,11 +422,17 @@ export default function StatsClient({
       if (coachHoleFormat === '9') return p.stats?.rounds_played_9 ?? 0;
       return p.stats?.rounds_played ?? 0;
     };
+    const getAverageWeight = (p: Player & { stats?: PlayerStats }) => {
+      if (coachHoleFormat === '18') return p.stats?.rounds_played_18 ?? 0;
+      if (coachHoleFormat === '9') return p.stats?.rounds_played_9 ?? 0;
+      return p.stats?.equivalent_rounds_all ?? 0;
+    };
 
     const playersWithStats = players.filter(p => getScoringAvg(p) !== null);
     const totalRounds = players.reduce((sum, p) => sum + getRounds(p), 0);
-    const teamAvg = playersWithStats.length > 0
-      ? playersWithStats.reduce((sum, p) => sum + (getScoringAvg(p) || 0), 0) / playersWithStats.length
+    const totalAverageWeight = playersWithStats.reduce((sum, p) => sum + getAverageWeight(p), 0);
+    const teamAvg = totalAverageWeight > 0
+      ? playersWithStats.reduce((sum, p) => sum + ((getScoringAvg(p) || 0) * getAverageWeight(p)), 0) / totalAverageWeight
       : 0;
 
     const sortedByAvg = [...playersWithStats].sort((a, b) =>
@@ -637,6 +644,7 @@ export default function StatsClient({
           recent_scores: recentNormalized.reverse(), // Oldest to newest for sparkline
           trend,
           last_played: lastPlayed,
+          equivalent_rounds_all: totalHoles / 18,
           rounds_played_18: roundsPlayed18,
           rounds_played_9: roundsPlayed9,
           scoring_average_18: roundsPlayed18 > 0 ? totalStrokes18 / roundsPlayed18 : null,
