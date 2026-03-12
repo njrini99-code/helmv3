@@ -3008,7 +3008,10 @@ export async function triggerPlayerInsightsAfterRound(
       duration_ms: Date.now() - startTime,
     });
 
-    revalidatePath('/golf/dashboard');
+    // NOTE: Do NOT call revalidatePath here — this function runs fire-and-forget
+    // after the server action response has been sent, which is outside the allowed
+    // context for revalidation. The caller (submitGolfRoundComprehensive) already
+    // revalidates all relevant paths before invoking this.
     return { success: true, insights_created: newInsights.length };
   } catch (error) {
     console.error('[CoachHelm] Error in post-round insight trigger:', error);
