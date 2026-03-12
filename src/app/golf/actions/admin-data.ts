@@ -7,6 +7,38 @@ import { createAdminClient } from '@/lib/supabase/admin';
 // TYPES
 // ============================================
 
+interface DashboardErrorIncident {
+  id: string;
+  title: string;
+  message: string;
+  severity: string;
+  status: 'open' | 'active' | 'historical';
+  summary: string;
+  likelyCause: string;
+  userImpact: string;
+  nextStep: string;
+  featureArea: string;
+  action: string | null;
+  route: string | null;
+  url: string | null;
+  source: string | null;
+  stack: string | null;
+  userId: string | null;
+  userEmail: string | null;
+  createdAt: string;
+  firstSeen: string;
+  lastSeen: string;
+  occurrences: number;
+  affectedUsers: number;
+  errorCode: string | null;
+  errorHint: string | null;
+  errorDetails: string | null;
+  requestId: string | null;
+  roundId: string | null;
+  playerId: string | null;
+  copySummary: string;
+}
+
 export interface AdminDashboardData {
   health: {
     activeUsers24h: number;
@@ -242,17 +274,7 @@ export interface AdminDashboardData {
   errorLogs: {
     totalErrors7d: number;
     criticalErrors7d: number;
-    recentErrors: {
-      id: string;
-      message: string;
-      severity: string;
-      stack: string | null;
-      url: string | null;
-      userId: string | null;
-      userEmail: string | null;
-      createdAt: string;
-      occurrences: number;
-    }[];
+    recentErrors: DashboardErrorIncident[];
     errorsByDay: { date: string; count: number }[];
     bySeverity: { severity: string; count: number }[];
     topErrors: {
@@ -512,6 +534,277 @@ export interface AdminDashboardData {
   };
   // BI Dashboard
   bi: BIDashboardData;
+}
+
+interface DashboardErrorContext {
+  action: string | null;
+  route: string | null;
+  url: string | null;
+  featureArea: string | null;
+  source: string | null;
+  requestId: string | null;
+  roundId: string | null;
+  playerId: string | null;
+  userId: string | null;
+  userEmail: string | null;
+  errorCode: string | null;
+  errorHint: string | null;
+  errorDetails: string | null;
+}
+
+function asObject(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
+}
+
+function asString(value: unknown): string | null {
+  return typeof value === 'string' && value.trim().length > 0 ? value : null;
+}
+
+function buildDashboardErrorContext(rawContext: unknown): DashboardErrorContext {
+  const context = asObject(rawContext);
+  return {
+    action: asString(context?.action),
+    route: asString(context?.route),
+    url: asString(context?.url),
+    featureArea: asString(context?.featureArea),
+    source: asString(context?.source),
+    requestId: asString(context?.requestId),
+    roundId: asString(context?.roundId),
+    playerId: asString(context?.playerId),
+    userId: asString(context?.userId),
+    userEmail: asString(context?.userEmail),
+    errorCode: asString(context?.errorCode),
+    errorHint: asString(context?.errorHint),
+    errorDetails: asString(context?.errorDetails),
+  };
+}
+
+function mergeDashboardErrorContext(
+  primary: DashboardErrorContext,
+  fallback: DashboardErrorContext,
+): DashboardErrorContext {
+  return {
+    action: primary.action ?? fallback.action,
+    route: primary.route ?? fallback.route,
+    url: primary.url ?? fallback.url,
+    featureArea: primary.featureArea ?? fallback.featureArea,
+    source: primary.source ?? fallback.source,
+    requestId: primary.requestId ?? fallback.requestId,
+    roundId: primary.roundId ?? fallback.roundId,
+    playerId: primary.playerId ?? fallback.playerId,
+    userId: primary.userId ?? fallback.userId,
+    userEmail: primary.userEmail ?? fallback.userEmail,
+    errorCode: primary.errorCode ?? fallback.errorCode,
+    errorHint: primary.errorHint ?? fallback.errorHint,
+    errorDetails: primary.errorDetails ?? fallback.errorDetails,
+  };
+}
+
+function normalizeIncidentKey(
+  message: string,
+  url: string | null,
+  action: string | null,
+  errorCode: string | null
+): string {
+  const normalizedUrl = (() => {
+    if (!url) return '';
+    try {
+      return new URL(url, 'http://localhost').pathname;
+    } catch {
+      return url;
+    }
+  })();
+
+  return [
+    message.trim().toLowerCase(),
+    normalizedUrl,
+    action ?? '',
+    errorCode ?? '',
+  ].join('::');
+}
+
+function toFeatureAreaLabel(featureArea: string | null, url: string | null, message: string): string {
+  const normalizedArea = featureArea?.toLowerCase() ?? '';
+  const normalizedUrl = (url ?? '').toLowerCase();
+  const normalizedMessage = message.toLowerCase();
+
+  if (normalizedArea === 'shot_tracking' || normalizedMessage.includes('round submit') || normalizedMessage.includes('continue round')) {
+    return 'Shot Tracking';
+  }
+  if (normalizedArea === 'stats_cache' || normalizedMessage.includes('stats cache') || normalizedMessage.includes('refresh_player_stats_cache')) {
+    return 'Stats Cache';
+  }
+  if (normalizedArea === 'coachhelm_ai') {
+    return 'CoachHelm AI';
+  }
+  if (normalizedArea === 'calendar' || normalizedUrl.includes('/calendar')) {
+    return 'Calendar';
+  }
+  if (normalizedArea === 'admin_crm') {
+    return 'Admin CRM';
+  }
+  if (normalizedUrl.includes('/admin')) {
+    return 'Admin';
+  }
+
+  return 'Platform';
+}
+
+function deriveIncidentNarrative(
+  message: string,
+  featureArea: string,
+  action: string | null,
+  url: string | null,
+  errorCode: string | null,
+): Pick<DashboardErrorIncident, 'title' | 'summary' | 'likelyCause' | 'userImpact' | 'nextStep'> {
+  const normalized = message.toLowerCase();
+
+  if (normalized.includes('stack depth limit exceeded')) {
+    return {
+      title: 'Round submit recursion failure',
+      summary: 'The round submit transaction hit PostgreSQL\'s stack-depth guard and aborted before the save path could finish.',
+      likelyCause: 'A database function or trigger in the round submit flow is recursing or re-entering too deeply.',
+      userImpact: 'Players can see submit failures or repeated save attempts while finishing a round.',
+      nextStep: 'Inspect submit_round_atomic and any triggers/functions it calls for recursive writes or self-referencing cache refresh logic.',
+    };
+  }
+
+  if (normalized.includes('created_at') && normalized.includes('ambiguous')) {
+    return {
+      title: 'Stats refresh query is ambiguous',
+      summary: 'The round submit flow reached a SQL statement that referenced created_at without a table alias, so Postgres rejected it.',
+      likelyCause: 'A joined stats-cache query or RPC orders or filters by created_at without qualifying the source table.',
+      userImpact: 'Round submits can fail even when the underlying hole and shot data is otherwise valid.',
+      nextStep: 'Review refresh_player_stats_cache and related SQL for unqualified created_at references.',
+    };
+  }
+
+  if (normalized.includes('putt_details_distance_feet_check')) {
+    return {
+      title: 'Putt detail rejected by DB constraint',
+      summary: 'A putt detail row was rejected because the submitted distance exceeded the database constraint.',
+      likelyCause: 'The app derived or forwarded a putt distance outside the allowed range for putt_details.distance_feet.',
+      userImpact: 'Players can lose a round submit when a long putt or converted distance is out of bounds.',
+      nextStep: 'Compare derivePuttDistanceFeet and the putt_details constraint against the actual values being inserted.',
+    };
+  }
+
+  if (normalized.includes('approach_miss_details_lie_type_check')) {
+    return {
+      title: 'Approach detail rejected by DB constraint',
+      summary: 'An approach miss detail row used a lie_type value the database constraint did not allow.',
+      likelyCause: 'The shot tracking flow emitted a lie label that no longer matched the allowed approach_miss_details values.',
+      userImpact: 'Players can see round submit failures on otherwise valid approach shots.',
+      nextStep: 'Compare the approach miss lie mapping in the app with the current DB constraint values.',
+    };
+  }
+
+  if (normalized.includes('continue round')) {
+    return {
+      title: 'Continue-round rehydration failed',
+      summary: 'The server could not fully reload the in-progress round state needed to resume tracking.',
+      likelyCause: 'A DB read failed while loading the round, holes, shots, or shot detail records.',
+      userImpact: 'Players may see a broken continue-round screen or missing tracked progress.',
+      nextStep: 'Check the affected round ID and validate the round, hole, shot, putt, and approach detail queries.',
+    };
+  }
+
+  if (
+    normalized.includes('refresh_player_stats_cache')
+    || normalized.includes('mark_player_stats_stale')
+    || normalized.includes('recalculate_round_strokes_gained')
+    || normalized.includes('update_player_stats_strokes_gained')
+    || normalized.includes('stats cache')
+  ) {
+    return {
+      title: 'Stats cache repair failed',
+      summary: 'The post-round cache refresh or strokes-gained repair path failed and the derived stats may now be stale.',
+      likelyCause: 'A cache RPC errored, timed out, or returned data that did not reconcile with live round totals.',
+      userImpact: 'Dashboard stats can stay stale or inconsistent after a save or submit.',
+      nextStep: 'Check the named cache RPC/function and compare live round totals with golf_player_stats_cache for the affected player.',
+    };
+  }
+
+  if (normalized.includes('round submit') || action === 'submitGolfRoundComprehensive') {
+    return {
+      title: 'Round submit failed',
+      summary: 'The server could not finish the round submit transaction.',
+      likelyCause: 'A database RPC, trigger, validation rule, or downstream cache refresh step rejected the payload.',
+      userImpact: 'Players likely saw the round save or submit fail.',
+      nextStep: 'Review submitGolfRoundComprehensive, submit_round_atomic, and the raw error details below.',
+    };
+  }
+
+  return {
+    title: `${featureArea} incident`,
+    summary: 'The admin dashboard received a server-side error event with enough context to review but not a known specialized pattern.',
+    likelyCause: action
+      ? `The ${action} path threw an error and the trace was captured for review.`
+      : 'The request failed in a server path that did not match a specialized diagnosis rule.',
+    userImpact: url
+      ? `Users interacting with ${url} may have seen a failure or stale data.`
+      : 'Users may have hit a failure in the affected feature area.',
+    nextStep: errorCode
+      ? `Start with the raw message, error code ${errorCode}, and the stack/context below.`
+      : 'Start with the raw message and stack/context below.',
+  };
+}
+
+function buildIncidentCopySummary(incident: DashboardErrorIncident): string {
+  return [
+    `Severity: ${incident.severity.toUpperCase()}`,
+    `Status: ${incident.status.toUpperCase()}`,
+    `Title: ${incident.title}`,
+    `Area: ${incident.featureArea}`,
+    `Summary: ${incident.summary}`,
+    `Likely cause: ${incident.likelyCause}`,
+    `User impact: ${incident.userImpact}`,
+    `Next step: ${incident.nextStep}`,
+    `Occurrences: ${incident.occurrences}`,
+    `Affected users: ${incident.affectedUsers}`,
+    `First seen: ${incident.firstSeen}`,
+    `Last seen: ${incident.lastSeen}`,
+    incident.action ? `Action: ${incident.action}` : null,
+    incident.route ? `Route: ${incident.route}` : null,
+    incident.url ? `URL: ${incident.url}` : null,
+    incident.source ? `Source: ${incident.source}` : null,
+    incident.errorCode ? `Error code: ${incident.errorCode}` : null,
+    incident.errorHint ? `Hint: ${incident.errorHint}` : null,
+    incident.errorDetails ? `Details: ${incident.errorDetails}` : null,
+    incident.requestId ? `Request ID: ${incident.requestId}` : null,
+    incident.roundId ? `Round ID: ${incident.roundId}` : null,
+    incident.playerId ? `Player ID: ${incident.playerId}` : null,
+    incident.userEmail ? `User: ${incident.userEmail}` : null,
+    `Raw message: ${incident.message}`,
+    incident.stack ? `Stack:\n${incident.stack}` : null,
+  ].filter(Boolean).join('\n');
+}
+
+const DASHBOARD_SEVERITY_ORDER: Record<string, number> = {
+  critical: 0,
+  error: 1,
+  warning: 2,
+  info: 3,
+};
+
+function normalizeDashboardSeverity(severity: string | null | undefined): 'critical' | 'error' | 'warning' | 'info' {
+  const normalized = severity?.toLowerCase();
+  if (normalized === 'critical' || normalized === 'error' || normalized === 'warning' || normalized === 'info') {
+    return normalized;
+  }
+  return 'error';
+}
+
+function extractErrorRoute(url: string | null): string | null {
+  if (!url) return null;
+
+  try {
+    return new URL(url, 'http://localhost').pathname;
+  } catch {
+    return url;
+  }
 }
 
 // ============================================
@@ -1750,7 +2043,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     adminEventsUnresolvedCriticalRes,
   ] = await Promise.all([
     // Error logs: recent entries
-    adminDb.from('error_logs').select('id, message, severity, stack, url, user_id, created_at').order('created_at', { ascending: false }).limit(50),
+    adminDb.from('error_logs').select('id, message, severity, stack, url, user_id, context, created_at').order('created_at', { ascending: false }).limit(250),
     // Error logs: 7d count
     adminDb.from('error_logs').select('id', { count: 'exact', head: true }).gte('created_at', ago7d),
     // Error logs: critical 7d
@@ -1807,7 +2100,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     // Total platform users (source of truth)
     adminDb.from('users').select('id', { count: 'exact', head: true }),
     // Admin events: recent entries
-    adminDb.from('admin_events').select('id, event_type, severity, title, message, user_id, user_email, url, resolved, created_at').order('created_at', { ascending: false }).limit(50),
+    adminDb.from('admin_events').select('id, event_type, severity, title, message, metadata, user_id, user_email, url, resolved, created_at').order('created_at', { ascending: false }).limit(250),
     // Admin events: summary via RPC (wrapped in try-catch for resilience)
     (async () => {
       try {
@@ -1836,19 +2129,16 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     critical_count: number;
   } | null;
 
-  const rawErrorLogs = errorLogsRecentRes.data ?? [];
-
-  const recentErrors = rawErrorLogs.map((e) => ({
-    id: e.id,
-    message: e.message,
-    severity: e.severity ?? 'error',
-    stack: e.stack,
-    url: e.url,
-    userId: e.user_id,
-    userEmail: e.user_id ? (errorEmailMap.get(e.user_id) ?? null) : null,
-    createdAt: e.created_at ?? new Date().toISOString(),
-    occurrences: 1,
-  }));
+  const rawErrorLogs = (errorLogsRecentRes.data ?? []) as {
+    id: string;
+    message: string;
+    severity: string | null;
+    stack: string | null;
+    url: string | null;
+    user_id: string | null;
+    context: Record<string, unknown> | null;
+    created_at: string | null;
+  }[];
 
   // Fallback: calculate error summary from raw error logs if RPC failed
   const errorSummary = errorSummaryRaw ?? (() => {
@@ -1941,6 +2231,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     severity: string;
     title: string;
     message: string | null;
+    metadata: Record<string, unknown> | null;
     user_id: string | null;
     user_email: string | null;
     url: string | null;
@@ -1989,6 +2280,163 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
         .map(([date, count]) => ({ date, count })),
     };
   })();
+
+  const openIncidentKeys = new Set<string>();
+  for (const event of rawAdminEvents) {
+    if (event.resolved) continue;
+
+    const metadata = asObject(event.metadata);
+    const eventContext = buildDashboardErrorContext(event.metadata);
+    const keyMessage =
+      asString(metadata?.originalMessage)
+      ?? asString(metadata?.message)
+      ?? event.message
+      ?? event.title;
+
+    openIncidentKeys.add(
+      normalizeIncidentKey(
+        keyMessage,
+        event.url ?? eventContext.url,
+        eventContext.action,
+        eventContext.errorCode,
+      )
+    );
+  }
+
+  const recentIncidentThreshold = new Date(ago24h).getTime();
+  const incidentGroups = new Map<string, {
+    key: string;
+    latestRow: typeof rawErrorLogs[number];
+    latestContext: DashboardErrorContext;
+    message: string;
+    severity: 'critical' | 'error' | 'warning' | 'info';
+    stack: string | null;
+    firstSeen: string;
+    lastSeen: string;
+    occurrences: number;
+    affectedActors: Set<string>;
+  }>();
+
+  for (const entry of rawErrorLogs) {
+    const createdAt = entry.created_at ?? new Date().toISOString();
+    const context = buildDashboardErrorContext(entry.context);
+    const message = entry.message ?? 'Unknown error';
+    const url = entry.url ?? context.url;
+    const severity = normalizeDashboardSeverity(entry.severity);
+    const key = normalizeIncidentKey(message, url, context.action, context.errorCode);
+    const actorKey = context.userId ?? entry.user_id ?? context.userEmail ?? null;
+    const existing = incidentGroups.get(key);
+
+    if (!existing) {
+      incidentGroups.set(key, {
+        key,
+        latestRow: entry,
+        latestContext: context,
+        message,
+        severity,
+        stack: entry.stack,
+        firstSeen: createdAt,
+        lastSeen: createdAt,
+        occurrences: 1,
+        affectedActors: new Set(actorKey ? [actorKey] : []),
+      });
+      continue;
+    }
+
+    existing.occurrences += 1;
+    if (actorKey) existing.affectedActors.add(actorKey);
+    if (entry.stack) existing.stack = entry.stack;
+    existing.latestContext = mergeDashboardErrorContext(existing.latestContext, context);
+    if (createdAt < existing.firstSeen) existing.firstSeen = createdAt;
+
+    if (createdAt >= existing.lastSeen) {
+      existing.lastSeen = createdAt;
+      existing.latestRow = entry;
+      existing.latestContext = mergeDashboardErrorContext(context, existing.latestContext);
+      existing.message = message;
+    }
+
+    if ((DASHBOARD_SEVERITY_ORDER[severity] ?? 99) < (DASHBOARD_SEVERITY_ORDER[existing.severity] ?? 99)) {
+      existing.severity = severity;
+    }
+  }
+
+  const statusOrder: Record<DashboardErrorIncident['status'], number> = {
+    open: 0,
+    active: 1,
+    historical: 2,
+  };
+
+  const recentErrors = Array.from(incidentGroups.values())
+    .map((group): DashboardErrorIncident => {
+      const latestRow = group.latestRow;
+      const latestContext = group.latestContext;
+      const url = latestRow.url ?? latestContext.url ?? null;
+      const route = latestContext.route ?? extractErrorRoute(url);
+      const featureArea = toFeatureAreaLabel(latestContext.featureArea, url, group.message);
+      const narrative = deriveIncidentNarrative(
+        group.message,
+        featureArea,
+        latestContext.action,
+        url,
+        latestContext.errorCode,
+      );
+      const userId = latestContext.userId ?? latestRow.user_id ?? null;
+      const userEmail = latestContext.userEmail ?? (userId ? (errorEmailMap.get(userId) ?? null) : null);
+      const lastSeenTs = new Date(group.lastSeen).getTime();
+      const status: DashboardErrorIncident['status'] = openIncidentKeys.has(group.key)
+        ? 'open'
+        : lastSeenTs >= recentIncidentThreshold
+          ? 'active'
+          : 'historical';
+
+      const incident: DashboardErrorIncident = {
+        id: group.key,
+        title: narrative.title,
+        message: group.message,
+        severity: group.severity,
+        status,
+        summary: narrative.summary,
+        likelyCause: narrative.likelyCause,
+        userImpact: narrative.userImpact,
+        nextStep: narrative.nextStep,
+        featureArea,
+        action: latestContext.action,
+        route,
+        url,
+        source: latestContext.source,
+        stack: group.stack,
+        userId,
+        userEmail,
+        createdAt: group.lastSeen,
+        firstSeen: group.firstSeen,
+        lastSeen: group.lastSeen,
+        occurrences: group.occurrences,
+        affectedUsers: group.affectedActors.size,
+        errorCode: latestContext.errorCode,
+        errorHint: latestContext.errorHint,
+        errorDetails: latestContext.errorDetails,
+        requestId: latestContext.requestId,
+        roundId: latestContext.roundId,
+        playerId: latestContext.playerId,
+        copySummary: '',
+      };
+
+      incident.copySummary = buildIncidentCopySummary(incident);
+      return incident;
+    })
+    .sort((a, b) => {
+      const statusDiff = (statusOrder[a.status] ?? 99) - (statusOrder[b.status] ?? 99);
+      if (statusDiff !== 0) return statusDiff;
+
+      const severityDiff = (DASHBOARD_SEVERITY_ORDER[a.severity] ?? 99) - (DASHBOARD_SEVERITY_ORDER[b.severity] ?? 99);
+      if (severityDiff !== 0) return severityDiff;
+
+      const lastSeenDiff = new Date(b.lastSeen).getTime() - new Date(a.lastSeen).getTime();
+      if (lastSeenDiff !== 0) return lastSeenDiff;
+
+      return b.occurrences - a.occurrences;
+    });
 
   const recentAdminEvents = rawAdminEvents.map((e) => ({
     id: e.id,

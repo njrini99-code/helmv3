@@ -7,8 +7,8 @@ import { AdminStatCard } from './AdminStatCard';
 import { HealthCheckGrid } from './HealthCheckGrid';
 import { CoachHelmHealthCard } from './CoachHelmHealthCard';
 import InfraHealthCard from './InfraHealthCard';
+import { ErrorFeed } from './ErrorFeed';
 import { SectionHeader } from '@/components/golf/dashboard/premium-components';
-import { timeAgo } from './admin-utils';
 
 interface Props {
   data: AdminDashboardData;
@@ -48,7 +48,12 @@ export function SystemTab({ data }: Props) {
         />
       </div>
 
-      {/* Error Timeline + Health Diagnostics */}
+      <div>
+        <SectionHeader title="Incident Feed" />
+        <ErrorFeed errorLogs={errorLogs} />
+      </div>
+
+      {/* Health Diagnostics + Data Quality */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5">
         <div>
           <SectionHeader title="Health Diagnostics" />
@@ -59,21 +64,15 @@ export function SystemTab({ data }: Props) {
           />
         </div>
         <div>
-          <SectionHeader title="Error Timeline" />
-          <ErrorTimeline errors={errorLogs.recentErrors} />
-        </div>
-      </div>
-
-      {/* Data Quality Ring + Feature Adoption */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5">
-        <div>
           <SectionHeader title="Data Quality" />
           <DataQualityRing quality={dataQuality} />
         </div>
-        <div>
-          <SectionHeader title="Feature Adoption" />
-          <FeatureAdoptionGrid features={usage.featureAdoption} />
-        </div>
+      </div>
+
+      {/* Feature Adoption */}
+      <div>
+        <SectionHeader title="Feature Adoption" />
+        <FeatureAdoptionGrid features={usage.featureAdoption} />
       </div>
 
       {/* CoachHelm AI Health */}
@@ -91,69 +90,6 @@ export function SystemTab({ data }: Props) {
           dbHealth={data.infraHealth.dbHealth}
           totals={data.infraHealth.totals}
         />
-      </div>
-    </div>
-  );
-}
-
-// Error Timeline Component
-function ErrorTimeline({ errors }: { errors: AdminDashboardData['errorLogs']['recentErrors'] }) {
-  if (errors.length === 0) {
-    return (
-      <div className={cn(
-        'glass-standard rounded-2xl p-6',
-        'flex flex-col items-center justify-center py-10 text-center'
-      )}>
-        <div className="w-12 h-12 rounded-2xl bg-primary-50 flex items-center justify-center mb-3">
-          <Activity size={24} className="text-primary-500" />
-        </div>
-        <p className="text-sm font-medium text-primary-700">No Errors</p>
-        <p className="text-xs text-warm-400 mt-1">Clean error log — all systems operational</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className={cn(
-      'glass-standard rounded-2xl p-5 md:p-6',
-      'max-h-[500px] overflow-y-auto'
-    )}>
-      <div className="space-y-0">
-        {errors.slice(0, 20).map((error, i) => (
-          <div key={error.id} className="relative pl-6 pb-4 last:pb-0">
-            {/* Timeline line */}
-            {i < Math.min(errors.length, 20) - 1 && (
-              <div className="absolute left-[9px] top-5 bottom-0 w-px bg-warm-200" />
-            )}
-            {/* Timeline dot */}
-            <div className={cn(
-              'absolute left-0 top-1.5 w-[18px] h-[18px] rounded-full border-2 border-white flex items-center justify-center',
-              error.severity === 'critical' ? 'bg-red-500' :
-              error.severity === 'warning' ? 'bg-amber-500' :
-              'bg-warm-300'
-            )}>
-              <div className="w-1.5 h-1.5 rounded-full bg-white" />
-            </div>
-            {/* Content */}
-            <div className="ml-2">
-              <p className="text-sm font-medium text-warm-900 leading-tight line-clamp-2">{error.message}</p>
-              <div className="flex items-center gap-2 mt-1">
-                <span className={cn(
-                  'text-micro font-semibold px-1.5 py-0.5 rounded',
-                  error.severity === 'critical' ? 'bg-red-50 text-red-600' :
-                  error.severity === 'warning' ? 'bg-amber-50 text-amber-600' :
-                  'bg-warm-100 text-warm-500'
-                )}>
-                  {error.severity}
-                </span>
-                <span className="text-xs text-warm-400">{timeAgo(error.createdAt)}</span>
-                {error.userEmail && (
-                  <span className="text-xs text-warm-400 truncate max-w-[120px]">{error.userEmail}</span>
-                )}
-              </div>
-            </div>
-          </div>
-        ))}
       </div>
     </div>
   );
