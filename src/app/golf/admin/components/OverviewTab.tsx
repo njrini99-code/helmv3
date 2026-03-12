@@ -76,10 +76,14 @@ export function OverviewTab({ data, onNavigateTab }: Props) {
         <DailyCharts signupsByDay={data.signupsByDay} visitsByDay={data.visitsByDay} />
       </div>
 
-      {/* 3-col: Health + Activity + User Breakdown */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-5">
-        <PlatformHealthCard health={data.health} />
+      <div>
+        <SectionHeader title="Live Activity" />
         <ActivityFeed activity={data.activity} />
+      </div>
+
+      {/* 2-col: Health + User Breakdown */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5">
+        <PlatformHealthCard health={data.health} />
         <UserBreakdownCard users={data.users} />
       </div>
     </div>

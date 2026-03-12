@@ -7,7 +7,6 @@ import {
   Search,
   Filter,
   CheckCircle2,
-  XCircle,
   AlertTriangle,
   Clock,
   CircleDot,
@@ -15,9 +14,11 @@ import {
   ChevronRight,
   Stethoscope,
   ArrowUpDown,
+  ShieldAlert,
+  XCircle,
 } from 'lucide-react';
 import { timeAgo, formatDate } from '../admin-utils';
-import type { FlatRound, TracerErrorLog } from './tracer-types';
+import type { FlatRound, TracerIncident } from './tracer-types';
 
 // ============================================================================
 // TYPES
@@ -62,8 +63,7 @@ function getChecks(round: FlatRound) {
 }
 
 function getIssueCount(round: FlatRound): number {
-  if (round.status !== 'completed') return 0;
-  return getChecks(round).filter((c) => !c.ok).length;
+  return round.errors.length;
 }
 
 function getInitials(name: string): string {
@@ -368,9 +368,8 @@ function RoundRow({
   onDiagnose: () => void;
 }) {
   const stuck = isStuckRound(round);
-  const isComplete = round.status === 'completed';
   const checks = getChecks(round);
-  const issueCount = isComplete ? checks.filter((c) => !c.ok).length : 0;
+  const issueCount = round.errors.length;
 
   return (
     <>
@@ -450,18 +449,21 @@ function RoundRow({
 
         {/* Issues */}
         <td className="px-4 py-3.5 text-center">
-          {isComplete && issueCount > 0 ? (
+          {issueCount > 0 ? (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700">
               <AlertTriangle size={10} />
               {issueCount}
             </span>
-          ) : isComplete ? (
+          ) : round.status === 'completed' ? (
             <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-green-600">
               <CheckCircle2 size={10} />
               Clear
             </span>
           ) : (
-            <span className="text-warm-300 text-xs">&mdash;</span>
+            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-warm-400">
+              <CircleDot size={10} />
+              Watching
+            </span>
           )}
         </td>
 
@@ -500,7 +502,7 @@ function RoundRow({
                   {/* Checks grid */}
                   <div className="mb-3">
                     <span className="text-[11px] font-semibold text-warm-500 uppercase tracking-wider">
-                      Data Completeness Checks
+                      Recorded Round Snapshot
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-1.5 mb-3">
@@ -512,14 +514,14 @@ function RoundRow({
                           'inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium',
                           check.ok
                             ? 'bg-green-50/70 text-green-700'
-                            : isComplete
+                            : round.status === 'completed'
                               ? 'bg-red-50/70 text-red-600'
                               : 'bg-warm-100/50 text-warm-400'
                         )}
                       >
                         {check.ok ? (
                           <CheckCircle2 size={11} className="flex-shrink-0" />
-                        ) : isComplete ? (
+                        ) : round.status === 'completed' ? (
                           <XCircle size={11} className="flex-shrink-0" />
                         ) : (
                           <CircleDot size={11} className="flex-shrink-0" />
@@ -533,16 +535,24 @@ function RoundRow({
                   </div>
 
                   {/* Inline errors */}
-                  {round.errors.length > 0 && (
-                    <div className="space-y-1.5 mt-3">
-                      <span className="text-[11px] font-semibold text-red-500 uppercase tracking-wider">
-                        Errors ({round.errors.length})
-                      </span>
-                      {round.errors.map((err) => (
+                  <div className="space-y-1.5 mt-3">
+                    <span className={cn(
+                      'text-[11px] font-semibold uppercase tracking-wider',
+                      round.errors.length > 0 ? 'text-red-500' : 'text-green-600'
+                    )}>
+                      {round.errors.length > 0 ? `Open tracer incidents (${round.errors.length})` : 'Open tracer incidents'}
+                    </span>
+                    {round.errors.length > 0 ? (
+                      round.errors.map((err) => (
                         <InlineError key={err.id} error={err} />
-                      ))}
-                    </div>
-                  )}
+                      ))
+                    ) : (
+                      <div className="flex items-center gap-2 rounded-lg bg-green-50/60 px-3 py-2 text-xs text-green-700">
+                        <CheckCircle2 size={12} className="flex-shrink-0" />
+                        No open shot-tracking incidents are tied to this round right now.
+                      </div>
+                    )}
+                  </div>
 
                   {/* Meta info */}
                   <div className="flex items-center gap-4 mt-3 pt-3 border-t border-warm-200/30 text-[11px] text-warm-400">
@@ -599,8 +609,7 @@ function StatusBadge({ status, stuck }: { status: string; stuck: boolean }) {
 // INLINE ERROR
 // ============================================================================
 
-function InlineError({ error }: { error: TracerErrorLog }) {
-  const sev = error.severity || 'error';
+function InlineError({ error }: { error: TracerIncident }) {
   const badgeColors: Record<string, string> = {
     critical: 'bg-red-100 text-red-800',
     error: 'bg-red-50 text-red-700',
@@ -609,17 +618,23 @@ function InlineError({ error }: { error: TracerErrorLog }) {
   };
 
   return (
-    <div className="flex items-start gap-2 text-xs text-red-600 bg-red-50/50 px-3 py-2 rounded-lg">
+    <div className="flex items-start gap-2 rounded-lg bg-red-50/50 px-3 py-2 text-xs text-red-600">
       <span className={cn(
         'font-bold uppercase text-[9px] px-1.5 py-0.5 rounded flex-shrink-0 mt-px',
-        badgeColors[sev] || 'bg-warm-100 text-warm-600'
+        badgeColors[error.severity] || 'bg-warm-100 text-warm-600'
       )}>
-        {sev}
+        {error.severity}
       </span>
-      <span className="min-w-0 break-words">{error.message}</span>
-      {error.created_at && (
-        <span className="text-[10px] text-warm-400 flex-shrink-0 whitespace-nowrap ml-auto">
-          {timeAgo(error.created_at)}
+      <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md bg-white/70 text-red-500">
+        <ShieldAlert size={11} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="break-words font-medium text-warm-800">{error.title}</p>
+        <p className="mt-0.5 break-words text-warm-600">{error.summary}</p>
+      </div>
+      {error.lastSeen && (
+        <span className="ml-auto flex-shrink-0 whitespace-nowrap text-[10px] text-warm-400">
+          {timeAgo(error.lastSeen)}
         </span>
       )}
     </div>

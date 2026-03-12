@@ -1,250 +1,441 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { cn } from '@/lib/utils';
-import { User, Target, Sparkles } from 'lucide-react';
+import {
+  Activity,
+  AlertTriangle,
+  Bot,
+  CheckCircle2,
+  Clock3,
+  Route,
+  Shield,
+  Target,
+  User,
+  Wrench,
+} from 'lucide-react';
 import { timeAgo } from './admin-utils';
+import { useAdminRealtimeContext } from './AdminRealtimeProvider';
 
 interface Props {
   activity: AdminDashboardData['activity'];
 }
 
-type ViewMode = 'sections' | 'timeline';
+type FeedFilter = 'all' | 'users' | 'golf' | 'ops' | 'issues';
+type TimelineKind = 'signup' | 'round' | 'insight' | 'admin_event' | 'audit';
 
 interface TimelineItem {
   id: string;
-  type: 'signup' | 'round' | 'insight';
+  kind: TimelineKind;
+  filter: FeedFilter;
   title: string;
   detail: string | null;
   timestamp: string | null;
+  badge: string;
+  live: boolean;
+  severity: 'info' | 'warning' | 'error' | 'critical' | null;
 }
 
-const typeIcons = {
-  signup: <User size={12} />,
-  round: <Target size={12} />,
-  insight: <Sparkles size={12} />,
+const itemStyles: Record<TimelineKind, { icon: ReactNode; chip: string; rail: string }> = {
+  signup: {
+    icon: <User size={13} />,
+    chip: 'bg-blue-100 text-blue-700',
+    rail: 'bg-blue-400',
+  },
+  round: {
+    icon: <Target size={13} />,
+    chip: 'bg-primary-100 text-primary-700',
+    rail: 'bg-primary-400',
+  },
+  insight: {
+    icon: <Bot size={13} />,
+    chip: 'bg-violet-100 text-violet-700',
+    rail: 'bg-violet-400',
+  },
+  admin_event: {
+    icon: <Shield size={13} />,
+    chip: 'bg-amber-100 text-amber-700',
+    rail: 'bg-amber-400',
+  },
+  audit: {
+    icon: <Wrench size={13} />,
+    chip: 'bg-slate-100 text-slate-700',
+    rail: 'bg-slate-400',
+  },
 };
 
-const typeColors = {
-  signup: 'bg-blue-100 text-blue-600',
-  round: 'bg-primary-100 text-primary-700',
-  insight: 'bg-purple-100 text-purple-600',
+const severityPills: Record<NonNullable<TimelineItem['severity']>, string> = {
+  info: 'bg-blue-50 text-blue-700',
+  warning: 'bg-amber-50 text-amber-700',
+  error: 'bg-rose-50 text-rose-700',
+  critical: 'bg-red-50 text-red-700',
 };
+
+function formatScore(totalScore: number | null, totalToPar: number | null): string | null {
+  if (totalScore == null && totalToPar == null) return null;
+  const score = totalScore != null ? `${totalScore}` : 'Round';
+  if (totalToPar == null) return score;
+  if (totalToPar === 0) return `${score} (E)`;
+  return `${score} (${totalToPar > 0 ? `+${totalToPar}` : totalToPar})`;
+}
+
+function formatAdminEventDetail(event: Props['activity']['recentAdminEvents'][number]): string | null {
+  const parts = [
+    event.userEmail,
+    event.url ? event.url.replace(/\/:id/g, '/…') : null,
+    event.message,
+  ].filter(Boolean);
+
+  return parts.length > 0 ? parts.join(' • ') : null;
+}
+
+function formatAuditDetail(event: Props['activity']['recentAuditEvents'][number]): string | null {
+  const parts = [
+    event.userEmail,
+    event.tableName,
+    event.recordId,
+  ].filter(Boolean);
+
+  return parts.length > 0 ? parts.join(' • ') : null;
+}
+
+function mapRealtimeEventToTimelineItem(
+  event: ReturnType<typeof useAdminRealtimeContext>['realtime']['events'][number],
+): TimelineItem | null {
+  if (['signup', 'round_submitted', 'ai_generation'].includes(event.event_type)) {
+    return null;
+  }
+
+  const filter: FeedFilter = event.event_type === 'error' || event.event_type === 'client_error' || event.event_type === 'api_error'
+    ? 'issues'
+    : event.event_type === 'login'
+      ? 'users'
+      : 'ops';
+
+  return {
+    id: `live-${event.id}`,
+    kind: 'admin_event',
+    filter,
+    title: event.title,
+    detail: [event.user_email, event.url, event.message].filter(Boolean).join(' • ') || null,
+    timestamp: event.created_at,
+    badge: filter === 'issues' ? 'Live issue' : 'Live event',
+    live: true,
+    severity: event.severity,
+  };
+}
 
 export function ActivityFeed({ activity }: Props) {
-  const [viewMode, setViewMode] = useState<ViewMode>('timeline');
+  const [filter, setFilter] = useState<FeedFilter>('all');
+  const { realtime } = useAdminRealtimeContext();
 
   const timelineItems = useMemo<TimelineItem[]>(() => {
-    const items: TimelineItem[] = [];
+    const items = new Map<string, TimelineItem>();
 
-    for (const u of activity.recentSignups) {
-      items.push({
-        id: `signup-${u.id}`,
-        type: 'signup',
-        title: u.email,
-        detail: u.role,
-        timestamp: u.created_at,
+    for (const event of realtime.events) {
+      const item = mapRealtimeEventToTimelineItem(event);
+      if (!item) continue;
+      items.set(item.id, item);
+    }
+
+    for (const signup of activity.recentSignups) {
+      items.set(`signup-${signup.id}`, {
+        id: `signup-${signup.id}`,
+        kind: 'signup',
+        filter: 'users',
+        title: signup.email,
+        detail: signup.role ? `${signup.role} account created` : 'New account created',
+        timestamp: signup.created_at,
+        badge: 'Signup',
+        live: false,
+        severity: null,
       });
     }
 
-    for (const r of activity.recentRounds) {
-      const scoreStr = r.total_score != null ? `${r.total_score}` : '';
-      const parStr = r.total_to_par != null
-        ? r.total_to_par > 0 ? ` (+${r.total_to_par})` : r.total_to_par === 0 ? ' (E)' : ` (${r.total_to_par})`
-        : '';
-      items.push({
-        id: `round-${r.id}`,
-        type: 'round',
-        title: r.player_name,
-        detail: `${scoreStr}${parStr}${r.course_name ? ` at ${r.course_name}` : ''}`,
-        timestamp: r.created_at,
+    for (const round of activity.recentRounds) {
+      items.set(`round-${round.id}`, {
+        id: `round-${round.id}`,
+        kind: 'round',
+        filter: 'golf',
+        title: `${round.player_name} submitted a round`,
+        detail: [
+          formatScore(round.total_score, round.total_to_par),
+          round.course_name ? `at ${round.course_name}` : null,
+          round.round_type,
+        ].filter(Boolean).join(' • ') || null,
+        timestamp: round.created_at,
+        badge: 'Round',
+        live: false,
+        severity: null,
       });
     }
 
-    for (const ins of activity.recentInsights) {
-      items.push({
-        id: `insight-${ins.id}`,
-        type: 'insight',
-        title: ins.insight_type || 'Insight',
-        detail: ins.insights_generated != null ? `${ins.insights_generated} generated` : null,
-        timestamp: ins.created_at,
+    for (const insight of activity.recentInsights) {
+      items.set(`insight-${insight.id}`, {
+        id: `insight-${insight.id}`,
+        kind: 'insight',
+        filter: 'golf',
+        title: insight.insight_type || 'CoachHelm insight generated',
+        detail: insight.insights_generated != null ? `${insight.insights_generated} insights generated` : 'AI output created',
+        timestamp: insight.created_at,
+        badge: 'AI',
+        live: false,
+        severity: null,
       });
     }
 
-    return items.sort((a, b) => {
+    for (const event of activity.recentAdminEvents) {
+      if (['signup', 'round_submitted', 'ai_generation'].includes(event.eventType)) continue;
+      const itemFilter: FeedFilter = event.eventType === 'error' || event.eventType === 'client_error' || event.eventType === 'api_error'
+        ? 'issues'
+        : event.eventType === 'login'
+          ? 'users'
+          : 'ops';
+
+      const key = `live-${event.id}`;
+      if (items.has(key)) continue;
+
+      items.set(key, {
+        id: key,
+        kind: 'admin_event',
+        filter: itemFilter,
+        title: event.title,
+        detail: formatAdminEventDetail(event),
+        timestamp: event.createdAt,
+        badge: itemFilter === 'issues' ? 'Issue' : event.eventType.replace(/_/g, ' '),
+        live: false,
+        severity: (event.severity === 'info' || event.severity === 'warning' || event.severity === 'error' || event.severity === 'critical')
+          ? event.severity
+          : null,
+      });
+    }
+
+    for (const event of activity.recentAuditEvents) {
+      items.set(`audit-${event.id}`, {
+        id: `audit-${event.id}`,
+        kind: 'audit',
+        filter: 'ops',
+        title: event.action.replace(/_/g, ' '),
+        detail: formatAuditDetail(event),
+        timestamp: event.createdAt,
+        badge: 'Audit',
+        live: false,
+        severity: null,
+      });
+    }
+
+    return Array.from(items.values()).sort((a, b) => {
       if (!a.timestamp) return 1;
       if (!b.timestamp) return -1;
       return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
     });
-  }, [activity]);
+  }, [activity, realtime.events]);
+
+  const visibleItems = useMemo(
+    () => timelineItems.filter((item) => filter === 'all' || item.filter === filter),
+    [timelineItems, filter],
+  );
+
+  const counts = useMemo(() => ({
+    users: timelineItems.filter((item) => item.filter === 'users').length,
+    golf: timelineItems.filter((item) => item.filter === 'golf').length,
+    ops: timelineItems.filter((item) => item.filter === 'ops').length,
+    issues: timelineItems.filter((item) => item.filter === 'issues').length,
+    live: timelineItems.filter((item) => item.live).length,
+  }), [timelineItems]);
+
+  const leadItem = visibleItems[0] ?? null;
 
   return (
-    <div className="glass-standard rounded-2xl p-6 transition-all duration-200 hover:bg-white/80 active:bg-white/90 hover:shadow-card-hover">
-      <div className="flex items-center justify-between mb-5">
-        <h3 className="text-lg font-semibold text-warm-900">Live Activity Feed</h3>
-        <div className="flex gap-1 bg-white/50 rounded-lg p-0.5">
-          <button
-            onClick={() => setViewMode('timeline')}
-            className={cn(
-              'px-2.5 py-1 text-xs font-medium rounded-md transition-all',
-              viewMode === 'timeline' ? 'bg-white shadow-sm text-warm-800' : 'text-warm-400 hover:text-warm-600'
-            )}
-          >
-            Timeline
-          </button>
-          <button
-            onClick={() => setViewMode('sections')}
-            className={cn(
-              'px-2.5 py-1 text-xs font-medium rounded-md transition-all',
-              viewMode === 'sections' ? 'bg-white shadow-sm text-warm-800' : 'text-warm-400 hover:text-warm-600'
-            )}
-          >
-            By Type
-          </button>
+    <div className="glass-standard rounded-2xl p-5 md:p-6">
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary-50 text-primary-700">
+              <Activity size={18} />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-warm-900">Live Activity Feed</h3>
+              <p className="text-sm text-warm-500">
+                Signups, round submissions, CoachHelm activity, audit actions, and live operational events in one stream.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <span className={cn(
+            'inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium',
+            realtime.isConnected
+              ? 'border-primary-200 bg-primary-50 text-primary-700'
+              : 'border-amber-200 bg-amber-50 text-amber-700'
+          )}>
+            <span className={cn(
+              'h-2 w-2 rounded-full',
+              realtime.isConnected ? 'bg-primary-500' : 'bg-amber-500'
+            )} />
+            {realtime.isConnected ? 'Realtime connected' : 'Realtime reconnecting'}
+          </span>
         </div>
       </div>
 
-      {viewMode === 'timeline' ? (
-        <div className="space-y-0">
-          {timelineItems.slice(0, 15).map((item, i) => (
-            <div
-              key={item.id}
-              className="flex items-start gap-3 py-2 relative"
-            >
-              {/* Timeline line */}
-              {i < Math.min(timelineItems.length, 15) - 1 && (
-                <div className="absolute left-[11px] top-8 bottom-0 w-px bg-warm-100" />
-              )}
-              {/* Dot */}
-              <div className={cn('w-[22px] h-[22px] rounded-full flex items-center justify-center shrink-0 relative z-10', typeColors[item.type])}>
-                {typeIcons[item.type]}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm text-warm-700 font-medium truncate">{item.title}</p>
-                  <span className="text-label text-warm-400 shrink-0 tabular-nums">{timeAgo(item.timestamp)}</span>
-                </div>
-                {item.detail && (
-                  <p className="text-xs text-warm-400 truncate mt-0.5">{item.detail}</p>
+      <div className="mt-4 grid grid-cols-2 gap-3 xl:grid-cols-5">
+        <div className="rounded-2xl border border-white/35 bg-white/60 px-4 py-3">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">Stream items</p>
+          <p className="mt-1 text-xl font-semibold tabular-nums text-warm-900">{timelineItems.length}</p>
+          <p className="mt-0.5 text-xs text-warm-500">last 20 per source</p>
+        </div>
+        <div className="rounded-2xl border border-white/35 bg-white/60 px-4 py-3">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">Live now</p>
+          <p className="mt-1 text-xl font-semibold tabular-nums text-warm-900">{counts.live}</p>
+          <p className="mt-0.5 text-xs text-warm-500">realtime events in memory</p>
+        </div>
+        <div className="rounded-2xl border border-white/35 bg-white/60 px-4 py-3">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">Users</p>
+          <p className="mt-1 text-xl font-semibold tabular-nums text-warm-900">{counts.users}</p>
+          <p className="mt-0.5 text-xs text-warm-500">signups and login activity</p>
+        </div>
+        <div className="rounded-2xl border border-white/35 bg-white/60 px-4 py-3">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">Golf</p>
+          <p className="mt-1 text-xl font-semibold tabular-nums text-warm-900">{counts.golf}</p>
+          <p className="mt-0.5 text-xs text-warm-500">rounds and AI output</p>
+        </div>
+        <div className="rounded-2xl border border-white/35 bg-white/60 px-4 py-3">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">Ops / issues</p>
+          <p className="mt-1 text-xl font-semibold tabular-nums text-warm-900">{counts.ops + counts.issues}</p>
+          <p className="mt-0.5 text-xs text-warm-500">{counts.issues} issue signals</p>
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-4 xl:grid-cols-[0.8fr_1.2fr]">
+        <div className="rounded-2xl border border-white/35 bg-white/55 p-4">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-warm-500">Focus</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {([
+              { value: 'all', label: 'All', count: timelineItems.length },
+              { value: 'users', label: 'Users', count: counts.users },
+              { value: 'golf', label: 'Golf', count: counts.golf },
+              { value: 'ops', label: 'Ops', count: counts.ops },
+              { value: 'issues', label: 'Issues', count: counts.issues },
+            ] as { value: FeedFilter; label: string; count: number }[]).map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setFilter(option.value)}
+                className={cn(
+                  'inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs transition-colors',
+                  filter === option.value
+                    ? 'border-warm-300 bg-white text-warm-900 shadow-sm'
+                    : 'border-white/30 bg-white/50 text-warm-500 hover:bg-white/70'
                 )}
+              >
+                <span>{option.label}</span>
+                <span className="rounded-full bg-warm-100 px-2 py-0.5 text-[11px] font-semibold text-warm-600 tabular-nums">
+                  {option.count}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {leadItem ? (
+            <div className="mt-4 rounded-2xl border border-white/35 bg-white/70 p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-warm-500">Lead item</p>
+              <p className="mt-2 text-base font-semibold text-warm-900">{leadItem.title}</p>
+              <p className="mt-1 text-sm leading-6 text-warm-600">{leadItem.detail ?? 'No additional detail captured.'}</p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <span className={cn('inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium', itemStyles[leadItem.kind].chip)}>
+                  {leadItem.badge}
+                </span>
+                {leadItem.severity && (
+                  <span className={cn('inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium', severityPills[leadItem.severity])}>
+                    {leadItem.severity}
+                  </span>
+                )}
+                {leadItem.live && (
+                  <span className="inline-flex items-center rounded-full bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700">
+                    live
+                  </span>
+                )}
+                <span className="text-xs text-warm-400">{timeAgo(leadItem.timestamp)}</span>
               </div>
             </div>
-          ))}
-          {timelineItems.length === 0 && (
-            <p className="text-sm text-warm-400 py-4 text-center">No recent activity</p>
+          ) : (
+            <div className="mt-4 rounded-2xl border border-primary-100 bg-primary-50/50 px-4 py-6 text-center">
+              <CheckCircle2 size={18} className="mx-auto text-primary-600" />
+              <p className="mt-2 text-sm font-medium text-primary-700">No recent activity captured</p>
+            </div>
           )}
         </div>
-      ) : (
-        <>
-          <div className="mb-5">
-            <h4 className="text-sm font-medium text-warm-500 mb-3 flex items-center gap-1.5">
-              <User size={14} />
-              Latest Signups
-            </h4>
-            {activity.recentSignups.length === 0 ? (
-              <p className="text-sm text-warm-400">No recent signups</p>
-            ) : (
-              <div className="space-y-2">
-                {activity.recentSignups.map((u) => (
-                  <div key={u.id} className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-7 h-7 rounded-full bg-primary-100 flex items-center justify-center shrink-0">
-                        <span className="text-xs font-medium text-primary-700">
-                          {u.email.charAt(0).toUpperCase()}
-                        </span>
+
+        <div className="rounded-2xl border border-white/35 bg-white/55 p-4">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-warm-500">Timeline</p>
+            <p className="text-xs text-warm-400">{visibleItems.length} visible items</p>
+          </div>
+
+          {visibleItems.length === 0 ? (
+            <div className="mt-4 rounded-2xl bg-white/70 px-4 py-8 text-center text-sm text-warm-500">
+              No activity in this filter.
+            </div>
+          ) : (
+            <div className="mt-4 max-h-[560px] space-y-0 overflow-y-auto pr-1">
+              {visibleItems.slice(0, 28).map((item, index) => {
+                const itemStyle = itemStyles[item.kind];
+                const showLine = index < Math.min(visibleItems.length, 28) - 1;
+
+                return (
+                  <div key={item.id} className="relative flex items-start gap-3 py-3">
+                    {showLine && (
+                      <div className="absolute left-[15px] top-9 bottom-0 w-px bg-warm-100" />
+                    )}
+
+                    <div className={cn(
+                      'relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl',
+                      itemStyle.chip
+                    )}>
+                      {itemStyle.icon}
+                    </div>
+
+                    <div className={cn('absolute left-[14px] top-8 h-3 w-1 rounded-full', itemStyle.rail)} />
+
+                    <div className="min-w-0 flex-1 rounded-2xl border border-white/35 bg-white/72 px-4 py-3">
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="text-sm font-semibold text-warm-900">{item.title}</p>
+                            <span className={cn('inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]', itemStyle.chip)}>
+                              {item.badge}
+                            </span>
+                            {item.severity && (
+                              <span className={cn('inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]', severityPills[item.severity])}>
+                                {item.severity}
+                              </span>
+                            )}
+                            {item.live && (
+                              <span className="inline-flex items-center rounded-full bg-primary-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-700">
+                                live
+                              </span>
+                            )}
+                          </div>
+                          {item.detail && (
+                            <p className="mt-1 text-sm leading-6 text-warm-600">{item.detail}</p>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-1 text-xs text-warm-400 tabular-nums">
+                          {item.filter === 'issues' ? <AlertTriangle size={12} /> : item.filter === 'ops' ? <Route size={12} /> : <Clock3 size={12} />}
+                          <span>{timeAgo(item.timestamp)}</span>
+                        </div>
                       </div>
-                      <span className="text-warm-700 truncate">{u.email}</span>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0 ml-2">
-                      {u.role && (
-                        <span className={cn(
-                          'text-xs px-1.5 py-0.5 rounded',
-                          u.role === 'coach' ? 'bg-blue-50 text-blue-600' :
-                          u.role === 'player' ? 'bg-primary-50 text-primary-700' :
-                          'bg-warm-100 text-warm-500'
-                        )}>
-                          {u.role}
-                        </span>
-                      )}
-                      <span className="text-xs text-warm-400">{timeAgo(u.created_at)}</span>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="mb-5">
-            <h4 className="text-sm font-medium text-warm-500 mb-3 flex items-center gap-1.5">
-              <Target size={14} />
-              Latest Rounds
-            </h4>
-            {activity.recentRounds.length === 0 ? (
-              <p className="text-sm text-warm-400">No recent rounds</p>
-            ) : (
-              <div className="space-y-2">
-                {activity.recentRounds.map((r) => (
-                  <div key={r.id} className="flex items-center justify-between text-sm">
-                    <div className="min-w-0">
-                      <span className="text-warm-700 font-medium">{r.player_name}</span>
-                      {r.course_name && (
-                        <span className="text-warm-400 ml-1.5 text-xs">at {r.course_name}</span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0 ml-2">
-                      {r.total_score != null && (
-                        <span className="text-sm font-semibold text-warm-700 tabular-nums">
-                          {r.total_score}
-                        </span>
-                      )}
-                      {r.total_to_par != null && (
-                        <span className={cn(
-                          'text-xs font-medium tabular-nums px-1.5 py-0.5 rounded',
-                          (r.total_to_par as number) < 0 ? 'bg-red-50 text-red-600' :
-                          (r.total_to_par as number) === 0 ? 'bg-warm-100 text-warm-600' :
-                          'bg-blue-50 text-blue-600'
-                        )}>
-                          {(r.total_to_par as number) > 0 ? `+${r.total_to_par}` : (r.total_to_par as number) === 0 ? 'E' : r.total_to_par}
-                        </span>
-                      )}
-                      <span className="text-xs text-warm-400">{timeAgo(r.created_at)}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div>
-            <h4 className="text-sm font-medium text-warm-500 mb-3 flex items-center gap-1.5">
-              <Sparkles size={14} />
-              Latest AI Insights
-            </h4>
-            {activity.recentInsights.length === 0 ? (
-              <p className="text-sm text-warm-400">No recent insights</p>
-            ) : (
-              <div className="space-y-2">
-                {activity.recentInsights.map((ins) => (
-                  <div key={ins.id} className="flex items-center justify-between text-sm">
-                    <div className="min-w-0">
-                      <span className="text-warm-700">{ins.insight_type || 'Insight'}</span>
-                      {ins.insights_generated != null && (
-                        <span className="text-warm-400 ml-1.5 text-xs">
-                          ({ins.insights_generated} generated)
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-xs text-warm-400 shrink-0 ml-2">
-                      {timeAgo(ins.created_at)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </>
-      )}
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

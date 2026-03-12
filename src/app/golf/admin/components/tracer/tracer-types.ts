@@ -3,7 +3,7 @@ import type {
   TracerPlayerSummary,
   TracerRoundDetail,
   TracerStatsAccuracy,
-  TracerErrorLog,
+  TracerIncident,
   TracerActivityEvent,
 } from '@/app/golf/actions/admin-tracer-data';
 
@@ -13,7 +13,7 @@ export type {
   TracerPlayerSummary,
   TracerRoundDetail,
   TracerStatsAccuracy,
-  TracerErrorLog,
+  TracerIncident,
   TracerActivityEvent,
 };
 
@@ -78,7 +78,7 @@ export interface RoundDiagnosticData {
   round: TracerRoundDetail;
   holes: HoleDiagnostic[];
   shots: ShotDiagnostic[];
-  errors: TracerErrorLog[];
+  errors: TracerIncident[];
   playerName: string;
 }
 

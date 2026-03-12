@@ -99,7 +99,8 @@ export function useAdminRealtime(options: UseAdminRealtimeOptions = {}): UseAdmi
   
   const channelRef = useRef<RealtimeChannel | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const supabase = createClient();
+  const isConnectedRef = useRef(false);
+  const [supabase] = useState(() => createClient());
 
   // Calculate event counts by severity
   const counts = {
@@ -151,127 +152,144 @@ export function useAdminRealtime(options: UseAdminRealtimeOptions = {}): UseAdmi
   // Connect to realtime channel
   const connect = useCallback(() => {
     try {
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+
       // Clean up existing channel
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current).catch(() => {
           // Ignore cleanup errors
         });
+        channelRef.current = null;
       }
 
       setConnectionState('connecting');
       setError(null);
+      setIsConnected(false);
+      isConnectedRef.current = false;
 
-    // Create channel for admin_events table (primary) + fallback to admin_client_errors
-    const channel = supabase
-      .channel('admin-realtime-events', {
-        config: {
-          presence: { key: 'admin-dashboard' },
-        },
-      })
-      // Listen for admin_events if table exists
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'admin_events',
-        },
-        handleNewEvent
-      )
-      // Also listen for client errors as fallback
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'admin_client_errors',
-        },
-        (payload) => {
-          // Transform client error to AdminEvent format
-          const clientError = payload.new as {
-            id: string;
-            error_message: string;
-            error_stack: string | null;
-            page_url: string | null;
-            user_id: string | null;
-            user_agent: string | null;
-            metadata: Record<string, unknown> | null;
-            created_at: string;
-          };
+      // Create channel for admin_events table (primary) + fallback to admin_client_errors
+      const channel = supabase
+        .channel('admin-realtime-events', {
+          config: {
+            presence: { key: 'admin-dashboard' },
+          },
+        })
+        // Listen for admin_events if table exists
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'admin_events',
+          },
+          handleNewEvent
+        )
+        // Also listen for client errors as fallback
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'admin_client_errors',
+          },
+          (payload) => {
+            // Transform client error to AdminEvent format
+            const clientError = payload.new as {
+              id: string;
+              error_message: string;
+              error_stack: string | null;
+              page_url: string | null;
+              user_id: string | null;
+              user_agent: string | null;
+              metadata: Record<string, unknown> | null;
+              created_at: string;
+            };
 
-          const event: AdminEvent = {
-            id: clientError.id,
-            event_type: 'client_error',
-            severity: 'error',
-            title: 'Client Error',
-            message: clientError.error_message,
-            metadata: clientError.metadata,
-            user_id: clientError.user_id,
-            user_email: null,
-            url: clientError.page_url,
-            stack_trace: clientError.error_stack,
-            browser_info: clientError.user_agent ? { userAgent: clientError.user_agent } : null,
-            resolved: false,
-            resolved_at: null,
-            resolved_by: null,
-            created_at: clientError.created_at,
-          };
+            const event: AdminEvent = {
+              id: clientError.id,
+              event_type: 'client_error',
+              severity: 'error',
+              title: 'Client Error',
+              message: clientError.error_message,
+              metadata: clientError.metadata,
+              user_id: clientError.user_id,
+              user_email: null,
+              url: clientError.page_url,
+              stack_trace: clientError.error_stack,
+              browser_info: clientError.user_agent ? { userAgent: clientError.user_agent } : null,
+              resolved: false,
+              resolved_at: null,
+              resolved_by: null,
+              created_at: clientError.created_at,
+            };
 
-          if (shouldIncludeEvent(event)) {
-            setEvents(prev => [event, ...prev].slice(0, maxEvents));
+            if (shouldIncludeEvent(event)) {
+              setEvents(prev => [event, ...prev].slice(0, maxEvents));
+            }
           }
-        }
-      )
-      // Listen for API errors
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'admin_api_perf_log',
-          filter: 'status=eq.error',
-        },
-        (payload) => {
-          const apiError = payload.new as {
-            id: string;
-            action_name: string;
-            error_message: string | null;
-            duration_ms: number;
-            user_id: string | null;
-            metadata: Record<string, unknown> | null;
-            created_at: string;
-          };
+        )
+        // Listen for API errors
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'admin_api_perf_log',
+            filter: 'status=eq.error',
+          },
+          (payload) => {
+            const apiError = payload.new as {
+              id: string;
+              action_name: string;
+              error_message: string | null;
+              duration_ms: number;
+              user_id: string | null;
+              metadata: Record<string, unknown> | null;
+              created_at: string;
+            };
 
-          const event: AdminEvent = {
-            id: apiError.id,
-            event_type: 'api_error',
-            severity: 'error',
-            title: `API Error: ${apiError.action_name}`,
-            message: apiError.error_message,
-            metadata: { ...apiError.metadata, duration_ms: apiError.duration_ms },
-            user_id: apiError.user_id,
-            user_email: null,
-            url: null,
-            stack_trace: null,
-            browser_info: null,
-            resolved: false,
-            resolved_at: null,
-            resolved_by: null,
-            created_at: apiError.created_at,
-          };
+            const event: AdminEvent = {
+              id: apiError.id,
+              event_type: 'api_error',
+              severity: 'error',
+              title: `API Error: ${apiError.action_name}`,
+              message: apiError.error_message,
+              metadata: { ...apiError.metadata, duration_ms: apiError.duration_ms },
+              user_id: apiError.user_id,
+              user_email: null,
+              url: null,
+              stack_trace: null,
+              browser_info: null,
+              resolved: false,
+              resolved_at: null,
+              resolved_by: null,
+              created_at: apiError.created_at,
+            };
 
-          if (shouldIncludeEvent(event)) {
-            setEvents(prev => [event, ...prev].slice(0, maxEvents));
+            if (shouldIncludeEvent(event)) {
+              setEvents(prev => [event, ...prev].slice(0, maxEvents));
+            }
           }
+        );
+
+      channelRef.current = channel;
+
+      channel.subscribe((status) => {
+        if (channelRef.current !== channel) {
+          return;
         }
-      )
-      .subscribe((status) => {
+
         if (status === 'SUBSCRIBED') {
           setIsConnected(true);
+          isConnectedRef.current = true;
           setConnectionState('connected');
           setError(null);
         } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
           setIsConnected(false);
+          isConnectedRef.current = false;
           setConnectionState(status === 'CHANNEL_ERROR' ? 'error' : 'disconnected');
           
           // Auto-reconnect on error
@@ -282,6 +300,7 @@ export function useAdminRealtime(options: UseAdminRealtimeOptions = {}): UseAdmi
           }
         } else if (status === 'TIMED_OUT') {
           setIsConnected(false);
+          isConnectedRef.current = false;
           setConnectionState('error');
           setError(new Error('Connection timed out'));
           
@@ -293,12 +312,12 @@ export function useAdminRealtime(options: UseAdminRealtimeOptions = {}): UseAdmi
         }
       });
 
-      channelRef.current = channel;
     } catch (err) {
       console.error('Failed to connect to realtime channel:', err);
       setConnectionState('error');
       setError(err instanceof Error ? err : new Error('Failed to connect'));
       setIsConnected(false);
+      isConnectedRef.current = false;
     }
   }, [supabase, handleNewEvent, shouldIncludeEvent, maxEvents, autoReconnect]);
 
@@ -316,7 +335,7 @@ export function useAdminRealtime(options: UseAdminRealtimeOptions = {}): UseAdmi
 
     // Handle visibility change - reconnect when tab becomes visible
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && !isConnected) {
+      if (document.visibilityState === 'visible' && !isConnectedRef.current) {
         reconnect();
       }
     };
@@ -332,9 +351,10 @@ export function useAdminRealtime(options: UseAdminRealtimeOptions = {}): UseAdmi
       
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
       }
     };
-  }, [connect, reconnect, isConnected, supabase]);
+  }, [connect, reconnect, supabase]);
 
   return {
     events,

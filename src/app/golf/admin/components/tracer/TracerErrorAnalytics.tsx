@@ -1,7 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useTransition } from 'react';
 import { cn } from '@/lib/utils';
+import { resolveDashboardIncident } from '@/app/golf/actions/admin-data';
 import {
   AlertTriangle,
   Check,
@@ -10,69 +11,27 @@ import {
   Clipboard,
   Layers3,
   Route,
+  RotateCcw,
   ShieldAlert,
   User,
 } from 'lucide-react';
 import { AdminAreaChart, AdminDonutChart, AdminProgressBar } from '../AdminChart';
 import { timeAgo } from '../admin-utils';
-import type { ErrorGroup, AffectedPlayer, DailyCount, TracerErrorLog } from './tracer-types';
+import type { ErrorGroup, AffectedPlayer, DailyCount, TracerIncident } from './tracer-types';
 
 interface TracerErrorAnalyticsProps {
   errorGroups: ErrorGroup[];
   affectedPlayers: AffectedPlayer[];
   dailyErrorCounts: DailyCount[];
-  recentErrors: TracerErrorLog[];
+  recentErrors: TracerIncident[];
   totalErrors7d: number;
   criticalErrors7d: number;
+  onIncidentResolved: () => Promise<void>;
 }
 
 type TimeRange = '7d' | '14d' | '30d';
 type FeedMode = 'all' | 'critical' | 'recent';
-
-interface TracerErrorContext {
-  action: string | null;
-  route: string | null;
-  url: string | null;
-  featureArea: string | null;
-  requestId: string | null;
-  roundId: string | null;
-  playerId: string | null;
-  userId: string | null;
-  userEmail: string | null;
-  errorCode: string | null;
-  errorHint: string | null;
-  errorDetails: string | null;
-  source: string | null;
-}
-
-interface TracerIncident {
-  id: string;
-  severity: 'critical' | 'error' | 'warning' | 'info';
-  title: string;
-  summary: string;
-  likelyCause: string;
-  operatorImpact: string;
-  nextStep: string;
-  featureArea: string;
-  action: string | null;
-  route: string | null;
-  url: string | null;
-  requestId: string | null;
-  errorCode: string | null;
-  errorHint: string | null;
-  errorDetails: string | null;
-  source: string | null;
-  firstSeen: string;
-  lastSeen: string;
-  occurrences: number;
-  sampleMessage: string;
-  sampleStack: string | null;
-  sampleContext: Record<string, unknown> | null;
-  roundIds: string[];
-  playerIds: string[];
-  userEmails: string[];
-  copySummary: string;
-}
+type QueueTab = 'active' | 'resolved';
 
 const GLASS_CARD = cn(
   'bg-white/65 backdrop-blur-[16px] border border-white/30 rounded-2xl',
@@ -119,205 +78,6 @@ const severityDonutColors: Record<TracerIncident['severity'], string> = {
   info: '#3B82F6',
 };
 
-const severityOrder: Record<TracerIncident['severity'], number> = {
-  critical: 0,
-  error: 1,
-  warning: 2,
-  info: 3,
-};
-
-function asObject(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === 'object' && !Array.isArray(value)
-    ? value as Record<string, unknown>
-    : null;
-}
-
-function asString(value: unknown): string | null {
-  return typeof value === 'string' && value.trim().length > 0 ? value : null;
-}
-
-function normalizeSeverity(severity: string | null | undefined): TracerIncident['severity'] {
-  const normalized = severity?.toLowerCase();
-  if (normalized === 'critical' || normalized === 'error' || normalized === 'warning' || normalized === 'info') {
-    return normalized;
-  }
-  return 'error';
-}
-
-function normalizeRoute(url: string | null): string | null {
-  if (!url) return null;
-  try {
-    return new URL(url, 'http://localhost').pathname;
-  } catch {
-    return url;
-  }
-}
-
-function buildTracerContext(rawContext: unknown): TracerErrorContext {
-  const context = asObject(rawContext);
-  return {
-    action: asString(context?.action),
-    route: asString(context?.route),
-    url: asString(context?.url),
-    featureArea: asString(context?.featureArea),
-    requestId: asString(context?.requestId),
-    roundId: asString(context?.roundId),
-    playerId: asString(context?.playerId),
-    userId: asString(context?.userId),
-    userEmail: asString(context?.userEmail),
-    errorCode: asString(context?.errorCode),
-    errorHint: asString(context?.errorHint),
-    errorDetails: asString(context?.errorDetails),
-    source: asString(context?.source),
-  };
-}
-
-function mergeTracerContext(primary: TracerErrorContext, fallback: TracerErrorContext): TracerErrorContext {
-  return {
-    action: primary.action ?? fallback.action,
-    route: primary.route ?? fallback.route,
-    url: primary.url ?? fallback.url,
-    featureArea: primary.featureArea ?? fallback.featureArea,
-    requestId: primary.requestId ?? fallback.requestId,
-    roundId: primary.roundId ?? fallback.roundId,
-    playerId: primary.playerId ?? fallback.playerId,
-    userId: primary.userId ?? fallback.userId,
-    userEmail: primary.userEmail ?? fallback.userEmail,
-    errorCode: primary.errorCode ?? fallback.errorCode,
-    errorHint: primary.errorHint ?? fallback.errorHint,
-    errorDetails: primary.errorDetails ?? fallback.errorDetails,
-    source: primary.source ?? fallback.source,
-  };
-}
-
-function normalizeMessageForKey(message: string): string {
-  return message
-    .toLowerCase()
-    .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '[id]')
-    .replace(/\b\d{4,}\b/g, '[num]')
-    .trim();
-}
-
-function toFeatureAreaLabel(context: TracerErrorContext, error: TracerErrorLog): string {
-  const featureArea = context.featureArea?.toLowerCase() ?? '';
-  const url = normalizeRoute(context.url ?? error.url)?.toLowerCase() ?? '';
-  const action = context.action?.toLowerCase() ?? '';
-  const message = error.message.toLowerCase();
-
-  if (featureArea === 'shot_tracking' || action.includes('round') || message.includes('round')) return 'Shot Tracking';
-  if (featureArea === 'stats_cache' || message.includes('stats cache') || message.includes('strokes gained')) return 'Stats Cache';
-  if (message.includes('continue round')) return 'Continue Round';
-  if (url.includes('/rounds')) return 'Rounds';
-  if (url.includes('/stats')) return 'Stats';
-  return 'Tracer';
-}
-
-function deriveTracerNarrative(
-  message: string,
-  featureArea: string,
-  action: string | null,
-  errorCode: string | null,
-): Pick<TracerIncident, 'title' | 'summary' | 'likelyCause' | 'operatorImpact' | 'nextStep'> {
-  const normalized = message.toLowerCase();
-
-  if (normalized.includes('stack depth limit exceeded')) {
-    return {
-      title: 'Round submit recursion failure',
-      summary: 'Shot tracking hit PostgreSQL recursion depth during a save or submit path.',
-      likelyCause: 'A round submit function or trigger is re-entering too deeply while trying to repair totals or cache state.',
-      operatorImpact: 'Players can get blocked on submit and may retry the same round multiple times.',
-      nextStep: 'Inspect submit_round_atomic and any post-submit cache triggers for recursive writes.',
-    };
-  }
-
-  if (normalized.includes('created_at') && normalized.includes('ambiguous')) {
-    return {
-      title: 'Stats refresh query is ambiguous',
-      summary: 'A shot-tracking save path reached SQL that references created_at without a qualifying table alias.',
-      likelyCause: 'A joined query in the stats refresh or cache repair path is ordering or filtering on an unqualified created_at column.',
-      operatorImpact: 'Round submit can fail even when the tracked round data itself is valid.',
-      nextStep: 'Review refresh_player_stats_cache and related SQL/RPC functions for unqualified created_at usage.',
-    };
-  }
-
-  if (normalized.includes('putt_details_distance_feet_check')) {
-    return {
-      title: 'Putt distance rejected by constraint',
-      summary: 'Tracer caught a putt detail insert whose distance violated the database range check.',
-      likelyCause: 'The save flow is deriving or converting a putt distance outside the allowed DB bounds.',
-      operatorImpact: 'A player can lose a round submit because one putt detail row is invalid.',
-      nextStep: 'Compare the submitted putt distance with derivePuttDistanceFeet and the DB constraint values.',
-    };
-  }
-
-  if (normalized.includes('approach_miss_details_lie_type_check')) {
-    return {
-      title: 'Approach lie type rejected by constraint',
-      summary: 'Tracer found an approach miss detail row whose lie_type is no longer accepted by the database.',
-      likelyCause: 'The app emitted a lie label that drifted from the current allowed DB enum/constraint values.',
-      operatorImpact: 'Players can see a submit failure on otherwise valid approach data.',
-      nextStep: 'Compare the app lie mapping against the live constraint values for approach_miss_details.',
-    };
-  }
-
-  if (normalized.includes('continue round')) {
-    return {
-      title: 'Continue-round rehydration failed',
-      summary: 'The tracer found a failure while trying to reload an in-progress round for resume.',
-      likelyCause: 'One of the dependent reads for the round, holes, or shot detail records failed.',
-      operatorImpact: 'Users can open the continue-round screen and hit missing data or a broken session.',
-      nextStep: 'Use the round ID below to inspect the round and related shot/detail rows end to end.',
-    };
-  }
-
-  if (
-    normalized.includes('refresh_player_stats_cache')
-    || normalized.includes('stats cache')
-    || normalized.includes('mark_player_stats_stale')
-    || normalized.includes('strokes gained')
-  ) {
-    return {
-      title: 'Post-round cache repair failed',
-      summary: 'A shot-tracking flow completed far enough to trigger cache or strokes-gained repair, and that repair failed.',
-      likelyCause: 'A cache RPC or reconciliation step errored, timed out, or hit stale data.',
-      operatorImpact: 'Round data may exist while derived stats stay stale or wrong.',
-      nextStep: 'Check the cache RPC named below and compare live round totals with golf_player_stats_cache.',
-    };
-  }
-
-  if (action === 'savePartialRound' || normalized.includes('save partial')) {
-    return {
-      title: 'Partial round save failed',
-      summary: 'Tracer captured a failure while the player was still saving an in-progress round.',
-      likelyCause: 'A validation, detail insert, or supporting update failed before the draft state persisted cleanly.',
-      operatorImpact: 'The player can lose progress or see stale in-progress data after a save attempt.',
-      nextStep: 'Inspect the route/action, round ID, and raw context below to find the failing draft save step.',
-    };
-  }
-
-  if (action === 'submitGolfRoundComprehensive' || normalized.includes('round submit')) {
-    return {
-      title: 'Round submit failed',
-      summary: 'Tracer captured a server-side failure in the final shot-tracking submit path.',
-      likelyCause: 'The submit transaction hit a validation failure, DB constraint, trigger issue, or cache repair failure.',
-      operatorImpact: 'A player likely saw the round fail to submit and may retry or abandon the save.',
-      nextStep: 'Start with the raw message, action, round ID, and stack/context in this incident.',
-    };
-  }
-
-  return {
-    title: `${featureArea} tracer incident`,
-    summary: 'Tracer captured a shot-tracking-side error that does not match a specialized diagnosis rule yet.',
-    likelyCause: action
-      ? `The ${action} path threw and logged structured context for review.`
-      : 'A tracer-monitored shot tracking path failed without a more specific pattern match.',
-    operatorImpact: 'Players or staff may have seen a failure or stale data in the tracer-monitored flow.',
-    nextStep: errorCode
-      ? `Review the raw message, error code ${errorCode}, and captured context below.`
-      : 'Review the raw message, captured context, and stack below.',
-  };
-}
-
 function formatTimestamp(dateStr: string | null): string {
   if (!dateStr) return 'Unknown';
   return new Date(dateStr).toLocaleString('en-US', {
@@ -329,8 +89,8 @@ function formatTimestamp(dateStr: string | null): string {
 }
 
 function formatDateLabel(dateStr: string): string {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 function filterByDays(data: DailyCount[], days: number): DailyCount[] {
@@ -383,160 +143,6 @@ function NarrativePanel({ label, body }: { label: string; body: string }) {
   );
 }
 
-function buildCopySummary(incident: TracerIncident): string {
-  return [
-    `Severity: ${incident.severity.toUpperCase()}`,
-    `Title: ${incident.title}`,
-    `Area: ${incident.featureArea}`,
-    `Summary: ${incident.summary}`,
-    `Likely cause: ${incident.likelyCause}`,
-    `Operator impact: ${incident.operatorImpact}`,
-    `Next step: ${incident.nextStep}`,
-    `Occurrences: ${incident.occurrences}`,
-    `First seen: ${incident.firstSeen}`,
-    `Last seen: ${incident.lastSeen}`,
-    incident.action ? `Action: ${incident.action}` : null,
-    incident.route ? `Route: ${incident.route}` : null,
-    incident.url ? `URL: ${incident.url}` : null,
-    incident.errorCode ? `Error code: ${incident.errorCode}` : null,
-    incident.errorHint ? `Hint: ${incident.errorHint}` : null,
-    incident.errorDetails ? `Details: ${incident.errorDetails}` : null,
-    incident.requestId ? `Request ID: ${incident.requestId}` : null,
-    incident.source ? `Trace source: ${incident.source}` : null,
-    incident.roundIds.length > 0 ? `Round IDs: ${incident.roundIds.join(', ')}` : null,
-    incident.playerIds.length > 0 ? `Player IDs: ${incident.playerIds.join(', ')}` : null,
-    incident.userEmails.length > 0 ? `User emails: ${incident.userEmails.join(', ')}` : null,
-    `Raw message: ${incident.sampleMessage}`,
-    incident.sampleContext ? `Context JSON:\n${JSON.stringify(incident.sampleContext, null, 2)}` : null,
-    incident.sampleStack ? `Stack:\n${incident.sampleStack}` : null,
-  ].filter(Boolean).join('\n');
-}
-
-function buildIncidents(recentErrors: TracerErrorLog[]): TracerIncident[] {
-  const groups = new Map<string, {
-    severity: TracerIncident['severity'];
-    latestError: TracerErrorLog;
-    context: TracerErrorContext;
-    sampleContext: Record<string, unknown> | null;
-    firstSeen: string;
-    lastSeen: string;
-    occurrences: number;
-    roundIds: Set<string>;
-    playerIds: Set<string>;
-    userEmails: Set<string>;
-    sampleStack: string | null;
-  }>();
-
-  for (const error of recentErrors) {
-    const context = buildTracerContext(error.context);
-    const route = normalizeRoute(context.route ?? context.url ?? error.url);
-    const key = [
-      normalizeMessageForKey(error.message),
-      context.action ?? '',
-      context.errorCode ?? '',
-      route ?? '',
-    ].join('::');
-
-    const createdAt = error.created_at ?? new Date().toISOString();
-    const severity = normalizeSeverity(error.severity);
-    const existing = groups.get(key);
-
-    if (!existing) {
-      groups.set(key, {
-        severity,
-        latestError: error,
-        context,
-        sampleContext: asObject(error.context),
-        firstSeen: createdAt,
-        lastSeen: createdAt,
-        occurrences: 1,
-        roundIds: new Set(context.roundId ? [context.roundId] : []),
-        playerIds: new Set(context.playerId ? [context.playerId] : []),
-        userEmails: new Set(context.userEmail ? [context.userEmail] : []),
-        sampleStack: error.stack,
-      });
-      continue;
-    }
-
-    existing.occurrences += 1;
-    if (context.roundId) existing.roundIds.add(context.roundId);
-    if (context.playerId) existing.playerIds.add(context.playerId);
-    if (context.userEmail) existing.userEmails.add(context.userEmail);
-    if (error.stack) existing.sampleStack = error.stack;
-    existing.context = mergeTracerContext(existing.context, context);
-    if (!existing.sampleContext && asObject(error.context)) existing.sampleContext = asObject(error.context);
-    if (createdAt < existing.firstSeen) existing.firstSeen = createdAt;
-
-    if (createdAt >= existing.lastSeen) {
-      existing.lastSeen = createdAt;
-      existing.latestError = error;
-      existing.context = mergeTracerContext(context, existing.context);
-      existing.sampleContext = asObject(error.context) ?? existing.sampleContext;
-    }
-
-    if (severityOrder[severity] < severityOrder[existing.severity]) {
-      existing.severity = severity;
-    }
-  }
-
-  return Array.from(groups.entries())
-    .map(([key, group]) => {
-      const featureArea = toFeatureAreaLabel(group.context, group.latestError);
-      const route = normalizeRoute(group.context.route ?? group.context.url ?? group.latestError.url);
-      const narrative = deriveTracerNarrative(
-        group.latestError.message,
-        featureArea,
-        group.context.action,
-        group.context.errorCode,
-      );
-
-      const incident: TracerIncident = {
-        id: key,
-        severity: group.severity,
-        title: narrative.title,
-        summary: narrative.summary,
-        likelyCause: narrative.likelyCause,
-        operatorImpact: narrative.operatorImpact,
-        nextStep: narrative.nextStep,
-        featureArea,
-        action: group.context.action,
-        route,
-        url: group.context.url ?? group.latestError.url,
-        requestId: group.context.requestId,
-        errorCode: group.context.errorCode,
-        errorHint: group.context.errorHint,
-        errorDetails: group.context.errorDetails,
-        source: group.context.source,
-        firstSeen: group.firstSeen,
-        lastSeen: group.lastSeen,
-        occurrences: group.occurrences,
-        sampleMessage: group.latestError.message,
-        sampleStack: group.sampleStack,
-        sampleContext: group.sampleContext,
-        roundIds: Array.from(group.roundIds).slice(0, 6),
-        playerIds: Array.from(group.playerIds).slice(0, 6),
-        userEmails: Array.from(group.userEmails).slice(0, 6),
-        copySummary: '',
-      };
-
-      incident.copySummary = buildCopySummary(incident);
-      return incident;
-    })
-    .sort((a, b) => {
-      const currentA = new Date(a.lastSeen).getTime() >= Date.now() - 24 * 60 * 60 * 1000 ? 0 : 1;
-      const currentB = new Date(b.lastSeen).getTime() >= Date.now() - 24 * 60 * 60 * 1000 ? 0 : 1;
-      if (currentA !== currentB) return currentA - currentB;
-
-      const severityDiff = severityOrder[a.severity] - severityOrder[b.severity];
-      if (severityDiff !== 0) return severityDiff;
-
-      const lastSeenDiff = new Date(b.lastSeen).getTime() - new Date(a.lastSeen).getTime();
-      if (lastSeenDiff !== 0) return lastSeenDiff;
-
-      return b.occurrences - a.occurrences;
-    });
-}
-
 export default function TracerErrorAnalytics({
   errorGroups,
   affectedPlayers,
@@ -544,22 +150,50 @@ export default function TracerErrorAnalytics({
   recentErrors,
   totalErrors7d,
   criticalErrors7d,
+  onIncidentResolved,
 }: TracerErrorAnalyticsProps) {
   const [timeRange, setTimeRange] = useState<TimeRange>('7d');
+  const [queueTab, setQueueTab] = useState<QueueTab>('active');
   const [feedMode, setFeedMode] = useState<FeedMode>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [copyState, setCopyState] = useState<{ target: string; status: 'success' | 'error' } | null>(null);
+  const [resolveState, setResolveState] = useState<{ target: string; status: 'success' | 'error'; message: string } | null>(null);
+  const [pendingIncidentId, setPendingIncidentId] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
 
-  const incidents = useMemo(() => buildIncidents(recentErrors), [recentErrors]);
+  const activeIncidents = useMemo(
+    () => recentErrors.filter((incident) => incident.status === 'open'),
+    [recentErrors]
+  );
+  const resolvedIncidents = useMemo(
+    () => [...recentErrors]
+      .filter((incident) => incident.status === 'resolved')
+      .sort((a, b) => new Date(b.resolvedAt ?? b.lastSeen).getTime() - new Date(a.resolvedAt ?? a.lastSeen).getTime()),
+    [recentErrors]
+  );
+
+  const recentCutoff = Date.now() - 24 * 60 * 60 * 1000;
+  const currentQueueIncidents = queueTab === 'resolved' ? resolvedIncidents : activeIncidents;
+  const recentIncidentCount = useMemo(
+    () => currentQueueIncidents.filter((incident) => {
+      const referenceTime = queueTab === 'resolved' ? (incident.resolvedAt ?? incident.lastSeen) : incident.lastSeen;
+      return new Date(referenceTime).getTime() >= recentCutoff;
+    }).length,
+    [currentQueueIncidents, queueTab, recentCutoff]
+  );
 
   const visibleIncidents = useMemo(() => {
-    const recentCutoff = Date.now() - 24 * 60 * 60 * 1000;
-    return incidents.filter((incident) => {
+    const source = currentQueueIncidents;
+
+    return source.filter((incident) => {
       if (feedMode === 'critical') return incident.severity === 'critical' || incident.severity === 'error';
-      if (feedMode === 'recent') return new Date(incident.lastSeen).getTime() >= recentCutoff;
+      if (feedMode === 'recent') {
+        const referenceTime = queueTab === 'resolved' ? (incident.resolvedAt ?? incident.lastSeen) : incident.lastSeen;
+        return new Date(referenceTime).getTime() >= recentCutoff;
+      }
       return true;
     });
-  }, [feedMode, incidents]);
+  }, [currentQueueIncidents, feedMode, queueTab, recentCutoff]);
 
   const filteredDailyData = useMemo(() => {
     const rangeCfg = TIME_RANGES.find((entry) => entry.label === timeRange);
@@ -579,8 +213,8 @@ export default function TracerErrorAnalytics({
       info: 0,
     };
 
-    for (const error of recentErrors) {
-      counts[normalizeSeverity(error.severity)] += 1;
+    for (const incident of recentErrors) {
+      counts[incident.severity] += incident.occurrences;
     }
 
     return (Object.keys(counts) as TracerIncident['severity'][]).filter((severity) => counts[severity] > 0).map((severity) => ({
@@ -592,13 +226,19 @@ export default function TracerErrorAnalytics({
 
   const topPlayers = useMemo(() => affectedPlayers.slice(0, 5), [affectedPlayers]);
   const maxPlayerErrors = topPlayers.length > 0 ? topPlayers[0]!.errorCount : 1;
-  const recentIncidentCount = incidents.filter((incident) => new Date(incident.lastSeen).getTime() >= Date.now() - 24 * 60 * 60 * 1000).length;
 
   const setCopyFeedback = (target: string, status: 'success' | 'error') => {
     setCopyState({ target, status });
     window.setTimeout(() => {
       setCopyState((current) => (current?.target === target ? null : current));
     }, 2200);
+  };
+
+  const setResolveFeedback = (target: string, status: 'success' | 'error', message: string) => {
+    setResolveState({ target, status, message });
+    window.setTimeout(() => {
+      setResolveState((current) => (current?.target === target ? null : current));
+    }, 3200);
   };
 
   const handleCopy = async (text: string, target: string) => {
@@ -610,8 +250,38 @@ export default function TracerErrorAnalytics({
     }
   };
 
+  const handleResolve = (incident: TracerIncident) => {
+    setPendingIncidentId(incident.id);
+    startTransition(async () => {
+      try {
+        const result = await resolveDashboardIncident({
+          incidentKey: incident.id,
+          title: incident.title,
+          message: incident.sampleMessage,
+          severity: incident.severity,
+          route: incident.route,
+          url: incident.url,
+          action: incident.action,
+          featureArea: incident.featureArea.toLowerCase().replace(/\s+/g, '_'),
+          errorCode: incident.errorCode,
+          source: incident.source,
+        });
+        setResolveFeedback(incident.id, result.success ? 'success' : 'error', result.message);
+        if (result.success) {
+          await onIncidentResolved();
+          setExpandedId((current) => (current === incident.id ? null : current));
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Could not resolve tracer incident.';
+        setResolveFeedback(incident.id, 'error', message);
+      } finally {
+        setPendingIncidentId((current) => (current === incident.id ? null : current));
+      }
+    });
+  };
+
   const visibleFeedSummary = visibleIncidents
-    .map((incident, index) => `Tracer Incident ${index + 1}\n${incident.copySummary}`)
+    .map((incident, index) => `${queueTab === 'resolved' ? 'Resolved' : 'Active'} tracer incident ${index + 1}\n${incident.copySummary}`)
     .join('\n\n====================\n\n');
 
   return (
@@ -624,15 +294,15 @@ export default function TracerErrorAnalytics({
                 <ShieldAlert size={17} className="text-red-600" />
               </div>
               <div>
-                <h3 className="text-base font-semibold text-warm-900">Tracer Error Diagnostics</h3>
-                <p className="text-sm text-warm-500">Grouped, copy-first shot-tracking incidents with raw context and stack trace on demand.</p>
+                <h3 className="text-base font-semibold text-warm-900">Tracer Incident Feed</h3>
+                <p className="text-sm text-warm-500">Shot-tracking-only incidents with explicit cause, fix guidance, copy support, and operator resolution.</p>
               </div>
             </div>
           </div>
 
           <button
             type="button"
-            onClick={() => handleCopy(visibleFeedSummary || 'No tracer incidents in the current filter.', 'feed')}
+            onClick={() => handleCopy(visibleFeedSummary || 'No tracer incidents in the current view.', 'feed')}
             className={cn(
               'inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors',
               copyState?.target === 'feed' && copyState.status === 'success'
@@ -651,18 +321,56 @@ export default function TracerErrorAnalytics({
           </button>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-2 xl:grid-cols-4">
-          <MetaItem label="Raw traces" value={String(recentErrors.length)} />
-          <MetaItem label="Grouped incidents" value={String(incidents.length)} />
-          <MetaItem label="7d error volume" value={`${totalErrors7d} traces`} />
-          <MetaItem label="Hot now" value={`${recentIncidentCount} current / ${criticalErrors7d} critical`} />
+        {resolveState && (
+          <div
+            className={cn(
+              'mt-3 rounded-xl border px-3 py-2 text-sm',
+              resolveState.status === 'success'
+                ? 'border-primary-100 bg-primary-50/70 text-primary-700'
+                : 'border-red-100 bg-red-50/70 text-red-700'
+            )}
+          >
+            {resolveState.message}
+          </div>
+        )}
+
+        <div className="mt-4 grid grid-cols-2 gap-2 xl:grid-cols-5">
+          <MetaItem label="Raw traces" value={String(totalErrors7d)} />
+          <MetaItem label="Active incidents" value={String(activeIncidents.length)} />
+          <MetaItem label="Resolved incidents" value={String(resolvedIncidents.length)} />
+          <MetaItem label="Critical traces" value={String(criticalErrors7d)} />
+          <MetaItem label="Pattern groups" value={String(errorGroups.length)} />
         </div>
 
         <div className="mt-4 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex flex-wrap gap-2">
             {([
-              { value: 'all', label: 'All', count: incidents.length },
-              { value: 'critical', label: 'Critical + error', count: incidents.filter((incident) => incident.severity === 'critical' || incident.severity === 'error').length },
+              { value: 'active', label: 'Active', count: activeIncidents.length },
+              { value: 'resolved', label: 'Resolved', count: resolvedIncidents.length },
+            ] as { value: QueueTab; label: string; count: number }[]).map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setQueueTab(option.value)}
+                className={cn(
+                  'inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors',
+                  queueTab === option.value
+                    ? 'border-warm-300 bg-white text-warm-900 shadow-sm'
+                    : 'border-white/30 bg-white/50 text-warm-500 hover:bg-white/70'
+                )}
+              >
+                <span>{option.label}</span>
+                <span className="rounded-full bg-warm-100 px-2 py-0.5 text-xs font-semibold text-warm-600 tabular-nums">
+                  {option.count}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {([
+              { value: 'all', label: 'All', count: queueTab === 'resolved' ? resolvedIncidents.length : activeIncidents.length },
+              { value: 'critical', label: 'Critical + error', count: (queueTab === 'resolved' ? resolvedIncidents : activeIncidents).filter((incident) => incident.severity === 'critical' || incident.severity === 'error').length },
               { value: 'recent', label: 'Last 24h', count: recentIncidentCount },
             ] as { value: FeedMode; label: string; count: number }[]).map((option) => (
               <button
@@ -683,8 +391,6 @@ export default function TracerErrorAnalytics({
               </button>
             ))}
           </div>
-
-          <p className="text-xs text-warm-500">Sorted current-first, then severity, then last seen.</p>
         </div>
 
         {visibleIncidents.length === 0 ? (
@@ -696,6 +402,7 @@ export default function TracerErrorAnalytics({
             {visibleIncidents.map((incident) => {
               const style = severityStyles[incident.severity];
               const isExpanded = expandedId === incident.id;
+              const resolvePending = pendingIncidentId === incident.id && isPending;
 
               return (
                 <article
@@ -703,7 +410,7 @@ export default function TracerErrorAnalytics({
                   className={cn(
                     'rounded-2xl border bg-white/55 p-3.5 md:p-4',
                     style.border,
-                    new Date(incident.lastSeen).getTime() >= Date.now() - 24 * 60 * 60 * 1000 && 'ring-1 ring-red-100'
+                    incident.status === 'open' && 'ring-1 ring-red-100'
                   )}
                 >
                   <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
@@ -731,11 +438,19 @@ export default function TracerErrorAnalytics({
                             {incident.roundIds.length} rounds
                           </span>
                         )}
+                        <span className={cn(
+                          'inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]',
+                          incident.status === 'open'
+                            ? 'border-red-200 bg-red-50 text-red-700'
+                            : 'border-primary-200 bg-primary-50 text-primary-700'
+                        )}>
+                          {incident.status === 'open' ? 'Open' : 'Resolved'}
+                        </span>
                       </div>
 
                       <div className="mt-2 flex items-start gap-3">
                         <div className={cn('mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-white/80', style.icon)}>
-                          <AlertTriangle size={16} />
+                          {incident.status === 'resolved' ? <RotateCcw size={16} /> : <AlertTriangle size={16} />}
                         </div>
                         <div className="min-w-0">
                           <h4 className="text-sm font-semibold leading-6 text-warm-900">{incident.title}</h4>
@@ -744,6 +459,7 @@ export default function TracerErrorAnalytics({
                             <span>{timeAgo(incident.lastSeen)} · {formatTimestamp(incident.lastSeen)}</span>
                             {incident.action && <span className="font-mono">{incident.action}</span>}
                             {(incident.route ?? incident.url) && <span className="truncate font-mono">{incident.route ?? incident.url}</span>}
+                            {incident.resolvedAt && <span>Resolved {timeAgo(incident.resolvedAt)}</span>}
                           </div>
                         </div>
                       </div>
@@ -770,6 +486,22 @@ export default function TracerErrorAnalytics({
                             : 'Copy'}
                       </button>
 
+                      {incident.status === 'open' && (
+                        <button
+                          type="button"
+                          onClick={() => handleResolve(incident)}
+                          disabled={resolvePending}
+                          className={cn(
+                            'inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors',
+                            'border-primary-200 bg-primary-50/80 text-primary-700 hover:bg-primary-50',
+                            resolvePending && 'cursor-not-allowed opacity-60'
+                          )}
+                        >
+                          <RotateCcw size={16} />
+                          {resolvePending ? 'Resolving...' : 'Mark resolved'}
+                        </button>
+                      )}
+
                       <button
                         type="button"
                         onClick={() => setExpandedId(isExpanded ? null : incident.id)}
@@ -784,9 +516,9 @@ export default function TracerErrorAnalytics({
                   {isExpanded && (
                     <div className="mt-4 space-y-3">
                       <div className="grid gap-3 lg:grid-cols-3">
-                        <NarrativePanel label="Likely Cause" body={incident.likelyCause} />
+                        <NarrativePanel label="Why It Happened" body={incident.whyItHappened} />
+                        <NarrativePanel label="How To Fix" body={incident.howToFix} />
                         <NarrativePanel label="Operator Impact" body={incident.operatorImpact} />
-                        <NarrativePanel label="Next Step" body={incident.nextStep} />
                       </div>
 
                       <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
@@ -800,6 +532,7 @@ export default function TracerErrorAnalytics({
                         <MetaItem label="Player IDs" value={incident.playerIds.join(', ') || null} mono />
                         <MetaItem label="User emails" value={incident.userEmails.join(', ') || null} mono />
                         <MetaItem label="Trace source" value={incident.source} mono />
+                        <MetaItem label="Resolution" value={incident.resolvedAt ? `${formatTimestamp(incident.resolvedAt)}${incident.resolvedBy ? ` · ${incident.resolvedBy}` : ''}` : null} />
                       </div>
 
                       <div className="rounded-xl border border-white/40 bg-white/65 p-3">
@@ -910,7 +643,7 @@ export default function TracerErrorAnalytics({
                   <AlertTriangle size={18} className="text-warm-400" />
                 </div>
                 <p className="mt-3 text-sm font-medium text-warm-600">No affected players</p>
-                <p className="text-xs text-warm-400">No player-linked tracer errors in the current slice.</p>
+                <p className="text-xs text-warm-400">No player-linked tracer incidents in the current slice.</p>
               </div>
             ) : (
               <div className="space-y-3">

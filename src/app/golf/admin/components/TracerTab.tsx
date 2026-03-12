@@ -35,12 +35,45 @@ import {
 } from './tracer/tracer-utils';
 import { fixRoundData } from '@/app/golf/actions/admin-tracer-data';
 import type { DataQualityIssue, FixResult } from './tracer/tracer-types';
+import { useAdminRealtimeContext } from './AdminRealtimeProvider';
+import type { AdminEvent } from '@/hooks/useAdminRealtime';
+
+function asObject(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
+}
+
+function asString(value: unknown): string | null {
+  return typeof value === 'string' && value.trim().length > 0 ? value : null;
+}
+
+function isTracerRealtimeEvent(event: AdminEvent): boolean {
+  if (event.event_type !== 'error') return false;
+
+  const metadata = asObject(event.metadata);
+  const action = asString(metadata?.action)?.toLowerCase() ?? '';
+  const featureArea = asString(metadata?.featureArea)?.toLowerCase() ?? '';
+  const roundId = asString(metadata?.roundId);
+
+  if (featureArea === 'shot_tracking') return true;
+  if (featureArea === 'stats_cache' && !!roundId) return true;
+
+  return (
+    action.startsWith('submitgolfroundcomprehensive')
+    || action.startsWith('savepartialround')
+    || action.startsWith('continueroundpage')
+    || action.startsWith('invalidateonroundcomplete')
+  );
+}
 
 // ============================================================================
 // TRACER TAB (Command Center Orchestrator)
 // ============================================================================
 
 export function TracerTab() {
+  const { realtime } = useAdminRealtimeContext();
+
   // Core data
   const [data, setData] = useState<TracerData | null>(null);
   const [enrichedData, setEnrichedData] = useState<TracerEnrichedData | null>(null);
@@ -80,9 +113,20 @@ export function TracerTab() {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(() => loadData(true), 60000);
+    const interval = setInterval(() => loadData(true), 20000);
     return () => clearInterval(interval);
   }, [loadData]);
+
+  const latestTracerRealtimeEvent = useMemo(
+    () => realtime.events.find((event) => isTracerRealtimeEvent(event)) ?? null,
+    [realtime.events]
+  );
+  const latestTracerRealtimeEventId = latestTracerRealtimeEvent?.id ?? null;
+
+  useEffect(() => {
+    if (!latestTracerRealtimeEvent || loading) return;
+    void loadData(true);
+  }, [latestTracerRealtimeEvent, latestTracerRealtimeEventId, loadData, loading]);
 
   // ------------------------------------------------------------------
   // Computed values (memoized)
@@ -150,7 +194,7 @@ export function TracerTab() {
 
   // Tab configs with badges
   const tabs: TracerSubTabConfig[] = useMemo(() => {
-    const errorCount = data?.errorStats.total7d ?? 0;
+    const errorCount = data?.recentErrors.filter((incident) => incident.status === 'open').length ?? 0;
     return [
       { id: 'health' as const, label: 'Health' },
       { id: 'rounds' as const, label: 'Rounds' },
@@ -276,6 +320,7 @@ export function TracerTab() {
           recentErrors={data.recentErrors}
           totalErrors7d={data.errorStats.total7d}
           criticalErrors7d={data.errorStats.critical7d}
+          onIncidentResolved={() => loadData(true)}
         />
       )}
 
@@ -284,6 +329,7 @@ export function TracerTab() {
         isOpen={diagnosticRoundId !== null}
         onClose={() => setDiagnosticRoundId(null)}
         roundId={diagnosticRoundId}
+        onIncidentResolved={() => loadData(true)}
       />
     </div>
   );

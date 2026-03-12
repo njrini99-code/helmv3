@@ -4,7 +4,6 @@ import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { PageLoading } from '@/components/ui/loading';
 import { IntelligenceCommandCenter } from '@/components/golf/coachhelm/v2';
-import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
 
 // ============================================================================
@@ -53,15 +52,11 @@ export default async function IntelligenceDashboardPage() {
         <MobileMenuButton />
       </div>
       <Suspense fallback={<PageLoading />}>
-        <AnimatedPage>
-          <AnimatedItem>
-            <IntelligenceCommandCenter
-              teamId={teamId}
-              coachId={coach.id}
-              variant="page"
-            />
-          </AnimatedItem>
-        </AnimatedPage>
+        <IntelligenceCommandCenter
+          teamId={teamId}
+          coachId={coach.id}
+          variant="page"
+        />
       </Suspense>
     </div>
   );

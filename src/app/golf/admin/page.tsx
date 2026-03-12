@@ -99,6 +99,47 @@ const AUTO_REFRESH_INTERVAL = 60000;
 const StatSkeleton = ImprovedStatSkeleton;
 const CardSkeleton = ImprovedCardSkeleton;
 
+function AdminBrand({ compact = false }: { compact?: boolean }) {
+  if (compact) {
+    return (
+      <div className="w-14 h-14 flex items-center justify-center">
+        <Image
+          src="/helm-golf-logo-transparent.png"
+          alt="GolfHelm"
+          width={56}
+          height={56}
+          className="w-14 h-14 object-contain"
+          unoptimized
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-3 min-w-0">
+      <div className="w-14 h-14 flex items-center justify-center flex-shrink-0">
+        <Image
+          src="/helm-golf-logo-transparent.png"
+          alt="GolfHelm"
+          width={56}
+          height={56}
+          className="w-14 h-14 object-contain"
+          priority
+          unoptimized
+        />
+      </div>
+      <div className="min-w-0">
+        <div className="text-xl font-bold leading-none tracking-tight text-white">
+          Golf<span className="text-primary-400">Helm</span>
+        </div>
+        <div className="mt-1 inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">
+          Admin
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ============================================================================
 // MAIN PAGE WRAPPER (with real-time provider)
 // ============================================================================
@@ -249,12 +290,50 @@ function AdminDashboardContent() {
   }
 
   const quickStats = data
-    ? {
-        totalUsers: data.totalPlatformUsers,
-        activeNow: data.health.realActiveUsers1h,
-        errors7d: data.errorLogs.totalErrors7d,
-        healthScore: data.growth.platformHealthScore,
-      }
+    ? [
+        {
+          key: 'incident-queue',
+          label: 'Open Incidents',
+          value: `${data.errorLogs.incidentCounts.open}`,
+          detail: data.errorLogs.incidentCounts.open > 0
+            ? `${data.errorLogs.incidentCounts.openCritical} critical · ${data.errorLogs.incidentCounts.active} active`
+            : data.errorLogs.incidentCounts.active > 0
+              ? `${data.errorLogs.incidentCounts.active} active signals`
+              : 'No unresolved incident backlog',
+          tone: data.errorLogs.incidentCounts.openCritical > 0
+            ? 'critical'
+            : data.errorLogs.incidentCounts.open > 0 || data.errorLogs.incidentCounts.active > 0
+              ? 'warning'
+              : 'healthy',
+        },
+        {
+          key: 'recovery',
+          label: 'Resolved (24h)',
+          value: `${data.errorLogs.incidentCounts.resolvedRecently}`,
+          detail: `${data.errorLogs.incidentCounts.resolved} total resolved incidents`,
+          tone: data.errorLogs.incidentCounts.resolvedRecently > 0 ? 'healthy' : 'neutral',
+        },
+        {
+          key: 'sessions',
+          label: 'Active Sessions',
+          value: `${data.health.activeSessions}`,
+          detail: `${data.health.realActiveUsers1h} online in the last hour`,
+          tone: data.health.activeSessions > 0 ? 'healthy' : 'neutral',
+        },
+        {
+          key: 'latency',
+          label: 'API Response',
+          value: `${data.health.avgResponseTimeMs}ms`,
+          detail: data.health.avgResponseTimeMs > 3000
+            ? 'Dashboard latency needs attention'
+            : 'Dashboard response time is stable',
+          tone: data.health.avgResponseTimeMs > 6000
+            ? 'critical'
+            : data.health.avgResponseTimeMs > 3000
+              ? 'warning'
+              : 'healthy',
+        },
+      ] as const
     : null;
 
   const overallHealth = data?.health.diagnostics.some((d) => d.status === 'critical')
@@ -286,20 +365,10 @@ function AdminDashboardContent() {
         )}
       >
         {/* Sidebar Header */}
-        <div className={cn('flex items-center gap-3 px-4 h-16', sidebarCollapsed && 'justify-center px-0')}>
-          <div className="w-9 h-9 rounded-[10px] bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/25">
-            <Image
-              src="/helm-golf-logo-transparent.png"
-              alt="Helm"
-              width={24}
-              height={24}
-              className="w-6 h-6 object-contain"
-              unoptimized
-            />
-          </div>
-          {!sidebarCollapsed && (
-            <span className="font-bold text-lg text-white tracking-tight">Admin</span>
-          )}
+        <div className={cn('flex items-center h-16 border-b border-white/10', sidebarCollapsed ? 'justify-center px-2' : 'px-4')}>
+          <Link href="/golf/admin" className="flex items-center min-w-0">
+            <AdminBrand compact={sidebarCollapsed} />
+          </Link>
         </div>
 
         {/* Navigation Tabs */}
@@ -400,112 +469,103 @@ function AdminDashboardContent() {
         {/* Quick Stats in Sidebar */}
         {!sidebarCollapsed && quickStats && (
           <div className="p-3 border-t border-white/10 space-y-3">
-            <div className="text-label font-semibold text-warm-500 uppercase tracking-wider px-1">
-              Quick Stats
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="rounded-[10px] p-3 bg-white/5 border border-white/5">
-                <div className="text-xl font-bold text-white tabular-nums">
-                  {quickStats.totalUsers}
+            <div className="flex items-center justify-between gap-2 px-1">
+              <div>
+                <div className="text-label font-semibold text-warm-500 uppercase tracking-wider">
+                  Quick Stats
                 </div>
-                <div className="text-micro text-warm-500 font-medium uppercase tracking-wider mt-0.5">
-                  Total Users
+                <div className="text-[11px] text-warm-600 mt-1">
+                  Operational snapshot for the admin rail
                 </div>
               </div>
-              <div className="rounded-[10px] p-3 bg-white/5 border border-white/5">
-                <div className="text-xl font-bold text-white tabular-nums">
-                  {quickStats.activeNow > 0 ? (
-                    quickStats.activeNow
-                  ) : (
-                    <span className="text-warm-500">—</span>
-                  )}
-                </div>
-                <div className="text-micro text-warm-500 font-medium uppercase tracking-wider mt-0.5">
-                  Active Now
-                </div>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
               <div
                 className={cn(
-                  'rounded-[10px] p-3 bg-white/5 border border-white/5',
-                  quickStats.errors7d > 0 && 'border-l-2 border-l-amber-500'
+                  'inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em]',
+                  overallHealth === 'healthy'
+                    ? 'border-primary-500/20 bg-primary-500/10 text-primary-300'
+                    : overallHealth === 'warning'
+                      ? 'border-amber-500/20 bg-amber-500/10 text-amber-300'
+                      : 'border-red-500/20 bg-red-500/10 text-red-300'
                 )}
               >
-                <div
+                <span
                   className={cn(
-                    'text-xl font-bold tabular-nums',
-                    quickStats.errors7d > 0 ? 'text-amber-400' : 'text-white'
+                    'w-1.5 h-1.5 rounded-full',
+                    overallHealth === 'healthy'
+                      ? 'bg-primary-400'
+                      : overallHealth === 'warning'
+                        ? 'bg-amber-400'
+                        : 'bg-red-400'
+                  )}
+                />
+                {overallHealth}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              {quickStats.map((stat) => (
+                <div
+                  key={stat.key}
+                  className={cn(
+                    'rounded-[10px] border px-3 py-2.5 bg-white/5',
+                    stat.tone === 'critical'
+                      ? 'border-red-500/20 bg-red-500/5'
+                      : stat.tone === 'warning'
+                        ? 'border-amber-500/20 bg-amber-500/5'
+                        : stat.tone === 'healthy'
+                          ? 'border-primary-500/15 bg-primary-500/5'
+                          : 'border-white/5'
                   )}
                 >
-                  {quickStats.errors7d > 0 ? (
-                    quickStats.errors7d
-                  ) : (
-                    <span className="text-warm-500">—</span>
-                  )}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-warm-500">
+                        {stat.label}
+                      </div>
+                      <div className="text-[11px] leading-5 text-warm-600 mt-1">
+                        {stat.detail}
+                      </div>
+                    </div>
+                    <div
+                      className={cn(
+                        'text-sm font-semibold tabular-nums shrink-0',
+                        stat.tone === 'critical'
+                          ? 'text-red-300'
+                          : stat.tone === 'warning'
+                            ? 'text-amber-300'
+                            : stat.tone === 'healthy'
+                              ? 'text-primary-300'
+                              : 'text-white'
+                      )}
+                    >
+                      {stat.value}
+                    </div>
+                  </div>
                 </div>
-                <div className="text-micro text-warm-500 font-medium uppercase tracking-wider mt-0.5">
-                  {quickStats.errors7d === 0 ? 'No Errors' : 'Errors (7d)'}
-                </div>
-              </div>
-              <div
-                className={cn(
-                  'rounded-[10px] p-3 bg-white/5 border border-white/5',
-                  overallHealth !== 'healthy' && 'border-l-2',
-                  overallHealth === 'warning' && 'border-l-amber-500',
-                  overallHealth === 'critical' && 'border-l-red-500'
-                )}
-              >
+              ))}
+            </div>
+
+            {/* Connection Status */}
+            <div className="rounded-[10px] p-2.5 bg-white/5 border border-white/5">
+              <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <div
                     className={cn(
                       'w-2 h-2 rounded-full',
-                      overallHealth === 'healthy'
-                        ? 'bg-primary-500'
-                        : overallHealth === 'warning'
-                          ? 'bg-amber-500'
-                          : 'bg-red-500'
+                      realtime.isConnected ? 'bg-primary-500' : 'bg-amber-500'
                     )}
                   />
                   <span
                     className={cn(
-                      'text-sm font-semibold',
-                      overallHealth === 'healthy'
-                        ? 'text-white'
-                        : overallHealth === 'warning'
-                          ? 'text-amber-400'
-                          : 'text-red-400'
+                      'text-xs font-medium',
+                      realtime.isConnected ? 'text-warm-300' : 'text-amber-300'
                     )}
                   >
-                    {overallHealth === 'healthy'
-                      ? 'Healthy'
-                      : overallHealth === 'warning'
-                        ? 'Warning'
-                        : 'Critical'}
+                    {realtime.isConnected ? 'Live Updates' : 'Realtime Reconnecting'}
                   </span>
                 </div>
-                <div className="text-micro text-warm-500 font-medium uppercase tracking-wider mt-1">
-                  System Health
-                </div>
-              </div>
-            </div>
-
-            {/* Connection Status */}
-            <div className="rounded-[10px] p-2.5 flex items-center justify-between bg-white/5 border border-white/5">
-              <div className="flex items-center gap-2">
-                <div
-                  className={cn(
-                    'w-2 h-2 rounded-full',
-                    realtime.isConnected ? 'bg-primary-500' : 'bg-amber-500'
-                  )}
-                />
-                <span
-                  className={cn(
-                    'text-xs font-medium',
-                    realtime.isConnected ? 'text-warm-400' : 'text-amber-400'
-                  )}
-                >
-                  {realtime.isConnected ? 'Live' : 'Connecting'}
+                <span className="text-[11px] text-warm-500">
+                  {alerts.unreadCount > 0 ? `${alerts.unreadCount} unread` : 'All caught up'}
                 </span>
               </div>
             </div>
@@ -531,19 +591,9 @@ function AdminDashboardContent() {
         )}
       >
         <div className="flex items-center justify-between px-4 h-16">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-[10px] bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center">
-              <Image
-                src="/helm-golf-logo-transparent.png"
-                alt="Helm"
-                width={24}
-                height={24}
-                className="w-6 h-6"
-                unoptimized
-              />
-            </div>
-            <span className="font-bold text-lg text-white">Admin</span>
-          </div>
+          <Link href="/golf/admin" className="flex items-center min-w-0">
+            <AdminBrand />
+          </Link>
           <button
             onClick={() => setMobileMenuOpen(false)}
             className="p-2 text-warm-400 hover:text-white transition-colors"

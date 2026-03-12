@@ -40,7 +40,7 @@ export interface TracerRoundDetail {
   has_putts: boolean;
   has_fairways: boolean;
   has_gir: boolean;
-  errors: TracerErrorLog[];
+  errors: TracerIncident[];
 }
 
 export interface TracerStatsAccuracy {
@@ -61,15 +61,56 @@ export interface TracerStatsAccuracy {
   cache_updated_at: string | null;
 }
 
-export interface TracerErrorLog {
+export interface TracerIncident {
   id: string;
-  message: string;
-  severity: string | null;
-  stack: string | null;
+  eventIds: string[];
+  status: 'open' | 'resolved';
+  severity: 'critical' | 'error' | 'warning' | 'info';
+  title: string;
+  summary: string;
+  whyItHappened: string;
+  howToFix: string;
+  operatorImpact: string;
+  featureArea: string;
+  action: string | null;
+  route: string | null;
   url: string | null;
+  requestId: string | null;
+  errorCode: string | null;
+  errorHint: string | null;
+  errorDetails: string | null;
+  source: string | null;
+  firstSeen: string;
+  lastSeen: string;
+  occurrences: number;
+  openOccurrences: number;
+  resolvedOccurrences: number;
+  sampleMessage: string;
+  sampleStack: string | null;
+  sampleContext: Record<string, unknown> | null;
+  roundIds: string[];
+  playerIds: string[];
+  userEmails: string[];
+  resolvedAt: string | null;
+  resolvedBy: string | null;
+  copySummary: string;
+}
+
+interface TracerAdminEventRecord {
+  id: string;
+  event_type: string;
+  severity: string | null;
+  title: string;
+  message: string | null;
+  metadata: Record<string, unknown> | null;
+  url: string | null;
+  stack_trace: string | null;
   user_id: string | null;
-  context: Record<string, unknown> | null;
-  created_at: string | null;
+  user_email: string | null;
+  resolved: boolean;
+  resolved_at: string | null;
+  resolved_by: string | null;
+  created_at: string;
 }
 
 export interface TracerActivityEvent {
@@ -88,7 +129,7 @@ export interface TracerData {
   playerSummaries: TracerPlayerSummary[];
   roundDetails: Record<string, TracerRoundDetail[]>;
   statsAccuracy: TracerStatsAccuracy[];
-  recentErrors: TracerErrorLog[];
+  recentErrors: TracerIncident[];
   activityFeed: TracerActivityEvent[];
   errorStats: {
     total7d: number;
@@ -111,6 +152,485 @@ export interface TracerData {
   }>;
 }
 
+interface TracerIncidentContext {
+  action: string | null;
+  route: string | null;
+  url: string | null;
+  featureArea: string | null;
+  source: string | null;
+  requestId: string | null;
+  roundId: string | null;
+  playerId: string | null;
+  userId: string | null;
+  userEmail: string | null;
+  errorCode: string | null;
+  errorHint: string | null;
+  errorDetails: string | null;
+}
+
+const TRACER_SEVERITY_ORDER: Record<TracerIncident['severity'], number> = {
+  critical: 0,
+  error: 1,
+  warning: 2,
+  info: 3,
+};
+
+const SHOT_TRACKING_ACTION_PREFIXES = [
+  'submitgolfroundcomprehensive',
+  'savepartialround',
+  'continueroundpage',
+  'invalidateonroundcomplete',
+];
+
+function asObject(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
+}
+
+function asString(value: unknown): string | null {
+  return typeof value === 'string' && value.trim().length > 0 ? value : null;
+}
+
+function normalizeTracerMessage(message: string): string {
+  return message
+    .trim()
+    .toLowerCase()
+    .replace(/\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi, ':uuid')
+    .replace(/\b[a-f0-9]{16,}\b/gi, ':id')
+    .replace(/\b\d{5,}\b/g, ':id')
+    .replace(/\s+/g, ' ');
+}
+
+function normalizeTracerPath(pathOrUrl: string | null): string {
+  if (!pathOrUrl) return '';
+
+  const rawPath = (() => {
+    try {
+      return new URL(pathOrUrl, 'http://localhost').pathname;
+    } catch {
+      return pathOrUrl.split('?')[0]?.split('#')[0] ?? pathOrUrl;
+    }
+  })();
+
+  const segments = rawPath
+    .split('/')
+    .filter(Boolean)
+    .map((segment) => (
+      /^[0-9]+$/.test(segment)
+      || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(segment)
+      || /^[a-f0-9]{16,}$/i.test(segment)
+        ? ':id'
+        : segment
+    ));
+
+  return segments.length > 0 ? `/${segments.join('/')}` : '/';
+}
+
+function normalizeTracerIncidentKey(
+  message: string,
+  routeOrUrl: string | null,
+  action: string | null,
+  errorCode: string | null,
+): string {
+  return [
+    normalizeTracerMessage(message),
+    normalizeTracerPath(routeOrUrl),
+    action ?? '',
+    errorCode ?? '',
+  ].join('::');
+}
+
+function buildTracerIncidentContext(rawContext: unknown): TracerIncidentContext {
+  const context = asObject(rawContext);
+  return {
+    action: asString(context?.action),
+    route: asString(context?.route),
+    url: asString(context?.url),
+    featureArea: asString(context?.featureArea),
+    source: asString(context?.source),
+    requestId: asString(context?.requestId),
+    roundId: asString(context?.roundId),
+    playerId: asString(context?.playerId),
+    userId: asString(context?.userId),
+    userEmail: asString(context?.userEmail),
+    errorCode: asString(context?.errorCode),
+    errorHint: asString(context?.errorHint),
+    errorDetails: asString(context?.errorDetails),
+  };
+}
+
+function mergeTracerIncidentContext(
+  primary: TracerIncidentContext,
+  fallback: TracerIncidentContext,
+): TracerIncidentContext {
+  return {
+    action: primary.action ?? fallback.action,
+    route: primary.route ?? fallback.route,
+    url: primary.url ?? fallback.url,
+    featureArea: primary.featureArea ?? fallback.featureArea,
+    source: primary.source ?? fallback.source,
+    requestId: primary.requestId ?? fallback.requestId,
+    roundId: primary.roundId ?? fallback.roundId,
+    playerId: primary.playerId ?? fallback.playerId,
+    userId: primary.userId ?? fallback.userId,
+    userEmail: primary.userEmail ?? fallback.userEmail,
+    errorCode: primary.errorCode ?? fallback.errorCode,
+    errorHint: primary.errorHint ?? fallback.errorHint,
+    errorDetails: primary.errorDetails ?? fallback.errorDetails,
+  };
+}
+
+function normalizeTracerSeverity(severity: string | null | undefined): TracerIncident['severity'] {
+  const normalized = severity?.toLowerCase();
+  if (normalized === 'critical' || normalized === 'error' || normalized === 'warning' || normalized === 'info') {
+    return normalized;
+  }
+  return 'error';
+}
+
+function getTracerEventMessage(event: TracerAdminEventRecord): string {
+  const metadata = asObject(event.metadata);
+  return (
+    asString(metadata?.originalMessage)
+    ?? asString(metadata?.message)
+    ?? event.message
+    ?? event.title
+  );
+}
+
+function isShotTrackingAction(action: string | null): boolean {
+  const normalizedAction = action?.toLowerCase() ?? '';
+  return SHOT_TRACKING_ACTION_PREFIXES.some((prefix) => normalizedAction.startsWith(prefix));
+}
+
+function isShotTrackingTracerEvent(
+  event: TracerAdminEventRecord,
+  context: TracerIncidentContext = buildTracerIncidentContext(event.metadata),
+): boolean {
+  if (event.event_type !== 'error') return false;
+
+  const featureArea = context.featureArea?.toLowerCase() ?? '';
+  const action = context.action?.toLowerCase() ?? '';
+  const normalizedUrl = normalizeTracerPath(context.route ?? context.url ?? event.url).toLowerCase();
+  const message = `${event.title} ${event.message ?? ''}`.toLowerCase();
+
+  if (featureArea === 'shot_tracking') return true;
+  if (isShotTrackingAction(action)) return true;
+  if (featureArea === 'stats_cache' && (!!context.roundId || isShotTrackingAction(action) || action.startsWith('invalidateonroundcomplete'))) {
+    return true;
+  }
+
+  return !!context.roundId && (
+    normalizedUrl.includes('/rounds')
+    || normalizedUrl.includes('/tracer')
+    || message.includes('round')
+    || message.includes('shot')
+  );
+}
+
+function toTracerFeatureAreaLabel(context: TracerIncidentContext): string {
+  const featureArea = context.featureArea?.toLowerCase() ?? '';
+  const action = context.action?.toLowerCase() ?? '';
+
+  if (featureArea === 'stats_cache' || action.startsWith('invalidateonroundcomplete')) {
+    return 'Shot Tracking Cache';
+  }
+
+  return 'Shot Tracking';
+}
+
+function deriveTracerNarrative(
+  message: string,
+  featureArea: string,
+  action: string | null,
+  errorCode: string | null,
+): Pick<TracerIncident, 'title' | 'summary' | 'whyItHappened' | 'howToFix' | 'operatorImpact'> {
+  const normalized = message.toLowerCase();
+
+  if (normalized.includes('stack depth limit exceeded')) {
+    return {
+      title: 'Round submit recursion failure',
+      summary: 'Shot tracking hit PostgreSQL recursion depth during save or submit.',
+      whyItHappened: 'A submit-triggered write path is likely calling into a recursive totals or cache repair path until PostgreSQL aborts the transaction.',
+      howToFix: 'Inspect the submit transaction and any post-submit repair chain for recursive writes, then retry the affected round after the loop is removed.',
+      operatorImpact: 'Players can get blocked on submit and may retry the same round multiple times.',
+    };
+  }
+
+  if (normalized.includes('created_at') && normalized.includes('ambiguous')) {
+    return {
+      title: 'Stats refresh query is ambiguous',
+      summary: 'A shot-tracking save path hit SQL that references created_at without a table alias.',
+      whyItHappened: 'A joined query in the tracer-side cache refresh path is ordering or filtering on an unqualified created_at column.',
+      howToFix: 'Qualify the created_at column in the failing cache refresh query or RPC, then rerun the stats refresh for the affected player.',
+      operatorImpact: 'Round submit can fail even when the captured round data itself is valid.',
+    };
+  }
+
+  if (normalized.includes('putt_details_distance_feet_check')) {
+    return {
+      title: 'Putt distance rejected by constraint',
+      summary: 'Tracer caught a putt detail insert whose distance violated the database check.',
+      whyItHappened: 'The save flow derived or converted a putt distance outside the range accepted by the database.',
+      howToFix: 'Compare the submitted putt distance with the app-side distance derivation and the live DB constraint, then correct the mapping and replay the round.',
+      operatorImpact: 'A player can lose a round submit because one putt detail row is invalid.',
+    };
+  }
+
+  if (normalized.includes('approach_miss_details_lie_type_check')) {
+    return {
+      title: 'Approach lie type rejected by constraint',
+      summary: 'Tracer found an approach miss detail row whose lie type is no longer accepted by the database.',
+      whyItHappened: 'The app emitted a lie label that drifted from the current allowed DB values for approach miss details.',
+      howToFix: 'Align the app lie mapping with the live DB constraint or enum values, then retry the failed round write.',
+      operatorImpact: 'Players can see a submit failure on otherwise valid approach data.',
+    };
+  }
+
+  if (normalized.includes('continue round')) {
+    return {
+      title: 'Continue-round rehydration failed',
+      summary: 'Tracer found a failure while trying to reopen an in-progress round.',
+      whyItHappened: 'One of the dependent reads for the round, holes, shots, or detail rows failed during the continue-round page load.',
+      howToFix: 'Use the round ID to inspect the missing read, repair the broken row or permission issue, then reopen the round to confirm hydration succeeds.',
+      operatorImpact: 'Users can hit missing data or a broken session when resuming a round.',
+    };
+  }
+
+  if (
+    normalized.includes('refresh_player_stats_cache')
+    || normalized.includes('stats cache')
+    || normalized.includes('mark_player_stats_stale')
+    || normalized.includes('strokes gained')
+  ) {
+    return {
+      title: 'Post-round cache repair failed',
+      summary: 'A shot-tracking flow completed far enough to trigger cache or strokes-gained repair, and that repair failed.',
+      whyItHappened: 'A cache RPC or reconciliation step errored, timed out, or rebuilt stale data after the round write.',
+      howToFix: 'Check the cache RPC named below, compare live round totals with the cache tables, and rerun the repair after fixing the underlying query or constraint.',
+      operatorImpact: 'Round data may exist while derived stats stay stale or wrong.',
+    };
+  }
+
+  if ((action ?? '').startsWith('savePartialRound') || normalized.includes('save partial')) {
+    return {
+      title: 'Partial round save failed',
+      summary: 'Tracer captured a failure while the player was saving an in-progress round.',
+      whyItHappened: 'A validation, detail insert, or supporting update failed before the draft state persisted cleanly.',
+      howToFix: 'Inspect the route, action, round ID, and raw context below to locate the failing draft-save step, then replay the save once the write path is repaired.',
+      operatorImpact: 'The player can lose progress or see stale in-progress data after a save attempt.',
+    };
+  }
+
+  if ((action ?? '').startsWith('submitGolfRoundComprehensive') || normalized.includes('round submit')) {
+    return {
+      title: 'Round submit failed',
+      summary: 'Tracer captured a server-side failure in the final shot-tracking submit path.',
+      whyItHappened: 'The submit transaction hit a validation failure, DB constraint, trigger issue, or tracer-side cache repair failure.',
+      howToFix: 'Start with the raw message, action, round ID, and captured context below, then fix the failing write or RPC before replaying the submission.',
+      operatorImpact: 'A player likely saw the round fail to submit and may retry or abandon the save.',
+    };
+  }
+
+  return {
+    title: `${featureArea} incident`,
+    summary: 'Tracer captured a shot-tracking-side error that did not match a specialized rule.',
+    whyItHappened: action
+      ? `The ${action} path threw and logged structured context for review.`
+      : 'A tracer-monitored shot-tracking path failed without a more specific pattern match.',
+    howToFix: errorCode
+      ? `Review the raw message, error code ${errorCode}, and captured context below, then fix the failing step before replaying the round workflow.`
+      : 'Review the raw message, captured context, and stack below, then repair the failing step before replaying the round workflow.',
+    operatorImpact: 'Players or staff may have seen a failure or stale data in the tracer-monitored flow.',
+  };
+}
+
+function buildTracerIncidentCopySummary(incident: TracerIncident): string {
+  return [
+    `Severity: ${incident.severity.toUpperCase()}`,
+    `Status: ${incident.status.toUpperCase()}`,
+    `Title: ${incident.title}`,
+    `Area: ${incident.featureArea}`,
+    `Summary: ${incident.summary}`,
+    `Why it happened: ${incident.whyItHappened}`,
+    `How to fix: ${incident.howToFix}`,
+    `Operator impact: ${incident.operatorImpact}`,
+    `Occurrences: ${incident.occurrences}`,
+    `Open occurrences: ${incident.openOccurrences}`,
+    `Resolved occurrences: ${incident.resolvedOccurrences}`,
+    `First seen: ${incident.firstSeen}`,
+    `Last seen: ${incident.lastSeen}`,
+    incident.action ? `Action: ${incident.action}` : null,
+    incident.route ? `Route: ${incident.route}` : null,
+    incident.url ? `URL: ${incident.url}` : null,
+    incident.errorCode ? `Error code: ${incident.errorCode}` : null,
+    incident.errorHint ? `Hint: ${incident.errorHint}` : null,
+    incident.errorDetails ? `Details: ${incident.errorDetails}` : null,
+    incident.requestId ? `Request ID: ${incident.requestId}` : null,
+    incident.source ? `Trace source: ${incident.source}` : null,
+    incident.roundIds.length > 0 ? `Round IDs: ${incident.roundIds.join(', ')}` : null,
+    incident.playerIds.length > 0 ? `Player IDs: ${incident.playerIds.join(', ')}` : null,
+    incident.userEmails.length > 0 ? `User emails: ${incident.userEmails.join(', ')}` : null,
+    incident.resolvedAt ? `Resolved at: ${incident.resolvedAt}` : null,
+    incident.resolvedBy ? `Resolved by: ${incident.resolvedBy}` : null,
+    `Raw message: ${incident.sampleMessage}`,
+    incident.sampleContext ? `Context JSON:\n${JSON.stringify(incident.sampleContext, null, 2)}` : null,
+    incident.sampleStack ? `Stack:\n${incident.sampleStack}` : null,
+  ].filter(Boolean).join('\n');
+}
+
+function buildTracerIncidents(events: TracerAdminEventRecord[]): TracerIncident[] {
+  const groups = new Map<string, {
+    eventIds: string[];
+    severity: TracerIncident['severity'];
+    latestEvent: TracerAdminEventRecord;
+    latestContext: TracerIncidentContext;
+    sampleContext: Record<string, unknown> | null;
+    firstSeen: string;
+    lastSeen: string;
+    occurrences: number;
+    openOccurrences: number;
+    resolvedOccurrences: number;
+    roundIds: Set<string>;
+    playerIds: Set<string>;
+    userEmails: Set<string>;
+    sampleStack: string | null;
+    resolvedAt: string | null;
+    resolvedBy: string | null;
+  }>();
+
+  for (const event of events) {
+    const context = buildTracerIncidentContext(event.metadata);
+    if (!isShotTrackingTracerEvent(event, context)) continue;
+
+    const keyMessage = getTracerEventMessage(event);
+    const key = normalizeTracerIncidentKey(
+      keyMessage,
+      context.route ?? event.url ?? context.url,
+      context.action,
+      context.errorCode,
+    );
+    const createdAt = event.created_at;
+    const severity = normalizeTracerSeverity(event.severity);
+    const existing = groups.get(key);
+
+    if (!existing) {
+      groups.set(key, {
+        eventIds: [event.id],
+        severity,
+        latestEvent: event,
+        latestContext: context,
+        sampleContext: asObject(event.metadata),
+        firstSeen: createdAt,
+        lastSeen: createdAt,
+        occurrences: 1,
+        openOccurrences: event.resolved ? 0 : 1,
+        resolvedOccurrences: event.resolved ? 1 : 0,
+        roundIds: new Set(context.roundId ? [context.roundId] : []),
+        playerIds: new Set(context.playerId ? [context.playerId] : []),
+        userEmails: new Set([
+          context.userEmail ?? event.user_email ?? '',
+        ].filter(Boolean)),
+        sampleStack: event.stack_trace,
+        resolvedAt: event.resolved_at,
+        resolvedBy: event.resolved_by,
+      });
+      continue;
+    }
+
+    existing.eventIds.push(event.id);
+    existing.occurrences += 1;
+    existing.openOccurrences += event.resolved ? 0 : 1;
+    existing.resolvedOccurrences += event.resolved ? 1 : 0;
+    if (context.roundId) existing.roundIds.add(context.roundId);
+    if (context.playerId) existing.playerIds.add(context.playerId);
+    if (context.userEmail) existing.userEmails.add(context.userEmail);
+    if (event.user_email) existing.userEmails.add(event.user_email);
+    if (event.stack_trace) existing.sampleStack = event.stack_trace;
+    existing.latestContext = mergeTracerIncidentContext(existing.latestContext, context);
+    if (!existing.sampleContext && asObject(event.metadata)) existing.sampleContext = asObject(event.metadata);
+    if (createdAt < existing.firstSeen) existing.firstSeen = createdAt;
+
+    if (createdAt >= existing.lastSeen) {
+      existing.lastSeen = createdAt;
+      existing.latestEvent = event;
+      existing.latestContext = mergeTracerIncidentContext(context, existing.latestContext);
+      existing.sampleContext = asObject(event.metadata) ?? existing.sampleContext;
+    }
+
+    if (event.resolved_at && (!existing.resolvedAt || event.resolved_at > existing.resolvedAt)) {
+      existing.resolvedAt = event.resolved_at;
+      existing.resolvedBy = event.resolved_by;
+    }
+
+    if (TRACER_SEVERITY_ORDER[severity] < TRACER_SEVERITY_ORDER[existing.severity]) {
+      existing.severity = severity;
+    }
+  }
+
+  return Array.from(groups.entries())
+    .map(([id, group]) => {
+      const featureArea = toTracerFeatureAreaLabel(group.latestContext);
+      const route = normalizeTracerPath(group.latestContext.route ?? group.latestContext.url ?? group.latestEvent.url) || null;
+      const narrative = deriveTracerNarrative(
+        getTracerEventMessage(group.latestEvent),
+        featureArea,
+        group.latestContext.action,
+        group.latestContext.errorCode,
+      );
+
+      const incident: TracerIncident = {
+        id,
+        eventIds: group.eventIds,
+        status: group.openOccurrences > 0 ? 'open' : 'resolved',
+        severity: group.severity,
+        title: narrative.title,
+        summary: narrative.summary,
+        whyItHappened: narrative.whyItHappened,
+        howToFix: narrative.howToFix,
+        operatorImpact: narrative.operatorImpact,
+        featureArea,
+        action: group.latestContext.action,
+        route,
+        url: group.latestContext.url ?? group.latestEvent.url,
+        requestId: group.latestContext.requestId,
+        errorCode: group.latestContext.errorCode,
+        errorHint: group.latestContext.errorHint,
+        errorDetails: group.latestContext.errorDetails,
+        source: group.latestContext.source,
+        firstSeen: group.firstSeen,
+        lastSeen: group.lastSeen,
+        occurrences: group.occurrences,
+        openOccurrences: group.openOccurrences,
+        resolvedOccurrences: group.resolvedOccurrences,
+        sampleMessage: getTracerEventMessage(group.latestEvent),
+        sampleStack: group.sampleStack,
+        sampleContext: group.sampleContext,
+        roundIds: Array.from(group.roundIds).slice(0, 12),
+        playerIds: Array.from(group.playerIds).slice(0, 12),
+        userEmails: Array.from(group.userEmails).slice(0, 12),
+        resolvedAt: group.openOccurrences > 0 ? null : group.resolvedAt,
+        resolvedBy: group.openOccurrences > 0 ? null : group.resolvedBy,
+        copySummary: '',
+      };
+
+      incident.copySummary = buildTracerIncidentCopySummary(incident);
+      return incident;
+    })
+    .sort((a, b) => {
+      if (a.status !== b.status) return a.status === 'open' ? -1 : 1;
+
+      const severityDiff = TRACER_SEVERITY_ORDER[a.severity] - TRACER_SEVERITY_ORDER[b.severity];
+      if (severityDiff !== 0) return severityDiff;
+
+      const lastSeenDiff = new Date(b.lastSeen).getTime() - new Date(a.lastSeen).getTime();
+      if (lastSeenDiff !== 0) return lastSeenDiff;
+
+      return b.occurrences - a.occurrences;
+    });
+}
+
 // ============================================
 // MAIN DATA FETCHER
 // ============================================
@@ -130,7 +650,7 @@ export async function getTracerData(): Promise<TracerData> {
 
   const adminDb = createAdminClient();
   const ago7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-  const ago30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const ago45d = new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString();
 
   // Batch 1: Core data
   const [allPlayersResult, allRoundsResult, statsAccuracyResult] = await Promise.all([
@@ -260,12 +780,12 @@ export async function getTracerData(): Promise<TracerData> {
     }
   }
 
-  // Batch 2: Hole/shot/detail counts + stats cache + error logs
+  // Batch 2: Hole/shot/detail counts + stats cache + tracer incidents
   const roundIds = (allRoundsResult.data || []).map((r) => r.id);
   const [
     holeCounts, shotCounts, puttDetailCounts, approachDetailCounts,
     statsCacheResult,
-    recentErrorsResult, errorTotal7d, errorCritical7d, errorWarnings7d,
+    tracerEventsResult,
   ] = await Promise.all([
     roundIds.length > 0
       ? adminDb.from('golf_holes').select('round_id, score, putts, fairway_hit, gir, par').in('round_id', roundIds)
@@ -283,36 +803,13 @@ export async function getTracerData(): Promise<TracerData> {
     roundIds.length > 0
       ? adminDb.from('golf_round_stats_cache').select('round_id').in('round_id', roundIds)
       : Promise.resolve({ data: [] }),
-    // Error logs
     adminDb
-      .from('error_logs')
-      .select('id, message, severity, stack, url, user_id, context, created_at')
-      .gte('created_at', ago30d)
-      .or(
-        `context->>action.in.(submitGolfRoundComprehensive,savePartialRound),severity.eq.warning`
-      )
+      .from('admin_events')
+      .select('id, event_type, severity, title, message, metadata, url, stack_trace, user_id, user_email, resolved, resolved_at, resolved_by, created_at')
+      .eq('event_type', 'error')
+      .gte('created_at', ago45d)
       .order('created_at', { ascending: false })
-      .limit(250),
-    adminDb
-      .from('error_logs')
-      .select('id', { count: 'exact', head: true })
-      .gte('created_at', ago7d)
-      .or(
-        `context->>action.in.(submitGolfRoundComprehensive,savePartialRound),severity.eq.warning`
-      ),
-    adminDb
-      .from('error_logs')
-      .select('id', { count: 'exact', head: true })
-      .gte('created_at', ago7d)
-      .eq('severity', 'critical')
-      .or(
-        `context->>action.in.(submitGolfRoundComprehensive,savePartialRound)`
-      ),
-    adminDb
-      .from('error_logs')
-      .select('id', { count: 'exact', head: true })
-      .gte('created_at', ago7d)
-      .eq('severity', 'warning'),
+      .limit(800),
   ]);
 
   // Count per round
@@ -396,33 +893,46 @@ export async function getTracerData(): Promise<TracerData> {
     statsCachedSet.add(sc.round_id);
   }
 
-  // Map errors to rounds + build error activity events
-  const errorsByRound = new Map<string, TracerErrorLog[]>();
-  const errors = (recentErrorsResult.data || []) as TracerErrorLog[];
-  for (const err of errors) {
-    const ctx = err.context as Record<string, unknown> | null;
-    const roundId = ctx?.roundId as string | undefined;
-    const playerId = ctx?.playerId as string | undefined;
-    if (roundId) {
-      if (!errorsByRound.has(roundId)) errorsByRound.set(roundId, []);
-      errorsByRound.get(roundId)!.push(err);
-    }
+  const tracerEvents = ((tracerEventsResult.data || []) as TracerAdminEventRecord[])
+    .filter((event) => isShotTrackingTracerEvent(event));
+  const errors = buildTracerIncidents(tracerEvents);
+  const openErrors = errors.filter((incident) => incident.status === 'open');
+  const errorsByRound = new Map<string, TracerIncident[]>();
 
-    // Add to activity feed
-    if (err.created_at) {
-      activityFeed.push({
-        type: err.severity === 'warning' ? 'detail_warning' : 'round_error',
-        player_name: playerId ? (playerNameMap.get(playerId) || 'Unknown') : 'Unknown',
-        player_id: playerId || '',
-        round_id: roundId || null,
-        course_name: null,
-        score: null,
-        score_to_par: null,
-        error_message: err.message,
-        timestamp: err.created_at,
-      });
+  for (const incident of openErrors) {
+    for (const roundId of incident.roundIds) {
+      if (!errorsByRound.has(roundId)) errorsByRound.set(roundId, []);
+      errorsByRound.get(roundId)!.push(incident);
     }
   }
+
+  for (const event of tracerEvents) {
+    const context = buildTracerIncidentContext(event.metadata);
+    const roundId = context.roundId;
+    const playerId = context.playerId;
+    const playerName = playerId ? (playerNameMap.get(playerId) || 'Unknown') : 'Unknown';
+    const linkedRound = roundId
+      ? (allRoundsResult.data || []).find((round) => round.id === roundId)
+      : null;
+
+    activityFeed.push({
+      type: normalizeTracerSeverity(event.severity) === 'warning' || normalizeTracerSeverity(event.severity) === 'info'
+        ? 'detail_warning'
+        : 'round_error',
+      player_name: playerName,
+      player_id: playerId || '',
+      round_id: roundId || null,
+      course_name: linkedRound?.course_name ?? null,
+      score: null,
+      score_to_par: null,
+      error_message: getTracerEventMessage(event),
+      timestamp: event.created_at,
+    });
+  }
+
+  const recentEventCount7d = tracerEvents.filter((event) => event.created_at >= ago7d).length;
+  const recentCriticalCount7d = tracerEvents.filter((event) => event.created_at >= ago7d && normalizeTracerSeverity(event.severity) === 'critical').length;
+  const recentWarningCount7d = tracerEvents.filter((event) => event.created_at >= ago7d && normalizeTracerSeverity(event.severity) === 'warning').length;
 
   // Apply counts + errors to round details
   for (const rounds of Object.values(roundsByPlayer)) {
@@ -496,9 +1006,9 @@ export async function getTracerData(): Promise<TracerData> {
     recentErrors: errors,
     activityFeed: activityFeed.slice(0, 50),
     errorStats: {
-      total7d: errorTotal7d.count || 0,
-      critical7d: errorCritical7d.count || 0,
-      warnings7d: errorWarnings7d.count || 0,
+      total7d: recentEventCount7d,
+      critical7d: recentCriticalCount7d,
+      warnings7d: recentWarningCount7d,
     },
     roundIntegrity,
   };
@@ -537,7 +1047,7 @@ export async function getTracerEnrichedData(): Promise<TracerEnrichedData> {
   const ago30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
   const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
 
-  const [roundsResult, errorsResult, stuckResult] = await Promise.all([
+  const [roundsResult, tracerEventsResult, stuckResult] = await Promise.all([
     // Daily round counts (last 30 days)
     adminDb
       .from('golf_rounds')
@@ -545,12 +1055,11 @@ export async function getTracerEnrichedData(): Promise<TracerEnrichedData> {
       .gte('created_at', ago30d)
       .order('created_at', { ascending: true }),
 
-    // Daily error counts (last 30 days)
     adminDb
-      .from('error_logs')
-      .select('created_at')
+      .from('admin_events')
+      .select('id, event_type, severity, title, message, metadata, url, stack_trace, user_id, user_email, resolved, resolved_at, resolved_by, created_at')
+      .eq('event_type', 'error')
       .gte('created_at', ago30d)
-      .or('context->>action.in.(submitGolfRoundComprehensive,savePartialRound),severity.eq.warning')
       .order('created_at', { ascending: true }),
 
     // Stuck rounds (in_progress with updated_at > 2 hours ago)
@@ -580,6 +1089,9 @@ export async function getTracerEnrichedData(): Promise<TracerEnrichedData> {
     return Array.from(map.entries()).map(([date, count]) => ({ date, count }));
   }
 
+  const tracerEvents = ((tracerEventsResult.data || []) as TracerAdminEventRecord[])
+    .filter((event) => isShotTrackingTracerEvent(event));
+
   // Resolve player names for stuck rounds
   const stuckData = stuckResult.data || [];
   const stuckPlayerIds = [...new Set(stuckData.map((r) => r.player_id))];
@@ -607,7 +1119,7 @@ export async function getTracerEnrichedData(): Promise<TracerEnrichedData> {
 
   return {
     dailyRoundCounts: toDailyCounts(roundsResult.data),
-    dailyErrorCounts: toDailyCounts(errorsResult.data),
+    dailyErrorCounts: toDailyCounts(tracerEvents),
     stuckRounds,
   };
 }
@@ -636,7 +1148,7 @@ export interface TracerShotDiagnostic {
 export interface TracerRoundDiagnosticData {
   holes: TracerHoleDiagnostic[];
   shots: TracerShotDiagnostic[];
-  errors: TracerErrorLog[];
+  errors: TracerIncident[];
   playerName: string;
 }
 
@@ -653,6 +1165,7 @@ export async function getTracerRoundDiagnostic(roundId: string): Promise<TracerR
   if (userData?.role !== 'admin') throw new Error('Forbidden');
 
   const adminDb = createAdminClient();
+  const ago45d = new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString();
 
   // Get round info to resolve player name
   const { data: round } = await adminDb
@@ -688,9 +1201,11 @@ export async function getTracerRoundDiagnostic(roundId: string): Promise<TracerR
       .order('shot_number', { ascending: true }),
 
     adminDb
-      .from('error_logs')
-      .select('id, message, severity, stack, url, user_id, context, created_at')
-      .eq('context->>roundId', roundId)
+      .from('admin_events')
+      .select('id, event_type, severity, title, message, metadata, url, stack_trace, user_id, user_email, resolved, resolved_at, resolved_by, created_at')
+      .eq('event_type', 'error')
+      .eq('metadata->>roundId', roundId)
+      .gte('created_at', ago45d)
       .order('created_at', { ascending: false }),
   ]);
 
@@ -714,7 +1229,7 @@ export async function getTracerRoundDiagnostic(roundId: string): Promise<TracerR
   return {
     holes,
     shots,
-    errors: (errorsResult.data || []) as TracerErrorLog[],
+    errors: buildTracerIncidents((errorsResult.data || []) as TracerAdminEventRecord[]),
     playerName,
   };
 }

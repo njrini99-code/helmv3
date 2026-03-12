@@ -10,7 +10,6 @@
  */
 
 import { useState, useTransition, useMemo, useCallback, memo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import {
@@ -63,17 +62,6 @@ interface IntelligenceCommandCenterProps {
 }
 
 type TabId = 'overview' | 'insights' | 'patterns' | 'predictions';
-
-// ============================================================================
-// ANIMATION VARIANTS
-// ============================================================================
-
-const fadeIn = {
-  initial: { opacity: 0, y: 8 },
-  animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -8 },
-  transition: { duration: 0.2, ease: [0.25, 0.46, 0.45, 0.94] as const },
-};
 
 // ============================================================================
 // HELPER: Tone config
@@ -181,7 +169,7 @@ const OverviewSummary = memo(function OverviewSummary({
   };
 
   return (
-    <motion.div {...fadeIn} className={cn(
+    <div className={cn(
       'grid gap-2 mb-3',
       isPage ? 'grid-cols-2 md:grid-cols-4 gap-4 mb-6' : 'grid-cols-2'
     )}>
@@ -233,7 +221,7 @@ const OverviewSummary = memo(function OverviewSummary({
         <div className={cn('space-y-1', isPage && 'space-y-2')}>
           {urgentCount > 0 && (
             <div className="flex items-center gap-2">
-              <div className={cn('rounded-full bg-red-500 animate-pulse', isPage ? 'w-2 h-2' : 'w-1.5 h-1.5')} />
+              <div className={cn('rounded-full bg-red-500', isPage ? 'w-2 h-2' : 'w-1.5 h-1.5')} />
               <span className={cn('text-red-600 font-medium', isPage ? 'text-sm' : 'text-xs')}>{urgentCount} urgent</span>
             </div>
           )}
@@ -281,7 +269,7 @@ const OverviewSummary = memo(function OverviewSummary({
           </div>
         </>
       )}
-    </motion.div>
+    </div>
   );
 });
 
@@ -321,12 +309,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
       );
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 8, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+    <div
       className={cn(
         'border overflow-hidden transition-shadow',
         isPage ? 'rounded-2xl' : 'rounded-xl',
@@ -401,24 +384,14 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
         </div>
 
         {/* Expand chevron */}
-        <motion.div
-          animate={{ rotate: expanded ? 180 : 0 }}
-          className="flex-shrink-0 mt-1 text-warm-300"
-        >
+        <div className={cn('flex-shrink-0 mt-1 text-warm-300', expanded && 'rotate-180')}>
           <IconChevronDown size={isPage ? 18 : 14} />
-        </motion.div>
+        </div>
       </button>
 
       {/* Expanded content */}
-      <AnimatePresence>
-        {expanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
-            className="overflow-hidden"
-          >
+      {expanded && (
+        <div className="overflow-hidden">
             <div className={cn('pt-0 space-y-2.5', isPage ? 'px-5 pb-5 space-y-4' : 'px-3 pb-3')}>
               {/* Full body */}
               <p className={cn('text-warm-600 leading-relaxed', isPage ? 'text-sm' : 'text-xs')}>
@@ -560,10 +533,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                     </span>
                   </div>
                   <div className={cn('bg-warm-100 rounded-full overflow-hidden', isPage ? 'h-2' : 'h-1.5')}>
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${Math.min(100, (strokeImpact / 2) * 100)}%` }}
-                      transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
+                    <div
                       className={cn(
                         'h-full rounded-full',
                         strokeImpact >= 1.0
@@ -572,6 +542,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                             ? 'bg-gradient-to-r from-amber-400 to-amber-500'
                             : 'bg-gradient-to-r from-warm-300 to-warm-400'
                       )}
+                      style={{ width: `${Math.min(100, (strokeImpact / 2) * 100)}%` }}
                     />
                   </div>
                 </div>
@@ -622,10 +593,9 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                 </div>
               )}
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
+        </div>
+      )}
+    </div>
   );
 });
 
@@ -678,12 +648,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
   const CategoryIcon = CATEGORY_ICONS[group.category] || IconSparkles;
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 8, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+    <div
       className={cn(
         'border overflow-hidden transition-shadow',
         isPage ? 'rounded-2xl' : 'rounded-xl',
@@ -799,24 +764,14 @@ const InsightGroupCard = memo(function InsightGroupCard({
         </div>
 
         {/* Expand chevron */}
-        <motion.div
-          animate={{ rotate: expanded ? 180 : 0 }}
-          className="flex-shrink-0 mt-1 text-warm-300"
-        >
+        <div className={cn('flex-shrink-0 mt-1 text-warm-300', expanded && 'rotate-180')}>
           <IconChevronDown size={isPage ? 18 : 14} />
-        </motion.div>
+        </div>
       </button>
 
       {/* Expanded content */}
-      <AnimatePresence>
-        {expanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
-            className="overflow-hidden"
-          >
+      {expanded && (
+        <div className="overflow-hidden">
             <div className={cn('pt-0 space-y-2.5', isPage ? 'px-5 pb-5 space-y-4' : 'px-3 pb-3')}>
               {/* Full body */}
               <p className={cn('text-warm-600 leading-relaxed', isPage ? 'text-sm' : 'text-xs')}>
@@ -912,10 +867,9 @@ const InsightGroupCard = memo(function InsightGroupCard({
                 </div>
               )}
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
+        </div>
+      )}
+    </div>
   );
 });
 
@@ -947,11 +901,7 @@ const EnhancedPatternCard = memo(function EnhancedPatternCard({
   };
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -8 }}
+    <div
       className={cn(
         'bg-white/80 border border-warm-200/60 overflow-hidden',
         isPage ? 'rounded-2xl' : 'rounded-xl',
@@ -977,12 +927,9 @@ const EnhancedPatternCard = memo(function EnhancedPatternCard({
           {pattern.trend === 'weakening' && (
             <IconTrendingDown size={10} className="text-primary-400 ml-auto" />
           )}
-          <motion.div
-            animate={{ rotate: expanded ? 180 : 0 }}
-            className="text-warm-300 ml-auto"
-          >
+          <div className={cn('text-warm-300 ml-auto', expanded && 'rotate-180')}>
             <IconChevronDown size={12} />
-          </motion.div>
+          </div>
         </div>
 
         {/* Description */}
@@ -1008,31 +955,22 @@ const EnhancedPatternCard = memo(function EnhancedPatternCard({
             </span>
           </div>
           <div className={cn('bg-warm-100 rounded-full overflow-hidden', isPage ? 'h-2' : 'h-1.5')}>
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${impactWidth}%` }}
-              transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
+            <div
               className={cn(
                 'h-full rounded-full',
                 isNegative
                   ? 'bg-gradient-to-r from-red-400 to-red-500'
                   : 'bg-gradient-to-r from-primary-400 to-primary-500'
               )}
+              style={{ width: `${impactWidth}%` }}
             />
           </div>
         </div>
       </button>
 
       {/* Expanded */}
-      <AnimatePresence>
-        {expanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
-            className="overflow-hidden"
-          >
+      {expanded && (
+        <div className="overflow-hidden">
             <div className="px-3 pb-3 space-y-2.5 border-t border-warm-100/80 pt-2.5">
               {/* Conditions */}
               {pattern.conditions.length > 0 && (
@@ -1085,10 +1023,9 @@ const EnhancedPatternCard = memo(function EnhancedPatternCard({
                 </div>
               )}
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
+        </div>
+      )}
+    </div>
   );
 });
 
@@ -1121,10 +1058,7 @@ const EnhancedPredictionCard = memo(function EnhancedPredictionCard({
     r !== undefined && !Array.isArray(r) && 'blowupProbability' in r;
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, scale: 0.97 }}
-      animate={{ opacity: 1, scale: 1 }}
+    <div
       className={cn(
         'bg-white/80 border border-warm-200/60 shadow-sm hover:shadow-md transition-shadow',
         isPage ? 'rounded-2xl p-5' : 'rounded-xl p-3'
@@ -1179,15 +1113,13 @@ const EnhancedPredictionCard = memo(function EnhancedPredictionCard({
             <span className="font-medium">{confidencePct}%</span>
           </div>
           <div className={cn('bg-warm-100 rounded-full overflow-hidden', isPage ? 'h-2' : 'h-1.5')}>
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${confidencePct}%` }}
-              transition={{ duration: 0.5, delay: 0.1 }}
+            <div
               className={cn(
                 'h-full rounded-full',
                 confidencePct >= 70 ? 'bg-primary-500' :
                 confidencePct >= 50 ? 'bg-amber-500' : 'bg-red-500'
               )}
+              style={{ width: `${confidencePct}%` }}
             />
           </div>
         </div>
@@ -1238,7 +1170,7 @@ const EnhancedPredictionCard = memo(function EnhancedPredictionCard({
           </div>
         </div>
       )}
-    </motion.div>
+    </div>
   );
 });
 
@@ -1427,9 +1359,7 @@ export function IntelligenceCommandCenter({
           >
             {isPending ? (
               <>
-                <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>
-                  <IconRefresh size={isPage ? 16 : 13} />
-                </motion.div>
+                <IconRefresh size={isPage ? 16 : 13} />
                 Analyzing Team...
               </>
             ) : (
@@ -1472,231 +1402,229 @@ export function IntelligenceCommandCenter({
       )}
 
       {/* Tab Content */}
-      <AnimatePresence mode="wait">
-        {activeTab === 'overview' && hasData && (
-          <motion.div key="overview" {...fadeIn} className={cn(isPage ? 'space-y-6' : 'space-y-2.5')}>
-            <OverviewSummary insights={insights} patterns={patterns} variant={variant} />
+      {activeTab === 'overview' && hasData && (
+        <div className={cn(isPage ? 'space-y-6' : 'space-y-2.5')}>
+          <OverviewSummary insights={insights} patterns={patterns} variant={variant} />
 
-            {isPage ? (
-              /* Page: two-column layout for top items */
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <h3 className="text-sm font-bold text-warm-500 uppercase tracking-wider">Top Insights</h3>
-                  {displayGroups ? (
-                    insightGroups.slice(0, 2).map((group) => (
-                      <InsightGroupCard
-                        key={group.id}
-                        group={group}
-                        onAcknowledgeGroup={(g) => handleGroupAction(g, 'acknowledge')}
-                        onDismissGroup={(g) => handleGroupAction(g, 'dismiss')}
-                        variant={variant}
-                      />
-                    ))
-                  ) : (
-                    <>
-                      {sortedInsights[0] && (() => {
-                        const first = sortedInsights[0];
-                        return (
-                          <EnhancedInsightCard
-                            insight={first}
-                            onAction={(action) => handleInsightAction(first, action)}
-                            variant={variant}
-                          />
-                        );
-                      })()}
-                      {sortedInsights[1] && (() => {
-                        const second = sortedInsights[1];
-                        return (
-                          <EnhancedInsightCard
-                            insight={second}
-                            onAction={(action) => handleInsightAction(second, action)}
-                            variant={variant}
-                          />
-                        );
-                      })()}
-                    </>
-                  )}
-                </div>
-                <div className="space-y-4">
-                  {sortedPatterns[0] && (
-                    <>
-                      <h3 className="text-sm font-bold text-warm-500 uppercase tracking-wider">Top Pattern</h3>
-                      <EnhancedPatternCard pattern={sortedPatterns[0]} variant={variant} />
-                    </>
-                  )}
-                  {predictions[0] && (
-                    <>
-                      <h3 className="text-sm font-bold text-warm-500 uppercase tracking-wider mt-4">Next Round Forecast</h3>
-                      <EnhancedPredictionCard prediction={predictions[0]} variant={variant} />
-                    </>
-                  )}
-                </div>
-              </div>
-            ) : (
-              /* Widget: compact single-column */
-              <>
+          {isPage ? (
+            /* Page: two-column layout for top items */
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <h3 className="text-sm font-bold text-warm-500 uppercase tracking-wider">Top Insights</h3>
                 {displayGroups ? (
-                  insightGroups[0] && (
-                    <InsightGroupCard
-                      group={insightGroups[0]}
-                      onAcknowledgeGroup={(g) => handleGroupAction(g, 'acknowledge')}
-                      onDismissGroup={(g) => handleGroupAction(g, 'dismiss')}
-                    />
-                  )
-                ) : (
-                  sortedInsights[0] && (() => {
-                    const topInsight = sortedInsights[0];
-                    return (
-                      <EnhancedInsightCard
-                        insight={topInsight}
-                        onAction={(action) => handleInsightAction(topInsight, action)}
-                      />
-                    );
-                  })()
-                )}
-                {sortedPatterns[0] && (
-                  <EnhancedPatternCard pattern={sortedPatterns[0]} />
-                )}
-                {predictions[0] && (
-                  <EnhancedPredictionCard prediction={predictions[0]} />
-                )}
-                <Link
-                  href="/golf/dashboard/intelligence"
-                  className="flex items-center justify-center gap-2 py-2.5 text-xs font-semibold text-primary-600 hover:text-primary-700 transition-colors"
-                >
-                  View Full Intelligence Dashboard
-                  <IconChevronRight size={14} />
-                </Link>
-              </>
-            )}
-          </motion.div>
-        )}
-
-        {activeTab === 'insights' && (
-          <motion.div key="insights" {...fadeIn} className={cn(isPage ? 'space-y-4' : 'space-y-2')}>
-            {displayGroups ? (
-              <>
-                {isPage && (
-                  <h3 className="text-lg font-semibold text-warm-800">
-                    Insights ({insightGroups.length} {insightGroups.length === 1 ? 'group' : 'groups'})
-                  </h3>
-                )}
-                {isPage ? (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {insightGroups.map((group) => (
-                      <InsightGroupCard
-                        key={group.id}
-                        group={group}
-                        onAcknowledgeGroup={(g) => handleGroupAction(g, 'acknowledge')}
-                        onDismissGroup={(g) => handleGroupAction(g, 'dismiss')}
-                        variant={variant}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  insightGroups.map((group) => (
+                  insightGroups.slice(0, 2).map((group) => (
                     <InsightGroupCard
                       key={group.id}
                       group={group}
                       onAcknowledgeGroup={(g) => handleGroupAction(g, 'acknowledge')}
                       onDismissGroup={(g) => handleGroupAction(g, 'dismiss')}
+                      variant={variant}
                     />
                   ))
-                )}
-              </>
-            ) : sortedInsights.length > 0 ? (
-              <>
-                {isPage && (
-                  <h3 className="text-lg font-semibold text-warm-800">All Insights ({sortedInsights.length})</h3>
-                )}
-                {isPage ? (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {sortedInsights.map((insight, i) => (
-                      <EnhancedInsightCard
-                        key={i}
-                        insight={insight}
-                        onAction={(action) => handleInsightAction(insight, action)}
-                        variant={variant}
-                      />
-                    ))}
-                  </div>
                 ) : (
-                  sortedInsights.map((insight, i) => (
+                  <>
+                    {sortedInsights[0] && (() => {
+                      const first = sortedInsights[0];
+                      return (
+                        <EnhancedInsightCard
+                          insight={first}
+                          onAction={(action) => handleInsightAction(first, action)}
+                          variant={variant}
+                        />
+                      );
+                    })()}
+                    {sortedInsights[1] && (() => {
+                      const second = sortedInsights[1];
+                      return (
+                        <EnhancedInsightCard
+                          insight={second}
+                          onAction={(action) => handleInsightAction(second, action)}
+                          variant={variant}
+                        />
+                      );
+                    })()}
+                  </>
+                )}
+              </div>
+              <div className="space-y-4">
+                {sortedPatterns[0] && (
+                  <>
+                    <h3 className="text-sm font-bold text-warm-500 uppercase tracking-wider">Top Pattern</h3>
+                    <EnhancedPatternCard pattern={sortedPatterns[0]} variant={variant} />
+                  </>
+                )}
+                {predictions[0] && (
+                  <>
+                    <h3 className="text-sm font-bold text-warm-500 uppercase tracking-wider mt-4">Next Round Forecast</h3>
+                    <EnhancedPredictionCard prediction={predictions[0]} variant={variant} />
+                  </>
+                )}
+              </div>
+            </div>
+          ) : (
+            /* Widget: compact single-column */
+            <>
+              {displayGroups ? (
+                insightGroups[0] && (
+                  <InsightGroupCard
+                    group={insightGroups[0]}
+                    onAcknowledgeGroup={(g) => handleGroupAction(g, 'acknowledge')}
+                    onDismissGroup={(g) => handleGroupAction(g, 'dismiss')}
+                  />
+                )
+              ) : (
+                sortedInsights[0] && (() => {
+                  const topInsight = sortedInsights[0];
+                  return (
+                    <EnhancedInsightCard
+                      insight={topInsight}
+                      onAction={(action) => handleInsightAction(topInsight, action)}
+                    />
+                  );
+                })()
+              )}
+              {sortedPatterns[0] && (
+                <EnhancedPatternCard pattern={sortedPatterns[0]} />
+              )}
+              {predictions[0] && (
+                <EnhancedPredictionCard prediction={predictions[0]} />
+              )}
+              <Link
+                href="/golf/dashboard/intelligence"
+                className="flex items-center justify-center gap-2 py-2.5 text-xs font-semibold text-primary-600 hover:text-primary-700 transition-colors"
+              >
+                View Full Intelligence Dashboard
+                <IconChevronRight size={14} />
+              </Link>
+            </>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'insights' && (
+        <div className={cn(isPage ? 'space-y-4' : 'space-y-2')}>
+          {displayGroups ? (
+            <>
+              {isPage && (
+                <h3 className="text-lg font-semibold text-warm-800">
+                  Insights ({insightGroups.length} {insightGroups.length === 1 ? 'group' : 'groups'})
+                </h3>
+              )}
+              {isPage ? (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {insightGroups.map((group) => (
+                    <InsightGroupCard
+                      key={group.id}
+                      group={group}
+                      onAcknowledgeGroup={(g) => handleGroupAction(g, 'acknowledge')}
+                      onDismissGroup={(g) => handleGroupAction(g, 'dismiss')}
+                      variant={variant}
+                    />
+                  ))}
+                </div>
+              ) : (
+                insightGroups.map((group) => (
+                  <InsightGroupCard
+                    key={group.id}
+                    group={group}
+                    onAcknowledgeGroup={(g) => handleGroupAction(g, 'acknowledge')}
+                    onDismissGroup={(g) => handleGroupAction(g, 'dismiss')}
+                  />
+                ))
+              )}
+            </>
+          ) : sortedInsights.length > 0 ? (
+            <>
+              {isPage && (
+                <h3 className="text-lg font-semibold text-warm-800">All Insights ({sortedInsights.length})</h3>
+              )}
+              {isPage ? (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {sortedInsights.map((insight, i) => (
                     <EnhancedInsightCard
                       key={i}
                       insight={insight}
                       onAction={(action) => handleInsightAction(insight, action)}
+                      variant={variant}
                     />
-                  ))
-                )}
-              </>
-            ) : (
-              <TabEmptyState
-                icon={<IconSparkles size={isPage ? 28 : 20} className="text-warm-300" />}
-                title="No insights yet"
-                description="Click 'Analyze Team' to generate AI-powered coaching insights"
-                variant={variant}
-              />
-            )}
-          </motion.div>
-        )}
-
-        {activeTab === 'patterns' && (
-          <motion.div key="patterns" {...fadeIn} className={cn(isPage ? 'space-y-4' : 'space-y-2')}>
-            {isPage && (
-              <h3 className="text-lg font-semibold text-warm-800">All Patterns ({sortedPatterns.length})</h3>
-            )}
-            {sortedPatterns.length > 0 ? (
-              isPage ? (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {sortedPatterns.map(pattern => (
-                    <EnhancedPatternCard key={pattern.id} pattern={pattern} variant={variant} />
                   ))}
                 </div>
               ) : (
-                sortedPatterns.map(pattern => (
-                  <EnhancedPatternCard key={pattern.id} pattern={pattern} />
+                sortedInsights.map((insight, i) => (
+                  <EnhancedInsightCard
+                    key={i}
+                    insight={insight}
+                    onAction={(action) => handleInsightAction(insight, action)}
+                  />
                 ))
-              )
-            ) : (
-              <TabEmptyState
-                icon={<IconStar size={isPage ? 28 : 20} className="text-warm-300" />}
-                title="No patterns detected"
-                description="Patterns emerge from analyzing recurring trends in player data"
-                variant={variant}
-              />
-            )}
-          </motion.div>
-        )}
+              )}
+            </>
+          ) : (
+            <TabEmptyState
+              icon={<IconSparkles size={isPage ? 28 : 20} className="text-warm-300" />}
+              title="No insights yet"
+              description="Click 'Analyze Team' to generate AI-powered coaching insights"
+              variant={variant}
+            />
+          )}
+        </div>
+      )}
 
-        {activeTab === 'predictions' && (
-          <motion.div key="predictions" {...fadeIn} className={cn(isPage ? 'space-y-4' : 'space-y-2')}>
-            {isPage && (
-              <h3 className="text-lg font-semibold text-warm-800">All Forecasts ({predictions.length})</h3>
-            )}
-            {predictions.length > 0 ? (
-              isPage ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {predictions.map((pred, i) => (
-                    <EnhancedPredictionCard key={i} prediction={pred} variant={variant} />
-                  ))}
-                </div>
-              ) : (
-                predictions.map((pred, i) => (
-                  <EnhancedPredictionCard key={i} prediction={pred} />
-                ))
-              )
+      {activeTab === 'patterns' && (
+        <div className={cn(isPage ? 'space-y-4' : 'space-y-2')}>
+          {isPage && (
+            <h3 className="text-lg font-semibold text-warm-800">All Patterns ({sortedPatterns.length})</h3>
+          )}
+          {sortedPatterns.length > 0 ? (
+            isPage ? (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {sortedPatterns.map(pattern => (
+                  <EnhancedPatternCard key={pattern.id} pattern={pattern} variant={variant} />
+                ))}
+              </div>
             ) : (
-              <TabEmptyState
-                icon={<IconTarget size={isPage ? 28 : 20} className="text-warm-300" />}
-                title="No predictions yet"
-                description="Predictions require sufficient round history to generate forecasts"
-                variant={variant}
-              />
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+              sortedPatterns.map(pattern => (
+                <EnhancedPatternCard key={pattern.id} pattern={pattern} />
+              ))
+            )
+          ) : (
+            <TabEmptyState
+              icon={<IconStar size={isPage ? 28 : 20} className="text-warm-300" />}
+              title="No patterns detected"
+              description="Patterns emerge from analyzing recurring trends in player data"
+              variant={variant}
+            />
+          )}
+        </div>
+      )}
+
+      {activeTab === 'predictions' && (
+        <div className={cn(isPage ? 'space-y-4' : 'space-y-2')}>
+          {isPage && (
+            <h3 className="text-lg font-semibold text-warm-800">All Forecasts ({predictions.length})</h3>
+          )}
+          {predictions.length > 0 ? (
+            isPage ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {predictions.map((pred, i) => (
+                  <EnhancedPredictionCard key={i} prediction={pred} variant={variant} />
+                ))}
+              </div>
+            ) : (
+              predictions.map((pred, i) => (
+                <EnhancedPredictionCard key={i} prediction={pred} />
+              ))
+            )
+          ) : (
+            <TabEmptyState
+              icon={<IconTarget size={isPage ? 28 : 20} className="text-warm-300" />}
+              title="No predictions yet"
+              description="Predictions require sufficient round history to generate forecasts"
+              variant={variant}
+            />
+          )}
+        </div>
+      )}
 
       {/* No data state */}
       {!hasData && !isPending && (

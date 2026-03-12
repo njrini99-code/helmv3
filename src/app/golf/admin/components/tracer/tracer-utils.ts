@@ -1,7 +1,7 @@
 import type {
   TracerData,
   TracerRoundDetail,
-  TracerErrorLog,
+  TracerIncident,
   TracerPlayerSummary,
   FlatRound,
   ErrorGroup,
@@ -99,45 +99,18 @@ export function isStuckRound(round: TracerRoundDetail): boolean {
 // GROUP ERRORS (cluster similar errors)
 // ============================================================================
 
-export function groupErrors(errors: TracerErrorLog[]): ErrorGroup[] {
-  const groups = new Map<string, ErrorGroup>();
-
-  for (const err of errors) {
-    // Normalize message by removing UUIDs and specific IDs for grouping
-    const normalizedMsg = err.message
-      .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '[ID]')
-      .replace(/\b\d{4,}\b/g, '[NUM]');
-
-    const key = `${err.severity || 'error'}:${normalizedMsg}`;
-    const ctx = err.context as Record<string, unknown> | null;
-    const playerId = (ctx?.playerId as string) || '';
-
-    if (groups.has(key)) {
-      const group = groups.get(key)!;
-      group.count++;
-      if (err.created_at && err.created_at > group.lastSeen) {
-        group.lastSeen = err.created_at;
-      }
-      if (err.created_at && err.created_at < group.firstSeen) {
-        group.firstSeen = err.created_at;
-      }
-      if (playerId && !group.affectedPlayers.includes(playerId)) {
-        group.affectedPlayers.push(playerId);
-      }
-    } else {
-      groups.set(key, {
-        key,
-        message: err.message,
-        count: 1,
-        severity: err.severity || 'error',
-        firstSeen: err.created_at || '',
-        lastSeen: err.created_at || '',
-        affectedPlayers: playerId ? [playerId] : [],
-      });
-    }
-  }
-
-  return Array.from(groups.values()).sort((a, b) => b.count - a.count);
+export function groupErrors(errors: TracerIncident[]): ErrorGroup[] {
+  return [...errors]
+    .map((incident) => ({
+      key: incident.id,
+      message: incident.title,
+      count: incident.occurrences,
+      severity: incident.severity,
+      firstSeen: incident.firstSeen,
+      lastSeen: incident.lastSeen,
+      affectedPlayers: incident.playerIds,
+    }))
+    .sort((a, b) => b.count - a.count);
 }
 
 // ============================================================================
@@ -145,16 +118,19 @@ export function groupErrors(errors: TracerErrorLog[]): ErrorGroup[] {
 // ============================================================================
 
 export function getMostAffectedPlayers(
-  errors: TracerErrorLog[],
+  errors: TracerIncident[],
   data: TracerData
 ): AffectedPlayer[] {
   const counts = new Map<string, number>();
 
-  for (const err of errors) {
-    const ctx = err.context as Record<string, unknown> | null;
-    const playerId = ctx?.playerId as string | undefined;
-    if (playerId) {
-      counts.set(playerId, (counts.get(playerId) || 0) + 1);
+  for (const incident of errors) {
+    const weight = incident.status === 'open'
+      ? Math.max(incident.openOccurrences, 1)
+      : Math.max(incident.occurrences, 1);
+    for (const playerId of incident.playerIds) {
+      if (playerId) {
+        counts.set(playerId, (counts.get(playerId) || 0) + weight);
+      }
     }
   }
 
