@@ -65,6 +65,9 @@ export interface TracerErrorLog {
   id: string;
   message: string;
   severity: string | null;
+  stack: string | null;
+  url: string | null;
+  user_id: string | null;
   context: Record<string, unknown> | null;
   created_at: string | null;
 }
@@ -127,6 +130,7 @@ export async function getTracerData(): Promise<TracerData> {
 
   const adminDb = createAdminClient();
   const ago7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const ago30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
   // Batch 1: Core data
   const [allPlayersResult, allRoundsResult, statsAccuracyResult] = await Promise.all([
@@ -282,12 +286,13 @@ export async function getTracerData(): Promise<TracerData> {
     // Error logs
     adminDb
       .from('error_logs')
-      .select('id, message, severity, context, created_at')
+      .select('id, message, severity, stack, url, user_id, context, created_at')
+      .gte('created_at', ago30d)
       .or(
         `context->>action.in.(submitGolfRoundComprehensive,savePartialRound),severity.eq.warning`
       )
       .order('created_at', { ascending: false })
-      .limit(100),
+      .limit(250),
     adminDb
       .from('error_logs')
       .select('id', { count: 'exact', head: true })
@@ -684,7 +689,7 @@ export async function getTracerRoundDiagnostic(roundId: string): Promise<TracerR
 
     adminDb
       .from('error_logs')
-      .select('id, message, severity, context, created_at')
+      .select('id, message, severity, stack, url, user_id, context, created_at')
       .eq('context->>roundId', roundId)
       .order('created_at', { ascending: false }),
   ]);

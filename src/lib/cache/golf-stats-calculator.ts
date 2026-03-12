@@ -645,8 +645,11 @@ function buildLiveStatsSnapshot(
   }> | null
 ): StatsCacheLiveSnapshot {
   const completedRounds = rounds ?? [];
+  const completed18HoleRounds = completedRounds.filter(
+    round => (round.holes_played ?? 18) === 18 && round.total_score != null
+  );
   const totalHolesPlayed = completedRounds.reduce((sum, round) => sum + Math.max(round.holes_played ?? 18, 1), 0);
-  const totalScore = completedRounds.reduce((sum, round) => sum + (round.total_score ?? 0), 0);
+  const totalScore18 = completed18HoleRounds.reduce((sum, round) => sum + (round.total_score ?? 0), 0);
   const totalPutts = completedRounds.reduce((sum, round) => sum + (round.total_putts ?? 0), 0);
   const totalFairwaysHit = completedRounds.reduce((sum, round) => sum + (round.total_fairways_hit ?? 0), 0);
   const totalFairways = completedRounds.reduce((sum, round) => sum + (round.total_fairways ?? 0), 0);
@@ -655,8 +658,8 @@ function buildLiveStatsSnapshot(
 
   return {
     liveRounds: completedRounds.length,
-    liveScoringAvg: totalHolesPlayed > 0
-      ? Math.round(((totalScore / totalHolesPlayed) * 18) * 10) / 10
+    liveScoringAvg: completed18HoleRounds.length > 0
+      ? Math.round((totalScore18 / completed18HoleRounds.length) * 10) / 10
       : null,
     livePuttsPerRound: totalHolesPlayed > 0
       ? Math.round(((totalPutts / totalHolesPlayed) * 18) * 10) / 10

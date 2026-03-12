@@ -8,6 +8,7 @@ import { Analytics } from '@vercel/analytics/next';
 import { AdminErrorHandler } from '@/components/providers/AdminErrorHandler';
 import { ChunkLoadErrorHandler } from '@/components/providers/ChunkLoadErrorHandler';
 import { CapacitorProvider } from '@/components/providers/CapacitorProvider';
+import { StaleDeploymentRecoveryScript } from '@/components/providers/StaleDeploymentRecoveryScript';
 
 const playfair = Playfair_Display({
   subsets: ['latin'],
@@ -91,6 +92,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${playfair.variable} ${dmSans.variable}`} suppressHydrationWarning>
       <body className="font-sans antialiased" suppressHydrationWarning>
+        <StaleDeploymentRecoveryScript />
         <DatadogProvider>
           {children}
         </DatadogProvider>

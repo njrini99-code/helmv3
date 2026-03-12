@@ -361,7 +361,7 @@ export function normalizeToFeet(distance: number | null | undefined, unit: strin
 
 /** @internal - exported for testing */
 export function normalizeShotType(shotType: string | null | undefined): string | null {
-  if (!shotType) return shotType ?? null;
+  if (!shotType) return null;
   const lower = shotType.toLowerCase();
   if (lower === 'putt') return 'putting';
   if (lower === 'drive') return 'tee';
@@ -687,7 +687,7 @@ function createHoleStatsFromKnownHole(hole: HoleInfo): CalculatedHoleStats {
 /** @internal - exported for testing */
 export function calculateHoleStatsFromShots(
   shots: RawShot[],
-  holeInfo: Pick<HoleInfo, 'hole_number' | 'par' | 'score' | 'putts' | 'fairway_hit' | 'gir'>
+  holeInfoOrPar: number | Pick<HoleInfo, 'hole_number' | 'par' | 'score' | 'putts' | 'fairway_hit' | 'gir'>
 ): CalculatedHoleStats {
   // Sort shots by shot number
   const sortedShots = [...shots].sort((a, b) => a.shot_number - b.shot_number);
@@ -695,6 +695,16 @@ export function calculateHoleStatsFromShots(
     ...shot,
     shot_type: normalizeShotType(shot.shot_type),
   }));
+  const holeInfo = typeof holeInfoOrPar === 'number'
+    ? {
+        hole_number: normalizedShots[0]?.hole_number ?? 0,
+        par: holeInfoOrPar,
+        score: null,
+        putts: null,
+        fairway_hit: null,
+        gir: null,
+      }
+    : holeInfoOrPar;
 
   // Score = number of shots
   const score = holeInfo.score ?? normalizedShots.length;
@@ -731,7 +741,7 @@ export function calculateHoleStatsFromShots(
   //
   // For stats purposes, we use: shot_number === par - 2 (the regulation attempt)
   // If that shot doesn't exist, fall back to shotToGreen
-  const girAttemptShotNumber = holeInfo.par - 2 + 1; // par 3 → shot 1, par 4 → shot 2, par 5 → shot 3
+  const girAttemptShotNumber = Math.max(holeInfo.par - 2, 1); // par 3 → shot 1, par 4 → shot 2, par 5 → shot 3
 
   // Find the GIR attempt shot (the approach)
   // Priority: 1) Shot at GIR attempt number, 2) Shot that landed on green (if earlier)

@@ -311,12 +311,12 @@ describe('deriveLieAfterFromResult edge cases', () => {
     expect(deriveLieAfterFromResult('')).toBeNull();
   });
 
-  it('is case-sensitive (Fairway returns null)', () => {
-    expect(deriveLieAfterFromResult('Fairway')).toBeNull();
+  it('normalizes mixed-case fairway results', () => {
+    expect(deriveLieAfterFromResult('Fairway')).toBe('fairway');
   });
 
-  it('is case-sensitive (PENALTY returns null)', () => {
-    expect(deriveLieAfterFromResult('PENALTY')).toBeNull();
+  it('normalizes uppercase penalty results', () => {
+    expect(deriveLieAfterFromResult('PENALTY')).toBe('penalty');
   });
 
   it('returns null for string with trailing space', () => {

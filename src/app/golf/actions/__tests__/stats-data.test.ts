@@ -4,16 +4,51 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Mock Supabase with a chainable query builder
 // ---------------------------------------------------------------------------
 
-function createChainableMock(finalResult: { data: unknown[]; error: unknown } = { data: [], error: null }) {
-  const chain: Record<string, unknown> = {};
-  const methods = ['select', 'eq', 'in', 'gte', 'lte', 'not', 'order', 'limit', 'single'];
+function createChainableMock({
+  data = [] as unknown[],
+  error = null as unknown,
+  singleData = null as unknown,
+  maybeSingleData = null as unknown,
+} = {}) {
+  const chain: Record<string, unknown> = {
+    data,
+    error,
+    count: Array.isArray(data) ? data.length : 0,
+  };
+  const methods = ['select', 'eq', 'in', 'gte', 'lte', 'not', 'order', 'limit', 'filter'];
   for (const method of methods) {
-    chain[method] = vi.fn(() => ({ ...chain, ...finalResult }));
+    chain[method] = vi.fn(() => chain);
   }
+  chain.single = vi.fn(async () => ({ data: singleData, error }));
+  chain.maybeSingle = vi.fn(async () => ({ data: maybeSingleData, error }));
   return chain;
 }
 
-const mockFrom = vi.fn(() => createChainableMock({ data: [] as unknown[], error: null }));
+let mockRoundsData: unknown[] = [];
+let mockCoachData: unknown = null;
+let mockMembershipData: unknown = null;
+
+const mockFrom = vi.fn((table: string) => {
+  if (table === 'golf_players') {
+    return createChainableMock({
+      singleData: { id: 'player-test', user_id: 'user-1' },
+    });
+  }
+
+  if (table === 'golf_coaches') {
+    return createChainableMock({
+      maybeSingleData: mockCoachData,
+    });
+  }
+
+  if (table === 'golf_team_members') {
+    return createChainableMock({
+      maybeSingleData: mockMembershipData,
+    });
+  }
+
+  return createChainableMock({ data: mockRoundsData });
+});
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(async () => ({
@@ -65,7 +100,9 @@ import type { SummaryStatsResponse, FilterOptions } from '../stats-data-types';
 describe('stats-data server actions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockFrom.mockImplementation(() => createChainableMock({ data: [], error: null }));
+    mockRoundsData = [];
+    mockCoachData = null;
+    mockMembershipData = null;
   });
 
   // ========================================================================
@@ -147,7 +184,7 @@ describe('stats-data server actions', () => {
         { id: 'r2', round_date: '2026-02-05', course_name: 'TPC', round_type: 'practice', total_score: 74, score_to_par: 2, total_fairways_hit: 8, total_fairways: 14, total_gir: 10, total_gir_possible: 18, total_putts: 32, holes_played: 18 },
       ];
 
-      mockFrom.mockImplementation(() => createChainableMock({ data: roundsData, error: null }));
+      mockRoundsData = roundsData;
 
       const result = await getStatsSummary('player-1');
 
@@ -189,7 +226,9 @@ describe('stats-data server actions', () => {
 describe('stats-data preset limits behavior', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockFrom.mockImplementation(() => createChainableMock({ data: [], error: null }));
+    mockRoundsData = [];
+    mockCoachData = null;
+    mockMembershipData = null;
   });
 
   it('last5 preset limits results to 5', async () => {
@@ -217,7 +256,7 @@ describe('stats-data preset limits behavior', () => {
       total_putts: null, holes_played: 18,
     }));
 
-    mockFrom.mockImplementation(() => createChainableMock({ data: manyRounds, error: null }));
+    mockRoundsData = manyRounds;
 
     const result = await getStatsSummary('p', { preset: 'last5' });
     expect(result.rounds.length).toBe(5);

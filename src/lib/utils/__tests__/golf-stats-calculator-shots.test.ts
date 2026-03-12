@@ -872,13 +872,12 @@ describe('normalizeToFeet edge cases', () => {
 
 describe('normalizeShotType edge cases', () => {
   it('empty string returns empty string (truthy)', () => {
-    // '' is falsy, so returns null
+    // Empty strings should normalize to null.
     expect(normalizeShotType('')).toBeNull();
   });
 
-  it('does not normalize uppercase variants (case-sensitive)', () => {
-    // 'PUTT' does not match 'putt', passes through
-    expect(normalizeShotType('PUTT')).toBe('PUTT');
+  it('normalizes uppercase variants case-insensitively', () => {
+    expect(normalizeShotType('PUTT')).toBe('putting');
   });
 });
 
@@ -982,11 +981,9 @@ describe('getExpectedStrokes edge cases', () => {
     expect(getExpectedStrokes('green', 0, 0.5)).toBe(1.00);
   });
 
-  it('green without feet parameter → returns 0 (falls through)', () => {
-    // When lie=green but no distanceFeet, it treats as non-green path
+  it('green without feet parameter uses the closest green benchmark', () => {
     const result = getExpectedStrokes('green', 100);
-    // green is not a key in tee/fairway/rough/sand benchmarks, fallback to 3.5
-    expect(result).toBe(3.5);
+    expect(result).toBe(2.18);
   });
 
   it('sand at very close distance (20 yards) → uses benchmark', () => {
@@ -1084,8 +1081,8 @@ describe('calculateHoleStatsFromShots edge cases', () => {
     ];
     const stats = calculateHoleStatsFromShots(shots, 4);
     expect(stats.greenInRegulation).toBe(false);
-    expect(stats.scrambleAttempt).toBe(false); // no green hit → no scramble attempt
-    expect(stats.approachProximity).toBeNull();
+    expect(stats.scrambleAttempt).toBe(true);
+    expect(stats.approachProximity).toBe(150);
   });
 
   it('par 3 miss GIR (tee shot misses green)', () => {
@@ -1145,10 +1142,10 @@ describe('calculateHoleStatsFromShots edge cases', () => {
 describe('calculateStatsFromShots edge cases', () => {
   it('handles shots with no matching hole (skips gracefully)', () => {
     const shots = par4BirdieRawShots(99); // hole 99
-    const holes = [makeHoleInfo({ hole_number: 1, par: 4 })]; // only hole 1
+    const holes: ReturnType<typeof makeHoleInfo>[] = [];
     const rounds = [makeRoundInfo()];
     const stats = calculateStatsFromShots(shots, holes, rounds);
-    // Shots for hole 99 have no HoleInfo, so should be excluded
+    // Shots for hole 99 have no HoleInfo, so should be excluded.
     expect(stats.holesPlayed).toBe(0);
   });
 

@@ -1,3 +1,6 @@
+/* eslint-env serviceworker */
+/* global caches, fetch, Response */
+
 /**
  * GolfHelm Service Worker
  *
@@ -10,22 +13,17 @@
  * Cache Strategy:
  * - Static assets: Cache-first (versioned)
  * - API responses: Network-first with cache fallback
- * - Shot data pages: Stale-while-revalidate
+ * - Dashboard pages: Network-first with cache fallback
  */
 
-const CACHE_VERSION = 'golfhelm-v90f3d369';
+const CACHE_VERSION = 'golfhelm-v517ca9fe';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const API_CACHE = `${CACHE_VERSION}-api`;
 
 // Assets to cache immediately on install
 const STATIC_ASSETS = [
-  '/',
-  '/golf/dashboard',
-  '/golf/dashboard/rounds',
-  '/golf/dashboard/rounds/new',
   '/manifest.json',
-  // Add critical CSS/JS bundles as they're identified
 ];
 
 // API routes to cache for offline access
@@ -36,12 +34,7 @@ const CACHEABLE_API_PATTERNS = [
   /\/api\/health/,
 ];
 
-// Pages that should work offline
-const OFFLINE_PAGES = [
-  '/golf/dashboard',
-  '/golf/dashboard/rounds',
-  '/golf/dashboard/rounds/new',
-];
+const GOLF_DASHBOARD_PATH = '/golf/dashboard';
 
 // ============================================================================
 // INSTALL EVENT
@@ -54,8 +47,8 @@ self.addEventListener('install', (event) => {
         // Cache what we can, but don't fail if some assets aren't available
         return Promise.allSettled(
           STATIC_ASSETS.map(url =>
-            cache.add(url).catch(err => {
-              console.warn(`[SW] Failed to cache ${url}:`, err);
+            cache.add(url).catch((cacheError) => {
+              console.warn(`[SW] Failed to cache ${url}:`, cacheError);
             })
           )
         );
@@ -111,7 +104,7 @@ self.addEventListener('fetch', (event) => {
   // Handle different types of requests
   if (isApiRequest(url)) {
     event.respondWith(handleApiRequest(event.request));
-  } else if (isOfflinePage(url)) {
+  } else if (isGolfDashboardPage(event.request, url)) {
     event.respondWith(handlePageRequest(event.request));
   } else if (isStaticAsset(url)) {
     event.respondWith(handleStaticAsset(event.request));
@@ -139,7 +132,7 @@ async function handleApiRequest(request) {
     }
 
     return response;
-  } catch (error) {
+  } catch {
     const cachedResponse = await cache.match(request);
     if (cachedResponse) {
       return cachedResponse;
@@ -160,41 +153,30 @@ async function handleApiRequest(request) {
 }
 
 /**
- * Handle page requests - Stale while revalidate
+ * Handle dashboard page requests - network first, cache fallback.
+ *
+ * Returning cached HTML before checking the network can strand the app on an
+ * older deployment whose route chunks no longer exist. Network-first keeps the
+ * dashboard fresh while still preserving offline fallback.
  */
 async function handlePageRequest(request) {
   const cache = await caches.open(DYNAMIC_CACHE);
 
-  // Try cache first
-  const cachedResponse = await cache.match(request);
+  try {
+    const response = await fetch(request);
+    const contentType = response.headers.get('content-type') || '';
+    if (response.ok && contentType.includes('text/html')) {
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch {
+    const cachedResponse = await cache.match(request);
+    if (cachedResponse) {
+      return cachedResponse;
+    }
 
-  // Fetch in background
-  const fetchPromise = fetch(request)
-    .then((response) => {
-      if (response.ok) {
-        cache.put(request, response.clone());
-      }
-      return response;
-    })
-    .catch(() => {
-      return null;
-    });
-
-  // Return cached response immediately, or wait for network
-  if (cachedResponse) {
-    // Update cache in background
-    fetchPromise.catch(() => {});
-    return cachedResponse;
+    return getOfflinePage();
   }
-
-  // Wait for network if no cache
-  const networkResponse = await fetchPromise;
-  if (networkResponse) {
-    return networkResponse;
-  }
-
-  // Return offline page
-  return getOfflinePage();
 }
 
 /**
@@ -226,7 +208,7 @@ async function handleDynamicRequest(request) {
   try {
     const response = await fetch(request);
     return response;
-  } catch (error) {
+  } catch {
     const cache = await caches.open(DYNAMIC_CACHE);
     const cachedResponse = await cache.match(request);
 
@@ -401,8 +383,8 @@ function isApiRequest(url) {
     CACHEABLE_API_PATTERNS.some(pattern => pattern.test(url.pathname));
 }
 
-function isOfflinePage(url) {
-  return OFFLINE_PAGES.some(page => url.pathname.startsWith(page));
+function isGolfDashboardPage(request, url) {
+  return request.mode === 'navigate' && (url.pathname === GOLF_DASHBOARD_PATH || url.pathname.startsWith(`${GOLF_DASHBOARD_PATH}/`));
 }
 
 function isStaticAsset(url) {
@@ -491,4 +473,3 @@ function getOfflinePage() {
     }
   );
 }
-

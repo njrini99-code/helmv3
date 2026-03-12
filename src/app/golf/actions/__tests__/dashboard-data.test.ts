@@ -156,7 +156,7 @@ describe('dashboard-data server actions', () => {
 
     it('satisfies CoachDashboardPayload type contract', async () => {
       mockSingle.mockResolvedValue({ data: null, error: null });
-      const result: CoachDashboardPayload = await getCoachDashboardData('c', 'u', 't');
+      const result: CoachDashboardPayload = await getCoachDashboardData('c', 'user-1', 't');
 
       // Verify required fields exist (TypeScript compilation is the real check,
       // but these runtime assertions document the contract)
@@ -175,7 +175,7 @@ describe('dashboard-data server actions', () => {
 
     it('sparkline labels are correct', async () => {
       mockSingle.mockResolvedValue({ data: null, error: null });
-      const result = await getCoachDashboardData('c', 'u', 't');
+      const result = await getCoachDashboardData('c', 'user-1', 't');
 
       expect(result.sparklines.scoringAvg.label).toBe('Team Scoring Avg');
       expect(result.sparklines.girPct.label).toBe('Team GIR%');
@@ -227,7 +227,7 @@ describe('dashboard-data server actions', () => {
 
     it('satisfies PlayerDashboardPayload type contract', async () => {
       mockSingle.mockResolvedValue({ data: { handicap: null }, error: null });
-      const result: PlayerDashboardPayload = await getPlayerDashboardData('p', 'u', 't');
+      const result: PlayerDashboardPayload = await getPlayerDashboardData('p', 'user-1', 't');
 
       expect(result).toHaveProperty('todayEvents');
       expect(result).toHaveProperty('stats');
@@ -242,7 +242,7 @@ describe('dashboard-data server actions', () => {
 
     it('sparkline labels are correct for player', async () => {
       mockSingle.mockResolvedValue({ data: { handicap: null }, error: null });
-      const result = await getPlayerDashboardData('p', 'u', 't');
+      const result = await getPlayerDashboardData('p', 'user-1', 't');
 
       expect(result.sparklines.scoringAvg.label).toBe('Scoring Avg');
       expect(result.sparklines.girPct.label).toBe('GIR%');
@@ -253,7 +253,7 @@ describe('dashboard-data server actions', () => {
 
     it('secondary stats default to null with no rounds', async () => {
       mockSingle.mockResolvedValue({ data: { handicap: null }, error: null });
-      const result = await getPlayerDashboardData('p', 'u', 't');
+      const result = await getPlayerDashboardData('p', 'user-1', 't');
 
       expect(result.secondaryStats.firPct).toBeNull();
       expect(result.secondaryStats.scramblingPct).toBeNull();
@@ -263,7 +263,7 @@ describe('dashboard-data server actions', () => {
 
     it('recentRounds is capped at 5', async () => {
       mockSingle.mockResolvedValue({ data: { handicap: null }, error: null });
-      const result = await getPlayerDashboardData('p', 'u', 't');
+      const result = await getPlayerDashboardData('p', 'user-1', 't');
 
       expect(result.recentRounds.length).toBeLessThanOrEqual(5);
     });

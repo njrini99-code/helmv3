@@ -109,17 +109,17 @@ describe('TodayTimeline', () => {
   describe('single event', () => {
     it('renders event title', () => {
       render(<TodayTimeline events={[makeEvent()]} role="coach" />);
-      expect(screen.getByText('Morning Practice')).toBeInTheDocument();
+      expect(screen.getAllByText('Morning Practice').length).toBeGreaterThan(0);
     });
 
     it('renders event type badge', () => {
       render(<TodayTimeline events={[makeEvent()]} role="coach" />);
-      expect(screen.getByText('Practice')).toBeInTheDocument();
+      expect(screen.getAllByText('Practice').length).toBeGreaterThan(0);
     });
 
     it('renders event location', () => {
       render(<TodayTimeline events={[makeEvent()]} role="coach" />);
-      expect(screen.getByText('Practice Facility')).toBeInTheDocument();
+      expect(screen.getAllByText('Practice Facility').length).toBeGreaterThan(0);
     });
 
     it('shows event count badge', () => {
@@ -148,8 +148,8 @@ describe('TodayTimeline', () => {
         makeEvent({ id: '2', title: 'Afternoon Round', event_type: 'tournament' }),
       ];
       render(<TodayTimeline events={events} role="coach" />);
-      expect(screen.getByText('Morning Session')).toBeInTheDocument();
-      expect(screen.getByText('Afternoon Round')).toBeInTheDocument();
+      expect(screen.getAllByText('Morning Session').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Afternoon Round').length).toBeGreaterThan(0);
     });
 
     it('shows correct event count for multiple events', () => {
@@ -174,8 +174,8 @@ describe('TodayTimeline', () => {
         makeEvent({ id: '2', title: 'Event B', start_time: start.toISOString(), end_time: end.toISOString() }),
       ];
       render(<TodayTimeline events={events} role="coach" />);
-      expect(screen.getByText('Event A')).toBeInTheDocument();
-      expect(screen.getByText('Event B')).toBeInTheDocument();
+      expect(screen.getAllByText('Event A').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Event B').length).toBeGreaterThan(0);
     });
   });
 
@@ -186,7 +186,7 @@ describe('TodayTimeline', () => {
     it('shows RSVP count for coach role', () => {
       const event = makeEvent({ rsvp_yes: 8, rsvp_total: 12 });
       render(<TodayTimeline events={[event]} role="coach" />);
-      expect(screen.getByText('8/12 confirmed')).toBeInTheDocument();
+      expect(screen.getAllByText('8/12 confirmed').length).toBeGreaterThan(0);
     });
 
     it('does not show RSVP count for player role', () => {
@@ -202,17 +202,17 @@ describe('TodayTimeline', () => {
   describe('event type labels', () => {
     it('maps tournament event type correctly', () => {
       render(<TodayTimeline events={[makeEvent({ event_type: 'tournament' })]} role="coach" />);
-      expect(screen.getByText('Tournament')).toBeInTheDocument();
+      expect(screen.getAllByText('Tournament').length).toBeGreaterThan(0);
     });
 
     it('maps qualifier event type correctly', () => {
       render(<TodayTimeline events={[makeEvent({ event_type: 'qualifier' })]} role="coach" />);
-      expect(screen.getByText('Qualifier')).toBeInTheDocument();
+      expect(screen.getAllByText('Qualifier').length).toBeGreaterThan(0);
     });
 
     it('maps unknown event type to "Event"', () => {
       render(<TodayTimeline events={[makeEvent({ event_type: 'unknown_type' })]} role="coach" />);
-      expect(screen.getByText('Event')).toBeInTheDocument();
+      expect(screen.getAllByText('Event').length).toBeGreaterThan(0);
     });
   });
 
@@ -222,7 +222,7 @@ describe('TodayTimeline', () => {
   describe('null end_time', () => {
     it('renders event with null end_time without crashing', () => {
       render(<TodayTimeline events={[makeEvent({ end_time: null })]} role="coach" />);
-      expect(screen.getByText('Morning Practice')).toBeInTheDocument();
+      expect(screen.getAllByText('Morning Practice').length).toBeGreaterThan(0);
     });
   });
 

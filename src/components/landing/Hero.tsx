@@ -367,7 +367,7 @@ export function Hero() {
       </motion.div>
 
       {/* Scroll indicator */}
-      <div
+      <motion.div
         style={{ opacity }}
         className="absolute bottom-8 pb-safe left-1/2 -translate-x-1/2 z-20 hidden md:flex flex-col items-center gap-2 transition-opacity duration-700 ease-out"
       >
@@ -379,7 +379,7 @@ export function Hero() {
           transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
           className="w-px h-8 bg-gradient-to-b from-white/15 to-transparent"
         />
-      </div>
+      </motion.div>
     </section>
   )
 }
