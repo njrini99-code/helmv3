@@ -1,12 +1,16 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import type { CalendarEvent } from '@/lib/types/calendar';
+import { logServerError } from '@/lib/server-error-logger';
 
 /**
  * GET /api/calendar/events
  * Fetch calendar events for the authenticated user (golf_events table)
  */
 export async function GET(request: Request) {
+  let userId: string | null = null;
+  let userEmail: string | null = null;
+
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -14,6 +18,8 @@ export async function GET(request: Request) {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    userId = user.id;
+    userEmail = user.email ?? null;
 
     // Parse query params
     const { searchParams } = new URL(request.url);
@@ -26,36 +32,100 @@ export async function GET(request: Request) {
     let resolvedTeamId: string | null = null;
 
     // Try to resolve from coach profile
-    const { data: coach } = await supabase
+    const { data: coach, error: coachError } = await supabase
       .from('golf_coaches')
       .select('organization_id')
       .eq('user_id', user.id)
       .maybeSingle();
 
+    if (coachError) {
+      await logServerError(`Calendar events GET coach lookup failed: ${coachError.message}`, {
+        action: 'calendarEventsApi.get.coachLookup',
+        source: 'route_handler',
+        featureArea: 'calendar',
+        route: '/api/calendar/events',
+        url: request.url,
+        userId,
+        userEmail,
+        errorCode: coachError.code,
+        errorHint: coachError.hint,
+        errorDetails: coachError.details,
+      }, 'warning');
+    }
+
     if (coach?.organization_id) {
-      const { data: team } = await supabase
+      const { data: team, error: teamError } = await supabase
         .from('golf_teams')
         .select('id')
         .eq('organization_id', coach.organization_id)
         .maybeSingle();
+      if (teamError) {
+        await logServerError(`Calendar events GET team lookup failed: ${teamError.message}`, {
+          action: 'calendarEventsApi.get.teamLookup',
+          source: 'route_handler',
+          featureArea: 'calendar',
+          route: '/api/calendar/events',
+          url: request.url,
+          userId,
+          userEmail,
+          errorCode: teamError.code,
+          errorHint: teamError.hint,
+          errorDetails: teamError.details,
+          extra: {
+            organizationId: coach.organization_id,
+          },
+        }, 'warning');
+      }
       resolvedTeamId = team?.id ?? null;
     }
 
     if (!resolvedTeamId) {
       // Try player membership
-      const { data: player } = await supabase
+      const { data: player, error: playerError } = await supabase
         .from('golf_players')
         .select('id')
         .eq('user_id', user.id)
         .maybeSingle();
 
+      if (playerError) {
+        await logServerError(`Calendar events GET player lookup failed: ${playerError.message}`, {
+          action: 'calendarEventsApi.get.playerLookup',
+          source: 'route_handler',
+          featureArea: 'calendar',
+          route: '/api/calendar/events',
+          url: request.url,
+          userId,
+          userEmail,
+          errorCode: playerError.code,
+          errorHint: playerError.hint,
+          errorDetails: playerError.details,
+        }, 'warning');
+      }
+
       if (player) {
-        const { data: membership } = await supabase
+        const { data: membership, error: membershipError } = await supabase
           .from('golf_team_members')
           .select('team_id')
           .eq('player_id', player.id)
           .eq('status', 'active')
           .maybeSingle();
+        if (membershipError) {
+          await logServerError(`Calendar events GET membership lookup failed: ${membershipError.message}`, {
+            action: 'calendarEventsApi.get.membershipLookup',
+            source: 'route_handler',
+            featureArea: 'calendar',
+            route: '/api/calendar/events',
+            url: request.url,
+            userId,
+            userEmail,
+            errorCode: membershipError.code,
+            errorHint: membershipError.hint,
+            errorDetails: membershipError.details,
+            extra: {
+              playerId: player.id,
+            },
+          }, 'warning');
+        }
         resolvedTeamId = membership?.team_id ?? null;
       }
     }
@@ -87,11 +157,40 @@ export async function GET(request: Request) {
     const { data, error } = await query;
 
     if (error) {
+      await logServerError(`Calendar events GET query failed: ${error.message}`, {
+        action: 'calendarEventsApi.get.query',
+        source: 'route_handler',
+        featureArea: 'calendar',
+        route: '/api/calendar/events',
+        url: request.url,
+        userId,
+        userEmail,
+        errorCode: error.code,
+        errorHint: error.hint,
+        errorDetails: error.details,
+        extra: {
+          resolvedTeamId,
+          startDate,
+          endDate,
+        },
+      }, 'critical');
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     return NextResponse.json(data as unknown as CalendarEvent[]);
-  } catch {
+  } catch (error) {
+    await logServerError(`Calendar events GET unexpected failure: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'calendarEventsApi.get',
+      source: 'route_handler',
+      featureArea: 'calendar',
+      route: '/api/calendar/events',
+      url: request.url,
+      userId,
+      userEmail,
+      extra: {
+        stack: error instanceof Error ? error.stack : undefined,
+      },
+    }, 'critical');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -104,6 +203,9 @@ export async function GET(request: Request) {
  * Create a new calendar event
  */
 export async function POST(request: Request) {
+  let userId: string | null = null;
+  let userEmail: string | null = null;
+
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -111,6 +213,8 @@ export async function POST(request: Request) {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    userId = user.id;
+    userEmail = user.email ?? null;
 
     const body = await request.json();
 
@@ -123,21 +227,54 @@ export async function POST(request: Request) {
     }
 
     // Get coach profile (created_by references golf_coaches.id)
-    const { data: coach } = await supabase
+    const { data: coach, error: coachError } = await supabase
       .from('golf_coaches')
       .select('id, organization_id')
       .eq('user_id', user.id)
       .single();
 
+    if (coachError) {
+      await logServerError(`Calendar events POST coach lookup failed: ${coachError.message}`, {
+        action: 'calendarEventsApi.post.coachLookup',
+        source: 'route_handler',
+        featureArea: 'calendar',
+        route: '/api/calendar/events',
+        url: request.url,
+        userId,
+        userEmail,
+        errorCode: coachError.code,
+        errorHint: coachError.hint,
+        errorDetails: coachError.details,
+      }, 'error');
+    }
+
     if (!coach || !coach.organization_id) {
       return NextResponse.json({ error: 'Coach profile not found' }, { status: 403 });
     }
 
-    const { data: team } = await supabase
+    const { data: team, error: teamError } = await supabase
       .from('golf_teams')
       .select('id')
       .eq('organization_id', coach.organization_id)
       .maybeSingle();
+
+    if (teamError) {
+      await logServerError(`Calendar events POST team lookup failed: ${teamError.message}`, {
+        action: 'calendarEventsApi.post.teamLookup',
+        source: 'route_handler',
+        featureArea: 'calendar',
+        route: '/api/calendar/events',
+        url: request.url,
+        userId,
+        userEmail,
+        errorCode: teamError.code,
+        errorHint: teamError.hint,
+        errorDetails: teamError.details,
+        extra: {
+          organizationId: coach.organization_id,
+        },
+      }, 'error');
+    }
 
     if (!team) {
       return NextResponse.json({ error: 'Team not found' }, { status: 404 });
@@ -162,11 +299,42 @@ export async function POST(request: Request) {
       .single();
 
     if (error) {
+      await logServerError(`Calendar events POST insert failed: ${error.message}`, {
+        action: 'calendarEventsApi.post.insert',
+        source: 'route_handler',
+        featureArea: 'calendar',
+        route: '/api/calendar/events',
+        url: request.url,
+        userId,
+        userEmail,
+        errorCode: error.code,
+        errorHint: error.hint,
+        errorDetails: error.details,
+        extra: {
+          teamId: team.id,
+          eventType: event_type,
+          title,
+          start_time,
+          end_time,
+        },
+      }, 'critical');
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     return NextResponse.json(data as unknown as CalendarEvent, { status: 201 });
-  } catch {
+  } catch (error) {
+    await logServerError(`Calendar events POST unexpected failure: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'calendarEventsApi.post',
+      source: 'route_handler',
+      featureArea: 'calendar',
+      route: '/api/calendar/events',
+      url: request.url,
+      userId,
+      userEmail,
+      extra: {
+        stack: error instanceof Error ? error.stack : undefined,
+      },
+    }, 'critical');
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

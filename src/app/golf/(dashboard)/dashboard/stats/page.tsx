@@ -7,8 +7,8 @@ export const metadata: Metadata = {
   description: 'View your golf performance statistics, strokes gained analysis, and scoring trends.',
 };
 
-// Cache stats page for 2 minutes (stats update moderately often)
-export const revalidate = 120;
+// Stats are user-specific and should reflect the latest completed rounds immediately.
+export const dynamic = 'force-dynamic';
 
 /**
  * Golf Stats Page

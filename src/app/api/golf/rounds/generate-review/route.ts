@@ -16,10 +16,17 @@ import {
   isCoachHelmEnabledForPlayer
 } from '@/lib/coachhelm/v2';
 import { logAIGeneration } from '@/lib/admin-logger';
+import { logServerError } from '@/lib/server-error-logger';
 
 export async function POST(request: NextRequest) {
+  let roundId: string | null = null;
+  let userId: string | null = null;
+  let userEmail: string | null = null;
+  let playerId: string | null = null;
+
   try {
-    const { roundId } = await request.json();
+    const payload = await request.json();
+    roundId = typeof payload?.roundId === 'string' ? payload.roundId : null;
 
     if (!roundId) {
       return NextResponse.json({ error: 'Round ID required' }, { status: 400 });
@@ -32,16 +39,36 @@ export async function POST(request: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    userId = user.id;
+    userEmail = user.email ?? null;
 
-    const { data: round } = await supabase
+    const { data: round, error: roundError } = await supabase
       .from('golf_rounds')
       .select('player_id, golf_players!inner(user_id)')
       .eq('id', roundId)
-      .single();
+      .maybeSingle();
+
+    if (roundError) {
+      await logServerError(`Generate review round lookup failed: ${roundError.message}`, {
+        action: 'generateRoundReviewApi.roundLookup',
+        source: 'route_handler',
+        featureArea: 'coachhelm_ai',
+        route: request.nextUrl.pathname,
+        url: request.url,
+        roundId,
+        userId,
+        userEmail,
+        errorCode: roundError.code,
+        errorHint: roundError.hint,
+        errorDetails: roundError.details,
+      }, 'critical');
+      return NextResponse.json({ error: 'Failed to load round' }, { status: 500 });
+    }
 
     if (!round) {
       return NextResponse.json({ error: 'Round not found' }, { status: 404 });
     }
+    playerId = round.player_id;
 
     // Check access: player owns the round OR coach has team access
     const playerData = round.golf_players as unknown as { user_id: string };
@@ -129,6 +156,21 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Generate review error:', error);
+
+    await logServerError(`Generate review route failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'generateRoundReviewApi',
+      source: 'route_handler',
+      featureArea: 'coachhelm_ai',
+      route: request.nextUrl.pathname,
+      url: request.url,
+      roundId,
+      playerId,
+      userId,
+      userEmail,
+      extra: {
+        stack: error instanceof Error ? error.stack : undefined,
+      },
+    }, 'critical');
 
     // Log AI generation error (fire-and-forget)
     logAIGeneration('', '', 'round_review', false, {

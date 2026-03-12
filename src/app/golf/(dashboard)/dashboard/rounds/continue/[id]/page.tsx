@@ -9,6 +9,7 @@ import { calculateHoleStats } from '@/lib/utils/shot-helpers';
 import type { Tables } from '@/lib/types/database';
 import type { ApproachMissDirection, PuttMissTag } from '@/lib/types/golf';
 import type { Metadata } from 'next';
+import { logServerError } from '@/lib/server-error-logger';
 
 export const metadata: Metadata = {
   title: 'Continue Round | GolfHelm',
@@ -161,17 +162,36 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
 
   const supabase = await createClient();
 
-  // Load in-progress round
+  // Load the round regardless of status so a stale continue URL can redirect
+  // cleanly once the round has already been completed.
   const { data: round, error: roundError } = await supabase
     .from('golf_rounds')
     .select('*')
     .eq('id', id)
     .eq('player_id', player.id)
-    .eq('status', 'in_progress')
     .maybeSingle();
+
+  if (roundError) {
+    await logServerError(`Continue round load failed: ${roundError.message}`, {
+      action: 'continueRoundPage',
+      source: 'server_component',
+      featureArea: 'shot_tracking',
+      route: `/golf/dashboard/rounds/continue/${id}`,
+      roundId: id,
+      playerId: player.id,
+      userId: session.userId,
+      errorCode: roundError.code,
+      errorHint: roundError.hint,
+      errorDetails: roundError.details,
+    }, 'critical');
+  }
 
   if (roundError || !round) {
     notFound();
+  }
+
+  if (round.status !== 'in_progress') {
+    redirect(`/golf/dashboard/rounds/${id}`);
   }
 
   // Load holes, shots, and course hole yardages in parallel
@@ -179,9 +199,9 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sb = supabase as any;
   const [
-    { data: holes },
-    { data: allShots },
-    { data: courseHoles }
+    { data: holes, error: holesError },
+    { data: allShots, error: shotsError },
+    { data: courseHoles, error: courseHolesError }
   ] = await Promise.all([
     supabase
       .from('golf_holes')
@@ -200,8 +220,56 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
           .select('hole_number, yardage')
           .eq('course_id', round.course_id)
           .order('hole_number', { ascending: true })
-      : Promise.resolve({ data: null }),
+      : Promise.resolve({ data: null, error: null }),
   ]);
+
+  if (holesError) {
+    await logServerError(`Continue round hole load failed: ${holesError.message}`, {
+      action: 'continueRoundPage.holes',
+      source: 'server_component',
+      featureArea: 'shot_tracking',
+      route: `/golf/dashboard/rounds/continue/${id}`,
+      roundId: id,
+      playerId: player.id,
+      userId: session.userId,
+      errorCode: holesError.code,
+      errorHint: holesError.hint,
+      errorDetails: holesError.details,
+    });
+  }
+
+  if (shotsError) {
+    await logServerError(`Continue round shot load failed: ${shotsError.message}`, {
+      action: 'continueRoundPage.shots',
+      source: 'server_component',
+      featureArea: 'shot_tracking',
+      route: `/golf/dashboard/rounds/continue/${id}`,
+      roundId: id,
+      playerId: player.id,
+      userId: session.userId,
+      errorCode: shotsError.code,
+      errorHint: shotsError.hint,
+      errorDetails: shotsError.details,
+    }, 'critical');
+  }
+
+  if (courseHolesError) {
+    await logServerError(`Continue round course-hole load failed: ${courseHolesError.message}`, {
+      action: 'continueRoundPage.courseHoles',
+      source: 'server_component',
+      featureArea: 'shot_tracking',
+      route: `/golf/dashboard/rounds/continue/${id}`,
+      roundId: id,
+      playerId: player.id,
+      userId: session.userId,
+      errorCode: courseHolesError.code,
+      errorHint: courseHolesError.hint,
+      errorDetails: courseHolesError.details,
+      extra: {
+        courseId: round.course_id ?? null,
+      },
+    }, 'warning');
+  }
 
   // Build yardage lookup from course config
   const courseYardageMap = new Map<number, number>();
@@ -223,6 +291,36 @@ export default async function ContinueRoundPage({ params }: { params: Promise<{ 
         .select('shot_id, miss_direction, lie_type, distance_from_green_yards')
         .in('shot_id', shotIds),
     ]);
+
+    if (puttRes?.error) {
+      await logServerError(`Continue round putt-detail load failed: ${puttRes.error.message}`, {
+        action: 'continueRoundPage.puttDetails',
+        source: 'server_component',
+        featureArea: 'shot_tracking',
+        route: `/golf/dashboard/rounds/continue/${id}`,
+        roundId: id,
+        playerId: player.id,
+        userId: session.userId,
+        errorCode: puttRes.error.code,
+        errorHint: puttRes.error.hint,
+        errorDetails: puttRes.error.details,
+      }, 'warning');
+    }
+
+    if (approachRes?.error) {
+      await logServerError(`Continue round approach-detail load failed: ${approachRes.error.message}`, {
+        action: 'continueRoundPage.approachDetails',
+        source: 'server_component',
+        featureArea: 'shot_tracking',
+        route: `/golf/dashboard/rounds/continue/${id}`,
+        roundId: id,
+        playerId: player.id,
+        userId: session.userId,
+        errorCode: approachRes.error.code,
+        errorHint: approachRes.error.hint,
+        errorDetails: approachRes.error.details,
+      }, 'warning');
+    }
 
     for (const pd of (puttRes?.data || [])) {
       puttDetailsByShot.set(pd.shot_id, { miss_tags: pd.miss_tags });

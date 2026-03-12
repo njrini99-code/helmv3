@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { logError } from '@/lib/error-logging';
 
 export default function GlobalError({
   error,
@@ -11,6 +12,12 @@ export default function GlobalError({
 }) {
   useEffect(() => {
     console.error('Global error boundary caught:', error);
+    logError(error, {
+      component: 'GlobalErrorBoundary',
+      action: 'render',
+      digest: error.digest ?? null,
+      route: typeof window !== 'undefined' ? window.location.href : undefined,
+    }, 'critical');
   }, [error]);
 
   return (

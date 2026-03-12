@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { startTransition, useState, useEffect, useCallback, useRef } from 'react';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import { useRouter, useSearchParams } from 'next/navigation';
 import ShotTrackingComprehensive from '@/components/golf/ShotTrackingComprehensive';
@@ -18,9 +18,12 @@ import {
   type SavedCourse,
   type SavedCourseHoleConfig
 } from '@/app/golf/actions/golf';
+import { checkRoundStaleness } from '@/app/golf/actions/round-drafts';
 import { useConnectionStatus } from '@/hooks/golf/use-connection-status';
+import { useRoundStatusSync } from '@/hooks/golf/use-round-status-sync';
 import { useOfflineSyncStore, useOfflineSyncStatus } from '@/stores/offline-sync-store';
 import { getSyncEngine } from '@/lib/offline/sync-engine';
+import { saveOfflineRound } from '@/lib/offline/indexed-db';
 import { OfflineWarningBanner } from '@/components/golf';
 import { IconBookmark, IconCheck, IconChartBar, IconFlag, IconMapPin, IconPlus, IconSearch, IconTrophy, IconWarning } from '@/components/icons';
 import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
@@ -32,7 +35,13 @@ import { useToast } from '@/components/ui/toast';
 // DraftIndicator removed - was too noisy
 import type { HoleConfig } from '@/lib/types/golf-course';
 import { useMobileNav } from '@/contexts/mobile-nav-context';
-import { emergencySave, loadEmergencySave, clearEmergencySave, type EmergencySaveData } from '@/lib/utils/emergency-save';
+import {
+  emergencySave,
+  loadEmergencySave,
+  clearEmergencySave,
+  isRecoverableRoundSubmitError,
+  type EmergencySaveData
+} from '@/lib/utils/emergency-save';
 
 type Hole = RoundHole;
 
@@ -62,6 +71,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
   const searchParams = useSearchParams();
   const { showToast } = useToast();
   const [showResumePrompt, setShowResumePrompt] = useState(!!existingInProgressRound);
+  const resumePromptUpdatedAtRef = useRef<string | undefined>(undefined);
 
   // Hide mobile bottom nav for entire round flow (setup → holes → tracking → submit)
   const { hide: hideMobileNav, show: showMobileNav } = useMobileNav();
@@ -200,6 +210,58 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
   const [showNewRoundRecovery, setShowNewRoundRecovery] = useState(false);
   const [newRoundRecoveryData, setNewRoundRecoveryData] = useState<EmergencySaveData | null>(null);
 
+  const redirectToCompletedRound = useCallback(() => {
+    const targetRoundId = savedRoundIdRef.current;
+    if (!targetRoundId) {
+      return;
+    }
+
+    setError('');
+    setShowResumePrompt(false);
+    isSubmittingRef.current = false;
+    startTransition(() => {
+      router.replace(`/golf/dashboard/rounds/${targetRoundId}`);
+    });
+  }, [router]);
+
+  const isCompletedRoundError = useCallback((message?: string) => {
+    if (typeof message !== 'string') {
+      return false;
+    }
+
+    const normalizedMessage = message.toLowerCase();
+    return normalizedMessage.includes('already been completed')
+      || normalizedMessage.includes('already been submitted')
+      || normalizedMessage.includes('may have already been completed');
+  }, []);
+
+  const handleRoundSyncConflict = useCallback(async (fallbackMessage: string) => {
+    const roundId = savedRoundIdRef.current;
+    if (!roundId) {
+      setError(fallbackMessage);
+      showToast(fallbackMessage, 'error');
+      return;
+    }
+
+    try {
+      const stalenessResult = await checkRoundStaleness(roundId, lastServerUpdatedAtRef.current);
+      if (stalenessResult.success) {
+        if (stalenessResult.data.currentUpdatedAt) {
+          lastServerUpdatedAtRef.current = stalenessResult.data.currentUpdatedAt;
+        }
+        if (stalenessResult.data.status === 'completed') {
+          redirectToCompletedRound();
+          return;
+        }
+      }
+    } catch {
+      // Fall through to the generic conflict message below.
+    }
+
+    setError(fallbackMessage);
+    showToast(fallbackMessage, 'error');
+  }, [redirectToCompletedRound, showToast]);
+
   // Check for emergency save on mount (for new rounds saved under _new key)
   useEffect(() => {
     const emergencyData = loadEmergencySave(null);
@@ -222,6 +284,21 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
   setupDataRef.current = setupData;
   const holesPerRoundRef = useRef(holesPerRound);
   holesPerRoundRef.current = holesPerRound;
+
+  useRoundStatusSync({
+    roundId: step === 'setup' && showResumePrompt ? existingInProgressRound?.id ?? null : null,
+    expectedUpdatedAtRef: resumePromptUpdatedAtRef,
+    onRoundCompleted: () => {
+      setShowResumePrompt(false);
+    },
+  });
+
+  useRoundStatusSync({
+    roundId: savedRoundId,
+    expectedUpdatedAtRef: lastServerUpdatedAtRef,
+    enabled: step === 'tracking' || step === 'submitting',
+    onRoundCompleted: redirectToCompletedRound,
+  });
 
   // Save data when user leaves the page (phone lock, app switch, tab close)
   const stepRef = useRef(step);
@@ -355,6 +432,48 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
   const [selectedRoundNumber, setSelectedRoundNumber] = useState<number | null>(null);
   const [availableRounds, setAvailableRounds] = useState<number[]>([]);
   const [qualifierError, setQualifierError] = useState<string | null>(null);
+
+  const buildRecoverySetupData = useCallback(() => ({
+    ...setupData,
+    qualifierId: setupData.roundType === 'qualifier' ? selectedQualifierId ?? undefined : undefined,
+    qualifierRoundNumber: setupData.roundType === 'qualifier' ? selectedRoundNumber ?? undefined : undefined,
+  }), [selectedQualifierId, selectedRoundNumber, setupData]);
+
+  const persistFailedSubmission = useCallback(async (allHoleStats: HoleStats[]) => {
+    const recoverySetupData = buildRecoverySetupData();
+    const currentRoundId = savedRoundIdRef.current;
+
+    emergencySave({
+      roundId: currentRoundId,
+      timestamp: Date.now(),
+      setupData: recoverySetupData,
+      holes,
+      completedHoleStats: allHoleStats,
+      inProgressShotsByHole: {},
+      currentHoleIndex: Math.max(0, holes.length - 1),
+      holesPerRound,
+    });
+
+    try {
+      await saveOfflineRound({
+        id: currentRoundId ?? `pending_submit_${Date.now()}`,
+        playerId: '',
+        serverRoundId: currentRoundId ?? undefined,
+        draftData: {
+          step: 'tracking',
+          roundId: currentRoundId ?? undefined,
+          setupData: recoverySetupData,
+          holes,
+          completedHoleStats: allHoleStats,
+          currentHoleIndex: Math.max(0, holes.length - 1),
+          inProgressShots: {},
+          submissionIntent: 'submit',
+        },
+      });
+    } catch {
+      // localStorage emergency save above remains the hard fallback
+    }
+  }, [buildRecoverySetupData, holes, holesPerRound]);
 
   // Saved courses state
   const [savedCourses, setSavedCourses] = useState<SavedCourse[]>([]);
@@ -790,7 +909,9 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
             setSavedRoundId(result.data.roundId);
           }
         } else if (result.error === 'conflict') {
-          showToast('This round was updated on another device. Please reload.', 'error');
+          void handleRoundSyncConflict('This round was updated on another device. Please reload.');
+        } else if (isCompletedRoundError(result.error)) {
+          redirectToCompletedRound();
         } else {
           consecutiveSaveFailuresRef.current++;
           if (consecutiveSaveFailuresRef.current >= 2) {
@@ -822,7 +943,9 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                     setSavedRoundId(r.data.roundId);
                   }
                 } else if (r.error === 'conflict') {
-                  showToast('This round was updated on another device. Please reload.', 'error');
+                  void handleRoundSyncConflict('This round was updated on another device. Please reload.');
+                } else if (isCompletedRoundError(r.error)) {
+                  redirectToCompletedRound();
                 }
               } catch { /* non-critical */ } finally {
                 serverSaveInProgressRef.current = false;
@@ -843,7 +966,9 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                     setSavedRoundId(r.data.roundId);
                   }
                 } else if (r.error === 'conflict') {
-                  showToast('This round was updated on another device. Please reload.', 'error');
+                  void handleRoundSyncConflict('This round was updated on another device. Please reload.');
+                } else if (isCompletedRoundError(r.error)) {
+                  redirectToCompletedRound();
                 }
               } catch { /* non-critical */ } finally {
                 serverSaveInProgressRef.current = false;
@@ -958,7 +1083,9 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                 setSavedRoundId(result.data.roundId);
               }
             } else if (result.error === 'conflict') {
-              showToast('This round was updated on another device. Please reload.', 'error');
+              void handleRoundSyncConflict('This round was updated on another device. Please reload.');
+            } else if (isCompletedRoundError(result.error)) {
+              redirectToCompletedRound();
             } else {
               consecutiveSaveFailuresRef.current++;
               if (consecutiveSaveFailuresRef.current >= 2) {
@@ -991,6 +1118,9 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
     }
   }, [
     buildPartialRoundData,
+    handleRoundSyncConflict,
+    isCompletedRoundError,
+    redirectToCompletedRound,
     showToast,
   ]);
 
@@ -1004,11 +1134,13 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
     pendingServerSaveRef.current = null;
 
     try {
+      const recoverySetupData = buildRecoverySetupData();
+
       // Save pre-submit snapshot to localStorage as insurance
       emergencySave({
         roundId: savedRoundIdRef.current,
         timestamp: Date.now(),
-        setupData,
+        setupData: recoverySetupData,
         holes,
         completedHoleStats: allHoleStats,
         inProgressShotsByHole: {},
@@ -1034,23 +1166,53 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
         });
       }
 
+      if (savedRoundIdRef.current && lastServerUpdatedAtRef.current) {
+        try {
+          const stalenessResult = await checkRoundStaleness(savedRoundIdRef.current, lastServerUpdatedAtRef.current);
+          if (stalenessResult.success) {
+            if (stalenessResult.data.currentUpdatedAt) {
+              lastServerUpdatedAtRef.current = stalenessResult.data.currentUpdatedAt;
+            }
+            if (stalenessResult.data.status === 'completed') {
+              redirectToCompletedRound();
+              return;
+            }
+            if (stalenessResult.data.isStale) {
+              setError(
+                'This round was modified on another device or browser tab. ' +
+                'Please reload the page to get the latest data before submitting.'
+              );
+              isSubmittingRef.current = false;
+              setStep('tracking');
+              return;
+            }
+          }
+        } catch {
+          // Non-critical — proceed with submission if check fails
+        }
+      }
+
       const roundData = {
-        courseName: setupData.courseName,
+        courseName: recoverySetupData.courseName,
         courseId: resolvedCourseIdRef.current || undefined,
-        courseCity: setupData.courseCity || undefined,
-        courseState: setupData.courseState || undefined,
-        courseRating: setupData.courseRating ? parseFloat(setupData.courseRating) : undefined,
-        courseSlope: setupData.courseSlope ? parseInt(setupData.courseSlope) : undefined,
-        teesPlayed: setupData.teesPlayed || undefined,
-        roundType: setupData.roundType,
-        roundDate: setupData.roundDate,
+        courseCity: recoverySetupData.courseCity || undefined,
+        courseState: recoverySetupData.courseState || undefined,
+        courseRating: recoverySetupData.courseRating ? parseFloat(recoverySetupData.courseRating) : undefined,
+        courseSlope: recoverySetupData.courseSlope ? parseInt(recoverySetupData.courseSlope) : undefined,
+        teesPlayed: recoverySetupData.teesPlayed || undefined,
+        roundType: recoverySetupData.roundType,
+        roundDate: recoverySetupData.roundDate,
         holes: allHoleStats,
-        qualifierId: setupData.roundType === 'qualifier' ? selectedQualifierId ?? undefined : undefined,
-        qualifierRoundNumber: setupData.roundType === 'qualifier' ? selectedRoundNumber ?? undefined : undefined,
+        qualifierId: recoverySetupData.qualifierId,
+        qualifierRoundNumber: recoverySetupData.qualifierRoundNumber,
       };
 
       const result = await submitGolfRoundComprehensive(roundData, savedRoundIdRef.current ?? undefined);
       if (!result.success) {
+        if (isCompletedRoundError(result.error)) {
+          redirectToCompletedRound();
+          return;
+        }
         throw new Error(result.error);
       }
 
@@ -1060,7 +1222,20 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
       // Show success celebration — the overlay auto-navigates to round review
       setCompletedRoundId(result.data.roundId);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to submit round');
+      const message = err instanceof Error ? err.message : 'Failed to submit round';
+      if (isRecoverableRoundSubmitError(message)) {
+        await persistFailedSubmission(allHoleStats);
+        isSubmittingRef.current = false;
+        setStep('tracking');
+        setError('');
+        showToast('Round saved on this device. Opening recovery flow.', 'warning');
+        startTransition(() => {
+          router.push('/golf/dashboard/rounds/recover?from=submit');
+        });
+        return;
+      }
+
+      setError(message);
       isSubmittingRef.current = false;
       // Stay on submitting step so the overlay can show the error state
     }
@@ -1070,6 +1245,14 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
     const result = await savePartialRound(buildPartialRoundData(), savedRoundId || undefined);
 
     if (!result.success) {
+      if (result.error === 'conflict') {
+        await handleRoundSyncConflict('This round was updated on another device. Please reload.');
+        return;
+      }
+      if (isCompletedRoundError(result.error)) {
+        redirectToCompletedRound();
+        return;
+      }
       throw new Error(result.error || 'Failed to save round. Please try again.');
     }
 

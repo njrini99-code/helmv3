@@ -24,6 +24,7 @@ import { logRoundSubmitted } from '@/lib/admin-logger';
 import { logCritical, logError } from '@/lib/error-monitoring';
 import { logServerError } from '@/lib/server-error-logger';
 import { deriveLieAfterFromResult, deriveLieAfter } from '@/lib/utils/shot-helpers';
+import type { Json } from '@/lib/types/database';
 
 // ============================================================================
 // COURSE ID RESOLUTION
@@ -520,12 +521,40 @@ function derivePuttDistanceFeet(shot: ShotRecord): number | null {
 }
 
 /** Allowed lie_type values for approach_miss_details CHECK constraint */
-const VALID_APPROACH_LIE_TYPES = new Set(['fairway', 'rough', 'sand', 'bunker', 'hazard']);
+const VALID_APPROACH_LIE_TYPES = new Set([
+  'fairway',
+  'rough',
+  'sand',
+  'bunker',
+  'recovery',
+  'hazard',
+  'green',
+  'tee',
+  'other',
+  'penalty',
+  'deep_rough',
+]);
+
+const VALID_APPROACH_MISS_DIRECTIONS = new Set([
+  'short',
+  'long',
+  'left',
+  'right',
+  'short_left',
+  'short_right',
+  'long_left',
+  'long_right',
+]);
 
 /** Validate client approachMissLieType against DB-safe lie_type values */
 function toDbLieType(lieType: string | undefined | null): string | null {
   if (!lieType) return null;
   return VALID_APPROACH_LIE_TYPES.has(lieType) ? lieType : null;
+}
+
+function toDbApproachMissDirection(missDirection: string | undefined | null): string | null {
+  if (!missDirection) return null;
+  return VALID_APPROACH_MISS_DIRECTIONS.has(missDirection) ? missDirection : null;
 }
 
 function derivePuttMade(shot: ShotRecord): boolean | null {
@@ -552,6 +581,311 @@ function calculateGirFromShots(
 
   // GIR means reaching green in (par - 2) strokes or fewer
   return shotToGreen.shotNumber <= (par - 2);
+}
+
+interface RoundHolePayload {
+  hole_number: number;
+  par: number;
+  yardage: number | null;
+  score: number;
+  putts: number;
+  fairway_hit: boolean | null;
+  gir: boolean | null;
+  penalty_strokes: number | null;
+  up_and_down: boolean | null;
+  sand_save: boolean | null;
+}
+
+interface RoundShotPayload {
+  shot_number: number;
+  shot_type: string;
+  club_type: string;
+  lie_before: string;
+  lie_after: string | null;
+  distance_to_hole_before: number;
+  distance_unit_before: string;
+  result: string;
+  distance_to_hole_after: number | null;
+  distance_unit_after: string | null;
+  shot_distance: number | null;
+  miss_direction: string | null;
+  putt_break: string | null;
+  putt_slope: string | null;
+  putt_distance_feet: number | null;
+  putt_made: boolean | null;
+  is_penalty: boolean;
+  penalty_type: string | null;
+}
+
+interface RoundShotGroupPayload {
+  hole_number: number;
+  shots: RoundShotPayload[];
+}
+
+interface RoundPuttDetailPayload {
+  hole_number: number;
+  shot_number: number;
+  miss_tags: string[];
+  break_direction: string | null;
+  distance_feet: number | null;
+  made: boolean;
+}
+
+interface RoundApproachDetailPayload {
+  hole_number: number;
+  shot_number: number;
+  miss_direction: string | null;
+  lie_type: string | null;
+  distance_from_green_yards: number | null;
+}
+
+interface CompletedRoundUpdatePayload {
+  player_id: string;
+  team_id: string | null;
+  course_id: string | null;
+  course_name: string;
+  course_city: string | null;
+  course_state: string | null;
+  course_rating: number | null;
+  course_slope: number | null;
+  tees_played: string | null;
+  round_type: 'practice' | 'tournament' | 'qualifier';
+  round_date: string;
+  holes_played: number;
+  total_score: number;
+  score_to_par: number;
+  total_putts: number;
+  total_fairways_hit: number;
+  total_fairways: number;
+  total_gir: number;
+  total_gir_possible: number;
+  total_penalties: number;
+  front_nine: number | null;
+  back_nine: number | null;
+  status: 'completed';
+  qualifier_id: string | null;
+  qualifier_round_number: number | null;
+}
+
+interface RoundSubmissionBackupPayload {
+  version: 1;
+  type: 'submit_backup';
+  savedAt: string;
+  roundData: CompletedRoundUpdatePayload;
+  holes: RoundHolePayload[];
+  shots: RoundShotGroupPayload[];
+  puttDetails: RoundPuttDetailPayload[];
+  approachDetails: RoundApproachDetailPayload[];
+}
+
+function buildRoundSubmissionBackup(
+  roundData: CompletedRoundUpdatePayload,
+  holesPayload: RoundHolePayload[],
+  shotsPayload: RoundShotGroupPayload[],
+  puttDetailsPayload: RoundPuttDetailPayload[],
+  approachDetailsPayload: RoundApproachDetailPayload[]
+): RoundSubmissionBackupPayload {
+  return {
+    version: 1,
+    type: 'submit_backup',
+    savedAt: new Date().toISOString(),
+    roundData,
+    holes: holesPayload,
+    shots: shotsPayload,
+    puttDetails: puttDetailsPayload,
+    approachDetails: approachDetailsPayload,
+  };
+}
+
+function mergeRoundWarnings(...warningGroups: Array<string[] | undefined>): string[] | undefined {
+  const merged = Array.from(new Set(warningGroups.flatMap(group => group ?? [])));
+  return merged.length > 0 ? merged : undefined;
+}
+
+function getPreservedRoundSubmitError(): string {
+  return 'Round submission hit a server error, but your round data was preserved. Reload this round and try again. Do not re-enter it.';
+}
+
+async function persistRoundSubmissionBackup(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  roundId: string,
+  playerId: string,
+  backup: RoundSubmissionBackupPayload
+): Promise<void> {
+  const roundsTable = fromUntyped(supabase, 'golf_rounds');
+  const { data: existingRound } = await roundsTable
+    .select('draft_data')
+    .eq('id', roundId)
+    .eq('player_id', playerId)
+    .maybeSingle();
+
+  const existingDraftData = existingRound?.draft_data;
+  const mergedDraftData = existingDraftData && typeof existingDraftData === 'object' && !Array.isArray(existingDraftData)
+    ? { ...existingDraftData, submissionBackup: backup }
+    : { submissionBackup: backup };
+
+  const { error } = await roundsTable
+    .update({ draft_data: mergedDraftData })
+    .eq('id', roundId)
+    .eq('player_id', playerId);
+
+  if (error) {
+    throw error;
+  }
+}
+
+async function submitRoundDirectFallback({
+  supabase,
+  roundId,
+  playerId,
+  roundData,
+  holesPayload,
+  shotsPayload,
+  puttDetailsPayload,
+  approachDetailsPayload,
+  submissionBackup,
+}: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any;
+  roundId: string;
+  playerId: string;
+  roundData: CompletedRoundUpdatePayload;
+  holesPayload: RoundHolePayload[];
+  shotsPayload: RoundShotGroupPayload[];
+  puttDetailsPayload: RoundPuttDetailPayload[];
+  approachDetailsPayload: RoundApproachDetailPayload[];
+  submissionBackup: RoundSubmissionBackupPayload;
+}): Promise<{ success: true; warnings: string[] } | { success: false; error: string }> {
+  const warnings: string[] = [];
+  const roundsTable = fromUntyped(supabase, 'golf_rounds');
+  const { data: existingRound } = await roundsTable
+    .select('draft_data')
+    .eq('id', roundId)
+    .eq('player_id', playerId)
+    .maybeSingle();
+
+  const existingDraftData = existingRound?.draft_data;
+
+  const { error: deleteShotsError } = await supabase
+    .from('golf_shots')
+    .delete()
+    .eq('round_id', roundId);
+
+  if (deleteShotsError) {
+    return { success: false, error: `Fallback failed while clearing shots: ${deleteShotsError.message}` };
+  }
+
+  const { error: deleteHolesError } = await supabase
+    .from('golf_holes')
+    .delete()
+    .eq('round_id', roundId);
+
+  if (deleteHolesError) {
+    return { success: false, error: `Fallback failed while clearing holes: ${deleteHolesError.message}` };
+  }
+
+  const { data: insertedHoles, error: holesError } = await supabase
+    .from('golf_holes')
+    .insert(holesPayload.map(hole => ({ round_id: roundId, ...hole })))
+    .select('id, hole_number');
+
+  if (holesError || !insertedHoles) {
+    return { success: false, error: `Fallback failed while writing holes: ${holesError?.message || 'unknown error'}` };
+  }
+
+  const holeIdMap = new Map<number, string>(
+    insertedHoles.map((hole: { hole_number: number; id: string }) => [hole.hole_number, hole.id])
+  );
+  const shotIdMap = new Map<string, string>();
+
+  for (const group of shotsPayload) {
+    const holeId = holeIdMap.get(group.hole_number);
+    if (!holeId || group.shots.length === 0) {
+      continue;
+    }
+
+    const { data: insertedShots, error: shotsError } = await supabase
+      .from('golf_shots')
+      .insert(group.shots.map(shot => ({
+        round_id: roundId,
+        hole_id: holeId,
+        hole_number: group.hole_number,
+        ...shot,
+      })))
+      .select('id, hole_number, shot_number');
+
+    if (shotsError || !insertedShots) {
+      return { success: false, error: `Fallback failed while writing shots: ${shotsError?.message || 'unknown error'}` };
+    }
+
+    for (const shot of insertedShots) {
+      shotIdMap.set(`${shot.hole_number}-${shot.shot_number}`, shot.id);
+    }
+  }
+
+  for (const pd of puttDetailsPayload) {
+    const shotId = shotIdMap.get(`${pd.hole_number}-${pd.shot_number}`);
+    if (!shotId) {
+      continue;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any).from('putt_details').insert({
+      shot_id: shotId,
+      miss_tags: pd.miss_tags || [],
+      break_direction: pd.break_direction,
+      distance_feet: pd.distance_feet != null ? Math.max(0, Math.min(500, pd.distance_feet)) : null,
+      made: pd.made,
+    });
+
+    if (error) {
+      warnings.push(
+        `Putt detail skipped for hole ${pd.hole_number} shot ${pd.shot_number}: ${error.message || 'unknown error'}`
+      );
+    }
+  }
+
+  for (const ad of approachDetailsPayload) {
+    const shotId = shotIdMap.get(`${ad.hole_number}-${ad.shot_number}`);
+    if (!shotId) {
+      continue;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any).from('approach_miss_details').insert({
+      shot_id: shotId,
+      miss_direction: toDbApproachMissDirection(ad.miss_direction),
+      lie_type: toDbLieType(ad.lie_type),
+      distance_from_green_yards: ad.distance_from_green_yards != null
+        ? Math.max(0, ad.distance_from_green_yards)
+        : null,
+    });
+
+    if (error) {
+      warnings.push(
+        `Approach detail skipped for hole ${ad.hole_number} shot ${ad.shot_number}: ${error.message || 'unknown error'}`
+      );
+    }
+  }
+
+  const mergedDraftData = existingDraftData && typeof existingDraftData === 'object' && !Array.isArray(existingDraftData)
+    ? { ...existingDraftData, submissionBackup: { ...submissionBackup, usedDirectFallback: true, fallbackCompletedAt: new Date().toISOString(), warnings } }
+    : { submissionBackup: { ...submissionBackup, usedDirectFallback: true, fallbackCompletedAt: new Date().toISOString(), warnings } };
+
+  const { error: finalizeError } = await roundsTable
+    .update({
+      ...roundData,
+      draft_data: mergedDraftData,
+    })
+    .eq('id', roundId)
+    .eq('player_id', playerId);
+
+  if (finalizeError) {
+    return { success: false, error: `Fallback failed while finalizing round: ${finalizeError.message}` };
+  }
+
+  return { success: true, warnings };
 }
 
 type GolfEventUpdateData = {
@@ -713,7 +1047,7 @@ export async function submitGolfRoundComprehensive(
     // Prepare round data
     const teamId = await getPlayerTeamId(supabase, player.id);
     const resolvedCourseId = await resolveCourseId(supabase, data.courseName, data.courseId);
-    const roundData = {
+    const roundData: CompletedRoundUpdatePayload = {
       player_id: player.id,
       team_id: teamId,
       course_id: resolvedCourseId,
@@ -832,10 +1166,102 @@ export async function submitGolfRoundComprehensive(
       }
     }
 
+    const submissionBackup = buildRoundSubmissionBackup(
+      roundData,
+      holesPayload,
+      shotsPayload,
+      puttDetailsPayload,
+      approachDetailsPayload
+    );
+    const shotsCount = shotsPayload.reduce((sum, group) => sum + group.shots.length, 0);
+
+    const attemptDirectSubmitFallback = async (
+      roundId: string,
+      path: 'existing_round' | 'new_round_rpc',
+      trigger: Record<string, unknown>,
+      backupPersisted: boolean
+    ): Promise<{ success: true; warnings?: string[] } | { success: false; error: string }> => {
+      const fallbackResult = await submitRoundDirectFallback({
+        supabase,
+        roundId,
+        playerId: player.id,
+        roundData,
+        holesPayload,
+        shotsPayload,
+        puttDetailsPayload,
+        approachDetailsPayload,
+        submissionBackup,
+      });
+
+      if (!fallbackResult.success) {
+        await logServerError(
+          `Direct round submit fallback failed: ${fallbackResult.error}`,
+          {
+            action: 'submitGolfRoundComprehensive',
+            roundId,
+            playerId: player.id,
+            userId: user.id,
+            userEmail: user.email,
+            holesCount: holesPayload.length,
+            shotsCount,
+            extra: { path, trigger, backupPersisted },
+          },
+          'critical'
+        );
+        return { success: false, error: getPreservedRoundSubmitError() };
+      }
+
+      await logServerError(
+        'Direct round submit fallback used after RPC failure',
+        {
+          action: 'submitGolfRoundComprehensive',
+          roundId,
+          playerId: player.id,
+          userId: user.id,
+          userEmail: user.email,
+          holesCount: holesPayload.length,
+          shotsCount,
+          extra: {
+            path,
+            trigger,
+            backupPersisted,
+            warnings: fallbackResult.warnings,
+          },
+        },
+        'warning'
+      );
+
+      return {
+        success: true,
+        warnings: fallbackResult.warnings.length > 0 ? fallbackResult.warnings : undefined,
+      };
+    };
+
     let round: { id: string };
     let detailWarnings: string[] | undefined;
 
     if (existingRoundId) {
+      let backupPersisted = false;
+      try {
+        await persistRoundSubmissionBackup(supabase, existingRoundId, player.id, submissionBackup);
+        backupPersisted = true;
+      } catch (backupError) {
+        await logServerError(
+          `Failed to persist round submission backup: ${backupError instanceof Error ? backupError.message : String(backupError)}`,
+          {
+            action: 'submitGolfRoundComprehensive',
+            roundId: existingRoundId,
+            playerId: player.id,
+            userId: user.id,
+            userEmail: user.email,
+            holesCount: holesPayload.length,
+            shotsCount,
+            extra: { path: 'existing_round', stage: 'backup_persist' },
+          },
+          'error'
+        );
+      }
+
       // Use atomic RPC — wraps entire submit in a single transaction
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: rpcResult, error: rpcError } = await (supabase as any).rpc(
@@ -859,64 +1285,98 @@ export async function submitGolfRoundComprehensive(
           userId: user.id,
           userEmail: user.email,
           holesCount: holesPayload.length,
-          shotsCount: shotsPayload.reduce((sum, g) => sum + g.shots.length, 0),
+          shotsCount,
           errorCode: rpcError.code,
           errorHint: rpcError.hint,
           errorDetails: rpcError.details,
           extra: { path: 'existing_round', courseName: data.courseName },
         }, 'critical');
-        const errMsg = rpcError.code === '57014' ? 'Round submission timed out — the server was too slow. Please try again.'
-          : rpcError.code === '55P03' ? 'Round submission was blocked by a concurrent save. Please wait a moment and try again.'
-          : `Failed to submit round. Please try again. (code: ${rpcError.code || 'unknown'})`;
-        return { success: false, error: errMsg };
-      }
-
-      if (rpcResult && !rpcResult.success) {
-        const isInternalError = rpcResult.error === 'internal_error';
-        await logServerError(`Round submit RPC returned failure: ${rpcResult.error}${isInternalError ? ` [${rpcResult.error_code}] at step "${rpcResult.step}": ${rpcResult.detail}` : ''}`, {
-          action: 'submitGolfRoundComprehensive',
-          roundId: existingRoundId,
-          playerId: player.id,
-          userId: user.id,
-          userEmail: user.email,
-          holesCount: holesPayload.length,
-          shotsCount: shotsPayload.reduce((sum, g) => sum + g.shots.length, 0),
-          errorCode: rpcResult.error_code,
-          errorDetails: rpcResult.step,
-          extra: { rpcResult, path: 'existing_round' },
-        }, isInternalError ? 'critical' : 'error');
-        if (isInternalError) {
-          const errMsg = rpcResult.error_code === '57014' ? 'Round submission timed out — the server was too slow. Please try again.'
-            : rpcResult.error_code === '55P03' ? 'Round submission was blocked by a concurrent save. Please wait a moment and try again.'
-            : `Failed to submit round at step "${rpcResult.step}". Please try again. (code: ${rpcResult.error_code})`;
-          return { success: false, error: errMsg };
-        }
-        return { success: false, error: rpcResult.error || 'Failed to submit round.' };
-      }
-
-      // Log warnings from resilient detail inserts (round saved successfully)
-      if (rpcResult?.warnings?.length > 0) {
-        detailWarnings = rpcResult.warnings as string[];
-        await logServerError(
-          `Round submitted with ${rpcResult.warnings.length} detail warning(s)`,
+        const fallbackResult = await attemptDirectSubmitFallback(
+          existingRoundId,
+          'existing_round',
           {
+            source: 'rpc_error',
+            code: rpcError.code,
+            message: rpcError.message,
+            hint: rpcError.hint,
+            details: rpcError.details,
+          },
+          backupPersisted
+        );
+        if (!fallbackResult.success) {
+          return fallbackResult;
+        }
+
+        detailWarnings = mergeRoundWarnings(detailWarnings, fallbackResult.warnings);
+        round = { id: existingRoundId };
+      } else {
+        if (rpcResult && !rpcResult.success) {
+          const isInternalError = rpcResult.error === 'internal_error';
+          await logServerError(`Round submit RPC returned failure: ${rpcResult.error}${isInternalError ? ` [${rpcResult.error_code}] at step "${rpcResult.step}": ${rpcResult.detail}` : ''}`, {
             action: 'submitGolfRoundComprehensive',
             roundId: existingRoundId,
             playerId: player.id,
             userId: user.id,
             userEmail: user.email,
-            extra: { warnings: rpcResult.warnings, path: 'existing_round' },
-          },
-          'warning'
-        );
-      }
+            holesCount: holesPayload.length,
+            shotsCount,
+            errorCode: rpcResult.error_code,
+            errorDetails: rpcResult.step,
+            extra: { rpcResult, path: 'existing_round' },
+          }, isInternalError ? 'critical' : 'error');
 
-      round = { id: existingRoundId };
+          if (isInternalError) {
+            const fallbackResult = await attemptDirectSubmitFallback(
+              existingRoundId,
+              'existing_round',
+              {
+                source: 'rpc_result',
+                error: rpcResult.error,
+                errorCode: rpcResult.error_code,
+                step: rpcResult.step,
+                detail: rpcResult.detail,
+              },
+              backupPersisted
+            );
+            if (!fallbackResult.success) {
+              return fallbackResult;
+            }
+
+            detailWarnings = mergeRoundWarnings(detailWarnings, fallbackResult.warnings);
+            round = { id: existingRoundId };
+          } else {
+            return { success: false, error: rpcResult.error || 'Failed to submit round.' };
+          }
+        } else {
+          // Log warnings from resilient detail inserts (round saved successfully)
+          if (rpcResult?.warnings?.length > 0) {
+            detailWarnings = rpcResult.warnings as string[];
+            await logServerError(
+              `Round submitted with ${rpcResult.warnings.length} detail warning(s)`,
+              {
+                action: 'submitGolfRoundComprehensive',
+                roundId: existingRoundId,
+                playerId: player.id,
+                userId: user.id,
+                userEmail: user.email,
+                extra: { warnings: rpcResult.warnings, path: 'existing_round' },
+              },
+              'warning'
+            );
+          }
+
+          round = { id: existingRoundId };
+        }
+      }
     } else {
       // Insert as draft — stats trigger only fires when status='completed'
       const { data: newRound, error: roundError } = await supabase
         .from('golf_rounds')
-        .insert({ ...roundData, status: 'draft' })
+        .insert({
+          ...roundData,
+          status: 'draft',
+          draft_data: { submissionBackup } as unknown as Json,
+        })
         .select('id')
         .single();
 
@@ -962,60 +1422,90 @@ export async function submitGolfRoundComprehensive(
           userId: user.id,
           userEmail: user.email,
           holesCount: holesPayload.length,
-          shotsCount: shotsPayload.reduce((sum, g) => sum + g.shots.length, 0),
+          shotsCount,
           errorCode: rpcError.code,
           errorHint: rpcError.hint,
           errorDetails: rpcError.details,
           extra: { path: 'new_round_rpc', courseName: data.courseName },
         }, 'critical');
-        const errMsg = rpcError.code === '57014' ? 'Round submission timed out — the server was too slow. Please try again.'
-          : rpcError.code === '55P03' ? 'Round submission was blocked by a concurrent save. Please wait a moment and try again.'
-          : `Failed to submit round. Please try again. (code: ${rpcError.code || 'unknown'})`;
-        return { success: false, error: errMsg };
-      }
-
-      if (rpcResult && !rpcResult.success) {
-        // Do NOT delete — the round is preserved as a draft for retry
-        const isInternalError = rpcResult.error === 'internal_error';
-        await logServerError(`Round submit RPC returned failure (new round): ${rpcResult.error}${isInternalError ? ` [${rpcResult.error_code}] at step "${rpcResult.step}": ${rpcResult.detail}` : ''}`, {
-          action: 'submitGolfRoundComprehensive',
-          roundId: newRound.id,
-          playerId: player.id,
-          userId: user.id,
-          userEmail: user.email,
-          holesCount: holesPayload.length,
-          shotsCount: shotsPayload.reduce((sum, g) => sum + g.shots.length, 0),
-          errorCode: rpcResult.error_code,
-          errorDetails: rpcResult.step,
-          extra: { rpcResult, path: 'new_round_rpc' },
-        }, isInternalError ? 'critical' : 'error');
-        if (isInternalError) {
-          const errMsg = rpcResult.error_code === '57014' ? 'Round submission timed out — the server was too slow. Please try again.'
-            : rpcResult.error_code === '55P03' ? 'Round submission was blocked by a concurrent save. Please wait a moment and try again.'
-            : `Failed to submit round at step "${rpcResult.step}". Please try again. (code: ${rpcResult.error_code})`;
-          return { success: false, error: errMsg };
-        }
-        return { success: false, error: rpcResult.error || 'Failed to submit round.' };
-      }
-
-      // Log warnings from resilient detail inserts (round saved successfully)
-      if (rpcResult?.warnings?.length > 0) {
-        detailWarnings = rpcResult.warnings as string[];
-        await logServerError(
-          `Round submitted with ${rpcResult.warnings.length} detail warning(s)`,
+        const fallbackResult = await attemptDirectSubmitFallback(
+          newRound.id,
+          'new_round_rpc',
           {
+            source: 'rpc_error',
+            code: rpcError.code,
+            message: rpcError.message,
+            hint: rpcError.hint,
+            details: rpcError.details,
+          },
+          true
+        );
+        if (!fallbackResult.success) {
+          return fallbackResult;
+        }
+
+        detailWarnings = mergeRoundWarnings(detailWarnings, fallbackResult.warnings);
+        round = { id: newRound.id };
+      } else {
+        if (rpcResult && !rpcResult.success) {
+          // Do NOT delete — the round is preserved as a draft for retry
+          const isInternalError = rpcResult.error === 'internal_error';
+          await logServerError(`Round submit RPC returned failure (new round): ${rpcResult.error}${isInternalError ? ` [${rpcResult.error_code}] at step "${rpcResult.step}": ${rpcResult.detail}` : ''}`, {
             action: 'submitGolfRoundComprehensive',
             roundId: newRound.id,
             playerId: player.id,
             userId: user.id,
             userEmail: user.email,
-            extra: { warnings: rpcResult.warnings, path: 'new_round_rpc' },
-          },
-          'warning'
-        );
-      }
+            holesCount: holesPayload.length,
+            shotsCount,
+            errorCode: rpcResult.error_code,
+            errorDetails: rpcResult.step,
+            extra: { rpcResult, path: 'new_round_rpc' },
+          }, isInternalError ? 'critical' : 'error');
 
-      round = { id: newRound.id };
+          if (isInternalError) {
+            const fallbackResult = await attemptDirectSubmitFallback(
+              newRound.id,
+              'new_round_rpc',
+              {
+                source: 'rpc_result',
+                error: rpcResult.error,
+                errorCode: rpcResult.error_code,
+                step: rpcResult.step,
+                detail: rpcResult.detail,
+              },
+              true
+            );
+            if (!fallbackResult.success) {
+              return fallbackResult;
+            }
+
+            detailWarnings = mergeRoundWarnings(detailWarnings, fallbackResult.warnings);
+            round = { id: newRound.id };
+          } else {
+            return { success: false, error: rpcResult.error || 'Failed to submit round.' };
+          }
+        } else {
+          // Log warnings from resilient detail inserts (round saved successfully)
+          if (rpcResult?.warnings?.length > 0) {
+            detailWarnings = rpcResult.warnings as string[];
+            await logServerError(
+              `Round submitted with ${rpcResult.warnings.length} detail warning(s)`,
+              {
+                action: 'submitGolfRoundComprehensive',
+                roundId: newRound.id,
+                playerId: player.id,
+                userId: user.id,
+                userEmail: user.email,
+                extra: { warnings: rpcResult.warnings, path: 'new_round_rpc' },
+              },
+              'warning'
+            );
+          }
+
+          round = { id: newRound.id };
+        }
+      }
     }
 
     // If this is a qualifier round, update the qualifier entry stats
@@ -1023,18 +1513,53 @@ export async function submitGolfRoundComprehensive(
       try {
         await updateQualifierEntryStats(supabase, data.qualifierId, player.id);
       } catch (err) {
-        console.error('[Golf] Failed to update qualifier entry stats:', err);
+        await logServerError(`Failed to update qualifier entry stats after round submit: ${err instanceof Error ? err.message : String(err)}`, {
+          action: 'submitGolfRoundComprehensive.qualifierStats',
+          featureArea: 'qualifiers',
+          roundId: round.id,
+          playerId: player.id,
+          userId: user.id,
+          userEmail: user.email,
+          extra: {
+            qualifierId: data.qualifierId,
+            stack: err instanceof Error ? err.stack : undefined,
+          },
+        }, 'warning');
       }
     }
 
     // Invalidate stats cache BEFORE revalidating paths so Next.js regeneration
     // picks up fresh data. Awaiting ensures the DB cache is rebuilt.
     const cacheResult = await invalidateOnRoundComplete(player.id, round.id).catch((err) => {
-      console.error('[Golf] Failed to invalidate stats cache:', player.id, err);
+      void logServerError(`Failed to invalidate stats cache after round submit: ${err instanceof Error ? err.message : String(err)}`, {
+        action: 'submitGolfRoundComprehensive.invalidateStatsCache',
+        featureArea: 'stats_cache',
+        roundId: round.id,
+        playerId: player.id,
+        userId: user.id,
+        userEmail: user.email,
+        extra: {
+          stack: err instanceof Error ? err.stack : undefined,
+        },
+      }, 'critical');
       return { warnings: ['Stats cache update failed.'] };
     });
     if (cacheResult.warnings.length > 0) {
       console.warn('[Golf] Stats warnings after round submit:', cacheResult.warnings);
+      await logServerError(
+        `Stats cache warnings after round submit: ${cacheResult.warnings.join(' | ')}`,
+        {
+          action: 'submitGolfRoundComprehensive',
+          roundId: round.id,
+          playerId: player.id,
+          userId: user.id,
+          userEmail: user.email,
+          holesCount: holesPayload.length,
+          shotsCount,
+          extra: { warnings: cacheResult.warnings },
+        },
+        'warning'
+      );
     }
 
     try {
@@ -1050,7 +1575,18 @@ export async function submitGolfRoundComprehensive(
         revalidatePath(`/golf/dashboard/qualifiers/${data.qualifierId}`);
       }
     } catch (cacheErr) {
-      console.error('[Golf] Cache revalidation failed after successful submit:', cacheErr);
+      await logServerError(`Next cache revalidation failed after round submit: ${cacheErr instanceof Error ? cacheErr.message : String(cacheErr)}`, {
+        action: 'submitGolfRoundComprehensive.revalidatePaths',
+        featureArea: 'stats_cache',
+        roundId: round.id,
+        playerId: player.id,
+        userId: user.id,
+        userEmail: user.email,
+        extra: {
+          qualifierId: data.qualifierId ?? null,
+          stack: cacheErr instanceof Error ? cacheErr.stack : undefined,
+        },
+      }, 'warning');
     }
 
     // Fire-and-forget: CoachHelm + logging run AFTER returning success to the

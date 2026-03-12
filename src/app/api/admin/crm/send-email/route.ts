@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { logServerError } from '@/lib/server-error-logger';
 
 interface Recipient {
   id: string;
@@ -15,6 +16,9 @@ interface SendEmailRequest {
 }
 
 export async function POST(request: Request) {
+  let userId: string | null = null;
+  let userEmail: string | null = null;
+
   try {
     // Auth check - must be logged-in admin
     const supabase = await createClient();
@@ -22,6 +26,8 @@ export async function POST(request: Request) {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    userId = user.id;
+    userEmail = user.email ?? null;
 
     // Verify admin role
     const { data: profile } = await supabase
@@ -47,6 +53,8 @@ export async function POST(request: Request) {
     // ── Log-only mode (used when sending via Gmail — just record the contact) ──
     if (logOnly) {
       const now = new Date().toISOString();
+      const loggingFailures: Array<{ recipientId: string; recipientEmail: string; message: string }> = [];
+
       for (const recipient of recipients) {
         try {
           await supabase.from('crm_contact_log').insert({
@@ -59,10 +67,33 @@ export async function POST(request: Request) {
             last_contacted_at: now,
             updated_at: now,
           }).eq('id', recipient.id);
-        } catch {
+        } catch (error) {
+          loggingFailures.push({
+            recipientId: recipient.id,
+            recipientEmail: recipient.email,
+            message: error instanceof Error ? error.message : String(error),
+          });
           // Continue logging others even if one fails
         }
       }
+
+      if (loggingFailures.length > 0) {
+        await logServerError(`CRM log-only email logging partially failed for ${loggingFailures.length} recipient(s)`, {
+          action: 'crmSendEmailApi.logOnly',
+          source: 'route_handler',
+          featureArea: 'admin_crm',
+          route: '/api/admin/crm/send-email',
+          userId,
+          userEmail,
+          extra: {
+            subject,
+            totalRecipients: recipients.length,
+            failedCount: loggingFailures.length,
+            failures: loggingFailures.slice(0, 10),
+          },
+        }, 'warning');
+      }
+
       return NextResponse.json({ logged: recipients.length });
     }
 
@@ -73,11 +104,24 @@ export async function POST(request: Request) {
 
     const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) {
+      await logServerError('CRM send-email route is missing RESEND_API_KEY', {
+        action: 'crmSendEmailApi.missingApiKey',
+        source: 'route_handler',
+        featureArea: 'admin_crm',
+        route: '/api/admin/crm/send-email',
+        userId,
+        userEmail,
+        extra: {
+          recipientCount: recipients.length,
+          subject,
+        },
+      }, 'critical');
       return NextResponse.json({ error: 'Email service not configured' }, { status: 500 });
     }
 
     let sent = 0;
     let failed = 0;
+    const failedRecipients: Array<{ recipientId: string; recipientEmail: string; message: string }> = [];
 
     for (const recipient of recipients) {
       try {
@@ -114,14 +158,54 @@ export async function POST(request: Request) {
           }).eq('id', recipient.id);
         } else {
           failed++;
+          const failureBody = (await res.text().catch(() => '')).slice(0, 500);
+          failedRecipients.push({
+            recipientId: recipient.id,
+            recipientEmail: recipient.email,
+            message: failureBody || `Resend returned ${res.status}`,
+          });
         }
-      } catch {
+      } catch (error) {
         failed++;
+        failedRecipients.push({
+          recipientId: recipient.id,
+          recipientEmail: recipient.email,
+          message: error instanceof Error ? error.message : String(error),
+        });
       }
     }
 
+    if (failed > 0) {
+      await logServerError(`CRM send-email route failed for ${failed} of ${recipients.length} recipient(s)`, {
+        action: 'crmSendEmailApi.send',
+        source: 'route_handler',
+        featureArea: 'admin_crm',
+        route: '/api/admin/crm/send-email',
+        userId,
+        userEmail,
+        extra: {
+          subject,
+          sent,
+          failed,
+          totalRecipients: recipients.length,
+          failures: failedRecipients.slice(0, 10),
+        },
+      }, failed === recipients.length ? 'critical' : 'warning');
+    }
+
     return NextResponse.json({ sent, failed, total: recipients.length });
-  } catch {
+  } catch (error) {
+    await logServerError(`CRM send-email route failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'crmSendEmailApi',
+      source: 'route_handler',
+      featureArea: 'admin_crm',
+      route: '/api/admin/crm/send-email',
+      userId,
+      userEmail,
+      extra: {
+        stack: error instanceof Error ? error.stack : undefined,
+      },
+    }, 'critical');
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

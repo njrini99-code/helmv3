@@ -90,14 +90,9 @@ function EmailCapture() {
 }
 
 export function Hero() {
-  const [isClient, setIsClient] = useState(false)
-  const [isMobile, setIsMobile] = useState(false)
+  const [isHeroReady, setIsHeroReady] = useState(false)
+  const [enableParallax, setEnableParallax] = useState(false)
   const shouldReduceMotion = useReducedMotion()
-  useEffect(() => {
-    setIsClient(true)
-    // Detect touch/mobile to disable parallax (causes jank on iOS Safari)
-    setIsMobile(window.matchMedia('(pointer: coarse)').matches)
-  }, [])
 
   const containerRef = useRef<HTMLElement>(null)
   const { scrollYProgress } = useScroll({
@@ -105,13 +100,29 @@ export function Hero() {
     offset: ['start start', 'end start']
   })
 
-  // Disable parallax transforms on mobile — they cause scroll jank on iOS Safari
-  const textY = useTransform(scrollYProgress, [0, 1], [0, isMobile ? 0 : -60])
-  const mockupY = useTransform(scrollYProgress, [0, 1], [0, isMobile ? 0 : 40])
-  const opacity = useTransform(scrollYProgress, [0, 0.6], [1, isMobile ? 1 : 0])
+  useEffect(() => {
+    if (shouldReduceMotion) {
+      setIsHeroReady(true)
+      setEnableParallax(false)
+      return
+    }
 
-  const initial = (values: Record<string, number>) =>
-    shouldReduceMotion ? false : isClient ? { opacity: 0, ...values } : false
+    const isCoarsePointer = window.matchMedia('(pointer: coarse)').matches
+    setEnableParallax(!isCoarsePointer)
+
+    const revealTimer = window.setTimeout(() => {
+      setIsHeroReady(true)
+    }, 500)
+
+    return () => window.clearTimeout(revealTimer)
+  }, [shouldReduceMotion])
+
+  // Keep the hero static on first paint, then enable subtle parallax only on
+  // fine pointers once the layout is already settled.
+  const textY = useTransform(scrollYProgress, [0, 1], [0, enableParallax ? -60 : 0])
+  const mockupY = useTransform(scrollYProgress, [0, 1], [0, enableParallax ? 40 : 0])
+  const opacity = useTransform(scrollYProgress, [0, 0.6], [1, enableParallax ? 0 : 1])
+  const heroVisible = isHeroReady || shouldReduceMotion
 
   return (
     <section
@@ -126,10 +137,18 @@ export function Hero() {
           fill
           className="object-cover"
           priority
+          fetchPriority="high"
           quality={90}
           sizes="100vw"
+          onLoad={() => setIsHeroReady(true)}
         />
       </div>
+
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 z-[4] pointer-events-none bg-[#05070d] transition-opacity duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]"
+        style={{ opacity: heroVisible ? 0 : 1 }}
+      />
 
       {/* Overlay — narrow left-side gradient for text readability only */}
       <div
@@ -168,7 +187,7 @@ export function Hero() {
       {/* Main Content */}
       <motion.div
         style={{ opacity }}
-        className="relative z-20 max-w-[90rem] mx-auto px-6 lg:px-14 xl:px-20"
+        className="relative z-20 max-w-[90rem] mx-auto px-6 lg:px-14 xl:px-20 transition-[filter] duration-500 ease-out"
       >
         <div className="grid grid-cols-1 lg:grid-cols-2 items-center min-h-[calc(100svh-64px)] min-h-[calc(-webkit-fill-available-64px)] md:min-h-[calc(100vh-64px)] gap-0 lg:gap-4">
 
@@ -178,23 +197,17 @@ export function Hero() {
             className="pt-10 sm:pt-16 lg:pt-0 pb-8 lg:pb-0"
           >
             {/* Eyebrow */}
-            <motion.div
-              initial={initial({ y: 20 })}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.15, ease: [0.25, 0.1, 0.25, 1] }}
+            <div
               className="flex items-center gap-4 mb-5 lg:mb-8"
             >
               <div className="w-8 h-px bg-primary-600/70" />
               <span className="text-primary-500/70 tracking-[0.25em] uppercase text-[11px] font-medium">
                 College Golf Intelligence
               </span>
-            </motion.div>
+            </div>
 
             {/* Headline */}
-            <motion.h1
-              initial={initial({ y: 50 })}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.9, delay: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
+            <h1
               className="font-serif text-[clamp(2.75rem,5.5vw,5.5rem)] text-white leading-[0.93] tracking-tightest"
             >
               Command
@@ -202,34 +215,25 @@ export function Hero() {
               <span className="italic text-primary-500">every angle</span>
               <br />
               of your program
-            </motion.h1>
+            </h1>
 
             {/* Subtitle */}
-            <motion.p
-              initial={initial({ y: 25 })}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.45, ease: [0.25, 0.1, 0.25, 1] }}
+            <p
               className="text-white text-[15px] lg:text-lg mt-5 lg:mt-7 max-w-md leading-relaxed"
             >
               The platform built for college golf coaches who demand
               clarity, precision, and a competitive edge.
-            </motion.p>
+            </p>
 
             {/* Email CTA */}
-            <motion.div
-              initial={initial({ y: 25 })}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
+            <div
               className="mt-7 lg:mt-10"
             >
               <EmailCapture />
-            </motion.div>
+            </div>
 
             {/* Explore GolfHelm pill */}
-            <motion.div
-              initial={initial({ y: 15 })}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
+            <div
               className="mt-7 lg:mt-10"
             >
               <Link href="/products#golfhelm" className="group inline-flex">
@@ -255,15 +259,12 @@ export function Hero() {
                   </svg>
                 </div>
               </Link>
-            </motion.div>
+            </div>
           </motion.div>
 
           {/* ─── Right: Dashboard in premium browser frame ─── */}
           <motion.div
             style={{ y: mockupY }}
-            initial={initial({ x: 80, scale: 0.96 })}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            transition={{ duration: 1.1, delay: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
             className="relative pb-16 lg:pb-0 hidden lg:block"
           >
             <div className="lg:-mr-[25%]">
@@ -347,8 +348,9 @@ export function Hero() {
                   width={2880}
                   height={1621}
                   className="w-full h-auto block"
+                  fetchPriority="low"
+                  loading="eager"
                   quality={95}
-                  priority
                 />
 
                 {/* Bottom fade — makes the crop look intentional */}
@@ -365,12 +367,9 @@ export function Hero() {
       </motion.div>
 
       {/* Scroll indicator */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.8, duration: 1 }}
+      <div
         style={{ opacity }}
-        className="absolute bottom-8 pb-safe left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 hidden md:flex"
+        className="absolute bottom-8 pb-safe left-1/2 -translate-x-1/2 z-20 hidden md:flex flex-col items-center gap-2 transition-opacity duration-700 ease-out"
       >
         <span className="text-white/15 text-[10px] tracking-[0.3em] uppercase font-medium">
           Scroll
@@ -380,7 +379,7 @@ export function Hero() {
           transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
           className="w-px h-8 bg-gradient-to-b from-white/15 to-transparent"
         />
-      </motion.div>
+      </div>
     </section>
   )
 }

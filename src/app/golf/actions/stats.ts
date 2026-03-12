@@ -21,6 +21,7 @@ import {
   type PlayerStatsSummary,
   type PlayerStatsCache,
 } from '@/lib/cache/golf-stats-calculator';
+import { logServerError } from '@/lib/server-error-logger';
 
 // ============================================================================
 // TYPES
@@ -98,7 +99,14 @@ export async function getPlayerStatsSummaryAction(
 
     return { success: true, data: stats };
   } catch (error) {
-    console.error('[Stats Action] Error getting player stats:', error);
+    await logServerError(`getPlayerStatsSummaryAction failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'getPlayerStatsSummaryAction',
+      featureArea: 'stats_cache',
+      playerId: playerId ?? null,
+      extra: {
+        stack: error instanceof Error ? error.stack : undefined,
+      },
+    });
     return { success: false, error: 'Failed to load stats' };
   }
 }
@@ -142,7 +150,14 @@ export async function getFullPlayerStatsAction(
     const stats = await getFullPlayerStats(targetPlayerId);
     return { success: true, data: stats };
   } catch (error) {
-    console.error('[Stats Action] Error getting full player stats:', error);
+    await logServerError(`getFullPlayerStatsAction failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'getFullPlayerStatsAction',
+      featureArea: 'stats_cache',
+      playerId: playerId ?? null,
+      extra: {
+        stack: error instanceof Error ? error.stack : undefined,
+      },
+    });
     return { success: false, error: 'Failed to load stats' };
   }
 }
@@ -229,7 +244,14 @@ export async function refreshStatsCacheAction(
 
     return { success: true, data: undefined };
   } catch (error) {
-    console.error('[Stats Action] Error refreshing stats cache:', error);
+    await logServerError(`refreshStatsCacheAction failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'refreshStatsCacheAction',
+      featureArea: 'stats_cache',
+      playerId: playerId ?? null,
+      extra: {
+        stack: error instanceof Error ? error.stack : undefined,
+      },
+    }, 'critical');
     return { success: false, error: 'Failed to refresh stats' };
   }
 }
@@ -281,7 +303,13 @@ export async function getTeamStatsAction(): Promise<
     const statsMap = await getTeamPlayerStats(team.id);
     return { success: true, data: statsMap };
   } catch (error) {
-    console.error('[Stats Action] Error getting team stats:', error);
+    await logServerError(`getTeamStatsAction failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'getTeamStatsAction',
+      featureArea: 'stats_cache',
+      extra: {
+        stack: error instanceof Error ? error.stack : undefined,
+      },
+    });
     return { success: false, error: 'Failed to load team stats' };
   }
 }
@@ -329,7 +357,14 @@ export async function getTeamTopPlayersAction(
     const topPlayers = await getTeamTopPlayers(team.id, limit);
     return { success: true, data: topPlayers };
   } catch (error) {
-    console.error('[Stats Action] Error getting top players:', error);
+    await logServerError(`getTeamTopPlayersAction failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'getTeamTopPlayersAction',
+      featureArea: 'stats_cache',
+      extra: {
+        limit,
+        stack: error instanceof Error ? error.stack : undefined,
+      },
+    });
     return { success: false, error: 'Failed to load top players' };
   }
 }
@@ -408,7 +443,15 @@ export async function onRoundCompleteAction(
     revalidatePath('/golf/dashboard');
     revalidatePath('/golf/dashboard/stats');
   } catch (error) {
-    console.error('[Stats Action] Error invalidating on round complete:', error);
+    await logServerError(`onRoundCompleteAction failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'onRoundCompleteAction',
+      featureArea: 'stats_cache',
+      playerId,
+      roundId,
+      extra: {
+        stack: error instanceof Error ? error.stack : undefined,
+      },
+    }, 'warning');
     // Don't throw - cache invalidation failure shouldn't block round submission
   }
 }
@@ -430,7 +473,14 @@ export async function markStatsStaleAction(playerId: string): Promise<void> {
     revalidatePath('/golf/dashboard');
     revalidatePath('/golf/dashboard/stats');
   } catch (error) {
-    console.error('[Stats Action] Error marking stats stale:', error);
+    await logServerError(`markStatsStaleAction failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'markStatsStaleAction',
+      featureArea: 'stats_cache',
+      playerId,
+      extra: {
+        stack: error instanceof Error ? error.stack : undefined,
+      },
+    }, 'warning');
   }
 }
 
@@ -576,7 +626,14 @@ export async function getPlayerStatsDirectAction(
       },
     };
   } catch (error) {
-    console.error('[Stats Action] Error getting direct stats:', error);
+    await logServerError(`getPlayerStatsDirectAction failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'getPlayerStatsDirectAction',
+      featureArea: 'stats_cache',
+      playerId: playerId ?? null,
+      extra: {
+        stack: error instanceof Error ? error.stack : undefined,
+      },
+    });
     return { success: false, error: 'Failed to load stats' };
   }
 }

@@ -12,6 +12,30 @@ import type { HoleStats, ShotRecord, RoundHole } from '@/lib/types/golf';
 
 const EMERGENCY_SAVE_PREFIX = 'golf_emergency_save';
 const MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
+const NON_RECOVERABLE_SUBMIT_ERROR_PATTERNS = [
+  'already been completed',
+  'already been submitted',
+  'may have already been completed',
+  'cannot submit round: hole',
+  'total score appears invalid',
+  'zero putts on every hole is not valid',
+  'invalid round data',
+  'qualifier not found',
+  'you are not entered in this qualifier',
+  'already submitted round',
+  'exceeds the qualifier',
+];
+const RECOVERABLE_SUBMIT_ERROR_PATTERNS = [
+  'data was preserved',
+  'failed to submit round',
+  'failed to save round',
+  'timed out',
+  'server error',
+  'server action',
+  'failed to fetch',
+  'network',
+  'concurrent save',
+];
 
 export interface EmergencySaveData {
   roundId: string | null;
@@ -110,6 +134,23 @@ export function clearEmergencySave(roundId?: string | null): void {
   } catch {
     // Ignore
   }
+}
+
+/**
+ * Heuristic for submit failures where the player's data should be handed off to
+ * the recovery flow instead of leaving them on a dead-end error screen.
+ */
+export function isRecoverableRoundSubmitError(message?: string): boolean {
+  if (typeof message !== 'string' || message.trim().length === 0) {
+    return true;
+  }
+
+  const normalized = message.toLowerCase();
+  if (NON_RECOVERABLE_SUBMIT_ERROR_PATTERNS.some(pattern => normalized.includes(pattern))) {
+    return false;
+  }
+
+  return RECOVERABLE_SUBMIT_ERROR_PATTERNS.some(pattern => normalized.includes(pattern));
 }
 
 /**

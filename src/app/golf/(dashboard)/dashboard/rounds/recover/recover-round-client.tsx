@@ -1,24 +1,36 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { submitGolfRoundComprehensive } from '@/app/golf/actions/golf';
 import { useToast } from '@/components/ui/toast';
 import type { HoleStats } from '@/lib/types/golf';
+import {
+  getPendingRounds as getModernPendingRounds,
+  deleteOfflineRound as deleteModernOfflineRound,
+  type OfflineRound as ModernOfflineRound
+} from '@/lib/offline/indexed-db';
+import { clearEmergencySave } from '@/lib/utils/emergency-save';
 
-// Direct IndexedDB access to read offline round data
-const DB_NAME = 'golf_offline_db';
+// Legacy IndexedDB access kept for older locally saved drafts
+const LEGACY_DB_NAME = 'golf_offline_db';
 const ROUNDS_STORE = 'offline_rounds';
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 // Emergency save localStorage key prefix (must match emergency-save.ts)
 const EMERGENCY_SAVE_PREFIX = 'golf_emergency_save';
 const EMERGENCY_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
 
+type StorageSource = 'legacy-indexeddb' | 'modern-indexeddb' | 'localstorage';
+
 interface OfflineRoundData {
   id: string;
   playerId: string;
+  storageSource: StorageSource;
+  serverRoundId?: string;
   draftData: {
     step: string;
+    roundId?: string;
     setupData: {
       courseName: string;
       courseCity: string;
@@ -28,36 +40,105 @@ interface OfflineRoundData {
       teesPlayed: string;
       roundType: 'practice' | 'tournament' | 'qualifier';
       roundDate: string;
+      qualifierId?: string;
+      qualifierRoundNumber?: number;
     };
     holes: Array<{ number: number; par: number; yardage: number; score: number | null }>;
     completedHoleStats: HoleStats[];
     currentHoleIndex: number;
     inProgressShots?: Record<number, unknown[]>;
+    submissionIntent?: string;
   };
   timestamp: number;
 }
 
-function openDatabase(): Promise<IDBDatabase> {
+function hasRecoverableStats(round: OfflineRoundData): boolean {
+  const completedHoleStats = round.draftData?.completedHoleStats;
+  if (!Array.isArray(completedHoleStats)) {
+    return false;
+  }
+
+  return completedHoleStats.some(
+    (hole): hole is HoleStats => hole != null && typeof hole === 'object' && 'score' in hole && hole.score > 0
+  );
+}
+
+function isCompletedRoundError(message?: string): boolean {
+  if (typeof message !== 'string') {
+    return false;
+  }
+
+  const normalized = message.toLowerCase();
+  return normalized.includes('already been completed')
+    || normalized.includes('already been submitted')
+    || normalized.includes('may have already been completed');
+}
+
+function getExistingRoundId(round: OfflineRoundData): string | undefined {
+  const explicitRoundId = typeof round.draftData.roundId === 'string' && round.draftData.roundId.length > 0
+    ? round.draftData.roundId
+    : undefined;
+  if (round.serverRoundId) {
+    return round.serverRoundId;
+  }
+  if (explicitRoundId) {
+    return explicitRoundId;
+  }
+  if (round.id.startsWith('localStorage_')) {
+    const localId = round.id.replace('localStorage_', '');
+    return localId !== 'new' ? localId : undefined;
+  }
+  return UUID_PATTERN.test(round.id) ? round.id : undefined;
+}
+
+function getRoundDedupKey(round: OfflineRoundData): string {
+  const existingRoundId = getExistingRoundId(round);
+  if (existingRoundId) {
+    return `server:${existingRoundId}`;
+  }
+
+  const completedCount = round.draftData.completedHoleStats.filter(
+    (hole): hole is HoleStats => hole != null && typeof hole === 'object' && 'score' in hole && hole.score > 0
+  ).length;
+  const totalScore = round.draftData.completedHoleStats
+    .filter((hole): hole is HoleStats => hole != null && typeof hole === 'object' && 'score' in hole && hole.score > 0)
+    .reduce((sum, hole) => sum + hole.score, 0);
+
+  return [
+    round.draftData.setupData.courseName || 'unknown-course',
+    round.draftData.setupData.roundDate || 'unknown-date',
+    round.draftData.setupData.roundType || 'unknown-type',
+    completedCount,
+    totalScore,
+  ].join('|');
+}
+
+function openLegacyDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME);
+    const request = indexedDB.open(LEGACY_DB_NAME);
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(new Error('Failed to open IndexedDB'));
   });
 }
 
-async function getAllOfflineRounds(): Promise<OfflineRoundData[]> {
-  const db = await openDatabase();
+async function getAllLegacyOfflineRounds(): Promise<OfflineRoundData[]> {
+  const db = await openLegacyDatabase();
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(ROUNDS_STORE, 'readonly');
     const store = transaction.objectStore(ROUNDS_STORE);
     const request = store.getAll();
-    request.onsuccess = () => resolve(request.result || []);
+    request.onsuccess = () => resolve(
+      (request.result || []).map((round: Omit<OfflineRoundData, 'storageSource'>) => ({
+        ...round,
+        storageSource: 'legacy-indexeddb',
+      }))
+    );
     request.onerror = () => reject(new Error('Failed to read rounds'));
   });
 }
 
-async function deleteOfflineRoundById(roundId: string): Promise<void> {
-  const db = await openDatabase();
+async function deleteLegacyOfflineRoundById(roundId: string): Promise<void> {
+  const db = await openLegacyDatabase();
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(ROUNDS_STORE, 'readwrite');
     const store = transaction.objectStore(ROUNDS_STORE);
@@ -96,13 +177,16 @@ function getEmergencySavesFromLocalStorage(): OfflineRoundData[] {
         results.push({
           id: `localStorage_${roundId}`,
           playerId: '',
+          storageSource: 'localstorage',
           draftData: {
             step: 'tracking',
+            roundId: roundId !== 'new' ? roundId : undefined,
             setupData: parsed.setupData,
             holes: parsed.holes || [],
             completedHoleStats: parsed.completedHoleStats,
             currentHoleIndex: parsed.currentHoleIndex ?? 0,
             inProgressShots: parsed.inProgressShotsByHole,
+            submissionIntent: parsed.submissionIntent,
           },
           timestamp: parsed.timestamp,
         });
@@ -116,46 +200,113 @@ function getEmergencySavesFromLocalStorage(): OfflineRoundData[] {
   return results;
 }
 
+function mapModernPendingRound(round: ModernOfflineRound): OfflineRoundData | null {
+  const draftData = round.draftData as Partial<OfflineRoundData['draftData']> | undefined;
+  if (!draftData?.setupData || !Array.isArray(draftData.completedHoleStats)) {
+    return null;
+  }
+
+  return {
+    id: round.id,
+    playerId: round.playerId,
+    storageSource: 'modern-indexeddb',
+    serverRoundId: round.serverRoundId,
+    draftData: {
+      step: typeof draftData.step === 'string' ? draftData.step : 'tracking',
+      roundId: typeof draftData.roundId === 'string' ? draftData.roundId : undefined,
+      setupData: {
+        courseName: draftData.setupData.courseName || '',
+        courseCity: draftData.setupData.courseCity || '',
+        courseState: draftData.setupData.courseState || '',
+        courseRating: draftData.setupData.courseRating || '',
+        courseSlope: draftData.setupData.courseSlope || '',
+        teesPlayed: draftData.setupData.teesPlayed || '',
+        roundType: draftData.setupData.roundType || 'practice',
+        roundDate: draftData.setupData.roundDate || '',
+        qualifierId: draftData.setupData.qualifierId,
+        qualifierRoundNumber: draftData.setupData.qualifierRoundNumber,
+      },
+      holes: Array.isArray(draftData.holes) ? draftData.holes : [],
+      completedHoleStats: draftData.completedHoleStats,
+      currentHoleIndex: typeof draftData.currentHoleIndex === 'number' ? draftData.currentHoleIndex : 0,
+      inProgressShots: draftData.inProgressShots,
+      submissionIntent: typeof draftData.submissionIntent === 'string' ? draftData.submissionIntent : undefined,
+    },
+    timestamp: round.timestamp,
+  };
+}
+
 export default function RecoverRoundClient({ playerId }: { playerId: string }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { showToast } = useToast();
   const [rounds, setRounds] = useState<OfflineRoundData[]>([]);
   const [loading, setLoading] = useState(true);
   const [recovering, setRecovering] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const openedFromSubmitFailure = searchParams.get('from') === 'submit';
 
   useEffect(() => {
-    getAllOfflineRounds()
-      .then(allRounds => {
-        // Filter to rounds that have completed hole stats
-        const recoverable = allRounds.filter(r => {
-          const draft = r.draftData;
-          if (!draft?.completedHoleStats) return false;
-          const completedCount = draft.completedHoleStats.filter(
-            (h): h is HoleStats => h != null && typeof h === 'object' && 'score' in h && h.score > 0
-          ).length;
-          return completedCount > 0;
-        });
-
-        // Also check localStorage emergency saves as a fallback source
+    Promise.allSettled([
+      getAllLegacyOfflineRounds(),
+      getModernPendingRounds().then(allRounds => allRounds.map(mapModernPendingRound).filter(Boolean) as OfflineRoundData[]),
+    ])
+      .then(([legacyResult, modernResult]) => {
+        const legacyRounds = legacyResult.status === 'fulfilled' ? legacyResult.value : [];
+        const modernRounds = modernResult.status === 'fulfilled' ? modernResult.value : [];
         const emergencySaves = getEmergencySavesFromLocalStorage();
-        // Deduplicate: only add localStorage saves that don't already exist in IndexedDB
-        const indexedDbIds = new Set(recoverable.map(r => r.id));
-        const uniqueEmergencySaves = emergencySaves.filter(es => !indexedDbIds.has(es.id));
+        const dedupedRounds: OfflineRoundData[] = [];
+        const seenKeys = new Set<string>();
 
-        setRounds([...recoverable, ...uniqueEmergencySaves]);
+        for (const round of [...modernRounds, ...legacyRounds, ...emergencySaves]) {
+          if (!hasRecoverableStats(round)) {
+            continue;
+          }
+
+          const dedupKey = getRoundDedupKey(round);
+          if (seenKeys.has(dedupKey)) {
+            continue;
+          }
+
+          seenKeys.add(dedupKey);
+          dedupedRounds.push(round);
+        }
+
+        if (dedupedRounds.length === 0 && legacyResult.status === 'rejected' && modernResult.status === 'rejected') {
+          setError('Could not access offline storage. Make sure you are using the same browser and device.');
+          return;
+        }
+
+        setRounds(dedupedRounds);
       })
       .catch(() => {
-        // IndexedDB failed — fall back to localStorage-only recovery
         const emergencySaves = getEmergencySavesFromLocalStorage();
         if (emergencySaves.length > 0) {
-          setRounds(emergencySaves);
+          setRounds(emergencySaves.filter(hasRecoverableStats));
         } else {
           setError('Could not access offline storage. Make sure you are using the same browser and device.');
         }
       })
       .finally(() => setLoading(false));
   }, [playerId]);
+
+  const cleanupRecoveredRound = async (round: OfflineRoundData): Promise<void> => {
+    const existingRoundId = getExistingRoundId(round);
+    clearEmergencySave(existingRoundId ?? null);
+
+    if (round.storageSource === 'localstorage') {
+      const lsKey = round.id.replace('localStorage_', '');
+      try { localStorage.removeItem(`${EMERGENCY_SAVE_PREFIX}_${lsKey}`); } catch { /* ignore */ }
+      return;
+    }
+
+    if (round.storageSource === 'modern-indexeddb') {
+      await deleteModernOfflineRound(round.id);
+      return;
+    }
+
+    await deleteLegacyOfflineRoundById(round.id);
+  };
 
   const handleRecover = async (round: OfflineRoundData) => {
     setRecovering(round.id);
@@ -182,13 +333,26 @@ export default function RecoverRoundClient({ playerId }: { playerId: string }) {
         teesPlayed: draft.setupData.teesPlayed || undefined,
         roundType: draft.setupData.roundType,
         roundDate: draft.setupData.roundDate,
+        qualifierId: draft.setupData.qualifierId || undefined,
+        qualifierRoundNumber: draft.setupData.qualifierRoundNumber || undefined,
         holes: stats,
       };
 
-      // Submit as a new round (the old one was deleted)
-      const result = await submitGolfRoundComprehensive(roundData);
+      const existingRoundId = getExistingRoundId(round);
+      let result = await submitGolfRoundComprehensive(roundData, existingRoundId);
+
+      if (!result.success && existingRoundId && /round not found or you do not have permission/i.test(result.error)) {
+        result = await submitGolfRoundComprehensive(roundData);
+      }
 
       if (!result.success) {
+        if (existingRoundId && isCompletedRoundError(result.error)) {
+          await cleanupRecoveredRound(round).catch(() => {});
+          showToast('Round was already submitted. Opening the saved round.', 'success');
+          router.push(`/golf/dashboard/rounds/${existingRoundId}`);
+          return;
+        }
+
         setError(result.error || 'Failed to recover round.');
         setRecovering(null);
         return;
@@ -196,13 +360,7 @@ export default function RecoverRoundClient({ playerId }: { playerId: string }) {
 
       // Clean up the offline data
       try {
-        if (round.id.startsWith('localStorage_')) {
-          // This was a localStorage emergency save — clean up the localStorage key
-          const lsKey = round.id.replace('localStorage_', '');
-          try { localStorage.removeItem(`${EMERGENCY_SAVE_PREFIX}_${lsKey}`); } catch { /* ignore */ }
-        } else {
-          await deleteOfflineRoundById(round.id);
-        }
+        await cleanupRecoveredRound(round);
       } catch {
         // Non-critical
       }
@@ -238,6 +396,12 @@ export default function RecoverRoundClient({ playerId }: { playerId: string }) {
           <p className="text-warm-500 text-sm mb-6">
             Found {rounds.length} recoverable round{rounds.length !== 1 ? 's' : ''} in your browser&apos;s offline storage.
           </p>
+
+          {openedFromSubmitFailure && (
+            <div className="mb-4 p-3 rounded-xl border border-amber-200 bg-amber-50 text-amber-800 text-sm">
+              Your round was saved locally because submit could not finish against the server. Recover it here without re-entering anything.
+            </div>
+          )}
 
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm">

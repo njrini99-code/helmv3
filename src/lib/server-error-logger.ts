@@ -2,9 +2,27 @@
 
 import * as Sentry from '@sentry/nextjs';
 import { createAdminClient } from '@/lib/supabase/admin';
+import type { Json } from '@/lib/types/database';
+
+export type ServerTraceSeverity = 'info' | 'warning' | 'error' | 'critical';
+export type ServerTraceSource =
+  | 'server_action'
+  | 'route_handler'
+  | 'server_component'
+  | 'background_job'
+  | 'request_hook';
 
 interface RoundErrorContext {
   action: string;
+  title?: string;
+  route?: string | null;
+  url?: string | null;
+  featureArea?: string | null;
+  source?: ServerTraceSource;
+  statusCode?: number | null;
+  requestId?: string | null;
+  runtime?: 'nodejs' | 'edge' | 'unknown';
+  handled?: boolean;
   roundId?: string | null;
   playerId?: string | null;
   userId?: string | null;
@@ -14,88 +32,210 @@ interface RoundErrorContext {
   errorCode?: string;
   errorHint?: string;
   errorDetails?: string;
-  /** Arbitrary extra data for debugging */
+  fingerprint?: string[];
+  tags?: Record<string, string | number | boolean | null | undefined>;
+  metadata?: Record<string, unknown>;
   extra?: Record<string, unknown>;
 }
 
-const SEVERITY_MAP: Record<string, Sentry.SeverityLevel> = {
+const SENTRY_SEVERITY_MAP: Record<ServerTraceSeverity, Sentry.SeverityLevel> = {
+  info: 'info',
   warning: 'warning',
   error: 'error',
   critical: 'fatal',
 };
 
+function normalizeContext(context: RoundErrorContext): Record<string, unknown> {
+  return JSON.parse(JSON.stringify({
+    action: context.action,
+    route: context.route ?? null,
+    url: context.url ?? null,
+    featureArea: context.featureArea ?? null,
+    source: context.source ?? 'server_action',
+    statusCode: context.statusCode ?? null,
+    requestId: context.requestId ?? null,
+    runtime: context.runtime ?? process.env.NEXT_RUNTIME ?? 'nodejs',
+    handled: context.handled ?? true,
+    roundId: context.roundId ?? null,
+    playerId: context.playerId ?? null,
+    userId: context.userId ?? null,
+    userEmail: context.userEmail ?? null,
+    holesCount: context.holesCount ?? null,
+    shotsCount: context.shotsCount ?? null,
+    errorCode: context.errorCode ?? null,
+    errorHint: context.errorHint ?? null,
+    errorDetails: context.errorDetails ?? null,
+    tags: context.tags ?? {},
+    metadata: context.metadata ?? {},
+    extra: context.extra ?? {},
+  }));
+}
+
+function buildAdminTitle(message: string, context: RoundErrorContext, severity: ServerTraceSeverity): string {
+  if (context.title?.trim()) {
+    return context.title.trim().slice(0, 500);
+  }
+
+  const actionPrefix = context.action ? `[${context.action}] ` : '';
+  const fallback = `${actionPrefix}${message}`;
+
+  if (severity === 'critical') {
+    return `Critical: ${fallback}`.slice(0, 500);
+  }
+
+  return fallback.slice(0, 500);
+}
+
+function buildUrl(context: RoundErrorContext): string | null {
+  if (context.url) return context.url;
+  if (context.route) return context.route;
+  if (context.action) return `/server/${context.action}`;
+  return null;
+}
+
+function buildFingerprint(context: RoundErrorContext, severity: ServerTraceSeverity): string[] {
+  if (context.fingerprint?.length) {
+    return context.fingerprint;
+  }
+
+  return [
+    context.source ?? 'server_action',
+    context.featureArea ?? 'unknown',
+    context.action,
+    context.errorCode ?? severity,
+  ];
+}
+
+async function writeAdminTables(
+  message: string,
+  error: Error | null,
+  context: RoundErrorContext,
+  severity: ServerTraceSeverity
+) {
+  const admin = createAdminClient();
+  const normalizedContext = normalizeContext(context);
+  const url = buildUrl(context);
+  const title = buildAdminTitle(message, context, severity);
+  const stack = error?.stack?.slice(0, 8000) ?? null;
+  const timestamp = new Date().toISOString();
+
+  const errorLogInsert = admin.from('error_logs').insert({
+    message: message.slice(0, 2000),
+    severity,
+    stack,
+    context: normalizedContext as Json,
+    user_id: context.userId ?? null,
+    url,
+    timestamp,
+  });
+
+  const adminEventInsert = admin.from('admin_events').insert({
+    event_type: 'error',
+    title,
+    severity,
+    message: message.slice(0, 10000),
+    metadata: normalizedContext as Json,
+    user_id: context.userId ?? null,
+    user_email: context.userEmail ?? null,
+    url,
+    stack_trace: stack,
+    browser_info: null,
+  });
+
+  await Promise.allSettled([errorLogInsert, adminEventInsert]);
+}
+
+function captureSentryTrace(
+  message: string,
+  error: Error | null,
+  context: RoundErrorContext,
+  severity: ServerTraceSeverity
+) {
+  Sentry.withScope((scope) => {
+    scope.setLevel(SENTRY_SEVERITY_MAP[severity] ?? 'error');
+    scope.setTag('action', context.action);
+    scope.setTag('error_source', context.source ?? 'server_action');
+    scope.setTag('feature_area', context.featureArea ?? 'unknown');
+    scope.setTag('handled', String(context.handled ?? true));
+    if (context.errorCode) scope.setTag('pg_error_code', context.errorCode);
+    if (context.statusCode) scope.setTag('http_status', String(context.statusCode));
+    if (context.requestId) scope.setTag('request_id', context.requestId);
+
+    if (context.tags) {
+      for (const [key, value] of Object.entries(context.tags)) {
+        if (value != null) {
+          scope.setTag(key, String(value));
+        }
+      }
+    }
+
+    if (context.userId || context.userEmail) {
+      scope.setUser({
+        id: context.userId ?? undefined,
+        email: context.userEmail ?? undefined,
+      });
+    }
+
+    scope.setContext('server_trace', normalizeContext(context));
+    scope.setFingerprint(buildFingerprint(context, severity));
+
+    Sentry.captureException(error ?? new Error(message));
+  });
+}
+
+async function captureServerTrace(
+  message: string,
+  context: RoundErrorContext,
+  severity: ServerTraceSeverity,
+  error?: Error | null,
+): Promise<void> {
+  const normalizedError = error ?? new Error(message);
+
+  try {
+    captureSentryTrace(message, normalizedError, context, severity);
+  } catch {
+    // Sentry should never block request handling.
+  }
+
+  try {
+    await writeAdminTables(message, normalizedError, context, severity);
+  } catch {
+    console.error('[ServerErrorLogger] Failed to persist trace:', message, context);
+  }
+}
+
 /**
- * Log an error to both Sentry and the error_logs table from server actions.
- *
- * Sentry is already initialized via instrumentation.ts, but handled errors
- * (caught + returned as {success: false}) never reach it automatically.
- * This explicitly captures them with full context.
- *
- * Fire-and-forget: never throws, never blocks the caller.
+ * Log an error from a server action, route handler, or server component.
+ * Writes to Sentry, error_logs, and admin_events so the admin dashboard gets
+ * the same incident signal as Sentry.
  */
 export async function logServerError(
   message: string,
   context: RoundErrorContext,
-  severity: 'warning' | 'error' | 'critical' = 'error'
+  severity: Exclude<ServerTraceSeverity, 'info'> = 'error'
 ): Promise<void> {
-  // 1. Send to Sentry with rich context
-  try {
-    Sentry.withScope((scope) => {
-      scope.setLevel(SEVERITY_MAP[severity] || 'error');
+  await captureServerTrace(message, context, severity);
+}
 
-      // Tag for easy filtering in Sentry dashboard
-      scope.setTag('action', context.action);
-      scope.setTag('error_source', 'server_action');
-      if (context.errorCode) scope.setTag('pg_error_code', context.errorCode);
+/**
+ * Capture an exception object while preserving the original stack trace.
+ */
+export async function logServerException(
+  error: Error | unknown,
+  context: RoundErrorContext,
+  severity: Exclude<ServerTraceSeverity, 'info'> = 'error'
+): Promise<void> {
+  const normalizedError = error instanceof Error ? error : new Error(String(error));
+  await captureServerTrace(normalizedError.message, context, severity, normalizedError);
+}
 
-      // User context so Sentry groups by user
-      if (context.userId || context.userEmail) {
-        scope.setUser({
-          id: context.userId || undefined,
-          email: context.userEmail || undefined,
-        });
-      }
-
-      // Structured extra data for the Sentry event detail view
-      scope.setContext('round', {
-        roundId: context.roundId,
-        playerId: context.playerId,
-        holesCount: context.holesCount,
-        shotsCount: context.shotsCount,
-      });
-      scope.setContext('postgres_error', {
-        code: context.errorCode,
-        hint: context.errorHint,
-        details: context.errorDetails,
-      });
-      if (context.extra) {
-        scope.setContext('extra', context.extra);
-      }
-
-      // Set fingerprint so Sentry groups by action + error code, not stack
-      scope.setFingerprint([context.action, context.errorCode || 'unknown']);
-
-      Sentry.captureException(new Error(message));
-    });
-  } catch {
-    // Sentry failure should never block the rest of error logging
-  }
-
-  // 2. Also persist to error_logs table for in-app admin dashboard
-  try {
-    const admin = createAdminClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (admin as any).from('error_logs').insert({
-      message: message.slice(0, 2000),
-      severity,
-      stack: new Error().stack?.slice(0, 8000) || null,
-      context: JSON.parse(JSON.stringify(context)),
-      user_id: context.userId || null,
-      url: `/golf/actions/${context.action}`,
-      timestamp: new Date().toISOString(),
-    });
-  } catch {
-    // Last-resort console log — this is the error logger itself failing
-    console.error('[ServerErrorLogger] Failed to log error:', message, context);
-  }
+/**
+ * Record non-error server-side signals that should still page the admin team.
+ */
+export async function logServerEvent(
+  message: string,
+  context: RoundErrorContext,
+  severity: ServerTraceSeverity = 'info'
+): Promise<void> {
+  await captureServerTrace(message, context, severity);
 }

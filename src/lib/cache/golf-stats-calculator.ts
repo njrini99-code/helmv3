@@ -7,6 +7,8 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { logServerError } from '@/lib/server-error-logger';
 import { cached, golfCache, invalidateGolf } from './index';
 
 // ============================================================================
@@ -116,34 +118,54 @@ export interface PlayerStatsCache {
   updatedAt: string;
 }
 
-/**
- * Round-level cached stats
- */
-interface RoundStatsCache {
-  roundId: string;
-  playerId: string;
-  totalScore: number | null;
-  scoreToPar: number | null;
-  frontNine: number | null;
-  backNine: number | null;
-  fairwaysHit: number | null;
-  fairwaysTotal: number | null;
-  greensHit: number | null;
-  greensTotal: number | null;
-  totalPutts: number | null;
-  onePutts: number;
-  threePutts: number;
-  scramblesConverted: number;
-  scrambleAttempts: number;
-  sandSaves: number;
-  sandAttempts: number;
-  eagles: number;
-  birdies: number;
-  pars: number;
-  bogeys: number;
-  doubleBogeys: number;
-  triplePlus: number;
-  penaltyStrokes: number;
+interface StatsCacheLiveSnapshot {
+  liveRounds: number;
+  liveScoringAvg: number | null;
+  livePuttsPerRound: number | null;
+  liveFairwayPct: number | null;
+  liveGirPct: number | null;
+}
+
+interface StatsCacheStoredSnapshot {
+  roundsPlayed: number;
+  scoringAverage: number | null;
+  puttsPerRound: number | null;
+  fairwayPercentage: number | null;
+  girPercentage: number | null;
+  isStale: boolean;
+  updatedAt: string | null;
+}
+
+type StatsCacheValidationResult =
+  | { ok: true; cache: StatsCacheStoredSnapshot | null; live: StatsCacheLiveSnapshot }
+  | { ok: false; reason: string; cache: StatsCacheStoredSnapshot | null; live: StatsCacheLiveSnapshot | null };
+
+function getTraceError(error: unknown): {
+  message: string;
+  code?: string;
+  hint?: string;
+  details?: string;
+  stack?: string;
+} {
+  if (typeof error === 'object' && error !== null) {
+    const candidate = error as {
+      message?: string;
+      code?: string;
+      hint?: string;
+      details?: string;
+      stack?: string;
+    };
+
+    return {
+      message: candidate.message ?? 'Unknown error',
+      code: candidate.code,
+      hint: candidate.hint,
+      details: candidate.details,
+      stack: candidate.stack,
+    };
+  }
+
+  return { message: String(error) };
 }
 
 // ============================================================================
@@ -262,7 +284,18 @@ export async function refreshStatsCache(playerId: string): Promise<void> {
     .rpc('refresh_player_stats_cache', { p_player_id: playerId });
 
   if (error) {
-    console.error('[Stats Cache] Failed to refresh cache for player:', playerId, error);
+    const traceError = getTraceError(error);
+    await logServerError(`refresh_player_stats_cache failed: ${traceError.message}`, {
+      action: 'refreshStatsCache',
+      featureArea: 'stats_cache',
+      playerId,
+      errorCode: traceError.code,
+      errorHint: traceError.hint,
+      errorDetails: traceError.details,
+      extra: {
+        stack: traceError.stack,
+      },
+    }, 'critical');
     throw error;
   }
 
@@ -283,7 +316,18 @@ export async function markStatsStale(playerId: string): Promise<void> {
     .rpc('mark_player_stats_stale', { p_player_id: playerId });
 
   if (error) {
-    console.error('[Stats Cache] Failed to mark stats stale for player:', playerId, error);
+    const traceError = getTraceError(error);
+    await logServerError(`mark_player_stats_stale failed: ${traceError.message}`, {
+      action: 'markStatsStale',
+      featureArea: 'stats_cache',
+      playerId,
+      errorCode: traceError.code,
+      errorHint: traceError.hint,
+      errorDetails: traceError.details,
+      extra: {
+        stack: traceError.stack,
+      },
+    }, 'warning');
   }
 
   // Invalidate Redis cache
@@ -295,14 +339,49 @@ export async function markStatsStale(playerId: string): Promise<void> {
  * Called from submitGolfRoundComprehensive action
  */
 export async function invalidateOnRoundComplete(playerId: string, roundId: string): Promise<{ warnings: string[] }> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const warnings: string[] = [];
 
   // 1. Invalidate the Redis layer
   await invalidateGolf.playerStats(playerId);
 
   // 2. Mark DB cache as stale so getStatsFromCache() knows to refresh
-  await markStatsStale(playerId);
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: staleError } = await (supabase as any)
+      .rpc('mark_player_stats_stale', { p_player_id: playerId });
+    if (staleError) {
+      const traceError = getTraceError(staleError);
+      await logServerError(`mark_player_stats_stale failed after round completion: ${traceError.message}`, {
+        action: 'invalidateOnRoundComplete.markStatsStale',
+        featureArea: 'stats_cache',
+        roundId,
+        playerId,
+        errorCode: traceError.code,
+        errorHint: traceError.hint,
+        errorDetails: traceError.details,
+        extra: {
+          stack: traceError.stack,
+        },
+      }, 'warning');
+      warnings.push(`Failed to mark stats stale: ${staleError.message}`);
+    }
+  } catch (err) {
+    const traceError = getTraceError(err);
+    await logServerError(`mark_player_stats_stale threw after round completion: ${traceError.message}`, {
+      action: 'invalidateOnRoundComplete.markStatsStale.catch',
+      featureArea: 'stats_cache',
+      roundId,
+      playerId,
+      errorCode: traceError.code,
+      errorHint: traceError.hint,
+      errorDetails: traceError.details,
+      extra: {
+        stack: traceError.stack,
+      },
+    }, 'warning');
+    warnings.push('Failed to mark stats stale.');
+  }
 
   // 3. Trigger strokes gained recalculation for the round (if function exists)
   // The database trigger should handle this automatically when status='completed',
@@ -311,11 +390,35 @@ export async function invalidateOnRoundComplete(playerId: string, roundId: strin
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: sgRoundError } = await (supabase as any).rpc('recalculate_round_strokes_gained', { p_round_id: roundId });
     if (sgRoundError) {
-      console.error('[Stats] recalculate_round_strokes_gained failed:', roundId, sgRoundError);
+      const traceError = getTraceError(sgRoundError);
+      await logServerError(`recalculate_round_strokes_gained failed: ${traceError.message}`, {
+        action: 'invalidateOnRoundComplete.recalculateRoundStrokesGained',
+        featureArea: 'stats_cache',
+        roundId,
+        playerId,
+        errorCode: traceError.code,
+        errorHint: traceError.hint,
+        errorDetails: traceError.details,
+        extra: {
+          stack: traceError.stack,
+        },
+      }, 'warning');
       warnings.push(`Round SG recalculation failed: ${sgRoundError.message}`);
     }
   } catch (e) {
-    console.error('[Stats] recalculate_round_strokes_gained threw:', roundId, e);
+    const traceError = getTraceError(e);
+    await logServerError(`recalculate_round_strokes_gained threw: ${traceError.message}`, {
+      action: 'invalidateOnRoundComplete.recalculateRoundStrokesGained.catch',
+      featureArea: 'stats_cache',
+      roundId,
+      playerId,
+      errorCode: traceError.code,
+      errorHint: traceError.hint,
+      errorDetails: traceError.details,
+      extra: {
+        stack: traceError.stack,
+      },
+    }, 'warning');
     warnings.push('Round SG recalculation threw an exception.');
   }
 
@@ -324,29 +427,259 @@ export async function invalidateOnRoundComplete(playerId: string, roundId: strin
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: sgPlayerError } = await (supabase as any).rpc('update_player_stats_strokes_gained', { p_player_id: playerId });
     if (sgPlayerError) {
-      console.error('[Stats] update_player_stats_strokes_gained failed:', playerId, sgPlayerError);
+      const traceError = getTraceError(sgPlayerError);
+      await logServerError(`update_player_stats_strokes_gained failed: ${traceError.message}`, {
+        action: 'invalidateOnRoundComplete.updatePlayerStatsStrokesGained',
+        featureArea: 'stats_cache',
+        roundId,
+        playerId,
+        errorCode: traceError.code,
+        errorHint: traceError.hint,
+        errorDetails: traceError.details,
+        extra: {
+          stack: traceError.stack,
+        },
+      }, 'warning');
       warnings.push(`Player SG aggregation failed: ${sgPlayerError.message}`);
     }
   } catch (e) {
-    console.error('[Stats] update_player_stats_strokes_gained threw:', playerId, e);
+    const traceError = getTraceError(e);
+    await logServerError(`update_player_stats_strokes_gained threw: ${traceError.message}`, {
+      action: 'invalidateOnRoundComplete.updatePlayerStatsStrokesGained.catch',
+      featureArea: 'stats_cache',
+      roundId,
+      playerId,
+      errorCode: traceError.code,
+      errorHint: traceError.hint,
+      errorDetails: traceError.details,
+      extra: {
+        stack: traceError.stack,
+      },
+    }, 'warning');
     warnings.push('Player SG aggregation threw an exception.');
   }
 
   // 5. Trigger full stats recalculation and await it
   // This ensures the cache is rebuilt with new round data before any subsequent reads
   try {
-    await refreshStatsCache(playerId);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: refreshError } = await (supabase as any)
+      .rpc('refresh_player_stats_cache', { p_player_id: playerId });
+    if (refreshError) {
+      throw refreshError;
+    }
   } catch (err) {
-    console.error('[Stats] refreshStatsCache failed:', playerId, err);
+    const traceError = getTraceError(err);
+    await logServerError(`refresh_player_stats_cache failed after round completion: ${traceError.message}`, {
+      action: 'invalidateOnRoundComplete.refreshStatsCache',
+      featureArea: 'stats_cache',
+      roundId,
+      playerId,
+      errorCode: traceError.code,
+      errorHint: traceError.hint,
+      errorDetails: traceError.details,
+      extra: {
+        stack: traceError.stack,
+      },
+    }, 'error');
     warnings.push('Stats cache refresh failed.');
+  }
+
+  // 6. Verify that the rebuilt cache actually matches live completed-round data.
+  let validation = await validatePlayerStatsCache(supabase, playerId);
+  if (!validation.ok) {
+    await logServerError(
+      `Stats cache verification failed after round completion: ${validation.reason}`,
+      {
+        action: 'invalidateOnRoundComplete.validateCache',
+        featureArea: 'stats_cache',
+        roundId,
+        playerId,
+        extra: {
+          cache: validation.cache,
+          live: validation.live,
+        },
+      },
+      'warning'
+    );
+    warnings.push(`Stats cache verification failed: ${validation.reason}`);
+  } else if (!validation.cache) {
+    await logServerError(
+      'Stats cache verification failed after round completion: cache row missing',
+      {
+        action: 'invalidateOnRoundComplete.validateCache',
+        featureArea: 'stats_cache',
+        roundId,
+        playerId,
+        extra: {
+          cache: null,
+          live: validation.live,
+        },
+      },
+      'warning'
+    );
+    warnings.push('Stats cache verification failed: cache row missing.');
+  } else if (isStatsCacheOutOfSync(validation.cache, validation.live)) {
+    try {
+      // Retry once with the same admin repair path before giving up.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: retryError } = await (supabase as any)
+        .rpc('refresh_player_stats_cache', { p_player_id: playerId });
+      if (retryError) {
+        throw retryError;
+      }
+      validation = await validatePlayerStatsCache(supabase, playerId);
+    } catch (err) {
+      const traceError = getTraceError(err);
+      await logServerError(`refresh_player_stats_cache retry failed: ${traceError.message}`, {
+        action: 'invalidateOnRoundComplete.refreshStatsCache.retry',
+        featureArea: 'stats_cache',
+        roundId,
+        playerId,
+        errorCode: traceError.code,
+        errorHint: traceError.hint,
+        errorDetails: traceError.details,
+        extra: {
+          stack: traceError.stack,
+        },
+      }, 'error');
+      warnings.push('Stats cache retry failed.');
+    }
+  }
+
+  if (validation.ok && validation.cache && isStatsCacheOutOfSync(validation.cache, validation.live)) {
+    warnings.push('Stats cache remained out of sync after refresh.');
+    void logServerError(
+      'Stats cache remained out of sync after round completion refresh',
+      {
+        action: 'invalidateOnRoundComplete',
+        roundId,
+        playerId,
+        extra: {
+          cache: validation.cache,
+          live: validation.live,
+        },
+      },
+      'warning'
+    );
   }
 
   // If any SG RPCs failed, re-mark stats as stale so the next read retries
   if (warnings.length > 0) {
-    await markStatsStale(playerId).catch(() => {});
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).rpc('mark_player_stats_stale', { p_player_id: playerId });
+    } catch {
+      // Ignore secondary stale-mark failures.
+    }
   }
 
   return { warnings };
+}
+
+async function validatePlayerStatsCache(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  playerId: string
+): Promise<StatsCacheValidationResult> {
+  const [
+    { data: cacheRow, error: cacheError },
+    { data: completedRounds, error: roundsError },
+  ] = await Promise.all([
+    supabase
+      .from('golf_player_stats_cache')
+      .select('rounds_played, scoring_average, putts_per_round, driving_accuracy_percentage, gir_percentage, is_stale, updated_at')
+      .eq('player_id', playerId)
+      .maybeSingle(),
+    supabase
+      .from('golf_rounds')
+      .select('holes_played, total_score, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible')
+      .eq('player_id', playerId)
+      .eq('status', 'completed'),
+  ]);
+
+  if (cacheError) {
+    return { ok: false, reason: `cache read failed: ${cacheError.message}`, cache: null, live: null };
+  }
+
+  if (roundsError) {
+    return { ok: false, reason: `live round read failed: ${roundsError.message}`, cache: null, live: null };
+  }
+
+  const live = buildLiveStatsSnapshot(
+    completedRounds as Array<{
+      holes_played: number | null;
+      total_score: number | null;
+      total_putts: number | null;
+      total_fairways_hit: number | null;
+      total_fairways: number | null;
+      total_gir: number | null;
+      total_gir_possible: number | null;
+    }> | null
+  );
+
+  const cache = cacheRow
+    ? {
+        roundsPlayed: cacheRow.rounds_played ?? 0,
+        scoringAverage: cacheRow.scoring_average != null ? Number(cacheRow.scoring_average) : null,
+        puttsPerRound: cacheRow.putts_per_round != null ? Number(cacheRow.putts_per_round) : null,
+        fairwayPercentage: cacheRow.driving_accuracy_percentage != null ? Number(cacheRow.driving_accuracy_percentage) : null,
+        girPercentage: cacheRow.gir_percentage != null ? Number(cacheRow.gir_percentage) : null,
+        isStale: cacheRow.is_stale ?? false,
+        updatedAt: cacheRow.updated_at ?? null,
+      }
+    : null;
+
+  return { ok: true, cache, live };
+}
+
+function buildLiveStatsSnapshot(
+  rounds: Array<{
+    holes_played: number | null;
+    total_score: number | null;
+    total_putts: number | null;
+    total_fairways_hit: number | null;
+    total_fairways: number | null;
+    total_gir: number | null;
+    total_gir_possible: number | null;
+  }> | null
+): StatsCacheLiveSnapshot {
+  const completedRounds = rounds ?? [];
+  const totalHolesPlayed = completedRounds.reduce((sum, round) => sum + Math.max(round.holes_played ?? 18, 1), 0);
+  const totalScore = completedRounds.reduce((sum, round) => sum + (round.total_score ?? 0), 0);
+  const totalPutts = completedRounds.reduce((sum, round) => sum + (round.total_putts ?? 0), 0);
+  const totalFairwaysHit = completedRounds.reduce((sum, round) => sum + (round.total_fairways_hit ?? 0), 0);
+  const totalFairways = completedRounds.reduce((sum, round) => sum + (round.total_fairways ?? 0), 0);
+  const totalGir = completedRounds.reduce((sum, round) => sum + (round.total_gir ?? 0), 0);
+  const totalGirPossible = completedRounds.reduce((sum, round) => sum + (round.total_gir_possible ?? 0), 0);
+
+  return {
+    liveRounds: completedRounds.length,
+    liveScoringAvg: totalHolesPlayed > 0
+      ? Math.round(((totalScore / totalHolesPlayed) * 18) * 10) / 10
+      : null,
+    livePuttsPerRound: totalHolesPlayed > 0
+      ? Math.round(((totalPutts / totalHolesPlayed) * 18) * 10) / 10
+      : null,
+    liveFairwayPct: totalFairways > 0
+      ? Math.round(((totalFairwaysHit / totalFairways) * 100) * 10) / 10
+      : null,
+    liveGirPct: totalGirPossible > 0
+      ? Math.round(((totalGir / totalGirPossible) * 100) * 10) / 10
+      : null,
+  };
+}
+
+function isStatsCacheOutOfSync(
+  cache: StatsCacheStoredSnapshot,
+  live: StatsCacheLiveSnapshot
+): boolean {
+  return cache.isStale
+    || cache.roundsPlayed !== live.liveRounds
+    || Math.abs((cache.scoringAverage ?? 0) - (live.liveScoringAvg ?? 0)) > 0.5
+    || Math.abs((cache.puttsPerRound ?? 0) - (live.livePuttsPerRound ?? 0)) > 0.5
+    || Math.abs((cache.fairwayPercentage ?? 0) - (live.liveFairwayPct ?? 0)) > 1
+    || Math.abs((cache.girPercentage ?? 0) - (live.liveGirPct ?? 0)) > 1;
 }
 
 // ============================================================================
@@ -527,4 +860,3 @@ function transformToPlayerStatsCache(row: any): PlayerStatsCache {
     updatedAt: row.updated_at,
   };
 }
-

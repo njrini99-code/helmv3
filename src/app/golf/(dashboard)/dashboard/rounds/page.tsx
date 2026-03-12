@@ -17,8 +17,8 @@ export const metadata: Metadata = {
   description: 'View and manage all golf rounds for your team. Track scores, stats, and player performance over time.',
 };
 
-// Cache rounds for 2 minutes (new rounds added moderately often)
-export const revalidate = 120;
+// Rounds are player-specific and should reflect new saves/completions immediately.
+export const dynamic = 'force-dynamic';
 
 interface RoundWithPlayer extends GolfRound {
   player: {

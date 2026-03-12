@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { revalidatePath } from 'next/cache';
 import type { HoleStats, ShotRecord, RoundHole } from '@/lib/types/golf';
+import { logServerError } from '@/lib/server-error-logger';
 
 // UUID format validation regex
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -184,6 +185,22 @@ export async function saveRoundDraft(
       if (updateError) {
         // If update fails, do NOT create a new round — this prevents orphan creation
         // when the original round was completed by submit
+        await logServerError(`Failed to update round draft: ${updateError.message}`, {
+          action: 'saveRoundDraft',
+          featureArea: 'round_draft',
+          roundId: existingRoundId,
+          playerId: player.id,
+          userId: user.id,
+          userEmail: user.email,
+          errorCode: updateError.code,
+          errorHint: updateError.hint,
+          errorDetails: updateError.details,
+          extra: {
+            mode: 'update_existing',
+            currentHoleIndex: data.currentHoleIndex,
+            step: data.step,
+          },
+        });
         return { success: false, error: 'Failed to save draft' };
       }
       if (!updated) {
@@ -214,6 +231,22 @@ export async function saveRoundDraft(
           .eq('status', 'in_progress');
 
         if (updateError) {
+          await logServerError(`Failed to update existing in-progress draft: ${updateError.message}`, {
+            action: 'saveRoundDraft',
+            featureArea: 'round_draft',
+            roundId: existingDraft.id,
+            playerId: player.id,
+            userId: user.id,
+            userEmail: user.email,
+            errorCode: updateError.code,
+            errorHint: updateError.hint,
+            errorDetails: updateError.details,
+            extra: {
+              mode: 'reuse_existing',
+              currentHoleIndex: data.currentHoleIndex,
+              step: data.step,
+            },
+          });
           return { success: false, error: 'Failed to update existing draft' };
         }
         roundId = existingDraft.id;
@@ -225,6 +258,21 @@ export async function saveRoundDraft(
           .single();
 
         if (createError) {
+          await logServerError(`Failed to create round draft: ${createError.message}`, {
+            action: 'saveRoundDraft',
+            featureArea: 'round_draft',
+            playerId: player.id,
+            userId: user.id,
+            userEmail: user.email,
+            errorCode: createError.code,
+            errorHint: createError.hint,
+            errorDetails: createError.details,
+            extra: {
+              mode: 'create_new',
+              currentHoleIndex: data.currentHoleIndex,
+              step: data.step,
+            },
+          });
           return { success: false, error: 'Failed to create draft' };
         }
         roundId = created.id;
@@ -237,7 +285,16 @@ export async function saveRoundDraft(
     };
 
   } catch (error) {
-    console.error('saveRoundDraft error:', error);
+    await logServerError(`saveRoundDraft unexpected error: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'saveRoundDraft.catch',
+      featureArea: 'round_draft',
+      roundId: existingRoundId ?? null,
+      extra: {
+        currentHoleIndex: data.currentHoleIndex,
+        step: data.step,
+        stack: error instanceof Error ? error.stack : undefined,
+      },
+    }, 'critical');
     return {
       success: false,
       error: 'Failed to save draft. Please try again.',
@@ -297,6 +354,16 @@ export async function loadRoundDraft(): Promise<ActionResult<DraftInfo | null>> 
       .maybeSingle();
 
     if (error) {
+      await logServerError(`Failed to load round draft: ${error.message}`, {
+        action: 'loadRoundDraft',
+        featureArea: 'round_draft',
+        playerId: player.id,
+        userId: user.id,
+        userEmail: user.email,
+        errorCode: error.code,
+        errorHint: error.hint,
+        errorDetails: error.details,
+      });
       return { success: false, error: 'Failed to load draft' };
     }
 
@@ -335,7 +402,13 @@ export async function loadRoundDraft(): Promise<ActionResult<DraftInfo | null>> 
     return { success: true, data: draftInfo };
 
   } catch (error) {
-    console.error('loadRoundDraft error:', error);
+    await logServerError(`loadRoundDraft unexpected error: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'loadRoundDraft.catch',
+      featureArea: 'round_draft',
+      extra: {
+        stack: error instanceof Error ? error.stack : undefined,
+      },
+    }, 'critical');
     return {
       success: false,
       error: 'Failed to load draft. Please try again.',
@@ -384,6 +457,17 @@ export async function clearRoundDraft(roundId: string): Promise<ActionResult<voi
       .eq('status', 'in_progress');
 
     if (error) {
+      await logServerError(`Failed to delete round draft: ${error.message}`, {
+        action: 'clearRoundDraft',
+        featureArea: 'round_draft',
+        roundId,
+        playerId: player.id,
+        userId: user.id,
+        userEmail: user.email,
+        errorCode: error.code,
+        errorHint: error.hint,
+        errorDetails: error.details,
+      });
       return { success: false, error: 'Failed to delete draft' };
     }
 
@@ -391,7 +475,14 @@ export async function clearRoundDraft(roundId: string): Promise<ActionResult<voi
     return { success: true, data: undefined };
 
   } catch (error) {
-    console.error('clearRoundDraft error:', error);
+    await logServerError(`clearRoundDraft unexpected error: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'clearRoundDraft.catch',
+      featureArea: 'round_draft',
+      roundId,
+      extra: {
+        stack: error instanceof Error ? error.stack : undefined,
+      },
+    }, 'critical');
     return {
       success: false,
       error: 'Failed to delete draft. Please try again.',
@@ -440,13 +531,29 @@ export async function cleanupOrphanedDrafts(): Promise<ActionResult<{ deletedCou
       .select('id');
 
     if (error) {
-      console.error('cleanupOrphanedDrafts error:', error);
+      await logServerError(`Failed to clean up orphaned round drafts: ${error.message}`, {
+        action: 'cleanupOrphanedDrafts',
+        featureArea: 'round_draft',
+        playerId: player.id,
+        userId: user.id,
+        userEmail: user.email,
+        errorCode: error.code,
+        errorHint: error.hint,
+        errorDetails: error.details,
+        extra: { cutoff },
+      });
       return { success: false, error: 'Failed to clean up old drafts' };
     }
 
     return { success: true, data: { deletedCount: deleted?.length ?? 0 } };
   } catch (error) {
-    console.error('cleanupOrphanedDrafts error:', error);
+    await logServerError(`cleanupOrphanedDrafts unexpected error: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'cleanupOrphanedDrafts.catch',
+      featureArea: 'round_draft',
+      extra: {
+        stack: error instanceof Error ? error.stack : undefined,
+      },
+    }, 'critical');
     return { success: false, error: 'Failed to clean up old drafts' };
   }
 }
@@ -462,8 +569,8 @@ export async function cleanupOrphanedDrafts(): Promise<ActionResult<{ deletedCou
  */
 export async function checkRoundStaleness(
   roundId: string,
-  expectedUpdatedAt: string
-): Promise<ActionResult<{ isStale: boolean; currentUpdatedAt: string | null }>> {
+  expectedUpdatedAt?: string
+): Promise<ActionResult<{ isStale: boolean; currentUpdatedAt: string | null; status: string | null }>> {
   try {
     if (!isValidUuid(roundId)) {
       return { success: false, error: 'Invalid round ID format' };
@@ -488,21 +595,50 @@ export async function checkRoundStaleness(
 
     const { data: round, error } = await supabase
       .from('golf_rounds')
-      .select('updated_at')
+      .select('updated_at, status')
       .eq('id', roundId)
       .eq('player_id', player.id)
       .single();
 
     if (error || !round) {
+      if (error) {
+        await logServerError(`Failed to check round staleness: ${error.message}`, {
+          action: 'checkRoundStaleness',
+          featureArea: 'round_sync',
+          roundId,
+          playerId: player.id,
+          userId: user.id,
+          userEmail: user.email,
+          errorCode: error.code,
+          errorHint: error.hint,
+          errorDetails: error.details,
+          extra: { expectedUpdatedAt },
+        });
+      }
       return { success: false, error: 'Round not found' };
     }
 
     const currentUpdatedAt = round.updated_at;
-    const isStale = currentUpdatedAt !== expectedUpdatedAt;
+    const isStale = expectedUpdatedAt != null && currentUpdatedAt !== expectedUpdatedAt;
 
-    return { success: true, data: { isStale, currentUpdatedAt } };
+    return {
+      success: true,
+      data: {
+        isStale,
+        currentUpdatedAt,
+        status: round.status ?? null,
+      },
+    };
   } catch (error) {
-    console.error('checkRoundStaleness error:', error);
+    await logServerError(`checkRoundStaleness unexpected error: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'checkRoundStaleness.catch',
+      featureArea: 'round_sync',
+      roundId,
+      extra: {
+        expectedUpdatedAt,
+        stack: error instanceof Error ? error.stack : undefined,
+      },
+    }, 'critical');
     return { success: false, error: 'Failed to check round status' };
   }
 }

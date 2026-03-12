@@ -2029,6 +2029,21 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     unresolvedCritical: unresolvedCriticalEvents,
   };
 
+  const unresolvedServerIncidents = unresolvedCriticalEvents.filter((event) => event.eventType === 'error');
+  const newestUnresolvedServerIncident = unresolvedServerIncidents[0] ?? null;
+
+  diagnostics.push({
+    label: 'Incident Queue',
+    status: unresolvedServerIncidents.length === 0
+      ? 'healthy'
+      : unresolvedServerIncidents.length < 3
+        ? 'warning'
+        : 'critical',
+    detail: unresolvedServerIncidents.length === 0
+      ? 'No unresolved server incidents'
+      : `${unresolvedServerIncidents.length} unresolved server incident${unresolvedServerIncidents.length > 1 ? 's' : ''}`,
+  });
+
   // --- Process baseball data ---
   const watchlistStages: Record<string, number> = {};
   for (const w of (bbWatchlistRes.data ?? [])) {
@@ -2079,6 +2094,15 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
       label: `${criticalCount} critical error${criticalCount > 1 ? 's' : ''} in last 7 days`,
       severity: 'critical',
       detail: 'Check Health & Issues tab for details',
+      tab: 'health',
+    });
+  }
+
+  if (unresolvedServerIncidents.length > 0 && newestUnresolvedServerIncident) {
+    needsAttention.push({
+      label: `${unresolvedServerIncidents.length} unresolved server incident${unresolvedServerIncidents.length > 1 ? 's' : ''}`,
+      severity: unresolvedServerIncidents.length > 2 ? 'critical' : 'warning',
+      detail: (newestUnresolvedServerIncident.message || newestUnresolvedServerIncident.title).slice(0, 140),
       tab: 'health',
     });
   }
