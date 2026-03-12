@@ -1652,7 +1652,14 @@ export async function submitGolfRoundComprehensive(
     // awaited (the server action exceeded Next.js timeout limits).
     const backgroundPlayerId = player.id;
     const backgroundRoundId = round.id;
-    triggerPlayerInsightsAfterRound(backgroundPlayerId).catch(async (err) => {
+    triggerPlayerInsightsAfterRound(backgroundPlayerId).then(async (result) => {
+      if (result && !result.success) {
+        await logServerError(`CoachHelm trigger returned failure after round submit: ${result.error || 'unknown failure'}`, {
+          action: 'submitGolfRoundComprehensive.coachhelm.result',
+          extra: { playerId: backgroundPlayerId, roundId: backgroundRoundId },
+        }, 'error');
+      }
+    }).catch(async (err) => {
       await logServerError(`CoachHelm trigger threw after round submit: ${err instanceof Error ? err.message : String(err)}`, {
         action: 'submitGolfRoundComprehensive.coachhelm',
         extra: {
@@ -1660,15 +1667,8 @@ export async function submitGolfRoundComprehensive(
           roundId: backgroundRoundId,
           stack: err instanceof Error ? err.stack : undefined,
         },
-      }, 'error');
-    }).then(async (result) => {
-      if (result && !result.success) {
-        await logServerError(`CoachHelm trigger returned failure after round submit: ${result.error || 'unknown failure'}`, {
-          action: 'submitGolfRoundComprehensive.coachhelm.result',
-          extra: { playerId: backgroundPlayerId, roundId: backgroundRoundId },
-        }, 'error');
-      }
-    }).catch(() => {});
+      }, 'error').catch(() => {});
+    });
 
     // Log round submission event (fire-and-forget)
     logRoundSubmitted(user.id, user.email || '', round.id, {
@@ -3565,13 +3565,19 @@ export async function savePartialRound(
       if (holesPayload.length > 0) {
         // Delete existing holes (and cascading shots) to prevent duplicate key errors
         // when a previous save partially completed (round+holes created but save returned failure)
-        await supabase.from('golf_holes').delete().eq('round_id', roundId);
+        const { error: deleteError } = await supabase.from('golf_holes').delete().eq('round_id', roundId);
 
         const holesData = holesPayload.map(h => ({ round_id: roundId, ...h }));
-        const { data: insertedHoles, error: holesError } = await supabase
-          .from('golf_holes')
-          .insert(holesData)
-          .select('id, hole_number');
+        // Use upsert if delete failed (e.g. RLS or race condition) to avoid duplicate key errors
+        const { data: insertedHoles, error: holesError } = deleteError
+          ? await supabase
+              .from('golf_holes')
+              .upsert(holesData, { onConflict: 'round_id,hole_number' })
+              .select('id, hole_number')
+          : await supabase
+              .from('golf_holes')
+              .insert(holesData)
+              .select('id, hole_number');
 
         if (holesError) {
           logError(new Error(holesError.message), undefined, { action: 'savePartialRound.insertHoles' });
@@ -3633,16 +3639,15 @@ export async function savePartialRound(
               for (const pd of holePuttDetails) {
                 const shotIdForPutt = shotIdMap.get(`${pd.hole_number}-${pd.shot_number}`);
                 if (shotIdForPutt) {
-                  try {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    await (supabase as any).from('putt_details').insert({
-                      shot_id: shotIdForPutt,
-                      miss_tags: pd.miss_tags || [],
-                      break_direction: pd.break_direction,
-                      distance_feet: pd.distance_feet,
-                      made: pd.made,
-                    });
-                  } catch { /* non-critical */ }
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  const { error: puttErr } = await (supabase as any).from('putt_details').insert({
+                    shot_id: shotIdForPutt,
+                    miss_tags: pd.miss_tags || [],
+                    break_direction: pd.break_direction,
+                    distance_feet: pd.distance_feet,
+                    made: pd.made,
+                  }).select();
+                  if (puttErr) { /* non-critical — putt detail enrichment only */ }
                 }
               }
 
@@ -3651,15 +3656,14 @@ export async function savePartialRound(
               for (const ad of holeApproachDetails) {
                 const shotIdForApproach = shotIdMap.get(`${ad.hole_number}-${ad.shot_number}`);
                 if (shotIdForApproach) {
-                  try {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    await (supabase as any).from('approach_miss_details').insert({
-                      shot_id: shotIdForApproach,
-                      miss_direction: ad.miss_direction,
-                      lie_type: ad.lie_type,
-                      distance_from_green_yards: ad.distance_from_green_yards,
-                    });
-                  } catch { /* non-critical */ }
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  const { error: approachErr } = await (supabase as any).from('approach_miss_details').insert({
+                    shot_id: shotIdForApproach,
+                    miss_direction: ad.miss_direction,
+                    lie_type: ad.lie_type,
+                    distance_from_green_yards: ad.distance_from_green_yards,
+                  }).select();
+                  if (approachErr) { /* non-critical — approach detail enrichment only */ }
                 }
               }
             }
