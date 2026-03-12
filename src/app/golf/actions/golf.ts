@@ -915,12 +915,31 @@ export async function submitGolfRoundComprehensive(
 ): Promise<ActionResult<{ roundId: string; warnings?: string[] }>> {
   try {
     // Validate input
-    golfRoundComprehensiveSchema.parse(data);
+    const zodResult = golfRoundComprehensiveSchema.safeParse(data);
+    if (!zodResult.success) {
+      const firstIssue = zodResult.error.issues[0];
+      const detail = `${firstIssue?.path.join('.')} — ${firstIssue?.message}`;
+      void logServerError(`Round submit validation failed: ${detail}`, {
+        action: 'submitGolfRoundComprehensive',
+        featureArea: 'shot_tracking',
+        extra: {
+          courseName: data.courseName,
+          holesCount: data.holes?.length,
+          zodErrors: zodResult.error.issues.slice(0, 5).map(i => `${i.path.join('.')}: ${i.message}`),
+        },
+      }, 'warning');
+      return { success: false, error: `Invalid round data: ${detail}` };
+    }
 
     const incompleteHole = data.holes.find(
       (hole) => hole == null || hole.score == null || hole.putts == null
     );
     if (incompleteHole) {
+      void logServerError(`Round submit rejected: hole ${incompleteHole.holeNumber} missing score/putts`, {
+        action: 'submitGolfRoundComprehensive',
+        featureArea: 'shot_tracking',
+        extra: { courseName: data.courseName, holeNumber: incompleteHole.holeNumber },
+      }, 'warning');
       return {
         success: false,
         error: `Cannot submit round: hole ${incompleteHole.holeNumber} is missing score or putts.`,
@@ -930,9 +949,19 @@ export async function submitGolfRoundComprehensive(
     // Reject impossibly low scores
     const validationTotalScore = data.holes.reduce((sum, h) => sum + h.score, 0);
     if (validationTotalScore < data.holes.length) {
+      void logServerError(`Round submit rejected: impossibly low total score ${validationTotalScore}`, {
+        action: 'submitGolfRoundComprehensive',
+        featureArea: 'shot_tracking',
+        extra: { courseName: data.courseName, totalScore: validationTotalScore, holesCount: data.holes.length },
+      }, 'warning');
       return { success: false, error: 'Total score appears invalid. Please check your scorecard.' };
     }
     if (data.holes.every(h => h.putts === 0)) {
+      void logServerError('Round submit rejected: zero putts on every hole', {
+        action: 'submitGolfRoundComprehensive',
+        featureArea: 'shot_tracking',
+        extra: { courseName: data.courseName, holesCount: data.holes.length },
+      }, 'warning');
       return { success: false, error: 'A round with zero putts on every hole is not valid.' };
     }
 
@@ -940,6 +969,11 @@ export async function submitGolfRoundComprehensive(
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
+      void logServerError('Round submit failed: user session expired or not signed in', {
+        action: 'submitGolfRoundComprehensive',
+        featureArea: 'shot_tracking',
+        extra: { courseName: data.courseName, holesCount: data.holes?.length },
+      }, 'error');
       return { success: false, error: 'You must be signed in to submit rounds' };
     }
 
@@ -951,6 +985,13 @@ export async function submitGolfRoundComprehensive(
       .single();
 
     if (!player) {
+      void logServerError('Round submit failed: player profile not found', {
+        action: 'submitGolfRoundComprehensive',
+        featureArea: 'shot_tracking',
+        userId: user.id,
+        userEmail: user.email,
+        extra: { courseName: data.courseName },
+      }, 'error');
       return { success: false, error: 'Player profile not found' };
     }
 
@@ -965,10 +1006,27 @@ export async function submitGolfRoundComprehensive(
         .single();
 
       if (verifyError || !existingRound) {
+        void logServerError('Round submit failed: existing round not found or permission denied', {
+          action: 'submitGolfRoundComprehensive',
+          featureArea: 'shot_tracking',
+          roundId: existingRoundId,
+          playerId: player.id,
+          userId: user.id,
+          userEmail: user.email,
+          errorCode: verifyError?.code,
+        }, 'warning');
         return { success: false, error: 'Round not found or you do not have permission to update it.' };
       }
 
       if (existingRound.status === 'completed') {
+        void logServerError('Round submit rejected: round already completed (double-submit attempt)', {
+          action: 'submitGolfRoundComprehensive',
+          featureArea: 'shot_tracking',
+          roundId: existingRoundId,
+          playerId: player.id,
+          userId: user.id,
+          userEmail: user.email,
+        }, 'warning');
         return { success: false, error: 'This round has already been submitted. It cannot be submitted again.' };
       }
     }
@@ -3121,13 +3179,29 @@ export async function savePartialRound(
     const validated = partialRoundSchema.safeParse(data);
     if (!validated.success) {
       const firstError = validated.error.issues[0];
-      return { success: false, error: `Validation error: ${firstError?.path.join('.')} — ${firstError?.message}` };
+      const detail = `${firstError?.path.join('.')} — ${firstError?.message}`;
+      void logServerError(`Auto-save validation failed: ${detail}`, {
+        action: 'savePartialRound',
+        featureArea: 'shot_tracking',
+        extra: {
+          courseName: data.courseName,
+          currentHole: data.currentHole,
+          zodErrors: validated.error.issues.slice(0, 5).map(i => `${i.path.join('.')}: ${i.message}`),
+        },
+      }, 'warning');
+      return { success: false, error: `Validation error: ${detail}` };
     }
 
     const supabase = await createClient();
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
+      void logServerError('Auto-save failed: user session expired mid-round', {
+        action: 'savePartialRound',
+        featureArea: 'shot_tracking',
+        roundId: existingRoundId,
+        extra: { courseName: data.courseName, currentHole: data.currentHole },
+      }, 'error');
       return { success: false, error: 'You must be signed in' };
     }
 
@@ -3139,6 +3213,14 @@ export async function savePartialRound(
       .single();
 
     if (!player) {
+      void logServerError('Auto-save failed: player profile not found', {
+        action: 'savePartialRound',
+        featureArea: 'shot_tracking',
+        roundId: existingRoundId,
+        userId: user.id,
+        userEmail: user.email,
+        extra: { courseName: data.courseName, currentHole: data.currentHole },
+      }, 'error');
       return { success: false, error: 'Player profile not found' };
     }
 
@@ -3368,6 +3450,15 @@ export async function savePartialRound(
         if (rpcResult.error === 'conflict') {
           return { success: false, error: 'conflict', };
         }
+        void logServerError(`Auto-save RPC returned failure: ${rpcResult.error || 'unknown'}`, {
+          action: 'savePartialRound',
+          featureArea: 'shot_tracking',
+          roundId: existingRoundId,
+          playerId: player.id,
+          userId: user.id,
+          userEmail: user.email,
+          extra: { rpcError: rpcResult.error, courseName: data.courseName, currentHole: data.currentHole },
+        }, 'error');
         return { success: false, error: rpcResult.error || 'Failed to save round.' };
       }
 

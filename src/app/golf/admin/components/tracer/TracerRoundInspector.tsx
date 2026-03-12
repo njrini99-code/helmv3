@@ -325,6 +325,7 @@ function SortableTh({
   asc,
   onSort,
   align = 'center',
+  className,
 }: {
   label: string;
   sortKey: SortKey;
@@ -441,12 +442,19 @@ function RoundRow({
 
         {/* Status */}
         <td className="px-4 py-3.5 text-center">
-          <StatusBadge status={round.status} stuck={stuck} />
+          <StatusBadge status={round.status} stuck={stuck} currentHole={round.current_hole} expectedHoles={round.expected_holes} />
         </td>
 
         {/* Holes */}
         <td className="hidden md:table-cell px-4 py-3.5 text-center tabular-nums text-warm-600">
-          {round.actual_holes}/{round.expected_holes}
+          {round.status === 'in_progress' && round.current_hole ? (
+            <span>
+              <span className="font-semibold text-amber-700">{round.current_hole}</span>
+              <span className="text-warm-400">/{round.expected_holes}</span>
+            </span>
+          ) : (
+            <span>{round.actual_holes}/{round.expected_holes}</span>
+          )}
         </td>
 
         {/* Issues */}
@@ -576,7 +584,7 @@ function RoundRow({
 // STATUS BADGE
 // ============================================================================
 
-function StatusBadge({ status, stuck }: { status: string; stuck: boolean }) {
+function StatusBadge({ status, stuck, currentHole, expectedHoles }: { status: string; stuck: boolean; currentHole?: number | null; expectedHoles?: number }) {
   if (status === 'completed') {
     return (
       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-green-50 text-green-700">
@@ -587,16 +595,23 @@ function StatusBadge({ status, stuck }: { status: string; stuck: boolean }) {
 
   if (status === 'in_progress') {
     return (
-      <span className={cn(
-        'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold',
-        stuck ? 'bg-amber-100 text-amber-800' : 'bg-amber-50 text-amber-700'
-      )}>
+      <div className="inline-flex flex-col items-center gap-0.5">
         <span className={cn(
-          'w-1.5 h-1.5 rounded-full bg-amber-400',
-          stuck ? 'animate-pulse' : ''
-        )} />
-        {stuck ? 'Stuck' : 'In Progress'}
-      </span>
+          'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold',
+          stuck ? 'bg-amber-100 text-amber-800' : 'bg-amber-50 text-amber-700'
+        )}>
+          <span className={cn(
+            'w-1.5 h-1.5 rounded-full bg-amber-400',
+            stuck ? 'animate-pulse' : ''
+          )} />
+          {stuck ? 'Stuck' : 'In Progress'}
+        </span>
+        {currentHole != null && currentHole > 0 && (
+          <span className="text-[10px] font-medium text-warm-500 tabular-nums">
+            Hole {currentHole}{expectedHoles ? `/${expectedHoles}` : ''}
+          </span>
+        )}
+      </div>
     );
   }
 

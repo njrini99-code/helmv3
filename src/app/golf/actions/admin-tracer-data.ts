@@ -28,6 +28,7 @@ export interface TracerRoundDetail {
   expected_holes: number;
   total_score: number | null;
   score_to_par: number | null;
+  current_hole: number | null;
   created_at: string | null;
   updated_at: string | null;
   // Data integrity checks
@@ -672,6 +673,7 @@ export async function getTracerData(): Promise<TracerData> {
         total_gir,
         total_gir_possible,
         strokes_gained_total,
+        current_hole,
         created_at,
         updated_at
       `)
@@ -733,6 +735,7 @@ export async function getTracerData(): Promise<TracerData> {
       course_name: r.course_name,
       round_date: r.round_date,
       expected_holes: r.holes_played || 18,
+      current_hole: r.current_hole ?? null,
       total_score: r.total_score,
       score_to_par: r.score_to_par,
       created_at: r.created_at,
