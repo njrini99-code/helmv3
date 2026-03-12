@@ -467,7 +467,7 @@ export function ErrorFeed({ errorLogs }: Props) {
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2 xl:justify-end">
-                    {incident.status === 'open' && (
+                    {incident.status !== 'resolved' && (
                       <button
                         type="button"
                         onClick={() => handleResolve(incident)}
