@@ -22,6 +22,10 @@ interface RoundSubmitOverlayProps {
   onGoBack: () => void;
   /** Called when user wants to retry submission */
   onRetry?: () => void;
+  /** Called when user wants to save current state and exit to rounds list */
+  onSaveAndExit?: () => void;
+  /** Called when user wants to discard the in-progress round entirely */
+  onDiscard?: () => void;
 }
 
 /**
@@ -46,6 +50,8 @@ export function RoundSubmitOverlay({
   completedRoundId,
   onGoBack,
   onRetry,
+  onSaveAndExit,
+  onDiscard,
 }: RoundSubmitOverlayProps) {
   const router = useRouter();
   const [showSafetyEscape, setShowSafetyEscape] = useState(false);
@@ -265,22 +271,45 @@ export function RoundSubmitOverlay({
                 {error}
               </p>
               <p className="text-xs text-warm-400 mb-6">
-                Your round data is saved locally and won&apos;t be lost.
+                Your round data is saved and won&apos;t be lost.
               </p>
 
-              <div className="flex gap-3">
-                <button
-                  onClick={onGoBack}
-                  className="flex-1 py-3 rounded-xl bg-warm-100 text-warm-700 font-medium hover:bg-warm-200 active:bg-warm-300 transition-colors"
-                >
-                  Go Back
-                </button>
+              <div className="flex flex-col gap-3">
+                {/* Primary action: retry */}
                 {onRetry && (
                   <button
                     onClick={onRetry}
-                    className="flex-1 py-3 rounded-xl bg-primary-600 text-white font-medium hover:bg-primary-700 active:bg-primary-800 transition-colors shadow-sm"
+                    className="w-full py-3 rounded-xl bg-primary-600 text-white font-medium hover:bg-primary-700 active:bg-primary-800 transition-colors shadow-sm"
                   >
-                    Try Again
+                    Retry Submit
+                  </button>
+                )}
+
+                {/* Secondary action: save & exit */}
+                {onSaveAndExit && (
+                  <button
+                    onClick={onSaveAndExit}
+                    className="w-full py-3 rounded-xl bg-warm-100 text-warm-700 font-medium hover:bg-warm-200 active:bg-warm-300 transition-colors"
+                  >
+                    Save &amp; Exit
+                  </button>
+                )}
+
+                {/* Fallback: go back to editing */}
+                <button
+                  onClick={onGoBack}
+                  className="w-full py-3 rounded-xl bg-warm-100 text-warm-700 font-medium hover:bg-warm-200 active:bg-warm-300 transition-colors"
+                >
+                  Go Back
+                </button>
+
+                {/* Destructive action: discard round */}
+                {onDiscard && (
+                  <button
+                    onClick={onDiscard}
+                    className="w-full py-3 rounded-xl bg-red-50 text-red-700 border border-red-200 font-medium hover:bg-red-100 active:bg-red-200 transition-colors"
+                  >
+                    Discard Round
                   </button>
                 )}
               </div>

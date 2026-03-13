@@ -1211,6 +1211,18 @@ export default function ContinueRoundClient({
           isSubmittingRef.current = false;
           void handleRoundSubmit(pendingFinalStats);
         } : undefined}
+        onSaveAndExit={async () => {
+          setError('');
+          isSubmittingRef.current = false;
+          setSubmitting(false);
+          await handleSaveForLater();
+        }}
+        onDiscard={async () => {
+          setError('');
+          isSubmittingRef.current = false;
+          setSubmitting(false);
+          await handleDeleteRound();
+        }}
       />
 
     </>

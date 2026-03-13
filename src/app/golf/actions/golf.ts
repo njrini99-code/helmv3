@@ -3218,6 +3218,11 @@ export async function savePartialRound(
       return { success: false, error: `Validation error: ${detail}` };
     }
 
+    // Bug #3: Clamp currentHole to holesToPlay for 9-hole rounds
+    if (data.currentHole && data.holesToPlay) {
+      data.currentHole = Math.min(data.currentHole, data.holesToPlay);
+    }
+
     const supabase = await createClient();
 
     const { data: { user } } = await supabase.auth.getUser();

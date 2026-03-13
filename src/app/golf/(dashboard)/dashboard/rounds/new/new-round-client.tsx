@@ -2532,6 +2532,16 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
           isSubmittingRef.current = false;
           void handleRoundSubmit(pendingFinalStats);
         } : undefined}
+        onSaveAndExit={async () => {
+          setError('');
+          isSubmittingRef.current = false;
+          await handleSaveForLater();
+        }}
+        onDiscard={async () => {
+          setError('');
+          isSubmittingRef.current = false;
+          await handleDeleteRound();
+        }}
       />
 
     </>

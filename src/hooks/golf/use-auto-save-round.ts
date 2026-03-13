@@ -84,6 +84,8 @@ export function useAutoSaveRound(
   const isMountedRef = useRef(true);
   // Use ref for lastSaved to avoid recreating performSave on every successful save
   const lastSavedRef = useRef<Date | null>(null);
+  // Fingerprint of last successfully saved data to skip redundant saves
+  const lastSavedFingerprintRef = useRef<string>('');
 
   // Track online/offline status
   useEffect(() => {
@@ -175,9 +177,16 @@ export function useAutoSaveRound(
   const performSave = useCallback(async (data: RoundDraftData) => {
     if (!isMountedRef.current) return;
 
-    // Don't save if we're submitting or in initial setup with no data
-    if (data.step === 'submitting') return;
-    if (data.step === 'setup' && !data.setupData.courseName) return;
+    // Only save once the player has started entering shots (tracking) or is reviewing
+    if (data.step !== 'tracking' && data.step !== 'review') return;
+
+    // Skip save if data hasn't changed since last successful save
+    const fingerprint = JSON.stringify({
+      step: data.step,
+      currentHoleIndex: data.currentHoleIndex,
+      holes: data.holes?.map(h => ({ score: h.score, putts: h.putts, shots: h.shots?.length })),
+    });
+    if (fingerprint === lastSavedFingerprintRef.current) return;
 
     // Always save to localStorage as backup
     saveToLocalStorage(data);
@@ -207,6 +216,11 @@ export function useAutoSaveRound(
         }
 
         pendingSaveRef.current = null;
+        lastSavedFingerprintRef.current = JSON.stringify({
+          step: data.step,
+          currentHoleIndex: data.currentHoleIndex,
+          holes: data.holes?.map(h => ({ score: h.score, putts: h.putts, shots: h.shots?.length })),
+        });
         const now = new Date();
         lastSavedRef.current = now;
         setSaveStatus({

@@ -13,20 +13,27 @@ export default async function NewRoundPage() {
 
   const supabase = await createClient();
 
-  // Clean up orphaned drafts (older than 24h) — fire-and-forget using
+  // Clean up orphaned drafts — fire-and-forget using
   // the already-available client + player ID to avoid redundant auth/player
   // lookups that caused timeouts (see server error: cleanupOrphanedDrafts timeout)
-  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  // Bug #5: Use created_at so auto-save can't defeat cleanup by resetting updated_at
+  const cutoff24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const cutoff7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  // Delete player's in_progress rounds older than 24h by created_at
   void supabase
     .from('golf_rounds')
     .delete()
     .eq('player_id', player.id)
     .eq('status', 'in_progress')
-    .lt('updated_at', cutoff)
-    .then(({ error }) => {
-      if (error) {
-        console.error('[cleanupOrphanedDrafts] Non-critical cleanup failed:', error.message);
-      }
+    .lt('created_at', cutoff24h)
+    .then(() => {
+      // Also clean up any very old drafts (7+ days) by created_at as a safety net
+      void supabase
+        .from('golf_rounds')
+        .delete()
+        .eq('player_id', player.id)
+        .eq('status', 'in_progress')
+        .lt('created_at', cutoff7d);
     });
 
   // Check for in-progress rounds so we can prompt the player to resume

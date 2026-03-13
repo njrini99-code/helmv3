@@ -495,9 +495,13 @@ export async function clearRoundDraft(roundId: string): Promise<ActionResult<voi
 // ============================================================================
 
 /**
- * Delete draft rounds (status='in_progress') older than 24 hours for the current player.
+ * Delete draft rounds (status='in_progress') older than 48 hours for the current player.
  * Called automatically when starting a new round to prevent orphaned drafts from accumulating.
  * Returns the number of deleted drafts.
+ *
+ * Bug #5: Uses created_at instead of updated_at so auto-save can't defeat cleanup.
+ * Bug #5: Increased cutoff from 24h to 48h to give players more time.
+ * Bug #5: Simplified query (removed joins) to avoid timeouts.
  */
 export async function cleanupOrphanedDrafts(): Promise<ActionResult<{ deletedCount: number }>> {
   try {
@@ -518,16 +522,16 @@ export async function cleanupOrphanedDrafts(): Promise<ActionResult<{ deletedCou
       return { success: false, error: 'Player profile not found' };
     }
 
-    // Calculate 24 hours ago
-    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    // Calculate 48 hours ago
+    const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
 
-    // Delete orphaned drafts older than 24 hours
+    // Delete orphaned drafts older than 48 hours by created_at
     const { data: deleted, error } = await supabase
       .from('golf_rounds')
       .delete()
       .eq('player_id', player.id)
       .eq('status', 'in_progress')
-      .lt('updated_at', cutoff)
+      .lt('created_at', cutoff)
       .select('id');
 
     if (error) {
