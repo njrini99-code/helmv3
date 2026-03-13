@@ -3,7 +3,6 @@ import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import NewRoundClient from './new-round-client';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
-import { cleanupOrphanedDrafts } from '@/app/golf/actions/round-drafts';
 
 export default async function NewRoundPage() {
   const session = await getGolfSessionProfile();
@@ -14,8 +13,21 @@ export default async function NewRoundPage() {
 
   const supabase = await createClient();
 
-  // Clean up orphaned drafts (older than 24h) before showing the new round UI
-  void cleanupOrphanedDrafts();
+  // Clean up orphaned drafts (older than 24h) — fire-and-forget using
+  // the already-available client + player ID to avoid redundant auth/player
+  // lookups that caused timeouts (see server error: cleanupOrphanedDrafts timeout)
+  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  void supabase
+    .from('golf_rounds')
+    .delete()
+    .eq('player_id', player.id)
+    .eq('status', 'in_progress')
+    .lt('updated_at', cutoff)
+    .then(({ error }) => {
+      if (error) {
+        console.error('[cleanupOrphanedDrafts] Non-critical cleanup failed:', error.message);
+      }
+    });
 
   // Check for in-progress rounds so we can prompt the player to resume
   // Show ANY in_progress round (including setup-only drafts without shots)
