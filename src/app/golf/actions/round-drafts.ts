@@ -217,7 +217,7 @@ export async function saveRoundDraft(
         .eq('status', 'in_progress')
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (existingDraft) {
         if (await hasTrackedRoundData(existingDraft.id)) {
@@ -602,24 +602,26 @@ export async function checkRoundStaleness(
       .select('updated_at, status')
       .eq('id', roundId)
       .eq('player_id', player.id)
-      .single();
+      .maybeSingle();
 
-    if (error || !round) {
-      if (error) {
-        await logServerError(`Failed to check round staleness: ${error.message}`, {
-          action: 'checkRoundStaleness',
-          featureArea: 'round_sync',
-          roundId,
-          playerId: player.id,
-          userId: user.id,
-          userEmail: user.email,
-          errorCode: error.code,
-          errorHint: error.hint,
-          errorDetails: error.details,
-          extra: { expectedUpdatedAt },
-        });
-      }
-      return { success: false, error: 'Round not found' };
+    if (error) {
+      await logServerError(`Failed to check round staleness: ${error.message}`, {
+        action: 'checkRoundStaleness',
+        featureArea: 'round_sync',
+        roundId,
+        playerId: player.id,
+        userId: user.id,
+        userEmail: user.email,
+        errorCode: error.code,
+        errorHint: error.hint,
+        errorDetails: error.details,
+        extra: { expectedUpdatedAt },
+      });
+      return { success: false, error: 'Failed to check round status' };
+    }
+
+    if (!round) {
+      return { success: false, error: 'Round not found or was deleted' };
     }
 
     const currentUpdatedAt = round.updated_at;
