@@ -64,16 +64,24 @@ export function computeHealthScore(data: TracerData): {
 // ============================================================================
 
 export function flattenRounds(data: TracerData): FlatRound[] {
+  // Build a name map from playerSummaries for quick lookup
+  const nameMap = new Map(
+    data.playerSummaries.map((p) => [
+      p.player_id,
+      `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Unknown',
+    ])
+  );
+
+  // Iterate ALL entries in roundDetails — not just playerSummaries — so rounds
+  // are never silently dropped when the players query is truncated by Supabase's
+  // default 1000-row limit.
   const rounds: FlatRound[] = [];
-
-  for (const player of data.playerSummaries) {
-    const playerRounds = data.roundDetails[player.player_id] || [];
-    const playerName = `${player.first_name || ''} ${player.last_name || ''}`.trim() || 'Unknown';
-
+  for (const [playerId, playerRounds] of Object.entries(data.roundDetails)) {
+    const playerName = nameMap.get(playerId) || 'Unknown';
     for (const round of playerRounds) {
       rounds.push({
         ...round,
-        player_id: player.player_id,
+        player_id: playerId,
         player_name: playerName,
       });
     }

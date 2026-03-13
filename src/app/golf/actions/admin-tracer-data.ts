@@ -654,8 +654,9 @@ export async function getTracerData(): Promise<TracerData> {
   const ago45d = new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString();
 
   // Batch 1: Core data
+  // Explicit .limit() to override Supabase's default 1000-row PostgREST cap
   const [allPlayersResult, allRoundsResult, statsAccuracyResult] = await Promise.all([
-    adminDb.from('golf_players').select('id, first_name, last_name'),
+    adminDb.from('golf_players').select('id, first_name, last_name').limit(10000),
     adminDb
       .from('golf_rounds')
       .select(`
@@ -677,7 +678,8 @@ export async function getTracerData(): Promise<TracerData> {
         created_at,
         updated_at
       `)
-      .order('updated_at', { ascending: false }),
+      .order('updated_at', { ascending: false })
+      .limit(10000),
     adminDb
       .from('golf_player_stats_cache')
       .select(`
@@ -689,7 +691,8 @@ export async function getTracerData(): Promise<TracerData> {
         gir_percentage,
         is_stale,
         updated_at
-      `),
+      `)
+      .limit(10000),
   ]);
 
   // Build player map
@@ -784,28 +787,32 @@ export async function getTracerData(): Promise<TracerData> {
   }
 
   // Batch 2: Hole/shot/detail counts + stats cache + tracer incidents
+  // Chunk .in() queries to avoid PostgREST URL length overflow with many round IDs
   const roundIds = (allRoundsResult.data || []).map((r) => r.id);
+  const IN_CHUNK_SIZE = 200; // Safe limit for UUID-based .in() queries
+
+  async function chunkedIn<T>(
+    queryFn: (ids: string[]) => PromiseLike<{ data: T[] | null }>,
+  ): Promise<{ data: T[] }> {
+    if (roundIds.length === 0) return { data: [] };
+    const chunks: string[][] = [];
+    for (let i = 0; i < roundIds.length; i += IN_CHUNK_SIZE) {
+      chunks.push(roundIds.slice(i, i + IN_CHUNK_SIZE));
+    }
+    const results = await Promise.all(chunks.map((ids) => queryFn(ids)));
+    return { data: results.flatMap((r) => r.data || []) };
+  }
+
   const [
     holeCounts, shotCounts, puttDetailCounts, approachDetailCounts,
     statsCacheResult,
     tracerEventsResult,
   ] = await Promise.all([
-    roundIds.length > 0
-      ? adminDb.from('golf_holes').select('round_id, score, putts, fairway_hit, gir, par').in('round_id', roundIds)
-      : Promise.resolve({ data: [] }),
-    roundIds.length > 0
-      ? adminDb.from('golf_shots').select('round_id').in('round_id', roundIds)
-      : Promise.resolve({ data: [] }),
-    roundIds.length > 0
-      ? adminDb.from('golf_shots').select('round_id, putt_details!inner(id)').in('round_id', roundIds)
-      : Promise.resolve({ data: [] }),
-    roundIds.length > 0
-      ? adminDb.from('golf_shots').select('round_id, approach_miss_details!inner(id)').in('round_id', roundIds)
-      : Promise.resolve({ data: [] }),
-    // Stats cache check: which rounds have stats cached
-    roundIds.length > 0
-      ? adminDb.from('golf_round_stats_cache').select('round_id').in('round_id', roundIds)
-      : Promise.resolve({ data: [] }),
+    chunkedIn((ids) => adminDb.from('golf_holes').select('round_id, score, putts, fairway_hit, gir, par').in('round_id', ids).limit(10000)),
+    chunkedIn((ids) => adminDb.from('golf_shots').select('round_id').in('round_id', ids).limit(50000)),
+    chunkedIn((ids) => adminDb.from('golf_shots').select('round_id, putt_details!inner(id)').in('round_id', ids).limit(50000)),
+    chunkedIn((ids) => adminDb.from('golf_shots').select('round_id, approach_miss_details!inner(id)').in('round_id', ids).limit(50000)),
+    chunkedIn((ids) => adminDb.from('golf_round_stats_cache').select('round_id').in('round_id', ids).limit(10000)),
     adminDb
       .from('admin_events')
       .select('id, event_type, severity, title, message, metadata, url, stack_trace, user_id, user_email, resolved, resolved_at, resolved_by, created_at')
