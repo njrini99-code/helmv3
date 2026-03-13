@@ -203,7 +203,7 @@ export function OverviewStats({
       </motion.div>
 
       {/* Strokes Gained Summary */}
-      {stats.strokesGainedTotal !== null && (
+      {stats.sgTotalPerRound !== null && (
         <motion.div variants={sectionVariants}>
           <h3 className="text-sm font-bold text-warm-700 uppercase tracking-wide mb-3">
             Strokes Gained
@@ -211,16 +211,16 @@ export function OverviewStats({
           <div className="glass-standard rounded-xl p-4">
             <div className="flex items-center justify-between mb-4">
               <span className="text-sm font-medium text-warm-600">Total</span>
-              <span className={`text-xl font-bold tabular-nums ${stats.strokesGainedTotal >= 0 ? 'text-primary-600' : 'text-red-500'}`}>
-                {stats.strokesGainedTotal >= 0 ? '+' : ''}{stats.strokesGainedTotal.toFixed(2)}
+              <span className={`text-xl font-bold tabular-nums ${stats.sgTotalPerRound >= 0 ? 'text-primary-600' : 'text-red-500'}`}>
+                {stats.sgTotalPerRound >= 0 ? '+' : ''}{stats.sgTotalPerRound.toFixed(2)}
               </span>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               {[
-                { label: 'Tee', value: stats.strokesGainedTee },
-                { label: 'Approach', value: stats.strokesGainedApproach },
-                { label: 'Around Green', value: stats.strokesGainedAroundGreen },
-                { label: 'Putting', value: stats.strokesGainedPutting },
+                { label: 'Tee', value: stats.sgTeePerRound },
+                { label: 'Approach', value: stats.sgApproachPerRound },
+                { label: 'Around Green', value: stats.sgAroundGreenPerRound },
+                { label: 'Putting', value: stats.sgPuttingPerRound },
               ].map(sg => (
                 <div key={sg.label} className="text-center p-2 rounded-lg bg-warm-50/80">
                   <div className={`text-sm font-bold tabular-nums ${sg.value !== null && sg.value >= 0 ? 'text-primary-600' : 'text-red-500'}`}>

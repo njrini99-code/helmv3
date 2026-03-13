@@ -265,6 +265,7 @@ export default function TracerErrorAnalytics({
           featureArea: incident.featureArea.toLowerCase().replace(/\s+/g, '_'),
           errorCode: incident.errorCode,
           source: incident.source,
+          eventIds: incident.eventIds,
         });
         setResolveFeedback(incident.id, result.success ? 'success' : 'error', result.message);
         if (result.success) {

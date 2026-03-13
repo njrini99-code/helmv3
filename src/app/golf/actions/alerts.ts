@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { coachHelmIntelligence } from '@/lib/coachhelm/v2';
 import type { CoachAlert } from '@/components/golf/coachhelm/alerts/AlertCard';
+import { logServerError } from '@/lib/server-error-logger';
 
 // ============================================================================
 // GET COACH ALERTS
@@ -81,7 +82,11 @@ export async function getCoachAlerts(
     const { data, error } = await query;
 
     if (error) {
-      console.error('Error fetching alerts:', error);
+      await logServerError(`getCoachAlerts failed: ${error.message}`, {
+        action: 'getCoachAlerts',
+        featureArea: 'alerts',
+        extra: { coachId, errorCode: error.code },
+      });
       return { success: false, error: 'Failed to fetch alerts' };
     }
 
@@ -112,7 +117,11 @@ export async function getCoachAlerts(
 
     return { success: true, alerts };
   } catch (error) {
-    console.error('Unexpected error fetching alerts:', error);
+    await logServerError(`getCoachAlerts failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'getCoachAlerts',
+      featureArea: 'alerts',
+      extra: { coachId },
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -178,7 +187,11 @@ export async function getAlertCounts(
 
     return { success: true, counts };
   } catch (error) {
-    console.error('Unexpected error getting alert counts:', error);
+    await logServerError(`getAlertCounts failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'getAlertCounts',
+      featureArea: 'alerts',
+      extra: { coachId },
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -220,7 +233,11 @@ export async function dismissAlert(
       .eq('id', alertId);
 
     if (error) {
-      console.error('Error dismissing alert:', error);
+      await logServerError(`dismissAlert failed: ${error.message}`, {
+        action: 'dismissAlert',
+        featureArea: 'alerts',
+        extra: { alertId, errorCode: error.code },
+      });
       return { success: false, error: 'Failed to dismiss alert' };
     }
 
@@ -228,7 +245,11 @@ export async function dismissAlert(
     revalidatePath('/golf/dashboard/alerts');
     return { success: true };
   } catch (error) {
-    console.error('Unexpected error dismissing alert:', error);
+    await logServerError(`dismissAlert failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'dismissAlert',
+      featureArea: 'alerts',
+      extra: { alertId },
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -268,14 +289,22 @@ export async function acknowledgeAlert(
       .eq('id', alertId);
 
     if (error) {
-      console.error('Error acknowledging alert:', error);
+      await logServerError(`acknowledgeAlert failed: ${error.message}`, {
+        action: 'acknowledgeAlert',
+        featureArea: 'alerts',
+        extra: { alertId, errorCode: error.code },
+      });
       return { success: false, error: 'Failed to acknowledge alert' };
     }
 
     revalidatePath('/golf/dashboard');
     return { success: true };
   } catch (error) {
-    console.error('Unexpected error acknowledging alert:', error);
+    await logServerError(`acknowledgeAlert failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'acknowledgeAlert',
+      featureArea: 'alerts',
+      extra: { alertId },
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -346,7 +375,11 @@ export async function generateAlerts(
           success: true,
         };
       } catch (error) {
-        console.error(`Error analyzing player ${player.id}:`, error);
+        await logServerError(`generateAlerts player analysis failed: ${error instanceof Error ? error.message : String(error)}`, {
+          action: 'generateAlerts.analyzePlayer',
+          featureArea: 'alerts',
+          playerId: player.id,
+        });
         return { player, analysis: null, success: false };
       }
     });
@@ -458,7 +491,11 @@ export async function generateAlerts(
         .insert(newAlerts);
 
       if (insertError) {
-        console.error('Error inserting alerts:', insertError);
+        await logServerError(`generateAlerts insert failed: ${insertError.message}`, {
+          action: 'generateAlerts.insert',
+          featureArea: 'alerts',
+          extra: { coachId, teamId, alertCount: newAlerts.length, errorCode: insertError.code },
+        });
         // Continue - we'll still return what we have
       }
     }
@@ -475,7 +512,11 @@ export async function generateAlerts(
       generated: newAlerts.length,
     };
   } catch (error) {
-    console.error('Unexpected error generating alerts:', error);
+    await logServerError(`generateAlerts failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'generateAlerts',
+      featureArea: 'alerts',
+      extra: { coachId, teamId },
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -534,7 +575,11 @@ export async function dismissAllAlerts(
 
     return { success: true, dismissed: data?.length || 0 };
   } catch (error) {
-    console.error('Unexpected error dismissing all alerts:', error);
+    await logServerError(`dismissAllAlerts failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'dismissAllAlerts',
+      featureArea: 'alerts',
+      extra: { coachId },
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -580,7 +625,11 @@ export async function acknowledgeAllAlerts(
 
     return { success: true, acknowledged: data?.length || 0 };
   } catch (error) {
-    console.error('Unexpected error acknowledging all alerts:', error);
+    await logServerError(`acknowledgeAllAlerts failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'acknowledgeAllAlerts',
+      featureArea: 'alerts',
+      extra: { coachId },
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }

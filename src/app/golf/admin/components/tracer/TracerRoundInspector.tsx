@@ -29,7 +29,7 @@ interface TracerRoundInspectorProps {
   onDiagnose: (roundId: string) => void;
 }
 
-type SortKey = 'player' | 'course' | 'date' | 'score' | 'status' | 'holes' | 'issues';
+type SortKey = 'player' | 'course' | 'date' | 'submitted' | 'score' | 'status' | 'holes' | 'issues';
 type StatusFilter = 'all' | 'completed' | 'in_progress' | 'draft';
 
 // ============================================================================
@@ -89,8 +89,8 @@ export function TracerRoundInspector({ rounds, onDiagnose }: TracerRoundInspecto
   const [stuckOnly, setStuckOnly] = useState(false);
   const [hasErrorsOnly, setHasErrorsOnly] = useState(false);
 
-  // Sort state
-  const [sortKey, setSortKey] = useState<SortKey>('date');
+  // Sort state — default to most recently submitted/updated first
+  const [sortKey, setSortKey] = useState<SortKey>('submitted');
   const [sortAsc, setSortAsc] = useState(false);
 
   // Expansion state
@@ -143,6 +143,8 @@ export function TracerRoundInspector({ rounds, onDiagnose }: TracerRoundInspecto
           return dir * (a.course_name ?? '').localeCompare(b.course_name ?? '');
         case 'date':
           return dir * (a.round_date ?? '').localeCompare(b.round_date ?? '');
+        case 'submitted':
+          return dir * (a.updated_at ?? '').localeCompare(b.updated_at ?? '');
         case 'score':
           return dir * ((a.total_score ?? 999) - (b.total_score ?? 999));
         case 'status':
@@ -278,7 +280,8 @@ export function TracerRoundInspector({ rounds, onDiagnose }: TracerRoundInspecto
                 <th className="w-10 px-3 py-3.5" />
                 <SortableTh label="Player" sortKey="player" currentKey={sortKey} asc={sortAsc} onSort={handleSort} align="left" />
                 <SortableTh label="Course" sortKey="course" currentKey={sortKey} asc={sortAsc} onSort={handleSort} align="left" className="hidden md:table-cell" />
-                <SortableTh label="Date" sortKey="date" currentKey={sortKey} asc={sortAsc} onSort={handleSort} className="hidden md:table-cell" />
+                <SortableTh label="Date" sortKey="date" currentKey={sortKey} asc={sortAsc} onSort={handleSort} className="hidden sm:table-cell" />
+                <SortableTh label="Submitted" sortKey="submitted" currentKey={sortKey} asc={sortAsc} onSort={handleSort} className="hidden lg:table-cell" />
                 <SortableTh label="Score" sortKey="score" currentKey={sortKey} asc={sortAsc} onSort={handleSort} className="hidden sm:table-cell" />
                 <SortableTh label="Status" sortKey="status" currentKey={sortKey} asc={sortAsc} onSort={handleSort} />
                 <SortableTh label="Holes" sortKey="holes" currentKey={sortKey} asc={sortAsc} onSort={handleSort} className="hidden md:table-cell" />
@@ -289,7 +292,7 @@ export function TracerRoundInspector({ rounds, onDiagnose }: TracerRoundInspecto
             <tbody>
               {sortedRounds.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="px-6 py-12 text-center">
+                  <td colSpan={10} className="px-6 py-12 text-center">
                     <Filter size={24} className="mx-auto mb-3 text-warm-300" />
                     <p className="text-warm-500 font-medium text-sm">No rounds match filters</p>
                     <p className="text-warm-400 text-xs mt-1">Try adjusting your search or filters</p>
@@ -417,8 +420,13 @@ function RoundRow({
         </td>
 
         {/* Date */}
-        <td className="hidden md:table-cell px-4 py-3.5 text-center text-warm-500 text-xs whitespace-nowrap">
+        <td className="hidden sm:table-cell px-4 py-3.5 text-center text-warm-500 text-xs whitespace-nowrap">
           {round.round_date ? formatDate(round.round_date) : <span className="text-warm-300">&mdash;</span>}
+        </td>
+
+        {/* Submitted */}
+        <td className="hidden lg:table-cell px-4 py-3.5 text-center text-warm-500 text-xs whitespace-nowrap">
+          {round.updated_at ? timeAgo(round.updated_at) : <span className="text-warm-300">&mdash;</span>}
         </td>
 
         {/* Score */}
@@ -500,7 +508,7 @@ function RoundRow({
       <AnimatePresence>
         {isExpanded && (
           <tr>
-            <td colSpan={9} className="bg-warm-50/30 p-0">
+            <td colSpan={10} className="bg-warm-50/30 p-0">
               <motion.div
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}

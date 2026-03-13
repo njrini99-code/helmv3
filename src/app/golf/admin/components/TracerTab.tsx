@@ -99,6 +99,13 @@ export function TracerTab() {
         getTracerData(),
         getTracerEnrichedData(),
       ]);
+      console.warn('[TracerTab] Data loaded:', {
+        playerSummaries: baseData.playerSummaries.length,
+        roundDetailPlayers: Object.keys(baseData.roundDetails).length,
+        totalRounds: Object.values(baseData.roundDetails).reduce((s, r) => s + r.length, 0),
+        activityFeed: baseData.activityFeed.length,
+        errors: baseData.recentErrors.length,
+      });
       setData(baseData);
       setEnrichedData(enriched);
       setError(null);

@@ -16,7 +16,7 @@ interface TracerSubTabNavProps {
 
 export function TracerSubTabNav({ tabs, activeTab, onTabChange }: TracerSubTabNavProps) {
   return (
-    <div className="flex items-center gap-1 p-1 bg-warm-100/50 rounded-xl max-w-full overflow-x-auto w-fit">
+    <div className="flex items-center gap-0.5 sm:gap-1.5 p-1 bg-warm-100/50 rounded-xl max-w-full overflow-x-auto w-fit">
       {tabs.map((tab) => {
         const isActive = tab.id === activeTab;
         const isErrorTab = tab.id === 'errors';
@@ -26,7 +26,7 @@ export function TracerSubTabNav({ tabs, activeTab, onTabChange }: TracerSubTabNa
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
             className={cn(
-              'relative flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-150',
+              'relative flex items-center gap-1.5 px-2.5 sm:px-4 py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-colors duration-150',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
               isActive
                 ? 'text-warm-900'

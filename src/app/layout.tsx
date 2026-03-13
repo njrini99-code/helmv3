@@ -7,6 +7,7 @@ import { DatadogProvider } from '@/components/providers/DatadogProvider';
 import { Analytics } from '@vercel/analytics/next';
 import { AdminErrorHandler } from '@/components/providers/AdminErrorHandler';
 import { ChunkLoadErrorHandler } from '@/components/providers/ChunkLoadErrorHandler';
+import { GlobalErrorHandlerSetup } from '@/components/providers/GlobalErrorHandlerSetup';
 import { CapacitorProvider } from '@/components/providers/CapacitorProvider';
 import { StaleDeploymentRecoveryScript } from '@/components/providers/StaleDeploymentRecoveryScript';
 
@@ -100,6 +101,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Analytics />
         <AdminErrorHandler />
         <ChunkLoadErrorHandler />
+        <GlobalErrorHandlerSetup />
         <CapacitorProvider />
       </body>
     </html>

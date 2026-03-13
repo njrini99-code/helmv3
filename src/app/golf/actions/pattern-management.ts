@@ -14,6 +14,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { MinedPattern, PatternTrend } from '@/lib/coachhelm/v2/types';
+import { logServerError } from '@/lib/server-error-logger';
 
 // ============================================================================
 // TYPES
@@ -252,7 +253,11 @@ export async function getTeamPatterns(
     const { data: patterns, error } = await query;
 
     if (error) {
-      console.error('[Pattern Management] Error fetching patterns:', error);
+      await logServerError(`getTeamPatterns query failed: ${error.message}`, {
+        action: 'getTeamPatterns',
+        featureArea: 'pattern_management',
+        extra: { errorCode: error.code },
+      });
       return { success: true, patterns: [] };
     }
 
@@ -262,7 +267,10 @@ export async function getTeamPatterns(
 
     return { success: true, patterns: transformedPatterns };
   } catch (error) {
-    console.error('[Pattern Management] Unexpected error:', error);
+    await logServerError(`getTeamPatterns failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'getTeamPatterns',
+      featureArea: 'pattern_management',
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -296,7 +304,12 @@ export async function getPlayerPatternsExtended(
       .order('stroke_impact', { ascending: false });
 
     if (error) {
-      console.error('[Pattern Management] Error fetching player patterns:', error);
+      await logServerError(`getPlayerPatternsExtended query failed: ${error.message}`, {
+        action: 'getPlayerPatternsExtended',
+        featureArea: 'pattern_management',
+        playerId,
+        extra: { errorCode: error.code },
+      });
       return { success: true, patterns: [] };
     }
 
@@ -306,7 +319,11 @@ export async function getPlayerPatternsExtended(
 
     return { success: true, patterns: transformedPatterns };
   } catch (error) {
-    console.error('[Pattern Management] Unexpected error:', error);
+    await logServerError(`getPlayerPatternsExtended failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'getPlayerPatternsExtended',
+      featureArea: 'pattern_management',
+      playerId,
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -363,7 +380,11 @@ export async function validatePattern(
       .eq('id', patternId);
 
     if (error) {
-      console.error('[Pattern Management] Error validating pattern:', error);
+      await logServerError(`validatePattern update failed: ${error.message}`, {
+        action: 'validatePattern',
+        featureArea: 'pattern_management',
+        extra: { patternId, errorCode: error.code },
+      });
       return { success: false, error: 'Failed to validate pattern' };
     }
 
@@ -375,7 +396,11 @@ export async function validatePattern(
     revalidatePath('/golf/dashboard/patterns');
     return { success: true };
   } catch (error) {
-    console.error('[Pattern Management] Unexpected error:', error);
+    await logServerError(`validatePattern failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'validatePattern',
+      featureArea: 'pattern_management',
+      extra: { patternId },
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -410,14 +435,22 @@ export async function dismissPattern(
       .eq('id', patternId);
 
     if (error) {
-      console.error('[Pattern Management] Error dismissing pattern:', error);
+      await logServerError(`dismissPattern update failed: ${error.message}`, {
+        action: 'dismissPattern',
+        featureArea: 'pattern_management',
+        extra: { patternId, errorCode: error.code },
+      });
       return { success: false, error: 'Failed to dismiss pattern' };
     }
 
     revalidatePath('/golf/dashboard/patterns');
     return { success: true };
   } catch (error) {
-    console.error('[Pattern Management] Unexpected error:', error);
+    await logServerError(`dismissPattern failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'dismissPattern',
+      featureArea: 'pattern_management',
+      extra: { patternId },
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -451,14 +484,22 @@ export async function markPatternAddressed(
       .eq('id', patternId);
 
     if (error) {
-      console.error('[Pattern Management] Error marking pattern addressed:', error);
+      await logServerError(`markPatternAddressed update failed: ${error.message}`, {
+        action: 'markPatternAddressed',
+        featureArea: 'pattern_management',
+        extra: { patternId, errorCode: error.code },
+      });
       return { success: false, error: 'Failed to update pattern' };
     }
 
     revalidatePath('/golf/dashboard/patterns');
     return { success: true };
   } catch (error) {
-    console.error('[Pattern Management] Unexpected error:', error);
+    await logServerError(`markPatternAddressed failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'markPatternAddressed',
+      featureArea: 'pattern_management',
+      extra: { patternId },
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -493,14 +534,22 @@ export async function resolvePattern(
       .eq('id', patternId);
 
     if (error) {
-      console.error('[Pattern Management] Error resolving pattern:', error);
+      await logServerError(`resolvePattern update failed: ${error.message}`, {
+        action: 'resolvePattern',
+        featureArea: 'pattern_management',
+        extra: { patternId, errorCode: error.code },
+      });
       return { success: false, error: 'Failed to resolve pattern' };
     }
 
     revalidatePath('/golf/dashboard/patterns');
     return { success: true };
   } catch (error) {
-    console.error('[Pattern Management] Unexpected error:', error);
+    await logServerError(`resolvePattern failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'resolvePattern',
+      featureArea: 'pattern_management',
+      extra: { patternId },
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -566,13 +615,21 @@ async function createFocusAreaFromPatternInternal(
       .single();
 
     if (insertError) {
-      console.error('[Pattern Management] Error creating focus area:', insertError);
+      await logServerError(`createFocusAreaFromPatternInternal insert failed: ${insertError.message}`, {
+        action: 'createFocusAreaFromPatternInternal',
+        featureArea: 'pattern_management',
+        extra: { patternId, coachId, errorCode: insertError.code },
+      });
       return { success: false, error: 'Failed to create focus area' };
     }
 
     return { success: true, focusAreaId: focusArea?.id };
   } catch (error) {
-    console.error('[Pattern Management] Unexpected error:', error);
+    await logServerError(`createFocusAreaFromPatternInternal failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'createFocusAreaFromPatternInternal',
+      featureArea: 'pattern_management',
+      extra: { patternId, coachId },
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -608,7 +665,11 @@ export async function createFocusAreaFromPattern(
 
     return result;
   } catch (error) {
-    console.error('[Pattern Management] Unexpected error:', error);
+    await logServerError(`createFocusAreaFromPattern failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'createFocusAreaFromPattern',
+      featureArea: 'pattern_management',
+      extra: { patternId, playerId },
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -635,14 +696,22 @@ export async function updatePatternNotes(
       .eq('id', patternId);
 
     if (error) {
-      console.error('[Pattern Management] Error updating notes:', error);
+      await logServerError(`updatePatternNotes update failed: ${error.message}`, {
+        action: 'updatePatternNotes',
+        featureArea: 'pattern_management',
+        extra: { patternId, errorCode: error.code },
+      });
       return { success: false, error: 'Failed to update notes' };
     }
 
     revalidatePath('/golf/dashboard/patterns');
     return { success: true };
   } catch (error) {
-    console.error('[Pattern Management] Unexpected error:', error);
+    await logServerError(`updatePatternNotes failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'updatePatternNotes',
+      featureArea: 'pattern_management',
+      extra: { patternId },
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -745,7 +814,11 @@ export async function getPatternStats(): Promise<{
       .in('player_id', playerIds);
 
     if (error) {
-      console.error('[Pattern Management] Error fetching pattern stats:', error);
+      await logServerError(`getPatternStats query failed: ${error.message}`, {
+        action: 'getPatternStats',
+        featureArea: 'pattern_management',
+        extra: { errorCode: error.code },
+      });
       return { success: true, stats: {
         total: 0,
         detected: 0,
@@ -804,7 +877,10 @@ export async function getPatternStats(): Promise<{
 
     return { success: true, stats };
   } catch (error) {
-    console.error('[Pattern Management] Unexpected error:', error);
+    await logServerError(`getPatternStats failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'getPatternStats',
+      featureArea: 'pattern_management',
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }

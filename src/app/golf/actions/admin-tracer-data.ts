@@ -695,6 +695,21 @@ export async function getTracerData(): Promise<TracerData> {
       .limit(10000),
   ]);
 
+  // Surface query errors instead of silently returning empty data
+  // NOTE: console.warn used (not console.log) because production build strips console.log
+  if (allPlayersResult.error) {
+    console.warn('[Tracer] golf_players query failed:', allPlayersResult.error.message);
+  }
+  if (allRoundsResult.error) {
+    console.error('[Tracer] golf_rounds query failed:', allRoundsResult.error.message);
+    throw new Error(`Tracer: golf_rounds query failed — ${allRoundsResult.error.message}`);
+  }
+  if (statsAccuracyResult.error) {
+    console.warn('[Tracer] golf_player_stats_cache query failed:', statsAccuracyResult.error.message);
+  }
+
+  console.warn(`[Tracer] Batch 1: ${allPlayersResult.data?.length ?? 0} players, ${allRoundsResult.data?.length ?? 0} rounds, ${statsAccuracyResult.data?.length ?? 0} stats cache`);
+
   // Build player map
   const playerMap = new Map<string, TracerPlayerSummary>();
   const playerNameMap = new Map<string, string>();
@@ -792,7 +807,7 @@ export async function getTracerData(): Promise<TracerData> {
   const IN_CHUNK_SIZE = 200; // Safe limit for UUID-based .in() queries
 
   async function chunkedIn<T>(
-    queryFn: (ids: string[]) => PromiseLike<{ data: T[] | null }>,
+    queryFn: (ids: string[]) => PromiseLike<{ data: T[] | null; error?: { message: string } | null }>,
   ): Promise<{ data: T[] }> {
     if (roundIds.length === 0) return { data: [] };
     const chunks: string[][] = [];
@@ -800,6 +815,9 @@ export async function getTracerData(): Promise<TracerData> {
       chunks.push(roundIds.slice(i, i + IN_CHUNK_SIZE));
     }
     const results = await Promise.all(chunks.map((ids) => queryFn(ids)));
+    for (const r of results) {
+      if (r.error) console.warn('[Tracer] chunkedIn query error:', r.error.message);
+    }
     return { data: results.flatMap((r) => r.data || []) };
   }
 
@@ -813,13 +831,16 @@ export async function getTracerData(): Promise<TracerData> {
     chunkedIn((ids) => adminDb.from('golf_shots').select('round_id, putt_details!inner(id)').in('round_id', ids).limit(50000)),
     chunkedIn((ids) => adminDb.from('golf_shots').select('round_id, approach_miss_details!inner(id)').in('round_id', ids).limit(50000)),
     chunkedIn((ids) => adminDb.from('golf_round_stats_cache').select('round_id').in('round_id', ids).limit(10000)),
+    // Tracer error events — already filtered to event_type='error' in SQL.
+    // JS-side isShotTrackingTracerEvent() further filters to shot-tracking context.
+    // Limit reduced from 800 to 300 (sufficient for 45-day error window at current volume).
     adminDb
       .from('admin_events')
       .select('id, event_type, severity, title, message, metadata, url, stack_trace, user_id, user_email, resolved, resolved_at, resolved_by, created_at')
       .eq('event_type', 'error')
       .gte('created_at', ago45d)
       .order('created_at', { ascending: false })
-      .limit(800),
+      .limit(300),
   ]);
 
   // Count per round
@@ -1008,6 +1029,10 @@ export async function getTracerData(): Promise<TracerData> {
   const playerSummaries = Array.from(playerMap.values())
     .filter((p) => p.total_rounds > 0)
     .sort((a, b) => b.total_rounds - a.total_rounds || (a.last_name ?? '').localeCompare(b.last_name ?? ''));
+
+  const roundDetailEntries = Object.keys(roundsByPlayer).length;
+  const totalRoundCount = Object.values(roundsByPlayer).reduce((sum, arr) => sum + arr.length, 0);
+  console.warn(`[Tracer] Result: ${playerSummaries.length} summaries, ${roundDetailEntries} players w/ rounds, ${totalRoundCount} rounds, ${activityFeed.length} activity, ${errors.length} incidents`);
 
   return {
     playerSummaries,

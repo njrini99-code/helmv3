@@ -110,11 +110,9 @@ export function Hero() {
     const isCoarsePointer = window.matchMedia('(pointer: coarse)').matches
     setEnableParallax(!isCoarsePointer)
 
-    const revealTimer = window.setTimeout(() => {
-      setIsHeroReady(true)
-    }, 500)
-
-    return () => window.clearTimeout(revealTimer)
+    // Reveal immediately on mount — the image onLoad will also trigger this,
+    // but we don't gate on it to avoid a blank/dark screen if the image is slow.
+    setIsHeroReady(true)
   }, [shouldReduceMotion])
 
   // Keep the hero static on first paint, then enable subtle parallax only on
@@ -146,7 +144,7 @@ export function Hero() {
 
       <div
         aria-hidden="true"
-        className="absolute inset-0 z-[4] pointer-events-none bg-[#05070d] transition-opacity duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]"
+        className="absolute inset-0 z-[4] pointer-events-none bg-[#05070d] transition-opacity duration-300 ease-out"
         style={{ opacity: heroVisible ? 0 : 1 }}
       />
 

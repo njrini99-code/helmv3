@@ -1816,7 +1816,6 @@
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
-  scroll-snap-type: x mandatory;
   scrollbar-width: none;
   touch-action: pan-x pinch-zoom;
   gap: 0.5rem;
@@ -1825,8 +1824,16 @@
   display: none;
 }
 .pills-scroll > * {
-  scroll-snap-align: center;
   flex-shrink: 0;
+}
+/* Snap only on desktop where scroll wheels benefit — mobile momentum is smoother without it */
+@media (min-width: 768px) {
+  .pills-scroll {
+    scroll-snap-type: x proximity;
+  }
+  .pills-scroll > * {
+    scroll-snap-align: center;
+  }
 }
 
 /* Smooth scroll - only on desktop; mobile native momentum is better */

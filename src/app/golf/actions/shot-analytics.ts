@@ -9,6 +9,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { z } from 'zod';
+import { logServerError } from '@/lib/server-error-logger';
 
 // ============================================================================
 // INPUT VALIDATION
@@ -764,6 +765,11 @@ export async function getPlayerShotAnalytics(
     };
 
   } catch (error) {
+    await logServerError(`getPlayerShotAnalytics failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'getPlayerShotAnalytics',
+      featureArea: 'shot_analytics',
+      playerId,
+    });
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to analyze shot data',

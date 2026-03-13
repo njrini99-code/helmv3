@@ -12,6 +12,7 @@ type DashboardIncidentStatus = 'open' | 'active' | 'resolved' | 'historical';
 
 interface DashboardErrorIncident {
   id: string;
+  eventIds: string[];
   title: string;
   message: string;
   severity: string;
@@ -945,6 +946,22 @@ interface AdminEventIncidentRecord {
   created_at: string;
 }
 
+/** Lightweight version without JSONB metadata — used for display-only event lists */
+interface AdminEventDisplayRecord {
+  id: string;
+  event_type: string;
+  severity: string;
+  title: string;
+  message: string | null;
+  user_id: string | null;
+  user_email: string | null;
+  url: string | null;
+  resolved: boolean;
+  resolved_at: string | null;
+  resolved_by: string | null;
+  created_at: string;
+}
+
 function buildAdminEventIncidentKey(event: Pick<AdminEventIncidentRecord, 'title' | 'message' | 'metadata' | 'url'>): string {
   const metadata = asObject(event.metadata);
   const context = buildDashboardErrorContext(event.metadata);
@@ -973,6 +990,7 @@ export async function resolveDashboardIncident(input: {
   featureArea: string;
   errorCode: string | null;
   source: string | null;
+  eventIds?: string[];
 }): Promise<{
   success: boolean;
   resolvedCount: number;
@@ -991,21 +1009,29 @@ export async function resolveDashboardIncident(input: {
   if ((userData?.role as string) !== 'admin') throw new Error('Forbidden');
 
   const adminDb = createAdminClient();
-  const { data, error } = await adminDb
-    .from('admin_events')
-    .select('id, event_type, severity, title, message, metadata, user_id, user_email, url, resolved, resolved_at, resolved_by, created_at')
-    .eq('event_type', 'error')
-    .eq('resolved', false)
-    .order('created_at', { ascending: false })
-    .limit(500);
 
-  if (error) {
-    return { success: false, resolvedCount: 0, message: `Could not load incident events: ${error.message}` };
+  // If caller provided event IDs directly (e.g. from tracer incidents which
+  // already know the exact events), resolve them without re-fetching + key matching.
+  let matchingIds: string[] = [];
+  if (input.eventIds && input.eventIds.length > 0) {
+    matchingIds = input.eventIds;
+  } else {
+    const { data, error } = await adminDb
+      .from('admin_events')
+      .select('id, event_type, severity, title, message, metadata, user_id, user_email, url, resolved, resolved_at, resolved_by, created_at')
+      .eq('event_type', 'error')
+      .eq('resolved', false)
+      .order('created_at', { ascending: false })
+      .limit(500);
+
+    if (error) {
+      return { success: false, resolvedCount: 0, message: `Could not load incident events: ${error.message}` };
+    }
+
+    matchingIds = ((data ?? []) as AdminEventIncidentRecord[])
+      .filter((event) => buildAdminEventIncidentKey(event) === input.incidentKey)
+      .map((event) => event.id);
   }
-
-  const matchingIds = ((data ?? []) as AdminEventIncidentRecord[])
-    .filter((event) => buildAdminEventIncidentKey(event) === input.incidentKey)
-    .map((event) => event.id);
 
   const resolvedAt = new Date().toISOString();
   if (matchingIds.length > 0) {
@@ -2303,9 +2329,10 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     adminEventsRecentRes,
     adminEventsSummaryRes,
     adminEventsUnresolvedCriticalRes,
+    adminEventsErrorOnlyRes,
   ] = await Promise.all([
-    // Error logs: recent entries
-    adminDb.from('error_logs').select('id, message, severity, stack, url, user_id, context, created_at').order('created_at', { ascending: false }).limit(250),
+    // Error logs: recent entries (limit 100 — incident grouping only needs recent window, not 250)
+    adminDb.from('error_logs').select('id, message, severity, stack, url, user_id, context, created_at').order('created_at', { ascending: false }).limit(100),
     // Error logs: 7d count
     adminDb.from('error_logs').select('id', { count: 'exact', head: true }).gte('created_at', ago7d),
     // Error logs: critical 7d
@@ -2361,8 +2388,8 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     adminDb.from('golf_player_stats_cache').select('strokes_gained_total, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting').not('strokes_gained_total', 'is', null),
     // Total platform users (source of truth)
     adminDb.from('users').select('id', { count: 'exact', head: true }),
-    // Admin events: recent entries
-    adminDb.from('admin_events').select('id, event_type, severity, title, message, metadata, user_id, user_email, url, resolved, resolved_at, resolved_by, created_at').order('created_at', { ascending: false }).limit(250),
+    // Admin events: recent entries for display (no metadata — saves bandwidth on JSONB column)
+    adminDb.from('admin_events').select('id, event_type, severity, title, message, user_id, user_email, url, resolved, resolved_at, resolved_by, created_at').order('created_at', { ascending: false }).limit(100),
     // Admin events: summary via RPC (wrapped in try-catch for resilience)
     (async () => {
       try {
@@ -2375,6 +2402,8 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     })(),
     // Admin events: unresolved critical
     adminDb.from('admin_events').select('id, event_type, title, message, created_at').eq('resolved', false).in('severity', ['critical', 'error']).order('created_at', { ascending: false }).limit(20),
+    // Admin events: error-type only with metadata (for incident key building — much smaller result set)
+    adminDb.from('admin_events').select('id, event_type, severity, title, message, metadata, user_id, user_email, url, resolved, resolved_at, resolved_by, created_at').eq('event_type', 'error').order('created_at', { ascending: false }).limit(250),
   ]);
 
   // --- Process error logs ---
@@ -2487,7 +2516,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   const failedLogins7d = loginAttempts.reduce((s, l) => s + l.failedAttempts, 0);
 
   // --- Process admin events ---
-  const rawAdminEvents = (adminEventsRecentRes.data ?? []) as AdminEventIncidentRecord[];
+  const rawAdminEvents = (adminEventsRecentRes.data ?? []) as AdminEventDisplayRecord[];
 
   const adminEventSummaryRaw = (adminEventsSummaryRes.data ?? null) as {
     total_events: number;
@@ -2531,14 +2560,20 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     };
   })();
 
-  const openIncidentKeys = new Set<string>();
-  const resolvedIncidentMeta = new Map<string, AdminEventIncidentResolution>();
-  for (const event of rawAdminEvents) {
-    if (event.event_type !== 'error') continue;
+  // Use the error-only query result (with metadata) for incident key building
+  const rawAdminErrorEvents = (adminEventsErrorOnlyRes.data ?? []) as AdminEventIncidentRecord[];
 
+  // Track the latest unresolved event timestamp per incident key (not just presence)
+  const latestUnresolvedEventTs = new Map<string, number>();
+  const resolvedIncidentMeta = new Map<string, AdminEventIncidentResolution>();
+  for (const event of rawAdminErrorEvents) {
     const incidentKey = buildAdminEventIncidentKey(event);
     if (!event.resolved) {
-      openIncidentKeys.add(incidentKey);
+      const eventTs = new Date(event.created_at).getTime();
+      const currentMax = latestUnresolvedEventTs.get(incidentKey) ?? -1;
+      if (eventTs > currentMax) {
+        latestUnresolvedEventTs.set(incidentKey, eventTs);
+      }
       continue;
     }
 
@@ -2637,13 +2672,21 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
       const lastSeenTs = new Date(group.lastSeen).getTime();
       const resolution = resolvedIncidentMeta.get(group.key);
       const resolvedAtTs = resolution?.resolvedAt ? new Date(resolution.resolvedAt).getTime() : -1;
-      const status: DashboardErrorIncident['status'] = openIncidentKeys.has(group.key)
-        ? 'open'
-        : resolution && resolvedAtTs >= lastSeenTs
-          ? 'resolved'
-        : lastSeenTs >= recentIncidentThreshold
-          ? 'active'
-          : 'historical';
+      // 5-second tolerance for cross-table timestamp differences
+      const RESOLVE_TOLERANCE_MS = 5_000;
+      const latestUnresolvedTs = latestUnresolvedEventTs.get(group.key) ?? -1;
+      const hasPostResolutionEvents = resolution
+        ? latestUnresolvedTs > (resolvedAtTs + RESOLVE_TOLERANCE_MS)
+        : false;
+      const status: DashboardErrorIncident['status'] = resolution && !hasPostResolutionEvents
+        ? 'resolved'
+        : resolution && hasPostResolutionEvents
+          ? 'open'
+          : latestUnresolvedTs > -1
+            ? 'open'
+          : lastSeenTs >= recentIncidentThreshold
+            ? 'active'
+            : 'historical';
 
       const incident: DashboardErrorIncident = {
         id: group.key,

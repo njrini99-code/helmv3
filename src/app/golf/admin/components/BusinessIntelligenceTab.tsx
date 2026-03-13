@@ -243,7 +243,7 @@ export function BusinessIntelligenceTab({ data }: Props) {
             key={tab.id}
             onClick={() => setActiveSubTab(tab.id)}
             className={cn(
-              'flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap',
+              'flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap',
               activeSubTab === tab.id
                 ? 'bg-white shadow-sm text-warm-900'
                 : 'text-warm-500 hover:text-warm-700'
@@ -334,7 +334,7 @@ function GrowthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
       {/* Activation Funnel */}
       <div>
         <BISectionHeader title="Activation Funnel" subtitle="From signup to first value action" />
-        <GlassCard>
+        <GlassCard className="overflow-x-auto">
           <FunnelBars steps={g.activationFunnel} />
         </GlassCard>
       </div>
@@ -342,7 +342,7 @@ function GrowthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
       {/* Signup Trend Area Chart */}
       <div>
         <BISectionHeader title="Signup Trend" subtitle="Weekly signups over time" />
-        <GlassCard>
+        <GlassCard className="overflow-x-auto">
           {g.signupsByWeek.length >= 2 ? (
             <ResponsiveContainer width="100%" height={280}>
               <AreaChart data={g.signupsByWeek} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
@@ -807,7 +807,7 @@ function FunnelSection({ bi }: { bi: AdminDashboardData['bi'] }) {
   return (
     <div className="space-y-6">
       {/* Biggest Drop-off Callouts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {f.biggestPlayerDropoff && (
           <DropoffCallout
             title="Biggest Player Drop-off"
@@ -1041,29 +1041,33 @@ function HealthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-white/20">
-                  <th className="text-left text-warm-500 font-medium py-2 px-3">Team</th>
-                  <th className="hidden md:table-cell text-left text-warm-500 font-medium py-2 px-3">Org</th>
+                  <th className="text-left text-warm-500 font-medium py-3 px-3">Team</th>
+                  <th className="hidden md:table-cell text-left text-warm-500 font-medium py-3 px-3">Org</th>
                   <th
-                    className="text-right text-warm-500 font-medium py-2 px-3 cursor-pointer hover:text-warm-700 select-none"
+                    className="text-right text-warm-500 font-medium py-3 px-3 cursor-pointer hover:text-warm-700 select-none"
                     onClick={() => toggleSort('score')}
                   >
-                    Score <SortIcon field="score" />
+                    <span className="hidden md:inline">Score</span><span className="md:hidden">Scr</span> <SortIcon field="score" />
                   </th>
-                  <th className="text-center text-warm-500 font-medium py-2 px-3">Grade</th>
+                  <th className="text-center text-warm-500 font-medium py-3 px-3">
+                    <span className="hidden md:inline">Grade</span><span className="md:hidden">Gr</span>
+                  </th>
                   <th
-                    className="text-right text-warm-500 font-medium py-2 px-3 cursor-pointer hover:text-warm-700 select-none"
+                    className="text-right text-warm-500 font-medium py-3 px-3 cursor-pointer hover:text-warm-700 select-none"
                     onClick={() => toggleSort('playerCount')}
                   >
-                    Players <SortIcon field="playerCount" />
+                    <span className="hidden md:inline">Players</span><span className="md:hidden">Plrs</span> <SortIcon field="playerCount" />
                   </th>
-                  <th className="hidden lg:table-cell text-right text-warm-500 font-medium py-2 px-3">Active</th>
+                  <th className="hidden lg:table-cell text-right text-warm-500 font-medium py-3 px-3">
+                    <span className="hidden md:inline">Active</span><span className="md:hidden">Act%</span>
+                  </th>
                   <th
-                    className="text-right text-warm-500 font-medium py-2 px-3 cursor-pointer hover:text-warm-700 select-none"
+                    className="text-right text-warm-500 font-medium py-3 px-3 cursor-pointer hover:text-warm-700 select-none"
                     onClick={() => toggleSort('roundsThisMonth')}
                   >
-                    <span className="hidden md:inline">Rounds/Mo</span><span className="md:hidden">Rnds</span> <SortIcon field="roundsThisMonth" />
+                    <span className="hidden md:inline">Rounds/Mo</span><span className="md:hidden">R/Mo</span> <SortIcon field="roundsThisMonth" />
                   </th>
-                  <th className="text-center text-warm-500 font-medium py-2 px-3">Risk</th>
+                  <th className="text-center text-warm-500 font-medium py-3 px-3">Risk</th>
                 </tr>
               </thead>
               <tbody>
@@ -1119,18 +1123,23 @@ function HealthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-white/20">
-                  <th className="text-left text-warm-500 font-medium py-2 px-3">Name</th>
-                  <th className="text-left text-warm-500 font-medium py-2 px-3">Type</th>
-                  <th className="hidden md:table-cell text-left text-warm-500 font-medium py-2 px-3">Team</th>
-                  <th className="text-right text-warm-500 font-medium py-2 px-3">Risk Score</th>
-                  <th className="hidden md:table-cell text-right text-warm-500 font-medium py-2 px-3">Days Inactive</th>
-                  <th className="hidden md:table-cell text-left text-warm-500 font-medium py-2 px-3">Signals</th>
+                  <th className="text-left text-warm-500 font-medium py-3 px-3">Name</th>
+                  <th className="text-left text-warm-500 font-medium py-3 px-3">Type</th>
+                  <th className="hidden md:table-cell text-left text-warm-500 font-medium py-3 px-3">Team</th>
+                  <th className="text-right text-warm-500 font-medium py-3 px-3">Risk Score</th>
+                  <th className="hidden md:table-cell text-right text-warm-500 font-medium py-3 px-3">Days Inactive</th>
+                  <th className="hidden md:table-cell text-left text-warm-500 font-medium py-3 px-3">Signals</th>
                 </tr>
               </thead>
               <tbody>
                 {h.atRiskAccounts.map((acct) => (
                   <tr key={`${acct.type}-${acct.id}`} className="border-t border-white/10 hover:bg-white/30 transition-colors">
-                    <td className="py-2 px-3 font-medium text-warm-800">{acct.name}</td>
+                    <td className="py-2 px-3 font-medium text-warm-800">
+                      {acct.name}
+                      <span className="md:hidden block text-xs text-warm-400 font-normal mt-0.5">
+                        {acct.daysSinceLastActive}d inactive
+                      </span>
+                    </td>
                     <td className="py-2 px-3">
                       <span
                         className={cn(

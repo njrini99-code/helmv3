@@ -11,6 +11,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { logServerError } from '@/lib/server-error-logger';
 
 // ============================================================================
 // TYPES
@@ -110,7 +111,12 @@ export async function checkInPlayer(
     revalidatePath('/golf/dashboard/calendar');
     return { success: true };
   } catch (err) {
-    console.error('[GolfHelm] Failed to check in player:', err);
+    await logServerError(`checkInPlayer failed: ${err instanceof Error ? err.message : String(err)}`, {
+      action: 'checkInPlayer',
+      featureArea: 'attendance',
+      playerId,
+      extra: { eventId },
+    });
     return {
       success: false,
       error: 'Failed to check in player. Please try again.',
@@ -179,7 +185,11 @@ export async function bulkCheckIn(
       data: { successCount, failureCount },
     };
   } catch (err) {
-    console.error('[GolfHelm] Failed to bulk check-in:', err);
+    await logServerError(`bulkCheckIn failed: ${err instanceof Error ? err.message : String(err)}`, {
+      action: 'bulkCheckIn',
+      featureArea: 'attendance',
+      extra: { eventId, playerCount: playerIds.length },
+    });
     return {
       success: false,
       error: 'Failed to bulk check-in. Please try again.',
@@ -231,7 +241,12 @@ export async function markNoShow(
     revalidatePath('/golf/dashboard/calendar');
     return { success: true };
   } catch (err) {
-    console.error('[GolfHelm] Failed to mark no-show:', err);
+    await logServerError(`markNoShow failed: ${err instanceof Error ? err.message : String(err)}`, {
+      action: 'markNoShow',
+      featureArea: 'attendance',
+      playerId,
+      extra: { eventId },
+    });
     return {
       success: false,
       error: 'Failed to mark no-show. Please try again.',
@@ -279,7 +294,11 @@ export async function getAttendanceReport(
       },
     };
   } catch (err) {
-    console.error('[GolfHelm] Failed to get attendance report:', err);
+    await logServerError(`getAttendanceReport failed: ${err instanceof Error ? err.message : String(err)}`, {
+      action: 'getAttendanceReport',
+      featureArea: 'attendance',
+      extra: { eventId },
+    });
     return {
       success: false,
       error: 'Failed to get attendance report. Please try again.',
@@ -321,7 +340,12 @@ export async function getPlayerAttendanceStats(
     const { data, error } = await query;
 
     if (error) {
-      console.error('[Attendance Error]', error);
+      await logServerError(`getPlayerAttendanceStats query failed: ${error.message}`, {
+        action: 'getPlayerAttendanceStats',
+        featureArea: 'attendance',
+        playerId: playerId ?? null,
+        extra: { errorCode: error.code },
+      });
       return { success: false, error: 'Operation failed. Please try again.' };
     }
 
@@ -344,7 +368,11 @@ export async function getPlayerAttendanceStats(
 
     return { success: true, data: results };
   } catch (err) {
-    console.error('[GolfHelm] Failed to get attendance stats:', err);
+    await logServerError(`getPlayerAttendanceStats failed: ${err instanceof Error ? err.message : String(err)}`, {
+      action: 'getPlayerAttendanceStats',
+      featureArea: 'attendance',
+      playerId: playerId ?? null,
+    });
     return {
       success: false,
       error: 'Failed to get attendance stats. Please try again.',

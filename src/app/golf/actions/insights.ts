@@ -810,7 +810,11 @@ export async function generateTeamInsights() {
             });
             return { player, analysis, success: true };
           } catch (err) {
-            console.error(`Error analyzing player ${player.id}:`, err);
+            await logServerError(`generateInsightsForTeam player analysis failed: ${err instanceof Error ? err.message : String(err)}`, {
+              action: 'generateInsightsForTeam.analyzePlayer',
+              featureArea: 'insights',
+              playerId: player.id,
+            });
             return { player, analysis: null, success: false };
           }
         })
@@ -925,7 +929,10 @@ export async function generateTeamInsights() {
         }
       }
     } catch (err) {
-      console.error('[CoachHelm] Error generating team pattern insights:', err);
+      await logServerError(`generateInsightsForTeam team pattern insights failed: ${err instanceof Error ? err.message : String(err)}`, {
+        action: 'generateInsightsForTeam.teamPatterns',
+        featureArea: 'insights',
+      });
     }
 
     // 6.5. Apply philosophy weighting to sort and enhance insights
@@ -961,7 +968,11 @@ export async function generateTeamInsights() {
       const { error: insertError } = await (supabase as any).from('golf_coach_insights').insert(cleanInsights);
 
       if (insertError) {
-        console.error('Failed to insert insights:', insertError);
+        await logServerError(`generateInsightsForTeam insert failed: ${insertError.message}`, {
+          action: 'generateInsightsForTeam.insert',
+          featureArea: 'insights',
+          extra: { insightCount: cleanInsights.length, errorCode: insertError.code },
+        });
         return { success: false, error: 'Failed to save insights' };
       }
     }
@@ -989,7 +1000,10 @@ export async function generateTeamInsights() {
       execution_time_ms: executionTime,
     };
   } catch (error) {
-    console.error('Unexpected error in insights action:', error);
+    await logServerError(`generateInsightsForTeam failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'generateInsightsForTeam',
+      featureArea: 'insights',
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -1036,13 +1050,20 @@ export async function getActiveInsights(limit: number = 10) {
       .limit(limit);
 
     if (error) {
-      console.error('[Insights Error]', error);
+      await logServerError(`getActiveInsights query failed: ${error.message}`, {
+        action: 'getActiveInsights',
+        featureArea: 'insights',
+        extra: { errorCode: error.code },
+      });
       return { success: false, error: 'Failed to generate insights. Please try again.', insights: [] };
     }
 
     return { success: true, insights: insights || [] };
   } catch (error) {
-    console.error('Unexpected error in insights action:', error);
+    await logServerError(`getActiveInsights failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'getActiveInsights',
+      featureArea: 'insights',
+    });
     return { success: false, error: 'An unexpected error occurred', insights: [] };
   }
 }
@@ -1070,14 +1091,22 @@ export async function acknowledgeInsight(insightId: string) {
       .eq('id', insightId);
 
     if (error) {
-      console.error('[Insights Error]', error);
+      await logServerError(`acknowledgeInsight failed: ${error.message}`, {
+        action: 'acknowledgeInsight',
+        featureArea: 'insights',
+        extra: { insightId, errorCode: error.code },
+      });
       return { success: false, error: 'Operation failed. Please try again.' };
     }
 
     revalidatePath('/golf/dashboard');
     return { success: true };
   } catch (error) {
-    console.error('Unexpected error in insights action:', error);
+    await logServerError(`acknowledgeInsight failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'acknowledgeInsight',
+      featureArea: 'insights',
+      extra: { insightId },
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -1104,14 +1133,22 @@ export async function dismissInsight(insightId: string) {
       .eq('id', insightId);
 
     if (error) {
-      console.error('[Insights Error]', error);
+      await logServerError(`dismissInsight failed: ${error.message}`, {
+        action: 'dismissInsight',
+        featureArea: 'insights',
+        extra: { insightId, errorCode: error.code },
+      });
       return { success: false, error: 'Operation failed. Please try again.' };
     }
 
     revalidatePath('/golf/dashboard');
     return { success: true };
   } catch (error) {
-    console.error('Unexpected error in insights action:', error);
+    await logServerError(`dismissInsight failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'dismissInsight',
+      featureArea: 'insights',
+      extra: { insightId },
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -1139,14 +1176,22 @@ export async function resolveInsight(insightId: string) {
       .eq('id', insightId);
 
     if (error) {
-      console.error('[Insights Error]', error);
+      await logServerError(`resolveInsight failed: ${error.message}`, {
+        action: 'resolveInsight',
+        featureArea: 'insights',
+        extra: { insightId, errorCode: error.code },
+      });
       return { success: false, error: 'Operation failed. Please try again.' };
     }
 
     revalidatePath('/golf/dashboard');
     return { success: true };
   } catch (error) {
-    console.error('Unexpected error in insights action:', error);
+    await logServerError(`resolveInsight failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'resolveInsight',
+      featureArea: 'insights',
+      extra: { insightId },
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -1222,12 +1267,20 @@ export async function rateInsight(
       });
     } catch (err) {
       // Non-critical - don't fail the operation
-      console.error('[CoachHelm] Failed to record rating interaction:', err);
+      await logServerError(`rateInsight interaction recording failed: ${err instanceof Error ? err.message : String(err)}`, {
+        action: 'rateInsight.recordInteraction',
+        featureArea: 'insights',
+        extra: { insightId },
+      }, 'warning');
     }
 
     return { success: true };
   } catch (error) {
-    console.error('Error in rateInsight:', error);
+    await logServerError(`rateInsight failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'rateInsight',
+      featureArea: 'insights',
+      extra: { insightId },
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -1259,13 +1312,22 @@ export async function getPlayerFocusAreas(playerId: string) {
       if (error.code === 'PGRST116' || error.code === '42501' || error.code === '42P01') {
         return { success: true, focus_areas: [] };
       }
-      console.error('[Insights Error]', error);
+      await logServerError(`getPlayerFocusAreas query failed: ${error.message}`, {
+        action: 'getPlayerFocusAreas',
+        featureArea: 'insights',
+        playerId,
+        extra: { errorCode: error.code },
+      });
       return { success: false, error: 'Failed to get focus areas. Please try again.', focus_areas: [] };
     }
 
     return { success: true, focus_areas: focusAreas || [] };
   } catch (error) {
-    console.error('Unexpected error in insights action:', error);
+    await logServerError(`getPlayerFocusAreas failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'getPlayerFocusAreas',
+      featureArea: 'insights',
+      playerId,
+    });
     return { success: false, error: 'An unexpected error occurred', focus_areas: [] };
   }
 }
@@ -1311,7 +1373,11 @@ export async function analyzePlayer(
 
     return { success: true, analysis };
   } catch (error) {
-    console.error('Error in analyzePlayer:', error);
+    await logServerError(`analyzePlayer failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'analyzePlayer',
+      featureArea: 'insights',
+      playerId,
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -1357,7 +1423,11 @@ export async function generatePlayerInsight(playerId: string): Promise<{
       prediction: analysis.predictions[0],
     };
   } catch (error) {
-    console.error('Error in generatePlayerInsight:', error);
+    await logServerError(`generatePlayerInsight failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'generatePlayerInsight',
+      featureArea: 'insights',
+      playerId,
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -1742,7 +1812,11 @@ export async function generateTeamInsight(): Promise<{
 
             return { player, playerName, analysis, success: true };
           } catch (playerError) {
-            console.error('Error analyzing player:', playerError);
+            await logServerError(`generateTeamInsight player analysis failed: ${playerError instanceof Error ? playerError.message : String(playerError)}`, {
+              action: 'generateTeamInsight.analyzePlayer',
+              featureArea: 'insights',
+              playerId: player.id,
+            });
             return { player, playerName: '', analysis: null, success: false };
           }
         })
@@ -1876,7 +1950,10 @@ export async function generateTeamInsight(): Promise<{
       playersMissingData: playersMissingData.length > 0 ? playersMissingData : undefined,
     };
   } catch (error) {
-    console.error('Error in generateTeamInsight:', error);
+    await logServerError(`generateTeamInsight failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'generateTeamInsight',
+      featureArea: 'insights',
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -1928,7 +2005,10 @@ export async function generatePracticeRecommendations(playerId: string): Promise
       focusAreas,
     };
   } catch (error) {
-    console.error('Error in generatePracticeRecommendations:', error);
+    await logServerError(`generatePracticeRecommendations failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'generatePracticeRecommendations',
+      featureArea: 'insights',
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -1978,7 +2058,10 @@ export async function generateTournamentPrep(playerId: string): Promise<{
       recommendations: analysis.recommendations,
     };
   } catch (error) {
-    console.error('Error in generateTournamentPrep:', error);
+    await logServerError(`generateTournamentPrep failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'generateTournamentPrep',
+      featureArea: 'insights',
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -2048,7 +2131,11 @@ export async function getPlayerPatterns(playerId: string): Promise<{
 
     return { success: true, patterns: transformedPatterns };
   } catch (error) {
-    console.error('Error in getPlayerPatterns:', error);
+    await logServerError(`getPlayerPatterns failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'getPlayerPatterns',
+      featureArea: 'insights',
+      playerId,
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -2086,7 +2173,10 @@ export async function generateRoundReview(
 
     return { success: true, review };
   } catch (error) {
-    console.error('Error in generateRoundReview:', error);
+    await logServerError(`generateRoundReview (insights) failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'generateRoundReview',
+      featureArea: 'insights',
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -2114,7 +2204,10 @@ export async function recordInteraction(
 
     return { success: true };
   } catch (error) {
-    console.error('Error recording CoachHelm interaction:', error);
+    await logServerError(`recordCoachHelmInteraction failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'recordCoachHelmInteraction',
+      featureArea: 'insights',
+    });
     return { success: false };
   }
 }
@@ -2142,7 +2235,10 @@ export async function getCoachHelmStatus(
       disabledReason: status.disabledReason,
     };
   } catch (error) {
-    console.error('Error getting CoachHelm status:', error);
+    await logServerError(`getCoachHelmStatus failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'getCoachHelmStatus',
+      featureArea: 'insights',
+    });
     return { success: false, enabled: true };
   }
 }
@@ -2279,7 +2375,10 @@ export async function getPlayerCoachHelmDashboard(
 
     return { success: true, data: dashboardData };
   } catch (error) {
-    console.error('Error getting player CoachHelm dashboard:', error);
+    await logServerError(`getPlayerCoachHelmDashboard failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'getPlayerCoachHelmDashboard',
+      featureArea: 'insights',
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -2707,7 +2806,11 @@ export async function acknowledgeComposedInsight(
       });
 
     if (insertError) {
-      console.error('Failed to persist acknowledged insight:', insertError);
+      await logServerError(`acknowledgeComposedInsight persist failed: ${insertError.message}`, {
+        action: 'acknowledgeComposedInsight.persist',
+        featureArea: 'insights',
+        extra: { errorCode: insertError.code },
+      });
       return { success: false, error: 'Failed to save insight' };
     }
 
@@ -2719,13 +2822,19 @@ export async function acknowledgeComposedInsight(
       });
     } catch (err) {
       // Non-critical, don't fail the operation
-      console.error('[CoachHelm] Failed to record acknowledge interaction:', err);
+      await logServerError(`acknowledgeComposedInsight interaction recording failed: ${err instanceof Error ? err.message : String(err)}`, {
+        action: 'acknowledgeComposedInsight.recordInteraction',
+        featureArea: 'insights',
+      }, 'warning');
     }
 
     revalidatePath('/golf/dashboard');
     return { success: true };
   } catch (error) {
-    console.error('Unexpected error acknowledging composed insight:', error);
+    await logServerError(`acknowledgeComposedInsight failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'acknowledgeComposedInsight',
+      featureArea: 'insights',
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -2798,7 +2907,11 @@ export async function dismissComposedInsight(
       });
 
     if (insertError) {
-      console.error('Failed to persist dismissed insight:', insertError);
+      await logServerError(`dismissComposedInsight persist failed: ${insertError.message}`, {
+        action: 'dismissComposedInsight.persist',
+        featureArea: 'insights',
+        extra: { errorCode: insertError.code },
+      });
       return { success: false, error: 'Failed to save insight' };
     }
 
@@ -2810,13 +2923,19 @@ export async function dismissComposedInsight(
       });
     } catch (err) {
       // Non-critical, don't fail the operation
-      console.error('[CoachHelm] Failed to record dismiss interaction:', err);
+      await logServerError(`dismissComposedInsight interaction recording failed: ${err instanceof Error ? err.message : String(err)}`, {
+        action: 'dismissComposedInsight.recordInteraction',
+        featureArea: 'insights',
+      }, 'warning');
     }
 
     revalidatePath('/golf/dashboard');
     return { success: true };
   } catch (error) {
-    console.error('Unexpected error dismissing composed insight:', error);
+    await logServerError(`dismissComposedInsight failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'dismissComposedInsight',
+      featureArea: 'insights',
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -3014,7 +3133,6 @@ export async function triggerPlayerInsightsAfterRound(
     // revalidates all relevant paths before invoking this.
     return { success: true, insights_created: newInsights.length };
   } catch (error) {
-    console.error('[CoachHelm] Error in post-round insight trigger:', error);
     await logServerError(
       `CoachHelm post-round trigger failed: ${error instanceof Error ? error.message : String(error)}`,
       {

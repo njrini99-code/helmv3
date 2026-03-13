@@ -11,6 +11,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
+import { logServerError } from '@/lib/server-error-logger';
 
 // ============================================================================
 // TYPES
@@ -108,14 +109,22 @@ export async function acknowledgeAnnouncement(
       );
 
     if (insertError) {
-      console.error('[acknowledgeAnnouncement Error]', insertError);
+      await logServerError(`acknowledgeAnnouncement insert failed: ${insertError.message}`, {
+        action: 'acknowledgeAnnouncement',
+        featureArea: 'communication',
+        extra: { announcementId },
+      });
       return { success: false, error: insertError.message };
     }
 
     revalidatePath('/golf/dashboard/announcements');
     return { success: true };
   } catch (error) {
-    console.error('[acknowledgeAnnouncement Error]', error);
+    await logServerError(`acknowledgeAnnouncement failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'acknowledgeAnnouncement',
+      featureArea: 'communication',
+      extra: { announcementId },
+    });
     return formatSafeErrorResponse(error);
   }
 }
@@ -193,7 +202,11 @@ export async function getAnnouncementAcknowledgements(
       .order('acknowledged_at', { ascending: false }) as { data: RawAcknowledgement[] | null; error: Error | null };
 
     if (ackError) {
-      console.error('[getAnnouncementAcknowledgements Error]', ackError);
+      await logServerError(`getAnnouncementAcknowledgements failed: ${ackError.message}`, {
+        action: 'getAnnouncementAcknowledgements',
+        featureArea: 'communication',
+        extra: { announcementId },
+      });
       return { success: false, error: 'Failed to fetch acknowledgements' };
     }
 
@@ -224,7 +237,11 @@ export async function getAnnouncementAcknowledgements(
 
     return { success: true, data: enrichedAcknowledgements };
   } catch (error) {
-    console.error('[getAnnouncementAcknowledgements Error]', error);
+    await logServerError(`getAnnouncementAcknowledgements failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'getAnnouncementAcknowledgements',
+      featureArea: 'communication',
+      extra: { announcementId },
+    });
     return formatSafeErrorResponse(error);
   }
 }
@@ -280,7 +297,11 @@ export async function hasPlayerAcknowledged(
       },
     };
   } catch (error) {
-    console.error('[hasPlayerAcknowledged Error]', error);
+    await logServerError(`hasPlayerAcknowledged failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'hasPlayerAcknowledged',
+      featureArea: 'communication',
+      extra: { announcementId },
+    });
     return formatSafeErrorResponse(error);
   }
 }

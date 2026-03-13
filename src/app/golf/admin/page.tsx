@@ -575,7 +575,7 @@ function AdminDashboardContent() {
         {/* Collapse Toggle */}
         <button
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className="absolute -right-3 top-20 w-6 h-6 rounded-full bg-[#1C1917] border border-white/20 flex items-center justify-center text-warm-400 hover:text-white transition-colors shadow-lg"
+          className="absolute -right-4 top-20 w-8 h-8 rounded-full bg-[#1C1917] border border-white/20 flex items-center justify-center text-warm-400 hover:text-white transition-colors shadow-lg"
         >
           {sidebarCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
         </button>
@@ -596,7 +596,7 @@ function AdminDashboardContent() {
           </Link>
           <button
             onClick={() => setMobileMenuOpen(false)}
-            className="p-2 text-warm-400 hover:text-white transition-colors"
+            className="p-3 text-warm-400 hover:text-white transition-colors"
           >
             <X size={20} />
           </button>
@@ -610,7 +610,7 @@ function AdminDashboardContent() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-[10px] transition-colors',
+                  'w-full flex items-center gap-3 px-3 py-3 rounded-[10px] transition-colors',
                   isActive
                     ? 'bg-white/10 text-white'
                     : 'text-warm-400 hover:bg-white/5 hover:text-white'
@@ -623,12 +623,56 @@ function AdminDashboardContent() {
           })}
           <Link
             href="/golf/admin/crm"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-[10px] text-primary-400 hover:bg-white/5 transition-colors mt-4 pt-4 border-t border-white/10"
+            className="flex items-center gap-3 px-3 py-3 rounded-[10px] text-primary-400 hover:bg-white/5 transition-colors mt-4 pt-4 border-t border-white/10"
           >
             <Target size={20} />
             <span className="text-sm font-medium">Coach CRM</span>
           </Link>
         </nav>
+
+        {/* Mobile Quick Stats — compact 2x2 grid */}
+        {quickStats && (
+          <div className="px-3 pb-3 border-t border-white/10 pt-3">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-warm-600 px-1 mb-2">
+              Quick Stats
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {quickStats.map((stat) => (
+                <div
+                  key={stat.key}
+                  className={cn(
+                    'rounded-[10px] border px-2.5 py-2 bg-white/5',
+                    stat.tone === 'critical'
+                      ? 'border-red-500/20 bg-red-500/5'
+                      : stat.tone === 'warning'
+                        ? 'border-amber-500/20 bg-amber-500/5'
+                        : stat.tone === 'healthy'
+                          ? 'border-primary-500/15 bg-primary-500/5'
+                          : 'border-white/5'
+                  )}
+                >
+                  <div
+                    className={cn(
+                      'text-sm font-semibold tabular-nums',
+                      stat.tone === 'critical'
+                        ? 'text-red-300'
+                        : stat.tone === 'warning'
+                          ? 'text-amber-300'
+                          : stat.tone === 'healthy'
+                            ? 'text-primary-300'
+                            : 'text-white'
+                    )}
+                  >
+                    {stat.value}
+                  </div>
+                  <div className="text-[10px] font-medium uppercase tracking-[0.12em] text-warm-600 mt-0.5 leading-tight">
+                    {stat.label}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </aside>
 
       {/* Main Content - with margin for fixed sidebar */}

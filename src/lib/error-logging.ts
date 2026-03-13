@@ -199,7 +199,7 @@ function sendToMonitoringService(logEntry: ErrorLogEntry): void {
 /**
  * Capture and log unhandled promise rejections
  */
-function setupGlobalErrorHandlers(): void {
+export function setupGlobalErrorHandlers(): void {
   if (typeof window !== 'undefined') {
     // Unhandled promise rejections
     window.addEventListener('unhandledrejection', (event) => {

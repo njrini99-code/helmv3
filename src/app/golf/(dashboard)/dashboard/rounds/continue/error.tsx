@@ -13,10 +13,10 @@ export default function Error({
     <RouteErrorBoundary
       error={error}
       reset={reset}
-      route="/golf"
-      component="GolfRoot"
-      title="Something went wrong"
-      message="An unexpected error occurred. Please try again."
+      route="/golf/dashboard/rounds/continue"
+      component="ContinueRoundPage"
+      title="Failed to load round"
+      message="We couldn't load your in-progress round. Please try again."
       homePath="/golf/dashboard"
     />
   );

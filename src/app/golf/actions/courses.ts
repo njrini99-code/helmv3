@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { CourseSetupData, GolfCourse, GolfCourseHole } from '@/lib/types/golf-course';
+import { logServerError } from '@/lib/server-error-logger';
 
 /**
  * Get all saved courses for the current user
@@ -103,7 +104,11 @@ export async function getCourseWithHoles(courseId: string): Promise<{
 
     return { course, holes };
   } catch (err) {
-    console.error('[getCourseWithHoles Error]', err);
+    await logServerError(`getCourseWithHoles failed: ${err instanceof Error ? err.message : String(err)}`, {
+      action: 'getCourseWithHoles',
+      featureArea: 'courses',
+      extra: { courseId },
+    });
     return { course: null, holes: [] };
   }
 }
@@ -145,7 +150,11 @@ export async function createCourse(data: CourseSetupData): Promise<{
     if (courseError.code === '23505') {
       return { success: false, error: 'You already have a course with this name' };
     }
-    console.error('[createCourse Error]', courseError);
+    await logServerError(`createCourse failed: ${courseError.message}`, {
+      action: 'createCourse',
+      featureArea: 'courses',
+      extra: { courseName: data.name, errorCode: courseError.code },
+    });
     return { success: false, error: 'Failed to create course. Please try again.' };
   }
 
@@ -264,7 +273,11 @@ export async function deleteCourse(courseId: string): Promise<{
     .eq('id', courseId);
 
   if (error) {
-    console.error('[deleteCourse Error]', error);
+    await logServerError(`deleteCourse failed: ${error.message}`, {
+      action: 'deleteCourse',
+      featureArea: 'courses',
+      extra: { courseId, errorCode: error.code },
+    });
     return { success: false, error: 'Failed to delete course. Please try again.' };
   }
 

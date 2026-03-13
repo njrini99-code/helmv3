@@ -58,20 +58,20 @@ export function StrokesGainedStats({
       </motion.div>
 
       {/* Strokes Gained Overview */}
-      <StatSection title="Strokes Gained Overview (vs PGA Tour)" delay={0.1}>
+      <StatSection title="Strokes Gained Per Round (vs PGA Tour)" delay={0.1}>
         <motion.div
           className="mb-4 text-sm text-warm-600"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.15 }}
         >
-          Positive numbers indicate better than PGA Tour average. Negative numbers indicate worse than tour average.
+          Average strokes gained per round. Positive numbers indicate better than PGA Tour average.
         </motion.div>
-        <StatRow label="Total Strokes Gained" value={formatStat(stats.strokesGainedTotal, '', 2)} index={0} />
-        <StatRow label="Strokes Gained: Tee" value={formatStat(stats.strokesGainedTee, '', 2)} index={1} />
-        <StatRow label="Strokes Gained: Approach" value={formatStat(stats.strokesGainedApproach, '', 2)} index={2} />
-        <StatRow label="Strokes Gained: Around Green" value={formatStat(stats.strokesGainedAroundGreen, '', 2)} index={3} />
-        <StatRow label="Strokes Gained: Putting" value={formatStat(stats.strokesGainedPutting, '', 2)} index={4} />
+        <StatRow label="Total Strokes Gained" value={formatStat(stats.sgTotalPerRound, '', 2)} index={0} />
+        <StatRow label="Strokes Gained: Tee" value={formatStat(stats.sgTeePerRound, '', 2)} index={1} />
+        <StatRow label="Strokes Gained: Approach" value={formatStat(stats.sgApproachPerRound, '', 2)} index={2} />
+        <StatRow label="Strokes Gained: Around Green" value={formatStat(stats.sgAroundGreenPerRound, '', 2)} index={3} />
+        <StatRow label="Strokes Gained: Putting" value={formatStat(stats.sgPuttingPerRound, '', 2)} index={4} />
       </StatSection>
 
       {/* Per Round Breakdown */}

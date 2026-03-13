@@ -195,9 +195,18 @@ export function ErrorFeed({ errorLogs }: Props) {
   const [copyState, setCopyState] = useState<{ target: string; status: 'success' | 'error' } | null>(null);
   const [resolveState, setResolveState] = useState<{ target: string; status: 'success' | 'error'; message: string } | null>(null);
   const [pendingIncidentId, setPendingIncidentId] = useState<string | null>(null);
+  const [optimisticallyResolved, setOptimisticallyResolved] = useState<Set<string>>(new Set());
   const [isPending, startTransition] = useTransition();
 
-  const { totalErrors7d, criticalErrors7d, recentErrors, incidentCounts } = errorLogs;
+  const { totalErrors7d, criticalErrors7d, recentErrors: serverErrors, incidentCounts } = errorLogs;
+
+  // Apply optimistic resolution status to incidents
+  const recentErrors = serverErrors.map((incident) => {
+    if (optimisticallyResolved.has(incident.id) && incident.status !== 'resolved') {
+      return { ...incident, status: 'resolved' as const, resolvedAt: new Date().toISOString() };
+    }
+    return incident;
+  });
   const activeIncidents = recentErrors.filter((incident) => incident.status !== 'resolved');
   const resolvedIncidents = [...recentErrors]
     .filter((incident) => incident.status === 'resolved')
@@ -238,6 +247,10 @@ export function ErrorFeed({ errorLogs }: Props) {
 
   const handleResolve = (incident: AdminDashboardData['errorLogs']['recentErrors'][number]) => {
     setPendingIncidentId(incident.id);
+    // Optimistic UI: immediately mark as resolved in local state
+    setOptimisticallyResolved((prev) => new Set(prev).add(incident.id));
+    setQueueTab('resolved');
+    setExpandedId(incident.id);
     startTransition(async () => {
       try {
         const result = await resolveDashboardIncident({
@@ -254,13 +267,26 @@ export function ErrorFeed({ errorLogs }: Props) {
         });
         setResolveFeedback(incident.id, result.success ? 'success' : 'error', result.message);
         if (result.success) {
-          setQueueTab('resolved');
-          setExpandedId(incident.id);
           router.refresh();
+        } else {
+          // Rollback optimistic update on failure
+          setOptimisticallyResolved((prev) => {
+            const next = new Set(prev);
+            next.delete(incident.id);
+            return next;
+          });
+          setQueueTab('active');
         }
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Could not resolve incident.';
         setResolveFeedback(incident.id, 'error', message);
+        // Rollback optimistic update on error
+        setOptimisticallyResolved((prev) => {
+          const next = new Set(prev);
+          next.delete(incident.id);
+          return next;
+        });
+        setQueueTab('active');
       } finally {
         setPendingIncidentId((current) => (current === incident.id ? null : current));
       }

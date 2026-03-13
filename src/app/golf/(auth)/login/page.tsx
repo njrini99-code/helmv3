@@ -232,10 +232,10 @@ function LoginContent() {
                   You&apos;re already signed in
                 </div>
                 <button
-                  onClick={() => router.push(returnTo || '/golf/dashboard')}
+                  onClick={() => router.push(returnTo || (isAdmin ? '/golf/admin' : '/golf/dashboard'))}
                   className="w-full py-3 bg-primary-600 text-white font-medium text-sm rounded-[10px] shadow-sm transition-all duration-200 hover:bg-primary-700 hover:shadow-md"
                 >
-                  {returnTo ? 'Continue' : 'Continue to Dashboard'}
+                  {returnTo ? 'Continue' : isAdmin ? 'Continue to Admin Dashboard' : 'Continue to Dashboard'}
                 </button>
                 <button
                   onClick={handleSignOut}

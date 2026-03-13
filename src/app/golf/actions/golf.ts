@@ -1677,7 +1677,13 @@ export async function submitGolfRoundComprehensive(
       scoreToPar: totalToPar,
       roundType: data.roundType,
       holesPlayed: data.holes.length,
-    }).catch(() => {});
+    }).catch((err) => {
+      logServerError(`logRoundSubmitted failed: ${err instanceof Error ? err.message : String(err)}`, {
+        action: 'submitGolfRoundComprehensive.logRoundSubmitted',
+        featureArea: 'rounds',
+        extra: { roundId: round.id },
+      });
+    });
 
     return { success: true, data: { roundId: round.id, warnings: detailWarnings } };
 
@@ -1824,7 +1830,11 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
             .insert(notifications);
 
           if (notifError) {
-            console.error('[createGolfEvent] Failed to insert notifications:', notifError.message);
+            await logServerError(`createGolfEvent notification insert failed: ${notifError.message}`, {
+              action: 'createGolfEvent.insertNotifications',
+              featureArea: 'events',
+              extra: { errorCode: notifError.code },
+            });
           }
 
           // 2. Email notifications (fire-and-forget)
@@ -1845,18 +1855,31 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
                 location: validatedData.location || '',
                 eventUrl: `${baseUrl}/golf/dashboard/calendar`,
               }
-            ).catch(() => {});
+            ).catch((err) => {
+              logServerError(`createGolfEvent email notification failed: ${err instanceof Error ? err.message : String(err)}`, {
+                action: 'createGolfEvent.emailNotification',
+                featureArea: 'events',
+              });
+            });
           }
 
           // 3. Push notifications (fire-and-forget)
           const { sendBulkPushNotification } = await import('@/lib/notifications/push');
           await sendBulkPushNotification('event_rsvp_reminder', userIds, {
             eventName: validatedData.title,
-          }).catch(() => {});
+          }).catch((err) => {
+            logServerError(`createGolfEvent push notification failed: ${err instanceof Error ? err.message : String(err)}`, {
+              action: 'createGolfEvent.pushNotification',
+              featureArea: 'events',
+            });
+          });
         }
       }
     } catch (notifErr) {
-      console.error('[createGolfEvent] Notification creation failed:', notifErr);
+      await logServerError(`createGolfEvent notification creation failed: ${notifErr instanceof Error ? notifErr.message : String(notifErr)}`, {
+        action: 'createGolfEvent.notifications',
+        featureArea: 'events',
+      });
     }
 
     revalidatePath('/golf/dashboard');
@@ -2228,7 +2251,10 @@ export async function createGolfQualifier(data: GolfQualifierInput): Promise<Act
           }
         }
       } catch (notifErr) {
-        console.error('[createGolfQualifier] Notification error (non-fatal):', notifErr);
+        await logServerError(`createGolfQualifier notification failed: ${notifErr instanceof Error ? notifErr.message : String(notifErr)}`, {
+          action: 'createGolfQualifier.notifications',
+          featureArea: 'qualifiers',
+        });
       }
     }
 

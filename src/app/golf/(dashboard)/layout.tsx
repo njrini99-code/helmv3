@@ -48,6 +48,11 @@ export default async function GolfDashboardLayout({
       .eq('id', session.userId)
       .maybeSingle();
 
+    // Admin users don't have golf profiles — send them to the admin dashboard
+    if (userData?.role === 'admin') {
+      redirect('/golf/admin');
+    }
+
     declaredRole = (userData?.role === 'coach' || userData?.role === 'player')
       ? userData.role
       : null;

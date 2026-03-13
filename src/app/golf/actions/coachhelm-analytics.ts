@@ -10,6 +10,7 @@
 // ============================================================================
 
 import { createClient } from '@/lib/supabase/server';
+import { logServerError } from '@/lib/server-error-logger';
 
 // ============================================================================
 // TYPES
@@ -256,7 +257,11 @@ export async function getInsightEffectiveness(
       },
     };
   } catch (error) {
-    console.error('Error fetching insight effectiveness:', error);
+    await logServerError(`getInsightEffectiveness failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'getInsightEffectiveness',
+      featureArea: 'coachhelm_analytics',
+      extra: { teamId },
+    });
     return { success: false, error: 'Failed to fetch insight effectiveness data' };
   }
 }
@@ -374,7 +379,11 @@ export async function getPredictionPerformance(
       },
     };
   } catch (error) {
-    console.error('Error fetching prediction performance:', error);
+    await logServerError(`getPredictionPerformance failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'getPredictionPerformance',
+      featureArea: 'coachhelm_analytics',
+      extra: { teamId },
+    });
     return { success: false, error: 'Failed to fetch prediction performance data' };
   }
 }
@@ -442,7 +451,11 @@ export async function getPatternImpact(
       .gte('first_detected', start.toISOString());
 
     if (error) {
-      console.error('Pattern query error:', error);
+      await logServerError(`getPatternImpact pattern query failed: ${error.message}`, {
+        action: 'getPatternImpact',
+        featureArea: 'coachhelm_analytics',
+        extra: { teamId, errorCode: error.code },
+      });
       return {
         success: true,
         data: generateMockPatternImpact(start, end),
@@ -522,7 +535,11 @@ export async function getPatternImpact(
       },
     };
   } catch (error) {
-    console.error('Error fetching pattern impact:', error);
+    await logServerError(`getPatternImpact failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'getPatternImpact',
+      featureArea: 'coachhelm_analytics',
+      extra: { teamId },
+    });
     return { success: false, error: 'Failed to fetch pattern impact data' };
   }
 }
@@ -669,7 +686,11 @@ export async function getCoachHelmOverview(
       },
     };
   } catch (error) {
-    console.error('Error fetching CoachHelm overview:', error);
+    await logServerError(`getCoachHelmOverview failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'getCoachHelmOverview',
+      featureArea: 'coachhelm_analytics',
+      extra: { teamId },
+    });
     // Return fallback data on error
     return {
       success: true,
@@ -854,7 +875,11 @@ async function calculateInsightEffectivenessFromInsights(
       },
     };
   } catch (error) {
-    console.error('Error calculating insight effectiveness:', error);
+    await logServerError(`calculateInsightEffectivenessFromInsights failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'calculateInsightEffectivenessFromInsights',
+      featureArea: 'coachhelm_analytics',
+      extra: { teamId },
+    });
     return { success: false, error: 'Failed to calculate insight effectiveness' };
   }
 }
@@ -1008,7 +1033,11 @@ async function calculatePredictionPerformanceFromPredictions(
       },
     };
   } catch (error) {
-    console.error('Error calculating prediction performance:', error);
+    await logServerError(`calculatePredictionPerformanceFromPredictions failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'calculatePredictionPerformanceFromPredictions',
+      featureArea: 'coachhelm_analytics',
+      extra: { teamId },
+    });
     return { success: false, error: 'Failed to calculate prediction performance' };
   }
 }

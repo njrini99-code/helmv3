@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { logServerError } from '@/lib/server-error-logger';
 
 // UUID format validation
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -575,7 +576,10 @@ export async function generateRoundReview(
     }
 
   } catch (error) {
-    console.error('Error generating round review:', error);
+    await logServerError(`generateRoundReview failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'generateRoundReview',
+      featureArea: 'round_reviews',
+    });
     return {
       success: false,
       error: error instanceof Error ? error.message : 'An unexpected error occurred',
@@ -623,7 +627,11 @@ export async function getReviewById(reviewId: string): Promise<{
 
     return { success: true, review: review as unknown as RoundReviewWithDetails };
   } catch (error) {
-    console.error('Error fetching review:', error);
+    await logServerError(`getReviewById failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'getReviewById',
+      featureArea: 'round_reviews',
+      extra: { reviewId },
+    });
     return { success: false, error: 'Failed to fetch review' };
   }
 }
@@ -664,7 +672,11 @@ export async function getReviewByRoundId(roundId: string): Promise<{
 
     return { success: true, review: dbRowToReview(review as ReviewDbRow, access.callerRole ?? 'player') };
   } catch (error) {
-    console.error('Error fetching review:', error);
+    await logServerError(`getReviewByRoundId failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'getReviewByRoundId',
+      featureArea: 'round_reviews',
+      extra: { roundId },
+    });
     return { success: false, error: 'Failed to fetch review' };
   }
 }
@@ -763,7 +775,11 @@ export async function saveCoachFeedback(
       .eq('id', reviewId);
 
     if (updateError) {
-      console.error('Error updating review:', updateError);
+      await logServerError(`saveCoachFeedback update failed: ${updateError.message}`, {
+        action: 'saveCoachFeedback',
+        featureArea: 'round_reviews',
+        extra: { reviewId, errorCode: updateError.code },
+      });
       return { success: false, error: 'Failed to save feedback' };
     }
 
@@ -774,7 +790,11 @@ export async function saveCoachFeedback(
     return { success: true };
 
   } catch (error) {
-    console.error('Error saving coach feedback:', error);
+    await logServerError(`saveCoachFeedback failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'saveCoachFeedback',
+      featureArea: 'round_reviews',
+      extra: { reviewId },
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -848,7 +868,11 @@ export async function shareReviewWithPlayer(
     return { success: true };
 
   } catch (error) {
-    console.error('Error sharing review:', error);
+    await logServerError(`shareReview failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'shareReview',
+      featureArea: 'round_reviews',
+      extra: { reviewId },
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -922,7 +946,11 @@ export async function getTeamReviews(
       .range(offset, offset + limit - 1);
 
     if (error) {
-      console.error('Error fetching team reviews:', error);
+      await logServerError(`getTeamReviews query failed: ${error.message}`, {
+        action: 'getTeamReviews',
+        featureArea: 'round_reviews',
+        extra: { teamId, errorCode: error.code },
+      });
       return { success: false, error: 'Failed to fetch reviews' };
     }
 
@@ -942,7 +970,11 @@ export async function getTeamReviews(
     };
 
   } catch (error) {
-    console.error('Error fetching team reviews:', error);
+    await logServerError(`getTeamReviews failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'getTeamReviews',
+      featureArea: 'round_reviews',
+      extra: { teamId },
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -1021,7 +1053,11 @@ export async function getPendingCoachReviews(_coachId?: string): Promise<{
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching pending reviews:', error);
+      await logServerError(`getPendingCoachReviews query failed: ${error.message}`, {
+        action: 'getPendingCoachReviews',
+        featureArea: 'round_reviews',
+        extra: { errorCode: error.code },
+      });
       return { success: false, error: 'Failed to fetch pending reviews' };
     }
 
@@ -1038,7 +1074,10 @@ export async function getPendingCoachReviews(_coachId?: string): Promise<{
     };
 
   } catch (error) {
-    console.error('Error fetching pending reviews:', error);
+    await logServerError(`getPendingCoachReviews failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'getPendingCoachReviews',
+      featureArea: 'round_reviews',
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -1067,7 +1106,12 @@ export async function getPlayerReviewHistory(playerId: string): Promise<{
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching player reviews:', error);
+      await logServerError(`getPlayerReviewHistory query failed: ${error.message}`, {
+        action: 'getPlayerReviewHistory',
+        featureArea: 'round_reviews',
+        playerId,
+        extra: { errorCode: error.code },
+      });
       return { success: false, error: 'Failed to fetch reviews' };
     }
 
@@ -1077,7 +1121,11 @@ export async function getPlayerReviewHistory(playerId: string): Promise<{
       reviews: (reviews as ReviewDbRow[]).map(r => dbRowToReview(r, callerRole))
     };
   } catch (error) {
-    console.error('Error fetching player reviews:', error);
+    await logServerError(`getPlayerReviewHistory failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'getPlayerReviewHistory',
+      featureArea: 'round_reviews',
+      playerId,
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -1133,7 +1181,11 @@ export async function markReviewAsViewed(reviewId: string): Promise<{
     return { success: true };
 
   } catch (error) {
-    console.error('Error marking review as viewed:', error);
+    await logServerError(`markReviewAsViewed failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'markReviewAsViewed',
+      featureArea: 'round_reviews',
+      extra: { reviewId },
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -1187,7 +1239,11 @@ export async function addPlayerFeedback(
     return { success: true };
 
   } catch (error) {
-    console.error('Error adding player feedback:', error);
+    await logServerError(`addPlayerFeedback failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'addPlayerFeedback',
+      featureArea: 'round_reviews',
+      extra: { reviewId },
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -1227,7 +1283,11 @@ export async function retryReviewGeneration(reviewId: string): Promise<GenerateR
     return generateRoundReview(review.round_id, true);
 
   } catch (error) {
-    console.error('Error retrying review:', error);
+    await logServerError(`retryReviewGeneration failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'retryReviewGeneration',
+      featureArea: 'round_reviews',
+      extra: { reviewId },
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -1281,7 +1341,11 @@ export async function getReviewGenerationStatus(reviewId: string): Promise<{
     };
 
   } catch (error) {
-    console.error('Error getting review status:', error);
+    await logServerError(`getReviewGenerationStatus failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'getReviewGenerationStatus',
+      featureArea: 'round_reviews',
+      extra: { reviewId },
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -1326,13 +1390,21 @@ export async function annotateInsight(
       .eq('id', insightId);
 
     if (error) {
-      console.error('Error annotating insight:', error);
+      await logServerError(`annotateInsight update failed: ${error.message}`, {
+        action: 'annotateInsight',
+        featureArea: 'round_reviews',
+        extra: { insightId, errorCode: error.code },
+      });
       return { success: false, error: 'Failed to save annotation' };
     }
 
     return { success: true };
   } catch (error) {
-    console.error('Unexpected error in annotateInsight:', error);
+    await logServerError(`annotateInsight failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'annotateInsight',
+      featureArea: 'round_reviews',
+      extra: { insightId },
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -1372,13 +1444,21 @@ export async function annotateReview(
       .eq('id', reviewId);
 
     if (error) {
-      console.error('Error annotating review:', error);
+      await logServerError(`annotateReview update failed: ${error.message}`, {
+        action: 'annotateReview',
+        featureArea: 'round_reviews',
+        extra: { reviewId, errorCode: error.code },
+      });
       return { success: false, error: 'Failed to save annotation' };
     }
 
     return { success: true };
   } catch (error) {
-    console.error('Unexpected error in annotateReview:', error);
+    await logServerError(`annotateReview failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'annotateReview',
+      featureArea: 'round_reviews',
+      extra: { reviewId },
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -1419,14 +1499,22 @@ export async function publishReview(
       .eq('id', reviewId);
 
     if (error) {
-      console.error('Error publishing review:', error);
+      await logServerError(`publishReview update failed: ${error.message}`, {
+        action: 'publishReview',
+        featureArea: 'round_reviews',
+        extra: { reviewId, errorCode: error.code },
+      });
       return { success: false, error: 'Failed to publish review' };
     }
 
     revalidatePath('/golf/dashboard');
     return { success: true };
   } catch (error) {
-    console.error('Unexpected error in publishReview:', error);
+    await logServerError(`publishReview failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'publishReview',
+      featureArea: 'round_reviews',
+      extra: { reviewId },
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -1484,14 +1572,22 @@ export async function createFocusAreaFromReview(
       .single();
 
     if (error || !focusArea) {
-      console.error('Error creating focus area:', error);
+      await logServerError(`createFocusAreaFromReview insert failed: ${error?.message || 'No focus area returned'}`, {
+        action: 'createFocusAreaFromReview',
+        featureArea: 'round_reviews',
+        extra: { reviewId, errorCode: error?.code },
+      });
       return { success: false, error: 'Failed to create focus area' };
     }
 
     revalidatePath('/golf/dashboard');
     return { success: true, focusAreaId: focusArea.id };
   } catch (error) {
-    console.error('Unexpected error in createFocusAreaFromReview:', error);
+    await logServerError(`createFocusAreaFromReview failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'createFocusAreaFromReview',
+      featureArea: 'round_reviews',
+      extra: { reviewId },
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -1564,13 +1660,21 @@ export async function acknowledgeReview(
       .eq('id', reviewId);
 
     if (error) {
-      console.error('Error acknowledging review:', error);
+      await logServerError(`acknowledgeReview update failed: ${error.message}`, {
+        action: 'acknowledgeReview',
+        featureArea: 'round_reviews',
+        extra: { reviewId, errorCode: error.code },
+      });
       return { success: false, error: 'Failed to acknowledge review' };
     }
 
     return { success: true };
   } catch (error) {
-    console.error('Unexpected error in acknowledgeReview:', error);
+    await logServerError(`acknowledgeReview failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'acknowledgeReview',
+      featureArea: 'round_reviews',
+      extra: { reviewId },
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -1651,7 +1755,11 @@ export async function markReviewViewedByCoach(
     return { success: true };
 
   } catch (error) {
-    console.error('Error marking review as viewed by coach:', error);
+    await logServerError(`markReviewViewedByCoach failed: ${error instanceof Error ? error.message : String(error)}`, {
+      action: 'markReviewViewedByCoach',
+      featureArea: 'round_reviews',
+      extra: { reviewId },
+    });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
