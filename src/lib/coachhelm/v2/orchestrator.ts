@@ -19,6 +19,11 @@ import { PerformancePredictor, TrajectoryForecaster } from './prediction';
 import { BehaviorLearner, OutcomeValidator, CrossLearner } from './learning';
 import { ReasoningEngine, ConfidenceCalibrator } from './reasoning';
 import { InsightComposer } from './nlg';
+import { buildPlayerBaseline } from './stats/baselines';
+import { analyzeMultiWindowTrends } from './trends/multi-window';
+import { detectAnomalies } from './stats/anomaly-detector';
+import { detectStreaks } from './trends/streak-detector';
+import { scoreInsight, shouldShowInsight } from './feedback/insight-scorer';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 
 import type {
@@ -119,6 +124,30 @@ class CoachHelmIntelligence {
       return null;
     }
 
+    // === NEW: Fetch recent rounds for statistical foundation ===
+    const supabaseClient = await createClient();
+    const ninetyDaysAgo = new Date();
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+    const { data: recentRounds } = await supabaseClient
+      .from('golf_rounds')
+      .select('id, score_to_par, total_putts, total_fairways, total_fairways_hit, total_gir, total_gir_possible')
+      .eq('player_id', playerId)
+      .eq('status', 'completed')
+      .gte('round_date', ninetyDaysAgo.toISOString())
+      .order('round_date', { ascending: true });
+
+    // === NEW: Statistical foundation ===
+    const playerBaseline = buildPlayerBaseline(
+      (recentRounds ?? []).map(r => ({
+        metrics: {
+          scoreToPar: r.score_to_par ?? 0,
+          putts: r.total_putts ?? 0,
+          fairwayPct: (r.total_fairways ?? 0) > 0 ? ((r.total_fairways_hit ?? 0) / (r.total_fairways ?? 1)) * 100 : 0,
+          girPct: (r.total_gir_possible ?? 0) > 0 ? ((r.total_gir ?? 0) / (r.total_gir_possible ?? 1)) * 100 : 0,
+        }
+      }))
+    );
+
     // Mine patterns
     let patterns: MinedPattern[] = [];
     if (includePatterns) {
@@ -173,6 +202,20 @@ class CoachHelmIntelligence {
     // Fetch comprehensive stats for stats-based insights
     const stats = await this.fetchPlayerStats(playerId);
 
+    // === NEW: Multi-window trend analysis ===
+    const scoreToPars = (recentRounds ?? []).map(r => r.score_to_par ?? 0);
+    // TODO: Feed trendAnalysis into insight generation in next iteration
+    void analyzeMultiWindowTrends(scoreToPars, 'scoreToPar');
+
+    // === NEW: Anomaly detection ===
+    const scoreBaseline = playerBaseline.metrics['scoreToPar'];
+    // TODO: Feed anomalies into insight generation in next iteration
+    if (scoreBaseline) void detectAnomalies(scoreToPars, scoreBaseline, 'scoreToPar');
+
+    // === NEW: Streak detection ===
+    // TODO: Feed streaks into insight generation in next iteration
+    void detectStreaks(scoreToPars, scoreBaseline?.ewma ?? 0);
+
     // Generate insights (including shot patterns, stats-based, and lie-specific)
     const insights = this.prioritizeInsights(await this.generateInsights(
       playerId,
@@ -186,6 +229,15 @@ class CoachHelmIntelligence {
       shotStateAnalysis ?? undefined
     ));
 
+    // === NEW: Score and filter insights ===
+    const scoredInsights = insights
+      .map(insight => ({
+        ...insight,
+        feedbackScore: scoreInsight(insight.confidence, insight.strokeImpact ?? 0, 'pattern', []).finalScore,
+      }))
+      .filter(insight => shouldShowInsight({ baseScore: insight.confidence, feedbackAdjustment: 0, finalScore: insight.feedbackScore, shouldShow: true }))
+      .sort((a, b) => b.feedbackScore - a.feedbackScore);
+
     // Determine alert level
     const alertLevel = this.determineAlertLevel(patterns, predictions, features);
 
@@ -197,8 +249,8 @@ class CoachHelmIntelligence {
     );
 
     // Get primary insight
-    const primaryInsight = insights.length > 0
-      ? insights[0]!
+    const primaryInsight = scoredInsights.length > 0
+      ? scoredInsights[0]!
       : {
           headline: 'Analysis Complete',
           body: 'No significant insights at this time.',
@@ -216,7 +268,7 @@ class CoachHelmIntelligence {
       trajectory,
       shotPatterns,
       lieAnalysis,
-      insights,
+      insights: scoredInsights,
       primaryInsight,
       recommendations,
       alertLevel,

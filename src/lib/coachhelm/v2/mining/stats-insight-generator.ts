@@ -16,7 +16,8 @@
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { MinedPattern, PatternType, PatternTrend } from '../types';
 
-// Benchmarks for college/competitive golf
+// TODO: Replace with dynamic baselines from stats/baselines.ts
+// These are D2/D3 college golf averages used as fallback when player baselines aren't available
 const BENCHMARKS = {
   // Strokes Gained per round (vs scratch/par)
   sgTotal: 0,           // Even with par

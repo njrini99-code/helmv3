@@ -32,5 +32,45 @@ export {
   isCoachHelmEnabledForPlayer,
 } from './gate';
 
+// Statistical foundation
+export * from './stats';
+
+// Trend analysis
+export * from './trends';
+
+// Shot analysis
+export * from './shot-analysis';
+
+// Simulation
+export * from './simulation';
+
+// Feedback loop (excluding CalibrationBucket and ValidationResult which are already exported from ./types)
+export {
+  calibrateConfidence,
+  updateCalibrationRecord,
+  calculateBrierScore,
+  createEmptyCalibrationRecord,
+  validatePrediction,
+  calculateAccuracyMetrics,
+  calculateAdjustments,
+  scoreInsight,
+  calculateThresholdAdjustments,
+  shouldShowInsight,
+  derivePreferences,
+  prioritizeForCoach,
+  recordAction,
+  queryActions,
+} from './feedback';
+export type {
+  CalibrationRecord,
+  PredictionAccuracyMetrics,
+  PredictionAdjustments,
+  InsightFeedback,
+  InsightScore,
+  ThresholdAdjustments,
+  CoachAction,
+  CoachPreferences,
+} from './feedback';
+
 // Orchestrator
 export { coachHelmIntelligence } from './orchestrator';
