@@ -126,10 +126,16 @@ export default async function PlayerCoachHelmPage() {
   }
 
   // Fetch CoachHelm dashboard data and shot analytics in parallel
-  const [dashboardResult, analyticsResult] = await Promise.all([
-    getPlayerCoachHelmDashboard(player.id),
-    getPlayerShotAnalytics(player.id, 30),
-  ]);
+  let dashboardResult: Awaited<ReturnType<typeof getPlayerCoachHelmDashboard>>;
+  let analyticsResult: Awaited<ReturnType<typeof getPlayerShotAnalytics>>;
+  try {
+    [dashboardResult, analyticsResult] = await Promise.all([
+      getPlayerCoachHelmDashboard(player.id),
+      getPlayerShotAnalytics(player.id, 30),
+    ]);
+  } catch (err) {
+    return <ErrorState error={err instanceof Error ? err.message : 'Failed to load dashboard data'} />;
+  }
 
   // Fetch additional V3 data (optional — new components)
   let profileData = null;
