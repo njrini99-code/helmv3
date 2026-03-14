@@ -16,7 +16,7 @@ export function UserFunnelViz({ funnel }: Props) {
       'bg-white/70 backdrop-blur-xl',
       'border border-white/20 rounded-2xl',
       'shadow-glass',
-      'p-5 md:p-6',
+      'p-4 sm:p-5 md:p-6',
       'h-full'
     )}>
       <div className="flex items-center gap-2 mb-5">
@@ -30,13 +30,16 @@ export function UserFunnelViz({ funnel }: Props) {
           const isDropoff = i > 0 && step.dropoffPct > 30;
 
           return (
-            <div key={step.stage} className="flex items-center gap-3">
-              {/* Label */}
-              <div className="w-[130px] text-right flex-shrink-0">
-                <p className="text-xs font-medium text-warm-700 leading-tight">{step.stage}</p>
+            <div key={step.stage} className="flex items-center gap-2 sm:gap-3">
+              {/* Label — narrower on mobile, fixed on sm+ */}
+              <div className="w-[90px] sm:w-[130px] text-right flex-shrink-0">
+                <p className="text-[11px] sm:text-xs font-medium text-warm-700 leading-tight">
+                  {step.stage}
+                </p>
               </div>
+
               {/* Bar */}
-              <div className="flex-1 relative">
+              <div className="flex-1 relative min-w-0">
                 <div className="h-7 rounded-lg bg-warm-50 overflow-hidden">
                   <div
                     className={cn(
@@ -52,7 +55,9 @@ export function UserFunnelViz({ funnel }: Props) {
                     style={{ width: `${Math.max(widthPercent, 8)}%` }}
                   >
                     {widthPercent > 20 && (
-                      <span className="text-micro font-bold text-white tabular-nums">{step.count}</span>
+                      <span className="text-[10px] sm:text-micro font-bold text-white tabular-nums">
+                        {step.count}
+                      </span>
                     )}
                   </div>
                 </div>
@@ -66,10 +71,17 @@ export function UserFunnelViz({ funnel }: Props) {
                   </div>
                 )}
               </div>
-              {/* Count */}
-              <div className="w-16 text-right flex-shrink-0">
+
+              {/* Count — abbreviated on mobile to save space */}
+              <div className="w-12 sm:w-16 text-right flex-shrink-0">
                 <span className="text-sm font-bold text-warm-900 tabular-nums">{step.count}</span>
-                <span className="text-micro text-warm-400 ml-1">({step.percentage}%)</span>
+                <span className="hidden sm:inline text-micro text-warm-400 ml-1">
+                  ({step.percentage}%)
+                </span>
+                {/* Percentage on its own line on mobile */}
+                <span className="block sm:hidden text-[10px] text-warm-400 tabular-nums">
+                  {step.percentage}%
+                </span>
               </div>
             </div>
           );
@@ -79,9 +91,9 @@ export function UserFunnelViz({ funnel }: Props) {
       {/* Conversion rate summary */}
       {funnel.length >= 2 && (
         <div className="mt-4 pt-3 border-t border-warm-100">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-warm-400">
-              Overall conversion: {funnel[0]?.stage} → {funnel[funnel.length - 1]?.stage}
+          <div className="flex flex-wrap items-center justify-between gap-1 text-xs">
+            <span className="text-warm-400 leading-snug">
+              Overall: {funnel[0]?.stage} → {funnel[funnel.length - 1]?.stage}
             </span>
             <span className={cn(
               'font-semibold tabular-nums',

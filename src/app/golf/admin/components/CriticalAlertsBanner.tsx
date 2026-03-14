@@ -92,42 +92,60 @@ export function CriticalAlertsBanner({ items, onNavigateTab }: Props) {
           <div
             key={item.label}
             className={cn(
-              'flex items-center gap-3 px-4 py-3 rounded-2xl',
+              'flex items-start gap-3 px-4 py-3 rounded-2xl',
               'border backdrop-blur-sm',
               config.bg
             )}
           >
-            <div className={cn('w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0', config.iconBg)}>
+            {/* Icon — always 44px touch-safe, flex-shrink-0 */}
+            <div className={cn(
+              'w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5',
+              config.iconBg
+            )}>
               <Icon size={16} className={config.iconColor} />
             </div>
+
+            {/* Text block — allow full wrapping on narrow screens */}
             <div className="flex-1 min-w-0">
-              <p className={cn('text-sm font-semibold', config.titleColor)}>{item.label}</p>
-              <p className={cn('text-xs mt-0.5', config.descColor)}>{item.detail}</p>
+              <p className={cn('text-sm font-semibold leading-snug', config.titleColor)}>
+                {item.label}
+              </p>
+              <p className={cn('text-xs mt-0.5 leading-relaxed', config.descColor)}>
+                {item.detail}
+              </p>
             </div>
-            {onNavigateTab && item.tab && (
+
+            {/* Action + dismiss buttons — stack below text on very small screens, inline otherwise */}
+            <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
+              {onNavigateTab && item.tab && (
+                <button
+                  onClick={() => onNavigateTab(item.tab)}
+                  className={cn(
+                    'min-h-[44px] min-w-[44px] text-xs font-medium px-3 py-2.5 rounded-lg transition-colors flex items-center',
+                    config.btnColor
+                  )}
+                >
+                  View
+                </button>
+              )}
               <button
-                onClick={() => onNavigateTab(item.tab)}
+                onClick={() => dismiss(item.label)}
+                aria-label="Dismiss alert"
                 className={cn(
-                  'text-xs font-medium px-3 py-1.5 rounded-lg transition-colors flex-shrink-0',
-                  config.btnColor
+                  'min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg transition-colors',
+                  config.dismissColor
                 )}
               >
-                View
+                <X size={16} />
               </button>
-            )}
-            <button
-              onClick={() => dismiss(item.label)}
-              className={cn('p-1 transition-colors flex-shrink-0', config.dismissColor)}
-            >
-              <X size={16} />
-            </button>
+            </div>
           </div>
         );
       })}
       {!showAll && hiddenCount > 0 && (
         <button
           onClick={() => setShowAll(true)}
-          className="text-xs font-medium text-warm-500 hover:text-warm-700 px-4 py-1 transition-colors"
+          className="min-h-[44px] text-xs font-medium text-warm-500 hover:text-warm-700 px-4 py-2.5 transition-colors"
         >
           Show {hiddenCount} more alert{hiddenCount > 1 ? 's' : ''}
         </button>

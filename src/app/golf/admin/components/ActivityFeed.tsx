@@ -248,17 +248,20 @@ export function ActivityFeed({ activity }: Props) {
   const leadItem = visibleItems[0] ?? null;
 
   return (
-    <div className="glass-standard rounded-2xl p-5 md:p-6">
+    <div className="glass-standard rounded-2xl p-4 sm:p-5 md:p-6">
+      {/* Top header */}
       <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div className="min-w-0">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary-50 text-primary-700">
+          <div className="flex items-start gap-2.5">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-primary-50 text-primary-700">
               <Activity size={18} />
             </div>
-            <div>
-              <h3 className="text-lg font-semibold text-warm-900">Live Activity Feed</h3>
-              <p className="text-sm text-warm-500">
-                Signups, round submissions, CoachHelm activity, audit actions, and live operational events in one stream.
+            <div className="min-w-0">
+              <h3 className="text-base sm:text-lg font-semibold text-warm-900">
+                Live Activity Feed
+              </h3>
+              <p className="text-xs sm:text-sm text-warm-500 leading-relaxed">
+                Signups, rounds, CoachHelm activity, audit actions, and live events in one stream.
               </p>
             </div>
           </div>
@@ -266,13 +269,13 @@ export function ActivityFeed({ activity }: Props) {
 
         <div className="flex flex-wrap items-center gap-2">
           <span className={cn(
-            'inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium',
+            'inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs sm:text-sm font-medium',
             realtime.isConnected
               ? 'border-primary-200 bg-primary-50 text-primary-700'
               : 'border-amber-200 bg-amber-50 text-amber-700'
           )}>
             <span className={cn(
-              'h-2 w-2 rounded-full',
+              'h-2 w-2 rounded-full shrink-0',
               realtime.isConnected ? 'bg-primary-500' : 'bg-amber-500'
             )} />
             {realtime.isConnected ? 'Realtime connected' : 'Realtime reconnecting'}
@@ -280,37 +283,62 @@ export function ActivityFeed({ activity }: Props) {
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-3 xl:grid-cols-5">
-        <div className="rounded-2xl border border-white/35 bg-white/60 px-4 py-3">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">Stream items</p>
-          <p className="mt-1 text-xl font-semibold tabular-nums text-warm-900">{timelineItems.length}</p>
+      {/* Stats mini-grid — 2-col on mobile, 5-col on xl */}
+      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
+        <div className="rounded-2xl border border-white/35 bg-white/60 px-3 py-3 sm:px-4">
+          <p className="text-[11px] sm:text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">
+            Stream items
+          </p>
+          <p className="mt-1 text-lg sm:text-xl font-semibold tabular-nums text-warm-900">
+            {timelineItems.length}
+          </p>
           <p className="mt-0.5 text-xs text-warm-500">last 20 per source</p>
         </div>
-        <div className="rounded-2xl border border-white/35 bg-white/60 px-4 py-3">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">Live now</p>
-          <p className="mt-1 text-xl font-semibold tabular-nums text-warm-900">{counts.live}</p>
-          <p className="mt-0.5 text-xs text-warm-500">realtime events in memory</p>
+        <div className="rounded-2xl border border-white/35 bg-white/60 px-3 py-3 sm:px-4">
+          <p className="text-[11px] sm:text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">
+            Live now
+          </p>
+          <p className="mt-1 text-lg sm:text-xl font-semibold tabular-nums text-warm-900">
+            {counts.live}
+          </p>
+          <p className="mt-0.5 text-xs text-warm-500">realtime events</p>
         </div>
-        <div className="rounded-2xl border border-white/35 bg-white/60 px-4 py-3">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">Users</p>
-          <p className="mt-1 text-xl font-semibold tabular-nums text-warm-900">{counts.users}</p>
-          <p className="mt-0.5 text-xs text-warm-500">signups and login activity</p>
+        <div className="rounded-2xl border border-white/35 bg-white/60 px-3 py-3 sm:px-4">
+          <p className="text-[11px] sm:text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">
+            Users
+          </p>
+          <p className="mt-1 text-lg sm:text-xl font-semibold tabular-nums text-warm-900">
+            {counts.users}
+          </p>
+          <p className="mt-0.5 text-xs text-warm-500">signups and logins</p>
         </div>
-        <div className="rounded-2xl border border-white/35 bg-white/60 px-4 py-3">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">Golf</p>
-          <p className="mt-1 text-xl font-semibold tabular-nums text-warm-900">{counts.golf}</p>
+        <div className="rounded-2xl border border-white/35 bg-white/60 px-3 py-3 sm:px-4">
+          <p className="text-[11px] sm:text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">
+            Golf
+          </p>
+          <p className="mt-1 text-lg sm:text-xl font-semibold tabular-nums text-warm-900">
+            {counts.golf}
+          </p>
           <p className="mt-0.5 text-xs text-warm-500">rounds and AI output</p>
         </div>
-        <div className="rounded-2xl border border-white/35 bg-white/60 px-4 py-3">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">Ops / issues</p>
-          <p className="mt-1 text-xl font-semibold tabular-nums text-warm-900">{counts.ops + counts.issues}</p>
+        <div className="rounded-2xl border border-white/35 bg-white/60 px-3 py-3 sm:px-4 col-span-2 sm:col-span-1">
+          <p className="text-[11px] sm:text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">
+            Ops / issues
+          </p>
+          <p className="mt-1 text-lg sm:text-xl font-semibold tabular-nums text-warm-900">
+            {counts.ops + counts.issues}
+          </p>
           <p className="mt-0.5 text-xs text-warm-500">{counts.issues} issue signals</p>
         </div>
       </div>
 
+      {/* Focus + Timeline — stacked on mobile, side-by-side on xl */}
       <div className="mt-4 grid gap-4 xl:grid-cols-[0.8fr_1.2fr]">
+        {/* Focus / filter panel */}
         <div className="rounded-2xl border border-white/35 bg-white/55 p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-warm-500">Focus</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-warm-500">
+            Focus
+          </p>
           <div className="mt-3 flex flex-wrap gap-2">
             {([
               { value: 'all', label: 'All', count: timelineItems.length },
@@ -324,7 +352,7 @@ export function ActivityFeed({ activity }: Props) {
                 type="button"
                 onClick={() => setFilter(option.value)}
                 className={cn(
-                  'inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs transition-colors',
+                  'inline-flex items-center gap-2 rounded-full border px-3 py-2.5 text-xs transition-colors min-h-[44px]',
                   filter === option.value
                     ? 'border-warm-300 bg-white text-warm-900 shadow-sm'
                     : 'border-white/30 bg-white/50 text-warm-500 hover:bg-white/70'
@@ -340,15 +368,27 @@ export function ActivityFeed({ activity }: Props) {
 
           {leadItem ? (
             <div className="mt-4 rounded-2xl border border-white/35 bg-white/70 p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-warm-500">Lead item</p>
-              <p className="mt-2 text-base font-semibold text-warm-900">{leadItem.title}</p>
-              <p className="mt-1 text-sm leading-6 text-warm-600">{leadItem.detail ?? 'No additional detail captured.'}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-warm-500">
+                Lead item
+              </p>
+              <p className="mt-2 text-sm sm:text-base font-semibold text-warm-900 truncate">
+                {leadItem.title}
+              </p>
+              <p className="mt-1 text-xs sm:text-sm leading-6 text-warm-600 line-clamp-3">
+                {leadItem.detail ?? 'No additional detail captured.'}
+              </p>
               <div className="mt-3 flex flex-wrap items-center gap-2">
-                <span className={cn('inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium', itemStyles[leadItem.kind].chip)}>
+                <span className={cn(
+                  'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium',
+                  itemStyles[leadItem.kind].chip
+                )}>
                   {leadItem.badge}
                 </span>
                 {leadItem.severity && (
-                  <span className={cn('inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium', severityPills[leadItem.severity])}>
+                  <span className={cn(
+                    'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium',
+                    severityPills[leadItem.severity]
+                  )}>
                     {leadItem.severity}
                   </span>
                 )}
@@ -363,14 +403,19 @@ export function ActivityFeed({ activity }: Props) {
           ) : (
             <div className="mt-4 rounded-2xl border border-primary-100 bg-primary-50/50 px-4 py-6 text-center">
               <CheckCircle2 size={18} className="mx-auto text-primary-600" />
-              <p className="mt-2 text-sm font-medium text-primary-700">No recent activity captured</p>
+              <p className="mt-2 text-sm font-medium text-primary-700">
+                No recent activity captured
+              </p>
             </div>
           )}
         </div>
 
+        {/* Timeline panel */}
         <div className="rounded-2xl border border-white/35 bg-white/55 p-4">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-warm-500">Timeline</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-warm-500">
+              Timeline
+            </p>
             <p className="text-xs text-warm-400">{visibleItems.length} visible items</p>
           </div>
 
@@ -399,16 +444,25 @@ export function ActivityFeed({ activity }: Props) {
 
                     <div className={cn('absolute left-[14px] top-8 h-3 w-1 rounded-full', itemStyle.rail)} />
 
-                    <div className="min-w-0 flex-1 rounded-2xl border border-white/35 bg-white/72 px-4 py-3">
+                    <div className="min-w-0 flex-1 rounded-2xl border border-white/35 bg-white/72 px-3 py-3 sm:px-4">
                       <div className="flex flex-wrap items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="text-sm font-semibold text-warm-900">{item.title}</p>
-                            <span className={cn('inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]', itemStyle.chip)}>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                            {/* Title — truncate long names on mobile */}
+                            <p className="text-xs sm:text-sm font-semibold text-warm-900 truncate max-w-[180px] sm:max-w-none">
+                              {item.title}
+                            </p>
+                            <span className={cn(
+                              'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]',
+                              itemStyle.chip
+                            )}>
                               {item.badge}
                             </span>
                             {item.severity && (
-                              <span className={cn('inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]', severityPills[item.severity])}>
+                              <span className={cn(
+                                'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]',
+                                severityPills[item.severity]
+                              )}>
                                 {item.severity}
                               </span>
                             )}
@@ -419,12 +473,19 @@ export function ActivityFeed({ activity }: Props) {
                             )}
                           </div>
                           {item.detail && (
-                            <p className="mt-1 text-sm leading-6 text-warm-600">{item.detail}</p>
+                            <p className="mt-1 text-xs sm:text-sm leading-5 text-warm-600 line-clamp-2">
+                              {item.detail}
+                            </p>
                           )}
                         </div>
 
-                        <div className="flex items-center gap-1 text-xs text-warm-400 tabular-nums">
-                          {item.filter === 'issues' ? <AlertTriangle size={12} /> : item.filter === 'ops' ? <Route size={12} /> : <Clock3 size={12} />}
+                        {/* Timestamp — always abbreviated, right-aligned */}
+                        <div className="flex items-center gap-1 text-xs text-warm-400 tabular-nums shrink-0">
+                          {item.filter === 'issues'
+                            ? <AlertTriangle size={11} />
+                            : item.filter === 'ops'
+                              ? <Route size={11} />
+                              : <Clock3 size={11} />}
                           <span>{timeAgo(item.timestamp)}</span>
                         </div>
                       </div>
