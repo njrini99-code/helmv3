@@ -99,20 +99,19 @@ export default async function MyDevelopmentPage() {
   return (
     <AnimatedPage className="min-h-full">
       <AnimatedItem>
-        <div className="golf-mobile-page-header border-warm-200/60">
-          <div className="max-w-5xl mx-auto px-4 md:px-6 py-5">
-            <div className="flex items-center gap-3">
-              <MobileMenuButton />
-              <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center">
-                <IconTarget size={20} className="text-primary-600" />
-              </div>
-              <div>
-                <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">
-                  My Development
-                </h1>
-                <p className="text-sm text-warm-500 mt-0.5">
-                  Focus areas assigned by your coach to help you improve
-                </p>
+        <div className="golf-mobile-page-header">
+          <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <MobileMenuButton />
+                <div>
+                  <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">
+                    My Development
+                  </h1>
+                  <p className="text-sm text-warm-500 mt-0.5">
+                    Focus areas assigned by your coach to help you improve
+                  </p>
+                </div>
               </div>
             </div>
 

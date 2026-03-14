@@ -411,43 +411,47 @@ export default function GolfClassesPage() {
   }
 
   return (
-    <AnimatedPage className="p-4 md:p-6 max-w-7xl mx-auto">
+    <AnimatedPage className="min-h-full">
       {/* Header */}
-      <AnimatedItem className="mb-8">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3 min-w-0">
-            <MobileMenuButton />
-            <div className="min-w-0">
-              <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900 truncate">My Classes</h1>
-              <p className="text-warm-500 mt-1 text-sm md:text-base truncate">
-                {classes.length > 0
-                  ? `${classes.length} class${classes.length !== 1 ? 'es' : ''} • ${totalCredits} credits`
-                  : 'Academic schedule'
-                }
-              </p>
+      <AnimatedItem className="golf-mobile-page-header">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <MobileMenuButton />
+              <div className="min-w-0">
+                <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900 truncate">My Classes</h1>
+                <p className="text-sm text-warm-500 mt-0.5 truncate">
+                  {classes.length > 0
+                    ? `${classes.length} class${classes.length !== 1 ? 'es' : ''} • ${totalCredits} credits`
+                    : 'Academic schedule'
+                  }
+                </p>
+              </div>
             </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3 sm:justify-end">
-            {classes.length > 0 && (
-              <Button
-                variant="danger"
-                onClick={handleDeleteAllClasses}
-                className="gap-2"
-              >
-                Delete All
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 sm:justify-end flex-shrink-0">
+              {classes.length > 0 && (
+                <Button
+                  variant="danger"
+                  onClick={handleDeleteAllClasses}
+                  className="gap-2"
+                >
+                  Delete All
+                </Button>
+              )}
+              <Button variant="secondary" onClick={() => setShowUploadModal(true)} className="gap-2">
+                <IconUpload size={18} />
+                Import Schedule
               </Button>
-            )}
-            <Button variant="secondary" onClick={() => setShowUploadModal(true)} className="gap-2">
-              <IconUpload size={18} />
-              Import Schedule
-            </Button>
-            <Button onClick={() => { setEditingClass(null); setShowAddModal(true); }} className="gap-2">
-              <IconPlus size={18} />
-              Add Class
-            </Button>
+              <Button onClick={() => { setEditingClass(null); setShowAddModal(true); }} className="gap-2">
+                <IconPlus size={18} />
+                Add Class
+              </Button>
+            </div>
           </div>
         </div>
       </AnimatedItem>
+
+      <div className="p-4 md:p-6 max-w-7xl mx-auto">
 
       <AnimatedItem>
       {loading ? (
@@ -680,6 +684,7 @@ export default function GolfClassesPage() {
         </div>
       )}
       </AnimatedItem>
+      </div>
 
       {/* Modals */}
       <AddClassModal

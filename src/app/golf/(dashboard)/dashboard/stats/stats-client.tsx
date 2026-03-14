@@ -939,17 +939,20 @@ export default function StatsClient({
   if (userRole === 'coach' && !selectedPlayerId) {
     return (
       <div className="min-h-full bg-transparent">
-        <div className="max-w-6xl mx-auto p-4 md:p-6">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <MobileMenuButton className="p-2 -ml-2" />
-              <div>
-                <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">Team Stats</h1>
-                <p className="text-warm-500 text-sm md:text-base">{players.length} players on your roster</p>
+        <div className="golf-mobile-page-header">
+          <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <MobileMenuButton />
+                <div>
+                  <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">Team Stats</h1>
+                  <p className="text-sm text-warm-500 mt-0.5">{players.length} players on your roster</p>
+                </div>
               </div>
             </div>
           </div>
+        </div>
+        <div className="max-w-6xl mx-auto p-4 md:p-6">
 
           {/* Format Toggle */}
           <div className="flex items-center mb-4">
@@ -1086,7 +1089,7 @@ export default function StatsClient({
 
           {/* Player Cards */}
           {filteredPlayers.length === 0 ? (
-            <div className="relative bg-white/70 backdrop-blur-xl rounded-2xl border border-white/30 overflow-clip p-8 md:p-16 text-center shadow-glass-sm">
+            <div className="relative glass-premium rounded-2xl overflow-clip p-8 md:p-16 text-center">
               <ShineEffect />
               <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
                 <IconUser size={28} className="text-warm-400" />
@@ -1134,14 +1137,14 @@ export default function StatsClient({
   return (
     <div className="relative">
       <div className="golf-mobile-page-header lg:hidden">
-        <div className="mx-auto px-4 py-3">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
           <div className="flex items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3">
               {userRole === 'coach' ? (
                 <button
                   onClick={handleBackClick}
                   aria-label="Go back"
-                  className="flex h-11 w-11 items-center justify-center rounded-xl text-warm-500 transition-colors hover:bg-warm-100/80 hover:text-warm-700"
+                  className="flex h-11 w-11 items-center justify-center rounded-xl text-warm-500 transition-colors hover:bg-warm-100/80 hover:text-warm-700 lg:hidden"
                 >
                   <IconChevronLeft size={20} />
                 </button>
@@ -1152,7 +1155,7 @@ export default function StatsClient({
                 <h1 className="truncate text-xl md:text-2xl font-semibold tracking-tight text-warm-900">
                   {userRole === 'coach' ? (playerName ? `${playerName}'s Stats` : 'Player Stats') : 'My Stats'}
                 </h1>
-                <p className="truncate text-xs text-warm-500">
+                <p className="truncate text-sm text-warm-500 mt-0.5">
                   {rounds.length > 0
                     ? `${rounds.length} round${rounds.length === 1 ? '' : 's'} available`
                     : 'Detailed performance view'}
@@ -1243,7 +1246,7 @@ export default function StatsClient({
       ) : statsError ? (
         /* Error state when server action fails */
         <div className="max-w-6xl mx-auto px-4 md:px-6 pt-16 pb-8">
-          <div className="relative bg-white/70 backdrop-blur-xl border border-red-200/50 rounded-2xl p-8 md:p-12 shadow-glass-sm text-center">
+          <div className="relative glass-premium rounded-2xl border border-red-200/50 p-8 md:p-12 text-center">
             <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-5">
               <IconChart size={36} className="text-red-300" />
             </div>

@@ -277,22 +277,15 @@ export function InsightsPageContent({
     <div className="relative">
       {/* Header */}
       <div className="golf-mobile-page-header">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
               <MobileMenuButton />
-              <m.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/20"
-              >
-                <IconSparkles size={24} className="text-white" />
-              </m.div>
               <div>
-                <h1 className="text-2xl font-semibold tracking-tight text-warm-900">
+                <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">
                   AI Insights
                 </h1>
-                <p className="text-warm-500 text-sm">
+                <p className="text-sm text-warm-500 mt-0.5">
                   Manage and act on coaching insights
                 </p>
               </div>

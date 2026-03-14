@@ -48,18 +48,22 @@ export function MyQualifiersClient({ qualifiers, error }: MyQualifiersClientProp
 
   return (
     <AnimatedPage className="min-h-full bg-transparent">
+      {/* Header */}
+      <AnimatedItem className="golf-mobile-page-header">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <MobileMenuButton />
+              <div>
+                <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">My Qualifiers</h1>
+                <p className="text-sm text-warm-500 mt-0.5">View your qualifier progress and leaderboards</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </AnimatedItem>
+
       <div className="max-w-4xl mx-auto px-4 md:px-6 py-6 md:py-8">
-        {/* Header */}
-        <AnimatedItem className="flex items-center gap-3 mb-8">
-          <MobileMenuButton />
-          <div className="w-10 h-10 rounded-2xl bg-amber-100 flex items-center justify-center">
-            <IconTrophy size={20} className="text-amber-600" />
-          </div>
-          <div>
-            <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">My Qualifiers</h1>
-            <p className="text-warm-500 text-sm">View your qualifier progress and leaderboards</p>
-          </div>
-        </AnimatedItem>
 
         <AnimatedItem>
         {error ? (

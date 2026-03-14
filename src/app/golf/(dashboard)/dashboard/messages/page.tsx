@@ -309,11 +309,13 @@ export default function GolfMessagesPage() {
       )}>
         {/* Header */}
         <div className="p-4 border-b border-warm-100">
-          <div className="flex items-center justify-between mb-1">
-            <div className="flex items-center gap-2">
-              {/* Mobile hamburger menu */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
               <MobileMenuButton />
-              <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">Messages</h1>
+              <div>
+                <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">Messages</h1>
+                <p className="text-sm text-warm-500 mt-0.5">Team conversations</p>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               {userRole === 'coach' && (

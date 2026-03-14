@@ -212,14 +212,14 @@ export default function GolfSettingsPage() {
   if (loading) {
     return (
       <AnimatedPage className="min-h-full">
-        <div className="golf-mobile-page-header border-warm-200/60">
-          <div className="max-w-2xl mx-auto px-4 md:px-6 py-4 md:py-5">
+        <div className="golf-mobile-page-header">
+          <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
             <div className="h-7 w-32 bg-warm-200 rounded-lg animate-pulse" />
             <div className="h-4 w-56 bg-warm-100 rounded mt-2 animate-pulse" />
           </div>
         </div>
         <div className="max-w-2xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6">
-          <div className="glass-standard rounded-2xl p-5 animate-pulse">
+          <div className="glass-premium rounded-2xl p-5 animate-pulse">
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 rounded-full bg-warm-200" />
               <div className="flex-1">
@@ -229,7 +229,7 @@ export default function GolfSettingsPage() {
             </div>
           </div>
           {[1, 2, 3].map((i) => (
-            <div key={i} className="glass-standard rounded-2xl p-4 animate-pulse">
+            <div key={i} className="glass-premium rounded-2xl p-4 animate-pulse">
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-xl bg-warm-200" />
                 <div className="flex-1">
@@ -249,13 +249,15 @@ export default function GolfSettingsPage() {
     <AnimatedPage className="min-h-full" key={profile.userId}>
       {/* Header */}
       <AnimatedItem>
-        <div className="golf-mobile-page-header border-warm-200/60">
-          <div className="max-w-2xl mx-auto px-4 md:px-6 py-4 md:py-5">
-            <div className="flex items-center gap-3">
-              <MobileMenuButton />
-              <div>
-                <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">Settings</h1>
-                <p className="text-warm-500 mt-0.5 text-sm">Manage your account and preferences</p>
+        <div className="golf-mobile-page-header">
+          <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <MobileMenuButton />
+                <div>
+                  <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">Settings</h1>
+                  <p className="text-sm text-warm-500 mt-0.5">Manage your account and preferences</p>
+                </div>
               </div>
             </div>
           </div>
@@ -266,7 +268,7 @@ export default function GolfSettingsPage() {
       <div className="max-w-2xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6">
         {/* Profile Card */}
         <AnimatedItem>
-          <div className="relative glass-standard rounded-2xl overflow-clip p-5">
+          <div className="relative glass-premium rounded-2xl overflow-clip p-5">
             <ShineEffect />
             <div className="flex items-center gap-4">
               <Avatar src={profile.avatarUrl} name={profile.name} size="lg" />
@@ -289,7 +291,7 @@ export default function GolfSettingsPage() {
         {/* Account */}
         <AnimatedItem>
           <SectionHeader>Account</SectionHeader>
-          <div className="glass-standard rounded-2xl overflow-clip relative">
+          <div className="glass-premium rounded-2xl overflow-clip relative">
             <ShineEffect />
             <SettingsExpandableRow
               icon={<IconUser size={18} />}
@@ -327,7 +329,7 @@ export default function GolfSettingsPage() {
         {/* Preferences */}
         <AnimatedItem>
           <SectionHeader>Preferences</SectionHeader>
-          <div className="glass-standard rounded-2xl overflow-clip relative">
+          <div className="glass-premium rounded-2xl overflow-clip relative">
             <ShineEffect />
             <SettingsExpandableRow
               icon={<IconBell size={18} />}
@@ -376,7 +378,7 @@ export default function GolfSettingsPage() {
         {profile.role === 'coach' && profile.teamId && (
           <AnimatedItem>
             <SectionHeader>Golf Settings</SectionHeader>
-            <div className="glass-standard rounded-2xl overflow-clip relative">
+            <div className="glass-premium rounded-2xl overflow-clip relative">
               <ShineEffect />
               <SettingsExpandableRow
                 icon={<IconSettings size={18} />}
@@ -396,7 +398,7 @@ export default function GolfSettingsPage() {
         {profile.role === 'player' && profile.playerId && (
           <AnimatedItem>
             <SectionHeader>Golf Profile</SectionHeader>
-            <div className="glass-standard rounded-2xl overflow-clip relative">
+            <div className="glass-premium rounded-2xl overflow-clip relative">
               <ShineEffect />
               <SettingsExpandableRow
                 icon={<IconSettings size={18} />}
@@ -420,7 +422,7 @@ export default function GolfSettingsPage() {
         {profile.role === 'coach' && profile.coachId && (
           <AnimatedItem>
             <SectionHeader>AI Features</SectionHeader>
-            <div className="glass-standard rounded-2xl overflow-clip p-4 relative">
+            <div className="glass-premium rounded-2xl overflow-clip p-4 relative">
               <ShineEffect />
               <CoachHelmToggle coachId={profile.coachId} />
             </div>
@@ -431,7 +433,7 @@ export default function GolfSettingsPage() {
         <AnimatedItem>
           <SectionHeader>Team</SectionHeader>
           {profile.role === 'coach' && (
-            <div className="glass-standard rounded-2xl overflow-clip relative">
+            <div className="glass-premium rounded-2xl overflow-clip relative">
               <ShineEffect />
               <SettingsExpandableRow
                 icon={<IconUsers size={18} />}
@@ -465,7 +467,7 @@ export default function GolfSettingsPage() {
         {/* Legal */}
         <AnimatedItem>
           <SectionHeader>Legal</SectionHeader>
-          <div className="glass-standard rounded-2xl overflow-clip relative">
+          <div className="glass-premium rounded-2xl overflow-clip relative">
             <ShineEffect />
             <SettingsLinkRow
               icon={<IconShield size={18} />}
@@ -486,7 +488,7 @@ export default function GolfSettingsPage() {
         {/* Danger Zone */}
         <AnimatedItem>
           <SectionHeader>Danger Zone</SectionHeader>
-          <div className="glass-standard rounded-2xl overflow-clip p-5 relative">
+          <div className="glass-premium rounded-2xl overflow-clip p-5 relative">
             <ShineEffect />
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
@@ -506,7 +508,7 @@ export default function GolfSettingsPage() {
         <AnimatedItem>
           <button
             onClick={handleSignOut}
-            className="relative w-full glass-standard rounded-2xl overflow-clip p-4 flex items-center gap-3 hover:border-red-200 hover:bg-red-50/50 transition-colors group"
+            className="relative w-full glass-premium rounded-2xl overflow-clip p-4 flex items-center gap-3 hover:border-red-200 hover:bg-red-50/50 transition-colors group"
           >
             <ShineEffect />
             <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center group-hover:bg-red-100 transition-colors">

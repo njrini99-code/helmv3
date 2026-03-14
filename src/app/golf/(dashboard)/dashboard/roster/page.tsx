@@ -341,7 +341,7 @@ export default async function GolfRosterPage() {
 
         {playersWithStats.length === 0 ? (
           /* Enhanced Empty State */
-          <div className="glass-standard rounded-2xl p-12 md:p-16 text-center shadow-sm relative overflow-hidden">
+          <div className="glass-premium rounded-2xl p-12 md:p-16 text-center shadow-sm relative overflow-hidden">
             {/* Decorative background pattern */}
             <div className="absolute inset-0 opacity-[0.03]">
               <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
@@ -376,7 +376,7 @@ export default async function GolfRosterPage() {
             {playersWithStats.map((player) => (
               <div
                 key={player.id}
-                className="group glass-standard rounded-2xl hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200"
+                className="group glass-premium rounded-2xl hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200"
               >
                 {/* Card Header with Avatar and Name */}
                 <div className="p-5 md:p-6">

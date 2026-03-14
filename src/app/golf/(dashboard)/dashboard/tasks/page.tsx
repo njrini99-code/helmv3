@@ -134,7 +134,7 @@ export default function GolfTasksPage() {
             ))}
           </div>
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="bg-white/70 rounded-2xl border border-white/20 p-4 space-y-3">
+            <div key={i} className="glass-premium rounded-2xl p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="h-4 w-48 skeleton-shimmer rounded" />
                 <div className="h-5 w-16 skeleton-shimmer rounded-full" />
@@ -149,44 +149,46 @@ export default function GolfTasksPage() {
 
   return (
     <div className="min-h-full bg-transparent">
-      <div className="max-w-4xl mx-auto px-4 md:px-6 py-6 md:py-8">
-        {/* Header */}
-        <m.div
-          variants={fadeUp}
-          initial="hidden"
-          animate="visible"
-          className="flex items-center justify-between mb-8"
-        >
-          <div>
+      {/* Header */}
+      <m.div
+        variants={fadeUp}
+        initial="hidden"
+        animate="visible"
+        className="golf-mobile-page-header"
+      >
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
+          <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <MobileMenuButton />
-              <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">Tasks</h1>
-              {/* Real-time indicator */}
-              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-primary-600 bg-primary-50 px-2 py-1 rounded-full">
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary-500" />
-                </span>
-                Live
-              </span>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">Tasks</h1>
+                  <span className="inline-flex items-center gap-1.5 text-xs font-medium text-primary-600 bg-primary-50 px-2 py-1 rounded-full">
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary-500" />
+                    </span>
+                    Live
+                  </span>
+                </div>
+                <p className="text-sm text-warm-500 mt-0.5">
+                  {userRole === 'coach' ? 'Assign and track player tasks' : 'View and complete your assigned tasks'}
+                </p>
+              </div>
             </div>
-            <p className="text-warm-500 mt-1">
-              {userRole === 'coach' ? 'Assign and track player tasks' : 'View and complete your assigned tasks'}
-            </p>
+            {userRole === 'coach' && (
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <Button onClick={() => setCreateModalOpen(true)}>
+                  <IconPlus size={18} />
+                  Create Task
+                </Button>
+              </div>
+            )}
           </div>
-          {userRole === 'coach' && (
-            <m.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.1 }}
-            >
-              <Button onClick={() => setCreateModalOpen(true)}>
-                <IconPlus size={18} />
-                Create Task
-              </Button>
-            </m.div>
-          )}
-        </m.div>
+        </div>
+      </m.div>
+
+      <div className="max-w-4xl mx-auto px-4 md:px-6 py-6 md:py-8">
 
         {/* Due Date Alert Banner */}
         {stats.overdue_tasks > 0 && (
@@ -285,7 +287,7 @@ export default function GolfTasksPage() {
                 className="sticky top-6"
               >
                 {/* Templates Section */}
-                <div className="glass-standard rounded-2xl overflow-clip">
+                <div className="glass-premium rounded-2xl overflow-clip">
                   <button
                     onClick={() => setShowTemplates(!showTemplates)}
                     className="w-full flex items-center justify-between p-4 hover:bg-warm-50/50 transition-colors"
@@ -326,7 +328,7 @@ export default function GolfTasksPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
-                  className="mt-4 glass-standard rounded-2xl p-4"
+                  className="mt-4 glass-premium rounded-2xl p-4"
                 >
                   <h3 className="text-sm font-semibold text-warm-400 uppercase tracking-wider mb-3">
                     Quick Stats

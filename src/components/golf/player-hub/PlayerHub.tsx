@@ -696,9 +696,9 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-        className="golf-mobile-page-header bg-white/80 md:backdrop-blur-xl"
+        className="golf-mobile-page-header"
       >
-        <div className="max-w-3xl mx-auto px-4 md:px-6 py-4 md:py-5">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
           <div className="flex items-center gap-3">
             <MobileMenuButton />
             <div>

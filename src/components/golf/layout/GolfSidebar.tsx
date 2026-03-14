@@ -182,50 +182,25 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
         'transition-[padding] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
         isCollapsed ? 'px-3 justify-center' : 'px-5'
       )}>
-        <Link href="/golf/dashboard" prefetch={true} className="flex items-center gap-3" onClick={handleNavClick}>
-          <div className="relative h-14 flex items-center">
-            {/* Icon version (shown when collapsed OR as fallback) */}
-            <div
-              aria-hidden={!isCollapsed}
-              className={cn(
-                'w-14 h-14 flex items-center justify-center flex-shrink-0',
-                'transition-[opacity,transform] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
-                isCollapsed ? 'opacity-100 scale-100' : 'opacity-0 scale-75 absolute'
-              )}
-            >
-              <Image
-                src="/helm-golf-logo-transparent.png"
-                alt="GolfHelm"
-                width={56}
-                height={56}
-                className="w-14 h-14 object-contain"
-                unoptimized
-              />
-            </div>
-            {/* Full logo + text (shown when expanded) */}
-            <div
-              aria-hidden={isCollapsed}
-              className={cn(
-                'flex items-center gap-3 transition-[opacity,transform] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
-                isCollapsed ? 'opacity-0 scale-75 absolute' : 'opacity-100 scale-100'
-              )}
-            >
-              <div className="w-14 h-14 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <Image
-                  src="/helm-golf-logo-transparent.png"
-                  alt=""
-                  width={56}
-                  height={56}
-                  className="w-14 h-14 object-contain"
-                  priority
-                  unoptimized
-                />
-              </div>
-              <span className="text-xl font-bold leading-none tracking-tight text-white">
-                Golf<span className="text-primary-400">Helm</span>
-              </span>
-            </div>
+        <Link href="/golf/dashboard" prefetch={true} className="flex items-center gap-2.5" onClick={handleNavClick}>
+          {/* Logo icon */}
+          <div className="w-9 h-9 flex items-center justify-center flex-shrink-0">
+            <Image
+              src="/helm-golf-logo-transparent.png"
+              alt="GolfHelm"
+              width={36}
+              height={36}
+              className="w-9 h-9 object-contain"
+              priority
+              unoptimized
+            />
           </div>
+          {/* Brand text (hidden when collapsed) */}
+          {!isCollapsed && (
+            <span className="text-lg font-bold leading-none tracking-tight text-white">
+              Golf<span className="text-primary-400">Helm</span>
+            </span>
+          )}
         </Link>
       </div>
 

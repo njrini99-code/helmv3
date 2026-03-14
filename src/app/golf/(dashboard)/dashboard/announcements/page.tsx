@@ -83,20 +83,20 @@ export default async function GolfAnnouncementsPage() {
     <AnimatedPage>
       {/* Header */}
       <AnimatedItem className="golf-mobile-page-header">
-        <div className="max-w-4xl mx-auto px-4 md:px-6 py-5">
-          <div className="flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
+          <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <MobileMenuButton />
               <div>
                 <div className="flex items-center gap-2.5">
-                  <h1 className="text-2xl font-semibold tracking-tight text-warm-900">Announcements</h1>
+                  <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">Announcements</h1>
                   {recentCount > 0 && (
                     <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-primary-50 text-primary-700">
                       {recentCount} new
                     </span>
                   )}
                 </div>
-                <p className="text-warm-500 mt-0.5">
+                <p className="text-sm text-warm-500 mt-0.5">
                   {isCoach ? 'Share updates with your team' : 'Team news and updates'}
                 </p>
               </div>
@@ -114,7 +114,7 @@ export default async function GolfAnnouncementsPage() {
       {/* Content */}
       <AnimatedItem className="max-w-4xl mx-auto px-4 md:px-6 py-6 md:py-8">
         {announcements.length === 0 ? (
-          <div className="glass-standard rounded-2xl p-8 md:p-16 text-center">
+          <div className="glass-premium rounded-2xl p-8 md:p-16 text-center">
             <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
               <IconBell size={28} className="text-warm-400" />
             </div>
@@ -134,7 +134,7 @@ export default async function GolfAnnouncementsPage() {
         ) : isCoach ? (
           <AnnouncementsCoachView announcements={announcements} />
         ) : !playerId ? (
-          <div className="glass-standard rounded-2xl p-8 md:p-16 text-center">
+          <div className="glass-premium rounded-2xl p-8 md:p-16 text-center">
             <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
               <IconBell size={28} className="text-warm-400" />
             </div>

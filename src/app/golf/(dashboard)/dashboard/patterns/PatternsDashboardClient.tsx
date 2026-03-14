@@ -5,8 +5,6 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
   IconRefresh,
-  IconSparkles,
-  IconChevronLeft,
 } from '@/components/icons';
 import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
 import { PatternDashboard } from '@/components/golf/coachhelm/patterns';
@@ -54,30 +52,17 @@ export function PatternsDashboardClient({
     <div className="min-h-full bg-transparent">
       {/* Header */}
       <div className="golf-mobile-page-header">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
               <MobileMenuButton />
-              <button
-                onClick={() => router.push('/golf/dashboard')}
-                className="hidden lg:block p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 transition-colors"
-              >
-                <IconChevronLeft size={20} />
-              </button>
-
-              {/* Title */}
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/20">
-                  <IconSparkles size={20} className="text-white" />
-                </div>
-                <div>
-                  <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">
-                    Pattern Management
-                  </h1>
-                  <p className="text-sm text-warm-500">
-                    Review and manage AI-detected performance patterns
-                  </p>
-                </div>
+              <div>
+                <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">
+                  Pattern Management
+                </h1>
+                <p className="text-sm text-warm-500 mt-0.5">
+                  Review and manage AI-detected performance patterns
+                </p>
               </div>
             </div>
 

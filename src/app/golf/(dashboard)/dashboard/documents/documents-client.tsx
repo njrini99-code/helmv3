@@ -7,9 +7,10 @@ import {
   IconFolder, IconFolderPlus, IconDownload, IconTrash, IconUpload, IconX,
   IconSearch, IconEdit, IconClock, IconEye, IconLayers, IconPlus,
   IconFile, IconFileText, IconImage, IconVideo, IconFileSpreadsheet,
-  IconCheck, IconMoreVertical, IconMenu, IconArrowLeft, IconChevronDown,
+  IconCheck, IconMoreVertical, IconArrowLeft, IconChevronDown,
 } from '@/components/icons';
-import { useSidebar } from '@/contexts/sidebar-context';
+import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
+
 import { cn } from '@/lib/utils';
 import {
   uploadGolfDocument,
@@ -121,7 +122,7 @@ interface PendingFile {
 
 export function DocumentsClient({ documents: initialDocuments, coachId, teamId, isCoach }: DocumentsClientProps) {
   const router = useRouter();
-  const { toggleMobile } = useSidebar();
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [documents, setDocuments] = useState(initialDocuments);
 
@@ -512,6 +513,61 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
         </div>
       )}
 
+      {/* Header */}
+      <div className="golf-mobile-page-header">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <MobileMenuButton />
+              {currentFolder !== null && currentFolder !== '' ? (
+                <div className="min-w-0">
+                  <button
+                    onClick={() => { setCurrentFolder(null); setSearchQuery(''); setCategoryFilter(''); }}
+                    className="flex items-center gap-1.5 text-sm text-warm-500 hover:text-warm-700 transition-colors mb-0.5"
+                  >
+                    <IconArrowLeft size={14} />
+                    All Documents
+                  </button>
+                  <div>
+                    <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900 truncate">{currentFolder}</h1>
+                    <p className="text-sm text-warm-500 mt-0.5">
+                      {filteredDocuments.length} file{filteredDocuments.length !== 1 ? 's' : ''}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">Documents</h1>
+                  <p className="text-sm text-warm-500 mt-0.5">
+                    {documents.length} file{documents.length !== 1 ? 's' : ''}{folders.length > 0 ? ` across ${folders.length} folder${folders.length !== 1 ? 's' : ''}` : ''}
+                  </p>
+                </div>
+              )}
+            </div>
+            {isCoach && (
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {!currentFolder && (
+                  <button
+                    onClick={() => setShowNewFolderInput(true)}
+                    className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-warm-600 bg-white border border-warm-200 rounded-lg hover:bg-warm-50 active:bg-warm-100 transition-colors"
+                  >
+                    <IconFolderPlus size={16} />
+                    <span className="hidden sm:inline">New Folder</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors text-sm"
+                >
+                  <IconUpload size={16} />
+                  <span className="hidden sm:inline">Upload</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
         {/* Hidden file input */}
         <input
@@ -522,73 +578,6 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
           onChange={handleFilesSelected}
           className="hidden"
         />
-
-        {/* Header — contextual: root vs folder view */}
-        <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
-          <div className="flex items-center gap-3 min-w-0">
-            <button
-              onClick={toggleMobile}
-              className={cn(
-                'lg:hidden p-2.5 -ml-2 rounded-xl flex-shrink-0',
-                'text-warm-500 hover:text-warm-700 hover:bg-warm-100/80',
-                'transition-colors duration-150 active:scale-95',
-                'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
-              )}
-              aria-label="Open navigation menu"
-            >
-              <IconMenu size={22} />
-            </button>
-            {currentFolder !== null && currentFolder !== '' ? (
-              <div className="min-w-0">
-                <button
-                  onClick={() => { setCurrentFolder(null); setSearchQuery(''); setCategoryFilter(''); }}
-                  className="flex items-center gap-1.5 text-sm text-warm-500 hover:text-warm-700 transition-colors mb-0.5"
-                >
-                  <IconArrowLeft size={14} />
-                  All Documents
-                </button>
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center flex-shrink-0">
-                    <IconFolder size={16} className="text-primary-600" />
-                  </div>
-                  <div className="min-w-0">
-                    <h1 className="text-xl font-semibold text-warm-900 truncate">{currentFolder}</h1>
-                    <p className="text-xs text-warm-500">
-                      {filteredDocuments.length} file{filteredDocuments.length !== 1 ? 's' : ''}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div>
-                <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">Documents</h1>
-                <p className="text-warm-500 text-sm mt-0.5">
-                  {documents.length} file{documents.length !== 1 ? 's' : ''}{folders.length > 0 ? ` across ${folders.length} folder${folders.length !== 1 ? 's' : ''}` : ''}
-                </p>
-              </div>
-            )}
-          </div>
-          {isCoach && (
-            <div className="flex items-center gap-2">
-              {!currentFolder && (
-                <button
-                  onClick={() => setShowNewFolderInput(true)}
-                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-warm-600 bg-white border border-warm-200 rounded-lg hover:bg-warm-50 active:bg-warm-100 transition-colors"
-                >
-                  <IconFolderPlus size={16} />
-                  <span className="hidden sm:inline">New Folder</span>
-                </button>
-              )}
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors text-sm"
-              >
-                <IconUpload size={16} />
-                <span className="hidden sm:inline">Upload</span>
-              </button>
-            </div>
-          )}
-        </div>
 
         {/* Create Folder Modal */}
         {showNewFolderInput && (
@@ -783,7 +772,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
         {/* Content */}
         {documents.length === 0 && currentFolder === null ? (
           <div
-            className="relative glass-standard rounded-2xl overflow-clip p-8 md:p-16 text-center"
+            className="relative glass-premium rounded-2xl overflow-clip p-8 md:p-16 text-center"
             onDragOver={isCoach ? handleDragOver : undefined}
             onDrop={isCoach ? handleDrop : undefined}
           >
@@ -811,7 +800,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
           </div>
         ) : filteredDocuments.length === 0 ? (
           <div
-            className="relative glass-standard rounded-2xl overflow-clip p-8 md:p-12 text-center"
+            className="relative glass-premium rounded-2xl overflow-clip p-8 md:p-12 text-center"
             onDragOver={isCoach ? handleDragOver : undefined}
             onDrop={isCoach ? handleDrop : undefined}
           >
@@ -856,7 +845,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
             {filteredDocuments.map((doc) => (
               <div
                 key={doc.id}
-                className="group relative glass-standard rounded-2xl overflow-clip hover:shadow-md hover:bg-white/80 transition-colors duration-200 cursor-pointer active:scale-[0.98]"
+                className="group relative glass-premium rounded-2xl overflow-clip hover:shadow-md hover:bg-white/80 transition-colors duration-200 cursor-pointer active:scale-[0.98]"
                 onClick={() => openPreview(doc)}
               >
                 {/* Color accent bar */}

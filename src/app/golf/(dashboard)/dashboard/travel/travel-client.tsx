@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { m, AnimatePresence } from 'framer-motion';
 import { ShineEffect } from '@/components/ui/shine-effect';
-import { cn } from '@/lib/utils';
+
 import {
   IconAirplane,
   IconMapPin,
@@ -16,9 +16,8 @@ import {
   IconEdit,
   IconDownload,
   IconChartBar,
-  IconMenu,
 } from '@/components/icons';
-import { useSidebar } from '@/contexts/sidebar-context';
+import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import { markTravelSeen } from '@/app/golf/actions/player-notifications';
 import {
@@ -72,7 +71,6 @@ interface TravelClientProps {
 type TabType = 'details' | 'expenses';
 
 export function TravelClient({ itineraries: initialItineraries, coachId, teamId, isCoach }: TravelClientProps) {
-  const { toggleMobile } = useSidebar();
   const router = useRouter();
   const { showToast } = useToast();
   const badges = useNotificationBadges();
@@ -367,25 +365,14 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
   return (
     <div className="min-h-full">
       {/* Header */}
-      <div className="border-b border-warm-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-5">
-          <div className="flex items-center justify-between">
+      <div className="golf-mobile-page-header">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
+          <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <button
-                onClick={toggleMobile}
-                className={cn(
-                  'lg:hidden p-2.5 -ml-2 rounded-xl',
-                  'text-warm-500 hover:text-warm-700 hover:bg-warm-100/80',
-                  'transition-colors duration-150 active:scale-95',
-                  'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
-                )}
-                aria-label="Open navigation menu"
-              >
-                <IconMenu size={22} />
-              </button>
+              <MobileMenuButton />
               <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-warm-900">Travel</h1>
-              <p className="text-warm-500 mt-0.5">
+              <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">Travel</h1>
+              <p className="text-sm text-warm-500 mt-0.5">
                 {itineraries.length === 0
                   ? 'Tournament travel itineraries & expenses'
                   : (() => {
@@ -417,7 +404,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
         {itineraries.length === 0 ? (
-          <div className="relative glass-standard rounded-2xl overflow-clip p-8 md:p-16 text-center">
+          <div className="relative glass-premium rounded-2xl overflow-clip p-8 md:p-16 text-center">
             <ShineEffect />
             <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
               <IconAirplane size={28} className="text-warm-400" />
@@ -494,7 +481,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
             {/* Selected Itinerary Details / Expenses */}
             <div className="lg:col-span-2">
               {selectedItinerary ? (
-                <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-clip">
+                <div className="glass-premium rounded-2xl overflow-clip">
                   {/* Itinerary Header */}
                   <div className="p-6 border-b border-warm-200">
                     <div className="flex items-start justify-between mb-4">
@@ -722,7 +709,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                   </div>
                 </div>
               ) : (
-                <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-8 md:p-12 text-center">
+                <div className="glass-premium rounded-2xl p-8 md:p-12 text-center">
                   <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
                     <IconAirplane size={28} className="text-warm-400" />
                   </div>

@@ -315,11 +315,8 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
     return (
         <div className="min-h-full bg-transparent">
             {/* HEADER — z-10 is sufficient inside the isolate main container */}
-            <div className={cn(
-                'golf-mobile-page-header',
-                'border-warm-200/40',
-            )}>
-                <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-4">
+            <div className="golf-mobile-page-header">
+                <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
                     <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-3 min-w-0">
                             <MobileMenuButton />

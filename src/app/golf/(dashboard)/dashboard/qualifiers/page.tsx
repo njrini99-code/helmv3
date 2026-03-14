@@ -94,7 +94,7 @@ export default async function GolfQualifiersPage() {
       <AnimatedItem>
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
         {qualifiers.length === 0 ? (
-          <div className="relative glass-standard rounded-2xl overflow-clip p-16 text-center">
+          <div className="relative glass-premium rounded-2xl overflow-clip p-16 text-center">
             <ShineEffect />
             <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
               <IconFlag size={28} className="text-warm-400" />
@@ -123,7 +123,7 @@ export default async function GolfQualifiersPage() {
                     opacity: 0,
                   }}
                 >
-                  <div className="relative glass-standard rounded-2xl overflow-clip p-6 min-h-[80px] hover:shadow-lg hover:-translate-y-0.5 active:bg-warm-50 transition-all duration-200">
+                  <div className="relative glass-premium rounded-2xl overflow-clip p-6 min-h-[80px] hover:shadow-lg hover:-translate-y-0.5 active:bg-warm-50 transition-all duration-200">
                     <ShineEffect />
                     {/* Header */}
                     <div className="flex items-start justify-between mb-4">

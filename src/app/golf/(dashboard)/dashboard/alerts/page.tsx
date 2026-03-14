@@ -12,9 +12,8 @@ import {
   IconX,
   IconRefresh,
   IconSparkles,
-  IconChevronLeft,
 } from '@/components/icons';
-import { GlassCard } from '@/components/ui/glass-card';
+
 import { useGolfUser } from '@/contexts/golf-user-context';
 import { AlertCard, type CoachAlert, type AlertLevel } from '@/components/golf/coachhelm/alerts';
 import {
@@ -209,9 +208,9 @@ export default function AlertsPage() {
   if (isLoading) {
     return (
       <div className="min-h-full bg-transparent">
-        <div className="golf-mobile-page-header glass-standard border-white/30 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
-          <div className="max-w-4xl mx-auto px-4 md:px-6 py-5">
-            <div className="flex items-center gap-4">
+        <div className="golf-mobile-page-header">
+          <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
+            <div className="flex items-center gap-3">
               <div className="h-5 w-5 skeleton-shimmer rounded-lg lg:hidden" />
               <div>
                 <div className="h-6 w-40 skeleton-shimmer rounded-lg" />
@@ -227,7 +226,7 @@ export default function AlertsPage() {
             ))}
           </div>
           {[1, 2, 3].map((i) => (
-            <div key={i} className="glass-standard rounded-2xl p-5 space-y-3">
+            <div key={i} className="glass-premium rounded-2xl p-5 space-y-3">
               <div className="flex items-start gap-3">
                 <div className="h-10 w-10 skeleton-shimmer rounded-xl flex-shrink-0" />
                 <div className="flex-1 space-y-2">
@@ -251,28 +250,16 @@ export default function AlertsPage() {
       animate="visible"
     >
       {/* Header */}
-      <m.div variants={itemVariants} className={cn(
-        'golf-mobile-page-header',
-        'glass-standard',
-        'border-white/30',
-        'shadow-[0_1px_3px_rgba(0,0,0,0.02)]'
-      )}>
-        <div className="max-w-4xl mx-auto px-4 md:px-6 py-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+      <m.div variants={itemVariants} className="golf-mobile-page-header">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
               <MobileMenuButton />
-              <button
-                onClick={() => router.back()}
-                className="hidden lg:block p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-white/50 transition-colors"
-              >
-                <IconChevronLeft size={20} />
-              </button>
               <div>
-                <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900 flex items-center gap-2">
-                  <IconBell size={24} className="text-primary-600" />
+                <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">
                   Player Alerts
                 </h1>
-                <p className="text-warm-500 mt-0.5 text-sm">
+                <p className="text-sm text-warm-500 mt-0.5">
                   AI-generated insights about players who need attention
                 </p>
               </div>
@@ -379,7 +366,7 @@ export default function AlertsPage() {
         </div>
 
         {/* Alerts List */}
-        <GlassCard className="p-4" glow="subtle">
+        <div className="glass-premium rounded-2xl p-4">
           <AnimatePresence mode="popLayout">
             {filteredAlerts.length > 0 ? (
               <div className="space-y-3">
@@ -396,7 +383,7 @@ export default function AlertsPage() {
               <EmptyAlertsState filter={filterLevel} />
             )}
           </AnimatePresence>
-        </GlassCard>
+        </div>
       </m.div>
     </m.div>
   );
