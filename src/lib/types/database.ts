@@ -1428,6 +1428,45 @@ export type Database = {
           },
         ]
       }
+      api_call_logs: {
+        Row: {
+          avg_duration_ms: number | null
+          error_count: number | null
+          id: string
+          method: string | null
+          p50_ms: number | null
+          p95_ms: number | null
+          p99_ms: number | null
+          recorded_at: string | null
+          request_count: number | null
+          route: string
+        }
+        Insert: {
+          avg_duration_ms?: number | null
+          error_count?: number | null
+          id?: string
+          method?: string | null
+          p50_ms?: number | null
+          p95_ms?: number | null
+          p99_ms?: number | null
+          recorded_at?: string | null
+          request_count?: number | null
+          route: string
+        }
+        Update: {
+          avg_duration_ms?: number | null
+          error_count?: number | null
+          id?: string
+          method?: string | null
+          p50_ms?: number | null
+          p95_ms?: number | null
+          p99_ms?: number | null
+          recorded_at?: string | null
+          request_count?: number | null
+          route?: string
+        }
+        Relationships: []
+      }
       approach_miss_details: {
         Row: {
           created_at: string | null
@@ -1512,6 +1551,75 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      auth_metrics_hourly: {
+        Row: {
+          active_sessions: number | null
+          created_at: string | null
+          failed_logins: number | null
+          hour: string
+          id: string
+          new_sessions: number | null
+          successful_logins: number | null
+        }
+        Insert: {
+          active_sessions?: number | null
+          created_at?: string | null
+          failed_logins?: number | null
+          hour: string
+          id?: string
+          new_sessions?: number | null
+          successful_logins?: number | null
+        }
+        Update: {
+          active_sessions?: number | null
+          created_at?: string | null
+          failed_logins?: number | null
+          hour?: string
+          id?: string
+          new_sessions?: number | null
+          successful_logins?: number | null
+        }
+        Relationships: []
+      }
+      background_job_logs: {
+        Row: {
+          completed_at: string | null
+          duration_ms: number | null
+          error_message: string | null
+          id: string
+          job_id: string | null
+          job_type: string
+          metadata: Json | null
+          retry_count: number | null
+          started_at: string | null
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          job_id?: string | null
+          job_type: string
+          metadata?: Json | null
+          retry_count?: number | null
+          started_at?: string | null
+          status?: string
+        }
+        Update: {
+          completed_at?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: string
+          job_id?: string | null
+          job_type?: string
+          metadata?: Json | null
+          retry_count?: number | null
+          started_at?: string | null
+          status?: string
+        }
+        Relationships: []
       }
       baseball_academic_eligibility: {
         Row: {
@@ -5024,6 +5132,39 @@ export type Database = {
           },
         ]
       }
+      error_rate_hourly: {
+        Row: {
+          affected_users: number | null
+          created_at: string | null
+          critical_errors: number | null
+          hour: string
+          id: string
+          internal_errors: number | null
+          total_errors: number | null
+          user_facing_errors: number | null
+        }
+        Insert: {
+          affected_users?: number | null
+          created_at?: string | null
+          critical_errors?: number | null
+          hour: string
+          id?: string
+          internal_errors?: number | null
+          total_errors?: number | null
+          user_facing_errors?: number | null
+        }
+        Update: {
+          affected_users?: number | null
+          created_at?: string | null
+          critical_errors?: number | null
+          hour?: string
+          id?: string
+          internal_errors?: number | null
+          total_errors?: number | null
+          user_facing_errors?: number | null
+        }
+        Relationships: []
+      }
       golf_academic_exclusions: {
         Row: {
           created_at: string | null
@@ -6875,6 +7016,69 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      golf_platform_metrics_daily: {
+        Row: {
+          active_teams: number | null
+          avg_engagement_score: number | null
+          avg_rounds_per_active_player: number | null
+          churn_at_risk_count: number | null
+          created_at: string | null
+          daily_active_users: number | null
+          id: string
+          insights_generated: number | null
+          monthly_active_users: number | null
+          new_signups: number | null
+          patterns_detected: number | null
+          reviews_created: number | null
+          rounds_this_week: number | null
+          rounds_today: number | null
+          snapshot_date: string
+          total_rounds: number | null
+          total_users: number | null
+          weekly_active_users: number | null
+        }
+        Insert: {
+          active_teams?: number | null
+          avg_engagement_score?: number | null
+          avg_rounds_per_active_player?: number | null
+          churn_at_risk_count?: number | null
+          created_at?: string | null
+          daily_active_users?: number | null
+          id?: string
+          insights_generated?: number | null
+          monthly_active_users?: number | null
+          new_signups?: number | null
+          patterns_detected?: number | null
+          reviews_created?: number | null
+          rounds_this_week?: number | null
+          rounds_today?: number | null
+          snapshot_date: string
+          total_rounds?: number | null
+          total_users?: number | null
+          weekly_active_users?: number | null
+        }
+        Update: {
+          active_teams?: number | null
+          avg_engagement_score?: number | null
+          avg_rounds_per_active_player?: number | null
+          churn_at_risk_count?: number | null
+          created_at?: string | null
+          daily_active_users?: number | null
+          id?: string
+          insights_generated?: number | null
+          monthly_active_users?: number | null
+          new_signups?: number | null
+          patterns_detected?: number | null
+          reviews_created?: number | null
+          rounds_this_week?: number | null
+          rounds_today?: number | null
+          snapshot_date?: string
+          total_rounds?: number | null
+          total_users?: number | null
+          weekly_active_users?: number | null
+        }
+        Relationships: []
       }
       golf_player_attendance_stats: {
         Row: {
@@ -9105,6 +9309,48 @@ export type Database = {
           },
         ]
       }
+      golf_tracer_health_snapshot: {
+        Row: {
+          avg_round_quality_score: number | null
+          completion_pct: number | null
+          created_at: string | null
+          error_count_7d: number | null
+          health_score: number | null
+          id: string
+          players_with_stale_cache: number | null
+          quality_score: number | null
+          snapped_at: string | null
+          stuck_rounds: number | null
+          total_rounds_tracked: number | null
+        }
+        Insert: {
+          avg_round_quality_score?: number | null
+          completion_pct?: number | null
+          created_at?: string | null
+          error_count_7d?: number | null
+          health_score?: number | null
+          id?: string
+          players_with_stale_cache?: number | null
+          quality_score?: number | null
+          snapped_at?: string | null
+          stuck_rounds?: number | null
+          total_rounds_tracked?: number | null
+        }
+        Update: {
+          avg_round_quality_score?: number | null
+          completion_pct?: number | null
+          created_at?: string | null
+          error_count_7d?: number | null
+          health_score?: number | null
+          id?: string
+          players_with_stale_cache?: number | null
+          quality_score?: number | null
+          snapped_at?: string | null
+          stuck_rounds?: number | null
+          total_rounds_tracked?: number | null
+        }
+        Relationships: []
+      }
       golf_travel_budgets: {
         Row: {
           budgeted_amount: number
@@ -9646,6 +9892,20 @@ export type Database = {
           sg_total: number
         }[]
       }
+      get_admin_event_summary: { Args: { p_days_back?: number }; Returns: Json }
+      get_api_performance_summary: {
+        Args: { days_back?: number }
+        Returns: {
+          avg_ms: number
+          error_rate: number
+          p50_ms: number
+          p95_ms: number
+          p99_ms: number
+          route: string
+          total_errors: number
+          total_requests: number
+        }[]
+      }
       get_audit_log_recent: { Args: { limit_count?: number }; Returns: Json }
       get_baseball_conversations_with_details: {
         Args: { p_user_id: string }
@@ -9660,6 +9920,19 @@ export type Database = {
           participant_names: string[]
           unread_count: number
           updated_at: string
+        }[]
+      }
+      get_coach_effectiveness_metrics: {
+        Args: never
+        Returns: {
+          avg_review_time_hours: number
+          coach_id: string
+          coach_name: string
+          effectiveness_score: number
+          has_philosophy: boolean
+          player_count: number
+          reviews_published: number
+          team_count: number
         }[]
       }
       get_crm_email_stats: { Args: never; Returns: Json }
@@ -9692,6 +9965,15 @@ export type Database = {
       }
       get_current_golf_player_id: { Args: never; Returns: string }
       get_current_player_team_ids: { Args: never; Returns: string[] }
+      get_enhanced_system_health: {
+        Args: never
+        Returns: {
+          detail: string
+          metric_name: string
+          metric_value: string
+          status: string
+        }[]
+      }
       get_error_summary: {
         Args: { days_back?: number }
         Returns: {
@@ -9744,6 +10026,16 @@ export type Database = {
       get_my_baseball_conversation_ids: { Args: never; Returns: string[] }
       get_my_coach_id: { Args: never; Returns: string }
       get_my_player_id: { Args: never; Returns: string }
+      get_onboarding_funnel_analysis: {
+        Args: never
+        Returns: {
+          completed_count: number
+          completion_rate: number
+          step_name: string
+          step_order: number
+          total_count: number
+        }[]
+      }
       get_pending_task_reminders: {
         Args: never
         Returns: {
@@ -9802,6 +10094,39 @@ export type Database = {
           player_id: string
           rounds_played: number
           total_score: number
+        }[]
+      }
+      get_team_health_dashboard: {
+        Args: never
+        Returns: {
+          active_30d: number
+          active_7d: number
+          avg_rounds_per_player: number
+          has_ai_philosophy: boolean
+          health_score: number
+          health_tier: string
+          member_count: number
+          org_name: string
+          rounds_30d: number
+          team_id: string
+          team_name: string
+        }[]
+      }
+      get_user_engagement_summary: {
+        Args: { time_range_days?: number }
+        Returns: {
+          days_since_signup: number
+          email: string
+          engagement_score: number
+          events_attended: number
+          insights_acknowledged: number
+          last_active_at: string
+          lifecycle_stage: string
+          messages_in_period: number
+          reviews_in_period: number
+          role: string
+          rounds_in_period: number
+          user_id: string
         }[]
       }
       get_user_golf_organization_id: { Args: never; Returns: string }
