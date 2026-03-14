@@ -199,7 +199,7 @@ export function TrendDashboard({ trends, streaks, volatility, trendData, playerS
                   {streak.length}-round {streak.type} streak
                 </span>
                 <span className="text-xs opacity-70 tabular-nums">
-                  ({streak.magnitude > 0 ? '+' : ''}{streak.magnitude.toFixed(1)} strokes)
+                  ({streak.magnitude > 0 ? '+' : ''}{(streak.magnitude ?? 0).toFixed(1)} strokes)
                 </span>
               </motion.div>
             ))}
@@ -217,7 +217,7 @@ export function TrendDashboard({ trends, streaks, volatility, trendData, playerS
             <IconWarning size={16} className="text-amber-500 shrink-0" />
             <span>Performance volatility is elevated</span>
             <span className="text-xs opacity-70 tabular-nums ml-auto">
-              {resolvedVolatility.current.toFixed(1)} vs {resolvedVolatility.historical.toFixed(1)} avg
+              {(resolvedVolatility.current ?? 0).toFixed(1)} vs {(resolvedVolatility.historical ?? 0).toFixed(1)} avg
             </span>
           </motion.div>
         )}

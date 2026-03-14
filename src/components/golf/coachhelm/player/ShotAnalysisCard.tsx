@@ -165,7 +165,7 @@ export function ShotAnalysisCard({
                         isPositive ? 'text-primary-600' : 'text-red-500'
                       )}
                     >
-                      {isPositive ? '+' : ''}{bucket.avgSG.toFixed(2)}
+                      {isPositive ? '+' : ''}{(bucket.avgSG ?? 0).toFixed(2)}
                     </span>
 
                     <span className="text-xs text-warm-400 tabular-nums w-8 text-right shrink-0">
@@ -197,7 +197,7 @@ export function ShotAnalysisCard({
                   className="inline-flex items-center gap-1 text-xs text-red-600 tabular-nums"
                 >
                   {dz.rangeStart}-{dz.rangeEnd}y
-                  <span className="text-red-400">({dz.deficit.toFixed(2)} deficit)</span>
+                  <span className="text-red-400">({(dz.deficit ?? 0).toFixed(2)} deficit)</span>
                 </span>
               ))}
             </div>
@@ -227,7 +227,7 @@ export function ShotAnalysisCard({
                   </div>
                   <div className="text-right shrink-0 ml-3">
                     <p className="text-sm font-semibold text-red-500 tabular-nums">
-                      {weakness.avgSG.toFixed(2)}
+                      {(weakness.avgSG ?? 0).toFixed(2)}
                     </p>
                     <p className="text-xs text-warm-400 tabular-nums">
                       {weakness.shotCount} shots
@@ -273,7 +273,7 @@ export function ShotAnalysisCard({
                     />
                   </svg>
                   <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-warm-900 tabular-nums">
-                    {resolvedResilience.toFixed(1)}
+                    {(resolvedResilience ?? 0).toFixed(1)}
                   </span>
                 </div>
                 <div>

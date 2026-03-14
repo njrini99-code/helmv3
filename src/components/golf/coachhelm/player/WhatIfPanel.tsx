@@ -104,7 +104,7 @@ export function WhatIfPanel({
           <IconTarget size={18} className="text-warm-500" />
           <span className="text-sm font-medium text-warm-600">Predicted:</span>
           <span className="text-2xl font-bold text-warm-900 tabular-nums">
-            {resolvedCurrentPrediction > 0 ? '+' : ''}{resolvedCurrentPrediction.toFixed(1)}
+            {resolvedCurrentPrediction > 0 ? '+' : ''}{(resolvedCurrentPrediction ?? 0).toFixed(1)}
           </span>
         </motion.div>
 
@@ -125,7 +125,7 @@ export function WhatIfPanel({
               </div>
               <div className="text-right">
                 <p className="text-sm font-bold text-primary-700 tabular-nums">
-                  {simResult.projectedScore > 0 ? '+' : ''}{simResult.projectedScore.toFixed(1)}
+                  {simResult.projectedScore > 0 ? '+' : ''}{(simResult.projectedScore ?? 0).toFixed(1)}
                 </p>
                 {simResult.rankChange !== 0 && (
                   <p className="text-xs text-primary-500 tabular-nums">
@@ -171,7 +171,7 @@ export function WhatIfPanel({
                     <p className="text-sm text-warm-600 mt-1">
                       Improve to average{' '}
                       <span className="font-medium text-primary-600 tabular-nums">
-                        &rarr; save {Math.abs(item.projectedScoringImpact).toFixed(1)} strokes/round
+                        &rarr; save {Math.abs(item.projectedScoringImpact ?? 0).toFixed(1)} strokes/round
                       </span>
                     </p>
                     <p className="text-xs text-warm-400 mt-0.5">{item.timeEstimate}</p>

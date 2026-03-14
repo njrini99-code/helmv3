@@ -133,7 +133,7 @@ function InsightCard({
                 Math.abs(insight.strokeImpact) >= 0.5 ? 'bg-amber-100 text-amber-700' :
                 'bg-warm-100 text-warm-600'
               )}>
-                {insight.strokeImpact > 0 ? '+' : ''}{insight.strokeImpact.toFixed(1)} strokes
+                {insight.strokeImpact > 0 ? '+' : ''}{(insight.strokeImpact ?? 0).toFixed(1)} strokes
               </span>
             )}
             {insight.reasoning && (
