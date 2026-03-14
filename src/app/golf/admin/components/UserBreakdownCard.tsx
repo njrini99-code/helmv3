@@ -2,7 +2,7 @@
 
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { AdminAreaChart, AdminDonutChart } from './AdminChart';
-import { Users, TrendingUp, TrendingDown } from 'lucide-react';
+import { IconUsers, IconTrendingUp, IconTrendingDown } from '@/components/icons';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -52,7 +52,7 @@ export function UserBreakdownCard({ users }: Props) {
       <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
         <div className="flex items-center gap-2">
           <div className="p-2 bg-white/50 rounded-lg text-warm-500">
-            <Users size={18} />
+            <IconUsers size={18} />
           </div>
           <h3 className="text-base sm:text-lg font-semibold text-warm-900">User Analytics</h3>
         </div>
@@ -60,7 +60,7 @@ export function UserBreakdownCard({ users }: Props) {
           'flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-full min-h-[32px]',
           isGrowth ? 'bg-primary-50 text-primary-700' : 'bg-red-50 text-red-700'
         )}>
-          {isGrowth ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+          {isGrowth ? <IconTrendingUp size={12} /> : <IconTrendingDown size={12} />}
           {isGrowth ? '+' : ''}{signupDelta} this week
         </div>
       </div>

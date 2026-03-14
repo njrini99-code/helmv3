@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { Users } from 'lucide-react';
+import { IconUsers } from '@/components/icons';
 import { type AdminPresenceInfo, getAdminInitials, getAdminColor } from '@/hooks/useAdminPresence';
 
 // ============================================
@@ -121,7 +121,7 @@ export function AdminOnlineIndicator({
               {/* Header */}
               <div className="px-4 py-3 border-b border-warm-100 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Users size={16} className="text-warm-500" />
+                  <IconUsers size={16} className="text-warm-500" />
                   <span className="font-semibold text-warm-900">Active Admins</span>
                 </div>
                 <span className="text-xs text-warm-500 tabular-nums">

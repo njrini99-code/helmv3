@@ -2,21 +2,21 @@
 
 import { cn } from '@/lib/utils';
 import {
-  Activity,
-  AlertTriangle,
-  BarChart3,
-  Brain,
-  CheckCircle2,
-  Clock,
-  Database,
-  Gauge,
-  Globe,
-  Lock,
-  RefreshCw,
-  Rocket,
-  Sparkles,
-  Zap,
-} from 'lucide-react';
+  IconActivity,
+  IconBrain,
+  IconDatabase,
+  IconGauge,
+  IconLock,
+  IconWarning,
+  IconChartBar,
+  IconCheckCircle2,
+  IconClock,
+  IconGlobe,
+  IconRefresh,
+  IconRocket,
+  IconSparkles,
+  IconZap,
+} from '@/components/icons';
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { HealthCheckGrid } from './HealthCheckGrid';
 import { CoachHelmHealthCard } from './CoachHelmHealthCard';
@@ -162,45 +162,45 @@ function SystemOverviewBar({ data }: { data: AdminDashboardData }) {
             label="Open Incidents"
             value={data.errorLogs.incidentCounts.open}
             tone={data.errorLogs.incidentCounts.open > 0 ? (data.errorLogs.incidentCounts.openCritical > 0 ? 'danger' : 'warn') : 'ok'}
-            icon={<AlertTriangle size={12} />}
+            icon={<IconWarning size={12} />}
           />
           <StatTile
             label="Resolved 24h"
             value={data.errorLogs.incidentCounts.resolvedRecently}
             tone={data.errorLogs.incidentCounts.resolvedRecently > 0 ? 'ok' : 'default'}
-            icon={<CheckCircle2 size={12} />}
+            icon={<IconCheckCircle2 size={12} />}
           />
           <StatTile
             label="API Latency"
             value={`${data.health.avgResponseTimeMs}ms`}
             tone={data.health.avgResponseTimeMs > 3000 ? 'warn' : 'ok'}
-            icon={<Gauge size={12} />}
+            icon={<IconGauge size={12} />}
           />
           <StatTile
             label="Data Quality"
             value={`${qualityScore}%`}
             tone={qualityScore >= 80 ? 'ok' : qualityScore >= 50 ? 'warn' : 'danger'}
-            icon={<Activity size={12} />}
+            icon={<IconActivity size={12} />}
           />
           <StatTile
             label="Active Sessions"
             value={data.health.activeSessions}
-            icon={<Zap size={12} />}
+            icon={<IconZap size={12} />}
           />
           <StatTile
             label="Last Round"
             value={formatRelativeTime(data.health.lastRoundSubmitted)}
-            icon={<Clock size={12} />}
+            icon={<IconClock size={12} />}
           />
           <StatTile
             label="Locked Accounts"
             value={data.loginSecurity.lockedAccounts}
             tone={data.loginSecurity.lockedAccounts > 0 ? 'danger' : 'ok'}
-            icon={<Lock size={12} />}
+            icon={<IconLock size={12} />}
           />
           <StatTile
             label="DB Size"
-            icon={<Database size={12} />}
+            icon={<IconDatabase size={12} />}
             value={(() => {
               const b = data.health.dbSizeBytes;
               if (b < 1048576) return `${(b / 1024).toFixed(1)} KB`;
@@ -292,7 +292,7 @@ function FeatureAdoptionGrid({ features }: { features: AdminDashboardData['usage
     <div className="glass-standard rounded-2xl p-5 md:p-6">
       <div className="flex items-center gap-2 mb-4">
         <div className="p-2 bg-white/50 rounded-lg text-warm-500">
-          <Sparkles size={16} />
+          <IconSparkles size={16} />
         </div>
         <h3 className="text-lg font-semibold text-warm-900">Feature Adoption</h3>
       </div>
@@ -339,9 +339,9 @@ function FeatureAdoptionGrid({ features }: { features: AdminDashboardData['usage
 // ─── Background Jobs Config ─────────────────────────────────────────────────
 
 const SYSTEM_JOBS = [
-  { name: 'Stats Cache Refresh', expectedInterval: '1h', icon: RefreshCw },
-  { name: 'CoachHelm Insight Generation', expectedInterval: '24h', icon: Brain },
-  { name: 'Platform Metrics Snapshot', expectedInterval: '24h', icon: BarChart3 },
+  { name: 'Stats Cache Refresh', expectedInterval: '1h', icon: IconRefresh },
+  { name: 'CoachHelm Insight Generation', expectedInterval: '24h', icon: IconBrain },
+  { name: 'Platform Metrics Snapshot', expectedInterval: '24h', icon: IconChartBar },
 ];
 
 // ─── External Services Config ───────────────────────────────────────────────
@@ -368,7 +368,7 @@ export function SystemTab({ data }: Props) {
       <div className="flex items-center justify-between rounded-2xl border border-white/30 bg-white/65 backdrop-blur-[16px] px-5 py-3">
         <div className="flex items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary-50">
-            <Rocket size={16} className="text-primary-600" />
+            <IconRocket size={16} className="text-primary-600" />
           </div>
           <div>
             <p className="text-sm font-semibold text-warm-900">Production</p>
@@ -494,7 +494,7 @@ export function SystemTab({ data }: Props) {
                 key={service.name}
                 className="flex items-center gap-3 rounded-xl border border-white/30 bg-white/50 px-4 py-3"
               >
-                <Globe size={14} className="text-warm-400" />
+                <IconGlobe size={14} className="text-warm-400" />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-warm-900">{service.name}</p>
                 </div>

@@ -3,16 +3,15 @@
 import { useCallback, useEffect, useState, useTransition } from 'react';
 import { cn } from '@/lib/utils';
 import {
-  Check,
-  CheckCircle2,
-  Clipboard,
-  Loader2,
-  RotateCcw,
-  ShieldAlert,
-  Hash,
-  Target,
-  XCircle,
-} from 'lucide-react';
+  IconCheck,
+  IconCheckCircle2,
+  IconClipboard,
+  IconLoader,
+  IconShieldAlert,
+  IconTarget,
+  IconXCircle,
+} from '@/components/icons';
+import { IconRotateCcw as RotateCcw, IconHash as Hash } from '@/components/icons';
 import { resolveDashboardIncident } from '@/app/golf/actions/admin-data';
 import { DetailModal } from '../DetailModal';
 import { timeAgo } from '../admin-utils';
@@ -100,14 +99,14 @@ export function RoundDiagnosticModal({ isOpen, onClose, roundId, onIncidentResol
     >
       {loading && (
         <div className="flex flex-col items-center justify-center py-16">
-          <Loader2 size={28} className="text-primary-500 animate-spin mb-3" />
+          <IconLoader size={28} className="text-primary-500 animate-spin mb-3" />
           <p className="text-sm text-warm-500">Loading diagnostic data...</p>
         </div>
       )}
 
       {error && (
         <div className="bg-red-50/80 border border-red-200 rounded-xl p-6 text-center">
-          <XCircle className="mx-auto mb-2 text-red-400" size={24} />
+          <IconXCircle className="mx-auto mb-2 text-red-400" size={24} />
           <p className="text-warm-900 font-semibold text-sm">Failed to load</p>
           <p className="text-warm-500 text-xs mt-1">{error}</p>
         </div>
@@ -245,9 +244,9 @@ function HoleGrid({ holes }: { holes: TracerHoleDiagnostic[] }) {
                   return (
                     <td key={n} className="px-2 py-2 text-center">
                       {hole?.fairway_hit === true ? (
-                        <CheckCircle2 size={13} className="inline text-green-500" />
+                        <IconCheckCircle2 size={13} className="inline text-green-500" />
                       ) : hole?.fairway_hit === false ? (
-                        <XCircle size={13} className="inline text-red-400" />
+                        <IconXCircle size={13} className="inline text-red-400" />
                       ) : (
                         <span className="text-warm-200">&mdash;</span>
                       )}
@@ -266,9 +265,9 @@ function HoleGrid({ holes }: { holes: TracerHoleDiagnostic[] }) {
                   return (
                     <td key={n} className="px-2 py-2 text-center">
                       {hole?.gir === true ? (
-                        <CheckCircle2 size={13} className="inline text-green-500" />
+                        <IconCheckCircle2 size={13} className="inline text-green-500" />
                       ) : hole?.gir === false ? (
-                        <XCircle size={13} className="inline text-red-400" />
+                        <IconXCircle size={13} className="inline text-red-400" />
                       ) : (
                         <span className="text-warm-200">&mdash;</span>
                       )}
@@ -294,7 +293,7 @@ function ShotSummary({ shots }: { shots: TracerShotDiagnostic[] }) {
       <section>
         <SectionLabel label="Shot Summary" />
         <div className="bg-warm-50/50 rounded-xl p-6 text-center">
-          <Target size={20} className="mx-auto mb-2 text-warm-300" />
+          <IconTarget size={20} className="mx-auto mb-2 text-warm-300" />
           <p className="text-sm text-warm-400">No shot data recorded</p>
         </div>
       </section>
@@ -413,7 +412,7 @@ function ErrorsList({
       <section>
         <SectionLabel label="Tracer Errors" />
         <div className="bg-green-50/40 border border-green-200/30 rounded-xl p-5 text-center">
-          <CheckCircle2 size={20} className="mx-auto mb-2 text-green-500" />
+          <IconCheckCircle2 size={20} className="mx-auto mb-2 text-green-500" />
           <p className="text-sm text-green-700 font-medium">No shot-tracking incidents tied to this round</p>
         </div>
       </section>
@@ -544,7 +543,7 @@ function ErrorsList({
                       {incident.status === 'open' ? 'Open' : 'Resolved'}
                     </span>
                     <span className="inline-flex items-center gap-1 rounded-full border border-white/40 bg-white/65 px-2 py-0.5 text-[11px] font-medium text-warm-600">
-                      <ShieldAlert size={11} />
+                      <IconShieldAlert size={11} />
                       {incident.occurrences}
                     </span>
                   </div>
@@ -570,7 +569,7 @@ function ErrorsList({
                           : 'border-white/40 bg-white/70 text-warm-700 hover:bg-white'
                     )}
                   >
-                    {copyState?.target === incident.id && copyState.status === 'success' ? <Check size={16} /> : <Clipboard size={16} />}
+                    {copyState?.target === incident.id && copyState.status === 'success' ? <IconCheck size={16} /> : <IconClipboard size={16} />}
                     {copyState?.target === incident.id && copyState.status === 'success'
                       ? 'Copied'
                       : copyState?.target === incident.id && copyState.status === 'error'
@@ -731,9 +730,9 @@ function CompletenessChecklist({
               )}
             >
               {check.ok ? (
-                <CheckCircle2 size={14} className="text-green-500 flex-shrink-0" />
+                <IconCheckCircle2 size={14} className="text-green-500 flex-shrink-0" />
               ) : (
-                <XCircle size={14} className="text-red-400 flex-shrink-0" />
+                <IconXCircle size={14} className="text-red-400 flex-shrink-0" />
               )}
               <span className={cn(
                 'font-medium',

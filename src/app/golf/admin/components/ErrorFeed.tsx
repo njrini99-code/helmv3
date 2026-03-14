@@ -6,16 +6,16 @@ import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { resolveDashboardIncident } from '@/app/golf/actions/admin-data';
 import { cn } from '@/lib/utils';
 import {
-  AlertTriangle,
-  Check,
-  ChevronDown,
-  ChevronUp,
-  Clipboard,
-  Layers3,
-  RotateCcw,
-  ShieldAlert,
-  User,
-} from 'lucide-react';
+  IconLayers3,
+  IconRotateCcw,
+  IconWarning,
+  IconCheck,
+  IconChevronDown,
+  IconChevronUp,
+  IconClipboard,
+  IconShieldAlert,
+  IconUser,
+} from '@/components/icons';
 import { timeAgo } from './admin-utils';
 
 interface Props {
@@ -308,7 +308,7 @@ export function ErrorFeed({ errorLogs }: Props) {
         <div className="min-w-0">
           <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-2xl bg-red-50">
-              <ShieldAlert size={16} className="text-red-600" />
+              <IconShieldAlert size={16} className="text-red-600" />
             </div>
             <div>
               <h3 className="text-sm font-semibold text-warm-900">Incident Command Feed</h3>
@@ -329,7 +329,7 @@ export function ErrorFeed({ errorLogs }: Props) {
                 : 'border-white/40 bg-white/70 text-warm-700 hover:bg-white'
           )}
         >
-          {copyState?.target === 'feed' && copyState.status === 'success' ? <Check size={16} /> : <Clipboard size={16} />}
+          {copyState?.target === 'feed' && copyState.status === 'success' ? <IconCheck size={16} /> : <IconClipboard size={16} />}
           {copyState?.target === 'feed' && copyState.status === 'success'
             ? 'Copied diagnostics'
             : copyState?.target === 'feed' && copyState.status === 'error'
@@ -420,7 +420,7 @@ export function ErrorFeed({ errorLogs }: Props) {
       {visibleIncidents.length === 0 ? (
         <div className="mt-4 flex flex-col items-center justify-center rounded-2xl border border-white/35 bg-white/55 px-6 py-8 text-center">
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary-50">
-            <Check size={20} className="text-primary-600" />
+            <IconCheck size={20} className="text-primary-600" />
           </div>
           <p className="mt-3 text-sm font-semibold text-primary-700">
             {queueTab === 'resolved' ? 'No resolved incidents yet.' : 'No incidents in this active queue view.'}
@@ -459,12 +459,12 @@ export function ErrorFeed({ errorLogs }: Props) {
                         {incident.featureArea}
                       </span>
                       <span className="inline-flex items-center gap-1 rounded-full border border-white/40 bg-white/65 px-2 py-0.5 text-[11px] font-medium text-warm-600">
-                        <Layers3 size={11} />
+                        <IconLayers3 size={11} />
                         {incident.occurrences}
                       </span>
                       {incident.affectedUsers > 0 && (
                         <span className="inline-flex items-center gap-1 rounded-full border border-white/40 bg-white/65 px-2 py-0.5 text-[11px] font-medium text-warm-600">
-                          <User size={11} />
+                          <IconUser size={11} />
                           {incident.affectedUsers}
                         </span>
                       )}
@@ -472,7 +472,7 @@ export function ErrorFeed({ errorLogs }: Props) {
 
                     <div className="mt-2 flex items-start gap-3">
                       <div className={cn('mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-white/80', severityStyle.icon)}>
-                        <AlertTriangle size={16} />
+                        <IconWarning size={16} />
                       </div>
                       <div className="min-w-0">
                         <h4 className="text-sm font-semibold leading-6 text-warm-900">{incident.title}</h4>
@@ -505,7 +505,7 @@ export function ErrorFeed({ errorLogs }: Props) {
                             : 'border-primary-200 bg-primary-50/70 text-primary-700 hover:bg-primary-50'
                         )}
                       >
-                        <RotateCcw size={16} className={cn(isResolving && 'animate-spin')} />
+                        <IconRotateCcw size={16} className={cn(isResolving && 'animate-spin')} />
                         {isResolving ? 'Resolving...' : 'Mark resolved'}
                       </button>
                     )}
@@ -521,7 +521,7 @@ export function ErrorFeed({ errorLogs }: Props) {
                             : 'border-white/40 bg-white/70 text-warm-700 hover:bg-white'
                       )}
                     >
-                      {copyState?.target === incident.id && copyState.status === 'success' ? <Check size={16} /> : <Clipboard size={16} />}
+                      {copyState?.target === incident.id && copyState.status === 'success' ? <IconCheck size={16} /> : <IconClipboard size={16} />}
                       {copyState?.target === incident.id && copyState.status === 'success'
                         ? 'Copied'
                         : copyState?.target === incident.id && copyState.status === 'error'
@@ -533,7 +533,7 @@ export function ErrorFeed({ errorLogs }: Props) {
                       onClick={() => setExpandedId(isExpanded ? null : incident.id)}
                       className="inline-flex items-center gap-2 rounded-xl border border-white/40 bg-white/70 px-3 py-2 text-sm font-medium text-warm-700 transition-colors hover:bg-white"
                     >
-                      {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                      {isExpanded ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
                       {isExpanded ? 'Hide' : 'Detail'}
                     </button>
                   </div>

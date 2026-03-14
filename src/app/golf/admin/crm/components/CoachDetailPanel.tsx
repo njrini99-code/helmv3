@@ -4,26 +4,26 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import {
-  X,
-  Mail,
-  Phone,
-  Plus,
-  Clock,
-  MessageSquare,
-  Star,
-  FileText,
-  History,
-  Tag,
-  ListChecks,
-  ClipboardCheck,
-  Monitor,
-  Users,
-  StickyNote,
-  Check,
-  Pencil,
-  Video,
-  Calendar,
-} from 'lucide-react';
+  IconX,
+  IconMail,
+  IconPhone,
+  IconPlus,
+  IconClock,
+  IconMessageSquare,
+  IconFileText,
+  IconUsers,
+  IconCheck,
+  IconCalendar,
+  IconStar,
+  IconRefresh as History,
+  IconHash as Tag,
+  IconClipboardList as ListChecks,
+  IconClipboard as ClipboardCheck,
+  IconEye as Monitor,
+  IconNote as StickyNote,
+  IconPencil as Pencil,
+  IconVideo as Video,
+} from '@/components/icons';
 import type { Coach, CoachStatus } from '../crm-config';
 import { ToastProvider, useToast } from './Toast';
 
@@ -93,22 +93,22 @@ interface TimelineEntry {
 // CONSTANTS
 // ============================================================================
 const CONTACT_TYPES = [
-  { value: 'email', label: 'Email', Icon: Mail, dotColor: 'bg-blue-500' },
-  { value: 'call', label: 'Call', Icon: Phone, dotColor: 'bg-primary-500' },
+  { value: 'email', label: 'Email', Icon: IconMail, dotColor: 'bg-blue-500' },
+  { value: 'call', label: 'Call', Icon: IconPhone, dotColor: 'bg-primary-500' },
   { value: 'demo', label: 'Demo', Icon: Monitor, dotColor: 'bg-violet-500' },
-  { value: 'meeting', label: 'Meeting', Icon: Users, dotColor: 'bg-cyan-500' },
+  { value: 'meeting', label: 'Meeting', Icon: IconUsers, dotColor: 'bg-cyan-500' },
   { value: 'note', label: 'Note', Icon: StickyNote, dotColor: 'bg-warm-400' },
 ] as const;
 
-const TIMELINE_TYPE_CONFIG: Record<string, { Icon: typeof Mail; dotColor: string; label: string }> = {
-  email:          { Icon: Mail,     dotColor: 'bg-blue-500',    label: 'Email Sent' },
-  call:           { Icon: Phone,    dotColor: 'bg-primary-500', label: 'Call Logged' },
+const TIMELINE_TYPE_CONFIG: Record<string, { Icon: typeof IconMail; dotColor: string; label: string }> = {
+  email:          { Icon: IconMail,     dotColor: 'bg-blue-500',    label: 'Email Sent' },
+  call:           { Icon: IconPhone,    dotColor: 'bg-primary-500', label: 'Call Logged' },
   demo:           { Icon: Video,    dotColor: 'bg-violet-500',  label: 'Demo' },
-  meeting:        { Icon: Users,    dotColor: 'bg-cyan-500',    label: 'Meeting' },
+  meeting:        { Icon: IconUsers,    dotColor: 'bg-cyan-500',    label: 'Meeting' },
   note:           { Icon: StickyNote, dotColor: 'bg-warm-400',  label: 'Note Added' },
-  follow_up:      { Icon: Calendar, dotColor: 'bg-amber-500',  label: 'Follow-up' },
-  email_reminder: { Icon: Mail,     dotColor: 'bg-sky-500',     label: 'Email Reminder' },
-  other:          { Icon: MessageSquare, dotColor: 'bg-warm-300', label: 'Activity' },
+  follow_up:      { Icon: IconCalendar, dotColor: 'bg-amber-500',  label: 'Follow-up' },
+  email_reminder: { Icon: IconMail,     dotColor: 'bg-sky-500',     label: 'Email Reminder' },
+  other:          { Icon: IconMessageSquare, dotColor: 'bg-warm-300', label: 'Activity' },
 };
 
 const ALL_STATUSES: readonly string[] = [
@@ -417,7 +417,7 @@ function CoachDetailPanelInner({
                       onClick={() => onUpdate({ is_starred: !coach.is_starred })}
                       className="hover:scale-110 transition-transform"
                     >
-                      <Star size={18} className={cn(coach.is_starred ? 'fill-amber-400 text-amber-400' : 'text-warm-300 hover:text-warm-400')} />
+                      <IconStar size={18} className={cn(coach.is_starred ? 'fill-amber-400 text-amber-400' : 'text-warm-300 hover:text-warm-400')} />
                     </button>
                     <h2 className="text-xl font-bold text-warm-900 truncate">{coach.name}</h2>
                     {coach.priority > 0 && (
@@ -448,7 +448,7 @@ function CoachDetailPanelInner({
                 </button>
               )}
               <button onClick={handleClose} className="p-2 rounded-xl hover:bg-warm-50 active:bg-warm-100 transition-colors text-warm-400 hover:text-warm-600">
-                <X size={18} />
+                <IconX size={18} />
               </button>
             </div>
           </div>
@@ -476,12 +476,12 @@ function CoachDetailPanelInner({
             {editingContact ? (
               <>
                 <div className="flex items-center gap-1.5 flex-1 min-w-[200px]">
-                  <Mail size={12} className="text-blue-500 flex-shrink-0" />
+                  <IconMail size={12} className="text-blue-500 flex-shrink-0" />
                   <input type="email" value={contactForm.email} onChange={e => setContactForm({ ...contactForm, email: e.target.value })}
                     placeholder="Email address" className="flex-1 px-2 py-1 border border-warm-200/50 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white/50" />
                 </div>
                 <div className="flex items-center gap-1.5 flex-1 min-w-[160px]">
-                  <Phone size={12} className="text-primary-500 flex-shrink-0" />
+                  <IconPhone size={12} className="text-primary-500 flex-shrink-0" />
                   <input type="tel" value={contactForm.phone} onChange={e => setContactForm({ ...contactForm, phone: e.target.value })}
                     placeholder="Phone number" className="flex-1 px-2 py-1 border border-warm-200/50 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white/50" />
                 </div>
@@ -490,20 +490,20 @@ function CoachDetailPanelInner({
               <>
                 {coach.email ? (
                   <a href={`mailto:${coach.email}`} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-medium transition-colors">
-                    <Mail size={12} /> {coach.email}
+                    <IconMail size={12} /> {coach.email}
                   </a>
                 ) : (
                   <button onClick={() => setEditingContact(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-dashed border-warm-300 text-xs text-warm-400 hover:border-warm-400 hover:text-warm-500 transition-colors">
-                    <Mail size={12} /> Add email
+                    <IconMail size={12} /> Add email
                   </button>
                 )}
                 {coach.phone ? (
                   <a href={`tel:${coach.phone}`} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary-50 text-primary-700 hover:bg-primary-100 text-xs font-medium transition-colors">
-                    <Phone size={12} /> {coach.phone}
+                    <IconPhone size={12} /> {coach.phone}
                   </a>
                 ) : (
                   <button onClick={() => setEditingContact(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-dashed border-warm-300 text-xs text-warm-400 hover:border-warm-400 hover:text-warm-500 transition-colors">
-                    <Phone size={12} /> Add phone
+                    <IconPhone size={12} /> Add phone
                   </button>
                 )}
               </>
@@ -514,7 +514,7 @@ function CoachDetailPanelInner({
         {/* Overdue alert */}
         {isOverdue && (
           <div className="mx-5 mt-3 px-3 py-2 rounded-xl bg-red-50 border border-red-200/50 flex items-center gap-2 flex-shrink-0">
-            <Clock size={14} className="text-red-500" />
+            <IconClock size={14} className="text-red-500" />
             <span className="text-xs font-medium text-red-700">Overdue follow-up: {coach.next_follow_up_at ? formatShort(coach.next_follow_up_at) : ''}</span>
           </div>
         )}
@@ -523,11 +523,11 @@ function CoachDetailPanelInner({
         <div className="flex-1 overflow-y-auto p-5 space-y-6">
 
           {/* Notes */}
-          <Section title="Notes" icon={<FileText size={14} className="text-warm-400" />}
+          <Section title="Notes" icon={<IconFileText size={14} className="text-warm-400" />}
             action={
               <button onClick={() => { if (editingNotes) saveNotes(); else setEditingNotes(true); }}
                 className="text-xs text-primary-600 hover:text-primary-700 font-semibold flex items-center gap-1">
-                {editingNotes ? <><Check size={12} /> Save</> : <><Pencil size={12} /> Edit</>}
+                {editingNotes ? <><IconCheck size={12} /> Save</> : <><Pencil size={12} /> Edit</>}
               </button>
             }>
             {editingNotes ? (
@@ -547,7 +547,7 @@ function CoachDetailPanelInner({
             action={
               <button onClick={() => setShowContactForm(!showContactForm)}
                 className="text-xs text-primary-600 hover:text-primary-700 font-semibold flex items-center gap-1">
-                <Plus size={12} /> Log Contact
+                <IconPlus size={12} /> Log Contact
               </button>
             }>
 
@@ -594,7 +594,7 @@ function CoachDetailPanelInner({
             ) : timeline.length === 0 ? (
               <div className="py-6 text-center">
                 <div className="w-10 h-10 rounded-xl bg-warm-50 flex items-center justify-center mx-auto mb-2">
-                  <MessageSquare size={18} className="text-warm-300" />
+                  <IconMessageSquare size={18} className="text-warm-300" />
                 </div>
                 <p className="text-sm font-medium text-warm-500">No activity yet</p>
                 <p className="text-xs text-warm-400 mt-0.5">Log your first interaction with this coach</p>
@@ -609,7 +609,7 @@ function CoachDetailPanelInner({
                 <div className="absolute left-[15px] top-3 bottom-2 w-[2px] bg-warm-200" />
 
                 {timeline.map((entry) => {
-                  const defaultConf = { Icon: MessageSquare, dotColor: 'bg-warm-300', label: 'Activity' };
+                  const defaultConf = { Icon: IconMessageSquare, dotColor: 'bg-warm-300', label: 'Activity' };
                   const typeConf = TIMELINE_TYPE_CONFIG[entry.type] || defaultConf;
                   const EntryIcon = typeConf.Icon;
                   const isPending = entry.type === 'email'
@@ -687,7 +687,7 @@ function CoachDetailPanelInner({
                         {/* Next action */}
                         {entry.nextAction && (
                           <div className="mt-1.5 flex items-center gap-1.5 text-xs text-amber-600">
-                            <Clock size={11} /> Next: {entry.nextAction}
+                            <IconClock size={11} /> Next: {entry.nextAction}
                             {entry.nextActionDate && <span className="text-warm-400">({formatShort(entry.nextActionDate)})</span>}
                           </div>
                         )}
@@ -705,19 +705,19 @@ function CoachDetailPanelInner({
               {(coach.tags || []).map((tag, i) => (
                 <span key={i} className="inline-flex items-center gap-1 px-2 py-1 bg-primary-50 text-primary-700 rounded-lg text-xs font-medium">
                   {tag}
-                  <button onClick={() => removeTag(tag)} className="hover:text-red-600 transition-colors"><X size={10} /></button>
+                  <button onClick={() => removeTag(tag)} className="hover:text-red-600 transition-colors"><IconX size={10} /></button>
                 </span>
               ))}
               {(coach.tags || []).length === 0 && !newTag && (
                 <button onClick={() => document.getElementById('tag-input')?.focus()}
                   className="flex items-center gap-1 px-2 py-1 rounded-lg border border-dashed border-warm-300 text-xs text-warm-400 hover:border-warm-400 hover:text-warm-500 transition-colors">
-                  <Plus size={12} /> Add tag
+                  <IconPlus size={12} /> Add tag
                 </button>
               )}
               <div className="flex items-center gap-1">
                 <input id="tag-input" type="text" value={newTag} onChange={e => setNewTag(e.target.value)} onKeyDown={e => e.key === 'Enter' && addTag()}
                   placeholder="Add tag..." className="px-2 py-1 border border-warm-200/30 rounded-lg text-xs w-24 focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white/50" />
-                {newTag && <button onClick={addTag} className="w-6 h-6 rounded-md bg-primary-100 text-primary-600 flex items-center justify-center hover:bg-primary-200 transition-colors"><Plus size={12} /></button>}
+                {newTag && <button onClick={addTag} className="w-6 h-6 rounded-md bg-primary-100 text-primary-600 flex items-center justify-center hover:bg-primary-200 transition-colors"><IconPlus size={12} /></button>}
               </div>
             </div>
           </Section>
@@ -730,8 +730,8 @@ function CoachDetailPanelInner({
                 <div className="flex items-center gap-1">
                   <input type="date" value={followUpDate} onChange={e => setFollowUpDate(e.target.value)}
                     className="px-2 py-1 border border-warm-200/30 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary-500" />
-                  <button onClick={saveFollowUp} className="text-xs text-primary-600 font-semibold px-1"><Check size={12} /></button>
-                  <button onClick={() => setEditingFollowUp(false)} className="text-xs text-warm-400 px-1"><X size={12} /></button>
+                  <button onClick={saveFollowUp} className="text-xs text-primary-600 font-semibold px-1"><IconCheck size={12} /></button>
+                  <button onClick={() => setEditingFollowUp(false)} className="text-xs text-warm-400 px-1"><IconX size={12} /></button>
                 </div>
               ) : (
                 <button onClick={() => setEditingFollowUp(true)}

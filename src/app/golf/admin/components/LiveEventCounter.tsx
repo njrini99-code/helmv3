@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { Activity, AlertTriangle } from 'lucide-react';
+import { IconActivity, IconWarning } from '@/components/icons';
 
 // ============================================
 // TYPES
@@ -83,7 +83,7 @@ export function LiveEventCounter({
       <div className="flex items-center gap-3">
         {/* Total events */}
         <div className="flex items-center gap-1">
-          <Activity size={14} className="text-warm-400" />
+          <IconActivity size={14} className="text-warm-400" />
           <span className="text-warm-700 font-semibold tabular-nums">
             {total}
           </span>
@@ -92,7 +92,7 @@ export function LiveEventCounter({
         {/* Error count (if any) */}
         {errors > 0 && (
           <div className="flex items-center gap-1">
-            <AlertTriangle
+            <IconWarning
               size={14}
               className={critical > 0 ? 'text-red-500' : 'text-amber-500'}
             />

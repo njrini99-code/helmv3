@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { ArrowRight, Rocket, Star, Zap } from 'lucide-react';
+import { IconStar, IconArrowRight, IconRocket, IconZap } from '@/components/icons';
 import type { Coach, CoachStatus, PipelineStage } from '../crm-config';
 
 interface PipelineViewProps {
@@ -140,7 +140,7 @@ export function PipelineView({
           'glass-standard'
         )}>
           <div className="w-16 h-16 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto mb-4">
-            <Rocket size={28} className="text-primary-600" />
+            <IconRocket size={28} className="text-primary-600" />
           </div>
           <h3 className="text-lg font-bold text-warm-900 mb-2">Ready to start your pipeline</h3>
           <p className="text-sm text-warm-500 max-w-md mx-auto mb-4">
@@ -152,7 +152,7 @@ export function PipelineView({
               disabled={processing}
               className="px-4 py-2.5 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors text-sm shadow-sm shadow-primary-500/25 disabled:opacity-50"
             >
-              <span className="flex items-center gap-2"><Zap size={16} /> Research Top 10</span>
+              <span className="flex items-center gap-2"><IconZap size={16} /> Research Top 10</span>
             </button>
             <button
               onClick={() => handleResearchNext(25)}
@@ -182,7 +182,7 @@ export function PipelineView({
                 </div>
               </div>
               {index < pipelineStages.length - 1 && (
-                <ArrowRight size={14} className="mx-1 text-warm-300 flex-shrink-0" />
+                <IconArrowRight size={14} className="mx-1 text-warm-300 flex-shrink-0" />
               )}
             </div>
           );
@@ -330,7 +330,7 @@ function KanbanCard({
       {/* Name + Star */}
       <div className="flex items-start justify-between gap-2 mb-1.5">
         <p className="text-sm font-semibold text-warm-900 leading-tight line-clamp-1">{coach.name}</p>
-        {coach.is_starred && <Star size={14} className="text-amber-500 fill-amber-500 flex-shrink-0 mt-0.5" />}
+        {coach.is_starred && <IconStar size={14} className="text-amber-500 fill-amber-500 flex-shrink-0 mt-0.5" />}
       </div>
 
       {/* School */}
@@ -373,7 +373,7 @@ function KanbanCard({
             aria-label={`Advance ${coach.name} to next stage`}
             tabIndex={-1}
           >
-            <ArrowRight size={12} />
+            <IconArrowRight size={12} />
           </button>
         )}
       </div>

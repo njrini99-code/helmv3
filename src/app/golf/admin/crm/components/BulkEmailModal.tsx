@@ -3,16 +3,16 @@
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import {
-  X,
-  Mail,
-  Send,
-  AlertCircle,
-  CheckCircle2,
-  Loader2,
-  ExternalLink,
-  Copy,
-  Check,
-} from 'lucide-react';
+  IconX,
+  IconMail,
+  IconAlertCircle,
+  IconCheckCircle2,
+  IconLoader,
+  IconCheck,
+  IconSend,
+  IconExternalLink,
+  IconCopy,
+} from '@/components/icons';
 import type { Coach } from '../crm-config';
 import { TemplatePicker } from './TemplatePicker';
 
@@ -172,7 +172,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
           <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100 bg-white">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center">
-                <Mail size={18} className="text-blue-600" />
+                <IconMail size={18} className="text-blue-600" />
               </div>
               <div>
                 <h2 className="text-lg font-bold text-warm-900">Email Coaches</h2>
@@ -185,7 +185,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
               onClick={onClose}
               className="p-2 rounded-xl hover:bg-warm-50 text-warm-400 hover:text-warm-600 transition-colors"
             >
-              <X size={18} />
+              <IconX size={18} />
             </button>
           </div>
 
@@ -238,12 +238,12 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
               >
                 {copied ? (
                   <>
-                    <Check size={12} className="text-primary-600" />
+                    <IconCheck size={12} className="text-primary-600" />
                     <span className="text-primary-600">Copied!</span>
                   </>
                 ) : (
                   <>
-                    <Copy size={12} />
+                    <IconCopy size={12} />
                     Copy email list
                   </>
                 )}
@@ -262,7 +262,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
             </div>
             {coachesWithoutEmail.length > 0 && (
               <div className="flex items-center gap-1.5 mt-2 text-xs text-amber-600">
-                <AlertCircle size={12} />
+                <IconAlertCircle size={12} />
                 <span>
                   {coachesWithoutEmail.length} coach{coachesWithoutEmail.length !== 1 ? 'es' : ''}{' '}
                   skipped (no email): {coachesWithoutEmail.map(c => c.name).join(', ')}
@@ -326,7 +326,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
                     'disabled:opacity-50 disabled:cursor-not-allowed'
                   )}
                 >
-                  <ExternalLink size={16} />
+                  <IconExternalLink size={16} />
                   Open in Gmail ({coachesWithEmail.length} BCC)
                 </button>
               </div>
@@ -361,7 +361,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
                   <TemplatePicker onSelect={handleTemplateSelect} coachData={coachData} />
                   {selectedTemplateId && (
                     <span className="flex items-center gap-1.5 px-2.5 py-1 bg-primary-50 text-primary-700 rounded-lg text-xs font-medium border border-primary-200/50">
-                      <Check size={12} />
+                      <IconCheck size={12} />
                       Template applied
                       <button
                         onClick={() => {
@@ -371,7 +371,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
                         }}
                         className="ml-1 text-primary-400 hover:text-primary-600"
                       >
-                        <X size={12} />
+                        <IconX size={12} />
                       </button>
                     </span>
                   )}
@@ -430,7 +430,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
                         : 'bg-red-50 text-red-700 border border-red-200/50'
                     )}
                   >
-                    {result.success ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+                    {result.success ? <IconCheckCircle2 size={16} /> : <IconAlertCircle size={16} />}
                     {result.message}
                   </div>
                 )}
@@ -457,12 +457,12 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
                 >
                   {sending ? (
                     <>
-                      <Loader2 size={16} className="animate-spin" />
+                      <IconLoader size={16} className="animate-spin" />
                       Sending...
                     </>
                   ) : (
                     <>
-                      <Send size={16} />
+                      <IconSend size={16} />
                       Send to {coachesWithEmail.length} Coach
                       {coachesWithEmail.length !== 1 ? 'es' : ''}
                     </>

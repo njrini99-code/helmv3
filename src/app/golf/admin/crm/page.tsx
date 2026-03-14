@@ -4,25 +4,24 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import {
-  BarChart3,
-  ClipboardList,
-  LayoutDashboard,
-  ArrowLeft,
-  ChevronLeft,
-  ChevronRight,
-  Plus,
-  Upload,
-  Download,
-  Users,
-  TrendingUp,
-  Clock,
-  Flame,
-  Building2,
-  Target,
-  AlertTriangle,
-  Mail,
-  Inbox,
-} from 'lucide-react';
+  IconChartBar,
+  IconChevronRight,
+  IconPlus,
+  IconUpload,
+  IconDownload,
+  IconUsers,
+  IconTrendingUp,
+  IconClock,
+  IconFlame,
+  IconTarget,
+  IconWarning,
+  IconMail,
+  IconClipboardList as ClipboardList,
+  IconLayoutGrid as LayoutDashboard,
+  IconArrowLeft as ArrowLeft,
+  IconChevronLeft as ChevronLeft,
+  IconBuilding as Building2,
+} from '@/components/icons';
 import { cn } from '@/lib/utils';
 import {
   type CoachStatus,
@@ -56,10 +55,10 @@ import type { CRMEvent } from './components/CalendarView';
 const TABS = [
   { id: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard, shortcut: '1', description: 'Pipeline overview & quick actions' },
   { id: 'list', label: 'Coaches', Icon: ClipboardList, shortcut: '2', description: 'All coaches in table view' },
-  { id: 'pipeline', label: 'Pipeline', Icon: BarChart3, shortcut: '3', description: 'Kanban sales pipeline' },
+  { id: 'pipeline', label: 'Pipeline', Icon: IconChartBar, shortcut: '3', description: 'Kanban sales pipeline' },
   { id: 'conferences', label: 'Conferences', Icon: Building2, shortcut: '4', description: 'Grouped by conference' },
-  { id: 'email', label: 'Email', Icon: Mail, shortcut: '5', description: 'Email tracking & analytics' },
-  { id: 'inbound', label: 'Inbound', Icon: Inbox, shortcut: '6', description: 'Demo requests & inbound leads' },
+  { id: 'email', label: 'Email', Icon: IconMail, shortcut: '5', description: 'Email tracking & analytics' },
+  { id: 'inbound', label: 'Inbound', Icon: IconMail, shortcut: '6', description: 'Demo requests & inbound leads' },
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
@@ -330,7 +329,7 @@ export default function CRMPage() {
       <div className="min-h-screen bg-[#FFFEF8] flex items-center justify-center p-8">
         <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/20 shadow-glass p-8 text-center max-w-md">
           <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4">
-            <AlertTriangle size={28} className="text-red-500" />
+            <IconWarning size={28} className="text-red-500" />
           </div>
           <h2 className="text-xl font-bold text-warm-900 mb-2">Error Loading CRM</h2>
           <p className="text-warm-600 mb-6">{error}</p>
@@ -381,7 +380,7 @@ export default function CRMPage() {
             onClick={() => setShowAddModal(true)}
             className="flex-shrink-0 p-1.5 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors"
           >
-            <Plus size={16} />
+            <IconPlus size={16} />
           </button>
         </div>
       </div>
@@ -397,7 +396,7 @@ export default function CRMPage() {
         {/* Logo */}
         <div className={cn('flex items-center gap-3 px-4 h-16', sidebarCollapsed && 'justify-center px-0')}>
           <div className="w-9 h-9 rounded-[10px] bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/25">
-            <Target size={18} className="text-white" />
+            <IconTarget size={18} className="text-white" />
           </div>
           {!sidebarCollapsed && <span className="font-bold text-lg text-white tracking-tight">Coach CRM</span>}
         </div>
@@ -458,16 +457,16 @@ export default function CRMPage() {
               'bg-gradient-to-r from-primary-500 to-primary-600 text-white hover:from-primary-600 hover:to-primary-700'
             )}
           >
-            <Plus size={16} className="flex-shrink-0" />
+            <IconPlus size={16} className="flex-shrink-0" />
             {!sidebarCollapsed && <span>Add Coach</span>}
           </button>
           {!sidebarCollapsed && (
             <div className="flex gap-2">
               <button onClick={() => setShowImportModal(true)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[10px] text-sm font-medium bg-white/5 hover:bg-white/10 text-warm-400 transition-colors">
-                <Upload size={14} /> Import
+                <IconUpload size={14} /> Import
               </button>
               <button onClick={exportToCSV} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[10px] text-sm font-medium bg-white/5 hover:bg-white/10 text-warm-400 transition-colors">
-                <Download size={14} /> Export
+                <IconDownload size={14} /> Export
               </button>
             </div>
           )}
@@ -478,7 +477,7 @@ export default function CRMPage() {
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
           className="absolute -right-3 top-20 w-6 h-6 rounded-full bg-[#1C1917] border border-white/20 flex items-center justify-center text-warm-400 hover:text-white transition-colors shadow-lg"
         >
-          {sidebarCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+          {sidebarCollapsed ? <IconChevronRight size={14} /> : <ChevronLeft size={14} />}
         </button>
       </aside>
 
@@ -497,25 +496,25 @@ export default function CRMPage() {
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
               <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/70 border border-white/30 shadow-glass-sm">
-                <Users size={14} className="text-warm-500" />
+                <IconUsers size={14} className="text-warm-500" />
                 <span className="text-sm font-bold text-warm-800 tabular-nums">{stats.total}</span>
                 <span className="text-xs text-warm-500 hidden sm:inline">coaches</span>
               </div>
               <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/70 border border-white/30 shadow-glass-sm">
-                <TrendingUp size={14} className="text-primary-500" />
+                <IconTrendingUp size={14} className="text-primary-500" />
                 <span className="text-sm font-bold text-warm-800 tabular-nums">{stats.inPipeline}</span>
                 <span className="text-xs text-warm-500">in pipeline</span>
               </div>
               {stats.followUpsDue > 0 && (
                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200/50">
-                  <Clock size={14} className="text-amber-600" />
+                  <IconClock size={14} className="text-amber-600" />
                   <span className="text-sm font-bold text-amber-700 tabular-nums">{stats.followUpsDue}</span>
                   <span className="text-xs text-amber-600 hidden sm:inline">due</span>
                 </div>
               )}
               {stats.hot > 0 && (
                 <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-50 border border-orange-200/50">
-                  <Flame size={14} className="text-orange-600" />
+                  <IconFlame size={14} className="text-orange-600" />
                   <span className="text-sm font-bold text-orange-700 tabular-nums">{stats.hot}</span>
                   <span className="text-xs text-orange-600">hot</span>
                 </div>

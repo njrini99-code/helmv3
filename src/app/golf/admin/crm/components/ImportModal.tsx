@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import type { Division, ProgramType } from '../crm-config';
-import { X, Check, AlertTriangle } from 'lucide-react';
+import { IconX, IconCheck, IconWarning } from '@/components/icons';
 
 interface ImportModalProps {
   onClose: () => void;
@@ -260,7 +260,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
             aria-label="Close"
             className="p-2 rounded-lg hover:bg-warm-100 active:bg-warm-200 text-warm-500 transition-colors"
           >
-            <X className="w-5 h-5" />
+            <IconX className="w-5 h-5" />
           </button>
         </div>
 
@@ -357,7 +357,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
               {errors.length > 0 && (
                 <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <p className="text-sm text-yellow-800">
-                    <AlertTriangle className="w-4 h-4 inline mr-1" />
+                    <IconWarning className="w-4 h-4 inline mr-1" />
                     {errors.length} rows skipped due to errors
                   </p>
                 </div>
@@ -366,7 +366,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
               {duplicateCount > 0 && (
                 <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
                   <p className="text-sm text-amber-800">
-                    <AlertTriangle className="w-4 h-4 inline mr-1" />
+                    <IconWarning className="w-4 h-4 inline mr-1" />
                     {duplicateCount} coach{duplicateCount !== 1 ? 'es' : ''} already exist (matched by email) and will be skipped
                   </p>
                 </div>
@@ -456,7 +456,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
                 'w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4',
                 importProgress.errors === 0 ? 'bg-primary-100' : 'bg-yellow-100'
               )}>
-                <Check className={cn(
+                <IconCheck className={cn(
                   'w-8 h-8',
                   importProgress.errors === 0 ? 'text-primary-600' : 'text-yellow-600'
                 )} />

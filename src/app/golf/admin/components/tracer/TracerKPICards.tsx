@@ -1,6 +1,6 @@
 'use client';
 
-import { CircleDot, CheckCircle2, AlertTriangle, BarChart3 } from 'lucide-react';
+import { IconCircleDot, IconCheckCircle2, IconWarning, IconChartBar } from '@/components/icons';
 import { AdminStatCard } from '../AdminStatCard';
 
 // ============================================================================
@@ -34,7 +34,7 @@ export function TracerKPICards({
       <AdminStatCard
         label="Total Rounds"
         value={totalRounds}
-        icon={<CircleDot size={20} />}
+        icon={<IconCircleDot size={20} />}
         detail={`${completedRounds} completed`}
         accentColor="green"
         sparklineData={sparklineData?.rounds}
@@ -42,14 +42,14 @@ export function TracerKPICards({
       <AdminStatCard
         label="Completion Rate"
         value={`${completionRate}%`}
-        icon={<CheckCircle2 size={20} />}
+        icon={<IconCheckCircle2 size={20} />}
         accentColor={completionRate >= 80 ? 'green' : completionRate >= 50 ? 'amber' : 'red'}
         detail={`${totalRounds - completedRounds} incomplete`}
       />
       <AdminStatCard
         label="Errors (7d)"
         value={errors7d}
-        icon={<AlertTriangle size={20} />}
+        icon={<IconWarning size={20} />}
         accentColor={critical7d > 0 ? 'red' : errors7d > 0 ? 'amber' : 'green'}
         detail={critical7d > 0 ? `${critical7d} critical` : 'No critical'}
         sparklineData={sparklineData?.errors}
@@ -58,7 +58,7 @@ export function TracerKPICards({
       <AdminStatCard
         label="Stats Mismatches"
         value={statsMismatches}
-        icon={<BarChart3 size={20} />}
+        icon={<IconChartBar size={20} />}
         accentColor={statsMismatches > 0 ? 'amber' : 'green'}
         detail={statsMismatches > 0 ? 'Cache vs live differ' : 'All in sync'}
       />

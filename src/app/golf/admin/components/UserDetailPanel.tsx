@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
-import { X, Mail, Calendar, Target, Sparkles, User, Clock } from 'lucide-react';
+import { IconX, IconMail, IconCalendar, IconTarget, IconSparkles, IconUser, IconClock } from '@/components/icons';
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { ActivityDot } from './ActivityDot';
 import { timeAgo, formatDate } from './admin-utils';
@@ -102,7 +102,7 @@ export function UserDetailPanel({ userId, teams, unassigned, userDirectory, onCl
               onClick={onClose}
               className="p-2 rounded-xl text-warm-400 hover:text-warm-700 hover:bg-warm-100/80 active:bg-warm-200 transition-colors"
             >
-              <X size={20} />
+              <IconX size={20} />
             </button>
           </div>
         </div>
@@ -174,14 +174,14 @@ export function UserDetailPanel({ userId, teams, unassigned, userDirectory, onCl
           <div className="grid grid-cols-2 gap-3 mb-6">
             <div className="p-3 rounded-xl bg-white/50 border border-white/30">
               <div className="flex items-center gap-1.5 mb-1">
-                <Clock size={12} className="text-warm-400" />
+                <IconClock size={12} className="text-warm-400" />
                 <span className="text-micro text-warm-400 uppercase tracking-wider font-medium">Last Active</span>
               </div>
               <p className="text-sm font-semibold text-warm-900">{timeAgo(lastSeen)}</p>
             </div>
             <div className="p-3 rounded-xl bg-white/50 border border-white/30">
               <div className="flex items-center gap-1.5 mb-1">
-                <Calendar size={12} className="text-warm-400" />
+                <IconCalendar size={12} className="text-warm-400" />
                 <span className="text-micro text-warm-400 uppercase tracking-wider font-medium">Signed Up</span>
               </div>
               <p className="text-sm font-semibold text-warm-900">{formatDate(createdAt)}</p>
@@ -190,7 +190,7 @@ export function UserDetailPanel({ userId, teams, unassigned, userDirectory, onCl
               <>
                 <div className="p-3 rounded-xl bg-white/50 border border-white/30">
                   <div className="flex items-center gap-1.5 mb-1">
-                    <Target size={12} className="text-warm-400" />
+                    <IconTarget size={12} className="text-warm-400" />
                     <span className="text-micro text-warm-400 uppercase tracking-wider font-medium">Rounds</span>
                   </div>
                   <p className="text-sm font-semibold text-warm-900 tabular-nums">{member.roundsEntered}</p>
@@ -200,7 +200,7 @@ export function UserDetailPanel({ userId, teams, unassigned, userDirectory, onCl
                 </div>
                 <div className="p-3 rounded-xl bg-white/50 border border-white/30">
                   <div className="flex items-center gap-1.5 mb-1">
-                    <Sparkles size={12} className="text-warm-400" />
+                    <IconSparkles size={12} className="text-warm-400" />
                     <span className="text-micro text-warm-400 uppercase tracking-wider font-medium">AI Insights</span>
                   </div>
                   <p className="text-sm font-semibold text-warm-900 tabular-nums">{member.insightsReceived}</p>
@@ -232,7 +232,7 @@ export function UserDetailPanel({ userId, teams, unassigned, userDirectory, onCl
               {member?.lastRoundDate && (
                 <div className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Target size={12} className="text-primary-600" />
+                    <IconTarget size={12} className="text-primary-600" />
                   </div>
                   <div>
                     <p className="text-sm text-warm-700">Last round submitted</p>
@@ -243,7 +243,7 @@ export function UserDetailPanel({ userId, teams, unassigned, userDirectory, onCl
               {lastSeen && (
                 <div className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <User size={12} className="text-blue-600" />
+                    <IconUser size={12} className="text-blue-600" />
                   </div>
                   <div>
                     <p className="text-sm text-warm-700">Last signed in</p>
@@ -254,7 +254,7 @@ export function UserDetailPanel({ userId, teams, unassigned, userDirectory, onCl
               {createdAt && (
                 <div className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full bg-warm-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Mail size={12} className="text-warm-500" />
+                    <IconMail size={12} className="text-warm-500" />
                   </div>
                   <div>
                     <p className="text-sm text-warm-700">Account created</p>

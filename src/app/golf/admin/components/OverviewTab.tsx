@@ -1,6 +1,6 @@
 'use client';
 
-import { Users, Target, Sparkles, Activity, AlertTriangle } from 'lucide-react';
+import { IconUsers, IconTarget, IconSparkles, IconActivity, IconWarning } from '@/components/icons';
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { AdminStatCard } from './AdminStatCard';
 import { CriticalAlertsBanner } from './CriticalAlertsBanner';
@@ -41,7 +41,7 @@ export function OverviewTab({ data, onNavigateTab }: Props) {
         <AdminStatCard
           label="Total Users"
           value={data.totalPlatformUsers}
-          icon={<Users size={20} />}
+          icon={<IconUsers size={20} />}
           trend={{ value: data.growth.userGrowthRate, label: 'WoW' }}
           detail={`${data.users.totalCoaches} coaches · ${data.users.totalPlayers} players · ${data.users.totalAdmins} admin`}
           accentColor="green"
@@ -49,7 +49,7 @@ export function OverviewTab({ data, onNavigateTab }: Props) {
         <AdminStatCard
           label="Weekly Active"
           value={data.health.activeUsers7d}
-          icon={<Target size={20} />}
+          icon={<IconTarget size={20} />}
           trend={roundsWoW !== 0 ? { value: roundsWoW, label: 'rounds WoW' } : undefined}
           detail={`${data.health.roundsToday} rounds today · ${data.health.roundsThisWeek} this week`}
           accentColor="blue"
@@ -57,7 +57,7 @@ export function OverviewTab({ data, onNavigateTab }: Props) {
         <AdminStatCard
           label="Errors (7d)"
           value={data.errorLogs.totalErrors7d}
-          icon={<Activity size={20} />}
+          icon={<IconActivity size={20} />}
           accentColor={data.errorLogs.criticalErrors7d > 0 ? 'red' : data.errorLogs.totalErrors7d > 0 ? 'amber' : 'green'}
           detail={data.errorLogs.criticalErrors7d > 0 ? `${data.errorLogs.criticalErrors7d} critical` : 'no critical errors'}
         />
@@ -65,7 +65,7 @@ export function OverviewTab({ data, onNavigateTab }: Props) {
           label="Health Score"
           value={data.growth.platformHealthScore}
           suffix="/100"
-          icon={<Sparkles size={20} />}
+          icon={<IconSparkles size={20} />}
           accentColor={healthScoreColor}
           detail={
             data.growth.platformHealthScore >= 70 ? 'Platform running well' :
@@ -79,7 +79,7 @@ export function OverviewTab({ data, onNavigateTab }: Props) {
       {atRiskTotal > 0 && (
         <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-amber-50/80 border border-amber-200/50">
           <div className="flex items-center gap-2 text-amber-800 text-sm font-medium">
-            <AlertTriangle size={16} className="text-amber-500 shrink-0" />
+            <IconWarning size={16} className="text-amber-500 shrink-0" />
             <span>
               {atRiskTotal} user{atRiskTotal !== 1 ? 's' : ''} inactive 14+ days
               {(atRiskCoaches > 0 || atRiskPlayers > 0) && (

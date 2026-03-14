@@ -4,18 +4,17 @@ import { useMemo, useState, useTransition } from 'react';
 import { cn } from '@/lib/utils';
 import { resolveDashboardIncident } from '@/app/golf/actions/admin-data';
 import {
-  AlertTriangle,
-  Check,
-  ChevronDown,
-  ChevronUp,
-  Clipboard,
-  Eye,
-  Layers3,
-  Route,
-  RotateCcw,
-  ShieldAlert,
-  User,
-} from 'lucide-react';
+  IconWarning,
+  IconCheck,
+  IconChevronDown,
+  IconChevronUp,
+  IconClipboard,
+  IconEye,
+  IconRoute,
+  IconShieldAlert,
+  IconUser,
+} from '@/components/icons';
+import { IconLayers3 as Layers3, IconRotateCcw as RotateCcw } from '@/components/icons';
 import { AdminAreaChart, AdminDonutChart, AdminProgressBar } from '../AdminChart';
 import { timeAgo } from '../admin-utils';
 import type { ErrorGroup, AffectedPlayer, DailyCount, TracerIncident } from './tracer-types';
@@ -328,7 +327,7 @@ export default function TracerErrorAnalytics({
           <div>
             <div className="flex items-center gap-2.5">
               <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-red-50">
-                <ShieldAlert size={17} className="text-red-600" />
+                <IconShieldAlert size={17} className="text-red-600" />
               </div>
               <div>
                 <h3 className="text-base font-semibold text-warm-900">Tracer Incident Feed</h3>
@@ -349,7 +348,7 @@ export default function TracerErrorAnalytics({
                   : 'border-white/40 bg-white/70 text-warm-700 hover:bg-white'
             )}
           >
-            {copyState?.target === 'feed' && copyState.status === 'success' ? <Check size={16} /> : <Clipboard size={16} />}
+            {copyState?.target === 'feed' && copyState.status === 'success' ? <IconCheck size={16} /> : <IconClipboard size={16} />}
             {copyState?.target === 'feed' && copyState.status === 'success'
               ? 'Copied tracer feed'
               : copyState?.target === 'feed' && copyState.status === 'error'
@@ -495,13 +494,13 @@ export default function TracerErrorAnalytics({
                         </span>
                         {incident.playerIds.length > 0 && (
                           <span className="inline-flex items-center gap-1 rounded-full border border-white/40 bg-white/65 px-2 py-0.5 text-[11px] font-medium text-warm-600">
-                            <User size={11} />
+                            <IconUser size={11} />
                             {incident.playerIds.length}
                           </span>
                         )}
                         {incident.roundIds.length > 0 && (
                           <span className="inline-flex items-center gap-1 rounded-full border border-white/40 bg-white/65 px-2 py-0.5 text-[11px] font-medium text-warm-600">
-                            <Route size={11} />
+                            <IconRoute size={11} />
                             {incident.roundIds.length} rounds
                           </span>
                         )}
@@ -521,7 +520,7 @@ export default function TracerErrorAnalytics({
 
                       <div className="mt-2 flex items-start gap-3">
                         <div className={cn('mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-white/80', style.icon)}>
-                          {incident.status === 'resolved' ? <RotateCcw size={16} /> : <AlertTriangle size={16} />}
+                          {incident.status === 'resolved' ? <RotateCcw size={16} /> : <IconWarning size={16} />}
                         </div>
                         <div className="min-w-0">
                           <h4 className="text-sm font-semibold leading-6 text-warm-900">{incident.title}</h4>
@@ -549,7 +548,7 @@ export default function TracerErrorAnalytics({
                               : 'border-white/40 bg-white/70 text-warm-700 hover:bg-white'
                         )}
                       >
-                        {copyState?.target === incident.id && copyState.status === 'success' ? <Check size={16} /> : <Clipboard size={16} />}
+                        {copyState?.target === incident.id && copyState.status === 'success' ? <IconCheck size={16} /> : <IconClipboard size={16} />}
                         {copyState?.target === incident.id && copyState.status === 'success'
                           ? 'Copied'
                           : copyState?.target === incident.id && copyState.status === 'error'
@@ -576,7 +575,7 @@ export default function TracerErrorAnalytics({
                                 : 'border-white/40 bg-white/70 text-warm-700 hover:bg-white'
                             )}
                           >
-                            <Eye size={16} />
+                            <IconEye size={16} />
                             {investigatingIds.has(incident.id) ? 'Investigating' : 'Start investigating'}
                           </button>
                           <button
@@ -600,7 +599,7 @@ export default function TracerErrorAnalytics({
                         onClick={() => setExpandedId(isExpanded ? null : incident.id)}
                         className="inline-flex items-center gap-2 rounded-xl border border-white/40 bg-white/70 px-3 py-2 text-sm font-medium text-warm-700 transition-colors hover:bg-white"
                       >
-                        {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                        {isExpanded ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
                         {isExpanded ? 'Hide detail' : 'Show detail'}
                       </button>
                     </div>
@@ -701,7 +700,7 @@ export default function TracerErrorAnalytics({
                 <p className="text-sm text-warm-500">Individual error events before grouping into incidents. Click to inspect each trace.</p>
               </div>
             </div>
-            {showRawTraces ? <ChevronUp size={18} className="text-warm-400" /> : <ChevronDown size={18} className="text-warm-400" />}
+            {showRawTraces ? <IconChevronUp size={18} className="text-warm-400" /> : <IconChevronDown size={18} className="text-warm-400" />}
           </button>
 
           {showRawTraces && (
@@ -813,7 +812,7 @@ export default function TracerErrorAnalytics({
             {topPlayers.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-center">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-warm-100/80">
-                  <AlertTriangle size={18} className="text-warm-400" />
+                  <IconWarning size={18} className="text-warm-400" />
                 </div>
                 <p className="mt-3 text-sm font-medium text-warm-600">No affected players</p>
                 <p className="text-xs text-warm-400">No player-linked tracer incidents in the current slice.</p>

@@ -4,11 +4,11 @@ import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import {
-  FileText,
-  ChevronDown,
-  Search,
-  X,
-} from 'lucide-react';
+  IconFileText,
+  IconChevronDown,
+  IconSearch,
+  IconX,
+} from '@/components/icons';
 
 // ── Types ──
 interface EmailTemplate {
@@ -144,9 +144,9 @@ export function TemplatePicker({ onSelect, coachData }: TemplatePickerProps) {
           open && 'bg-white border-warm-300/60 shadow-sm'
         )}
       >
-        <FileText size={15} className="text-warm-500" />
+        <IconFileText size={15} className="text-warm-500" />
         Use Template
-        <ChevronDown size={14} className={cn('text-warm-400 transition-transform duration-200', open && 'rotate-180')} />
+        <IconChevronDown size={14} className={cn('text-warm-400 transition-transform duration-200', open && 'rotate-180')} />
       </button>
 
       {/* Dropdown */}
@@ -155,7 +155,7 @@ export function TemplatePicker({ onSelect, coachData }: TemplatePickerProps) {
           {/* Search */}
           <div className="p-3 border-b border-warm-100/50">
             <div className="relative">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
+              <IconSearch size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
               <input
                 type="text"
                 value={search}
@@ -169,7 +169,7 @@ export function TemplatePicker({ onSelect, coachData }: TemplatePickerProps) {
                   onClick={() => setSearch('')}
                   className="absolute right-2.5 top-1/2 -translate-y-1/2 text-warm-400 hover:text-warm-600"
                 >
-                  <X size={14} />
+                  <IconX size={14} />
                 </button>
               )}
             </div>

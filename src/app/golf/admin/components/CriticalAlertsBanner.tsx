@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { AlertTriangle, Info, X } from 'lucide-react';
+import { IconWarning, IconInfo, IconX } from '@/components/icons';
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 
 interface Props {
@@ -86,7 +86,7 @@ export function CriticalAlertsBanner({ items, onNavigateTab }: Props) {
     <div className="space-y-2">
       {displayed.map((item) => {
         const config = severityConfig[item.severity];
-        const Icon = item.severity === 'info' ? Info : AlertTriangle;
+        const Icon = item.severity === 'info' ? IconInfo : IconWarning;
 
         return (
           <div
@@ -136,7 +136,7 @@ export function CriticalAlertsBanner({ items, onNavigateTab }: Props) {
                   config.dismissColor
                 )}
               >
-                <X size={16} />
+                <IconX size={16} />
               </button>
             </div>
           </div>

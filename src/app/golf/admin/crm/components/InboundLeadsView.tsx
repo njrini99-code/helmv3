@@ -4,14 +4,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import {
-  Inbox,
-  Mail,
-  Clock,
-  CheckCircle2,
-  UserPlus,
-  ExternalLink,
-  RefreshCw,
-} from 'lucide-react';
+  IconMail,
+  IconClock,
+  IconCheckCircle2,
+  IconUserPlus,
+  IconRefresh,
+  IconExternalLink,
+} from '@/components/icons';
 
 interface DemoRequest {
   id: string;
@@ -131,14 +130,14 @@ export function InboundLeadsView() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          icon={<Inbox size={20} />}
+          icon={<IconMail size={20} />}
           iconBg="bg-blue-50"
           iconColor="text-blue-600"
           label="Total Requests"
           value={allStats.total}
         />
         <StatCard
-          icon={<Mail size={20} />}
+          icon={<IconMail size={20} />}
           iconBg="bg-amber-50"
           iconColor="text-amber-600"
           label="New / Uncontacted"
@@ -146,14 +145,14 @@ export function InboundLeadsView() {
           highlight={allStats.new > 0}
         />
         <StatCard
-          icon={<CheckCircle2 size={20} />}
+          icon={<IconCheckCircle2 size={20} />}
           iconBg="bg-violet-50"
           iconColor="text-violet-600"
           label="Contacted"
           value={allStats.contacted}
         />
         <StatCard
-          icon={<UserPlus size={20} />}
+          icon={<IconUserPlus size={20} />}
           iconBg="bg-primary-50"
           iconColor="text-primary-600"
           label="Added to CRM"
@@ -188,7 +187,7 @@ export function InboundLeadsView() {
           onClick={fetchRequests}
           className="p-2 rounded-lg hover:bg-warm-50 text-warm-400 hover:text-warm-600 transition-colors"
         >
-          <RefreshCw size={16} />
+          <IconRefresh size={16} />
         </button>
       </div>
 
@@ -210,7 +209,7 @@ export function InboundLeadsView() {
         ) : requests.length === 0 ? (
           <div className="py-16 text-center">
             <div className="w-14 h-14 rounded-2xl bg-warm-50 flex items-center justify-center mx-auto mb-4">
-              <Inbox size={24} className="text-warm-300" />
+              <IconMail size={24} className="text-warm-300" />
             </div>
             <p className="text-sm font-medium text-warm-500">No demo requests yet</p>
             <p className="text-xs text-warm-400 mt-1">Requests from the landing page will appear here</p>
@@ -238,9 +237,9 @@ export function InboundLeadsView() {
                     isContacted && 'bg-violet-100',
                     isConverted && 'bg-primary-100',
                   )}>
-                    {isNew && <Mail size={18} className="text-amber-600" />}
-                    {isContacted && <CheckCircle2 size={18} className="text-violet-600" />}
-                    {isConverted && <UserPlus size={18} className="text-primary-600" />}
+                    {isNew && <IconMail size={18} className="text-amber-600" />}
+                    {isContacted && <IconCheckCircle2 size={18} className="text-violet-600" />}
+                    {isConverted && <IconUserPlus size={18} className="text-primary-600" />}
                   </div>
 
                   {/* Info */}
@@ -263,7 +262,7 @@ export function InboundLeadsView() {
                         <span className="text-xs text-warm-400">{request.organization}</span>
                       )}
                       <span className="text-xs text-warm-400 flex items-center gap-1">
-                        <Clock size={10} />
+                        <IconClock size={10} />
                         {request.created_at ? formatRelative(request.created_at) : 'Unknown'}
                       </span>
                       {request.interest_type && (
@@ -291,7 +290,7 @@ export function InboundLeadsView() {
                           disabled={isProcessing}
                           className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary-600 text-white hover:bg-primary-700 transition-colors disabled:opacity-50 flex items-center gap-1"
                         >
-                          <UserPlus size={12} />
+                          <IconUserPlus size={12} />
                           Add to CRM
                         </button>
                       </>
@@ -302,13 +301,13 @@ export function InboundLeadsView() {
                         disabled={isProcessing}
                         className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary-600 text-white hover:bg-primary-700 transition-colors disabled:opacity-50 flex items-center gap-1"
                       >
-                        <UserPlus size={12} />
+                        <IconUserPlus size={12} />
                         Add to CRM
                       </button>
                     )}
                     {isConverted && (
                       <span className="text-xs text-primary-600 font-medium flex items-center gap-1">
-                        <CheckCircle2 size={12} />
+                        <IconCheckCircle2 size={12} />
                         In CRM
                       </span>
                     )}
@@ -316,7 +315,7 @@ export function InboundLeadsView() {
                       href={`mailto:${request.email}`}
                       className="p-1.5 rounded-lg hover:bg-warm-50 text-warm-400 hover:text-warm-600 transition-colors"
                     >
-                      <ExternalLink size={14} />
+                      <IconExternalLink size={14} />
                     </a>
                   </div>
                 </div>

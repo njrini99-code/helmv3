@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { Search, X, Clock, Star, ChevronDown, ChevronUp, FileText, AlertCircle, Loader2 } from 'lucide-react';
+import { IconStar, IconSearch, IconX, IconClock, IconChevronDown, IconChevronUp, IconFileText, IconAlertCircle, IconLoader } from '@/components/icons';
 import type { CoachStatus } from '../crm-config';
 
 export interface Filters {
@@ -87,9 +87,9 @@ export function CoachFilters({
         {/* Search */}
         <div className="relative flex-1 min-w-[200px] max-w-sm">
           {isDebouncing ? (
-            <Loader2 size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-primary-400 animate-spin" />
+            <IconLoader size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-primary-400 animate-spin" />
           ) : (
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
+            <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
           )}
           <input
             type="text"
@@ -106,7 +106,7 @@ export function CoachFilters({
           />
           {localSearch && (
             <button onClick={() => { setLocalSearch(''); setFilters(f => ({ ...f, search: '' })); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-warm-400 hover:text-warm-600">
-              <X size={14} />
+              <IconX size={14} />
             </button>
           )}
         </div>
@@ -162,7 +162,7 @@ export function CoachFilters({
               : 'bg-white/60 border-warm-200/50 text-warm-500 hover:bg-warm-50 active:bg-warm-100'
           )}
         >
-          {showMore ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+          {showMore ? <IconChevronUp size={12} /> : <IconChevronDown size={12} />}
           Filters
           {activeFilterCount > 0 && (
             <span className="ml-0.5 px-1.5 py-0.5 bg-primary-600 text-white text-micro font-bold rounded-full leading-none">
@@ -175,7 +175,7 @@ export function CoachFilters({
         {activeFilterCount > 0 && (
           <button onClick={clearFilters}
             className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-red-600 hover:bg-red-50 transition-colors whitespace-nowrap ml-auto">
-            <X size={12} /> Clear {activeFilterCount}
+            <IconX size={12} /> Clear {activeFilterCount}
           </button>
         )}
       </div>
@@ -243,7 +243,7 @@ export function CoachFilters({
                 : 'bg-white/60 border-warm-200/50 text-warm-500 hover:bg-warm-50 active:bg-warm-100'
             )}
           >
-            <Clock size={12} /> Follow-ups Due
+            <IconClock size={12} /> Follow-ups Due
           </button>
 
           <button
@@ -255,7 +255,7 @@ export function CoachFilters({
                 : 'bg-white/60 border-warm-200/50 text-warm-500 hover:bg-warm-50 active:bg-warm-100'
             )}
           >
-            <Star size={12} /> Starred
+            <IconStar size={12} /> Starred
           </button>
 
           <button
@@ -267,7 +267,7 @@ export function CoachFilters({
                 : 'bg-white/60 border-warm-200/50 text-warm-500 hover:bg-warm-50 active:bg-warm-100'
             )}
           >
-            <FileText size={12} /> Has Notes
+            <IconFileText size={12} /> Has Notes
           </button>
 
           <button
@@ -279,7 +279,7 @@ export function CoachFilters({
                 : 'bg-white/60 border-warm-200/50 text-warm-500 hover:bg-warm-50 active:bg-warm-100'
             )}
           >
-            <AlertCircle size={12} /> No Contact 30 Days
+            <IconAlertCircle size={12} /> No Contact 30 Days
           </button>
         </div>
       )}

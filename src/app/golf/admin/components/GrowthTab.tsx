@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { Activity, Sparkles, TrendingUp, BarChart3 } from 'lucide-react';
+import { IconActivity, IconSparkles, IconTrendingUp, IconChartBar } from '@/components/icons';
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { AdminStatCard } from './AdminStatCard';
 import { GrowthCard } from './GrowthCard';
@@ -27,14 +27,14 @@ export function GrowthTab({ data }: Props) {
           label="Health Score"
           value={data.growth.platformHealthScore}
           suffix="/100"
-          icon={<Activity size={20} />}
+          icon={<IconActivity size={20} />}
           accentColor={data.growth.platformHealthScore >= 50 ? 'green' : 'red'}
         />
         <AdminStatCard
           label="Power Users"
           value={`${data.growth.npsProxy}`}
           suffix="%"
-          icon={<Sparkles size={20} />}
+          icon={<IconSparkles size={20} />}
           detail="coaches fully engaged"
           accentColor={data.growth.npsProxy > 30 ? 'green' : 'amber'}
         />
@@ -42,14 +42,14 @@ export function GrowthTab({ data }: Props) {
           label="Weekly Active"
           value={`${data.engagement.weeklyRetention}`}
           suffix="%"
-          icon={<TrendingUp size={20} />}
+          icon={<IconTrendingUp size={20} />}
           accentColor={data.engagement.weeklyRetention > 30 ? 'green' : 'amber'}
         />
         <AdminStatCard
           label="Stickiness"
           value={`${data.stickiness.dauMauRatio}`}
           suffix="%"
-          icon={<BarChart3 size={20} />}
+          icon={<IconChartBar size={20} />}
           detail={`DAU/MAU · ${data.stickiness.dau}/${data.stickiness.mau}`}
           accentColor={data.stickiness.dauMauRatio > 20 ? 'green' : 'amber'}
         />

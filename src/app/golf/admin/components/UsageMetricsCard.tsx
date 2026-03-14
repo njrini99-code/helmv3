@@ -2,7 +2,7 @@
 
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { AdminAreaChart, AdminDonutChart, AdminProgressBar, AdminFunnelChart } from './AdminChart';
-import { BarChart3 } from 'lucide-react';
+import { IconChartBar } from '@/components/icons';
 
 const ROUND_TYPE_COLORS: Record<string, string> = {
   practice: '#16A34A',
@@ -63,7 +63,7 @@ export function UsageMetricsCard({ usage, dataQuality, funnel }: Props) {
     <div className="glass-standard rounded-2xl p-6 transition-all duration-200 hover:bg-white/80 active:bg-white/90 hover:shadow-card-hover">
       <div className="flex items-center gap-2 mb-5">
         <div className="p-2 bg-white/50 rounded-lg text-warm-500">
-          <BarChart3 size={18} />
+          <IconChartBar size={18} />
         </div>
         <h3 className="text-lg font-semibold text-warm-900">Usage Metrics</h3>
       </div>

@@ -1,14 +1,14 @@
 import {
-  Inbox,
-  PhoneOutgoing,
-  Sparkles,
-  FileCheck,
-  Trophy,
-  CircleX,
-  Sprout,
-  Zap,
-  Target,
-} from 'lucide-react';
+  IconSparkles,
+  IconZap,
+  IconTarget,
+  IconMail as Inbox,
+  IconPhone as PhoneOutgoing,
+  IconFileText as FileCheck,
+  IconTrophy as Trophy,
+  IconXCircle as CircleX,
+  IconActivity as Sprout,
+} from '@/components/icons';
 
 // ============================================================================
 // TYPES
@@ -149,7 +149,7 @@ export const STATUS_CONFIG: Record<CoachStatus, {
 }> = {
   new_lead:  { label: 'New Lead',   color: 'text-warm-700',    bgColor: 'bg-warm-100',    ringColor: 'ring-warm-300',    icon: <Inbox size={14} />,         iconLabel: '📥', order: 1, gradient: 'from-warm-400 to-warm-500',       stage: 'new' },
   contacted: { label: 'Contacted',  color: 'text-blue-700',    bgColor: 'bg-blue-50',     ringColor: 'ring-blue-300',    icon: <PhoneOutgoing size={14} />, iconLabel: '📞', order: 2, gradient: 'from-blue-400 to-blue-500',       stage: 'active' },
-  engaged:   { label: 'Engaged',    color: 'text-violet-700',  bgColor: 'bg-violet-50',   ringColor: 'ring-violet-300',  icon: <Sparkles size={14} />,      iconLabel: '✨', order: 3, gradient: 'from-violet-400 to-violet-500',   stage: 'active' },
+  engaged:   { label: 'Engaged',    color: 'text-violet-700',  bgColor: 'bg-violet-50',   ringColor: 'ring-violet-300',  icon: <IconSparkles size={14} />,      iconLabel: '✨', order: 3, gradient: 'from-violet-400 to-violet-500',   stage: 'active' },
   proposal:  { label: 'Proposal',   color: 'text-amber-700',   bgColor: 'bg-amber-50',    ringColor: 'ring-amber-300',   icon: <FileCheck size={14} />,     iconLabel: '📄', order: 4, gradient: 'from-amber-400 to-amber-500',     stage: 'closing' },
   won:       { label: 'Customer',   color: 'text-primary-700', bgColor: 'bg-primary-50',  ringColor: 'ring-primary-400', icon: <Trophy size={14} />,        iconLabel: '🏆', order: 5, gradient: 'from-primary-400 to-primary-500', stage: 'closed' },
   lost:      { label: 'Lost',       color: 'text-red-700',     bgColor: 'bg-red-50',      ringColor: 'ring-red-300',     icon: <CircleX size={14} />,       iconLabel: '✗',  order: 6, gradient: 'from-red-400 to-red-500',         stage: 'closed' },
@@ -171,6 +171,6 @@ export const AUTO_FOLLOWUP_DAYS: Partial<Record<CoachStatus, number>> = {
 // ============================================================================
 export const PRIORITY_CONFIG: Record<number, { label: string; color: string; bgColor: string; icon: React.ReactNode; iconLabel: string }> = {
   0: { label: 'Normal', color: 'text-warm-500', bgColor: 'bg-warm-50', icon: null, iconLabel: '' },
-  1: { label: 'High', color: 'text-amber-600', bgColor: 'bg-amber-50', icon: <Zap size={14} />, iconLabel: '⚡' },
-  2: { label: 'Hot', color: 'text-orange-600', bgColor: 'bg-orange-50', icon: <Target size={14} />, iconLabel: '🔥' },
+  1: { label: 'High', color: 'text-amber-600', bgColor: 'bg-amber-50', icon: <IconZap size={14} />, iconLabel: '⚡' },
+  2: { label: 'Hot', color: 'text-orange-600', bgColor: 'bg-orange-50', icon: <IconTarget size={14} />, iconLabel: '🔥' },
 };

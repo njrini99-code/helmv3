@@ -5,22 +5,22 @@ import type { AdminDashboardData, BIFunnelStep } from '@/app/golf/actions/admin-
 import { AdminStatCard } from './AdminStatCard';
 import { cn } from '@/lib/utils';
 import {
-  TrendingUp,
-  Users,
-  Zap,
-  Clock,
-  BarChart3,
-  Activity,
-  AlertTriangle,
-  ShieldAlert,
-  Target,
-  Heart,
-  Star,
-  ArrowDown,
-  Layers,
-  ChevronDown,
-  ChevronUp,
-} from 'lucide-react';
+  IconHeart,
+  IconArrowDown,
+  IconTrendingUp,
+  IconUsers,
+  IconZap,
+  IconClock,
+  IconChartBar,
+  IconActivity,
+  IconWarning,
+  IconShieldAlert,
+  IconTarget,
+  IconStar,
+  IconLayers,
+  IconChevronDown,
+  IconChevronUp,
+} from '@/components/icons';
 import {
   BarChart,
   Bar,
@@ -48,11 +48,11 @@ interface Props {
 }
 
 const SUB_TABS: { id: BISubTab; label: string; icon: ReactNode }[] = [
-  { id: 'growth', label: 'Growth', icon: <TrendingUp size={14} /> },
-  { id: 'retention', label: 'Retention', icon: <Activity size={14} /> },
-  { id: 'usage', label: 'Product Usage', icon: <Layers size={14} /> },
-  { id: 'funnel', label: 'Funnel', icon: <Target size={14} /> },
-  { id: 'health', label: 'Health', icon: <Heart size={14} /> },
+  { id: 'growth', label: 'Growth', icon: <IconTrendingUp size={14} /> },
+  { id: 'retention', label: 'Retention', icon: <IconActivity size={14} /> },
+  { id: 'usage', label: 'Product Usage', icon: <IconLayers size={14} /> },
+  { id: 'funnel', label: 'Funnel', icon: <IconTarget size={14} /> },
+  { id: 'health', label: 'Health', icon: <IconHeart size={14} /> },
 ];
 
 const CHART_GREEN = '#16A34A';
@@ -93,7 +93,7 @@ class SectionErrorBoundary extends Component<SectionErrorBoundaryProps, SectionE
     if (this.state.hasError) {
       return (
         <div className="bg-red-50/80 backdrop-blur-sm border border-red-200/50 rounded-2xl p-6 text-center">
-          <AlertTriangle className="w-6 h-6 text-red-400 mx-auto mb-2" />
+          <IconWarning className="w-6 h-6 text-red-400 mx-auto mb-2" />
           <p className="text-sm font-medium text-red-700">
             Failed to render {this.props.sectionName}
           </p>
@@ -225,7 +225,7 @@ export function BusinessIntelligenceTab({ data }: Props) {
       <div className="space-y-6">
         <GlassCard>
           <div className="text-center py-12">
-            <BarChart3 className="w-10 h-10 text-warm-300 mx-auto mb-3" />
+            <IconChartBar className="w-10 h-10 text-warm-300 mx-auto mb-3" />
             <p className="text-warm-500 font-medium">Business Intelligence data is not available yet.</p>
             <p className="text-warm-400 text-sm mt-1">Please refresh the dashboard to load BI metrics.</p>
           </div>
@@ -253,7 +253,7 @@ export function BusinessIntelligenceTab({ data }: Props) {
             bi.growth.overallActivationRate >= 25 ? 'bg-amber-50 text-amber-600' :
             'bg-red-50 text-red-600'
           )}>
-            <TrendingUp size={20} />
+            <IconTrendingUp size={20} />
           </div>
         </div>
         <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -347,7 +347,7 @@ function GrowthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
           label="Activation Rate"
           value={g.overallActivationRate}
           suffix="%"
-          icon={<Zap size={20} />}
+          icon={<IconZap size={20} />}
           accentColor={g.overallActivationRate >= 40 ? 'green' : g.overallActivationRate >= 20 ? 'amber' : 'red'}
           detail={`Players ${g.playerActivationRate.toFixed(0)}% / Coaches ${g.coachActivationRate.toFixed(0)}%`}
           trend={g.userGrowthRateWoW !== 0 ? { value: g.userGrowthRateWoW, label: 'WoW' } : undefined}
@@ -355,7 +355,7 @@ function GrowthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
         <AdminStatCard
           label="Activated Users"
           value={g.activatedPlayers + g.activatedCoaches}
-          icon={<Users size={20} />}
+          icon={<IconUsers size={20} />}
           accentColor="blue"
           detail={`${g.activatedPlayers} players, ${g.activatedCoaches} coaches`}
         />
@@ -363,7 +363,7 @@ function GrowthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
           label="Median TTFV"
           value={g.medianTTFVDays !== null ? g.medianTTFVDays : '---'}
           suffix={g.medianTTFVDays !== null ? 'd' : ''}
-          icon={<Clock size={20} />}
+          icon={<IconClock size={20} />}
           accentColor={g.medianTTFVDays !== null && g.medianTTFVDays <= 3 ? 'green' : 'amber'}
           detail="Time to first value"
         />
@@ -371,7 +371,7 @@ function GrowthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
           label="WoW Growth"
           value={g.userGrowthRateWoW}
           suffix="%"
-          icon={<TrendingUp size={20} />}
+          icon={<IconTrendingUp size={20} />}
           accentColor={g.userGrowthRateWoW > 0 ? 'green' : g.userGrowthRateWoW === 0 ? 'amber' : 'red'}
           trend={g.roundGrowthRateWoW !== 0 ? { value: g.roundGrowthRateWoW, label: 'Rounds WoW' } : undefined}
           sparklineData={signupSparkline.length >= 2 ? signupSparkline : undefined}
@@ -485,7 +485,7 @@ function RetentionSection({ bi }: { bi: AdminDashboardData['bi'] }) {
           label="D1 Retention"
           value={r.d1.rate}
           suffix="%"
-          icon={<Activity size={20} />}
+          icon={<IconActivity size={20} />}
           accentColor={r.d1.rate >= 40 ? 'green' : r.d1.rate >= 20 ? 'amber' : 'red'}
           detail={`${r.d1.retained}/${r.d1.total} users`}
         />
@@ -493,7 +493,7 @@ function RetentionSection({ bi }: { bi: AdminDashboardData['bi'] }) {
           label="D7 Retention"
           value={r.d7.rate}
           suffix="%"
-          icon={<Activity size={20} />}
+          icon={<IconActivity size={20} />}
           accentColor={r.d7.rate >= 25 ? 'green' : r.d7.rate >= 10 ? 'amber' : 'red'}
           detail={`${r.d7.retained}/${r.d7.total} users`}
         />
@@ -501,7 +501,7 @@ function RetentionSection({ bi }: { bi: AdminDashboardData['bi'] }) {
           label="D30 Retention"
           value={r.d30.rate}
           suffix="%"
-          icon={<Activity size={20} />}
+          icon={<IconActivity size={20} />}
           accentColor={r.d30.rate >= 15 ? 'green' : r.d30.rate >= 5 ? 'amber' : 'red'}
           detail={`${r.d30.retained}/${r.d30.total} users`}
         />
@@ -509,7 +509,7 @@ function RetentionSection({ bi }: { bi: AdminDashboardData['bi'] }) {
           label="Stickiness"
           value={r.stickinessLogins}
           suffix="%"
-          icon={<BarChart3 size={20} />}
+          icon={<IconChartBar size={20} />}
           accentColor={r.stickinessLogins >= 20 ? 'green' : 'amber'}
           detail={`DAU/MAU (Rounds: ${r.stickinessRounds}%)`}
         />
@@ -715,7 +715,7 @@ function UsageSection({ bi }: { bi: AdminDashboardData['bi'] }) {
       {/* Dead Features Warning */}
       {u.deadFeatures.length > 0 && (
         <div className="bg-red-50/80 backdrop-blur-sm border border-red-200/50 rounded-2xl p-4 flex items-start gap-3">
-          <ShieldAlert className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+          <IconShieldAlert className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-semibold text-red-800">Dead Features Detected</p>
             <p className="text-xs text-red-600 mt-0.5">
@@ -981,7 +981,7 @@ function DropoffCallout({
   return (
     <div className={cn('rounded-2xl border p-5 backdrop-blur-sm', colors)}>
       <div className="flex items-start gap-3">
-        <ArrowDown className={cn('w-5 h-5 flex-shrink-0 mt-0.5', iconColor)} />
+        <IconArrowDown className={cn('w-5 h-5 flex-shrink-0 mt-0.5', iconColor)} />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold">{title}</p>
           <p className="text-xs mt-1 opacity-80">
@@ -1037,7 +1037,7 @@ function ErrorAreaRow({ area, maxCount }: { area: { area: string; count: number;
           )}
         </div>
         {area.recentErrors.length > 0 && (
-          expanded ? <ChevronUp className="w-3.5 h-3.5 text-warm-400 shrink-0" /> : <ChevronDown className="w-3.5 h-3.5 text-warm-400 shrink-0" />
+          expanded ? <IconChevronUp className="w-3.5 h-3.5 text-warm-400 shrink-0" /> : <IconChevronDown className="w-3.5 h-3.5 text-warm-400 shrink-0" />
         )}
       </button>
       {expanded && area.recentErrors.length > 0 && (
@@ -1096,9 +1096,9 @@ function HealthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
   function SortIcon({ field }: { field: typeof healthSortField }) {
     if (healthSortField !== field) return null;
     return healthSortDir === 'desc' ? (
-      <ChevronDown size={12} className="inline ml-0.5" />
+      <IconChevronDown size={12} className="inline ml-0.5" />
     ) : (
-      <ChevronUp size={12} className="inline ml-0.5" />
+      <IconChevronUp size={12} className="inline ml-0.5" />
     );
   }
 
@@ -1121,14 +1121,14 @@ function HealthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
           label="Power Users"
           value={h.powerUsers.pct}
           suffix="%"
-          icon={<Star size={20} />}
+          icon={<IconStar size={20} />}
           accentColor="violet"
           detail={`${h.powerUsers.count} users`}
         />
         <AdminStatCard
           label="At-Risk Accounts"
           value={h.atRiskAccounts.length}
-          icon={<AlertTriangle size={20} />}
+          icon={<IconWarning size={20} />}
           accentColor={h.atRiskAccounts.length === 0 ? 'green' : h.atRiskAccounts.length <= 5 ? 'amber' : 'red'}
           detail={h.atRiskAccounts.length === 0 ? 'All clear' : 'Needs attention'}
         />
@@ -1136,7 +1136,7 @@ function HealthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
           label="Top Conversion Score"
           value={topConversionScore}
           suffix="/100"
-          icon={<Target size={20} />}
+          icon={<IconTarget size={20} />}
           accentColor={topConversionScore >= 60 ? 'green' : 'amber'}
           detail={`${h.conversionProxies.filter((c) => c.tier === 'high').length} high-tier teams`}
         />

@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { Users } from 'lucide-react';
+import { IconUsers } from '@/components/icons';
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 
 interface Props {
@@ -49,7 +49,7 @@ export function TeamHealthCards({ teams, onSelectTeam }: Props) {
                   'w-8 h-8 rounded-xl flex items-center justify-center',
                   healthBgColors[team.healthStatus]
                 )}>
-                  <Users size={14} className="text-warm-600" />
+                  <IconUsers size={14} className="text-warm-600" />
                 </div>
                 <div className="relative">
                   <div className={cn('w-2.5 h-2.5 rounded-full', healthColors[team.healthStatus])} />

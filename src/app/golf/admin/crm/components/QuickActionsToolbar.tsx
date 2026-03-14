@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
-import { Zap, Search, AlertCircle, Users, Target, ArrowRight, X } from 'lucide-react';
+import { IconZap, IconSearch, IconAlertCircle, IconUsers, IconTarget, IconArrowRight, IconX } from '@/components/icons';
 import type { Coach, CoachStatus } from '../crm-config';
 
 interface QuickActionsToolbarProps {
@@ -92,7 +92,7 @@ export function QuickActionsToolbar({
       {/* Coaching header */}
       <div className="flex items-start gap-3">
         <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center flex-shrink-0">
-          <Zap size={20} className="text-primary-600" />
+          <IconZap size={20} className="text-primary-600" />
         </div>
         <div>
           <h3 className="font-bold text-warm-900 text-base">Get Started with Your Pipeline</h3>
@@ -115,13 +115,13 @@ export function QuickActionsToolbar({
           )}
         >
           <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
-            <Search size={18} className="text-blue-600" />
+            <IconSearch size={18} className="text-blue-600" />
           </div>
           <div>
             <div className="font-semibold text-warm-800 text-sm">Research Next 10</div>
             <div className="text-xs text-warm-500">Move 10 leads to Researching</div>
           </div>
-          <ArrowRight size={14} className="ml-auto text-warm-400" />
+          <IconArrowRight size={14} className="ml-auto text-warm-400" />
         </button>
 
         <button
@@ -135,13 +135,13 @@ export function QuickActionsToolbar({
           )}
         >
           <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center flex-shrink-0">
-            <Users size={18} className="text-violet-600" />
+            <IconUsers size={18} className="text-violet-600" />
           </div>
           <div>
             <div className="font-semibold text-warm-800 text-sm">Research Next 25</div>
             <div className="text-xs text-warm-500">Batch move 25 leads</div>
           </div>
-          <ArrowRight size={14} className="ml-auto text-warm-400" />
+          <IconArrowRight size={14} className="ml-auto text-warm-400" />
         </button>
 
         <div className={cn(
@@ -149,7 +149,7 @@ export function QuickActionsToolbar({
           'bg-white/80 border border-white/40 shadow-sm'
         )}>
           <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
-            <Target size={18} className="text-amber-600" />
+            <IconTarget size={18} className="text-amber-600" />
           </div>
           <div>
             <div className="font-semibold text-warm-800 text-sm">Pipeline Stats</div>
@@ -160,7 +160,7 @@ export function QuickActionsToolbar({
 
       {/* Tips */}
       <div className="flex items-center gap-2 px-3 py-2 bg-white/60 rounded-xl">
-        <AlertCircle size={14} className="text-blue-500 flex-shrink-0" />
+        <IconAlertCircle size={14} className="text-blue-500 flex-shrink-0" />
         <p className="text-xs text-warm-600">
           <strong>Tip:</strong> Star your top prospects first, then use &quot;Research Next 10&quot; to prioritize starred coaches. Use the list view to bulk-select and categorize.
         </p>
@@ -242,7 +242,7 @@ function SingleCoachQuickAction({
               <p className="text-warm-300 text-sm">{coach.school} • {coach.conference}</p>
             </div>
             <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors">
-              <X size={18} className="text-white/70" />
+              <IconX size={18} className="text-white/70" />
             </button>
           </div>
         </div>

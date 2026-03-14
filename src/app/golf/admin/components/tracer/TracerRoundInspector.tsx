@@ -4,19 +4,17 @@ import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
-  Search,
-  Filter,
-  CheckCircle2,
-  AlertTriangle,
-  Clock,
-  CircleDot,
-  ChevronDown,
-  ChevronRight,
-  Stethoscope,
-  ArrowUpDown,
-  ShieldAlert,
-  XCircle,
-} from 'lucide-react';
+  IconSearch,
+  IconCheckCircle2,
+  IconWarning,
+  IconClock,
+  IconCircleDot,
+  IconChevronDown,
+  IconChevronRight,
+  IconShieldAlert,
+  IconXCircle,
+} from '@/components/icons';
+import { IconFilter as Filter, IconStethoscope as Stethoscope, IconArrowUpDown as ArrowUpDown } from '@/components/icons';
 import { timeAgo, formatDate } from '../admin-utils';
 import type { FlatRound, TracerIncident } from './tracer-types';
 
@@ -200,7 +198,7 @@ export function TracerRoundInspector({ rounds, onDiagnose }: TracerRoundInspecto
       <div className="flex flex-wrap items-center gap-3">
         {/* Search */}
         <div className="relative flex-1 min-w-[200px]">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
+          <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
           <input
             type="text"
             placeholder="Search player or course..."
@@ -232,7 +230,7 @@ export function TracerRoundInspector({ rounds, onDiagnose }: TracerRoundInspecto
             <option value="in_progress">In Progress</option>
             <option value="draft">Draft</option>
           </select>
-          <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-warm-400 pointer-events-none" />
+          <IconChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-warm-400 pointer-events-none" />
         </div>
 
         {/* Stuck only toggle */}
@@ -245,7 +243,7 @@ export function TracerRoundInspector({ rounds, onDiagnose }: TracerRoundInspecto
               : 'bg-white/60 border border-white/30 text-warm-500 hover:bg-white/80 hover:text-warm-700'
           )}
         >
-          <Clock size={14} />
+          <IconClock size={14} />
           Stuck only
           {stuckCount > 0 && (
             <span className={cn(
@@ -267,7 +265,7 @@ export function TracerRoundInspector({ rounds, onDiagnose }: TracerRoundInspecto
               : 'bg-white/60 border border-white/30 text-warm-500 hover:bg-white/80 hover:text-warm-700'
           )}
         >
-          <AlertTriangle size={14} />
+          <IconWarning size={14} />
           Has errors
           {errorCount > 0 && (
             <span className={cn(
@@ -423,9 +421,9 @@ function RoundRow({
             isExpanded ? 'bg-warm-200/50' : 'bg-transparent'
           )}>
             {isExpanded ? (
-              <ChevronDown size={14} className="text-warm-500" />
+              <IconChevronDown size={14} className="text-warm-500" />
             ) : (
-              <ChevronRight size={14} className="text-warm-400" />
+              <IconChevronRight size={14} className="text-warm-400" />
             )}
           </div>
         </td>
@@ -508,17 +506,17 @@ function RoundRow({
         <td className="px-4 py-3.5 text-center">
           {issueCount > 0 ? (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700">
-              <AlertTriangle size={10} />
+              <IconWarning size={10} />
               {issueCount}
             </span>
           ) : round.status === 'completed' ? (
             <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-green-600">
-              <CheckCircle2 size={10} />
+              <IconCheckCircle2 size={10} />
               Clear
             </span>
           ) : (
             <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-warm-400">
-              <CircleDot size={10} />
+              <IconCircleDot size={10} />
               Watching
             </span>
           )}
@@ -577,11 +575,11 @@ function RoundRow({
                         )}
                       >
                         {check.ok ? (
-                          <CheckCircle2 size={11} className="flex-shrink-0" />
+                          <IconCheckCircle2 size={11} className="flex-shrink-0" />
                         ) : round.status === 'completed' ? (
-                          <XCircle size={11} className="flex-shrink-0" />
+                          <IconXCircle size={11} className="flex-shrink-0" />
                         ) : (
-                          <CircleDot size={11} className="flex-shrink-0" />
+                          <IconCircleDot size={11} className="flex-shrink-0" />
                         )}
                         {check.label}
                         {(!check.ok || check.detail !== 'Yes') && check.detail !== 'No' && (
@@ -605,7 +603,7 @@ function RoundRow({
                       ))
                     ) : (
                       <div className="flex items-center gap-2 rounded-lg bg-green-50/60 px-3 py-2 text-xs text-green-700">
-                        <CheckCircle2 size={12} className="flex-shrink-0" />
+                        <IconCheckCircle2 size={12} className="flex-shrink-0" />
                         No open shot-tracking incidents are tied to this round right now.
                       </div>
                     )}
@@ -690,7 +688,7 @@ function InlineError({ error }: { error: TracerIncident }) {
         {error.severity}
       </span>
       <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md bg-white/70 text-red-500">
-        <ShieldAlert size={11} />
+        <IconShieldAlert size={11} />
       </span>
       <div className="min-w-0 flex-1">
         <p className="break-words font-medium text-warm-800">{error.title}</p>

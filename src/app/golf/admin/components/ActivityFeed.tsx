@@ -4,17 +4,17 @@ import { useMemo, useState, type ReactNode } from 'react';
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { cn } from '@/lib/utils';
 import {
-  Activity,
-  AlertTriangle,
-  Bot,
-  CheckCircle2,
-  Clock3,
-  Route,
-  Shield,
-  Target,
-  User,
-  Wrench,
-} from 'lucide-react';
+  IconActivity,
+  IconShield,
+  IconWarning,
+  IconBot,
+  IconCheckCircle2,
+  IconClock3,
+  IconRoute,
+  IconTarget,
+  IconUser,
+  IconWrench,
+} from '@/components/icons';
 import { timeAgo } from './admin-utils';
 import { useAdminRealtimeContext } from './AdminRealtimeProvider';
 
@@ -39,27 +39,27 @@ interface TimelineItem {
 
 const itemStyles: Record<TimelineKind, { icon: ReactNode; chip: string; rail: string }> = {
   signup: {
-    icon: <User size={13} />,
+    icon: <IconUser size={13} />,
     chip: 'bg-blue-100 text-blue-700',
     rail: 'bg-blue-400',
   },
   round: {
-    icon: <Target size={13} />,
+    icon: <IconTarget size={13} />,
     chip: 'bg-primary-100 text-primary-700',
     rail: 'bg-primary-400',
   },
   insight: {
-    icon: <Bot size={13} />,
+    icon: <IconBot size={13} />,
     chip: 'bg-violet-100 text-violet-700',
     rail: 'bg-violet-400',
   },
   admin_event: {
-    icon: <Shield size={13} />,
+    icon: <IconShield size={13} />,
     chip: 'bg-amber-100 text-amber-700',
     rail: 'bg-amber-400',
   },
   audit: {
-    icon: <Wrench size={13} />,
+    icon: <IconWrench size={13} />,
     chip: 'bg-slate-100 text-slate-700',
     rail: 'bg-slate-400',
   },
@@ -254,7 +254,7 @@ export function ActivityFeed({ activity }: Props) {
         <div className="min-w-0">
           <div className="flex items-start gap-2.5">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-primary-50 text-primary-700">
-              <Activity size={18} />
+              <IconActivity size={18} />
             </div>
             <div className="min-w-0">
               <h3 className="text-base sm:text-lg font-semibold text-warm-900">
@@ -402,7 +402,7 @@ export function ActivityFeed({ activity }: Props) {
             </div>
           ) : (
             <div className="mt-4 rounded-2xl border border-primary-100 bg-primary-50/50 px-4 py-6 text-center">
-              <CheckCircle2 size={18} className="mx-auto text-primary-600" />
+              <IconCheckCircle2 size={18} className="mx-auto text-primary-600" />
               <p className="mt-2 text-sm font-medium text-primary-700">
                 No recent activity captured
               </p>
@@ -482,10 +482,10 @@ export function ActivityFeed({ activity }: Props) {
                         {/* Timestamp — always abbreviated, right-aligned */}
                         <div className="flex items-center gap-1 text-xs text-warm-400 tabular-nums shrink-0">
                           {item.filter === 'issues'
-                            ? <AlertTriangle size={11} />
+                            ? <IconWarning size={11} />
                             : item.filter === 'ops'
-                              ? <Route size={11} />
-                              : <Clock3 size={11} />}
+                              ? <IconRoute size={11} />
+                              : <IconClock3 size={11} />}
                           <span>{timeAgo(item.timestamp)}</span>
                         </div>
                       </div>

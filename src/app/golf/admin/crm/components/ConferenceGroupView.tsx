@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { ChevronDown, ChevronRight, Users, Star, ArrowRight, MoreHorizontal, MessageSquare, Mail } from 'lucide-react';
+import { IconStar, IconChevronDown, IconChevronRight, IconUsers, IconArrowRight, IconMoreHorizontal, IconMessageSquare, IconMail } from '@/components/icons';
 import type { Coach, CoachStatus } from '../crm-config';
 
 interface ConferenceGroupViewProps {
@@ -134,7 +134,7 @@ export function ConferenceGroupView({
     return (
       <div className="py-16 text-center glass-standard rounded-2xl">
         <div className="w-14 h-14 rounded-2xl bg-warm-100/80 flex items-center justify-center mx-auto mb-4">
-          <Users size={24} className="text-warm-300" />
+          <IconUsers size={24} className="text-warm-300" />
         </div>
         <h3 className="text-base font-semibold text-warm-700 mb-1">No coaches found</h3>
         <p className="text-sm text-warm-500 max-w-xs mx-auto">Try adjusting your filters.</p>
@@ -194,7 +194,7 @@ export function ConferenceGroupView({
               </div>
 
               <div className="text-warm-400">
-                {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                {isExpanded ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
               </div>
 
               <div className="flex-1 text-left">
@@ -290,7 +290,7 @@ export function ConferenceGroupView({
                               onClick={() => onToggleStar(coach.id, coach.is_starred)}
                               className={cn('transition-transform hover:scale-110', coach.is_starred ? 'opacity-100' : 'opacity-20 group-hover:opacity-50')}
                             >
-                              <Star size={14} className={cn(coach.is_starred ? 'fill-amber-400 text-amber-400' : 'text-warm-300')} />
+                              <IconStar size={14} className={cn(coach.is_starred ? 'fill-amber-400 text-amber-400' : 'text-warm-300')} />
                             </button>
                           </td>
                           <td className="px-4 py-2.5">
@@ -352,27 +352,27 @@ export function ConferenceGroupView({
                                 onClick={e => { e.stopPropagation(); setOpenActionMenu(openActionMenu === coach.id ? null : coach.id); setOpenStatusDropdown(null); }}
                                 className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 opacity-0 group-hover:opacity-100 transition-all"
                               >
-                                <MoreHorizontal size={14} />
+                                <IconMoreHorizontal size={14} />
                               </button>
                               {openActionMenu === coach.id && (
                                 <div className="absolute right-0 top-full mt-1 z-50 w-44 py-1 rounded-xl bg-white border border-warm-200/80 shadow-xl">
                                   <button onClick={() => { onLogContact(coach); setOpenActionMenu(null); }}
                                     className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 flex items-center gap-2">
-                                    <MessageSquare size={14} /> Log Contact
+                                    <IconMessageSquare size={14} /> Log Contact
                                   </button>
                                   {coach.email && (
                                     <a href={`mailto:${coach.email}`} onClick={() => setOpenActionMenu(null)}
                                       className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2">
-                                      <Mail size={14} /> Send Email
+                                      <IconMail size={14} /> Send Email
                                     </a>
                                   )}
                                   <button onClick={() => { onStatusChange(coach.id, 'contacted'); setOpenActionMenu(null); }}
                                     className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2">
-                                    <ArrowRight size={14} /> Move to Contacted
+                                    <IconArrowRight size={14} /> Move to Contacted
                                   </button>
                                   <button onClick={() => { onToggleStar(coach.id, coach.is_starred); setOpenActionMenu(null); }}
                                     className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2">
-                                    <Star size={14} /> {coach.is_starred ? 'Unstar' : 'Star'}
+                                    <IconStar size={14} /> {coach.is_starred ? 'Unstar' : 'Star'}
                                   </button>
                                 </div>
                               )}

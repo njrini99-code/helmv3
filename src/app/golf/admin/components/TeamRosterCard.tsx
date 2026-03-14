@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { cn } from '@/lib/utils';
-import { Users, ChevronDown, ChevronRight } from 'lucide-react';
+import { IconUsers, IconChevronDown, IconChevronRight } from '@/components/icons';
 import { timeAgo } from './admin-utils';
 
 interface Props {
@@ -38,7 +38,7 @@ export function TeamRosterCard({ teamRosters }: Props) {
       <div className="glass-standard rounded-2xl p-6">
         <div className="flex items-center gap-2 mb-4">
           <div className="p-2 bg-white/50 rounded-lg text-warm-500">
-            <Users size={18} />
+            <IconUsers size={18} />
           </div>
           <h3 className="text-lg font-semibold text-warm-900">Team Rosters</h3>
         </div>
@@ -52,7 +52,7 @@ export function TeamRosterCard({ teamRosters }: Props) {
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2">
           <div className="p-2 bg-white/50 rounded-lg text-warm-500">
-            <Users size={18} />
+            <IconUsers size={18} />
           </div>
           <div>
             <h3 className="text-lg font-semibold text-warm-900">Team Rosters</h3>
@@ -88,7 +88,7 @@ export function TeamRosterCard({ teamRosters }: Props) {
               >
                 <div className="flex items-center gap-3">
                   <div className="text-warm-400">
-                    {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                    {isExpanded ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
                   </div>
                   <div>
                     <h4 className="text-sm font-semibold text-warm-900">{team.name}</h4>

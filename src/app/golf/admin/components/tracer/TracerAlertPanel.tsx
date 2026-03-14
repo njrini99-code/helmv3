@@ -2,12 +2,12 @@
 
 import { cn } from '@/lib/utils';
 import {
-  XCircle,
-  AlertTriangle,
-  Info,
-  ChevronRight,
-  CheckCircle2,
-} from 'lucide-react';
+  IconXCircle,
+  IconWarning,
+  IconInfo,
+  IconChevronRight,
+  IconCheckCircle2,
+} from '@/components/icons';
 import type { TracerAlert, TracerSubTab, AlertSeverityLevel } from './tracer-types';
 
 // ============================================================================
@@ -20,25 +20,25 @@ interface TracerAlertPanelProps {
 }
 
 const severityConfig: Record<AlertSeverityLevel, {
-  icon: typeof XCircle;
+  icon: typeof IconXCircle;
   iconColor: string;
   iconBg: string;
   borderColor: string;
 }> = {
   critical: {
-    icon: XCircle,
+    icon: IconXCircle,
     iconColor: 'text-red-500',
     iconBg: 'bg-red-50',
     borderColor: 'border-l-red-500',
   },
   warning: {
-    icon: AlertTriangle,
+    icon: IconWarning,
     iconColor: 'text-amber-500',
     iconBg: 'bg-amber-50',
     borderColor: 'border-l-amber-500',
   },
   info: {
-    icon: Info,
+    icon: IconInfo,
     iconColor: 'text-blue-500',
     iconBg: 'bg-blue-50',
     borderColor: 'border-l-blue-500',
@@ -57,7 +57,7 @@ export function TracerAlertPanel({ alerts, onNavigate }: TracerAlertPanelProps) 
         /* Empty state */
         <div className="flex flex-col items-center justify-center py-10 text-center">
           <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center mb-3">
-            <CheckCircle2 className="text-green-500" size={20} />
+            <IconCheckCircle2 className="text-green-500" size={20} />
           </div>
           <p className="text-sm font-medium text-warm-700">No active alerts</p>
           <p className="text-xs text-warm-400 mt-1">Everything is running smoothly</p>
@@ -126,7 +126,7 @@ function AlertRow({
 
       {/* Navigation arrow */}
       {hasNavigation && (
-        <ChevronRight size={16} className="text-warm-400 flex-shrink-0" />
+        <IconChevronRight size={16} className="text-warm-400 flex-shrink-0" />
       )}
     </button>
   );

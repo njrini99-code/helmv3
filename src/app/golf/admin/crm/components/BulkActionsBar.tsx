@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { ArrowRight, Mail, Star, Trash2, X, ChevronUp } from 'lucide-react';
+import { IconStar, IconArrowRight, IconMail, IconTrash, IconX, IconChevronUp } from '@/components/icons';
 import type { CoachStatus } from '../crm-config';
 
 interface BulkActionsBarProps {
@@ -44,8 +44,8 @@ export function BulkActionsBar({
           onClick={() => setShowStatusMenu(!showStatusMenu)}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-white/10 transition-colors"
         >
-          <ArrowRight size={14} /> Move to
-          <ChevronUp size={12} className={cn('transition-transform', showStatusMenu && 'rotate-180')} />
+          <IconArrowRight size={14} /> Move to
+          <IconChevronUp size={12} className={cn('transition-transform', showStatusMenu && 'rotate-180')} />
         </button>
         {showStatusMenu && (
           <div className="absolute bottom-full mb-2 left-0 bg-white/95 backdrop-blur-xl border border-warm-200/50 rounded-xl shadow-xl py-1 min-w-[180px] max-h-[400px] overflow-y-auto">
@@ -66,7 +66,7 @@ export function BulkActionsBar({
         onClick={() => onAction('email')}
         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-white/10 transition-colors"
       >
-        <Mail size={14} /> Email
+        <IconMail size={14} /> Email
       </button>
 
       {/* Star */}
@@ -74,7 +74,7 @@ export function BulkActionsBar({
         onClick={() => onAction('star')}
         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-white/10 transition-colors"
       >
-        <Star size={14} /> Star
+        <IconStar size={14} /> Star
       </button>
 
       {/* Unstar */}
@@ -99,7 +99,7 @@ export function BulkActionsBar({
       ) : (
         <button onClick={() => setConfirmDelete(true)}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-red-400 hover:bg-red-500/20 transition-colors">
-          <Trash2 size={14} /> Delete
+          <IconTrash size={14} /> Delete
         </button>
       )}
 
@@ -107,7 +107,7 @@ export function BulkActionsBar({
 
       {/* Dismiss */}
       <button onClick={onClear} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors">
-        <X size={16} />
+        <IconX size={16} />
       </button>
     </div>
   );

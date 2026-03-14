@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
-import { CheckCircle2, XCircle, AlertTriangle, Info, X } from 'lucide-react';
+import { IconXCircle, IconCheckCircle2, IconWarning, IconInfo, IconX } from '@/components/icons';
 
 // ============================================================================
 // TYPES
@@ -35,27 +35,27 @@ export function useToast(): ToastContextValue {
 // CONFIG
 // ============================================================================
 const TOAST_CONFIG: Record<ToastType, {
-  icon: typeof CheckCircle2;
+  icon: typeof IconCheckCircle2;
   containerClass: string;
   iconClass: string;
 }> = {
   success: {
-    icon: CheckCircle2,
+    icon: IconCheckCircle2,
     containerClass: 'border-emerald-200/50 bg-emerald-50/80',
     iconClass: 'text-emerald-500',
   },
   error: {
-    icon: XCircle,
+    icon: IconXCircle,
     containerClass: 'border-red-200/50 bg-red-50/80',
     iconClass: 'text-red-500',
   },
   warning: {
-    icon: AlertTriangle,
+    icon: IconWarning,
     containerClass: 'border-amber-200/50 bg-amber-50/80',
     iconClass: 'text-amber-500',
   },
   info: {
-    icon: Info,
+    icon: IconInfo,
     containerClass: 'border-blue-200/50 bg-blue-50/80',
     iconClass: 'text-blue-500',
   },
@@ -151,7 +151,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 }}
                 className="flex-shrink-0 p-0.5 rounded-md text-warm-400 hover:text-warm-600 transition-colors"
               >
-                <X size={12} />
+                <IconX size={12} />
               </button>
             </div>
           );

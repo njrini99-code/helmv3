@@ -10,19 +10,19 @@ import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { cn } from '@/lib/utils';
 import { useAnalyticsTracking } from '@/hooks/useAnalyticsTracking';
 import {
-  LayoutDashboard,
-  Users,
-  Cpu,
-  Crosshair,
-  Target,
-  RefreshCw,
-  LogOut,
-  ChevronLeft,
-  ChevronRight,
-  Menu,
-  X,
-  BarChart3,
-} from 'lucide-react';
+  IconUsers,
+  IconTarget,
+  IconRefresh,
+  IconChevronRight,
+  IconX,
+  IconChartBar,
+  IconLayoutGrid as LayoutDashboard,
+  IconBrain as Cpu,
+  IconCrosshair as Crosshair,
+  IconLogOut as LogOut,
+  IconChevronLeft as ChevronLeft,
+  IconMenu as Menu,
+} from '@/components/icons';
 
 // Tab components
 import { OverviewTab } from './components/OverviewTab';
@@ -64,7 +64,7 @@ const TABS = [
   {
     id: 'people',
     label: 'People',
-    Icon: Users,
+    Icon: IconUsers,
     shortcut: '2',
     description: 'User & team management',
   },
@@ -78,7 +78,7 @@ const TABS = [
   {
     id: 'bi',
     label: 'Intelligence',
-    Icon: BarChart3,
+    Icon: IconChartBar,
     shortcut: '4',
     description: 'Business Intelligence',
   },
@@ -446,7 +446,7 @@ function AdminDashboardContent() {
                 'text-primary-400 hover:bg-white/5 hover:text-primary-300'
               )}
             >
-              <Target size={20} className="flex-shrink-0" />
+              <IconTarget size={20} className="flex-shrink-0" />
               {!sidebarCollapsed && (
                 <>
                   <div className="flex-1 text-left">
@@ -578,7 +578,7 @@ function AdminDashboardContent() {
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
           className="absolute -right-4 top-20 w-8 h-8 rounded-full bg-[#1C1917] border border-white/20 flex items-center justify-center text-warm-400 hover:text-white transition-colors shadow-lg"
         >
-          {sidebarCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+          {sidebarCollapsed ? <IconChevronRight size={14} /> : <ChevronLeft size={14} />}
         </button>
       </aside>
 
@@ -599,7 +599,7 @@ function AdminDashboardContent() {
             onClick={() => setMobileMenuOpen(false)}
             className="p-3 text-warm-400 hover:text-white transition-colors"
           >
-            <X size={20} />
+            <IconX size={20} />
           </button>
         </div>
         <nav className="flex-1 px-3 py-2 space-y-1">
@@ -626,7 +626,7 @@ function AdminDashboardContent() {
             href="/golf/admin/crm"
             className="flex items-center gap-3 px-3 py-3 rounded-[10px] text-primary-400 hover:bg-white/5 transition-colors mt-4 pt-4 border-t border-white/10"
           >
-            <Target size={20} />
+            <IconTarget size={20} />
             <span className="text-sm font-medium">Coach CRM</span>
           </Link>
         </nav>
@@ -719,14 +719,14 @@ function AdminDashboardContent() {
                 )}
                 title="Refresh (R)"
               >
-                <RefreshCw size={18} />
+                <IconRefresh size={18} />
               </button>
 
               <Link
                 href="/golf/admin/crm"
                 className="flex items-center gap-2 text-sm font-medium text-primary-600 hover:text-primary-700 px-3 py-1.5 rounded-xl bg-primary-50 hover:bg-primary-100 transition-colors"
               >
-                <Target size={16} />
+                <IconTarget size={16} />
                 <span className="hidden sm:inline">CRM</span>
               </Link>
 

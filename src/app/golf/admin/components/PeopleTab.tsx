@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
-import { Users, AlertTriangle, UserX, CheckCircle, Mail, Download } from 'lucide-react';
+import { IconUsers, IconWarning, IconUserX, IconCheckCircle2, IconMail, IconDownload } from '@/components/icons';
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { TeamHealthCards } from './TeamHealthCards';
 import { TeamUserDirectory } from './TeamUserDirectory';
@@ -182,7 +182,7 @@ export function PeopleTab({ data }: Props) {
                 'flex items-center gap-1.5'
               )}
             >
-              <Mail size={12} />
+              <IconMail size={12} />
               Email Re-engagement
             </button>
             <button
@@ -193,7 +193,7 @@ export function PeopleTab({ data }: Props) {
                 'flex items-center gap-1.5'
               )}
             >
-              <Download size={12} />
+              <IconDownload size={12} />
               Export CSV
             </button>
           </div>
@@ -208,7 +208,7 @@ export function PeopleTab({ data }: Props) {
           'backdrop-blur-sm'
         )}>
           <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center mb-3">
-            <CheckCircle size={24} className="text-primary-600" />
+            <IconCheckCircle2 size={24} className="text-primary-600" />
           </div>
           <p className="text-sm font-semibold text-primary-900">No at-risk users!</p>
           <p className="text-xs text-primary-700 mt-1">All users are active.</p>
@@ -236,7 +236,7 @@ export function PeopleTab({ data }: Props) {
               'backdrop-blur-sm'
             )}>
               <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <UserX size={18} className="text-amber-600" />
+                <IconUserX size={18} className="text-amber-600" />
               </div>
               <div className="flex-1">
                 <p className="text-sm font-semibold text-amber-900">
@@ -256,7 +256,7 @@ export function PeopleTab({ data }: Props) {
               'backdrop-blur-sm'
             )}>
               <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <AlertTriangle size={18} className="text-red-600" />
+                <IconWarning size={18} className="text-red-600" />
               </div>
               <div className="flex-1">
                 <p className="text-sm font-semibold text-red-900">
@@ -274,7 +274,7 @@ export function PeopleTab({ data }: Props) {
       {/* Summary Stats Row */}
       {!showAtRiskEmptyState && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          <SummaryCard label="Total Users" value={summary.totalUsers} icon={<Users size={14} />} />
+          <SummaryCard label="Total Users" value={summary.totalUsers} icon={<IconUsers size={14} />} />
           <SummaryCard label="Active Today" value={summary.activeToday} color={summary.activeToday > 0 ? 'green' : undefined} icon={<div className="w-2 h-2 rounded-full bg-primary-500" />} />
           <SummaryCard label="Active 7d" value={summary.activeThisWeek} color={summary.activeThisWeek > 5 ? 'green' : undefined} />
           <SummaryCard label="Never Logged In" value={summary.neverLoggedIn} color={summary.neverLoggedIn > 0 ? 'amber' : undefined} />

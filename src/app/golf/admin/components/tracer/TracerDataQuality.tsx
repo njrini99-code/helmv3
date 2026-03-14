@@ -4,13 +4,13 @@ import { useState, useMemo } from 'react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
-  ArrowUpDown,
-  RefreshCw,
-  CheckCircle2,
-  AlertTriangle,
-  AlertCircle,
-  Info,
-} from 'lucide-react';
+  IconRefresh,
+  IconCheckCircle2,
+  IconWarning,
+  IconAlertCircle,
+  IconInfo,
+} from '@/components/icons';
+import { IconArrowUpDown as ArrowUpDown } from '@/components/icons';
 import { timeAgo } from '../admin-utils';
 import { DataCompletenessGrid } from './DataCompletenessGrid';
 import { DataQualityIssueRow } from './DataQualityIssueRow';
@@ -222,7 +222,7 @@ function StatsAccuracyRow({
               title="Refresh cache"
               className="p-1 rounded-md text-warm-400 hover:text-warm-600 hover:bg-warm-100/50 transition-colors"
             >
-              <RefreshCw size={12} />
+              <IconRefresh size={12} />
             </button>
           )}
         </div>
@@ -426,9 +426,9 @@ export function TracerDataQuality({
                     const info = issues.filter(i => i.severity === 'info').length;
                     return (
                       <>
-                        {crit > 0 && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700"><AlertCircle size={10} />{crit}</span>}
-                        {warn > 0 && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700"><AlertTriangle size={10} />{warn}</span>}
-                        {info > 0 && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700"><Info size={10} />{info}</span>}
+                        {crit > 0 && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700"><IconAlertCircle size={10} />{crit}</span>}
+                        {warn > 0 && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700"><IconWarning size={10} />{warn}</span>}
+                        {info > 0 && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700"><IconInfo size={10} />{info}</span>}
                       </>
                     );
                   })()}
@@ -509,7 +509,7 @@ export function TracerDataQuality({
         <section>
           <div className="bg-white/65 backdrop-blur-[16px] border border-white/30 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)] p-8 text-center">
             <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-3">
-              <CheckCircle2 className="text-green-500" size={24} />
+              <IconCheckCircle2 className="text-green-500" size={24} />
             </div>
             <p className="text-sm font-semibold text-warm-900">All Data Quality Checks Passing</p>
             <p className="text-xs text-warm-400 mt-1">All diagnostic checks passed across all players and rounds</p>
@@ -661,7 +661,7 @@ export function TracerDataQuality({
             /* Empty state */
             <div className="flex flex-col items-center justify-center py-10 text-center">
               <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center mb-3">
-                <CheckCircle2 className="text-green-500" size={20} />
+                <IconCheckCircle2 className="text-green-500" size={20} />
               </div>
               <p className="text-sm font-medium text-warm-700">No outliers detected</p>
               <p className="text-xs text-warm-400 mt-1">All recorded values are within expected thresholds</p>

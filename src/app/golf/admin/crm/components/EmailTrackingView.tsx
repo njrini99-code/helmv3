@@ -4,19 +4,18 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import {
-  Mail,
-  Send,
-  CheckCircle2,
-  Eye,
-  MousePointerClick,
-  AlertTriangle,
-  ChevronDown,
-  ChevronRight,
-  ShieldAlert,
-  Ban,
-  Inbox,
-  Clock,
-} from 'lucide-react';
+  IconMail,
+  IconCheckCircle2,
+  IconWarning,
+  IconChevronDown,
+  IconChevronRight,
+  IconClock,
+  IconSend,
+  IconEye,
+  IconTarget as MousePointerClick,
+  IconShieldAlert as ShieldAlert,
+  IconXCircle as Ban,
+} from '@/components/icons';
 
 // ============================================================================
 // TYPES
@@ -93,14 +92,14 @@ function getEmailStatus(events: EmailEvent[]): string {
   return 'sent';
 }
 
-const STATUS_BADGE_DEFAULT = { label: 'Sent', color: 'text-warm-600', bgColor: 'bg-warm-50', icon: <Send size={12} /> };
+const STATUS_BADGE_DEFAULT = { label: 'Sent', color: 'text-warm-600', bgColor: 'bg-warm-50', icon: <IconSend size={12} /> };
 
 const STATUS_BADGE_CONFIG: Record<string, { label: string; color: string; bgColor: string; icon: React.ReactNode }> = {
-  sent:      { label: 'Sent',      color: 'text-warm-600',    bgColor: 'bg-warm-50',    icon: <Send size={12} /> },
-  delivered: { label: 'Delivered', color: 'text-blue-600',    bgColor: 'bg-blue-50',    icon: <CheckCircle2 size={12} /> },
-  opened:    { label: 'Opened',   color: 'text-emerald-600', bgColor: 'bg-emerald-50', icon: <Eye size={12} /> },
+  sent:      { label: 'Sent',      color: 'text-warm-600',    bgColor: 'bg-warm-50',    icon: <IconSend size={12} /> },
+  delivered: { label: 'Delivered', color: 'text-blue-600',    bgColor: 'bg-blue-50',    icon: <IconCheckCircle2 size={12} /> },
+  opened:    { label: 'Opened',   color: 'text-emerald-600', bgColor: 'bg-emerald-50', icon: <IconEye size={12} /> },
   clicked:   { label: 'Clicked',  color: 'text-violet-600',  bgColor: 'bg-violet-50',  icon: <MousePointerClick size={12} /> },
-  bounced:   { label: 'Bounced',  color: 'text-red-600',     bgColor: 'bg-red-50',     icon: <AlertTriangle size={12} /> },
+  bounced:   { label: 'Bounced',  color: 'text-red-600',     bgColor: 'bg-red-50',     icon: <IconWarning size={12} /> },
 };
 
 const EVENT_TIMELINE_CONFIG: Record<string, { label: string; color: string; dotColor: string }> = {
@@ -290,7 +289,7 @@ export function EmailTrackingView() {
       <div className="max-w-[1400px] mx-auto">
         <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-12 text-center">
           <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center mx-auto mb-5">
-            <Inbox size={28} className="text-blue-400" />
+            <IconMail size={28} className="text-blue-400" />
           </div>
           <h3 className="text-xl font-bold text-warm-900 mb-2">No emails sent yet</h3>
           <p className="text-sm text-warm-500 max-w-md mx-auto leading-relaxed">
@@ -307,7 +306,7 @@ export function EmailTrackingView() {
       {/* ══════════════ A. KPI Cards ══════════════ */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <KPICard
-          icon={<Send size={20} />}
+          icon={<IconSend size={20} />}
           iconBg="bg-blue-50"
           iconColor="text-blue-600"
           label="Total Sent"
@@ -315,7 +314,7 @@ export function EmailTrackingView() {
           detail="All time"
         />
         <KPICard
-          icon={<CheckCircle2 size={20} />}
+          icon={<IconCheckCircle2 size={20} />}
           iconBg="bg-emerald-50"
           iconColor="text-emerald-600"
           label="Delivered"
@@ -323,7 +322,7 @@ export function EmailTrackingView() {
           detail={`${stats.delivered} delivered`}
         />
         <KPICard
-          icon={<Eye size={20} />}
+          icon={<IconEye size={20} />}
           iconBg="bg-violet-50"
           iconColor="text-violet-600"
           label="Opened"
@@ -339,7 +338,7 @@ export function EmailTrackingView() {
           detail={`${stats.clicked} clicked`}
         />
         <KPICard
-          icon={<AlertTriangle size={20} />}
+          icon={<IconWarning size={20} />}
           iconBg="bg-red-50"
           iconColor="text-red-600"
           label="Bounced"
@@ -402,7 +401,7 @@ export function EmailTrackingView() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center">
-                <Mail size={16} className="text-blue-600" />
+                <IconMail size={16} className="text-blue-600" />
               </div>
               <div>
                 <h3 className="text-sm font-semibold text-warm-900">Email Activity</h3>
@@ -447,7 +446,7 @@ export function EmailTrackingView() {
           {filteredEmails.length === 0 ? (
             <div className="py-12 text-center">
               <div className="w-10 h-10 rounded-xl bg-warm-50 flex items-center justify-center mx-auto mb-2">
-                <Mail size={18} className="text-warm-300" />
+                <IconMail size={18} className="text-warm-300" />
               </div>
               <p className="text-sm font-medium text-warm-500">No emails match this filter</p>
               <p className="text-xs text-warm-400 mt-0.5">Try a different filter tab above</p>
@@ -500,7 +499,7 @@ export function EmailTrackingView() {
                       {/* Sent Date */}
                       <div className="lg:col-span-2 flex items-center">
                         <div className="flex items-center gap-1.5 text-xs text-warm-500">
-                          <Clock size={12} />
+                          <IconClock size={12} />
                           <span className="tabular-nums">{formatRelative(email.contact_date)}</span>
                         </div>
                       </div>
@@ -519,8 +518,8 @@ export function EmailTrackingView() {
                       {/* Expand Icon */}
                       <div className="lg:col-span-1 flex items-center justify-end">
                         {isExpanded
-                          ? <ChevronDown size={14} className="text-warm-400" />
-                          : <ChevronRight size={14} className="text-warm-300" />
+                          ? <IconChevronDown size={14} className="text-warm-400" />
+                          : <IconChevronRight size={14} className="text-warm-300" />
                         }
                       </div>
                     </button>

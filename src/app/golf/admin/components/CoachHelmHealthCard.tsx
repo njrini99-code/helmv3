@@ -3,7 +3,7 @@
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { AdminAreaChart } from './AdminChart';
 import { cn } from '@/lib/utils';
-import { Sparkles } from 'lucide-react';
+import { IconSparkles } from '@/components/icons';
 
 interface Props {
   coachhelm: AdminDashboardData['coachhelm'];
@@ -25,7 +25,7 @@ export function CoachHelmHealthCard({ coachhelm, coachhelmRoi }: Props) {
     <div className="glass-standard rounded-2xl p-6 transition-all duration-200 hover:bg-white/80 active:bg-white/90 hover:shadow-card-hover">
       <div className="flex items-center gap-2 mb-5">
         <div className="p-2 bg-white/50 rounded-lg text-warm-500">
-          <Sparkles size={18} />
+          <IconSparkles size={18} />
         </div>
         <h3 className="text-lg font-semibold text-warm-900">CoachHelm AI Health</h3>
       </div>

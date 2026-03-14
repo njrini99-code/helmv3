@@ -4,19 +4,19 @@ import { useState, useMemo, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import {
-  Users,
-  TrendingUp,
-  MessageSquare,
-  Trophy,
-  Zap,
-  Rocket,
-  Clock,
-  AlertTriangle,
-  ArrowRight,
-  BarChart3,
-  Target,
-  Mail,
-} from 'lucide-react';
+  IconUsers,
+  IconTrendingUp,
+  IconMessageSquare,
+  IconZap,
+  IconRocket,
+  IconClock,
+  IconWarning,
+  IconArrowRight,
+  IconChartBar,
+  IconTarget,
+  IconMail,
+  IconTrophy,
+} from '@/components/icons';
 import type { Coach, CoachStatus, PipelineStage } from '../crm-config';
 
 interface CRMDashboardProps {
@@ -159,7 +159,7 @@ export function CRMDashboard({
       {/* ── KPI Cards ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         <KPICard
-          icon={<Users size={20} />}
+          icon={<IconUsers size={20} />}
           iconBg="bg-blue-50"
           iconColor="text-blue-600"
           label="Total Coaches"
@@ -167,7 +167,7 @@ export function CRMDashboard({
           detail={`${divisionStats.d2} D2 · ${divisionStats.d3} D3`}
         />
         <KPICard
-          icon={<TrendingUp size={20} />}
+          icon={<IconTrendingUp size={20} />}
           iconBg="bg-primary-50"
           iconColor="text-primary-600"
           label="In Pipeline"
@@ -175,7 +175,7 @@ export function CRMDashboard({
           detail={`${stats.total > 0 ? Math.round((stats.inPipeline / stats.total) * 100) : 0}% of total`}
         />
         <KPICard
-          icon={<MessageSquare size={20} />}
+          icon={<IconMessageSquare size={20} />}
           iconBg="bg-violet-50"
           iconColor="text-violet-600"
           label="Contacted"
@@ -183,7 +183,7 @@ export function CRMDashboard({
           detail={`${stats.total > 0 ? Math.round((stats.contacted / stats.total) * 100) : 0}% contact rate`}
         />
         <KPICard
-          icon={<Trophy size={20} />}
+          icon={<IconTrophy size={20} />}
           iconBg="bg-primary-50"
           iconColor="text-primary-600"
           label="Won"
@@ -192,7 +192,7 @@ export function CRMDashboard({
           accent
         />
         <KPICard
-          icon={<Target size={20} />}
+          icon={<IconTarget size={20} />}
           iconBg="bg-orange-50"
           iconColor="text-orange-600"
           label="Hot Leads"
@@ -206,7 +206,7 @@ export function CRMDashboard({
       {allNewLeads && (
         <div className="glass-standard rounded-2xl p-8 text-center">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center mx-auto mb-5">
-            <Rocket size={28} className="text-primary-600" />
+            <IconRocket size={28} className="text-primary-600" />
           </div>
           <h3 className="text-xl font-bold text-warm-900 mb-2">Ready to start your pipeline</h3>
           <p className="text-sm text-warm-500 max-w-lg mx-auto mb-6 leading-relaxed">
@@ -220,7 +220,7 @@ export function CRMDashboard({
               className="px-5 py-2.5 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-[background-color,box-shadow] text-sm shadow-sm shadow-primary-500/25 disabled:opacity-50 hover:shadow-md"
             >
               <span className="flex items-center gap-2">
-                <Zap size={16} />
+                <IconZap size={16} />
                 Research Top 10
               </span>
             </button>
@@ -247,14 +247,14 @@ export function CRMDashboard({
         <div className="lg:col-span-2 glass-standard rounded-2xl p-5">
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2">
-              <BarChart3 size={16} className="text-warm-400" />
+              <IconChartBar size={16} className="text-warm-400" />
               <h3 className="text-sm font-semibold text-warm-500 uppercase tracking-wider">Pipeline Funnel</h3>
             </div>
             <button
               onClick={() => onNavigate('pipeline')}
               className="text-xs font-medium text-primary-600 hover:text-primary-700 flex items-center gap-1 transition-colors"
             >
-              View Pipeline <ArrowRight size={12} />
+              View Pipeline <IconArrowRight size={12} />
             </button>
           </div>
           <div className="space-y-3">
@@ -336,7 +336,7 @@ export function CRMDashboard({
         <div className="glass-standard rounded-2xl p-5">
           <div className="flex items-center gap-2.5 mb-4">
             <div className="w-8 h-8 rounded-xl bg-amber-50 flex items-center justify-center">
-              <Clock size={16} className="text-amber-600" />
+              <IconClock size={16} className="text-amber-600" />
             </div>
             <div>
               <h3 className="text-sm font-semibold text-warm-900">Follow-ups Due</h3>
@@ -344,7 +344,7 @@ export function CRMDashboard({
             </div>
           </div>
           {followUpsDueToday.length === 0 ? (
-            <EmptyState icon={<Clock size={18} className="text-warm-300" />} title="No follow-ups due" subtitle="Schedule follow-ups from coach detail" />
+            <EmptyState icon={<IconClock size={18} className="text-warm-300" />} title="No follow-ups due" subtitle="Schedule follow-ups from coach detail" />
           ) : (
             <div className="space-y-1.5 max-h-[280px] overflow-y-auto">
               {followUpsDueToday.slice(0, 8).map(coach => (
@@ -372,7 +372,7 @@ export function CRMDashboard({
         <div className="glass-standard rounded-2xl p-5">
           <div className="flex items-center gap-2.5 mb-4">
             <div className="w-8 h-8 rounded-xl bg-red-50 flex items-center justify-center">
-              <AlertTriangle size={16} className="text-red-600" />
+              <IconWarning size={16} className="text-red-600" />
             </div>
             <div>
               <h3 className="text-sm font-semibold text-warm-900">Stale Leads</h3>
@@ -380,7 +380,7 @@ export function CRMDashboard({
             </div>
           </div>
           {staleLeads.length === 0 ? (
-            <EmptyState icon={<AlertTriangle size={18} className="text-warm-300" />} title="No stale leads" subtitle="All pipeline leads are actively worked" />
+            <EmptyState icon={<IconWarning size={18} className="text-warm-300" />} title="No stale leads" subtitle="All pipeline leads are actively worked" />
           ) : (
             <div className="space-y-1.5 max-h-[280px] overflow-y-auto">
               {staleLeads.slice(0, 8).map(coach => (
@@ -408,7 +408,7 @@ export function CRMDashboard({
         <div className="glass-standard rounded-2xl p-5">
           <div className="flex items-center gap-2.5 mb-4">
             <div className="w-8 h-8 rounded-xl bg-primary-50 flex items-center justify-center">
-              <Zap size={16} className="text-primary-600" />
+              <IconZap size={16} className="text-primary-600" />
             </div>
             <div>
               <h3 className="text-sm font-semibold text-warm-900">Recent Activity</h3>
@@ -416,7 +416,7 @@ export function CRMDashboard({
             </div>
           </div>
           {recentlyUpdated.length === 0 ? (
-            <EmptyState icon={<Zap size={18} className="text-warm-300" />} title="No activity yet" subtitle="Start working leads to see activity" />
+            <EmptyState icon={<IconZap size={18} className="text-warm-300" />} title="No activity yet" subtitle="Start working leads to see activity" />
           ) : (
             <div className="space-y-1.5 max-h-[280px] overflow-y-auto">
               {recentlyUpdated.map(coach => (
@@ -438,7 +438,7 @@ export function CRMDashboard({
         <div className="glass-standard rounded-2xl p-5">
           <div className="flex items-center gap-2.5 mb-4">
             <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center">
-              <Mail size={16} className="text-blue-600" />
+              <IconMail size={16} className="text-blue-600" />
             </div>
             <div>
               <h3 className="text-sm font-semibold text-warm-900">Email Performance</h3>
@@ -482,7 +482,7 @@ export function CRMDashboard({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center">
-                  <Zap size={18} className="text-primary-600" />
+                  <IconZap size={18} className="text-primary-600" />
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold text-warm-900">Quick Actions</h3>
@@ -497,7 +497,7 @@ export function CRMDashboard({
                   disabled={processing === 'research' || (stats.byStatus.new_lead || 0) === 0}
                   className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm bg-primary-600 text-white hover:bg-primary-700 transition-[background-color,transform,box-shadow] shadow-sm shadow-primary-500/25 disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5 hover:shadow-md"
                 >
-                  <Zap size={16} /> Research Next 10
+                  <IconZap size={16} /> Research Next 10
                 </button>
                 <button
                   onClick={() => onNavigate('pipeline')}

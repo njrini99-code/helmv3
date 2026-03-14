@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { AlertTriangle, CheckCircle2, Clock3, Route, ShieldAlert } from 'lucide-react';
+import { IconWarning, IconCheckCircle2, IconClock3, IconRoute, IconShieldAlert } from '@/components/icons';
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { timeAgo } from './admin-utils';
 
@@ -51,11 +51,11 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
             allClear ? 'bg-primary-50' : incidentCounts.open > 0 ? 'bg-red-50' : 'bg-amber-50'
           )}>
             {allClear ? (
-              <CheckCircle2 size={16} className="text-primary-600" />
+              <IconCheckCircle2 size={16} className="text-primary-600" />
             ) : incidentCounts.open > 0 ? (
-              <AlertTriangle size={16} className="text-red-600" />
+              <IconWarning size={16} className="text-red-600" />
             ) : (
-              <ShieldAlert size={16} className="text-amber-600" />
+              <IconShieldAlert size={16} className="text-amber-600" />
             )}
           </div>
           <div className="min-w-0">
@@ -184,7 +184,7 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
                 Last seen
               </p>
               <div className="mt-1 flex items-center gap-1.5 text-xs text-warm-700">
-                <Clock3 size={12} className="text-warm-400 flex-shrink-0" />
+                <IconClock3 size={12} className="text-warm-400 flex-shrink-0" />
                 <span className="min-w-0">
                   {timeAgo(leadIncident.lastSeen)} · {leadIncident.occurrences} occurrences
                 </span>
@@ -195,7 +195,7 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
       ) : (
         <div className="mt-4 flex flex-col items-center justify-center rounded-2xl border border-primary-100 bg-primary-50/50 px-6 py-8 text-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-100">
-            <CheckCircle2 size={22} className="text-primary-600" />
+            <IconCheckCircle2 size={22} className="text-primary-600" />
           </div>
           <p className="mt-3 text-sm font-medium text-primary-700">
             No grouped incidents to spotlight
@@ -248,7 +248,7 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
                   key={route.route}
                   className="flex items-center gap-2 rounded-lg bg-white/55 px-2.5 py-2.5"
                 >
-                  <Route size={12} className="text-warm-400 flex-shrink-0" />
+                  <IconRoute size={12} className="text-warm-400 flex-shrink-0" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-medium text-warm-700">
                       {formatRoute(route.route)}

@@ -3,11 +3,11 @@
 import { m } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
-  CircleDot,
-  CheckCircle2,
-  XCircle,
-  AlertTriangle,
-} from 'lucide-react';
+  IconCircleDot,
+  IconCheckCircle2,
+  IconXCircle,
+  IconWarning,
+} from '@/components/icons';
 import { TracerKPICards } from './TracerKPICards';
 import { TracerAlertPanel } from './TracerAlertPanel';
 import { HealthRing } from '../HealthRing';
@@ -44,28 +44,28 @@ interface TracerHealthOverviewProps {
 
 const ACTIVITY_CONFIG: Record<
   string,
-  { icon: typeof CheckCircle2; color: string; bg: string; label: string }
+  { icon: typeof IconCheckCircle2; color: string; bg: string; label: string }
 > = {
   round_started: {
-    icon: CircleDot,
+    icon: IconCircleDot,
     color: 'text-blue-500',
     bg: 'bg-blue-50',
     label: 'Started round',
   },
   round_completed: {
-    icon: CheckCircle2,
+    icon: IconCheckCircle2,
     color: 'text-green-500',
     bg: 'bg-green-50',
     label: 'Completed round',
   },
   round_error: {
-    icon: XCircle,
+    icon: IconXCircle,
     color: 'text-red-500',
     bg: 'bg-red-50',
     label: 'Error on submit',
   },
   detail_warning: {
-    icon: AlertTriangle,
+    icon: IconWarning,
     color: 'text-amber-500',
     bg: 'bg-amber-50',
     label: 'Detail warning',

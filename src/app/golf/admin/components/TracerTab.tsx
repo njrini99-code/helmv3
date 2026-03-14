@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { cn } from '@/lib/utils';
-import { RefreshCw } from 'lucide-react';
+import { IconRefresh } from '@/components/icons';
 import {
   getTracerData,
   getTracerEnrichedData,
@@ -264,7 +264,7 @@ export function TracerTab() {
             refreshing && 'opacity-60 cursor-not-allowed'
           )}
         >
-          <RefreshCw size={12} className={cn(refreshing && 'animate-spin')} />
+          <IconRefresh size={12} className={cn(refreshing && 'animate-spin')} />
           {refreshing ? 'Refreshing...' : 'Refresh'}
         </button>
       </div>

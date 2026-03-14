@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { AlertTriangle, AlertCircle, Info, Wrench, Loader2, ChevronDown, ChevronRight } from 'lucide-react';
+import { IconWarning, IconAlertCircle, IconInfo, IconWrench, IconLoader, IconChevronDown, IconChevronRight } from '@/components/icons';
 import type { DataQualityIssue, FixResult } from './tracer-types';
 
 interface DataQualityIssueRowProps {
@@ -12,9 +12,9 @@ interface DataQualityIssueRowProps {
 }
 
 const SEVERITY_STYLES = {
-  critical: { bg: 'bg-red-50', text: 'text-red-700', dot: 'bg-red-500', icon: AlertCircle },
-  warning: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500', icon: AlertTriangle },
-  info: { bg: 'bg-blue-50', text: 'text-blue-700', dot: 'bg-blue-500', icon: Info },
+  critical: { bg: 'bg-red-50', text: 'text-red-700', dot: 'bg-red-500', icon: IconAlertCircle },
+  warning: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500', icon: IconWarning },
+  info: { bg: 'bg-blue-50', text: 'text-blue-700', dot: 'bg-blue-500', icon: IconInfo },
 } as const;
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -42,7 +42,7 @@ export function DataQualityIssueRow({ issue, onFix, fixing }: DataQualityIssueRo
       <div className="flex items-center gap-3 px-4 py-3 cursor-pointer" onClick={() => setExpanded(!expanded)}>
         {/* Expand toggle */}
         <button type="button" className="text-warm-300 flex-shrink-0">
-          {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+          {expanded ? <IconChevronDown size={14} /> : <IconChevronRight size={14} />}
         </button>
 
         {/* Severity badge */}
@@ -86,7 +86,7 @@ export function DataQualityIssueRow({ issue, onFix, fixing }: DataQualityIssueRo
                 : 'bg-green-50 text-green-700 hover:bg-green-100'
             )}
           >
-            {fixing ? <Loader2 size={10} className="animate-spin" /> : <Wrench size={10} />}
+            {fixing ? <IconLoader size={10} className="animate-spin" /> : <IconWrench size={10} />}
             Fix
           </button>
         )}

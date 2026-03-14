@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
-import { ChevronRight, Search, AlertTriangle, Sparkles, Target } from 'lucide-react';
+import { IconChevronRight, IconSearch, IconWarning, IconSparkles, IconTarget } from '@/components/icons';
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { ActivityDot } from './ActivityDot';
 import { timeAgo } from './admin-utils';
@@ -111,7 +111,7 @@ function TeamSection({
           'text-left'
         )}
       >
-        <ChevronRight
+        <IconChevronRight
           size={16}
           className={cn(
             'text-warm-400 transition-transform duration-200 flex-shrink-0',
@@ -200,13 +200,13 @@ function MemberRow({ member, onSelect }: { member: TeamMember; onSelect?: (id: s
       </td>
       <td className="px-3 py-2.5 text-right hidden lg:table-cell">
         <div className="flex items-center justify-end gap-1">
-          <Target size={12} className="text-warm-300" />
+          <IconTarget size={12} className="text-warm-300" />
           <span className="text-sm font-medium text-warm-700 tabular-nums">{member.roundsEntered}</span>
         </div>
       </td>
       <td className="px-3 py-2.5 text-right hidden lg:table-cell">
         <div className="flex items-center justify-end gap-1">
-          <Sparkles size={12} className="text-warm-300" />
+          <IconSparkles size={12} className="text-warm-300" />
           <span className="text-sm font-medium text-warm-700 tabular-nums">{member.insightsReceived}</span>
         </div>
       </td>
@@ -263,7 +263,7 @@ export function TeamUserDirectory({ teams, unassigned, onSelectUser, expandedTea
       <div className="flex flex-wrap items-center gap-2 px-4 py-3 border-b border-warm-100 bg-warm-50/30">
         {/* Search */}
         <div className="relative flex-1 min-w-[200px] max-w-xs">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
+          <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
           <input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -340,14 +340,14 @@ export function TeamUserDirectory({ teams, unassigned, onSelectUser, expandedTea
                   'text-left'
                 )}
               >
-                <ChevronRight
+                <IconChevronRight
                   size={16}
                   className={cn(
                     'text-warm-400 transition-transform duration-200 flex-shrink-0',
                     expanded.has('__unassigned__') && 'rotate-90'
                   )}
                 />
-                <AlertTriangle size={14} className="text-amber-500 flex-shrink-0" />
+                <IconWarning size={14} className="text-amber-500 flex-shrink-0" />
                 <span className="text-sm font-semibold text-warm-700">No Team Assigned</span>
                 <span className="text-xs text-amber-600 font-medium">{filteredUnassigned.length} users</span>
               </button>
