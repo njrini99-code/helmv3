@@ -21,6 +21,7 @@ import {
   Target,
   AlertTriangle,
   Mail,
+  Inbox,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -42,6 +43,7 @@ import { ImportModal } from './components/ImportModal';
 import { BulkActionsBar } from './components/BulkActionsBar';
 import { BulkEmailModal } from './components/BulkEmailModal';
 import { EmailTrackingView } from './components/EmailTrackingView';
+import { InboundLeadsView } from './components/InboundLeadsView';
 import { FAB } from './components/FAB';
 import { QuickActionsPanel } from './components/QuickActionsPanel';
 import { ScheduleEventModal } from './components/ScheduleEventModal';
@@ -57,6 +59,7 @@ const TABS = [
   { id: 'pipeline', label: 'Pipeline', Icon: BarChart3, shortcut: '3', description: 'Kanban sales pipeline' },
   { id: 'conferences', label: 'Conferences', Icon: Building2, shortcut: '4', description: 'Grouped by conference' },
   { id: 'email', label: 'Email', Icon: Mail, shortcut: '5', description: 'Email tracking & analytics' },
+  { id: 'inbound', label: 'Inbound', Icon: Inbox, shortcut: '6', description: 'Demo requests & inbound leads' },
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
@@ -605,6 +608,9 @@ export default function CRMPage() {
 
           {/* ── Email Tab ── */}
           {activeTab === 'email' && <EmailTrackingView />}
+
+          {/* ── Inbound Tab ── */}
+          {activeTab === 'inbound' && <InboundLeadsView />}
         </div>
       </main>
 

@@ -52,21 +52,30 @@ function EmailCapture() {
   }
 
   return (
-    <div>
+    <div
+      className="rounded-2xl border border-white/[0.15] p-5 sm:p-6"
+      style={{
+        background: 'rgba(255,255,255,0.07)',
+        backdropFilter: 'blur(24px)',
+        WebkitBackdropFilter: 'blur(24px)',
+        boxShadow: '0 0 40px rgba(22,163,74,0.08), inset 0 1px 0 rgba(255,255,255,0.1)',
+      }}
+    >
+      <p className="text-white/80 text-sm font-medium mb-3">Request a demo — see Helm in action</p>
       <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
         <input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="Enter your email"
+          placeholder="coach@university.edu"
           required
           disabled={loading}
-          className="px-5 py-3.5 rounded-xl bg-white/[0.06] border border-white/[0.1] text-white placeholder:text-white/25 focus:outline-none focus:border-primary-600/30 focus:bg-white/[0.08] transition-all disabled:opacity-50 text-sm w-full sm:w-64"
+          className="px-5 py-3.5 rounded-xl bg-white/[0.1] border border-white/[0.18] text-white placeholder:text-white/40 focus:outline-none focus:border-primary-500/50 focus:bg-white/[0.14] focus:ring-1 focus:ring-primary-500/20 transition-all disabled:opacity-50 text-sm w-full sm:w-72"
         />
         <button
           type="submit"
           disabled={loading}
-          className="px-7 py-3.5 rounded-xl bg-primary-600 hover:bg-primary-600 text-white font-medium text-sm transition-all whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(22,163,74,0.3)] hover:shadow-[0_0_30px_rgba(22,163,74,0.45)]"
+          className="px-7 py-3.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-semibold text-sm transition-all whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_24px_rgba(22,163,74,0.35)] hover:shadow-[0_0_36px_rgba(22,163,74,0.5)] hover:-translate-y-0.5 active:translate-y-0"
         >
           {loading ? (
             <span className="flex items-center justify-center gap-2">
@@ -77,7 +86,7 @@ function EmailCapture() {
               Sending...
             </span>
           ) : (
-            'Get Early Access'
+            'Request Demo'
           )}
         </button>
       </form>
