@@ -116,8 +116,8 @@ export function ShotAnalysisCard({
             <div className="space-y-1.5">
               {resolvedYardageCurve.buckets.map((bucket, i) => {
                 const isDead = isDeadZone(bucket.rangeStart, bucket.rangeEnd, resolvedDeadZones);
-                const barWidth = Math.abs(bucket.avgSG) / maxAbsSG * 50;
-                const isPositive = bucket.avgSG >= 0;
+                const barWidth = Math.abs(Number(bucket.avgSG ?? 0)) / maxAbsSG * 50;
+                const isPositive = Number(bucket.avgSG ?? 0) >= 0;
 
                 return (
                   <motion.div
@@ -165,7 +165,7 @@ export function ShotAnalysisCard({
                         isPositive ? 'text-primary-600' : 'text-red-500'
                       )}
                     >
-                      {isPositive ? '+' : ''}{(bucket.avgSG ?? 0).toFixed(2)}
+                      {isPositive ? '+' : ''}{Number(bucket.avgSG ?? 0).toFixed(2)}
                     </span>
 
                     <span className="text-xs text-warm-400 tabular-nums w-8 text-right shrink-0">
@@ -197,7 +197,7 @@ export function ShotAnalysisCard({
                   className="inline-flex items-center gap-1 text-xs text-red-600 tabular-nums"
                 >
                   {dz.rangeStart}-{dz.rangeEnd}y
-                  <span className="text-red-400">({(dz.deficit ?? 0).toFixed(2)} deficit)</span>
+                  <span className="text-red-400">({Number(dz.deficit ?? 0).toFixed(2)} deficit)</span>
                 </span>
               ))}
             </div>
@@ -227,7 +227,7 @@ export function ShotAnalysisCard({
                   </div>
                   <div className="text-right shrink-0 ml-3">
                     <p className="text-sm font-semibold text-red-500 tabular-nums">
-                      {(weakness.avgSG ?? 0).toFixed(2)}
+                      {Number(weakness.avgSG ?? 0).toFixed(2)}
                     </p>
                     <p className="text-xs text-warm-400 tabular-nums">
                       {weakness.shotCount} shots
@@ -267,22 +267,22 @@ export function ShotAnalysisCard({
                       fill="none"
                       strokeWidth="4"
                       strokeLinecap="round"
-                      className={resolvedResilience >= 1.0 ? 'stroke-primary-500' : 'stroke-amber-500'}
+                      className={Number(resolvedResilience ?? 0) >= 1.0 ? 'stroke-primary-500' : 'stroke-amber-500'}
                       strokeDasharray={2 * Math.PI * 18}
-                      strokeDashoffset={2 * Math.PI * 18 * (1 - Math.min(resolvedResilience / 2, 1))}
+                      strokeDashoffset={2 * Math.PI * 18 * (1 - Math.min(Number(resolvedResilience ?? 0) / 2, 1))}
                     />
                   </svg>
                   <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-warm-900 tabular-nums">
-                    {(resolvedResilience ?? 0).toFixed(1)}
+                    {Number(resolvedResilience ?? 0).toFixed(1)}
                   </span>
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-warm-800">Resilience</p>
                   <p className={cn(
                     'text-xs font-medium',
-                    resolvedResilience >= 1.0 ? 'text-primary-600' : 'text-amber-600'
+                    Number(resolvedResilience ?? 0) >= 1.0 ? 'text-primary-600' : 'text-amber-600'
                   )}>
-                    {resolvedResilience >= 1.0 ? 'Good recovery' : 'Compounds errors'}
+                    {Number(resolvedResilience ?? 0) >= 1.0 ? 'Good recovery' : 'Compounds errors'}
                   </p>
                 </div>
               </motion.div>

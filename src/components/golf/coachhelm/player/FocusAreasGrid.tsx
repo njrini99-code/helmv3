@@ -25,10 +25,12 @@ interface FocusAreasGridProps {
 }
 
 // Format strokes gained/lost for display
-function formatStrokesGained(value: number | undefined | null): string {
-  if (value == null || typeof value !== 'number' || isNaN(value)) return '0.0';
-  if (value === 0) return '0.0';
-  return value > 0 ? `+${value.toFixed(1)}` : value.toFixed(1);
+function formatStrokesGained(value: number | string | undefined | null): string {
+  if (value == null) return '0.0';
+  const num = Number(value);
+  if (isNaN(num)) return '0.0';
+  if (num === 0) return '0.0';
+  return num > 0 ? `+${num.toFixed(1)}` : num.toFixed(1);
 }
 
 // Get trend icon and color
@@ -59,10 +61,11 @@ function getTrendConfig(trend: FocusArea['trend']) {
 }
 
 // Get strokes color based on value
-function getStrokesColor(value: number) {
-  if (value > 0.2) return 'text-primary-600';
-  if (value < -0.5) return 'text-red-600';
-  if (value < -0.2) return 'text-amber-600';
+function getStrokesColor(value: number | string) {
+  const num = Number(value ?? 0);
+  if (num > 0.2) return 'text-primary-600';
+  if (num < -0.5) return 'text-red-600';
+  if (num < -0.2) return 'text-amber-600';
   return 'text-warm-600';
 }
 
@@ -78,7 +81,7 @@ function FocusAreaCardContent({
   const trendConfig = getTrendConfig(focusArea.trend);
   const TrendIcon = trendConfig.icon;
   const strokesColor = getStrokesColor(focusArea.strokesGained);
-  const isPositive = focusArea.strokesGained > 0;
+  const isPositive = Number(focusArea.strokesGained ?? 0) > 0;
 
   return (
     <>
@@ -126,7 +129,7 @@ function FocusAreaCardContent({
         <m.div
           initial={{ width: 0 }}
           animate={{
-            width: `${Math.min(Math.abs(focusArea.strokesGained) * 20, 100)}%`,
+            width: `${Math.min(Math.abs(Number(focusArea.strokesGained ?? 0)) * 20, 100)}%`,
           }}
           transition={{ duration: 0.5, delay: 0.2 + index * 0.1 }}
           className={cn(

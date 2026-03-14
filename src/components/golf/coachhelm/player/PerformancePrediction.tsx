@@ -45,10 +45,10 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
     );
   }
 
-  const predictedValue = typeof prediction.predictedValue === 'number' ? prediction.predictedValue : 0;
+  const predictedValue = prediction.predictedValue != null ? Number(prediction.predictedValue) : 0;
   const isPositive = predictedValue < 0;
   const isNeutral = Math.abs(predictedValue) < 0.5;
-  const confidencePercent = Math.round((prediction.calibratedConfidence ?? prediction.confidence) * 100);
+  const confidencePercent = Math.round(Number(prediction.calibratedConfidence ?? prediction.confidence ?? 0) * 100);
 
   const rangeLow = prediction.predictionRange?.low ?? prediction.predictedRangeLow;
   const rangeHigh = prediction.predictionRange?.high ?? prediction.predictedRangeHigh;
@@ -68,10 +68,12 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
     return <IconTrendingDown size={24} className="text-red-500" />;
   };
 
-  const formatScore = (value: number | undefined | null) => {
-    if (value == null || typeof value !== 'number' || isNaN(value)) return '--';
-    if (value === 0) return 'E';
-    return value > 0 ? `+${value.toFixed(1)}` : value.toFixed(1);
+  const formatScore = (value: number | string | undefined | null) => {
+    if (value == null) return '--';
+    const num = Number(value);
+    if (isNaN(num)) return '--';
+    if (num === 0) return 'E';
+    return num > 0 ? `+${num.toFixed(1)}` : num.toFixed(1);
   };
 
   const getStateMessage = () => {
@@ -186,9 +188,9 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
                 <span className="text-warm-600">{factor.name}</span>
                 <span className={cn(
                   'font-medium tabular-nums',
-                  factor.contribution > 0 ? 'text-red-500' : 'text-primary-500'
+                  Number(factor.contribution ?? 0) > 0 ? 'text-red-500' : 'text-primary-500'
                 )}>
-                  {(factor.contribution ?? 0) > 0 ? '+' : ''}{(factor.contribution ?? 0).toFixed(1)}
+                  {Number(factor.contribution ?? 0) > 0 ? '+' : ''}{Number(factor.contribution ?? 0).toFixed(1)}
                 </span>
               </m.div>
             ))}
@@ -202,13 +204,13 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
           <div className="text-center p-3 bg-red-50/50 rounded-lg">
             <p className="text-xs text-warm-500 mb-1">Rough Round Risk</p>
             <p className="text-lg font-bold text-red-500">
-              {Math.round(prediction.tailRisks.blowupProbability * 100)}%
+              {Math.round(Number(prediction.tailRisks.blowupProbability ?? 0) * 100)}%
             </p>
           </div>
           <div className="text-center p-3 bg-primary-50/50 rounded-lg">
             <p className="text-xs text-warm-500 mb-1">Great Round Chance</p>
             <p className="text-lg font-bold text-primary-500">
-              {Math.round(prediction.tailRisks.greatRoundProbability * 100)}%
+              {Math.round(Number(prediction.tailRisks.greatRoundProbability ?? 0) * 100)}%
             </p>
           </div>
         </div>

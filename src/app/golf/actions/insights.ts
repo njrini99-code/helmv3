@@ -874,10 +874,10 @@ export async function generateTeamInsights() {
             coach_id: coach.id,
             team_id: teamId,
             insight_type: 'pattern_detected',  // maps to allowed DB type
-            priority: pattern.strokeImpact > 2 ? 'high' : 'medium',
+            priority: Number(pattern.strokeImpact ?? 0) > 2 ? 'high' : 'medium',
             player_id: player.id,
             title: `Pattern: ${pattern.description || 'Performance Pattern'}`,
-            content: pattern.recommendation || `Pattern detected with ${(pattern.confidence * 100).toFixed(0)}% confidence.`,
+            content: pattern.recommendation || `Pattern detected with ${(Number(pattern.confidence ?? 0) * 100).toFixed(0)}% confidence.`,
             metadata: {
               v2_engine: true,
               pattern_type: pattern.patternType,
@@ -2450,19 +2450,22 @@ function clampNumber(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
-function averageNumber(values: Array<number | null | undefined>): number | null {
-  const filtered = values.filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
+function averageNumber(values: Array<number | string | null | undefined>): number | null {
+  const filtered = values
+    .map((v) => (v != null ? Number(v) : NaN))
+    .filter((v): v is number => Number.isFinite(v));
   if (filtered.length === 0) return null;
   return filtered.reduce((sum, value) => sum + value, 0) / filtered.length;
 }
 
-function formatSigned(value: number, decimals = 2): string {
-  const formatted = value.toFixed(decimals);
-  return value > 0 ? `+${formatted}` : formatted;
+function formatSigned(value: number | string, decimals = 2): string {
+  const num = Number(value ?? 0);
+  const formatted = num.toFixed(decimals);
+  return num > 0 ? `+${formatted}` : formatted;
 }
 
-function formatPercent(value: number): string {
-  return `${value.toFixed(0)}%`;
+function formatPercent(value: number | string): string {
+  return `${Number(value ?? 0).toFixed(0)}%`;
 }
 
 function computeInsightConfidence(rounds: number | null | undefined): number {
@@ -2588,18 +2591,18 @@ function buildStatInsightsForTeam(
           (a.value as number) > (b.value as number) ? a : b
         );
 
-        if ((worst.value as number) <= -0.5) {
+        if (Number(worst.value ?? 0) <= -0.5) {
           const teamDelta =
             worst.teamAvg != null
-              ? (worst.value as number) - worst.teamAvg
+              ? Number(worst.value ?? 0) - Number(worst.teamAvg ?? 0)
               : null;
           const vsTeam = teamDelta != null
             ? ` (${formatSigned(teamDelta)} vs team avg)`
             : '';
-          const severity = Math.abs(worst.value as number);
+          const severity = Math.abs(Number(worst.value ?? 0));
           playerInsights.push({
             insight: {
-              headline: `${playerName}: SG ${worst.label} ${formatSigned(worst.value as number)}`,
+              headline: `${playerName}: SG ${worst.label} ${formatSigned(Number(worst.value ?? 0))}`,
               body: `Losing ${severity.toFixed(1)} strokes per round ${worst.label.toLowerCase()}${vsTeam}. Over ${rounds} rounds, this area is the biggest opportunity for improvement.`,
               callToAction: worst.action,
               tone: severity >= 1.0 ? 'urgent' : 'cautionary',
@@ -2613,18 +2616,18 @@ function buildStatInsightsForTeam(
           });
         }
 
-        if ((best.value as number) >= 0.5) {
+        if (Number(best.value ?? 0) >= 0.5) {
           const teamDelta =
             best.teamAvg != null
-              ? (best.value as number) - best.teamAvg
+              ? Number(best.value ?? 0) - Number(best.teamAvg ?? 0)
               : null;
           const vsTeam = teamDelta != null
             ? ` (${formatSigned(teamDelta)} vs team avg)`
             : '';
           playerInsights.push({
             insight: {
-              headline: `${playerName}: SG ${best.label} ${formatSigned(best.value as number)}`,
-              body: `Gaining ${(best.value as number).toFixed(1)} strokes per round ${best.label.toLowerCase()}${vsTeam}. This is a clear competitive advantage.`,
+              headline: `${playerName}: SG ${best.label} ${formatSigned(Number(best.value ?? 0))}`,
+              body: `Gaining ${Number(best.value ?? 0).toFixed(1)} strokes per round ${best.label.toLowerCase()}${vsTeam}. This is a clear competitive advantage.`,
               callToAction: `Keep reinforcing ${best.label.toLowerCase()} strengths in practice plans.`,
               tone: 'celebratory',
               confidence,
@@ -2632,7 +2635,7 @@ function buildStatInsightsForTeam(
               playerName,
               category: mapMetricKeyToCategory(best.key),
             },
-            severity: Math.abs(best.value as number),
+            severity: Math.abs(Number(best.value ?? 0)),
           });
         }
       }
@@ -2698,9 +2701,9 @@ function buildStatInsightsForTeam(
         if (diffTrigger || absoluteTrigger) {
           const formattedValue = metric.higherIsBetter
             ? formatPercent(value)
-            : value.toFixed(1);
+            : Number(value ?? 0).toFixed(1);
           const teamAvgFormatted = teamAvg != null
-            ? (metric.higherIsBetter ? formatPercent(teamAvg) : teamAvg.toFixed(1))
+            ? (metric.higherIsBetter ? formatPercent(teamAvg) : Number(teamAvg ?? 0).toFixed(1))
             : null;
 
           const severity = delta != null
@@ -3067,10 +3070,10 @@ export async function triggerPlayerInsightsAfterRound(
           coach_id: coach.id,
           team_id: teamId,
           insight_type: 'pattern_detected',
-          priority: pattern.strokeImpact > 2 ? 'high' : 'medium',
+          priority: Number(pattern.strokeImpact ?? 0) > 2 ? 'high' : 'medium',
           player_id: playerId,
           title: `Pattern: ${pattern.description || 'Performance Pattern'}`,
-          content: pattern.recommendation || `Pattern detected with ${(pattern.confidence * 100).toFixed(0)}% confidence.`,
+          content: pattern.recommendation || `Pattern detected with ${(Number(pattern.confidence ?? 0) * 100).toFixed(0)}% confidence.`,
           metadata: {
             v2_engine: true,
             auto_triggered: true,

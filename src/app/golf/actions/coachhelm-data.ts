@@ -268,16 +268,16 @@ function mapStatsCacheToMetrics(
   },
 ): Record<string, number> {
   return {
-    scoringAvg: row.scoring_average ?? 0,
-    girPct: row.gir_percentage ?? 0,
-    fairwayPct: row.driving_accuracy_percentage ?? 0,
-    puttsPerRound: row.putts_per_round ?? 0,
-    scramblePct: row.scrambling_percentage ?? 0,
-    sgTotal: row.strokes_gained_total ?? 0,
-    sgOffTee: row.strokes_gained_tee ?? 0,
-    sgApproach: row.strokes_gained_approach ?? 0,
-    sgAroundGreen: row.strokes_gained_around_green ?? 0,
-    sgPutting: row.strokes_gained_putting ?? 0,
+    scoringAvg: Number(row.scoring_average ?? 0),
+    girPct: Number(row.gir_percentage ?? 0),
+    fairwayPct: Number(row.driving_accuracy_percentage ?? 0),
+    puttsPerRound: Number(row.putts_per_round ?? 0),
+    scramblePct: Number(row.scrambling_percentage ?? 0),
+    sgTotal: Number(row.strokes_gained_total ?? 0),
+    sgOffTee: Number(row.strokes_gained_tee ?? 0),
+    sgApproach: Number(row.strokes_gained_approach ?? 0),
+    sgAroundGreen: Number(row.strokes_gained_around_green ?? 0),
+    sgPutting: Number(row.strokes_gained_putting ?? 0),
   };
 }
 

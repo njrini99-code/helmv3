@@ -156,7 +156,7 @@ export function TrendDashboard({ trends, streaks, volatility, trendData, playerS
                   <motion.div
                     className={cn('h-full rounded-full', config.barColor)}
                     initial={{ width: 0 }}
-                    animate={{ width: `${Math.min(window.magnitude * 100, 100)}%` }}
+                    animate={{ width: `${Math.min(Number(window.magnitude ?? 0) * 100, 100)}%` }}
                     transition={{ duration: 0.8, delay: 0.2 + i * 0.1, ease: 'easeOut' }}
                   />
                 </div>
@@ -167,7 +167,7 @@ export function TrendDashboard({ trends, streaks, volatility, trendData, playerS
                 </div>
 
                 <span className="text-xs text-warm-400 tabular-nums w-10 text-right shrink-0">
-                  {Math.round(window.confidence * 100)}%
+                  {Math.round(Number(window.confidence ?? 0) * 100)}%
                 </span>
               </motion.div>
             );
@@ -199,7 +199,7 @@ export function TrendDashboard({ trends, streaks, volatility, trendData, playerS
                   {streak.length}-round {streak.type} streak
                 </span>
                 <span className="text-xs opacity-70 tabular-nums">
-                  ({streak.magnitude > 0 ? '+' : ''}{(streak.magnitude ?? 0).toFixed(1)} strokes)
+                  ({Number(streak.magnitude ?? 0) > 0 ? '+' : ''}{Number(streak.magnitude ?? 0).toFixed(1)} strokes)
                 </span>
               </motion.div>
             ))}
@@ -217,7 +217,7 @@ export function TrendDashboard({ trends, streaks, volatility, trendData, playerS
             <IconWarning size={16} className="text-amber-500 shrink-0" />
             <span>Performance volatility is elevated</span>
             <span className="text-xs opacity-70 tabular-nums ml-auto">
-              {(resolvedVolatility.current ?? 0).toFixed(1)} vs {(resolvedVolatility.historical ?? 0).toFixed(1)} avg
+              {Number(resolvedVolatility.current ?? 0).toFixed(1)} vs {Number(resolvedVolatility.historical ?? 0).toFixed(1)} avg
             </span>
           </motion.div>
         )}

@@ -106,7 +106,7 @@ export function CompositeRatingCard({
     );
   }
 
-  const displayComposite = resolvedComposite ?? 0;
+  const displayComposite = Number(resolvedComposite ?? 0);
   const displayCategories = resolvedCategories ?? { teeGame: 50, approach: 50, shortGame: 50, putting: 50, scoring: 50 };
 
   const circumference = 2 * Math.PI * 54;
@@ -174,7 +174,7 @@ export function CompositeRatingCard({
             <span>
               {trendConfig[resolvedTrend.direction].label}{' '}
               <span className="tabular-nums">
-                {resolvedTrend.delta > 0 ? '+' : ''}{resolvedTrend.delta}
+                {Number(resolvedTrend.delta ?? 0) > 0 ? '+' : ''}{Number(resolvedTrend.delta ?? 0)}
               </span>{' '}
               over 30 days
             </span>

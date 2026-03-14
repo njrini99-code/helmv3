@@ -81,7 +81,7 @@ function InsightCard({
   const [expanded, setExpanded] = useState(false);
   const config = toneConfig[insight.tone] || toneConfig.neutral;
   const Icon = config.icon;
-  const confidencePercent = Math.round(insight.confidence * 100);
+  const confidencePercent = Math.round(Number(insight.confidence ?? 0) * 100);
 
   return (
     <m.div
@@ -129,11 +129,11 @@ function InsightCard({
             {insight.strokeImpact && (
               <span className={cn(
                 'text-xs font-semibold px-2 py-0.5 rounded-full',
-                Math.abs(insight.strokeImpact) >= 1.5 ? 'bg-red-100 text-red-700' :
-                Math.abs(insight.strokeImpact) >= 0.5 ? 'bg-amber-100 text-amber-700' :
+                Math.abs(Number(insight.strokeImpact ?? 0)) >= 1.5 ? 'bg-red-100 text-red-700' :
+                Math.abs(Number(insight.strokeImpact ?? 0)) >= 0.5 ? 'bg-amber-100 text-amber-700' :
                 'bg-warm-100 text-warm-600'
               )}>
-                {insight.strokeImpact > 0 ? '+' : ''}{(insight.strokeImpact ?? 0).toFixed(1)} strokes
+                {Number(insight.strokeImpact ?? 0) > 0 ? '+' : ''}{Number(insight.strokeImpact ?? 0).toFixed(1)} strokes
               </span>
             )}
             {insight.reasoning && (
