@@ -8143,7 +8143,6 @@ export type Database = {
       golf_shots: {
         Row: {
           club_type: string | null
-          club_used: string | null
           created_at: string | null
           distance_to_hole_after: number | null
           distance_to_hole_before: number | null
@@ -8172,7 +8171,6 @@ export type Database = {
         }
         Insert: {
           club_type?: string | null
-          club_used?: string | null
           created_at?: string | null
           distance_to_hole_after?: number | null
           distance_to_hole_before?: number | null
@@ -8201,7 +8199,6 @@ export type Database = {
         }
         Update: {
           club_type?: string | null
-          club_used?: string | null
           created_at?: string | null
           distance_to_hole_after?: number | null
           distance_to_hole_before?: number | null
@@ -9635,10 +9632,6 @@ export type Database = {
           top_errors: Json
           total_count: number
         }[]
-      }
-      get_expected_strokes: {
-        Args: { p_distance: number; p_is_putting?: boolean; p_lie: string }
-        Returns: number
       }
       get_golf_conversations_with_details: {
         Args: { p_user_id: string }

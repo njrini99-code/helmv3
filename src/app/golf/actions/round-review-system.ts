@@ -259,7 +259,7 @@ interface ShotRow {
   hole_number: number;
   shot_number: number;
   shot_type: string;
-  club_used: string | null;
+  club_type: string | null;
   distance_to_hole_before: string | null;
   distance_unit_before: string | null;
   result: string | null;
@@ -448,7 +448,7 @@ function buildHoleBreakdowns(shots: ShotRow[], round: RoundData, holePars?: Hole
 
     const driveDist = teeShot?.shot_distance ? parseFloat(teeShot.shot_distance) : null;
     const driveMiss = teeShot?.miss_direction ?? null;
-    const driveClub = teeShot?.club_used ?? null;
+    const driveClub = teeShot?.club_type ?? null;
 
     const firstPutt = putts[0];
     const firstPuttFeet = firstPutt?.putt_distance_feet ? parseFloat(firstPutt.putt_distance_feet) : null;
@@ -456,7 +456,7 @@ function buildHoleBreakdowns(shots: ShotRow[], round: RoundData, holePars?: Hole
     const approachShot = holeShots.find(s =>
       s.shot_type === 'approach' || (s.shot_type === 'around_green' && !gir)
     );
-    const approachClub = approachShot?.club_used ?? null;
+    const approachClub = approachShot?.club_type ?? null;
     const approachDist = approachShot?.distance_to_hole_before ? parseFloat(approachShot.distance_to_hole_before) : null;
     const approachMiss = approachShot?.miss_direction ?? null;
 
@@ -1355,7 +1355,7 @@ export async function generateAndStoreRoundReview(
     // Fetch shot-level data
     const { data: shots } = await supabase
       .from('golf_shots')
-      .select('hole_number, shot_number, shot_type, club_used, distance_to_hole_before, distance_unit_before, result, lie_before, lie_after, miss_direction, putt_distance_feet, shot_distance, is_penalty, putt_made')
+      .select('hole_number, shot_number, shot_type, club_type, distance_to_hole_before, distance_unit_before, result, lie_before, lie_after, miss_direction, putt_distance_feet, shot_distance, is_penalty, putt_made')
       .eq('round_id', roundId)
       .order('hole_number', { ascending: true })
       .order('shot_number', { ascending: true });

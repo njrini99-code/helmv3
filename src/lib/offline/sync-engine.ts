@@ -847,7 +847,6 @@ class SyncEngine {
       penalties: 'Penalties',
       // Shot fields
       shot_number: 'Shot Number',
-      club_used: 'Club Used',
       distance: 'Distance',
       result: 'Result',
       lie: 'Lie',

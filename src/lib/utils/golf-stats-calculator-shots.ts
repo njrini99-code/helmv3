@@ -19,7 +19,6 @@ export interface RawShot {
   hole_number: number;
   shot_number: number;
   shot_type: string | null;
-  club_used?: string | null;
   club_type: string | null;
   lie_before: string | null;
   lie_after?: string | null;

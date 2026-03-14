@@ -1253,7 +1253,7 @@ export async function getTracerRoundDiagnostic(roundId: string): Promise<TracerR
 
     adminDb
       .from('golf_shots')
-      .select('shot_number, hole_number, club_used, shot_type, shot_distance')
+      .select('shot_number, hole_number, club_type, shot_type, shot_distance')
       .eq('round_id', roundId)
       .order('hole_number', { ascending: true })
       .order('shot_number', { ascending: true }),
@@ -1279,7 +1279,7 @@ export async function getTracerRoundDiagnostic(roundId: string): Promise<TracerR
   const shots: TracerShotDiagnostic[] = (shotsResult.data || []).map((s) => ({
     shot_number: s.shot_number,
     hole_number: s.hole_number,
-    club: s.club_used,
+    club: s.club_type,
     shot_type: s.shot_type,
     distance: s.shot_distance != null ? Number(s.shot_distance) : null,
   }));

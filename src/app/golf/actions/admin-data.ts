@@ -1541,7 +1541,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     // Shot data quality
     adminDb.from('golf_shots').select('id', { count: 'exact', head: true }).not('distance_to_hole_before', 'is', null),
     adminDb.from('golf_shots').select('id', { count: 'exact', head: true }).not('lie_before', 'is', null),
-    adminDb.from('golf_shots').select('id', { count: 'exact', head: true }).not('club_used', 'is', null),
+    adminDb.from('golf_shots').select('id', { count: 'exact', head: true }).not('club_type', 'is', null),
     // Unique reviewed rounds
     adminDb.from('golf_round_reviews').select('round_id'),
     // Rounds with insights

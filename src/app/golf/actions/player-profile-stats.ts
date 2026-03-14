@@ -202,7 +202,6 @@ export async function getPlayerProfileStats(
         hole_number: s.hole_number,
         shot_number: s.shot_number,
         shot_type: s.shot_type,
-        club_used: s.club_used,
         club_type: s.club_type,
         lie_before: s.lie_before,
         lie_after: s.lie_after,
