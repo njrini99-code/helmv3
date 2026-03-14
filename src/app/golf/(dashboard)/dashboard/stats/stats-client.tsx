@@ -160,7 +160,7 @@ function KPICard({
   trend?: 'up' | 'down';
 }) {
   return (
-    <div className="relative overflow-clip glass-standard rounded-2xl p-5 hover:shadow-glass-md hover:-translate-y-0.5 transition-[transform,box-shadow] duration-200">
+    <div className="relative overflow-clip glass-premium rounded-2xl p-5 hover:shadow-glass-md hover:-translate-y-0.5 transition-[transform,box-shadow] duration-200">
       <ShineEffect />
       <div className="flex items-start justify-between">
         <div>
@@ -212,7 +212,7 @@ function PlayerCard({
   return (
     <button
       onClick={onClick}
-      className="w-full group glass-standard rounded-2xl p-4 hover:shadow-glass-md hover:-translate-y-0.5 hover:bg-white/80 active:bg-white/90 transition-[transform,box-shadow,background-color] duration-200 text-left"
+      className="w-full group glass-premium rounded-2xl p-4 hover:shadow-glass-md hover:-translate-y-0.5 hover:bg-white/80 active:bg-white/90 transition-[transform,box-shadow,background-color] duration-200 text-left"
     >
       <div className="flex items-center gap-4">
         {/* Rank badge */}
@@ -1266,7 +1266,7 @@ export default function StatsClient({
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
-              className="relative glass-standard rounded-2xl p-10 md:p-16 text-center overflow-clip"
+              className="relative glass-premium rounded-2xl p-10 md:p-16 text-center overflow-clip"
             >
               <ShineEffect />
               <m.div

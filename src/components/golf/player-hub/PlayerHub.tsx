@@ -177,7 +177,7 @@ function TripCard({ trip, onExpand }: { trip: TripData; onExpand: () => void }) 
     <m.div
       variants={fadeUp}
       onClick={onExpand}
-      className="group relative glass-standard rounded-2xl overflow-clip cursor-pointer transition-[transform,box-shadow] duration-300 hover:shadow-lg hover:-translate-y-0.5"
+      className="group relative glass-premium rounded-2xl overflow-clip cursor-pointer transition-[transform,box-shadow] duration-300 hover:shadow-lg hover:-translate-y-0.5"
     >
       <ShineEffect />
       {/* Colored top accent based on trip proximity */}
@@ -395,7 +395,7 @@ function PlayerTaskCard({
       variants={fadeUp}
       layout
       className={cn(
-        'relative glass-standard rounded-2xl overflow-clip transition-[transform,box-shadow] duration-300',
+        'relative glass-premium rounded-2xl overflow-clip transition-[transform,box-shadow] duration-300',
         isCompleted && 'opacity-60',
         !isCompleted && 'hover:shadow-lg hover:-translate-y-0.5',
       )}
@@ -502,7 +502,7 @@ function EventRSVPCard({
       variants={fadeUp}
       layout
       className={cn(
-        'relative glass-standard rounded-2xl overflow-clip transition-[transform,box-shadow] duration-300',
+        'relative glass-premium rounded-2xl overflow-clip transition-[transform,box-shadow] duration-300',
         !isPast && 'hover:shadow-lg hover:-translate-y-0.5',
         isPast && 'opacity-60',
       )}

@@ -56,10 +56,8 @@ export const StatCardSparkline = memo(function StatCardSparkline({
             aria-label={`${label}: ${displayValue}${suffix}`}
             className={cn(
                 'relative overflow-hidden group',
-                'bg-white/65 backdrop-blur-[16px]',
-                'border rounded-2xl',
-                'shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)]',
-                'hover:shadow-[0_8px_24px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.8)]',
+                'glass-premium',
+                'rounded-2xl',
                 'transition-shadow duration-200',
                 'p-4 md:p-5',
                 accent

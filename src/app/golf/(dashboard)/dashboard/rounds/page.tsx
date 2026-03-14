@@ -220,7 +220,7 @@ export default async function RoundsPage() {
           {roundStats && rounds.length >= 3 && (
             <div className="mb-6 grid grid-cols-2 md:grid-cols-5 gap-2">
               {/* Total Rounds */}
-              <div className="relative glass-standard rounded-xl overflow-clip p-3">
+              <div className="relative glass-premium rounded-2xl overflow-clip p-3">
                 <ShineEffect />
                 <div className="relative z-10">
                   <div className="flex items-center gap-2 mb-1.5">
@@ -234,7 +234,7 @@ export default async function RoundsPage() {
               </div>
 
               {/* Avg Score */}
-              <div className="relative glass-standard rounded-xl overflow-clip p-3">
+              <div className="relative glass-premium rounded-2xl overflow-clip p-3">
                 <ShineEffect />
                 <div className="relative z-10">
                   <div className="flex items-center gap-2 mb-1.5">
@@ -248,7 +248,7 @@ export default async function RoundsPage() {
               </div>
 
               {/* Best Round */}
-              <div className="relative glass-standard rounded-xl overflow-clip p-3">
+              <div className="relative glass-premium rounded-2xl overflow-clip p-3">
                 <ShineEffect />
                 <div className="relative z-10">
                   <div className="flex items-center gap-2 mb-1.5">
@@ -265,7 +265,7 @@ export default async function RoundsPage() {
               </div>
 
               {/* Avg to Par */}
-              <div className="relative glass-standard rounded-xl overflow-clip p-3">
+              <div className="relative glass-premium rounded-2xl overflow-clip p-3">
                 <ShineEffect />
                 <div className="relative z-10">
                   <div className="flex items-center gap-2 mb-1.5">
@@ -293,7 +293,7 @@ export default async function RoundsPage() {
               </div>
 
               {/* Under Par % + Trend */}
-              <div className="relative glass-standard rounded-xl overflow-clip p-3 col-span-2 md:col-span-1">
+              <div className="relative glass-premium rounded-2xl overflow-clip p-3 col-span-2 md:col-span-1">
                 <ShineEffect />
                 <div className="relative z-10">
                   <div className="flex items-center gap-2 mb-1.5">
@@ -321,7 +321,7 @@ export default async function RoundsPage() {
 
           {rounds.length === 0 && inProgressRounds.length === 0 ? (
             /* Empty State */
-            <div className="relative glass-standard rounded-2xl overflow-clip py-20 px-8 text-center">
+            <div className="relative glass-premium rounded-2xl overflow-clip py-20 px-8 text-center">
               <ShineEffect />
               <div className="relative z-10">
                 <div className="w-16 h-16 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto mb-5">

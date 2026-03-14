@@ -70,9 +70,8 @@ export const ActionItemsCard = memo(function ActionItemsCard({ items, role }: Ac
     return (
         <div className={cn(
             'relative overflow-hidden',
-            'bg-glass-subtle backdrop-blur-glass-prominent',
-            'border border-white/30 rounded-2xl',
-            'shadow-glass'
+            'glass-premium',
+            'rounded-2xl'
         )}>
             {/* Tabs */}
             <div className="flex border-b border-white/15">

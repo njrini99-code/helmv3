@@ -29,9 +29,8 @@ export const QuickStatRow = memo(function QuickStatRow({ stats }: QuickStatRowPr
     return (
         <div className={cn(
             'flex items-center justify-between',
-            'bg-glass-subtle backdrop-blur-glass-prominent',
-            'border border-white/30 rounded-2xl',
-            'shadow-glass px-5 py-3.5',
+            'glass-premium',
+            'rounded-2xl px-5 py-3.5',
             'overflow-x-auto'
         )}>
             {visibleStats.map((stat, i) => (

@@ -81,12 +81,10 @@ export const PremiumGlassCard = memo(function PremiumGlassCard({
         <Component
             className={cn(
                 'relative overflow-hidden',
-                // Enhanced Premium Glass - More transparent and glass-like
-                'bg-glass-subtle backdrop-blur-glass-prominent',
-                'border border-white/30',
+                // Premium glass treatment (products page aesthetic)
+                'glass-premium',
                 'rounded-2xl', // Standardized: 16px
-                // Premium shadow with inset highlight
-                'shadow-glass hover:shadow-card-hover transition-shadow duration-200',
+                'transition-shadow duration-200',
                 !noPadding && 'p-5',
                 className
             )}
