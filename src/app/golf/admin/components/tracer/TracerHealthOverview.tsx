@@ -166,18 +166,21 @@ export default function TracerHealthOverview({
       value: healthBreakdown.completionScore,
       max: 100,
       color: '#10B981',
+      onClick: () => onNavigate('rounds'),
     },
     {
       label: 'Quality',
       value: healthBreakdown.qualityScore,
       max: 100,
       color: '#3B82F6',
+      onClick: () => onNavigate('quality'),
     },
     {
       label: 'Errors',
       value: healthBreakdown.errorScore,
       max: 100,
       color: '#F59E0B',
+      onClick: () => onNavigate('errors'),
     },
   ];
 

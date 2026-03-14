@@ -13,6 +13,7 @@ export interface HealthBreakdown {
   value: number;
   max: number;
   color?: string;
+  onClick?: () => void;
 }
 
 export interface HealthRingProps {
@@ -174,10 +175,24 @@ export function HealthRing({
               const pct = item.max > 0 ? (item.value / item.max) * 100 : 0;
               const itemColor = item.color || getScoreColor(pct).primary;
               
+              const Wrapper = item.onClick ? 'button' : 'div';
               return (
-                <div key={i} className="group">
+                <Wrapper
+                  key={i}
+                  className={cn(
+                    'group text-left w-full',
+                    item.onClick && 'cursor-pointer rounded-lg px-2 py-1.5 -mx-2 transition-colors hover:bg-warm-50/80'
+                  )}
+                  {...(item.onClick ? { type: 'button' as const, onClick: item.onClick } : {})}
+                >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm text-warm-600">{item.label}</span>
+                    <span className={cn(
+                      'text-sm text-warm-600',
+                      item.onClick && 'group-hover:text-warm-800 transition-colors'
+                    )}>
+                      {item.label}
+                      {item.onClick && <span className="ml-1 text-warm-400 group-hover:text-warm-600 transition-colors">&rarr;</span>}
+                    </span>
                     <span className="text-sm font-medium text-warm-900 tabular-nums">
                       {item.value}/{item.max}
                     </span>
@@ -191,7 +206,7 @@ export function HealthRing({
                       style={{ backgroundColor: itemColor }}
                     />
                   </div>
-                </div>
+                </Wrapper>
               );
             })}
           </div>

@@ -29,7 +29,7 @@ interface TracerRoundInspectorProps {
   onDiagnose: (roundId: string) => void;
 }
 
-type SortKey = 'player' | 'course' | 'date' | 'submitted' | 'score' | 'status' | 'holes' | 'issues';
+type SortKey = 'priority' | 'player' | 'course' | 'date' | 'submitted' | 'score' | 'status' | 'holes' | 'issues';
 type StatusFilter = 'all' | 'completed' | 'in_progress' | 'draft';
 
 // ============================================================================
@@ -66,6 +66,31 @@ function getIssueCount(round: FlatRound): number {
   return round.errors.length;
 }
 
+function computePriority(round: FlatRound): { level: 'critical' | 'high' | 'medium' | 'low'; score: number } {
+  let score = 0;
+  if (isStuckRound(round)) score += 40;
+  if (round.errors.length > 0) score += 20 * round.errors.length;
+  if (!round.stats_cached) score += 15;
+  if (round.actual_holes < round.expected_holes) score += 10;
+
+  const level = score >= 60 ? 'critical' : score >= 30 ? 'high' : score >= 10 ? 'medium' : 'low';
+  return { level, score };
+}
+
+const PRIORITY_BADGE_STYLES: Record<'critical' | 'high' | 'medium' | 'low', string> = {
+  critical: 'bg-red-100 text-red-800 border-red-200',
+  high: 'bg-amber-100 text-amber-800 border-amber-200',
+  medium: 'bg-blue-100 text-blue-800 border-blue-200',
+  low: 'bg-warm-100 text-warm-600 border-warm-200',
+};
+
+const PRIORITY_LABELS: Record<'critical' | 'high' | 'medium' | 'low', string> = {
+  critical: 'Critical',
+  high: 'High',
+  medium: 'Medium',
+  low: 'Low',
+};
+
 function getInitials(name: string): string {
   const parts = name.split(' ').filter(Boolean);
   if (parts.length === 0) return '?';
@@ -89,8 +114,8 @@ export function TracerRoundInspector({ rounds, onDiagnose }: TracerRoundInspecto
   const [stuckOnly, setStuckOnly] = useState(false);
   const [hasErrorsOnly, setHasErrorsOnly] = useState(false);
 
-  // Sort state — default to most recently submitted/updated first
-  const [sortKey, setSortKey] = useState<SortKey>('submitted');
+  // Sort state — default to highest priority first
+  const [sortKey, setSortKey] = useState<SortKey>('priority');
   const [sortAsc, setSortAsc] = useState(false);
 
   // Expansion state
@@ -137,6 +162,8 @@ export function TracerRoundInspector({ rounds, onDiagnose }: TracerRoundInspecto
     return [...filteredRounds].sort((a, b) => {
       const dir = sortAsc ? 1 : -1;
       switch (sortKey) {
+        case 'priority':
+          return dir * (computePriority(a).score - computePriority(b).score);
         case 'player':
           return dir * a.player_name.localeCompare(b.player_name);
         case 'course':
@@ -278,6 +305,7 @@ export function TracerRoundInspector({ rounds, onDiagnose }: TracerRoundInspecto
             <thead>
               <tr className="border-b border-warm-100/80">
                 <th className="w-10 px-3 py-3.5" />
+                <SortableTh label="Priority" sortKey="priority" currentKey={sortKey} asc={sortAsc} onSort={handleSort} />
                 <SortableTh label="Player" sortKey="player" currentKey={sortKey} asc={sortAsc} onSort={handleSort} align="left" />
                 <SortableTh label="Course" sortKey="course" currentKey={sortKey} asc={sortAsc} onSort={handleSort} align="left" className="hidden md:table-cell" />
                 <SortableTh label="Date" sortKey="date" currentKey={sortKey} asc={sortAsc} onSort={handleSort} className="hidden sm:table-cell" />
@@ -292,7 +320,7 @@ export function TracerRoundInspector({ rounds, onDiagnose }: TracerRoundInspecto
             <tbody>
               {sortedRounds.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="px-6 py-12 text-center">
+                  <td colSpan={11} className="px-6 py-12 text-center">
                     <Filter size={24} className="mx-auto mb-3 text-warm-300" />
                     <p className="text-warm-500 font-medium text-sm">No rounds match filters</p>
                     <p className="text-warm-400 text-xs mt-1">Try adjusting your search or filters</p>
@@ -376,6 +404,7 @@ function RoundRow({
   const stuck = isStuckRound(round);
   const checks = getChecks(round);
   const issueCount = round.errors.length;
+  const priority = computePriority(round);
 
   return (
     <>
@@ -399,6 +428,16 @@ function RoundRow({
               <ChevronRight size={14} className="text-warm-400" />
             )}
           </div>
+        </td>
+
+        {/* Priority */}
+        <td className="px-4 py-3.5 text-center">
+          <span className={cn(
+            'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border',
+            PRIORITY_BADGE_STYLES[priority.level]
+          )}>
+            {PRIORITY_LABELS[priority.level]}
+          </span>
         </td>
 
         {/* Player */}
@@ -508,7 +547,7 @@ function RoundRow({
       <AnimatePresence>
         {isExpanded && (
           <tr>
-            <td colSpan={10} className="bg-warm-50/30 p-0">
+            <td colSpan={11} className="bg-warm-50/30 p-0">
               <motion.div
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}

@@ -26,6 +26,37 @@ const roleColors: Record<string, string> = {
 type RoleFilter = 'all' | 'coach' | 'player' | 'admin';
 type ActivityFilter = 'all' | 'active_7d' | 'inactive_30d' | 'never';
 
+type LifecycleStage = 'brand_new' | 'active' | 'at_risk' | 'churned' | 'never';
+
+function computeLifecycleStage(member: { created_at: string; last_seen: string | null; daysSinceLastSeen: number | null; activityStatus: string }): LifecycleStage {
+  if (member.last_seen === null || member.activityStatus === 'never') return 'never';
+
+  const createdDaysAgo = Math.floor((Date.now() - new Date(member.created_at).getTime()) / (1000 * 60 * 60 * 24));
+  const daysSince = member.daysSinceLastSeen ?? 0;
+
+  if (createdDaysAgo < 7 && daysSince >= createdDaysAgo) return 'brand_new';
+  if (daysSince <= 7) return 'active';
+  if (daysSince <= 30) return 'at_risk';
+  return 'churned';
+}
+
+const lifecycleConfig: Record<LifecycleStage, { label: string; className: string }> = {
+  brand_new: { label: 'New', className: 'bg-blue-50 text-blue-700' },
+  active: { label: 'Active', className: 'bg-primary-50 text-primary-700' },
+  at_risk: { label: 'At Risk', className: 'bg-amber-50 text-amber-700' },
+  churned: { label: 'Churned', className: 'bg-red-50 text-red-700' },
+  never: { label: 'Never', className: 'bg-warm-100 text-warm-500' },
+};
+
+function LifecycleBadge({ stage }: { stage: LifecycleStage }) {
+  const config = lifecycleConfig[stage];
+  return (
+    <span className={cn('text-micro font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap', config.className)}>
+      {config.label}
+    </span>
+  );
+}
+
 function getInitials(name: string | null, email: string): string {
   if (name && name.trim()) {
     const parts = name.trim().split(/\s+/);
@@ -128,6 +159,8 @@ function TeamSection({
 }
 
 function MemberRow({ member, onSelect }: { member: TeamMember; onSelect?: (id: string) => void }) {
+  const lifecycle = computeLifecycleStage(member);
+
   return (
     <tr
       onClick={() => onSelect?.(member.id)}
@@ -149,7 +182,10 @@ function MemberRow({ member, onSelect }: { member: TeamMember; onSelect?: (id: s
             </div>
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-medium text-warm-900 truncate">{member.name || member.email.split('@')[0]}</p>
+            <div className="flex items-center gap-1.5">
+              <p className="text-sm font-medium text-warm-900 truncate">{member.name || member.email.split('@')[0]}</p>
+              <LifecycleBadge stage={lifecycle} />
+            </div>
             <p className="text-label text-warm-400 truncate">{member.email}</p>
           </div>
         </div>

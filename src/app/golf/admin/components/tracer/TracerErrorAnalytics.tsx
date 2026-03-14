@@ -9,6 +9,7 @@ import {
   ChevronDown,
   ChevronUp,
   Clipboard,
+  Eye,
   Layers3,
   Route,
   RotateCcw,
@@ -172,9 +173,11 @@ export default function TracerErrorAnalytics({
   const [feedMode, setFeedMode] = useState<FeedMode>('all');
   const [showRawTraces, setShowRawTraces] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<'lastSeen' | 'occurrences' | 'severity' | 'playerCount'>('lastSeen');
   const [copyState, setCopyState] = useState<{ target: string; status: 'success' | 'error' } | null>(null);
   const [resolveState, setResolveState] = useState<{ target: string; status: 'success' | 'error'; message: string } | null>(null);
   const [pendingIncidentId, setPendingIncidentId] = useState<string | null>(null);
+  const [investigatingIds, setInvestigatingIds] = useState<Set<string>>(new Set());
   const [isPending, startTransition] = useTransition();
 
   const activeIncidents = useMemo(
@@ -198,10 +201,12 @@ export default function TracerErrorAnalytics({
     [currentQueueIncidents, queueTab, recentCutoff]
   );
 
+  const severityOrder: Record<string, number> = { critical: 0, error: 1, warning: 2, info: 3 };
+
   const visibleIncidents = useMemo(() => {
     const source = currentQueueIncidents;
 
-    return source.filter((incident) => {
+    const filtered = source.filter((incident) => {
       if (feedMode === 'critical') return incident.severity === 'critical' || incident.severity === 'error';
       if (feedMode === 'recent') {
         const referenceTime = queueTab === 'resolved' ? (incident.resolvedAt ?? incident.lastSeen) : incident.lastSeen;
@@ -209,7 +214,22 @@ export default function TracerErrorAnalytics({
       }
       return true;
     });
-  }, [currentQueueIncidents, feedMode, queueTab, recentCutoff]);
+
+    return [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case 'lastSeen':
+          return new Date(b.lastSeen).getTime() - new Date(a.lastSeen).getTime();
+        case 'occurrences':
+          return b.occurrences - a.occurrences;
+        case 'severity':
+          return (severityOrder[a.severity] ?? 4) - (severityOrder[b.severity] ?? 4);
+        case 'playerCount':
+          return b.playerIds.length - a.playerIds.length;
+        default:
+          return 0;
+      }
+    });
+  }, [currentQueueIncidents, feedMode, queueTab, recentCutoff, sortBy]);
 
   const filteredDailyData = useMemo(() => {
     const rangeCfg = TIME_RANGES.find((entry) => entry.label === timeRange);
@@ -410,6 +430,27 @@ export default function TracerErrorAnalytics({
           </div>
         </div>
 
+        <div className="mt-3 flex items-center gap-2 text-xs text-warm-500">
+          <span>Sort:</span>
+          {(['lastSeen', 'occurrences', 'severity', 'playerCount'] as const).map((sortKey) => (
+            <button
+              key={sortKey}
+              type="button"
+              onClick={() => setSortBy(sortKey)}
+              className={cn(
+                'rounded-lg px-2 py-1 transition-colors',
+                sortBy === sortKey
+                  ? 'bg-warm-200/60 text-warm-800 font-medium'
+                  : 'text-warm-500 hover:bg-warm-100 hover:text-warm-700'
+              )}
+            >
+              {sortKey === 'lastSeen' ? 'Latest' :
+               sortKey === 'occurrences' ? 'Most frequent' :
+               sortKey === 'severity' ? 'Severity' : 'Most affected'}
+            </button>
+          ))}
+        </div>
+
         {visibleIncidents.length === 0 ? (
           <div className="mt-5 flex flex-col items-center justify-center rounded-2xl border border-white/35 bg-white/55 px-6 py-10 text-sm text-warm-500">
             <p>No tracer incidents match this filter.</p>
@@ -467,10 +508,14 @@ export default function TracerErrorAnalytics({
                         <span className={cn(
                           'inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]',
                           incident.status === 'open'
-                            ? 'border-red-200 bg-red-50 text-red-700'
+                            ? investigatingIds.has(incident.id)
+                              ? 'border-amber-300 bg-amber-50 text-amber-700'
+                              : 'border-red-200 bg-red-50 text-red-700'
                             : 'border-primary-200 bg-primary-50 text-primary-700'
                         )}>
-                          {incident.status === 'open' ? 'Open' : 'Resolved'}
+                          {incident.status === 'open'
+                            ? investigatingIds.has(incident.id) ? 'Investigating' : 'Open'
+                            : 'Resolved'}
                         </span>
                       </div>
 
@@ -513,19 +558,41 @@ export default function TracerErrorAnalytics({
                       </button>
 
                       {incident.status === 'open' && (
-                        <button
-                          type="button"
-                          onClick={() => handleResolve(incident)}
-                          disabled={resolvePending}
-                          className={cn(
-                            'inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors',
-                            'border-primary-200 bg-primary-50/80 text-primary-700 hover:bg-primary-50',
-                            resolvePending && 'cursor-not-allowed opacity-60'
-                          )}
-                        >
-                          <RotateCcw size={16} />
-                          {resolvePending ? 'Resolving...' : 'Mark resolved'}
-                        </button>
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setInvestigatingIds((prev) => {
+                                const next = new Set(prev);
+                                if (next.has(incident.id)) next.delete(incident.id);
+                                else next.add(incident.id);
+                                return next;
+                              });
+                            }}
+                            className={cn(
+                              'inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors',
+                              investigatingIds.has(incident.id)
+                                ? 'border-amber-300 bg-amber-50 text-amber-800'
+                                : 'border-white/40 bg-white/70 text-warm-700 hover:bg-white'
+                            )}
+                          >
+                            <Eye size={16} />
+                            {investigatingIds.has(incident.id) ? 'Investigating' : 'Start investigating'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleResolve(incident)}
+                            disabled={resolvePending}
+                            className={cn(
+                              'inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors',
+                              'border-primary-200 bg-primary-50/80 text-primary-700 hover:bg-primary-50',
+                              resolvePending && 'cursor-not-allowed opacity-60'
+                            )}
+                          >
+                            <RotateCcw size={16} />
+                            {resolvePending ? 'Resolving...' : 'Mark resolved'}
+                          </button>
+                        </>
                       )}
 
                       <button

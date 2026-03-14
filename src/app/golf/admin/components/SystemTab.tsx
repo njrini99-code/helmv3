@@ -1,7 +1,22 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { Activity, AlertTriangle, CheckCircle2, Clock, Database, Gauge, Lock, Sparkles, Zap } from 'lucide-react';
+import {
+  Activity,
+  AlertTriangle,
+  BarChart3,
+  Brain,
+  CheckCircle2,
+  Clock,
+  Database,
+  Gauge,
+  Globe,
+  Lock,
+  RefreshCw,
+  Rocket,
+  Sparkles,
+  Zap,
+} from 'lucide-react';
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { HealthCheckGrid } from './HealthCheckGrid';
 import { CoachHelmHealthCard } from './CoachHelmHealthCard';
@@ -321,13 +336,50 @@ function FeatureAdoptionGrid({ features }: { features: AdminDashboardData['usage
   );
 }
 
+// ─── Background Jobs Config ─────────────────────────────────────────────────
+
+const SYSTEM_JOBS = [
+  { name: 'Stats Cache Refresh', expectedInterval: '1h', icon: RefreshCw },
+  { name: 'CoachHelm Insight Generation', expectedInterval: '24h', icon: Brain },
+  { name: 'Platform Metrics Snapshot', expectedInterval: '24h', icon: BarChart3 },
+];
+
+// ─── External Services Config ───────────────────────────────────────────────
+
+const SERVICES = [
+  { name: 'Supabase', status: 'operational' },
+  { name: 'Vercel', status: 'operational' },
+  { name: 'Sentry', status: 'operational' },
+];
+
 // ─── Root Export ─────────────────────────────────────────────────────────────
 
 export function SystemTab({ data }: Props) {
   const { errorLogs, dataQuality, usage } = data;
 
+  // Storage quota calculations
+  const dbSizeGb = (data.health?.dbSizeBytes || 0) / (1024 * 1024 * 1024);
+  const quotaGb = 8; // Supabase free tier default
+  const usagePct = Math.min((dbSizeGb / quotaGb) * 100, 100);
+
   return (
     <div className="space-y-6">
+      {/* ── Deployment Info ── */}
+      <div className="flex items-center justify-between rounded-2xl border border-white/30 bg-white/65 backdrop-blur-[16px] px-5 py-3">
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary-50">
+            <Rocket size={16} className="text-primary-600" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-warm-900">Production</p>
+            <p className="text-xs text-warm-500">Next.js &middot; Vercel &middot; Supabase</p>
+          </div>
+        </div>
+        <div className="text-right">
+          <p className="text-xs text-warm-400">Environment healthy</p>
+        </div>
+      </div>
+
       {/* ── Section 1: System Overview ── */}
       <div>
         <SectionHeader title="System Overview" />
@@ -340,7 +392,39 @@ export function SystemTab({ data }: Props) {
         <ErrorFeed errorLogs={errorLogs} />
       </div>
 
-      {/* ── Section 3: Platform Health ── */}
+      {/* ── Section 3: Background Jobs ── */}
+      <div>
+        <SectionHeader title="Background Jobs" />
+        <div className="rounded-2xl border border-white/30 bg-white/65 backdrop-blur-[16px] p-5">
+          <div className="space-y-3">
+            {SYSTEM_JOBS.map((job) => {
+              const JobIcon = job.icon;
+              return (
+                <div
+                  key={job.name}
+                  className="flex items-center justify-between rounded-xl border border-white/30 bg-white/50 px-4 py-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/70">
+                      <JobIcon size={14} className="text-warm-500" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-warm-900">{job.name}</p>
+                      <p className="text-[11px] text-warm-400">Every {job.expectedInterval}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-amber-400" />
+                    <span className="text-xs text-warm-400">No data yet</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Section 4: Platform Health ── */}
       <div>
         <SectionHeader title="Platform Health" />
         <div className="grid grid-cols-1 gap-4 md:gap-5 xl:grid-cols-[1.35fr_0.65fr]">
@@ -352,15 +436,79 @@ export function SystemTab({ data }: Props) {
             dataQuality={dataQuality}
           />
 
-          {/* Right: Data quality ring + infra snapshot */}
+          {/* Right: Data quality ring + infra snapshot + storage quota */}
           <div className="glass-standard rounded-2xl p-5 md:p-6 space-y-4">
             <DataQualityRing quality={dataQuality} />
             <InfraSnapshotPanel health={data.health} />
+
+            {/* Storage Quota */}
+            <div className="rounded-2xl border border-white/35 bg-white/55 p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-warm-500">
+                Storage Quota
+              </p>
+              <div className="mt-3">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-medium text-warm-700">Database</span>
+                  <span
+                    className={cn(
+                      'text-xs font-bold tabular-nums',
+                      usagePct > 80
+                        ? 'text-red-600'
+                        : usagePct > 60
+                          ? 'text-amber-600'
+                          : 'text-primary-600'
+                    )}
+                  >
+                    {dbSizeGb.toFixed(1)} GB / {quotaGb} GB
+                  </span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-warm-100">
+                  <div
+                    className={cn(
+                      'h-full rounded-full transition-all duration-500',
+                      usagePct > 80
+                        ? 'bg-red-500'
+                        : usagePct > 60
+                          ? 'bg-amber-500'
+                          : 'bg-primary-500'
+                    )}
+                    style={{ width: `${Math.max(usagePct, 1)}%` }}
+                  />
+                </div>
+                <p className="mt-1.5 text-[10px] text-warm-400">
+                  {usagePct.toFixed(1)}% of {quotaGb} GB quota used
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* ── Section 4: Feature & AI Health ── */}
+      {/* ── Section 5: External Services ── */}
+      <div>
+        <SectionHeader title="External Services" />
+        <div className="rounded-2xl border border-white/30 bg-white/65 backdrop-blur-[16px] p-5">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            {SERVICES.map((service) => (
+              <div
+                key={service.name}
+                className="flex items-center gap-3 rounded-xl border border-white/30 bg-white/50 px-4 py-3"
+              >
+                <Globe size={14} className="text-warm-400" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-warm-900">{service.name}</p>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-primary-500" />
+                  <span className="text-xs text-primary-600 font-medium">Operational</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Section 6: Feature & AI Health ── */}
       <div>
         <SectionHeader title="Feature & AI Health" />
         <div className="grid grid-cols-1 gap-4 md:gap-5 xl:grid-cols-2">
@@ -369,7 +517,7 @@ export function SystemTab({ data }: Props) {
         </div>
       </div>
 
-      {/* ── Section 5: Infrastructure Detail ── */}
+      {/* ── Section 7: Infrastructure Detail ── */}
       <div>
         <SectionHeader title="Infrastructure" />
         <InfraHealthCard

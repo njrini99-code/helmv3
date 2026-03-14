@@ -236,7 +236,63 @@ export function BusinessIntelligenceTab({ data }: Props) {
 
   return (
     <div className="space-y-6">
+      {/* Executive Summary */}
+      <div className="rounded-2xl border border-white/30 bg-white/65 backdrop-blur-[16px] p-5 md:p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-warm-900">Platform Intelligence</h3>
+            <p className="mt-1 text-sm text-warm-500">
+              {bi.growth.overallActivationRate >= 40 ? 'Platform health is strong' :
+               bi.growth.overallActivationRate >= 25 ? 'Platform health needs attention' :
+               'Platform health is critical'} &middot; {bi.growth.overallActivationRate.toFixed(0)}% activation rate
+            </p>
+          </div>
+          <div className={cn(
+            'flex h-10 w-10 items-center justify-center rounded-2xl',
+            bi.growth.overallActivationRate >= 40 ? 'bg-primary-50 text-primary-600' :
+            bi.growth.overallActivationRate >= 25 ? 'bg-amber-50 text-amber-600' :
+            'bg-red-50 text-red-600'
+          )}>
+            <TrendingUp size={20} />
+          </div>
+        </div>
+        <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="rounded-xl bg-warm-50/60 px-3 py-2.5">
+            <p className="text-[11px] font-medium text-warm-400 uppercase tracking-wider">Activation</p>
+            <p className="text-lg font-bold text-warm-900 tabular-nums mt-0.5">
+              {bi.growth.overallActivationRate.toFixed(0)}%
+              {bi.growth.userGrowthRateWoW !== 0 && (
+                <span className={cn(
+                  'ml-1.5 text-xs font-medium',
+                  bi.growth.userGrowthRateWoW > 0 ? 'text-primary-600' : 'text-red-600'
+                )}>
+                  {bi.growth.userGrowthRateWoW > 0 ? '\u2191' : '\u2193'} {Math.abs(bi.growth.userGrowthRateWoW).toFixed(1)}%
+                </span>
+              )}
+            </p>
+          </div>
+          <div className="rounded-xl bg-warm-50/60 px-3 py-2.5">
+            <p className="text-[11px] font-medium text-warm-400 uppercase tracking-wider">D7 Retention</p>
+            <p className="text-lg font-bold text-warm-900 tabular-nums mt-0.5">{bi.retention.d7.rate.toFixed(0)}%</p>
+          </div>
+          <div className="rounded-xl bg-warm-50/60 px-3 py-2.5">
+            <p className="text-[11px] font-medium text-warm-400 uppercase tracking-wider">WAU Stickiness</p>
+            <p className="text-lg font-bold text-warm-900 tabular-nums mt-0.5">{bi.retention.stickinessLogins.toFixed(0)}%</p>
+          </div>
+          <div className="rounded-xl bg-warm-50/60 px-3 py-2.5">
+            <p className="text-[11px] font-medium text-warm-400 uppercase tracking-wider">At-Risk</p>
+            <p className={cn(
+              'text-lg font-bold tabular-nums mt-0.5',
+              bi.health.atRiskAccounts.length === 0 ? 'text-primary-600' : bi.health.atRiskAccounts.length <= 5 ? 'text-amber-600' : 'text-red-600'
+            )}>
+              {bi.health.atRiskAccounts.length}
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Sub-navigation pills */}
+      <div className="sticky top-0 z-10 bg-[#FFFEFA]/80 backdrop-blur-md py-2">
       <div className="flex items-center gap-1 p-1 bg-white/50 backdrop-blur-sm border border-white/30 rounded-full w-full sm:w-fit overflow-x-auto">
         {SUB_TABS.map((tab) => (
           <button
@@ -253,6 +309,7 @@ export function BusinessIntelligenceTab({ data }: Props) {
             {tab.label}
           </button>
         ))}
+      </div>
       </div>
 
       {/* Section content */}
@@ -277,6 +334,13 @@ function GrowthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
 
   return (
     <div className="space-y-6">
+      {/* Narrative Callout */}
+      <div className="rounded-xl border border-blue-100 bg-blue-50/50 px-4 py-3 text-sm text-blue-800">
+        {g.userGrowthRateWoW > 0
+          ? `Growth is accelerating: +${g.userGrowthRateWoW.toFixed(1)}% WoW signup growth. Median time-to-first-value is ${g.medianTTFVDays !== null ? `${g.medianTTFVDays} days` : 'N/A'}.`
+          : `Signup growth has slowed. Focus on activation: ${g.overallActivationRate.toFixed(0)}% of users are activated.`}
+      </div>
+
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <AdminStatCard
@@ -286,6 +350,7 @@ function GrowthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
           icon={<Zap size={20} />}
           accentColor={g.overallActivationRate >= 40 ? 'green' : g.overallActivationRate >= 20 ? 'amber' : 'red'}
           detail={`Players ${g.playerActivationRate.toFixed(0)}% / Coaches ${g.coachActivationRate.toFixed(0)}%`}
+          trend={g.userGrowthRateWoW !== 0 ? { value: g.userGrowthRateWoW, label: 'WoW' } : undefined}
         />
         <AdminStatCard
           label="Activated Users"
@@ -408,6 +473,12 @@ function RetentionSection({ bi }: { bi: AdminDashboardData['bi'] }) {
 
   return (
     <div className="space-y-6">
+      {/* Narrative Callout */}
+      <div className="rounded-xl border border-blue-100 bg-blue-50/50 px-4 py-3 text-sm text-blue-800">
+        D7 retention is {r.d7.rate.toFixed(0)}% ({r.d7.rate >= 30 ? 'healthy' : 'needs improvement'}).
+        DAU/MAU stickiness: {r.stickinessLogins.toFixed(0)}% for logins.
+      </div>
+
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <AdminStatCard
@@ -629,6 +700,18 @@ function UsageSection({ bi }: { bi: AdminDashboardData['bi'] }) {
 
   return (
     <div className="space-y-6">
+      {/* Narrative Callout */}
+      <div className={cn(
+        "rounded-xl border px-4 py-3 text-sm",
+        u.deadFeatures.length > 0
+          ? "border-amber-100 bg-amber-50/50 text-amber-800"
+          : "border-blue-100 bg-blue-50/50 text-blue-800"
+      )}>
+        {u.featureAdoption.length} features tracked. {u.deadFeatures.length > 0
+          ? `${u.deadFeatures.length} dead feature${u.deadFeatures.length === 1 ? '' : 's'} detected with zero usage in 30 days.`
+          : 'All features showing active usage in the last 30 days.'}
+      </div>
+
       {/* Dead Features Warning */}
       {u.deadFeatures.length > 0 && (
         <div className="bg-red-50/80 backdrop-blur-sm border border-red-200/50 rounded-2xl p-4 flex items-start gap-3">
@@ -806,6 +889,21 @@ function FunnelSection({ bi }: { bi: AdminDashboardData['bi'] }) {
 
   return (
     <div className="space-y-6">
+      {/* Narrative Callout */}
+      <div className={cn(
+        "rounded-xl border px-4 py-3 text-sm",
+        (f.biggestPlayerDropoff && f.biggestPlayerDropoff.pct >= 50) || (f.biggestCoachDropoff && f.biggestCoachDropoff.pct >= 50)
+          ? "border-amber-100 bg-amber-50/50 text-amber-800"
+          : "border-blue-100 bg-blue-50/50 text-blue-800"
+      )}>
+        {f.biggestPlayerDropoff
+          ? `Largest player drop-off: ${f.biggestPlayerDropoff.from} to ${f.biggestPlayerDropoff.to} (${f.biggestPlayerDropoff.pct}% loss).`
+          : 'No significant player drop-offs detected.'}
+        {f.biggestCoachDropoff
+          ? ` Largest coach drop-off: ${f.biggestCoachDropoff.from} to ${f.biggestCoachDropoff.to} (${f.biggestCoachDropoff.pct}% loss).`
+          : ''}
+      </div>
+
       {/* Biggest Drop-off Callouts */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {f.biggestPlayerDropoff && (
@@ -1006,6 +1104,17 @@ function HealthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
 
   return (
     <div className="space-y-6">
+      {/* Narrative Callout */}
+      <div className={cn(
+        "rounded-xl border px-4 py-3 text-sm",
+        h.atRiskAccounts.length > 5
+          ? "border-amber-100 bg-amber-50/50 text-amber-800"
+          : "border-primary-100 bg-primary-50/50 text-primary-800"
+      )}>
+        {h.atRiskAccounts.length} account{h.atRiskAccounts.length === 1 ? '' : 's'} at risk.{' '}
+        {h.teamHealthScores.filter(t => t.riskLevel === 'critical').length} team{h.teamHealthScores.filter(t => t.riskLevel === 'critical').length === 1 ? '' : 's'} in critical status.
+      </div>
+
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         <AdminStatCard
