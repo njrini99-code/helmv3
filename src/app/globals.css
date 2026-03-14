@@ -250,7 +250,10 @@
 
 @layer components {
   .golf-mobile-page-header {
-    @apply sticky top-0 z-10 border-b border-warm-200/60 bg-white/80 backdrop-blur-xl;
+    @apply sticky top-0 z-10 border-b border-warm-200/40;
+    background: rgba(255, 254, 250, 0.75);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     padding-top: max(0.25rem, env(safe-area-inset-top, 0px));
   }
 
