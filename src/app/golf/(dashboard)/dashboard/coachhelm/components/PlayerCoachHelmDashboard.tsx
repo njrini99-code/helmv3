@@ -177,7 +177,7 @@ export function PlayerCoachHelmDashboard({
             </m.div>
 
             {/* Insights Section */}
-            <AnimatePresence mode="wait">
+            <AnimatePresence mode="popLayout">
               {activeSection === 'insights' && (
                 <m.div
                   key="insights"

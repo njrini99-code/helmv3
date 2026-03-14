@@ -499,13 +499,14 @@
   /* Glass Level 2.5: Premium - Products-page-inspired card treatment */
   .glass-premium {
     background: rgba(255, 255, 255, 0.55);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.7);
     box-shadow:
       0 1px 2px rgba(0, 0, 0, 0.04),
       0 4px 16px rgba(0, 0, 0, 0.03),
       inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    transition: background-color 0.2s ease-out, box-shadow 0.2s ease-out;
   }
 
   .glass-premium:hover {
@@ -1118,7 +1119,7 @@
         #FDF9F0 33%,
         #FAF5EB 66%,
         #F5F0E6 100%);
-    background-attachment: fixed;
+    background-attachment: scroll;
     position: relative;
   }
 

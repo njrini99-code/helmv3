@@ -33,7 +33,7 @@ export const containerVariants = {
     visible: {
         opacity: 1,
         transition: {
-            staggerChildren: 0.05,
+            staggerChildren: 0.03,
             delayChildren: 0
         }
     }
@@ -45,7 +45,7 @@ export const itemVariants = {
         opacity: 1,
         y: 0,
         transition: {
-            duration: 0.35,
+            duration: 0.25,
             ease: [0.16, 1, 0.3, 1] as [number, number, number, number]
         }
     }

@@ -554,7 +554,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
 
                   {/* Tab Content */}
                   <div className="p-6">
-                    <AnimatePresence mode="wait">
+                    <AnimatePresence mode="popLayout">
                       {activeTab === 'details' ? (
                         <m.div
                           key="details"

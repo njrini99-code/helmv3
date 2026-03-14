@@ -159,14 +159,14 @@ export const PerformanceRadar = memo(function PerformanceRadar({ data }: Perform
                                             className="absolute left-1/2 top-0 bottom-0 bg-primary-500 rounded-r-full"
                                             initial={{ width: 0 }}
                                             animate={{ width: `${barWidth}%` }}
-                                            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1], delay: i * 0.08 }}
+                                            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                                         />
                                     ) : (
                                         <m.div
                                             className="absolute right-1/2 top-0 bottom-0 bg-red-400 rounded-l-full"
                                             initial={{ width: 0 }}
                                             animate={{ width: `${barWidth}%` }}
-                                            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1], delay: i * 0.08 }}
+                                            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                                         />
                                     )}
                                 </div>

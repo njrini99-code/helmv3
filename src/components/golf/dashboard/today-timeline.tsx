@@ -180,7 +180,7 @@ export function TodayTimeline({ events, role, timezone }: TodayTimelineProps) {
                             key={event.id}
                             initial={{ opacity: 0, y: 8 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: i * 0.05, duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                             className={cn(
                                 'rounded-xl border p-3.5 transition-all duration-200',
                                 config.border,

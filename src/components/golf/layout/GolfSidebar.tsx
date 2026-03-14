@@ -90,7 +90,8 @@ interface GolfSidebarProps {
 export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile = false }: GolfSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const supabase = createClient();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const supabase = useMemo(() => createClient(), []);
   const { collapsed, setCollapsed, setMobileOpen } = useSidebar();
   const [isSigningOut, setIsSigningOut] = useState(false);
 
