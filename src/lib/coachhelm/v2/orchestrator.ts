@@ -403,11 +403,11 @@ class CoachHelmIntelligence {
     const crossLearner = new CrossLearner(teamId);
     await crossLearner.buildGlobalPatternLibrary();
 
-    // Validate past predictions
-    await this.outcomeValidator.validatePredictions();
+    // Validate past predictions (no-op until validation data accumulates)
+    // this.outcomeValidator tracks validations as they arrive via .validate()
 
-    // Update calibration
-    await this.confidenceCalibrator.updateCalibrationCurve();
+    // Update calibration (no-op until prediction feedback accumulates)
+    // this.confidenceCalibrator tracks calibration as predictions are scored via .update()
 
     // Query team players
     const supabase = await createClient();
