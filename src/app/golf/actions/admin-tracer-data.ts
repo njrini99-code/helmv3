@@ -137,6 +137,17 @@ export interface TracerData {
     critical7d: number;
     warnings7d: number;
   };
+  /** Raw admin_event records (ungrouped) for individual trace inspection */
+  rawTraces: {
+    id: string;
+    severity: string;
+    message: string;
+    url: string | null;
+    user_email: string | null;
+    created_at: string;
+    metadata: Record<string, unknown> | null;
+    resolved: boolean;
+  }[];
   /** Per-round integrity data from hole-level aggregation */
   roundIntegrity?: Record<string, {
     round_id: string;
@@ -1046,6 +1057,18 @@ export async function getTracerData(): Promise<TracerData> {
       warnings7d: recentWarningCount7d,
     },
     roundIntegrity,
+    rawTraces: tracerEvents
+      .filter((event) => event.created_at >= ago7d)
+      .map((event) => ({
+        id: event.id,
+        severity: normalizeTracerSeverity(event.severity),
+        message: getTracerEventMessage(event),
+        url: event.url,
+        user_email: event.user_email,
+        created_at: event.created_at,
+        metadata: event.metadata,
+        resolved: event.resolved,
+      })),
   };
 }
 

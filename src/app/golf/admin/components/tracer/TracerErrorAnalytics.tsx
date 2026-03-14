@@ -19,6 +19,17 @@ import { AdminAreaChart, AdminDonutChart, AdminProgressBar } from '../AdminChart
 import { timeAgo } from '../admin-utils';
 import type { ErrorGroup, AffectedPlayer, DailyCount, TracerIncident } from './tracer-types';
 
+interface RawTrace {
+  id: string;
+  severity: string;
+  message: string;
+  url: string | null;
+  user_email: string | null;
+  created_at: string;
+  metadata: Record<string, unknown> | null;
+  resolved: boolean;
+}
+
 interface TracerErrorAnalyticsProps {
   errorGroups: ErrorGroup[];
   affectedPlayers: AffectedPlayer[];
@@ -27,6 +38,7 @@ interface TracerErrorAnalyticsProps {
   totalErrors7d: number;
   criticalErrors7d: number;
   onIncidentResolved: () => Promise<void>;
+  rawTraces?: RawTrace[];
 }
 
 type TimeRange = '7d' | '14d' | '30d';
@@ -151,10 +163,14 @@ export default function TracerErrorAnalytics({
   totalErrors7d,
   criticalErrors7d,
   onIncidentResolved,
+  rawTraces = [],
 }: TracerErrorAnalyticsProps) {
+  // Auto-select the tab that has content
+  const defaultTab: QueueTab = recentErrors.some((i) => i.status === 'open') ? 'active' : 'resolved';
   const [timeRange, setTimeRange] = useState<TimeRange>('7d');
-  const [queueTab, setQueueTab] = useState<QueueTab>('active');
+  const [queueTab, setQueueTab] = useState<QueueTab>(defaultTab);
   const [feedMode, setFeedMode] = useState<FeedMode>('all');
+  const [showRawTraces, setShowRawTraces] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [copyState, setCopyState] = useState<{ target: string; status: 'success' | 'error' } | null>(null);
   const [resolveState, setResolveState] = useState<{ target: string; status: 'success' | 'error'; message: string } | null>(null);
@@ -395,8 +411,17 @@ export default function TracerErrorAnalytics({
         </div>
 
         {visibleIncidents.length === 0 ? (
-          <div className="mt-5 flex items-center justify-center rounded-2xl border border-white/35 bg-white/55 px-6 py-10 text-sm text-warm-500">
-            No tracer incidents match this filter.
+          <div className="mt-5 flex flex-col items-center justify-center rounded-2xl border border-white/35 bg-white/55 px-6 py-10 text-sm text-warm-500">
+            <p>No tracer incidents match this filter.</p>
+            {queueTab === 'active' && resolvedIncidents.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setQueueTab('resolved')}
+                className="mt-2 text-primary-600 hover:text-primary-700 font-medium underline underline-offset-2"
+              >
+                View {resolvedIncidents.length} resolved incident{resolvedIncidents.length !== 1 ? 's' : ''}
+              </button>
+            )}
           </div>
         ) : (
           <div className="mt-5 space-y-3">
@@ -591,6 +616,86 @@ export default function TracerErrorAnalytics({
           </div>
         )}
       </div>
+
+      {/* Raw Traces — individual ungrouped error events */}
+      {rawTraces.length > 0 && (
+        <div className={cn(GLASS_CARD, 'p-4 md:p-5')}>
+          <button
+            type="button"
+            onClick={() => setShowRawTraces(!showRawTraces)}
+            className="flex w-full items-center justify-between"
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-warm-100">
+                <Layers3 size={17} className="text-warm-600" />
+              </div>
+              <div className="text-left">
+                <h3 className="text-base font-semibold text-warm-900">Raw Traces ({rawTraces.length})</h3>
+                <p className="text-sm text-warm-500">Individual error events before grouping into incidents. Click to inspect each trace.</p>
+              </div>
+            </div>
+            {showRawTraces ? <ChevronUp size={18} className="text-warm-400" /> : <ChevronDown size={18} className="text-warm-400" />}
+          </button>
+
+          {showRawTraces && (
+            <div className="mt-4 space-y-2">
+              {rawTraces.map((trace) => {
+                const sevStyle = severityStyles[trace.severity as TracerIncident['severity']] ?? severityStyles.info;
+                const meta = trace.metadata;
+                const action = meta?.action as string | undefined;
+                const featureArea = meta?.featureArea as string | undefined;
+                const roundId = meta?.roundId as string | undefined;
+                const playerId = meta?.playerId as string | undefined;
+                const errorCode = meta?.errorCode as string | undefined;
+                const hint = meta?.hint as string | undefined;
+                const details = meta?.details as string | undefined;
+
+                return (
+                  <div key={trace.id} className={cn('rounded-xl border bg-white/55 p-3', sevStyle.border)}>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]', sevStyle.badge)}>
+                        {trace.severity}
+                      </span>
+                      {featureArea && (
+                        <span className="inline-flex items-center rounded-full border border-white/40 bg-white/65 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-warm-600">
+                          {featureArea}
+                        </span>
+                      )}
+                      <span className={cn(
+                        'inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]',
+                        trace.resolved
+                          ? 'border-primary-200 bg-primary-50 text-primary-700'
+                          : 'border-red-200 bg-red-50 text-red-700'
+                      )}>
+                        {trace.resolved ? 'Resolved' : 'Open'}
+                      </span>
+                      <span className="text-xs text-warm-400">{timeAgo(trace.created_at)} · {formatTimestamp(trace.created_at)}</span>
+                    </div>
+
+                    <p className="mt-2 text-sm leading-6 text-warm-800 break-words">{trace.message || 'No message captured'}</p>
+
+                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-warm-500">
+                      {action && <span><span className="font-medium text-warm-600">Action:</span> <span className="font-mono">{action}</span></span>}
+                      {trace.url && <span><span className="font-medium text-warm-600">URL:</span> <span className="font-mono truncate">{trace.url}</span></span>}
+                      {errorCode && <span><span className="font-medium text-warm-600">Code:</span> <span className="font-mono">{errorCode}</span></span>}
+                      {roundId && <span><span className="font-medium text-warm-600">Round:</span> <span className="font-mono">{roundId.slice(0, 8)}</span></span>}
+                      {playerId && <span><span className="font-medium text-warm-600">Player:</span> <span className="font-mono">{playerId.slice(0, 8)}</span></span>}
+                      {trace.user_email && <span><span className="font-medium text-warm-600">User:</span> {trace.user_email}</span>}
+                    </div>
+
+                    {(hint || details) && (
+                      <div className="mt-2 rounded-lg border border-amber-100 bg-amber-50/65 px-2.5 py-1.5 text-xs text-amber-800">
+                        {hint && <p><span className="font-medium">Hint:</span> {hint}</p>}
+                        {details && <p className={hint ? 'mt-1' : ''}><span className="font-medium">Details:</span> {details}</p>}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.25fr)_minmax(340px,0.75fr)]">
         <div className={cn(GLASS_CARD, 'p-5')}>

@@ -328,6 +328,7 @@ export function TracerTab() {
           totalErrors7d={data.errorStats.total7d}
           criticalErrors7d={data.errorStats.critical7d}
           onIncidentResolved={() => loadData(true)}
+          rawTraces={data.rawTraces}
         />
       )}
 

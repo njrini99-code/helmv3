@@ -83,7 +83,7 @@ export function OverviewTab({ data, onNavigateTab }: Props) {
 
       {/* 2-col: Health + User Breakdown */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5">
-        <PlatformHealthCard health={data.health} />
+        <PlatformHealthCard health={data.health} statsCacheLastUpdated={data.statsCacheLastUpdated} />
         <UserBreakdownCard users={data.users} />
       </div>
     </div>

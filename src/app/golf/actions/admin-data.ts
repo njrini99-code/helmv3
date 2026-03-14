@@ -320,6 +320,8 @@ export interface AdminDashboardData {
       lastSeen: string;
       affectedUsers: number;
     }[];
+    errorSummaryDegraded?: boolean;
+    adminEventSummaryDegraded?: boolean;
   };
   // Audit log
   auditLog: {
@@ -569,6 +571,11 @@ export interface AdminDashboardData {
   };
   // BI Dashboard
   bi: BIDashboardData;
+  // Degraded state flags (RPC functions unavailable)
+  errorSummaryDegraded?: boolean;
+  adminEventSummaryDegraded?: boolean;
+  // Stats cache freshness
+  statsCacheLastUpdated?: string | null;
 }
 
 interface DashboardErrorContext {
@@ -1557,6 +1564,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     errorsRes,
     userToPlayerMapRes,
     platformHealthStatsRes,
+    statsCacheLastUpdatedRes,
   ] = await Promise.all([
     // Teams with org
     adminDb.from('golf_teams').select('id, name, organization_id, organizations(name)'),
@@ -1581,11 +1589,17 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     adminDb.from('golf_players').select('id, user_id'),
     // Real platform health stats from auth sessions + DB metrics
     adminDb.rpc('get_platform_health_stats' as never) as unknown as { data: PlatformHealthStatsResult | null; error: unknown },
+    // Cache freshness check for golf_player_stats_cache
+    adminDb.from('golf_player_stats_cache').select('updated_at').order('updated_at', { ascending: false }).limit(1),
   ]);
 
   // ============================================
   // PROCESS DATA
   // ============================================
+
+  // --- Stats cache freshness ---
+  const statsCacheLastUpdated: string | null =
+    (statsCacheLastUpdatedRes.data as { updated_at: string }[] | null)?.[0]?.updated_at ?? null;
 
   // --- Signups by week ---
   const signupsByWeek = groupByWeek(
@@ -2331,8 +2345,8 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     adminEventsUnresolvedCriticalRes,
     adminEventsErrorOnlyRes,
   ] = await Promise.all([
-    // Error logs: recent entries (limit 100 — incident grouping only needs recent window, not 250)
-    adminDb.from('error_logs').select('id, message, severity, stack, url, user_id, context, created_at').order('created_at', { ascending: false }).limit(100),
+    // Error logs: recent entries (limit 500 — incident grouping needs broader window)
+    adminDb.from('error_logs').select('id, message, severity, stack, url, user_id, context, created_at').order('created_at', { ascending: false }).limit(500),
     // Error logs: 7d count
     adminDb.from('error_logs').select('id', { count: 'exact', head: true }).gte('created_at', ago7d),
     // Error logs: critical 7d
@@ -2389,7 +2403,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     // Total platform users (source of truth)
     adminDb.from('users').select('id', { count: 'exact', head: true }),
     // Admin events: recent entries for display (no metadata — saves bandwidth on JSONB column)
-    adminDb.from('admin_events').select('id, event_type, severity, title, message, user_id, user_email, url, resolved, resolved_at, resolved_by, created_at').order('created_at', { ascending: false }).limit(100),
+    adminDb.from('admin_events').select('id, event_type, severity, title, message, user_id, user_email, url, resolved, resolved_at, resolved_by, created_at').order('created_at', { ascending: false }).limit(500),
     // Admin events: summary via RPC (wrapped in try-catch for resilience)
     (async () => {
       try {
@@ -2403,7 +2417,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     // Admin events: unresolved critical
     adminDb.from('admin_events').select('id, event_type, title, message, created_at').eq('resolved', false).in('severity', ['critical', 'error']).order('created_at', { ascending: false }).limit(20),
     // Admin events: error-type only with metadata (for incident key building — much smaller result set)
-    adminDb.from('admin_events').select('id, event_type, severity, title, message, metadata, user_id, user_email, url, resolved, resolved_at, resolved_by, created_at').eq('event_type', 'error').order('created_at', { ascending: false }).limit(250),
+    adminDb.from('admin_events').select('id, event_type, severity, title, message, metadata, user_id, user_email, url, resolved, resolved_at, resolved_by, created_at').eq('event_type', 'error').order('created_at', { ascending: false }).limit(500),
   ]);
 
   // --- Process error logs ---
@@ -2430,6 +2444,9 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     context: Record<string, unknown> | null;
     created_at: string | null;
   }[];
+
+  // Track whether RPC fallback was used
+  const errorSummaryDegraded = errorSummaryRaw === null;
 
   // Fallback: calculate error summary from raw error logs if RPC failed
   const errorSummary = errorSummaryRaw ?? (() => {
@@ -2528,6 +2545,9 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     events_by_day: { date: string; count: number }[];
   } | null;
 
+  // Track whether RPC fallback was used
+  const adminEventSummaryDegraded = adminEventSummaryRaw === null;
+
   // Fallback: calculate admin event summary from raw events if RPC failed
   const adminEventSummary = adminEventSummaryRaw ?? (() => {
     const eventsByType: Record<string, number> = {};
@@ -2600,6 +2620,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     lastSeen: string;
     occurrences: number;
     affectedActors: Set<string>;
+    eventIds: string[];
   }>();
 
   for (const entry of rawErrorLogs) {
@@ -2624,11 +2645,13 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
         lastSeen: createdAt,
         occurrences: 1,
         affectedActors: new Set(actorKey ? [actorKey] : []),
+        eventIds: [entry.id],
       });
       continue;
     }
 
     existing.occurrences += 1;
+    existing.eventIds.push(entry.id);
     if (actorKey) existing.affectedActors.add(actorKey);
     if (entry.stack) existing.stack = entry.stack;
     existing.latestContext = mergeDashboardErrorContext(existing.latestContext, context);
@@ -2690,6 +2713,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
 
       const incident: DashboardErrorIncident = {
         id: group.key,
+        eventIds: group.eventIds,
         title: narrative.title,
         message: group.message,
         severity: group.severity,
@@ -4656,6 +4680,8 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
         lastSeen: e.last_seen,
         affectedUsers: e.affected_users,
       })),
+      errorSummaryDegraded,
+      adminEventSummaryDegraded,
     },
     auditLog: {
       totalEvents7d: auditLog7dCountRes.count ?? 0,
@@ -4703,6 +4729,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
       sgAroundGreen: sgAroundGreen != null ? Math.round(sgAroundGreen * 100) / 100 : null,
       sgPutting: sgPutting != null ? Math.round(sgPutting * 100) / 100 : null,
     },
+    statsCacheLastUpdated,
     needsAttention,
     userAuthDetails,
     // Enhanced analytics

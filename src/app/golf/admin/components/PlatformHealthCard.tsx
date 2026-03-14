@@ -7,6 +7,7 @@ import { timeAgo, formatBytes } from './admin-utils';
 
 interface Props {
   health: AdminDashboardData['health'];
+  statsCacheLastUpdated?: string | null;
 }
 
 const statusColors = {
@@ -27,7 +28,7 @@ const statusGradients = {
   critical: 'bg-gradient-to-r from-red-50/80 to-red-50/30',
 };
 
-export function PlatformHealthCard({ health }: Props) {
+export function PlatformHealthCard({ health, statsCacheLastUpdated }: Props) {
   const overallHealth = health.diagnostics.some((d) => d.status === 'critical')
     ? 'critical'
     : health.diagnostics.some((d) => d.status === 'warning')
@@ -240,6 +241,14 @@ export function PlatformHealthCard({ health }: Props) {
               {timeAgo(health.lastInsightGenerated)}
             </span>
           </div>
+          {statsCacheLastUpdated !== undefined && (
+            <div className="flex justify-between gap-2">
+              <span className="text-warm-500">Stats Cache</span>
+              <span className="text-warm-600 font-medium tabular-nums">
+                {timeAgo(statsCacheLastUpdated ?? null)}
+              </span>
+            </div>
+          )}
         </div>
         <div className="mt-2 flex items-center gap-1.5">
           <div className={cn(

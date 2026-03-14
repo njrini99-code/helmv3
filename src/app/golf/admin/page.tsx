@@ -228,7 +228,8 @@ function AdminDashboardContent() {
       setError(null);
 
       const supabase = createClient();
-      const { data: crmData } = await supabase.from('crm_coaches').select('status');
+      const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+      const { data: crmData } = await supabase.from('crm_coaches').select('status').gte('created_at', ninetyDaysAgo);
 
       if (crmData) {
         const stats: CRMStats = {
@@ -772,6 +773,12 @@ function AdminDashboardContent() {
             </div>
           ) : data ? (
             <div className="space-y-6">
+              {(data.errorSummaryDegraded || data.adminEventSummaryDegraded) && (
+                <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-50/80 border border-amber-200/50 text-amber-700 text-xs font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                  Some metrics are using approximate calculations (database functions unavailable)
+                </div>
+              )}
               {activeTab === 'overview' && (
                 <OverviewTab data={data} onNavigateTab={handleNavigateTab} />
               )}
