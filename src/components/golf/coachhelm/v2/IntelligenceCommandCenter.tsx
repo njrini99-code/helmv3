@@ -1297,88 +1297,54 @@ export function IntelligenceCommandCenter({
       'overflow-hidden',
       isPage ? 'space-y-6 p-6 md:p-8 max-w-6xl mx-auto' : 'space-y-2.5 p-3 md:p-4'
     )}>
-      {/* Command Center Header */}
-      <div className={cn(
-        'relative overflow-hidden border border-white/50 bg-gradient-to-br from-warm-900 via-warm-800 to-warm-900 shadow-lg',
-        isPage ? 'rounded-2xl p-6 md:p-8' : 'rounded-xl p-3'
-      )}>
-        {/* Ambient effects */}
-        <div className={cn(
-          'absolute rounded-full bg-primary-500/20 blur-2xl pointer-events-none',
-          isPage ? '-right-12 -top-12 w-40 h-40' : '-right-6 -top-6 w-20 h-20'
-        )} />
-        <div className={cn(
-          'absolute rounded-full bg-blue-500/15 blur-xl pointer-events-none',
-          isPage ? '-left-8 -bottom-8 w-32 h-32' : '-left-4 -bottom-4 w-16 h-16'
-        )} />
-
-        <div className="relative z-10">
-          {/* Top row */}
-          <div className={cn('flex items-center justify-between', isPage ? 'mb-6' : 'mb-2.5')}>
-            <div className={cn('flex items-center', isPage ? 'gap-4' : 'gap-2')}>
-              <div className={cn(
-                'rounded-lg bg-gradient-to-br from-primary-500 to-primary-500 flex items-center justify-center shadow-lg shadow-primary-500/25',
-                isPage ? 'w-12 h-12 rounded-xl' : 'w-8 h-8'
-              )}>
-                <IconSparkles size={isPage ? 22 : 14} className="text-white" />
-              </div>
-              <div>
-                <h3 className={cn(
-                  'font-bold text-white leading-tight',
-                  isPage ? 'text-xl' : 'text-sm'
-                )}>CoachHelm AI</h3>
-                <p className={cn(
-                  'text-white/40 uppercase',
-                  isPage ? 'text-xs tracking-[0.2em]' : 'text-[9px] tracking-[0.15em]'
-                )}>Intelligence Engine</p>
-              </div>
+      {/* Deep Analysis Header */}
+      <div className="glass-premium rounded-2xl p-5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center">
+              <IconSparkles size={20} className="text-primary-600" />
             </div>
+            <div>
+              <h3 className="text-sm font-semibold text-warm-900">Deep Analysis</h3>
+              <p className="text-xs text-warm-500">
+                {lastAnalyzed
+                  ? `Last run ${lastAnalyzed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                  : 'Run full AI analysis on your team'
+                }
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
             <Link
               href="/golf/dashboard/settings/coaching-intelligence"
-              className={cn(
-                'rounded-lg hover:bg-white/10 transition-colors',
-                isPage ? 'p-2.5' : 'p-1.5'
-              )}
+              className="p-2 rounded-lg hover:bg-warm-50 transition-colors"
               aria-label="CoachHelm Settings"
             >
-              <IconSettings size={isPage ? 18 : 14} className="text-white/40" />
+              <IconSettings size={16} className="text-warm-400" />
             </Link>
+            <button
+              onClick={handleAnalyze}
+              disabled={isPending}
+              className={cn(
+                'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all',
+                isPending
+                  ? 'bg-warm-100 text-warm-400 cursor-not-allowed'
+                  : 'bg-primary-600 text-white hover:bg-primary-700 shadow-sm shadow-primary-600/20 active:scale-[0.98]'
+              )}
+            >
+              {isPending ? (
+                <>
+                  <IconRefresh size={14} className="animate-spin" />
+                  Analyzing...
+                </>
+              ) : (
+                <>
+                  <IconSparkles size={14} />
+                  {hasData ? 'Re-Analyze' : 'Analyze Team'}
+                </>
+              )}
+            </button>
           </div>
-
-          {/* Analyze button */}
-          <button
-            onClick={handleAnalyze}
-            disabled={isPending}
-            className={cn(
-              'w-full flex items-center justify-center gap-2 rounded-lg font-bold uppercase tracking-wider transition-all',
-              isPage ? 'px-6 py-4 text-sm rounded-xl' : 'px-3 py-2 text-xs',
-              isPending
-                ? 'bg-white/10 text-white/40 cursor-not-allowed'
-                : 'bg-gradient-to-r from-primary-500 to-primary-500 text-white shadow-lg shadow-primary-500/25 hover:shadow-primary-500/40 active:scale-[0.98]'
-            )}
-          >
-            {isPending ? (
-              <>
-                <IconRefresh size={isPage ? 16 : 13} />
-                Analyzing Team...
-              </>
-            ) : (
-              <>
-                <IconSparkles size={isPage ? 16 : 13} />
-                {hasData ? 'Re-Analyze Team' : 'Analyze Team'}
-              </>
-            )}
-          </button>
-
-          {/* Status line */}
-          {lastAnalyzed && (
-            <p className={cn(
-              'text-white/30 text-center uppercase tracking-wider',
-              isPage ? 'text-xs mt-3' : 'text-[9px] mt-1.5'
-            )}>
-              Last analyzed {lastAnalyzed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </p>
-          )}
         </div>
       </div>
 

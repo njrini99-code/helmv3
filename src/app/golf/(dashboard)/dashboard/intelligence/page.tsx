@@ -5,6 +5,8 @@ import { getGolfSessionProfile } from '@/lib/auth/session';
 import { PageLoading } from '@/components/ui/loading';
 import { IntelligenceCommandCenter } from '@/components/golf/coachhelm/v2';
 import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
+import { getTeamCategoryInsights } from '@/app/golf/actions/team-category-insights';
+import { TeamCategoryView } from '@/components/golf/coachhelm/coach';
 
 // ============================================================================
 // METADATA
@@ -46,18 +48,53 @@ export default async function IntelligenceDashboardPage() {
     redirect('/golf/dashboard');
   }
 
+  // Fetch categorized insights
+  const result = await getTeamCategoryInsights();
+
   return (
     <div className="flex flex-col min-h-full">
-      <div className="px-4 md:px-6 pt-4 pb-2 lg:hidden">
-        <MobileMenuButton />
+      {/* Header */}
+      <div className="golf-mobile-page-header">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <MobileMenuButton />
+              <div>
+                <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">CoachHelm AI</h1>
+                <p className="text-sm text-warm-500 mt-0.5">Team intelligence by category</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <Suspense fallback={<PageLoading />}>
-        <IntelligenceCommandCenter
-          teamId={teamId}
-          coachId={coach.id}
-          variant="page"
-        />
-      </Suspense>
+
+      {/* Content */}
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8 w-full">
+        {result.success && result.data ? (
+          <TeamCategoryView
+            categories={result.data.categories}
+            teamHealth={result.data.teamHealth}
+            lastAnalyzed={result.data.lastAnalyzed}
+          />
+        ) : (
+          <div className="glass-premium rounded-2xl p-8 text-center">
+            <p className="text-warm-500">
+              {result.error || 'Unable to load team intelligence. Make sure your team has players with round data.'}
+            </p>
+          </div>
+        )}
+
+        {/* Deep Analysis (uses existing IntelligenceCommandCenter) */}
+        <div className="mt-8">
+          <Suspense fallback={<PageLoading />}>
+            <IntelligenceCommandCenter
+              teamId={teamId}
+              coachId={coach.id}
+              variant="widget"
+            />
+          </Suspense>
+        </div>
+      </div>
     </div>
   );
 }
