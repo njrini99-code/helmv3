@@ -12,8 +12,9 @@ import {
 } from '@/components/icons';
 
 interface WhatIfPanelProps {
-  currentPrediction: number;
-  improvements: Array<{
+  // Typed props (used when data is pre-parsed)
+  currentPrediction?: number;
+  improvements?: Array<{
     metric: string;
     currentValue: number;
     projectedScoringImpact: number;
@@ -22,6 +23,10 @@ interface WhatIfPanelProps {
     priority: number;
   }>;
   onSimulate?: (metric: string, amount: number) => Promise<{ projectedScore: number; rankChange: number }>;
+  // Raw data prop (from server action — parsed internally)
+  playerId?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  profileData?: Record<string, any>;
 }
 
 const difficultyConfig = {
@@ -34,7 +39,12 @@ export function WhatIfPanel({
   currentPrediction,
   improvements,
   onSimulate,
+  playerId: _playerId,
+  profileData,
 }: WhatIfPanelProps) {
+  // Resolve props: prefer typed props, fall back to parsing from profileData
+  const resolvedCurrentPrediction = currentPrediction ?? (profileData?.currentPrediction as number | undefined) ?? 0;
+  const resolvedImprovements = improvements ?? (profileData?.improvements as typeof improvements | undefined) ?? [];
   const [simulating, setSimulating] = useState<string | null>(null);
   const [simResult, setSimResult] = useState<{
     metric: string;
@@ -42,7 +52,7 @@ export function WhatIfPanel({
     rankChange: number;
   } | null>(null);
 
-  const sorted = [...improvements].sort((a, b) => a.priority - b.priority);
+  const sorted = [...resolvedImprovements].sort((a, b) => a.priority - b.priority);
 
   async function handleSimulate(metric: string, impact: number) {
     if (!onSimulate) return;
@@ -56,7 +66,7 @@ export function WhatIfPanel({
     }
   }
 
-  if (!improvements.length) {
+  if (!resolvedImprovements.length) {
     return (
       <GlassCard className="relative overflow-hidden" glow="subtle">
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600" />
@@ -94,7 +104,7 @@ export function WhatIfPanel({
           <IconTarget size={18} className="text-warm-500" />
           <span className="text-sm font-medium text-warm-600">Predicted:</span>
           <span className="text-2xl font-bold text-warm-900 tabular-nums">
-            {currentPrediction > 0 ? '+' : ''}{currentPrediction.toFixed(1)}
+            {resolvedCurrentPrediction > 0 ? '+' : ''}{resolvedCurrentPrediction.toFixed(1)}
           </span>
         </motion.div>
 

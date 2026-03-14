@@ -290,8 +290,8 @@ function computeCategoryBreakdown(rounds: RoundRow[]): CategoryBreakdown {
       )
     : 50;
 
-  // Short game — inferred from scoring minus other categories
-  const shortGame = Math.round((teeGame + approach + putting) / 3 + (Math.random() * 10 - 5));
+  // Short game — inferred as the average of other categories (no randomness)
+  const shortGame = Math.round((teeGame + approach + putting) / 3);
 
   // Scoring — based on total_score vs par
   const scoringRounds = recent.filter((r) => r.total_score && r.course_par);

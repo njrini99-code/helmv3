@@ -10,8 +10,9 @@ import {
 } from '@/components/icons';
 
 interface CompositeRatingCardProps {
-  composite: number;
-  categories: {
+  // Typed props (used when data is pre-parsed)
+  composite?: number;
+  categories?: {
     teeGame: number;
     approach: number;
     shortGame: number;
@@ -20,6 +21,11 @@ interface CompositeRatingCardProps {
   };
   percentiles?: Record<string, { team: number }>;
   trend?: { direction: 'improving' | 'stable' | 'declining'; delta: number };
+  // Raw data prop (from server action — parsed internally)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  profileData?: Record<string, any>;
+  playerState?: string;
+  playerName?: string;
 }
 
 const categoryLabels: Record<string, string> = {
@@ -69,9 +75,18 @@ export function CompositeRatingCard({
   categories,
   percentiles,
   trend,
+  profileData,
+  playerState: _playerState,
+  playerName: _playerName,
 }: CompositeRatingCardProps) {
+  // Resolve props: prefer typed props, fall back to parsing from profileData
+  const resolvedComposite = composite ?? (profileData?.composite as number | undefined) ?? 0;
+  const resolvedCategories = categories ?? (profileData?.categories as typeof categories | undefined) ?? { teeGame: 50, approach: 50, shortGame: 50, putting: 50, scoring: 50 };
+  const resolvedPercentiles = percentiles ?? (profileData?.percentiles as typeof percentiles | undefined);
+  const resolvedTrend = trend ?? (profileData?.trend as typeof trend | undefined);
+
   const circumference = 2 * Math.PI * 54;
-  const strokeDashoffset = circumference - (composite / 100) * circumference;
+  const strokeDashoffset = circumference - (resolvedComposite / 100) * circumference;
 
   return (
     <GlassCard className="relative overflow-hidden" glow="subtle">
@@ -106,7 +121,7 @@ export function CompositeRatingCard({
               fill="none"
               strokeWidth="8"
               strokeLinecap="round"
-              className={getRingColor(composite)}
+              className={getRingColor(resolvedComposite)}
               strokeDasharray={circumference}
               initial={{ strokeDashoffset: circumference }}
               animate={{ strokeDashoffset }}
@@ -114,28 +129,28 @@ export function CompositeRatingCard({
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className={cn('text-5xl font-bold tabular-nums', getRatingColor(composite))}>
-              {composite}
+            <span className={cn('text-5xl font-bold tabular-nums', getRatingColor(resolvedComposite))}>
+              {resolvedComposite}
             </span>
           </div>
         </motion.div>
 
         {/* Trend indicator */}
-        {trend && (
+        {resolvedTrend && (
           <motion.div
-            className={cn('flex items-center gap-1.5 text-sm font-medium', trendConfig[trend.direction].color)}
+            className={cn('flex items-center gap-1.5 text-sm font-medium', trendConfig[resolvedTrend.direction].color)}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
           >
             {(() => {
-              const TrendIcon = trendConfig[trend.direction].icon;
+              const TrendIcon = trendConfig[resolvedTrend.direction].icon;
               return <TrendIcon size={16} />;
             })()}
             <span>
-              {trendConfig[trend.direction].label}{' '}
+              {trendConfig[resolvedTrend.direction].label}{' '}
               <span className="tabular-nums">
-                {trend.delta > 0 ? '+' : ''}{trend.delta}
+                {resolvedTrend.delta > 0 ? '+' : ''}{resolvedTrend.delta}
               </span>{' '}
               over 30 days
             </span>
@@ -144,7 +159,7 @@ export function CompositeRatingCard({
 
         {/* Category bars */}
         <div className="w-full space-y-3">
-          {(Object.entries(categories) as [keyof typeof categories, number][]).map(
+          {(Object.entries(resolvedCategories) as [keyof typeof resolvedCategories, number][]).map(
             ([key, value], i) => (
               <motion.div
                 key={key}
@@ -167,9 +182,9 @@ export function CompositeRatingCard({
                 <span className="text-sm font-semibold text-warm-900 tabular-nums w-8 text-right">
                   {value}
                 </span>
-                {percentiles?.[key] && (
+                {resolvedPercentiles?.[key] && (
                   <span className="text-xs text-warm-400 tabular-nums w-16 text-right">
-                    {percentiles[key].team}th %ile
+                    {resolvedPercentiles[key].team}th %ile
                   </span>
                 )}
               </motion.div>

@@ -39,9 +39,12 @@ interface PlayerCoachHelmDashboardProps {
   playerId: string;
   initialShotAnalytics?: PlayerShotAnalytics | null;
   /** V3 optional data — degrades gracefully if not available */
-  profileData?: Record<string, unknown> | null;
-  trendData?: Record<string, unknown> | null;
-  shotData?: Record<string, unknown> | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  profileData?: Record<string, any> | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  trendData?: Record<string, any> | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  shotData?: Record<string, any> | null;
 }
 
 /**

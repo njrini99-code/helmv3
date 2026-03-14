@@ -13,7 +13,8 @@ import {
 } from '@/components/icons';
 
 interface TrendDashboardProps {
-  trends: {
+  // Typed props (used when data is pre-parsed)
+  trends?: {
     metric: string;
     windows: Array<{
       name: 'fast' | 'medium' | 'slow';
@@ -24,13 +25,17 @@ interface TrendDashboardProps {
     signal: string;
     description: string;
   };
-  streaks: Array<{
+  streaks?: Array<{
     type: 'hot' | 'cold';
     length: number;
     magnitude: number;
     isOngoing: boolean;
   }>;
   volatility?: { current: number; historical: number; isElevated: boolean };
+  // Raw data prop (from server action — parsed internally)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  trendData?: Record<string, any>;
+  playerState?: string;
 }
 
 const windowLabels: Record<string, { label: string; rounds: string }> = {
@@ -77,8 +82,13 @@ function getSignalBadgeStyle(signal: string): string {
   return 'bg-warm-100 text-warm-700 border-warm-200';
 }
 
-export function TrendDashboard({ trends, streaks, volatility }: TrendDashboardProps) {
-  if (!trends.windows.length) {
+export function TrendDashboard({ trends, streaks, volatility, trendData, playerState: _playerState }: TrendDashboardProps) {
+  // Resolve props: prefer typed props, fall back to parsing from trendData
+  const resolvedTrends = trends ?? (trendData?.trends as typeof trends | undefined) ?? { metric: '', windows: [], signal: '', description: '' };
+  const resolvedStreaks = streaks ?? (trendData?.streaks as typeof streaks | undefined) ?? [];
+  const resolvedVolatility = volatility ?? (trendData?.volatility as typeof volatility | undefined);
+
+  if (!resolvedTrends.windows.length) {
     return (
       <GlassCard className="relative overflow-hidden" glow="subtle">
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600" />
@@ -91,7 +101,7 @@ export function TrendDashboard({ trends, streaks, volatility }: TrendDashboardPr
     );
   }
 
-  const ongoingStreaks = streaks.filter((s) => s.isOngoing);
+  const ongoingStreaks = resolvedStreaks.filter((s) => s.isOngoing);
 
   return (
     <GlassCard className="relative overflow-hidden" glow="subtle">
@@ -106,25 +116,25 @@ export function TrendDashboard({ trends, streaks, volatility }: TrendDashboardPr
             </div>
             <div>
               <h3 className="text-lg font-semibold text-warm-900">Trend Analysis</h3>
-              <p className="text-sm text-warm-500">{trends.metric}</p>
+              <p className="text-sm text-warm-500">{resolvedTrends.metric}</p>
             </div>
           </div>
           <span
             className={cn(
               'inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border',
-              getSignalBadgeStyle(trends.signal)
+              getSignalBadgeStyle(resolvedTrends.signal)
             )}
           >
-            {trends.signal}
+            {resolvedTrends.signal}
           </span>
         </div>
 
         {/* Description */}
-        <p className="text-sm text-warm-600">{trends.description}</p>
+        <p className="text-sm text-warm-600">{resolvedTrends.description}</p>
 
         {/* Trend windows */}
         <div className="space-y-3">
-          {trends.windows.map((window, i) => {
+          {resolvedTrends.windows.map((window, i) => {
             const config = directionConfig[window.direction];
             const DirectionIcon = config.icon;
             const meta = windowLabels[window.name];
@@ -197,7 +207,7 @@ export function TrendDashboard({ trends, streaks, volatility }: TrendDashboardPr
         )}
 
         {/* Volatility warning */}
-        {volatility?.isElevated && (
+        {resolvedVolatility?.isElevated && (
           <motion.div
             className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-700"
             initial={{ opacity: 0, y: 8 }}
@@ -207,7 +217,7 @@ export function TrendDashboard({ trends, streaks, volatility }: TrendDashboardPr
             <IconWarning size={16} className="text-amber-500 shrink-0" />
             <span>Performance volatility is elevated</span>
             <span className="text-xs opacity-70 tabular-nums ml-auto">
-              {volatility.current.toFixed(1)} vs {volatility.historical.toFixed(1)} avg
+              {resolvedVolatility.current.toFixed(1)} vs {resolvedVolatility.historical.toFixed(1)} avg
             </span>
           </motion.div>
         )}

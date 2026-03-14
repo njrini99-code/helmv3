@@ -10,6 +10,7 @@ import {
 } from '@/components/icons';
 
 interface ShotAnalysisCardProps {
+  // Typed props (used when data is pre-parsed)
   yardageCurve?: {
     buckets: Array<{
       rangeStart: number;
@@ -35,6 +36,10 @@ interface ShotAnalysisCardProps {
   resilience?: number;
   scrambleRate?: number;
   teamScrambleRate?: number;
+  // Raw data prop (from server action — parsed internally)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  shotData?: Record<string, any>;
+  playerId?: string;
 }
 
 function isDeadZone(
@@ -63,8 +68,17 @@ export function ShotAnalysisCard({
   resilience,
   scrambleRate,
   teamScrambleRate,
+  shotData,
+  playerId: _playerId,
 }: ShotAnalysisCardProps) {
-  const hasSomething = yardageCurve?.buckets?.length || weaknesses?.length || resilience != null || scrambleRate != null;
+  // Resolve props: prefer typed props, fall back to parsing from shotData
+  const resolvedYardageCurve = yardageCurve ?? (shotData?.yardageCurve as typeof yardageCurve | undefined);
+  const resolvedDeadZones = deadZones ?? (shotData?.deadZones as typeof deadZones | undefined);
+  const resolvedWeaknesses = weaknesses ?? (shotData?.weaknesses as typeof weaknesses | undefined);
+  const resolvedResilience = resilience ?? (shotData?.resilience as typeof resilience | undefined);
+  const resolvedScrambleRate = scrambleRate ?? (shotData?.scrambleRate as typeof scrambleRate | undefined);
+  const resolvedTeamScrambleRate = teamScrambleRate ?? (shotData?.teamScrambleRate as typeof teamScrambleRate | undefined);
+  const hasSomething = resolvedYardageCurve?.buckets?.length || resolvedWeaknesses?.length || resolvedResilience != null || resolvedScrambleRate != null;
 
   if (!hasSomething) {
     return (
@@ -79,8 +93,8 @@ export function ShotAnalysisCard({
     );
   }
 
-  const maxAbsSG = getMaxAbsSG(yardageCurve);
-  const topWeaknesses = weaknesses?.slice(0, 3) ?? [];
+  const maxAbsSG = getMaxAbsSG(resolvedYardageCurve);
+  const topWeaknesses = resolvedWeaknesses?.slice(0, 3) ?? [];
 
   return (
     <GlassCard className="relative overflow-hidden" glow="subtle">
@@ -96,12 +110,12 @@ export function ShotAnalysisCard({
         </div>
 
         {/* Yardage curve */}
-        {yardageCurve?.buckets && yardageCurve.buckets.length > 0 && (
+        {resolvedYardageCurve?.buckets && resolvedYardageCurve.buckets.length > 0 && (
           <div className="space-y-2">
             <p className="text-sm font-semibold text-warm-700">Yardage Performance</p>
             <div className="space-y-1.5">
-              {yardageCurve.buckets.map((bucket, i) => {
-                const isDead = isDeadZone(bucket.rangeStart, bucket.rangeEnd, deadZones);
+              {resolvedYardageCurve.buckets.map((bucket, i) => {
+                const isDead = isDeadZone(bucket.rangeStart, bucket.rangeEnd, resolvedDeadZones);
                 const barWidth = Math.abs(bucket.avgSG) / maxAbsSG * 50;
                 const isPositive = bucket.avgSG >= 0;
 
@@ -173,11 +187,11 @@ export function ShotAnalysisCard({
         )}
 
         {/* Dead zones callout */}
-        {deadZones && deadZones.length > 0 && (
+        {resolvedDeadZones && resolvedDeadZones.length > 0 && (
           <div className="px-3 py-2 rounded-xl bg-red-50 border border-red-200">
             <p className="text-xs font-semibold text-red-700 mb-1">Dead Zones</p>
             <div className="flex flex-wrap gap-2">
-              {deadZones.map((dz) => (
+              {resolvedDeadZones.map((dz) => (
                 <span
                   key={`${dz.rangeStart}-${dz.rangeEnd}`}
                   className="inline-flex items-center gap-1 text-xs text-red-600 tabular-nums"
@@ -226,10 +240,10 @@ export function ShotAnalysisCard({
         )}
 
         {/* Bottom row: Resilience + Scramble */}
-        {(resilience != null || scrambleRate != null) && (
+        {(resolvedResilience != null || resolvedScrambleRate != null) && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-white/10">
             {/* Resilience */}
-            {resilience != null && (
+            {resolvedResilience != null && (
               <motion.div
                 className="flex items-center gap-3 p-3 rounded-xl bg-white/40 border border-white/20"
                 initial={{ opacity: 0, y: 8 }}
@@ -253,29 +267,29 @@ export function ShotAnalysisCard({
                       fill="none"
                       strokeWidth="4"
                       strokeLinecap="round"
-                      className={resilience >= 1.0 ? 'stroke-primary-500' : 'stroke-amber-500'}
+                      className={resolvedResilience >= 1.0 ? 'stroke-primary-500' : 'stroke-amber-500'}
                       strokeDasharray={2 * Math.PI * 18}
-                      strokeDashoffset={2 * Math.PI * 18 * (1 - Math.min(resilience / 2, 1))}
+                      strokeDashoffset={2 * Math.PI * 18 * (1 - Math.min(resolvedResilience / 2, 1))}
                     />
                   </svg>
                   <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-warm-900 tabular-nums">
-                    {resilience.toFixed(1)}
+                    {resolvedResilience.toFixed(1)}
                   </span>
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-warm-800">Resilience</p>
                   <p className={cn(
                     'text-xs font-medium',
-                    resilience >= 1.0 ? 'text-primary-600' : 'text-amber-600'
+                    resolvedResilience >= 1.0 ? 'text-primary-600' : 'text-amber-600'
                   )}>
-                    {resilience >= 1.0 ? 'Good recovery' : 'Compounds errors'}
+                    {resolvedResilience >= 1.0 ? 'Good recovery' : 'Compounds errors'}
                   </p>
                 </div>
               </motion.div>
             )}
 
             {/* Scramble rate */}
-            {scrambleRate != null && (
+            {resolvedScrambleRate != null && (
               <motion.div
                 className="flex items-center gap-3 p-3 rounded-xl bg-white/40 border border-white/20"
                 initial={{ opacity: 0, y: 8 }}
@@ -288,10 +302,10 @@ export function ShotAnalysisCard({
                 <div>
                   <p className="text-sm font-semibold text-warm-800">Scramble Rate</p>
                   <p className="text-xs text-warm-600">
-                    <span className="font-semibold text-warm-900 tabular-nums">{scrambleRate}%</span>
-                    {teamScrambleRate != null && (
+                    <span className="font-semibold text-warm-900 tabular-nums">{resolvedScrambleRate}%</span>
+                    {resolvedTeamScrambleRate != null && (
                       <span className="text-warm-400">
-                        {' '}(team avg: {teamScrambleRate}%)
+                        {' '}(team avg: {resolvedTeamScrambleRate}%)
                       </span>
                     )}
                   </p>

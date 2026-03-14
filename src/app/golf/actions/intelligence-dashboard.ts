@@ -49,6 +49,8 @@ export interface CorrelationDiscovery {
   correlation: number;
   strokeImpact: number;
   playerCount: number;
+  /** True when this is a placeholder correlation, not computed from real data */
+  isDefault?: boolean;
 }
 
 export interface PaginationParams {
@@ -397,7 +399,7 @@ export async function getTeamInsightsSummary(
       }
     }
 
-    // If no stored correlations, generate some common ones based on team data
+    // If no stored correlations, generate some common placeholder defaults based on team data
     if (correlations.length === 0) {
       correlations.push(
         {
@@ -408,6 +410,7 @@ export async function getTeamInsightsSummary(
           metrics: ['fairwayPercentage', 'girPercentage'],
           correlation: 0.65,
           strokeImpact: 0.5,
+          isDefault: true,
           playerCount: playerSummaries.length || 1,
         },
         {
@@ -418,6 +421,7 @@ export async function getTeamInsightsSummary(
           metrics: ['threePuttsPerRound', 'scoringAverage'],
           correlation: 0.72,
           strokeImpact: 0.9,
+          isDefault: true,
           playerCount: playerSummaries.length || 1,
         },
         {
@@ -428,6 +432,7 @@ export async function getTeamInsightsSummary(
           metrics: ['scramblingPercentage', 'bogeyAvoidance'],
           correlation: 0.58,
           strokeImpact: 0.4,
+          isDefault: true,
           playerCount: playerSummaries.length || 1,
         }
       );
@@ -479,7 +484,7 @@ export async function generateTeamCorrelations(
       return { success: true, correlations: [] };
     }
 
-    // Return default correlations
+    // Return default placeholder correlations (not computed from real data)
     const correlations: CorrelationDiscovery[] = [
       {
         id: `team-${teamId}-fw-gir`,
@@ -489,6 +494,7 @@ export async function generateTeamCorrelations(
         metrics: ['fairwayPercentage', 'girPercentage'],
         correlation: 0.65,
         strokeImpact: 0.5,
+        isDefault: true,
         playerCount: players.length,
       },
       {
@@ -499,6 +505,7 @@ export async function generateTeamCorrelations(
         metrics: ['puttsPerRound', 'scoringAverage'],
         correlation: -0.7,
         strokeImpact: 0.8,
+        isDefault: true,
         playerCount: players.length,
       },
     ];
