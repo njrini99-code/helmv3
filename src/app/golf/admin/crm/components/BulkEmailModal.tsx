@@ -14,6 +14,7 @@ import {
   Check,
 } from 'lucide-react';
 import type { Coach } from '../crm-config';
+import { TemplatePicker } from './TemplatePicker';
 
 interface BulkEmailModalProps {
   coaches: Coach[];
@@ -30,10 +31,17 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
 
   const coachesWithEmail = coaches.filter(c => c.email);
   const coachesWithoutEmail = coaches.filter(c => !c.email);
   const bccList = coachesWithEmail.map(c => c.email!).join(',');
+
+  // Use first coach's data for merge tag preview
+  const firstCoach = coachesWithEmail[0];
+  const coachData = firstCoach
+    ? { name: firstCoach.name, school: firstCoach.school, conference: firstCoach.conference }
+    : undefined;
 
   // ── Open in Gmail with BCC ──
   const openInGmail = () => {
@@ -107,9 +115,12 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
             id: c.id,
             email: c.email!,
             name: c.name,
+            school: c.school,
+            conference: c.conference,
           })),
           subject: subject.trim(),
           body: body.trim(),
+          templateId: selectedTemplateId,
         }),
       });
 
@@ -118,9 +129,14 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
       if (!res.ok) {
         setResult({ success: false, message: data.error || 'Failed to send emails' });
       } else {
+        const parts: string[] = [];
+        parts.push(`Successfully sent ${data.sent} email${data.sent !== 1 ? 's' : ''}`);
+        if (data.skipped > 0) parts.push(`${data.skipped} skipped (bounced)`);
+        if (data.failed > 0) parts.push(`${data.failed} failed`);
+
         setResult({
           success: true,
-          message: `Successfully sent ${data.sent} email${data.sent !== 1 ? 's' : ''}${data.failed > 0 ? ` (${data.failed} failed)` : ''}`,
+          message: parts.join(' · '),
         });
         setTimeout(() => {
           onSuccess();
@@ -132,6 +148,13 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
     } finally {
       setSending(false);
     }
+  };
+
+  // ── Handle template selection ──
+  const handleTemplateSelect = (template: { subject: string; body: string; id: string }) => {
+    setSubject(template.subject);
+    setBody(template.body);
+    setSelectedTemplateId(template.id);
   };
 
   return (
@@ -320,10 +343,40 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
                     Helm. Each coach gets their own email — use{' '}
                     <code className="px-1 py-0.5 bg-primary-100 rounded text-primary-700 text-xs">
                       {'{name}'}
+                    </code>
+                    ,{' '}
+                    <code className="px-1 py-0.5 bg-primary-100 rounded text-primary-700 text-xs">
+                      {'{school}'}
+                    </code>
+                    ,{' '}
+                    <code className="px-1 py-0.5 bg-primary-100 rounded text-primary-700 text-xs">
+                      {'{conference}'}
                     </code>{' '}
                     to personalize. Auto-logs in the CRM contact history.
                   </p>
                 </div>
+
+                {/* Template Picker */}
+                <div className="flex items-center gap-3">
+                  <TemplatePicker onSelect={handleTemplateSelect} coachData={coachData} />
+                  {selectedTemplateId && (
+                    <span className="flex items-center gap-1.5 px-2.5 py-1 bg-primary-50 text-primary-700 rounded-lg text-xs font-medium border border-primary-200/50">
+                      <Check size={12} />
+                      Template applied
+                      <button
+                        onClick={() => {
+                          setSelectedTemplateId(null);
+                          setSubject('');
+                          setBody('');
+                        }}
+                        className="ml-1 text-primary-400 hover:text-primary-600"
+                      >
+                        <X size={12} />
+                      </button>
+                    </span>
+                  )}
+                </div>
+
                 <div>
                   <label className="block text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1.5">
                     Subject <span className="text-red-400">*</span>
@@ -354,8 +407,16 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
                     Use{' '}
                     <code className="px-1 py-0.5 bg-warm-100 rounded text-warm-600">
                       {'{name}'}
+                    </code>
+                    ,{' '}
+                    <code className="px-1 py-0.5 bg-warm-100 rounded text-warm-600">
+                      {'{school}'}
+                    </code>
+                    ,{' '}
+                    <code className="px-1 py-0.5 bg-warm-100 rounded text-warm-600">
+                      {'{conference}'}
                     </code>{' '}
-                    to insert each coach&apos;s name
+                    to personalize each email
                   </p>
                 </div>
 

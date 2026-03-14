@@ -19,6 +19,7 @@ interface ParsedCoach {
   conference: string;
   division: Division;
   program: ProgramType;
+  isDuplicate?: boolean;
 }
 
 export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
@@ -28,6 +29,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
   const [division, setDivision] = useState<Division>('D3');
   const [importProgress, setImportProgress] = useState({ current: 0, total: 0, errors: 0 });
   const [errors, setErrors] = useState<string[]>([]);
+  const [duplicateCount, setDuplicateCount] = useState(0);
 
   const supabase = createClient();
 
@@ -41,7 +43,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
     const header = lines[0]?.toLowerCase() ?? '';
     const hasSchool = header.includes('school');
     const hasName = header.includes('name') || header.includes('coach');
-    
+
     if (!hasSchool || !hasName) {
       setErrors(['CSV must have "School" and "Coach Name" or "Name" columns']);
       return;
@@ -67,7 +69,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
       const cols: string[] = [];
       let current = '';
       let inQuotes = false;
-      
+
       for (const char of line) {
         if (char === '"') {
           inQuotes = !inQuotes;
@@ -120,44 +122,116 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
 
     setParsedData(parsed);
     setErrors(parseErrors);
+
+    // Check for duplicates before showing preview
+    checkDuplicates(parsed);
+  };
+
+  const checkDuplicates = async (parsed: ParsedCoach[]) => {
+    // Collect emails that are non-empty for duplicate detection
+    const emails = parsed
+      .map(c => c.email)
+      .filter(e => e && e.length > 0);
+
+    if (emails.length > 0) {
+      try {
+        const { data: existingCoaches } = await supabase
+          .from('crm_coaches')
+          .select('email')
+          .in('email', emails);
+
+        if (existingCoaches && existingCoaches.length > 0) {
+          const existingEmails = new Set(existingCoaches.map((c: { email: string | null }) => c.email?.toLowerCase()).filter(Boolean));
+          let dupes = 0;
+          const updated = parsed.map(coach => {
+            const isDup = coach.email && existingEmails.has(coach.email.toLowerCase());
+            if (isDup) dupes++;
+            return { ...coach, isDuplicate: !!isDup };
+          });
+          setParsedData(updated);
+          setDuplicateCount(dupes);
+        }
+      } catch {
+        // If duplicate check fails, proceed without marking duplicates
+      }
+    }
+
     setStep('preview');
   };
 
   const handleImport = async () => {
     setStep('importing');
-    setImportProgress({ current: 0, total: parsedData.length, errors: 0 });
 
-    let errorCount = 0;
+    // Filter out duplicates
+    const coachesToImport = parsedData.filter(c => !c.isDuplicate);
+    setImportProgress({ current: 0, total: coachesToImport.length, errors: 0 });
+
+    if (coachesToImport.length === 0) {
+      setErrors(['All coaches are duplicates. Nothing to import.']);
+      setStep('done');
+      return;
+    }
+
     const importErrors: string[] = [];
 
-    for (let i = 0; i < parsedData.length; i++) {
-      const coach = parsedData[i];
-      if (!coach) continue;
-      
-      try {
-        const { error } = await supabase
-          .from('crm_coaches')
-          .insert({
-            name: coach.name,
-            title: coach.title || null,
-            email: coach.email || null,
-            school: coach.school,
-            conference: coach.conference,
-            division: coach.division,
-            program: coach.program,
-            status: 'new_lead',
-          });
+    try {
+      // Batch insert — single .insert() call with array
+      const insertPayload = coachesToImport.map(coach => ({
+        name: coach.name,
+        title: coach.title || null,
+        email: coach.email || null,
+        school: coach.school,
+        conference: coach.conference,
+        division: coach.division,
+        program: coach.program,
+        status: 'new_lead' as const,
+        source: 'import',
+      }));
 
-        if (error) {
-          errorCount++;
-          importErrors.push(`${coach.name} @ ${coach.school}: ${error.message}`);
+      const { error } = await supabase
+        .from('crm_coaches')
+        .insert(insertPayload);
+
+      if (error) {
+        // If batch insert fails, fall back to individual inserts
+        let errorCount = 0;
+        for (let i = 0; i < coachesToImport.length; i++) {
+          const coach = coachesToImport[i];
+          if (!coach) continue;
+
+          try {
+            const { error: insertError } = await supabase
+              .from('crm_coaches')
+              .insert({
+                name: coach.name,
+                title: coach.title || null,
+                email: coach.email || null,
+                school: coach.school,
+                conference: coach.conference,
+                division: coach.division,
+                program: coach.program,
+                status: 'new_lead',
+                source: 'import',
+              });
+
+            if (insertError) {
+              errorCount++;
+              importErrors.push(`${coach.name} @ ${coach.school}: ${insertError.message}`);
+            }
+          } catch (err) {
+            errorCount++;
+            importErrors.push(`${coach.name} @ ${coach.school}: ${err instanceof Error ? err.message : 'Unknown error'}`);
+          }
+
+          setImportProgress({ current: i + 1, total: coachesToImport.length, errors: errorCount });
         }
-      } catch (err) {
-        errorCount++;
-        importErrors.push(`${coach.name} @ ${coach.school}: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      } else {
+        // Batch succeeded
+        setImportProgress({ current: coachesToImport.length, total: coachesToImport.length, errors: 0 });
       }
-
-      setImportProgress({ current: i + 1, total: parsedData.length, errors: errorCount });
+    } catch (err) {
+      importErrors.push(`Batch insert failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setImportProgress(prev => ({ ...prev, errors: prev.errors + 1 }));
     }
 
     setErrors(importErrors);
@@ -266,6 +340,11 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
               <div className="flex items-center justify-between">
                 <p className="text-sm text-warm-600">
                   Found <span className="font-semibold">{parsedData.length}</span> coaches to import
+                  {duplicateCount > 0 && (
+                    <span className="text-amber-600 ml-1">
+                      ({duplicateCount} duplicate{duplicateCount !== 1 ? 's' : ''} will be skipped)
+                    </span>
+                  )}
                 </p>
                 <span className={cn(
                   'px-2 py-1 rounded text-xs font-medium',
@@ -284,6 +363,15 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
                 </div>
               )}
 
+              {duplicateCount > 0 && (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <p className="text-sm text-amber-800">
+                    <AlertTriangle className="w-4 h-4 inline mr-1" />
+                    {duplicateCount} coach{duplicateCount !== 1 ? 'es' : ''} already exist (matched by email) and will be skipped
+                  </p>
+                </div>
+              )}
+
               <div className="border border-warm-200 rounded-lg overflow-hidden max-h-[300px] overflow-y-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-warm-50 sticky top-0">
@@ -292,15 +380,23 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
                       <th className="text-left px-3 py-2 text-xs font-medium text-warm-500">School</th>
                       <th className="text-left px-3 py-2 text-xs font-medium text-warm-500">Conference</th>
                       <th className="text-left px-3 py-2 text-xs font-medium text-warm-500">Program</th>
+                      <th className="text-left px-3 py-2 text-xs font-medium text-warm-500 w-20">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-warm-100">
                     {parsedData.slice(0, 50).map((coach, i) => (
-                      <tr key={i}>
+                      <tr key={i} className={cn(coach.isDuplicate && 'bg-amber-50/50')}>
                         <td className="px-3 py-2">{coach.name}</td>
                         <td className="px-3 py-2">{coach.school}</td>
                         <td className="px-3 py-2 truncate max-w-[150px]">{coach.conference}</td>
                         <td className="px-3 py-2 capitalize">{coach.program}</td>
+                        <td className="px-3 py-2">
+                          {coach.isDuplicate && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-micro font-semibold bg-amber-100 text-amber-700">
+                              Duplicate
+                            </span>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -314,16 +410,17 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
 
               <div className="flex justify-end gap-3">
                 <button
-                  onClick={() => setStep('upload')}
+                  onClick={() => { setStep('upload'); setDuplicateCount(0); }}
                   className="px-4 py-2 rounded-lg border border-warm-200 text-warm-600 hover:bg-warm-50 active:bg-warm-100 transition-colors"
                 >
                   Back
                 </button>
                 <button
                   onClick={handleImport}
-                  className="px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors"
+                  disabled={parsedData.filter(c => !c.isDuplicate).length === 0}
+                  className="px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50 transition-colors"
                 >
-                  Import {parsedData.length} Coaches
+                  Import {parsedData.filter(c => !c.isDuplicate).length} Coaches
                 </button>
               </div>
             </div>
@@ -347,7 +444,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
               <div className="w-full bg-warm-200 rounded-full h-2 mt-4 max-w-md mx-auto">
                 <div
                   className="bg-primary-500 h-2 rounded-full transition-all"
-                  style={{ width: `${(importProgress.current / importProgress.total) * 100}%` }}
+                  style={{ width: `${importProgress.total > 0 ? (importProgress.current / importProgress.total) * 100 : 0}%` }}
                 />
               </div>
             </div>
@@ -368,6 +465,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
               <p className="text-warm-600">
                 Successfully imported {importProgress.total - importProgress.errors} coaches
                 {importProgress.errors > 0 && ` (${importProgress.errors} failed)`}
+                {duplicateCount > 0 && ` (${duplicateCount} duplicates skipped)`}
               </p>
 
               {errors.length > 0 && (

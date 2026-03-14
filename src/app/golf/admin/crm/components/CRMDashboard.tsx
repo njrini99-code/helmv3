@@ -106,7 +106,7 @@ export function CRMDashboard({
     const fourteenDaysAgo = new Date();
     fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
     return allCoaches.filter(c => {
-      const inPipeline = !['new_lead', 'closed_won', 'closed_lost', 'not_interested', 'bad_timing'].includes(c.status);
+      const inPipeline = !['new_lead', 'won', 'lost', 'nurture'].includes(c.status);
       const noRecentContact = !c.last_contacted_at || new Date(c.last_contacted_at) < fourteenDaysAgo;
       return inPipeline && noRecentContact;
     });
@@ -143,7 +143,7 @@ export function CRMDashboard({
         })
         .slice(0, count);
       if (newLeads.length === 0) return;
-      await onBulkUpdate(newLeads.map(c => c.id), { status: 'researching' as CoachStatus });
+      await onBulkUpdate(newLeads.map(c => c.id), { status: 'contacted' as CoachStatus });
       onRefresh();
     } finally {
       setProcessing(null);
@@ -187,7 +187,7 @@ export function CRMDashboard({
           iconBg="bg-primary-50"
           iconColor="text-primary-600"
           label="Won"
-          value={stats.byStatus.closed_won || 0}
+          value={stats.byStatus.won || 0}
           detail="Closed customers"
           accent
         />
@@ -211,7 +211,7 @@ export function CRMDashboard({
           <h3 className="text-xl font-bold text-warm-900 mb-2">Ready to start your pipeline</h3>
           <p className="text-sm text-warm-500 max-w-lg mx-auto mb-6 leading-relaxed">
             You have <span className="font-semibold text-warm-700">{stats.total} coaches</span> ready to work.
-            Start by researching your top prospects — prioritize by conference, division, or star your favorites first.
+            Start by contacting your top prospects — prioritize by conference, division, or star your favorites first.
           </p>
           <div className="flex items-center justify-center gap-3">
             <button

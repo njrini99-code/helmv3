@@ -650,17 +650,22 @@ export function CalendarView({
         </div>
       ) : events.length === 0 && viewMode === 'month' ? (
         <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
-          <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mb-4">
-            <span className="text-3xl">📅</span>
+          <div className="w-16 h-16 rounded-2xl bg-warm-50 flex items-center justify-center mb-4">
+            <svg className="w-8 h-8 text-warm-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
           </div>
-          <h3 className="text-lg font-bold text-warm-900 mb-2">No events this month</h3>
+          <h3 className="text-lg font-bold text-warm-900 mb-2">No events scheduled</h3>
           <p className="text-warm-500 text-sm mb-6 max-w-sm">
-            Click any date to schedule a demo, call, or follow-up with a coach.
+            Schedule your first demo or follow-up to start tracking your outreach pipeline.
           </p>
           <button
             onClick={() => onSlotClick?.(new Date())}
-            className="px-4 py-2 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors shadow-sm"
+            className="flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors shadow-sm shadow-primary-500/25"
           >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
             Schedule Event
           </button>
         </div>

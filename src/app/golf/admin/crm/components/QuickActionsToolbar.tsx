@@ -57,7 +57,7 @@ export function QuickActionsToolbar({
   const newLeadCount = stats.byStatus.new_lead || 0;
   const allNewLeads = newLeadCount === stats.total;
 
-  // "Research Next 10" — move 10 coaches from new_lead to researching
+  // "Contact Next 10" — move 10 coaches from new_lead to contacted
   const handleResearchNext = async (count: number) => {
     setProcessing('research');
     try {
@@ -74,7 +74,7 @@ export function QuickActionsToolbar({
       
       await onBulkUpdate(
         newLeads.map(c => c.id),
-        { status: 'researching' as CoachStatus }
+        { status: 'contacted' as CoachStatus }
       );
       onRefresh();
     } catch (err) {
@@ -97,7 +97,7 @@ export function QuickActionsToolbar({
         <div>
           <h3 className="font-bold text-warm-900 text-base">Get Started with Your Pipeline</h3>
           <p className="text-sm text-warm-600 mt-0.5">
-            All {newLeadCount} coaches are in &quot;New Lead&quot;. Start by researching your top prospects to move them through the pipeline.
+            All {newLeadCount} coaches are in &quot;New Lead&quot;. Start by contacting your top prospects to move them through the pipeline.
           </p>
         </div>
       </div>
@@ -214,7 +214,7 @@ function SingleCoachQuickAction({
 
       const updates: Partial<Coach> = { last_contacted_at: new Date().toISOString() };
       if (coach.status === 'new_lead') {
-        updates.status = 'initial_contact' as CoachStatus;
+        updates.status = 'contacted' as CoachStatus;
       }
       
       await onBulkUpdate([coach.id], updates);

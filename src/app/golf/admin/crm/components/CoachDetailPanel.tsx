@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import {
@@ -21,9 +21,15 @@ import {
   StickyNote,
   Check,
   Pencil,
+  Video,
+  Calendar,
 } from 'lucide-react';
 import type { Coach, CoachStatus } from '../crm-config';
+import { ToastProvider, useToast } from './Toast';
 
+// ============================================================================
+// TYPES
+// ============================================================================
 interface CoachDetailPanelProps {
   coach: Coach;
   onClose: () => void;
@@ -48,6 +54,44 @@ interface ContactLog {
   crm_email_events: EmailEvent[];
 }
 
+interface CrmEvent {
+  id: string;
+  event_type: string;
+  title: string;
+  description: string | null;
+  start_time: string;
+  end_time: string;
+  location: string | null;
+  meeting_url: string | null;
+  notes: string | null;
+  outcome: string | null;
+  status: string | null;
+}
+
+// Unified timeline entry
+interface TimelineEntry {
+  id: string;
+  source: 'log' | 'event';
+  type: string;        // email | call | demo | meeting | note | follow_up | email_reminder | other
+  date: string;
+  title: string;
+  notes: string | null;
+  // Contact log specific
+  nextAction?: string | null;
+  nextActionDate?: string | null;
+  emailEvents?: EmailEvent[];
+  resendMessageId?: string | null;
+  // CRM event specific
+  location?: string | null;
+  meetingUrl?: string | null;
+  outcome?: string | null;
+  eventStatus?: string | null;
+  endTime?: string;
+}
+
+// ============================================================================
+// CONSTANTS
+// ============================================================================
 const CONTACT_TYPES = [
   { value: 'email', label: 'Email', Icon: Mail, dotColor: 'bg-blue-500' },
   { value: 'call', label: 'Call', Icon: Phone, dotColor: 'bg-primary-500' },
@@ -56,21 +100,51 @@ const CONTACT_TYPES = [
   { value: 'note', label: 'Note', Icon: StickyNote, dotColor: 'bg-warm-400' },
 ] as const;
 
-const ALL_STATUSES: CoachStatus[] = [
-  'new_lead', 'researching', 'outreach_pending', 'initial_contact', 'follow_up',
-  'engaged', 'demo_scheduled', 'demo_completed', 'proposal_sent', 'negotiating',
-  'closed_won', 'closed_lost', 'not_interested', 'bad_timing', 'nurture',
+const TIMELINE_TYPE_CONFIG: Record<string, { Icon: typeof Mail; dotColor: string; label: string }> = {
+  email:          { Icon: Mail,     dotColor: 'bg-blue-500',    label: 'Email Sent' },
+  call:           { Icon: Phone,    dotColor: 'bg-primary-500', label: 'Call Logged' },
+  demo:           { Icon: Video,    dotColor: 'bg-violet-500',  label: 'Demo' },
+  meeting:        { Icon: Users,    dotColor: 'bg-cyan-500',    label: 'Meeting' },
+  note:           { Icon: StickyNote, dotColor: 'bg-warm-400',  label: 'Note Added' },
+  follow_up:      { Icon: Calendar, dotColor: 'bg-amber-500',  label: 'Follow-up' },
+  email_reminder: { Icon: Mail,     dotColor: 'bg-sky-500',     label: 'Email Reminder' },
+  other:          { Icon: MessageSquare, dotColor: 'bg-warm-300', label: 'Activity' },
+};
+
+const ALL_STATUSES: readonly string[] = [
+  'new_lead', 'contacted', 'engaged', 'proposal', 'won', 'lost', 'nurture',
 ];
 
-export function CoachDetailPanel({
+const EMAIL_DELIVERY_STEPS = [
+  { key: 'sent',      label: 'Sent' },
+  { key: 'delivered',  label: 'Delivered',  eventType: 'email.delivered' },
+  { key: 'opened',     label: 'Opened',     eventType: 'email.opened' },
+  { key: 'clicked',    label: 'Clicked',    eventType: 'email.clicked' },
+] as const;
+
+// ============================================================================
+// COMPONENT
+// ============================================================================
+export function CoachDetailPanel(props: CoachDetailPanelProps) {
+  return (
+    <ToastProvider>
+      <CoachDetailPanelInner {...props} />
+    </ToastProvider>
+  );
+}
+
+function CoachDetailPanelInner({
   coach,
   onClose,
   onUpdate,
   statusConfig,
   priorityConfig,
 }: CoachDetailPanelProps) {
+  const { toast } = useToast();
+
   const [logs, setLogs] = useState<ContactLog[]>([]);
-  const [loadingLogs, setLoadingLogs] = useState(true);
+  const [events, setEvents] = useState<CrmEvent[]>([]);
+  const [loadingTimeline, setLoadingTimeline] = useState(true);
 
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesValue, setNotesValue] = useState(coach.notes || '');
@@ -101,16 +175,27 @@ export function CoachDetailPanel({
 
   const supabase = createClient();
 
-  const fetchLogs = useCallback(async () => {
-    setLoadingLogs(true);
+  // --------------------------------------------------------------------------
+  // Data fetching
+  // --------------------------------------------------------------------------
+  const fetchTimeline = useCallback(async () => {
+    setLoadingTimeline(true);
     try {
-      const { data } = await supabase
-        .from('crm_contact_log')
-        .select('*, crm_email_events(event_type, occurred_at)')
-        .eq('coach_id', coach.id)
-        .order('contact_date', { ascending: false });
+      const [logsRes, eventsRes] = await Promise.all([
+        supabase
+          .from('crm_contact_log')
+          .select('*, crm_email_events(event_type, occurred_at)')
+          .eq('coach_id', coach.id)
+          .order('contact_date', { ascending: false }),
+        supabase
+          .from('crm_events')
+          .select('*')
+          .eq('coach_id', coach.id)
+          .order('start_time', { ascending: false }),
+      ]);
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setLogs((data || []).map((d: any) => ({
+      setLogs((logsRes.data || []).map((d: any) => ({
         id: d.id,
         contact_type: d.contact_type,
         contact_date: d.contact_date,
@@ -120,22 +205,83 @@ export function CoachDetailPanel({
         resend_message_id: d.resend_message_id || null,
         crm_email_events: Array.isArray(d.crm_email_events) ? d.crm_email_events : [],
       })));
-    } catch (err) { console.error('Failed to fetch logs:', err); }
-    finally { setLoadingLogs(false); }
-  }, [supabase, coach.id]);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setEvents((eventsRes.data || []).map((d: any) => ({
+        id: d.id,
+        event_type: d.event_type,
+        title: d.title,
+        description: d.description,
+        start_time: d.start_time,
+        end_time: d.end_time,
+        location: d.location,
+        meeting_url: d.meeting_url,
+        notes: d.notes,
+        outcome: d.outcome,
+        status: d.status,
+      })));
+    } catch {
+      toast('Failed to load activity timeline', 'error');
+    } finally {
+      setLoadingTimeline(false);
+    }
+  }, [supabase, coach.id, toast]);
 
   useEffect(() => { const t = setTimeout(() => setIsVisible(true), 10); return () => clearTimeout(t); }, []);
   useEffect(() => {
-    fetchLogs();
+    fetchTimeline();
     setNotesValue(coach.notes || '');
     setFollowUpDate(coach.next_follow_up_at?.split('T')[0] || '');
     setContactForm({ name: coach.name, title: coach.title || '', email: coach.email || '', phone: coach.phone || '', school: coach.school });
     setEditingContact(false);
-  }, [coach.id, coach.name, coach.title, coach.email, coach.phone, coach.school, coach.notes, coach.next_follow_up_at, fetchLogs]);
+  }, [coach.id, coach.name, coach.title, coach.email, coach.phone, coach.school, coach.notes, coach.next_follow_up_at, fetchTimeline]);
 
+  // --------------------------------------------------------------------------
+  // Unified timeline — merge logs + events, sort by date desc
+  // --------------------------------------------------------------------------
+  const timeline = useMemo<TimelineEntry[]>(() => {
+    const logEntries: TimelineEntry[] = logs.map(l => ({
+      id: `log-${l.id}`,
+      source: 'log',
+      type: l.contact_type,
+      date: l.contact_date,
+      title: TIMELINE_TYPE_CONFIG[l.contact_type]?.label || l.contact_type,
+      notes: l.notes,
+      nextAction: l.next_action,
+      nextActionDate: l.next_action_date,
+      emailEvents: l.crm_email_events,
+      resendMessageId: l.resend_message_id,
+    }));
+
+    const eventEntries: TimelineEntry[] = events.map(e => ({
+      id: `event-${e.id}`,
+      source: 'event',
+      type: e.event_type,
+      date: e.start_time,
+      title: e.title,
+      notes: e.notes,
+      location: e.location,
+      meetingUrl: e.meeting_url,
+      outcome: e.outcome,
+      eventStatus: e.status,
+      endTime: e.end_time,
+    }));
+
+    return [...logEntries, ...eventEntries].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+  }, [logs, events]);
+
+  // --------------------------------------------------------------------------
+  // Handlers
+  // --------------------------------------------------------------------------
   const handleClose = () => { setIsVisible(false); setTimeout(onClose, 200); };
 
-  const saveNotes = () => { onUpdate({ notes: notesValue || null }); setEditingNotes(false); };
+  const saveNotes = () => {
+    onUpdate({ notes: notesValue || null });
+    setEditingNotes(false);
+    toast('Notes saved', 'success');
+  };
 
   const saveContactInfo = () => {
     if (!contactForm.name.trim() || !contactForm.school.trim()) return;
@@ -154,25 +300,37 @@ export function CoachDetailPanel({
     setEditingContact(false);
   };
 
+  const handleStatusChange = (newStatus: CoachStatus) => {
+    onUpdate({ status: newStatus });
+    toast(`Status updated to ${statusConfig[newStatus]?.label || newStatus}`, 'success');
+  };
+
   const submitContact = async () => {
     setSubmitting(true);
     try {
-      await supabase.from('crm_contact_log').insert({
+      const { error } = await supabase.from('crm_contact_log').insert({
         coach_id: coach.id,
         contact_type: newContact.type as 'email' | 'call' | 'demo' | 'meeting' | 'note',
         notes: newContact.notes || null,
         next_action: newContact.nextAction || null,
         next_action_date: newContact.nextActionDate || null,
       });
+      if (error) throw error;
+
       const updates: Partial<Coach> = { last_contacted_at: new Date().toISOString() };
       if (newContact.nextActionDate) updates.next_follow_up_at = newContact.nextActionDate;
-      if (coach.status === 'new_lead') updates.status = 'initial_contact' as CoachStatus;
+      if (coach.status === 'new_lead') updates.status = 'contacted' as CoachStatus;
       onUpdate(updates);
       setNewContact({ type: 'email', notes: '', nextAction: '', nextActionDate: '' });
       setShowContactForm(false);
-      fetchLogs();
-    } catch (err) { console.error('Failed to log contact:', err); }
-    finally { setSubmitting(false); }
+      fetchTimeline();
+      toast('Contact logged', 'success');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to log contact';
+      toast(message, 'error');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const addTag = () => {
@@ -182,12 +340,38 @@ export function CoachDetailPanel({
     setNewTag('');
   };
   const removeTag = (tag: string) => onUpdate({ tags: (coach.tags || []).filter(t => t !== tag) });
-  const saveFollowUp = () => { onUpdate({ next_follow_up_at: followUpDate ? new Date(followUpDate).toISOString() : null }); setEditingFollowUp(false); };
 
+  const saveFollowUp = () => {
+    onUpdate({ next_follow_up_at: followUpDate ? new Date(followUpDate).toISOString() : null });
+    setEditingFollowUp(false);
+    toast('Follow-up scheduled', 'success');
+  };
+
+  // --------------------------------------------------------------------------
+  // Formatting helpers
+  // --------------------------------------------------------------------------
   const formatDate = (s: string) => new Date(s).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
   const formatShort = (s: string) => new Date(s).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+  const relativeTime = (dateStr: string): string => {
+    const now = Date.now();
+    const then = new Date(dateStr).getTime();
+    const diffMs = now - then;
+    const diffMin = Math.floor(diffMs / 60000);
+    if (diffMin < 1) return 'just now';
+    if (diffMin < 60) return `${diffMin}m ago`;
+    const diffHr = Math.floor(diffMin / 60);
+    if (diffHr < 24) return `${diffHr}h ago`;
+    const diffDay = Math.floor(diffHr / 24);
+    if (diffDay < 30) return `${diffDay}d ago`;
+    return formatShort(dateStr);
+  };
+
   const isOverdue = coach.next_follow_up_at && new Date(coach.next_follow_up_at) < new Date();
 
+  // --------------------------------------------------------------------------
+  // Render
+  // --------------------------------------------------------------------------
   return (
     <>
       {/* Backdrop */}
@@ -206,7 +390,7 @@ export function CoachDetailPanel({
         {/* Primary accent bar */}
         <div className="h-1 bg-gradient-to-r from-primary-500 to-primary-600 flex-shrink-0" />
 
-        {/* Header — clean white background */}
+        {/* Header */}
         <div className="bg-white border-b border-warm-100 p-5 flex-shrink-0">
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
@@ -275,9 +459,9 @@ export function CoachDetailPanel({
           <div className="flex items-center gap-3 px-5 py-3">
             <div className="flex items-center gap-2 flex-1">
               <span className="text-xs text-warm-500 font-medium">Status</span>
-              <select value={coach.status} onChange={e => onUpdate({ status: e.target.value as CoachStatus })}
+              <select value={coach.status} onChange={e => handleStatusChange(e.target.value as CoachStatus)}
                 className={cn('px-2.5 py-1.5 rounded-xl text-xs font-semibold border-0 cursor-pointer', statusConfig[coach.status]?.bgColor, statusConfig[coach.status]?.color)}>
-                {ALL_STATUSES.map(s => <option key={s} value={s}>{statusConfig[s]?.iconLabel} {statusConfig[s]?.label}</option>)}
+                {ALL_STATUSES.map(s => <option key={s} value={s}>{statusConfig[s as CoachStatus]?.iconLabel} {statusConfig[s as CoachStatus]?.label}</option>)}
               </select>
             </div>
             <div className="flex items-center gap-2">
@@ -356,8 +540,10 @@ export function CoachDetailPanel({
             )}
           </Section>
 
-          {/* Contact Log Timeline */}
-          <Section title="Contact Log" icon={<History size={14} className="text-warm-400" />}
+          {/* ================================================================
+              Unified Activity Timeline
+              ================================================================ */}
+          <Section title="Activity Timeline" icon={<History size={14} className="text-warm-400" />}
             action={
               <button onClick={() => setShowContactForm(!showContactForm)}
                 className="text-xs text-primary-600 hover:text-primary-700 font-semibold flex items-center gap-1">
@@ -396,7 +582,7 @@ export function CoachDetailPanel({
               </div>
             )}
 
-            {loadingLogs ? (
+            {loadingTimeline ? (
               <div className="space-y-3">
                 {[1, 2, 3].map(i => (
                   <div key={i} className="flex gap-3 pl-4">
@@ -405,12 +591,12 @@ export function CoachDetailPanel({
                   </div>
                 ))}
               </div>
-            ) : logs.length === 0 ? (
+            ) : timeline.length === 0 ? (
               <div className="py-6 text-center">
                 <div className="w-10 h-10 rounded-xl bg-warm-50 flex items-center justify-center mx-auto mb-2">
                   <MessageSquare size={18} className="text-warm-300" />
                 </div>
-                <p className="text-sm font-medium text-warm-500">No contacts yet</p>
+                <p className="text-sm font-medium text-warm-500">No activity yet</p>
                 <p className="text-xs text-warm-400 mt-0.5">Log your first interaction with this coach</p>
                 <button onClick={() => setShowContactForm(true)}
                   className="mt-3 px-3 py-1.5 text-xs font-medium bg-primary-50 text-primary-700 rounded-lg hover:bg-primary-100 transition-colors">
@@ -419,32 +605,90 @@ export function CoachDetailPanel({
               </div>
             ) : (
               <div className="space-y-0 relative">
-                <div className="absolute left-4 top-6 bottom-2 w-px bg-warm-200" />
-                {logs.map((log) => {
-                  const ct = CONTACT_TYPES.find(t => t.value === log.contact_type);
-                  const LogIcon = ct?.Icon || MessageSquare;
+                {/* Vertical timeline line */}
+                <div className="absolute left-[15px] top-3 bottom-2 w-[2px] bg-warm-200" />
+
+                {timeline.map((entry) => {
+                  const defaultConf = { Icon: MessageSquare, dotColor: 'bg-warm-300', label: 'Activity' };
+                  const typeConf = TIMELINE_TYPE_CONFIG[entry.type] || defaultConf;
+                  const EntryIcon = typeConf.Icon;
+                  const isPending = entry.type === 'email'
+                    && entry.source === 'log'
+                    && entry.emailEvents
+                    && entry.emailEvents.length === 0
+                    && (Date.now() - new Date(entry.date).getTime()) < 5 * 60 * 1000;
+
                   return (
-                    <div key={log.id} className="relative flex gap-3 pb-4 pl-4">
+                    <div key={entry.id} className="relative flex gap-3 pb-4 pl-4">
+                      {/* Colored dot */}
                       <div className={cn(
-                        'absolute left-[11px] top-1.5 w-[10px] h-[10px] rounded-full border-2 border-white z-10',
-                        ct?.dotColor || 'bg-warm-400'
+                        'absolute left-[11px] top-1.5 w-[10px] h-[10px] rounded-full border-2 border-[#FFFEF8] z-10',
+                        typeConf.dotColor,
+                        isPending && 'animate-pulse'
                       )} />
-                      <div className="ml-4 flex-1">
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium text-warm-900 flex items-center gap-1.5">
-                            <LogIcon size={12} className="text-warm-400" />
-                            {ct?.label || log.contact_type}
+
+                      <div className="ml-4 flex-1 min-w-0">
+                        {/* Header row */}
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-sm font-medium text-warm-900 flex items-center gap-1.5 truncate">
+                            <EntryIcon size={12} className="text-warm-400 flex-shrink-0" />
+                            {entry.source === 'event' ? entry.title : typeConf.label}
+                            {entry.source === 'event' && (
+                              <span className={cn(
+                                'text-[10px] font-semibold px-1.5 py-0.5 rounded-md',
+                                entry.eventStatus === 'completed' ? 'bg-emerald-50 text-emerald-600' :
+                                entry.eventStatus === 'cancelled' ? 'bg-red-50 text-red-600' :
+                                'bg-blue-50 text-blue-600'
+                              )}>
+                                {entry.eventStatus || 'scheduled'}
+                              </span>
+                            )}
                           </p>
-                          <span className="text-xs text-warm-400 tabular-nums">{formatDate(log.contact_date)}</span>
+                          <span className="text-xs text-warm-400 tabular-nums flex-shrink-0">{relativeTime(entry.date)}</span>
                         </div>
-                        {log.notes && <p className="text-xs text-warm-600 mt-0.5 leading-relaxed">{log.notes}</p>}
-                        {log.contact_type === 'email' && log.crm_email_events.length > 0 && (
-                          <EmailTrackingBadges events={log.crm_email_events} />
+
+                        {/* Notes / description */}
+                        {entry.notes && (
+                          <p className="text-xs text-warm-600 mt-0.5 leading-relaxed">{entry.notes}</p>
                         )}
-                        {log.next_action && (
+
+                        {/* Event-specific details */}
+                        {entry.source === 'event' && (
+                          <div className="mt-1 space-y-0.5">
+                            {entry.location && (
+                              <p className="text-[11px] text-warm-500 flex items-center gap-1">
+                                <span className="text-warm-400">Location:</span> {entry.location}
+                              </p>
+                            )}
+                            {entry.meetingUrl && (
+                              <a href={entry.meetingUrl} target="_blank" rel="noopener noreferrer"
+                                className="text-[11px] text-blue-600 hover:text-blue-700 flex items-center gap-1">
+                                <Video size={10} /> Join meeting
+                              </a>
+                            )}
+                            {entry.outcome && (
+                              <p className="text-[11px] text-warm-500">
+                                <span className="text-warm-400">Outcome:</span> {entry.outcome}
+                              </p>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Email delivery timeline */}
+                        {entry.type === 'email' && entry.source === 'log' && (
+                          <EmailDeliveryTimeline
+                            events={entry.emailEvents || []}
+                            isPending={!!isPending}
+                            isBounced={entry.emailEvents?.some(e => e.event_type === 'email.bounced') || false}
+                            isSpam={entry.emailEvents?.some(e => e.event_type === 'email.complained') || false}
+                          />
+                        )}
+
+                        {/* Next action */}
+                        {entry.nextAction && (
                           <div className="mt-1.5 flex items-center gap-1.5 text-xs text-amber-600">
-                            <Clock size={11} /> Next: {log.next_action}
-                            {log.next_action_date && <span className="text-warm-400">({formatShort(log.next_action_date)})</span>}
+                            <Clock size={11} /> Next: {entry.nextAction}
+                            {entry.nextActionDate && <span className="text-warm-400">({formatShort(entry.nextActionDate)})</span>}
                           </div>
                         )}
                       </div>
@@ -521,6 +765,90 @@ export function CoachDetailPanel({
 }
 
 // ============================================================================
+// EMAIL DELIVERY TIMELINE
+// ============================================================================
+function EmailDeliveryTimeline({
+  events,
+  isPending,
+  isBounced,
+  isSpam,
+}: {
+  events: EmailEvent[];
+  isPending: boolean;
+  isBounced: boolean;
+  isSpam: boolean;
+}) {
+  if (isBounced || isSpam) {
+    return (
+      <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+        {isBounced && (
+          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-red-50 text-red-600 text-[10px] font-semibold leading-none">
+            <span className="w-1 h-1 rounded-full bg-red-400" /> Bounced
+          </span>
+        )}
+        {isSpam && (
+          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-red-50 text-red-600 text-[10px] font-semibold leading-none">
+            <span className="w-1 h-1 rounded-full bg-red-400" /> Spam
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  const eventSet = new Set(events.map(e => e.event_type));
+
+  return (
+    <div className="mt-2 ml-1 relative">
+      {/* Mini connecting line */}
+      <div className="absolute left-[3px] top-1 bottom-1 w-px bg-warm-100" />
+
+      <div className="flex items-center gap-0">
+        {EMAIL_DELIVERY_STEPS.map((step, idx) => {
+          const isActive = step.key === 'sent'
+            ? true // Always sent if we have the log entry
+            : eventSet.has(step.eventType!);
+
+          return (
+            <div key={step.key} className="flex items-center">
+              <div className="flex flex-col items-center">
+                <div className={cn(
+                  'w-[6px] h-[6px] rounded-full transition-colors',
+                  isActive ? 'bg-emerald-400' : 'bg-warm-200'
+                )} />
+                <span className={cn(
+                  'text-[9px] mt-0.5 font-medium',
+                  isActive ? 'text-emerald-600' : 'text-warm-300'
+                )}>
+                  {step.label}
+                </span>
+              </div>
+              {idx < EMAIL_DELIVERY_STEPS.length - 1 && (
+                <div className={cn(
+                  'w-6 h-px mx-0.5 mt-[-10px]',
+                  isActive && (
+                    step.key === 'sent' ? eventSet.has('email.delivered') :
+                    step.key === 'delivered' ? eventSet.has('email.opened') :
+                    eventSet.has('email.clicked')
+                  ) ? 'bg-emerald-300' : 'bg-warm-200'
+                )} />
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Pending indicator */}
+      {isPending && (
+        <div className="flex items-center gap-1.5 mt-1">
+          <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+          <span className="text-[10px] text-amber-500 font-medium animate-pulse">Pending...</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================================
 // HELPERS
 // ============================================================================
 function Section({ title, icon, action, children }: { title: string; icon: React.ReactNode; action?: React.ReactNode; children: React.ReactNode }) {
@@ -542,45 +870,6 @@ function Row({ label, value }: { label: string; value: string | null | undefined
     <div className="flex justify-between items-center py-1">
       <span className="text-xs text-warm-500">{label}</span>
       <span className="text-xs font-medium text-warm-800 truncate max-w-[200px]">{value || <span className="text-warm-300">&mdash;</span>}</span>
-    </div>
-  );
-}
-
-function EmailTrackingBadges({ events }: { events: EmailEvent[] }) {
-  const eventSet = new Set(events.map(e => e.event_type));
-  const bounced = eventSet.has('email.bounced');
-  const complained = eventSet.has('email.complained');
-  const delivered = eventSet.has('email.delivered');
-  const opened = eventSet.has('email.opened');
-  const clicked = eventSet.has('email.clicked');
-
-  return (
-    <div className="flex items-center gap-1 mt-1.5 flex-wrap">
-      {bounced && (
-        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-red-50 text-red-600 text-[10px] font-semibold leading-none">
-          <span className="w-1 h-1 rounded-full bg-red-400" /> Bounced
-        </span>
-      )}
-      {complained && (
-        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-red-50 text-red-600 text-[10px] font-semibold leading-none">
-          <span className="w-1 h-1 rounded-full bg-red-400" /> Spam
-        </span>
-      )}
-      {delivered && !bounced && (
-        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-600 text-[10px] font-semibold leading-none">
-          <span className="w-1 h-1 rounded-full bg-emerald-400" /> Delivered
-        </span>
-      )}
-      {opened && (
-        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-blue-50 text-blue-600 text-[10px] font-semibold leading-none">
-          <span className="w-1 h-1 rounded-full bg-blue-400" /> Opened
-        </span>
-      )}
-      {clicked && (
-        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-violet-50 text-violet-600 text-[10px] font-semibold leading-none">
-          <span className="w-1 h-1 rounded-full bg-violet-400" /> Clicked
-        </span>
-      )}
     </div>
   );
 }

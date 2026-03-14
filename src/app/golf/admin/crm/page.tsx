@@ -20,6 +20,7 @@ import {
   Building2,
   Target,
   AlertTriangle,
+  Mail,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -28,6 +29,7 @@ import {
   PIPELINE_STAGES,
   STATUS_CONFIG,
   PRIORITY_CONFIG,
+  AUTO_FOLLOWUP_DAYS,
 } from './crm-config';
 import { CRMDashboard } from './components/CRMDashboard';
 import { CoachTable } from './components/CoachTable';
@@ -39,6 +41,7 @@ import { CoachDetailPanel } from './components/CoachDetailPanel';
 import { ImportModal } from './components/ImportModal';
 import { BulkActionsBar } from './components/BulkActionsBar';
 import { BulkEmailModal } from './components/BulkEmailModal';
+import { EmailTrackingView } from './components/EmailTrackingView';
 import { FAB } from './components/FAB';
 import { QuickActionsPanel } from './components/QuickActionsPanel';
 import { ScheduleEventModal } from './components/ScheduleEventModal';
@@ -53,6 +56,7 @@ const TABS = [
   { id: 'list', label: 'Coaches', Icon: ClipboardList, shortcut: '2', description: 'All coaches in table view' },
   { id: 'pipeline', label: 'Pipeline', Icon: BarChart3, shortcut: '3', description: 'Kanban sales pipeline' },
   { id: 'conferences', label: 'Conferences', Icon: Building2, shortcut: '4', description: 'Grouped by conference' },
+  { id: 'email', label: 'Email', Icon: Mail, shortcut: '5', description: 'Email tracking & analytics' },
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
@@ -191,9 +195,19 @@ export default function CRMPage() {
   // ACTIONS
   // ============================================================================
   const updateCoach = async (coachId: string, updates: Partial<Coach>) => {
-    const finalUpdates = updates.status
+    let finalUpdates = updates.status
       ? { ...updates, updated_at: new Date().toISOString() }
       : updates;
+
+    // Auto follow-up: if status changed and new status has an auto follow-up rule, set next_follow_up_at
+    if (updates.status && !updates.next_follow_up_at) {
+      const followUpDays = AUTO_FOLLOWUP_DAYS[updates.status];
+      if (followUpDays) {
+        const followUpDate = new Date();
+        followUpDate.setDate(followUpDate.getDate() + followUpDays);
+        finalUpdates = { ...finalUpdates, next_follow_up_at: followUpDate.toISOString() };
+      }
+    }
 
     try {
       const { error: updateError } = await supabase.from('crm_coaches').update(finalUpdates).eq('id', coachId);
@@ -300,7 +314,7 @@ export default function CRMPage() {
     const hot = allCoaches.filter(c => c.priority >= 2).length;
     const followUpsDue = allCoaches.filter(c => c.next_follow_up_at && new Date(c.next_follow_up_at) <= new Date()).length;
     const contacted = allCoaches.filter(c => c.last_contacted_at).length;
-    const inPipeline = allCoaches.filter(c => !['new_lead', 'closed_won', 'closed_lost', 'not_interested', 'bad_timing'].includes(c.status)).length;
+    const inPipeline = allCoaches.filter(c => !['new_lead', 'won', 'lost', 'nurture'].includes(c.status)).length;
 
     return { total, byStatus, byStage, starred, hot, followUpsDue, contacted, inPipeline };
   }, [allCoaches]);
@@ -588,6 +602,9 @@ export default function CRMPage() {
               />
             </div>
           )}
+
+          {/* ── Email Tab ── */}
+          {activeTab === 'email' && <EmailTrackingView />}
         </div>
       </main>
 

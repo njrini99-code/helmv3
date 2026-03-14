@@ -103,7 +103,7 @@ export function QuickActionsPanel({
 
       // Update coach status if scheduling demo
       if (scheduleForm.type === 'demo') {
-        onUpdate({ status: 'demo_scheduled', next_follow_up_at: startTime.toISOString() });
+        onUpdate({ status: 'engaged', next_follow_up_at: startTime.toISOString() });
       } else {
         onUpdate({ next_follow_up_at: startTime.toISOString() });
       }
@@ -134,7 +134,7 @@ export function QuickActionsPanel({
       }
       // Auto-advance status if still new_lead
       if (coach.status === 'new_lead') {
-        updates.status = 'initial_contact';
+        updates.status = 'contacted';
       }
       
       onUpdate(updates);

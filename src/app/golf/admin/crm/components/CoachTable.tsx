@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
-import { MoreHorizontal, MessageSquare, ArrowRight, Star, ChevronDown, Mail } from 'lucide-react';
+import { MoreHorizontal, MessageSquare, ArrowRight, Star, ChevronDown, ChevronRight, Mail, Upload, UserPlus, Flame, Zap } from 'lucide-react';
 import type { Coach, CoachStatus } from '../crm-config';
 
 interface CoachTableProps {
@@ -11,17 +11,18 @@ interface CoachTableProps {
   selectedIds: Set<string>;
   onSelectionChange: (ids: Set<string>) => void;
   onStatusChange: (coachId: string, status: CoachStatus) => void;
+  onPriorityChange?: (coachId: string, priority: number) => void;
   onToggleStar: (coachId: string, currentStarred: boolean) => void;
   onCoachClick: (coach: Coach) => void;
   onLogContact: (coach: Coach) => void;
+  onImport?: () => void;
+  onAddCoach?: () => void;
   statusConfig: Record<CoachStatus, { label: string; color: string; bgColor: string; icon: React.ReactNode; order: number }>;
   priorityConfig: Record<number, { label: string; color: string; bgColor: string; icon: React.ReactNode; iconLabel: string }>;
 }
 
 const ALL_STATUSES: CoachStatus[] = [
-  'new_lead', 'researching', 'outreach_pending', 'initial_contact', 'follow_up',
-  'engaged', 'demo_scheduled', 'demo_completed', 'proposal_sent', 'negotiating',
-  'closed_won', 'closed_lost', 'not_interested', 'bad_timing', 'nurture',
+  'new_lead', 'contacted', 'engaged', 'proposal', 'won', 'lost', 'nurture',
 ];
 
 type SortField = 'name' | 'school' | 'conference' | 'division' | 'status' | 'priority' | 'last_contacted_at';
@@ -45,14 +46,18 @@ export function CoachTable({
   selectedIds,
   onSelectionChange,
   onStatusChange,
+  onPriorityChange,
   onToggleStar,
   onCoachClick,
   onLogContact,
+  onImport,
+  onAddCoach,
   statusConfig,
   priorityConfig,
 }: CoachTableProps) {
   const [openStatusDropdown, setOpenStatusDropdown] = useState<string | null>(null);
   const [openActionMenu, setOpenActionMenu] = useState<string | null>(null);
+  const [openPrioritySubmenu, setOpenPrioritySubmenu] = useState<string | null>(null);
   const [sortField, setSortField] = useState<SortField | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [page, setPage] = useState(1);
@@ -64,7 +69,7 @@ export function CoachTable({
   // Close dropdowns on outside click
   useEffect(() => {
     if (!openStatusDropdown && !openActionMenu) return;
-    const handler = () => { setOpenStatusDropdown(null); setOpenActionMenu(null); };
+    const handler = () => { setOpenStatusDropdown(null); setOpenActionMenu(null); setOpenPrioritySubmenu(null); };
     document.addEventListener('click', handler);
     return () => document.removeEventListener('click', handler);
   }, [openStatusDropdown, openActionMenu]);
@@ -126,7 +131,7 @@ export function CoachTable({
       case 'x':
         if (focusedIndex !== null && paginatedCoaches[focusedIndex]) { e.preventDefault(); toggleSelection(paginatedCoaches[focusedIndex].id); }
         break;
-      case 'Escape': setFocusedIndex(null); setOpenStatusDropdown(null); setOpenActionMenu(null); break;
+      case 'Escape': setFocusedIndex(null); setOpenStatusDropdown(null); setOpenActionMenu(null); setOpenPrioritySubmenu(null); break;
     }
   }, [paginatedCoaches, focusedIndex, onToggleStar, onCoachClick, toggleSelection]);
 
@@ -185,7 +190,25 @@ export function CoachTable({
           <MessageSquare size={24} className="text-warm-300" />
         </div>
         <h3 className="text-base font-semibold text-warm-700 mb-1">No coaches found</h3>
-        <p className="text-sm text-warm-500 max-w-xs mx-auto">Try adjusting your filters or import some coaches.</p>
+        <p className="text-sm text-warm-500 max-w-xs mx-auto mb-6">Try adjusting your filters or import some coaches to get started.</p>
+        <div className="flex items-center justify-center gap-3">
+          {onImport && (
+            <button
+              onClick={onImport}
+              className="flex items-center gap-2 px-4 py-2.5 bg-white border border-warm-200/50 text-warm-700 rounded-xl font-medium hover:bg-warm-50 active:bg-warm-100 transition-colors text-sm"
+            >
+              <Upload size={16} /> Import Coaches
+            </button>
+          )}
+          {onAddCoach && (
+            <button
+              onClick={onAddCoach}
+              className="flex items-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors text-sm shadow-sm shadow-primary-500/25"
+            >
+              <UserPlus size={16} /> Add Coach
+            </button>
+          )}
+        </div>
       </div>
     );
   }
@@ -323,7 +346,7 @@ export function CoachTable({
                 <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                   <div className="relative">
                     <button
-                      onClick={e => { e.stopPropagation(); setOpenActionMenu(openActionMenu === coach.id ? null : coach.id); setOpenStatusDropdown(null); }}
+                      onClick={e => { e.stopPropagation(); setOpenActionMenu(openActionMenu === coach.id ? null : coach.id); setOpenStatusDropdown(null); setOpenPrioritySubmenu(null); }}
                       className={cn(
                         'p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200',
                         'opacity-0 group-hover:opacity-100 transition-all duration-200'
@@ -343,14 +366,55 @@ export function CoachTable({
                             <Mail size={14} /> Send Email
                           </a>
                         )}
-                        <button onClick={() => { onStatusChange(coach.id, 'researching'); setOpenActionMenu(null); }}
+                        <button onClick={() => { onStatusChange(coach.id, 'contacted' as CoachStatus); setOpenActionMenu(null); }}
                           className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2">
-                          <ArrowRight size={14} /> Move to Researching
+                          <ArrowRight size={14} /> Move to Contacted
                         </button>
                         <button onClick={() => { onToggleStar(coach.id, coach.is_starred); setOpenActionMenu(null); }}
                           className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2">
                           <Star size={14} /> {coach.is_starred ? 'Unstar' : 'Star'}
                         </button>
+
+                        {/* Set Priority submenu */}
+                        <div className="relative">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setOpenPrioritySubmenu(openPrioritySubmenu === coach.id ? null : coach.id); }}
+                            className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center justify-between"
+                          >
+                            <span className="flex items-center gap-2">
+                              <Flame size={14} /> Set Priority
+                            </span>
+                            <ChevronRight size={12} className="text-warm-400" />
+                          </button>
+                          {openPrioritySubmenu === coach.id && (
+                            <div className="absolute left-full top-0 ml-1 z-50 w-36 py-1 rounded-xl bg-white border border-warm-200/80 shadow-xl">
+                              <button
+                                onClick={() => { onPriorityChange?.(coach.id, 0); setOpenActionMenu(null); setOpenPrioritySubmenu(null); }}
+                                className={cn('w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors',
+                                  coach.priority === 0 ? 'bg-warm-50 font-semibold text-warm-900' : 'text-warm-700 hover:bg-warm-50 active:bg-warm-100'
+                                )}
+                              >
+                                Normal
+                              </button>
+                              <button
+                                onClick={() => { onPriorityChange?.(coach.id, 1); setOpenActionMenu(null); setOpenPrioritySubmenu(null); }}
+                                className={cn('w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors',
+                                  coach.priority === 1 ? 'bg-amber-50 font-semibold text-amber-700' : 'text-warm-700 hover:bg-warm-50 active:bg-warm-100'
+                                )}
+                              >
+                                <Zap size={14} className="text-amber-500" /> High
+                              </button>
+                              <button
+                                onClick={() => { onPriorityChange?.(coach.id, 2); setOpenActionMenu(null); setOpenPrioritySubmenu(null); }}
+                                className={cn('w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors',
+                                  coach.priority >= 2 ? 'bg-orange-50 font-semibold text-orange-700' : 'text-warm-700 hover:bg-warm-50 active:bg-warm-100'
+                                )}
+                              >
+                                <Flame size={14} className="text-orange-500" /> Hot
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>

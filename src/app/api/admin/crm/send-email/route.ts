@@ -6,6 +6,8 @@ interface Recipient {
   id: string;
   email: string;
   name: string;
+  school?: string;
+  conference?: string;
 }
 
 interface SendEmailRequest {
@@ -13,6 +15,7 @@ interface SendEmailRequest {
   subject: string;
   body?: string;
   logOnly?: boolean;
+  templateId?: string;
 }
 
 export async function POST(request: Request) {
@@ -40,7 +43,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { recipients, subject, body, logOnly } = (await request.json()) as SendEmailRequest;
+    const { recipients, subject, body, logOnly, templateId } = (await request.json()) as SendEmailRequest;
 
     if (!recipients?.length || !subject?.trim()) {
       return NextResponse.json({ error: 'Missing required fields: recipients, subject' }, { status: 400 });
@@ -102,6 +105,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Message body is required for sending' }, { status: 400 });
     }
 
+    // ── Daily limit check ──
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const { count: dailyCount } = await supabase
+      .from('crm_contact_log')
+      .select('*', { count: 'exact', head: true })
+      .not('resend_message_id', 'is', null)
+      .gte('contact_date', today.toISOString());
+
+    if ((dailyCount ?? 0) >= 500) {
+      return NextResponse.json({ error: 'Daily email limit reached (500). Try again tomorrow.' }, { status: 429 });
+    }
+
     const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) {
       await logServerError('CRM send-email route is missing RESEND_API_KEY', {
@@ -119,13 +135,50 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Email service not configured' }, { status: 500 });
     }
 
+    // ── Fetch email_status for all recipients to skip bounced ──
+    const recipientIds = recipients.map(r => r.id);
+    const { data: coachStatuses } = await supabase
+      .from('crm_coaches')
+      .select('id, email_status')
+      .in('id', recipientIds) as { data: Array<{ id: string; email_status: string | null }> | null };
+
+    const statusMap = new Map<string, string>();
+    for (const cs of coachStatuses ?? []) {
+      statusMap.set(cs.id, cs.email_status ?? 'valid');
+    }
+
     let sent = 0;
     let failed = 0;
+    let skipped = 0;
     const failedRecipients: Array<{ recipientId: string; recipientEmail: string; message: string }> = [];
+    const skippedRecipients: Array<{ recipientId: string; recipientEmail: string; reason: string }> = [];
 
-    for (const recipient of recipients) {
+    for (let i = 0; i < recipients.length; i++) {
+      const recipient = recipients[i]!;
+
+      // Skip bounced/complained coaches
+      const emailStatus = statusMap.get(recipient.id) ?? 'valid';
+      if (emailStatus !== 'valid') {
+        skipped++;
+        skippedRecipients.push({
+          recipientId: recipient.id,
+          recipientEmail: recipient.email,
+          reason: `email_status: ${emailStatus}`,
+        });
+        continue;
+      }
+
       try {
-        const personalizedBody = body.replace(/\{name\}/g, recipient.name);
+        // Replace merge tags with recipient-specific data
+        const personalizedSubject = subject
+          .replace(/\{name\}/g, recipient.name)
+          .replace(/\{school\}/g, recipient.school ?? '')
+          .replace(/\{conference\}/g, recipient.conference ?? '');
+
+        const personalizedBody = body
+          .replace(/\{name\}/g, recipient.name)
+          .replace(/\{school\}/g, recipient.school ?? '')
+          .replace(/\{conference\}/g, recipient.conference ?? '');
 
         const res = await fetch('https://api.resend.com/emails', {
           method: 'POST',
@@ -136,8 +189,8 @@ export async function POST(request: Request) {
           body: JSON.stringify({
             from: 'Helm Sports Labs <admin@helmsportslabs.com>',
             to: [recipient.email],
-            subject,
-            html: buildEmailHtml(recipient.name, subject, personalizedBody),
+            subject: personalizedSubject,
+            html: buildEmailHtml(recipient.name, personalizedSubject, personalizedBody),
           }),
         });
 
@@ -147,8 +200,8 @@ export async function POST(request: Request) {
           await supabase.from('crm_contact_log').insert({
             coach_id: recipient.id,
             contact_type: 'email',
-            subject,
-            notes: `Bulk email: "${subject}"`,
+            subject: personalizedSubject,
+            notes: `Bulk email: "${personalizedSubject}"`,
             resend_message_id: resendData.id,
             created_by: user.id,
           });
@@ -173,6 +226,31 @@ export async function POST(request: Request) {
           message: error instanceof Error ? error.message : String(error),
         });
       }
+
+      // 200ms delay between sends to avoid Resend rate limits
+      if (i < recipients.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+    }
+
+    // ── Increment template usage count ──
+    if (templateId && sent > 0) {
+      try {
+        const { data: tpl } = await supabase
+          .from('crm_email_templates' as 'crm_contact_log')
+          .select('usage_count')
+          .eq('id', templateId)
+          .single() as { data: { usage_count: number } | null };
+
+        if (tpl) {
+          await supabase
+            .from('crm_email_templates' as 'crm_contact_log')
+            .update({ usage_count: (tpl.usage_count ?? 0) + 1 } as Record<string, unknown>)
+            .eq('id', templateId);
+        }
+      } catch {
+        // Non-critical — don't fail the response
+      }
     }
 
     if (failed > 0) {
@@ -187,13 +265,15 @@ export async function POST(request: Request) {
           subject,
           sent,
           failed,
+          skipped,
           totalRecipients: recipients.length,
           failures: failedRecipients.slice(0, 10),
+          skippedRecipients: skippedRecipients.slice(0, 10),
         },
       }, failed === recipients.length ? 'critical' : 'warning');
     }
 
-    return NextResponse.json({ sent, failed, total: recipients.length });
+    return NextResponse.json({ sent, failed, skipped, total: recipients.length });
   } catch (error) {
     await logServerError(`CRM send-email route failed: ${error instanceof Error ? error.message : String(error)}`, {
       action: 'crmSendEmailApi',

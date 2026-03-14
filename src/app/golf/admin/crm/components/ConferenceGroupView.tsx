@@ -26,9 +26,7 @@ interface ConferenceGroup {
 }
 
 const ALL_STATUSES: CoachStatus[] = [
-  'new_lead', 'researching', 'outreach_pending', 'initial_contact', 'follow_up',
-  'engaged', 'demo_scheduled', 'demo_completed', 'proposal_sent', 'negotiating',
-  'closed_won', 'closed_lost', 'not_interested', 'bad_timing', 'nurture',
+  'new_lead', 'contacted', 'engaged', 'proposal', 'won', 'lost', 'nurture',
 ];
 
 function formatRelativeDate(dateStr: string | null): string {
@@ -173,7 +171,7 @@ export function ConferenceGroupView({
         const isExpanded = expandedConferences.has(group.conference);
         const allSelected = group.coaches.every(c => selectedIds.has(c.id));
         const someSelected = group.coaches.some(c => selectedIds.has(c.id));
-        const activeCount = group.coaches.filter(c => !['new_lead', 'closed_lost', 'not_interested', 'bad_timing'].includes(c.status)).length;
+        const activeCount = group.coaches.filter(c => !['new_lead', 'lost', 'nurture'].includes(c.status)).length;
 
         return (
           <div
@@ -368,9 +366,9 @@ export function ConferenceGroupView({
                                       <Mail size={14} /> Send Email
                                     </a>
                                   )}
-                                  <button onClick={() => { onStatusChange(coach.id, 'researching'); setOpenActionMenu(null); }}
+                                  <button onClick={() => { onStatusChange(coach.id, 'contacted'); setOpenActionMenu(null); }}
                                     className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2">
-                                    <ArrowRight size={14} /> Move to Researching
+                                    <ArrowRight size={14} /> Move to Contacted
                                   </button>
                                   <button onClick={() => { onToggleStar(coach.id, coach.is_starred); setOpenActionMenu(null); }}
                                     className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2">

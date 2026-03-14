@@ -117,7 +117,7 @@ export function PipelineView({
         })
         .slice(0, count);
       if (newLeads.length > 0) {
-        await onBulkUpdate(newLeads.map(c => c.id), { status: 'researching' as CoachStatus });
+        await onBulkUpdate(newLeads.map(c => c.id), { status: 'contacted' as CoachStatus });
         onRefresh();
       }
     } finally { setProcessing(false); }
@@ -144,7 +144,7 @@ export function PipelineView({
           </div>
           <h3 className="text-lg font-bold text-warm-900 mb-2">Ready to start your pipeline</h3>
           <p className="text-sm text-warm-500 max-w-md mx-auto mb-4">
-            All {stats.total} coaches are new leads. Start by researching your top prospects and moving them through the pipeline.
+            All {stats.total} coaches are new leads. Start by contacting your top prospects and moving them through the pipeline.
           </p>
           <div className="flex items-center justify-center gap-3">
             <button
@@ -277,7 +277,7 @@ export function PipelineView({
 }
 
 // ============================================================================
-// KANBAN CARD — premium hover lift
+// KANBAN CARD — premium hover lift + keyboard accessibility
 // ============================================================================
 function KanbanCard({
   coach, nextStatus, isDragging,
@@ -296,15 +296,32 @@ function KanbanCard({
 }) {
   const daysInStage = daysSince(coach.updated_at);
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      onClick();
+    } else if (e.key === ' ') {
+      e.preventDefault();
+      if (nextStatus) {
+        onStatusChange(coach.id, nextStatus);
+      }
+    }
+  };
+
   return (
     <div
       draggable
+      tabIndex={0}
+      role="button"
+      aria-label={`${coach.name} at ${coach.school}. ${coach.division}. ${daysInStage} days in stage.${nextStatus ? ' Press Space to advance.' : ''}`}
       onDragStart={(e) => onDragStart(e, coach)}
       onDragEnd={onDragEnd}
       onClick={onClick}
+      onKeyDown={handleKeyDown}
       className={cn(
         'p-3 rounded-xl bg-white border border-warm-200/60 shadow-sm',
         'hover:shadow-md hover:-translate-y-0.5 hover:border-warm-300',
+        'focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-300',
         'transition-all duration-200',
         'cursor-grab active:cursor-grabbing group',
         isDragging && 'opacity-40 scale-95',
@@ -342,7 +359,7 @@ function KanbanCard({
               'text-micro font-bold uppercase tracking-wider px-1.5 py-0.5 rounded',
               coach.priority >= 2 ? 'bg-orange-50 text-orange-600' : 'bg-amber-50 text-amber-600'
             )}>
-              {coach.priority >= 2 ? '🔥 Hot' : '⚡ High'}
+              {coach.priority >= 2 ? 'Hot' : 'High'}
             </span>
           )}
         </div>
@@ -351,8 +368,10 @@ function KanbanCard({
         {nextStatus && (
           <button
             onClick={(e) => { e.stopPropagation(); onStatusChange(coach.id, nextStatus); }}
-            className="opacity-0 group-hover:opacity-100 w-6 h-6 rounded-md flex items-center justify-center hover:bg-primary-50 active:bg-primary-100 text-primary-600 transition-all"
+            className="opacity-0 group-hover:opacity-100 focus:opacity-100 w-6 h-6 rounded-md flex items-center justify-center hover:bg-primary-50 active:bg-primary-100 text-primary-600 transition-all"
             title="Advance to next stage"
+            aria-label={`Advance ${coach.name} to next stage`}
+            tabIndex={-1}
           >
             <ArrowRight size={12} />
           </button>

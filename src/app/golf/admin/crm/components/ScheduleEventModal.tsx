@@ -177,7 +177,7 @@ export function ScheduleEventModal({
           await supabase
             .from('crm_coaches')
             .update({
-              status: 'demo_scheduled',
+              status: 'engaged',
               next_follow_up_at: startTime.toISOString(),
             })
             .eq('id', form.coachId);

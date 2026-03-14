@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { Search, X, Clock, Star, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, X, Clock, Star, ChevronDown, ChevronUp, FileText, AlertCircle, Loader2 } from 'lucide-react';
 import type { CoachStatus } from '../crm-config';
 
 export interface Filters {
@@ -32,6 +32,31 @@ export function CoachFilters({
   statusConfig,
 }: CoachFiltersProps) {
   const [showMore, setShowMore] = useState(false);
+  const [localSearch, setLocalSearch] = useState(filters.search);
+  const [isDebouncing, setIsDebouncing] = useState(false);
+
+  // Debounce search input — 300ms delay before updating parent filter
+  useEffect(() => {
+    if (localSearch === filters.search) {
+      setIsDebouncing(false);
+      return;
+    }
+
+    setIsDebouncing(true);
+    const timeout = setTimeout(() => {
+      setFilters(f => ({ ...f, search: localSearch }));
+      setIsDebouncing(false);
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [localSearch, filters.search, setFilters]);
+
+  // Sync local search when parent clears filters
+  useEffect(() => {
+    if (filters.search === '' && localSearch !== '') {
+      setLocalSearch('');
+    }
+  }, [filters.search, localSearch]);
 
   const activeFilterCount = [
     filters.status !== 'all',
@@ -45,9 +70,10 @@ export function CoachFilters({
     filters.noContact30Days,
   ].filter(Boolean).length;
 
-  const hasSecondaryFilters = filters.conference !== 'all' || filters.status !== 'all' || filters.followUpDue || filters.starred;
+  const hasSecondaryFilters = filters.conference !== 'all' || filters.status !== 'all' || filters.followUpDue || filters.starred || filters.hasNotes || filters.noContact30Days || filters.priority !== 'all';
 
   const clearFilters = () => {
+    setLocalSearch('');
     setFilters({
       status: 'all', division: 'all', conference: 'all', program: 'all', priority: 'all',
       search: '', followUpDue: false, starred: false, hasNotes: false, noContact30Days: false,
@@ -60,12 +86,16 @@ export function CoachFilters({
       <div className="flex flex-wrap items-center gap-2">
         {/* Search */}
         <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
+          {isDebouncing ? (
+            <Loader2 size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-primary-400 animate-spin" />
+          ) : (
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
+          )}
           <input
             type="text"
             placeholder="Search coaches, schools, conferences..."
-            value={filters.search}
-            onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
+            value={localSearch}
+            onChange={(e) => setLocalSearch(e.target.value)}
             className={cn(
               'w-full pl-9 pr-8 py-2 rounded-[10px] text-sm',
               'bg-white/80 border border-warm-200/50',
@@ -74,8 +104,8 @@ export function CoachFilters({
               'transition-all duration-200'
             )}
           />
-          {filters.search && (
-            <button onClick={() => setFilters(f => ({ ...f, search: '' }))} className="absolute right-3 top-1/2 -translate-y-1/2 text-warm-400 hover:text-warm-600">
+          {localSearch && (
+            <button onClick={() => { setLocalSearch(''); setFilters(f => ({ ...f, search: '' })); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-warm-400 hover:text-warm-600">
               <X size={14} />
             </button>
           )}
@@ -185,6 +215,24 @@ export function CoachFilters({
             {(Object.keys(statusConfig) as CoachStatus[]).map(s => <option key={s} value={s}>{statusConfig[s].label}</option>)}
           </select>
 
+          {/* Priority dropdown */}
+          <select
+            value={filters.priority}
+            onChange={(e) => setFilters(f => ({ ...f, priority: e.target.value }))}
+            className={cn(
+              'px-3 py-2 rounded-[10px] text-xs font-medium',
+              'bg-white/80 border border-warm-200/50 text-warm-600',
+              'focus:outline-none focus:ring-2 focus:ring-primary-500/20',
+              'cursor-pointer',
+              filters.priority !== 'all' && 'border-primary-300 bg-primary-50 text-primary-700'
+            )}
+          >
+            <option value="all">All Priorities</option>
+            <option value="0">Normal</option>
+            <option value="1">High</option>
+            <option value="2">Hot</option>
+          </select>
+
           {/* Quick filter pills */}
           <button
             onClick={() => setFilters(f => ({ ...f, followUpDue: !f.followUpDue }))}
@@ -208,6 +256,30 @@ export function CoachFilters({
             )}
           >
             <Star size={12} /> Starred
+          </button>
+
+          <button
+            onClick={() => setFilters(f => ({ ...f, hasNotes: !f.hasNotes }))}
+            className={cn(
+              'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors whitespace-nowrap',
+              filters.hasNotes
+                ? 'bg-amber-50 border-amber-200 text-amber-700'
+                : 'bg-white/60 border-warm-200/50 text-warm-500 hover:bg-warm-50 active:bg-warm-100'
+            )}
+          >
+            <FileText size={12} /> Has Notes
+          </button>
+
+          <button
+            onClick={() => setFilters(f => ({ ...f, noContact30Days: !f.noContact30Days }))}
+            className={cn(
+              'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors whitespace-nowrap',
+              filters.noContact30Days
+                ? 'bg-orange-50 border-orange-200 text-orange-700'
+                : 'bg-white/60 border-warm-200/50 text-warm-500 hover:bg-warm-50 active:bg-warm-100'
+            )}
+          >
+            <AlertCircle size={12} /> No Contact 30 Days
           </button>
         </div>
       )}

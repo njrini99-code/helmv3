@@ -4620,8 +4620,54 @@ export type Database = {
           },
         ]
       }
+      crm_activity_log: {
+        Row: {
+          action: string
+          changed_by: string | null
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          new_values: Json | null
+          old_values: Json | null
+          record_id: string
+          table_name: string
+        }
+        Insert: {
+          action: string
+          changed_by?: string | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id: string
+          table_name: string
+        }
+        Update: {
+          action?: string
+          changed_by?: string | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id?: string
+          table_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_activity_log_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crm_coaches: {
         Row: {
+          archived_at: string | null
+          archived_by: string | null
           best_contact_method: string | null
           best_contact_time: string | null
           budget_range: string | null
@@ -4632,9 +4678,11 @@ export type Database = {
           decision_timeline: string | null
           division: Database["public"]["Enums"]["ncaa_division"]
           email: string | null
+          email_status: string | null
           highlight_color: string | null
           id: string
           internal_comments: string | null
+          is_archived: boolean | null
           is_starred: boolean | null
           last_contacted_at: string | null
           name: string
@@ -4645,6 +4693,7 @@ export type Database = {
           priority: number | null
           program: Database["public"]["Enums"]["program_type"]
           school: string
+          source: string | null
           status: Database["public"]["Enums"]["coach_status"]
           tags: string[] | null
           team_size: number | null
@@ -4653,6 +4702,8 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          archived_at?: string | null
+          archived_by?: string | null
           best_contact_method?: string | null
           best_contact_time?: string | null
           budget_range?: string | null
@@ -4663,9 +4714,11 @@ export type Database = {
           decision_timeline?: string | null
           division: Database["public"]["Enums"]["ncaa_division"]
           email?: string | null
+          email_status?: string | null
           highlight_color?: string | null
           id?: string
           internal_comments?: string | null
+          is_archived?: boolean | null
           is_starred?: boolean | null
           last_contacted_at?: string | null
           name: string
@@ -4676,6 +4729,7 @@ export type Database = {
           priority?: number | null
           program?: Database["public"]["Enums"]["program_type"]
           school: string
+          source?: string | null
           status?: Database["public"]["Enums"]["coach_status"]
           tags?: string[] | null
           team_size?: number | null
@@ -4684,6 +4738,8 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          archived_at?: string | null
+          archived_by?: string | null
           best_contact_method?: string | null
           best_contact_time?: string | null
           budget_range?: string | null
@@ -4694,9 +4750,11 @@ export type Database = {
           decision_timeline?: string | null
           division?: Database["public"]["Enums"]["ncaa_division"]
           email?: string | null
+          email_status?: string | null
           highlight_color?: string | null
           id?: string
           internal_comments?: string | null
+          is_archived?: boolean | null
           is_starred?: boolean | null
           last_contacted_at?: string | null
           name?: string
@@ -4707,6 +4765,7 @@ export type Database = {
           priority?: number | null
           program?: Database["public"]["Enums"]["program_type"]
           school?: string
+          source?: string | null
           status?: Database["public"]["Enums"]["coach_status"]
           tags?: string[] | null
           team_size?: number | null
@@ -4715,6 +4774,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "crm_coaches_archived_by_fkey"
+            columns: ["archived_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "crm_coaches_created_by_fkey"
             columns: ["created_by"]
@@ -4818,6 +4884,56 @@ export type Database = {
             columns: ["contact_log_id"]
             isOneToOne: false
             referencedRelation: "crm_contact_log"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_email_templates: {
+        Row: {
+          body: string
+          category: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_default: boolean | null
+          merge_tags: string[] | null
+          name: string
+          subject: string
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          body: string
+          category?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_default?: boolean | null
+          merge_tags?: string[] | null
+          name: string
+          subject: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          body?: string
+          category?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_default?: boolean | null
+          merge_tags?: string[] | null
+          name?: string
+          subject?: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_email_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -9935,7 +10051,18 @@ export type Database = {
           team_count: number
         }[]
       }
+      get_crm_coach_email_events: {
+        Args: { p_coach_id: string }
+        Returns: {
+          event_type: string
+          id: string
+          occurred_at: string
+          recipient_email: string
+          subject: string
+        }[]
+      }
       get_crm_email_stats: { Args: never; Returns: Json }
+      get_crm_email_stats_detailed: { Args: never; Returns: Json }
       get_crm_events_in_range: {
         Args: { p_end: string; p_start: string }
         Returns: {
@@ -9953,14 +10080,6 @@ export type Database = {
           start_time: string
           status: string
           title: string
-        }[]
-      }
-      get_crm_pipeline_summary: {
-        Args: never
-        Returns: {
-          coach_count: number
-          division: Database["public"]["Enums"]["ncaa_division"]
-          status: Database["public"]["Enums"]["coach_status"]
         }[]
       }
       get_current_golf_player_id: { Args: never; Returns: string }
@@ -10158,17 +10277,6 @@ export type Database = {
       is_baseball_team_player: { Args: { team_uuid: string }; Returns: boolean }
       is_golf_team_coach: { Args: { team_uuid: string }; Returns: boolean }
       is_golf_team_player: { Args: { team_uuid: string }; Returns: boolean }
-      log_coach_contact: {
-        Args: {
-          p_coach_id: string
-          p_contact_type: Database["public"]["Enums"]["contact_type"]
-          p_new_status?: Database["public"]["Enums"]["coach_status"]
-          p_next_action?: string
-          p_next_action_date?: string
-          p_notes?: string
-        }
-        Returns: string
-      }
       mark_player_stats_stale: {
         Args: { p_player_id: string }
         Returns: undefined
@@ -10269,19 +10377,11 @@ export type Database = {
       baseball_player_type: "college" | "juco" | "high_school" | "showcase"
       coach_status:
         | "new_lead"
-        | "researching"
-        | "outreach_pending"
-        | "initial_contact"
-        | "follow_up"
+        | "contacted"
         | "engaged"
-        | "demo_scheduled"
-        | "demo_completed"
-        | "proposal_sent"
-        | "negotiating"
-        | "closed_won"
-        | "closed_lost"
-        | "not_interested"
-        | "bad_timing"
+        | "proposal"
+        | "won"
+        | "lost"
         | "nurture"
       contact_type: "email" | "call" | "demo" | "meeting" | "note"
       crm_event_type:
@@ -10460,19 +10560,11 @@ export const Constants = {
       baseball_player_type: ["college", "juco", "high_school", "showcase"],
       coach_status: [
         "new_lead",
-        "researching",
-        "outreach_pending",
-        "initial_contact",
-        "follow_up",
+        "contacted",
         "engaged",
-        "demo_scheduled",
-        "demo_completed",
-        "proposal_sent",
-        "negotiating",
-        "closed_won",
-        "closed_lost",
-        "not_interested",
-        "bad_timing",
+        "proposal",
+        "won",
+        "lost",
         "nurture",
       ],
       contact_type: ["email", "call", "demo", "meeting", "note"],

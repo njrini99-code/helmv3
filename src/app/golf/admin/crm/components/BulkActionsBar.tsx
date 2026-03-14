@@ -13,9 +13,7 @@ interface BulkActionsBarProps {
 }
 
 const ALL_STATUSES: CoachStatus[] = [
-  'new_lead', 'researching', 'outreach_pending', 'initial_contact', 'follow_up',
-  'engaged', 'demo_scheduled', 'demo_completed', 'proposal_sent', 'negotiating',
-  'closed_won', 'closed_lost', 'not_interested', 'bad_timing', 'nurture',
+  'new_lead', 'contacted', 'engaged', 'proposal', 'won', 'lost', 'nurture',
 ];
 
 export function BulkActionsBar({

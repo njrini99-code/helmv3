@@ -33,19 +33,11 @@ const CONTACT_TYPES = [
 
 const STATUS_OPTIONS: { value: CoachStatus; label: string }[] = [
   { value: 'new_lead', label: 'New Lead' },
-  { value: 'researching', label: 'Researching' },
-  { value: 'outreach_pending', label: 'Outreach Pending' },
-  { value: 'initial_contact', label: 'Initial Contact' },
-  { value: 'follow_up', label: 'Follow Up' },
+  { value: 'contacted', label: 'Contacted' },
   { value: 'engaged', label: 'Engaged' },
-  { value: 'demo_scheduled', label: 'Demo Scheduled' },
-  { value: 'demo_completed', label: 'Demo Completed' },
-  { value: 'proposal_sent', label: 'Proposal Sent' },
-  { value: 'negotiating', label: 'Negotiating' },
-  { value: 'closed_won', label: '✓ Customer' },
-  { value: 'closed_lost', label: '✗ Lost' },
-  { value: 'not_interested', label: 'Not Interested' },
-  { value: 'bad_timing', label: 'Bad Timing' },
+  { value: 'proposal', label: 'Proposal' },
+  { value: 'won', label: 'Customer' },
+  { value: 'lost', label: 'Lost' },
   { value: 'nurture', label: 'Nurture' },
 ];
 
