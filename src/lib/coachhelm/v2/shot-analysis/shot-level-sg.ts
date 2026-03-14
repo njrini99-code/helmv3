@@ -43,7 +43,7 @@ export interface ShotContextAnalysis {
 }
 
 // ---------------------------------------------------------------------------
-// Distance buckets
+// Distance buckets (yards — for non-green lies)
 // ---------------------------------------------------------------------------
 
 const DISTANCE_BUCKETS = [
@@ -67,7 +67,25 @@ function getBucket(distance: number): (typeof DISTANCE_BUCKETS)[number] {
   return DISTANCE_BUCKETS[DISTANCE_BUCKETS.length - 1];
 }
 
+// ---------------------------------------------------------------------------
+// Green distance buckets (feet — for putting)
+// ---------------------------------------------------------------------------
+
+function getGreenDistanceBucket(distanceFeet: number): string {
+  if (distanceFeet <= 3) return '0-3';
+  if (distanceFeet <= 5) return '3-5';
+  if (distanceFeet <= 10) return '5-10';
+  if (distanceFeet <= 15) return '10-15';
+  if (distanceFeet <= 20) return '15-20';
+  if (distanceFeet <= 30) return '20-30';
+  if (distanceFeet <= 50) return '30-50';
+  return '50+';
+}
+
 function baselineKey(lie: string, distance: number): string {
+  if (lie === 'green') {
+    return `green_${getGreenDistanceBucket(distance)}`;
+  }
   const bucket = getBucket(distance);
   return `${lie}_${bucket.label}`;
 }
@@ -196,20 +214,16 @@ export function buildDefaultBaseline(): SGBaseline {
   strokesToHole['recovery_225-250'] = 4.75;
   strokesToHole['recovery_250+'] = 5.00;
 
-  // ---- Green (putting) — distance in yards, converted from feet mentally ----
-  // 0-25 yards on the green covers most putts (up to 75 feet)
-  strokesToHole['green_0-25'] = 1.80;
-  strokesToHole['green_25-50'] = 2.20;
-  strokesToHole['green_50-75'] = 2.50;
-  strokesToHole['green_75-100'] = 2.80;
-  // Longer distances on the green are unusual but can happen on large greens
-  strokesToHole['green_100-125'] = 3.00;
-  strokesToHole['green_125-150'] = 3.10;
-  strokesToHole['green_150-175'] = 3.20;
-  strokesToHole['green_175-200'] = 3.30;
-  strokesToHole['green_200-225'] = 3.40;
-  strokesToHole['green_225-250'] = 3.50;
-  strokesToHole['green_250+'] = 3.60;
+  // ---- Green (putting) — uses FEET, not yards ----
+  // These match the PGA/amateur benchmark: expected putts from distance
+  strokesToHole['green_0-3'] = 1.00;    // Tap-in
+  strokesToHole['green_3-5'] = 1.05;    // Short putt
+  strokesToHole['green_5-10'] = 1.33;   // Makeable
+  strokesToHole['green_10-15'] = 1.61;  // Mid-range
+  strokesToHole['green_15-20'] = 1.78;  // Longer
+  strokesToHole['green_20-30'] = 1.90;  // Long putt
+  strokesToHole['green_30-50'] = 2.00;  // Lag putt
+  strokesToHole['green_50+'] = 2.10;    // Very long lag
 
   return { strokesToHole };
 }
@@ -230,8 +244,10 @@ export function analyzeShotsByContext(
   const groups = new Map<string, { shots: ShotData[]; sgValues: number[] }>();
 
   for (const shot of shots) {
-    const bucket = getBucket(shot.distanceBefore);
-    const key = `${shot.lieBefore}_${bucket.label}`;
+    const bucketLabel = shot.lieBefore === 'green'
+      ? getGreenDistanceBucket(shot.distanceBefore)
+      : getBucket(shot.distanceBefore).label;
+    const key = `${shot.lieBefore}_${bucketLabel}`;
 
     let group = groups.get(key);
     if (!group) {

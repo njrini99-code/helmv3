@@ -19,7 +19,16 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
+import { IconTarget, IconFlag, IconCircleDot, IconMap, IconBrain } from '@/components/icons';
 import { PRIORITY_METRICS, PriorityMetric, CoachPhilosophy } from '@/lib/coachhelm/types';
+
+const METRIC_ICONS: Record<string, React.ReactNode> = {
+    priorityBallStriking: <IconTarget size={18} />,
+    priorityShortGame: <IconFlag size={18} />,
+    priorityPutting: <IconCircleDot size={18} />,
+    priorityCourseManagement: <IconMap size={18} />,
+    priorityMentalGame: <IconBrain size={18} />,
+};
 
 // Types for the component
 type PriorityKeys = 'priorityBallStriking' | 'priorityShortGame' | 'priorityPutting' | 'priorityCourseManagement' | 'priorityMentalGame';
@@ -79,7 +88,7 @@ function SortableItem({ metric, rank }: { metric: PriorityMetric; rank: number }
             </div>
 
             {/* Icon */}
-            <span className="text-xl">{metric.icon}</span>
+            <span className="text-warm-600">{METRIC_ICONS[metric.key] ?? metric.icon}</span>
 
             {/* Label & description */}
             <div className="flex-1 min-w-0">

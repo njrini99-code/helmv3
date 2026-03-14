@@ -19,11 +19,11 @@ import type {
 import { extractAllFeatures } from '../features';
 
 const THRESHOLDS = {
-  minSupport: 0.08,      // 8% of rounds (was 10%)
-  minConfidence: 0.55,   // 55% confidence (was 60%)
-  minLift: 1.3,          // 1.3x lift (was 1.5x)
-  minSampleSize: 5,      // 5 rounds minimum (was 10)
-  minStrokeImpact: 0.25, // 0.25 strokes (was 0.3)
+  minSupport: 0.12,      // 12% of rounds — need statistical significance
+  minConfidence: 0.60,   // 60% confidence
+  minLift: 1.5,          // 1.5x lift — meaningful above random
+  minSampleSize: 8,      // 8 rounds minimum — robust sample
+  minStrokeImpact: 0.3,  // 0.3 strokes — meaningful impact
 };
 
 function normalizeRoundType(roundType?: string | null): string | null {

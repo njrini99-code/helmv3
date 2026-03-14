@@ -20,37 +20,37 @@ import type { MinedPattern, PatternType, PatternTrend } from '../types';
 // These are D2/D3 college golf averages used as fallback when player baselines aren't available
 const BENCHMARKS = {
   // Strokes Gained per round (vs scratch/par)
-  sgTotal: 0,           // Even with par
+  sgTotal: 0,           // Even with par (baseline)
   sgTee: 0,
   sgApproach: 0,
   sgAroundGreen: 0,
   sgPutting: 0,
 
-  // Putting make percentages (college level)
-  puttMake0_3: 98,      // Inside 3 feet
-  puttMake3_5: 75,      // 3-5 feet
-  puttMake5_10: 45,     // 5-10 feet
-  puttMake10_15: 25,    // 10-15 feet
-  puttMake15_20: 15,    // 15-20 feet
+  // Putting make percentages (D2/D3 college level)
+  puttMake0_3: 95,      // Inside 3 feet (was 98 — slightly lower)
+  puttMake3_5: 60,      // 3-5 feet (was 75 — PGA level)
+  puttMake5_10: 30,     // 5-10 feet (was 45 — PGA level)
+  puttMake10_15: 18,    // 10-15 feet (was 25)
+  puttMake15_20: 12,    // 15-20 feet (was 15)
 
-  // GIR targets
-  girPct: 60,           // Overall
-  girPctPar3: 50,
-  girPctPar4: 55,
-  girPctPar5: 75,
+  // GIR targets (D2/D3 level)
+  girPct: 42,           // Overall (was 60 — PGA level)
+  girPctPar3: 35,
+  girPctPar4: 38,
+  girPctPar5: 55,
 
   // GIR by distance
-  girPct100_125: 70,    // 100-125 yards
-  girPct125_150: 60,    // 125-150 yards
-  girPct150_175: 50,    // 150-175 yards
-  girPct175_200: 40,    // 175-200 yards
+  girPct100_125: 55,    // 100-125 yards (was 70)
+  girPct125_150: 45,    // 125-150 yards (was 60)
+  girPct150_175: 35,    // 150-175 yards (was 50)
+  girPct175_200: 25,    // 175-200 yards (was 40)
 
   // Driving
-  fairwayPct: 60,
+  fairwayPct: 58,       // was 60 (slight adjust)
 
-  // Scrambling
-  scramblingPct: 55,
-  sandSavePct: 45,
+  // Scrambling (D2/D3 level)
+  scramblingPct: 42,    // was 55 (PGA level)
+  sandSavePct: 30,      // was 45
 
   // Putting efficiency (strokes to hole out)
   puttEff5_10: 1.5,     // Under 1.5 is good
@@ -59,10 +59,10 @@ const BENCHMARKS = {
   puttEff20_25: 2.1,
 
   // Three putts
-  threePuttsPerRound: 0.8,
+  threePuttsPerRound: 1.2,  // was 0.8
 
   // Penalties
-  penaltiesPerRound: 0.5,
+  penaltiesPerRound: 0.6,   // was 0.5
 
   // Scoring differentials
   qualifyingVsPractice: 1.5, // Max acceptable difference
@@ -880,8 +880,9 @@ export class StatsInsightGenerator {
     // Overall GIR
     if (stats.girPercentage !== null && stats.girPercentage < BENCHMARKS.girPct - 10) {
       const girDeficit = BENCHMARKS.girPct - stats.girPercentage;
-      // Each GIR miss typically costs ~0.5 strokes (scrambling vs 2-putt birdie chance)
-      const strokesLost = (girDeficit / 100) * this.getHolesPerRound(stats) * 0.5;
+      // Conservative: only count the extra misses, with lower per-miss cost
+      const extraMisses = (girDeficit / 100) * this.getHolesPerRound(stats);
+      const strokesLost = extraMisses * 0.25; // 0.25 strokes per extra miss, not 0.5
 
       insights.push({
         id: 'approach-gir-overall',
@@ -951,7 +952,7 @@ export class StatsInsightGenerator {
           category: 'approach',
           headline: 'Large Fairway vs Rough GIR Gap',
           body: `GIR from fairway: ${stats.girPctFromFairway.toFixed(0)}%, from rough: ${stats.girPctFromRough.toFixed(0)}% (${fwRoughGap.toFixed(0)}% gap). Your iron play suffers significantly from the rough.`,
-          strokeImpact: fwRoughGap / 100 * 6 * 0.5, // ~6 rough approaches/round
+          strokeImpact: fwRoughGap / 100 * 6 * 0.2, // conservative multiplier
           recommendation: 'Practice from rough lies. Focus on ball-first contact and consider club adjustment (take one more club) from rough.',
           priority: 'medium',
           confidence: 0.8,
