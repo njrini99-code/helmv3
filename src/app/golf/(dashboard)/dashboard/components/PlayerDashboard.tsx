@@ -155,11 +155,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
     return (
         <div className="min-h-full bg-transparent">
             {/* HEADER — z-10 is sufficient inside the isolate main container */}
-            <div className={cn(
-                'golf-mobile-page-header',
-                'bg-white/80 md:backdrop-blur-xl',
-                'border-warm-200/40',
-            )}>
+            <div className="golf-mobile-page-header">
                 <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-4">
                     <div className="flex items-center gap-3">
                         <MobileMenuButton />
