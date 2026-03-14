@@ -1,0 +1,962 @@
+'use server';
+
+// ============================================================================
+// COACHHELM V3 DATA ACTIONS
+// ============================================================================
+//
+// Server actions exposing CoachHelm V3 engine modules to the UI.
+// Each function follows the standard pattern:
+//   - Auth check (player owns data or coach owns team)
+//   - Fetch relevant data from Supabase
+//   - Run V3 engine computations
+//   - Return { success, data?, error? }
+//
+// ============================================================================
+
+import { createClient } from '@/lib/supabase/server';
+
+// Stats module
+import {
+  normalizePlayerMetrics,
+  computeCategoryRatings,
+  buildPlayerBaseline,
+  buildPercentileProfile,
+  detectAnomalies,
+  calculateVolatility,
+} from '@/lib/coachhelm/v2/stats';
+import type {
+  PlayerMetrics,
+  CategoryRatings,
+  PlayerBaseline,
+  PercentileProfile,
+  Anomaly,
+  VolatilityMetrics,
+} from '@/lib/coachhelm/v2/stats';
+
+// Trends module
+import {
+  analyzeMultiWindowTrends,
+  detectStreaks,
+  detectRegressionCandidate,
+} from '@/lib/coachhelm/v2/trends';
+import type {
+  MultiWindowAnalysis,
+  Streak,
+  RegressionPrediction,
+} from '@/lib/coachhelm/v2/trends';
+
+// Shot analysis module
+import {
+  analyzeShotsByContext,
+  rankWeaknessContexts,
+  buildDefaultBaseline,
+  buildYardageCurve,
+  findDeadZones,
+  analyzeSequenceEffects,
+  calculateShotSG,
+  calculateScrambleRate,
+} from '@/lib/coachhelm/v2/shot-analysis';
+import type {
+  ShotData,
+  ShotContextAnalysis,
+  YardageCurve,
+  DeadZone,
+  SequenceAnalysis,
+  ScrambleAnalysis,
+} from '@/lib/coachhelm/v2/shot-analysis';
+
+// Simulation module
+import {
+  simulateTournament,
+  optimizeLineup,
+  simulateWhatIf,
+} from '@/lib/coachhelm/v2/simulation';
+import type {
+  PlayerProfile,
+  TournamentSimulation,
+  LineupOptimization,
+  WhatIfScenario,
+} from '@/lib/coachhelm/v2/simulation';
+
+// ============================================================================
+// TYPES
+// ============================================================================
+
+interface ActionSuccess<T> {
+  success: true;
+  data: T;
+}
+
+interface ActionError {
+  success: false;
+  error: string;
+}
+
+type ActionResult<T> = ActionSuccess<T> | ActionError;
+
+interface PlayerProfileData {
+  composite: number | null;
+  categories: CategoryRatings;
+  percentiles: PercentileProfile;
+  baselines: PlayerBaseline;
+  playerState: {
+    playerId: string;
+    roundCount: number;
+    zScores: Record<string, number>;
+  };
+}
+
+interface TrendAnalysisData {
+  trends: MultiWindowAnalysis;
+  streaks: Streak[];
+  regressionPrediction: RegressionPrediction | null;
+  anomalies: Anomaly[];
+  volatility: VolatilityMetrics;
+}
+
+interface ShotContextData {
+  weaknesses: ShotContextAnalysis[];
+  yardageCurve: YardageCurve;
+  deadZones: DeadZone[];
+  resilience: SequenceAnalysis;
+  scrambleRate: ScrambleAnalysis;
+}
+
+interface TeamSimulationData {
+  simulation: TournamentSimulation;
+  lineupOptimization: LineupOptimization;
+}
+
+interface WhatIfData {
+  scenario: WhatIfScenario;
+}
+
+// ============================================================================
+// INTERNAL HELPERS
+// ============================================================================
+
+/**
+ * Verify that the authenticated user can access a given player's data.
+ * Returns the user ID on success, or null with an error message.
+ */
+async function verifyPlayerAccess(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  playerId: string,
+): Promise<{ authorized: boolean; error?: string }> {
+  // Check if user owns this player record
+  const { data: ownPlayer } = await supabase
+    .from('golf_players')
+    .select('id')
+    .eq('id', playerId)
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (ownPlayer) return { authorized: true };
+
+  // Check if user is a coach with the player on their team
+  const { data: coach } = await supabase
+    .from('golf_coaches')
+    .select('id, organization_id')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (!coach?.organization_id) {
+    return { authorized: false, error: 'Unauthorized' };
+  }
+
+  const { data: team } = await supabase
+    .from('golf_teams')
+    .select('id')
+    .eq('organization_id', coach.organization_id)
+    .maybeSingle();
+
+  if (!team) {
+    return { authorized: false, error: 'Unauthorized' };
+  }
+
+  const { data: membership } = await supabase
+    .from('golf_team_members')
+    .select('id')
+    .eq('team_id', team.id)
+    .eq('player_id', playerId)
+    .eq('status', 'active')
+    .maybeSingle();
+
+  if (!membership) {
+    return { authorized: false, error: 'Unauthorized' };
+  }
+
+  return { authorized: true };
+}
+
+/**
+ * Verify that the authenticated user can access a given player's data.
+ * Throws-style guard that returns a string error or null.
+ */
+async function getPlayerAccessError(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  playerId: string,
+): Promise<string | null> {
+  const result = await verifyPlayerAccess(supabase, userId, playerId);
+  return result.authorized ? null : (result.error ?? 'Unauthorized');
+}
+
+/**
+ * Verify that the authenticated user is a coach for the given team.
+ */
+async function verifyCoachAccess(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  teamId: string,
+): Promise<{ authorized: boolean; coachId?: string; error?: string }> {
+  const { data: coach } = await supabase
+    .from('golf_coaches')
+    .select('id, organization_id')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (!coach?.organization_id) {
+    return { authorized: false, error: 'Unauthorized — coach access required' };
+  }
+
+  const { data: team } = await supabase
+    .from('golf_teams')
+    .select('id')
+    .eq('id', teamId)
+    .eq('organization_id', coach.organization_id)
+    .maybeSingle();
+
+  if (!team) {
+    return { authorized: false, error: 'Unauthorized — team not found for this coach' };
+  }
+
+  return { authorized: true, coachId: coach.id };
+}
+
+// Stat metric keys used for z-score normalization and percentile building
+const STAT_METRICS = [
+  'scoringAvg',
+  'girPct',
+  'fairwayPct',
+  'puttsPerRound',
+  'scramblePct',
+  'sgTotal',
+  'sgOffTee',
+  'sgApproach',
+  'sgAroundGreen',
+  'sgPutting',
+  'birdieRate',
+  'bogeyAvoidance',
+] as const;
+
+/**
+ * Map a golf_player_stats_cache row into a metrics record keyed by STAT_METRICS names.
+ */
+function mapStatsCacheToMetrics(
+  row: {
+    scoring_average: number | null;
+    gir_percentage: number | null;
+    driving_accuracy_percentage: number | null;
+    putts_per_round: number | null;
+    scrambling_percentage: number | null;
+    strokes_gained_total: number | null;
+    strokes_gained_tee: number | null;
+    strokes_gained_approach: number | null;
+    strokes_gained_around_green: number | null;
+    strokes_gained_putting: number | null;
+  },
+): Record<string, number> {
+  return {
+    scoringAvg: row.scoring_average ?? 0,
+    girPct: row.gir_percentage ?? 0,
+    fairwayPct: row.driving_accuracy_percentage ?? 0,
+    puttsPerRound: row.putts_per_round ?? 0,
+    scramblePct: row.scrambling_percentage ?? 0,
+    sgTotal: row.strokes_gained_total ?? 0,
+    sgOffTee: row.strokes_gained_tee ?? 0,
+    sgApproach: row.strokes_gained_approach ?? 0,
+    sgAroundGreen: row.strokes_gained_around_green ?? 0,
+    sgPutting: row.strokes_gained_putting ?? 0,
+    birdieRate: 0,       // Not directly in stats cache; set to 0 as fallback
+    bogeyAvoidance: 0,   // Not directly in stats cache; set to 0 as fallback
+  };
+}
+
+// ============================================================================
+// 1. getPlayerProfile
+// ============================================================================
+
+/**
+ * Returns Z-score composite, category ratings, percentiles, and baseline comparison
+ * for a given player.
+ */
+export async function getPlayerProfile(
+  playerId: string,
+): Promise<ActionResult<PlayerProfileData>> {
+  const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { success: false, error: 'Unauthorized' };
+  }
+
+  const accessError = await getPlayerAccessError(supabase, user.id, playerId);
+  if (accessError) {
+    return { success: false, error: accessError };
+  }
+
+  try {
+    // Fetch player's recent rounds (last 30)
+    const { data: roundsData, error: roundsError } = await supabase
+      .from('golf_rounds')
+      .select('id, score_to_par, total_score, round_date, total_putts, total_gir, total_fairways_hit, holes_played')
+      .eq('player_id', playerId)
+      .eq('status', 'completed')
+      .not('total_score', 'is', null)
+      .order('round_date', { ascending: true })
+      .limit(30);
+
+    if (roundsError) {
+      return { success: false, error: 'Failed to fetch round data' };
+    }
+
+    if (!roundsData || roundsData.length === 0) {
+      return { success: false, error: 'No completed rounds found for this player' };
+    }
+
+    // Build baseline from round data
+    const baselineRounds = roundsData.map((r) => ({
+      metrics: {
+        scoreToPar: r.score_to_par ?? 0,
+        totalScore: r.total_score ?? 0,
+        puttsPerRound: r.total_putts ?? 0,
+        girPct: r.holes_played && r.total_gir != null
+          ? (r.total_gir / r.holes_played) * 100
+          : 0,
+        fairwayPct: r.holes_played && r.total_fairways_hit != null
+          ? (r.total_fairways_hit / r.holes_played) * 100
+          : 0,
+      },
+    }));
+
+    const baseline = buildPlayerBaseline(baselineRounds, playerId);
+
+    // Fetch team context — find player's team
+    const { data: membership } = await supabase
+      .from('golf_team_members')
+      .select('team_id')
+      .eq('player_id', playerId)
+      .eq('status', 'active')
+      .maybeSingle();
+
+    let teamPlayerIds: string[] = [];
+    if (membership?.team_id) {
+      const { data: teamMembers } = await supabase
+        .from('golf_team_members')
+        .select('player_id')
+        .eq('team_id', membership.team_id)
+        .eq('status', 'active');
+
+      teamPlayerIds = (teamMembers ?? []).map((m) => m.player_id);
+    }
+
+    // Fetch stats cache for team players (for z-scores and percentiles)
+    interface StatsCacheRow {
+      player_id: string;
+      scoring_average: number | null;
+      gir_percentage: number | null;
+      driving_accuracy_percentage: number | null;
+      putts_per_round: number | null;
+      scrambling_percentage: number | null;
+      strokes_gained_total: number | null;
+      strokes_gained_tee: number | null;
+      strokes_gained_approach: number | null;
+      strokes_gained_around_green: number | null;
+      strokes_gained_putting: number | null;
+    }
+
+    let teamStats: StatsCacheRow[] = [];
+    if (teamPlayerIds.length > 0) {
+      const { data: statsData } = await supabase
+        .from('golf_player_stats_cache')
+        .select('player_id, scoring_average, gir_percentage, driving_accuracy_percentage, putts_per_round, scrambling_percentage, strokes_gained_total, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting')
+        .in('player_id', teamPlayerIds);
+
+      teamStats = (statsData ?? []) as StatsCacheRow[];
+    }
+
+    // Build PlayerMetrics for each team member
+    const teamPlayerMetrics: PlayerMetrics[] = teamStats.map((row) => ({
+      playerId: row.player_id,
+      metrics: mapStatsCacheToMetrics(row),
+    }));
+
+    // Calculate z-scores across team
+    const metricKeys = [...STAT_METRICS];
+    const allZScores = normalizePlayerMetrics(teamPlayerMetrics, metricKeys);
+    const playerZScores = allZScores.find((z) => z.playerId === playerId);
+
+    const composite = playerZScores?.composite ?? null;
+    const categories = playerZScores?.categories ?? computeCategoryRatings({});
+    const zScores = playerZScores?.zScores ?? {};
+
+    // Build percentile profile
+    const playerStatsRow = teamStats.find((s) => s.player_id === playerId);
+    const playerMetricsForPercentile = playerStatsRow
+      ? mapStatsCacheToMetrics(playerStatsRow)
+      : {};
+
+    // Build team distributions
+    const teamDistributions: Record<string, number[]> = {};
+    for (const key of metricKeys) {
+      teamDistributions[key] = teamPlayerMetrics.map((p) => p.metrics[key] ?? 0);
+    }
+
+    // Platform distributions default to team (could be expanded later)
+    const platformDistributions = teamDistributions;
+
+    const percentiles = buildPercentileProfile(
+      playerMetricsForPercentile,
+      teamDistributions,
+      platformDistributions,
+      playerId,
+    );
+
+    return {
+      success: true,
+      data: {
+        composite,
+        categories,
+        percentiles,
+        baselines: baseline,
+        playerState: {
+          playerId,
+          roundCount: roundsData.length,
+          zScores,
+        },
+      },
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error in getPlayerProfile';
+    return { success: false, error: message };
+  }
+}
+
+// ============================================================================
+// 2. getPlayerTrendAnalysis
+// ============================================================================
+
+/**
+ * Returns multi-window trends, streak info, regression predictions,
+ * anomaly detection, and volatility analysis for a player.
+ */
+export async function getPlayerTrendAnalysis(
+  playerId: string,
+): Promise<ActionResult<TrendAnalysisData>> {
+  const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { success: false, error: 'Unauthorized' };
+  }
+
+  const accessError = await getPlayerAccessError(supabase, user.id, playerId);
+  if (accessError) {
+    return { success: false, error: accessError };
+  }
+
+  try {
+    // Fetch player's rounds (last 30)
+    const { data: roundsData, error: roundsError } = await supabase
+      .from('golf_rounds')
+      .select('id, score_to_par, round_date, total_putts, total_gir, total_fairways_hit, holes_played')
+      .eq('player_id', playerId)
+      .eq('status', 'completed')
+      .not('score_to_par', 'is', null)
+      .order('round_date', { ascending: true })
+      .limit(30);
+
+    if (roundsError) {
+      return { success: false, error: 'Failed to fetch round data' };
+    }
+
+    if (!roundsData || roundsData.length < 3) {
+      return { success: false, error: 'Need at least 3 completed rounds for trend analysis' };
+    }
+
+    // Extract score_to_par values (chronological, oldest first)
+    const scoreValues = roundsData.map((r) => r.score_to_par ?? 0);
+
+    // Build baseline from rounds
+    const baselineRounds = roundsData.map((r) => ({
+      metrics: {
+        scoreToPar: r.score_to_par ?? 0,
+        puttsPerRound: r.total_putts ?? 0,
+        girPct: r.holes_played && r.total_gir != null
+          ? (r.total_gir / r.holes_played) * 100
+          : 0,
+        fairwayPct: r.holes_played && r.total_fairways_hit != null
+          ? (r.total_fairways_hit / r.holes_played) * 100
+          : 0,
+      },
+    }));
+
+    const baseline = buildPlayerBaseline(baselineRounds, playerId);
+
+    // Run multi-window trend analysis on score_to_par
+    const trends = analyzeMultiWindowTrends(scoreValues, 'scoreToPar');
+
+    // Detect streaks against baseline mean
+    const baselineMean = baseline.metrics['scoreToPar']?.mean ?? 0;
+    const streaks = detectStreaks(scoreValues, baselineMean);
+
+    // Check for regression candidates
+    const baselineMetric = baseline.metrics['scoreToPar'];
+    const latestScore = scoreValues[scoreValues.length - 1];
+    const regressionPrediction = baselineMetric && latestScore !== undefined
+      ? detectRegressionCandidate(
+          latestScore,
+          baselineMetric.mean,
+          baselineMetric.stdDev,
+          'scoreToPar',
+          0.5,
+          scoreValues.length,
+        )
+      : null;
+
+    // Detect anomalies + volatility
+    const anomalies = baselineMetric
+      ? detectAnomalies(scoreValues, baselineMetric, 'scoreToPar')
+      : [];
+
+    const volatility = calculateVolatility(scoreValues);
+
+    return {
+      success: true,
+      data: {
+        trends,
+        streaks,
+        regressionPrediction,
+        anomalies,
+        volatility,
+      },
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error in getPlayerTrendAnalysis';
+    return { success: false, error: message };
+  }
+}
+
+// ============================================================================
+// 3. getPlayerShotContext
+// ============================================================================
+
+/**
+ * Returns shot-level SG analysis, yardage curves, dead zones,
+ * sequence/resilience analysis, and scramble rate for a player.
+ */
+export async function getPlayerShotContext(
+  playerId: string,
+  periodDays: number = 90,
+): Promise<ActionResult<ShotContextData>> {
+  const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { success: false, error: 'Unauthorized' };
+  }
+
+  const accessError = await getPlayerAccessError(supabase, user.id, playerId);
+  if (accessError) {
+    return { success: false, error: accessError };
+  }
+
+  try {
+    // Calculate date range
+    const sinceDate = new Date();
+    sinceDate.setDate(sinceDate.getDate() - periodDays);
+    const sinceDateStr = sinceDate.toISOString().split('T')[0];
+
+    // Fetch rounds in the period
+    const { data: roundsData, error: roundsError } = await supabase
+      .from('golf_rounds')
+      .select('id')
+      .eq('player_id', playerId)
+      .eq('status', 'completed')
+      .gte('round_date', sinceDateStr);
+
+    if (roundsError) {
+      return { success: false, error: 'Failed to fetch rounds' };
+    }
+
+    if (!roundsData || roundsData.length === 0) {
+      return { success: false, error: 'No completed rounds found in the specified period' };
+    }
+
+    const roundIds = roundsData.map((r) => r.id);
+
+    // Fetch shots for these rounds
+    const { data: shotsData, error: shotsError } = await supabase
+      .from('golf_shots')
+      .select('id, round_id, hole_number, shot_number, lie_before, lie_after, distance_to_hole_before, distance_to_hole_after, distance_unit_before, distance_unit_after, club_type, result')
+      .in('round_id', roundIds)
+      .order('round_id')
+      .order('hole_number')
+      .order('shot_number');
+
+    if (shotsError) {
+      return { success: false, error: 'Failed to fetch shot data' };
+    }
+
+    if (!shotsData || shotsData.length === 0) {
+      return { success: false, error: 'No shot data available for analysis' };
+    }
+
+    // Map DB shots to ShotData interface
+    const shots: ShotData[] = shotsData
+      .filter((s) => s.lie_before && s.distance_to_hole_before != null)
+      .map((s) => {
+        // Convert feet to yards if needed
+        const distBefore = s.distance_unit_before === 'feet'
+          ? (s.distance_to_hole_before ?? 0) / 3
+          : (s.distance_to_hole_before ?? 0);
+        const distAfter = s.distance_unit_after === 'feet'
+          ? (s.distance_to_hole_after ?? 0) / 3
+          : (s.distance_to_hole_after ?? 0);
+
+        return {
+          id: s.id,
+          roundId: s.round_id,
+          holeNumber: s.hole_number,
+          shotNumber: s.shot_number,
+          lieBefore: s.lie_before ?? 'fairway',
+          distanceBefore: distBefore,
+          lieAfter: s.lie_after ?? 'fairway',
+          distanceAfter: distAfter,
+          club: s.club_type ?? undefined,
+          result: s.result ?? undefined,
+        };
+      });
+
+    if (shots.length === 0) {
+      return { success: false, error: 'Insufficient shot data with distance information' };
+    }
+
+    // Build default SG baseline
+    const sgBaseline = buildDefaultBaseline();
+
+    // Analyze by context + rank weaknesses
+    const contextAnalyses = analyzeShotsByContext(shots, sgBaseline);
+    const weaknesses = rankWeaknessContexts(contextAnalyses, 5); // Lower min for broader view
+
+    // Build yardage curve + find dead zones
+    const yardageCurve = buildYardageCurve(shots, sgBaseline, 25, playerId);
+
+    // Build a synthetic baseline yardage curve for dead zone comparison.
+    // The default SG baseline represents average performance (SG = 0),
+    // so we create a curve where every bucket has avgSG = 0.
+    const syntheticBaselineCurve: YardageCurve = {
+      playerId: 'baseline',
+      buckets: yardageCurve.buckets.map((b) => ({
+        ...b,
+        avgSG: 0, // Baseline SG is 0 by definition
+      })),
+    };
+    const deadZones = findDeadZones(yardageCurve, syntheticBaselineCurve, 0.3, 5);
+
+    // Calculate SG values for sequence analysis
+    const sgValues = shots.map((shot) =>
+      calculateShotSG(
+        shot.distanceBefore,
+        shot.lieBefore,
+        shot.distanceAfter,
+        shot.lieAfter,
+        sgBaseline,
+      ),
+    );
+
+    // Analyze shot sequences for resilience
+    const resilience = analyzeSequenceEffects(shots, sgValues);
+
+    // Fetch holes for scramble rate
+    const { data: holesData } = await supabase
+      .from('golf_holes')
+      .select('hole_number, par, score, gir, putts, round_id')
+      .in('round_id', roundIds);
+
+    const scrambleHoles = (holesData ?? [])
+      .filter((h): h is typeof h & { par: number; score: number; gir: boolean } =>
+        h.par != null && h.score != null && h.gir != null,
+      )
+      .map((h) => ({
+        gir: h.gir,
+        par: h.par,
+        score: h.score,
+      }));
+
+    const scrambleRate = calculateScrambleRate(scrambleHoles);
+
+    return {
+      success: true,
+      data: {
+        weaknesses,
+        yardageCurve,
+        deadZones,
+        resilience,
+        scrambleRate,
+      },
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error in getPlayerShotContext';
+    return { success: false, error: message };
+  }
+}
+
+// ============================================================================
+// 4. getTeamSimulation
+// ============================================================================
+
+/**
+ * Returns Monte Carlo tournament simulation and lineup optimization
+ * for a team. Coach-only access.
+ */
+export async function getTeamSimulation(
+  teamId: string,
+  rounds: number = 4,
+): Promise<ActionResult<TeamSimulationData>> {
+  const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { success: false, error: 'Unauthorized' };
+  }
+
+  const coachAccess = await verifyCoachAccess(supabase, user.id, teamId);
+  if (!coachAccess.authorized) {
+    return { success: false, error: coachAccess.error ?? 'Unauthorized' };
+  }
+
+  try {
+    // Fetch active team members
+    const { data: membersData, error: membersError } = await supabase
+      .from('golf_team_members')
+      .select('player_id, golf_players(id, first_name, last_name)')
+      .eq('team_id', teamId)
+      .eq('status', 'active');
+
+    if (membersError) {
+      return { success: false, error: 'Failed to fetch team members' };
+    }
+
+    if (!membersData || membersData.length < 2) {
+      return { success: false, error: 'Need at least 2 active players for simulation' };
+    }
+
+    // Build player profiles from recent scoring data
+    const playerProfiles: PlayerProfile[] = [];
+
+    for (const member of membersData) {
+      const playerInfo = member.golf_players as { id: string; first_name: string | null; last_name: string | null } | null;
+      if (!playerInfo) continue;
+
+      // Fetch recent rounds for scoring stats
+      const { data: playerRounds } = await supabase
+        .from('golf_rounds')
+        .select('score_to_par')
+        .eq('player_id', member.player_id)
+        .eq('status', 'completed')
+        .not('score_to_par', 'is', null)
+        .order('round_date', { ascending: false })
+        .limit(20);
+
+      const scores = (playerRounds ?? []).map((r) => r.score_to_par ?? 0);
+
+      if (scores.length < 3) continue; // Need enough data
+
+      const mean = scores.reduce((s, v) => s + v, 0) / scores.length;
+      const variance = scores.reduce((s, v) => s + (v - mean) ** 2, 0) / scores.length;
+      const stdDev = Math.sqrt(variance);
+
+      // Recent form: compare last 5 to overall mean
+      const recentScores = scores.slice(0, Math.min(5, scores.length));
+      const recentMean = recentScores.reduce((s, v) => s + v, 0) / recentScores.length;
+      const recentForm = Math.max(-2, Math.min(2, recentMean - mean));
+
+      playerProfiles.push({
+        playerId: member.player_id,
+        name: `${playerInfo.first_name ?? ''} ${playerInfo.last_name ?? ''}`.trim(),
+        scoringMean: mean,
+        scoringStdDev: Math.max(stdDev, 0.5), // Floor stdDev to avoid degenerate cases
+        recentForm,
+      });
+    }
+
+    if (playerProfiles.length < 2) {
+      return { success: false, error: 'Not enough players with sufficient round data for simulation' };
+    }
+
+    // Run tournament simulation
+    const simulation = simulateTournament(playerProfiles, rounds);
+
+    // Run lineup optimization (default to top 5 or all if fewer)
+    const lineupSize = Math.min(5, playerProfiles.length);
+    const lineupOptimization = optimizeLineup(playerProfiles, lineupSize);
+
+    return {
+      success: true,
+      data: {
+        simulation,
+        lineupOptimization,
+      },
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error in getTeamSimulation';
+    return { success: false, error: message };
+  }
+}
+
+// ============================================================================
+// 5. getPlayerWhatIf
+// ============================================================================
+
+/**
+ * Returns a what-if scenario projection for a player improving a specific metric.
+ */
+export async function getPlayerWhatIf(
+  playerId: string,
+  improvement: { metric: string; amount: number },
+): Promise<ActionResult<WhatIfData>> {
+  const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { success: false, error: 'Unauthorized' };
+  }
+
+  const accessError = await getPlayerAccessError(supabase, user.id, playerId);
+  if (accessError) {
+    return { success: false, error: accessError };
+  }
+
+  try {
+    // Fetch player info
+    const { data: playerInfo } = await supabase
+      .from('golf_players')
+      .select('id, first_name, last_name')
+      .eq('id', playerId)
+      .maybeSingle();
+
+    if (!playerInfo) {
+      return { success: false, error: 'Player not found' };
+    }
+
+    // Fetch player scoring data
+    const { data: roundsData, error: roundsError } = await supabase
+      .from('golf_rounds')
+      .select('score_to_par')
+      .eq('player_id', playerId)
+      .eq('status', 'completed')
+      .not('score_to_par', 'is', null)
+      .order('round_date', { ascending: false })
+      .limit(20);
+
+    if (roundsError) {
+      return { success: false, error: 'Failed to fetch scoring data' };
+    }
+
+    const scores = (roundsData ?? []).map((r) => r.score_to_par ?? 0);
+
+    if (scores.length < 3) {
+      return { success: false, error: 'Need at least 3 completed rounds for scenario analysis' };
+    }
+
+    const mean = scores.reduce((s, v) => s + v, 0) / scores.length;
+    const variance = scores.reduce((s, v) => s + (v - mean) ** 2, 0) / scores.length;
+    const stdDev = Math.sqrt(variance);
+
+    // Recent form
+    const recentScores = scores.slice(0, Math.min(5, scores.length));
+    const recentMean = recentScores.reduce((s, v) => s + v, 0) / recentScores.length;
+    const recentForm = Math.max(-2, Math.min(2, recentMean - mean));
+
+    const playerProfile: PlayerProfile = {
+      playerId,
+      name: `${playerInfo.first_name ?? ''} ${playerInfo.last_name ?? ''}`.trim(),
+      scoringMean: mean,
+      scoringStdDev: Math.max(stdDev, 0.5),
+      recentForm,
+    };
+
+    // Optionally fetch team for rank change projection
+    let teamPlayers: PlayerProfile[] | undefined;
+
+    const { data: membership } = await supabase
+      .from('golf_team_members')
+      .select('team_id')
+      .eq('player_id', playerId)
+      .eq('status', 'active')
+      .maybeSingle();
+
+    if (membership?.team_id) {
+      const { data: teamMembers } = await supabase
+        .from('golf_team_members')
+        .select('player_id, golf_players(id, first_name, last_name)')
+        .eq('team_id', membership.team_id)
+        .eq('status', 'active');
+
+      if (teamMembers && teamMembers.length > 1) {
+        const profiles: PlayerProfile[] = [];
+
+        for (const m of teamMembers) {
+          const info = m.golf_players as { id: string; first_name: string | null; last_name: string | null } | null;
+          if (!info) continue;
+
+          if (m.player_id === playerId) {
+            profiles.push(playerProfile);
+            continue;
+          }
+
+          const { data: mRounds } = await supabase
+            .from('golf_rounds')
+            .select('score_to_par')
+            .eq('player_id', m.player_id)
+            .eq('status', 'completed')
+            .not('score_to_par', 'is', null)
+            .order('round_date', { ascending: false })
+            .limit(20);
+
+          const mScores = (mRounds ?? []).map((r) => r.score_to_par ?? 0);
+          if (mScores.length < 3) continue;
+
+          const mMean = mScores.reduce((s, v) => s + v, 0) / mScores.length;
+          const mVariance = mScores.reduce((s, v) => s + (v - mMean) ** 2, 0) / mScores.length;
+          const mStdDev = Math.sqrt(mVariance);
+          const mRecent = mScores.slice(0, Math.min(5, mScores.length));
+          const mRecentMean = mRecent.reduce((s, v) => s + v, 0) / mRecent.length;
+
+          profiles.push({
+            playerId: m.player_id,
+            name: `${info.first_name ?? ''} ${info.last_name ?? ''}`.trim(),
+            scoringMean: mMean,
+            scoringStdDev: Math.max(mStdDev, 0.5),
+            recentForm: Math.max(-2, Math.min(2, mRecentMean - mMean)),
+          });
+        }
+
+        if (profiles.length > 1) {
+          teamPlayers = profiles;
+        }
+      }
+    }
+
+    // Run what-if simulation
+    const scenario = simulateWhatIf(playerProfile, improvement, teamPlayers);
+
+    return {
+      success: true,
+      data: {
+        scenario,
+      },
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error in getPlayerWhatIf';
+    return { success: false, error: message };
+  }
+}

@@ -18,7 +18,8 @@ ALTER TABLE golf_player_baselines ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Coaches and players can view baselines" ON golf_player_baselines FOR SELECT
   USING (auth.uid() = player_id OR EXISTS (
     SELECT 1 FROM golf_team_members gtm
-    JOIN golf_coaches gc ON gc.team_id = gtm.team_id
+    JOIN golf_teams gt ON gt.id = gtm.team_id
+    JOIN golf_coaches gc ON gc.organization_id = gt.organization_id
     WHERE gtm.player_id = golf_player_baselines.player_id AND gc.user_id = auth.uid()
   ));
 
@@ -38,7 +39,8 @@ ALTER TABLE golf_percentile_cache ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Coaches and players can view percentiles" ON golf_percentile_cache FOR SELECT
   USING (auth.uid() = player_id OR EXISTS (
     SELECT 1 FROM golf_team_members gtm
-    JOIN golf_coaches gc ON gc.team_id = gtm.team_id
+    JOIN golf_teams gt ON gt.id = gtm.team_id
+    JOIN golf_coaches gc ON gc.organization_id = gt.organization_id
     WHERE gtm.player_id = golf_percentile_cache.player_id AND gc.user_id = auth.uid()
   ));
 

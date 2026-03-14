@@ -232,7 +232,7 @@ export function AlertCard({
             {!compact && (
               <div className="flex items-center gap-2 mt-2">
                 <a
-                  href={`/golf/dashboard/roster/${alert.playerId}`}
+                  href={`/golf/dashboard/players/${alert.playerId}`}
                   className={cn(
                     'flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg',
                     'text-warm-600 hover:text-warm-800 hover:bg-white/50 active:bg-white/70',

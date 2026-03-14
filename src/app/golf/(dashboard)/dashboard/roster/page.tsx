@@ -469,6 +469,10 @@ export default async function GolfRosterPage() {
 
                 {/* Action Buttons - min 44px touch targets */}
                 <div className="px-5 md:px-6 pb-5 md:pb-6 flex items-center gap-3">
+                  <Link href={`/golf/dashboard/players/${player.id}`} className="flex-1 w-full px-4 py-3 min-h-[48px] bg-primary-600 text-white text-sm font-medium rounded-xl hover:bg-primary-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                    <IconUsers size={16} />
+                    View Player
+                  </Link>
                   <Link href={`/golf/dashboard/stats?player=${player.id}`} className="flex-1 w-full px-4 py-3 min-h-[48px] bg-warm-900 text-white text-sm font-medium rounded-xl hover:bg-warm-800 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
                     <IconChartBar size={16} />
                     View Stats

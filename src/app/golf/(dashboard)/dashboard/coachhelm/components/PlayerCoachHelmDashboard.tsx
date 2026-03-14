@@ -14,14 +14,16 @@ import {
   PerformancePrediction,
   AIInsightsPanel,
   FocusAreasGrid,
-  RecentRoundReviews,
 } from '@/components/golf/coachhelm/player';
+import { CompositeRatingCard } from '@/components/golf/coachhelm/player/CompositeRatingCard';
+import { TrendDashboard } from '@/components/golf/coachhelm/player/TrendDashboard';
+import { ShotAnalysisCard } from '@/components/golf/coachhelm/player/ShotAnalysisCard';
+import { WhatIfPanel } from '@/components/golf/coachhelm/player/WhatIfPanel';
 import { ShotAnalyticsPanel } from '@/components/golf/coachhelm/analytics';
 import { GolfTabBar } from '@/components/golf/GolfTabBar';
 import type { PlayerCoachHelmDashboardData } from '@/app/golf/actions/insights';
 import type { PlayerShotAnalytics } from '@/app/golf/actions/shot-analytics';
 import { CoachHelmHeader } from './CoachHelmHeader';
-import { PlayerStateCard } from './PlayerStateCard';
 
 async function loadCoachHelmActions() {
   const [{ getPlayerCoachHelmDashboard }, { getPlayerShotAnalytics }] = await Promise.all([
@@ -36,6 +38,10 @@ interface PlayerCoachHelmDashboardProps {
   data: PlayerCoachHelmDashboardData;
   playerId: string;
   initialShotAnalytics?: PlayerShotAnalytics | null;
+  /** V3 optional data — degrades gracefully if not available */
+  profileData?: Record<string, unknown> | null;
+  trendData?: Record<string, unknown> | null;
+  shotData?: Record<string, unknown> | null;
 }
 
 /**
@@ -83,15 +89,23 @@ export function PlayerCoachHelmDashboard({
   data: initialData,
   playerId,
   initialShotAnalytics,
+  profileData,
+  trendData,
+  shotData,
 }: PlayerCoachHelmDashboardProps) {
   const router = useRouter();
   const [dashboardData, setDashboardData] = useState<PlayerCoachHelmDashboardData>(initialData);
   const [shotAnalytics, setShotAnalytics] = useState<PlayerShotAnalytics | null>(initialShotAnalytics ?? null);
   const [refreshing, setRefreshing] = useState(false);
   const [activeSection, setActiveSection] = useState<'insights' | 'analytics'>('insights');
+  const [activeBottomTab, setActiveBottomTab] = useState<'shot-analysis' | 'what-if'>('shot-analysis');
   const sectionTabs = [
     { id: 'insights' as const, label: 'AI Insights', icon: <IconSparkles size={16} /> },
     { id: 'analytics' as const, label: 'Shot Analytics', icon: <IconChartRadar size={16} /> },
+  ];
+  const bottomTabs = [
+    { id: 'shot-analysis' as const, label: 'Shot Analysis' },
+    { id: 'what-if' as const, label: 'What If' },
   ];
 
   /**
@@ -186,34 +200,42 @@ export function PlayerCoachHelmDashboard({
                   exit={{ opacity: 0, x: 20 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                    {/* Left Column - State, Prediction & Focus Areas */}
-                    <div className="lg:col-span-5 space-y-6">
-                      {/* Player State Card - Hero card showing current form */}
-                      <m.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4 }}
-                      >
-                        <PlayerStateCard
-                          playerState={dashboardData.playerState}
-                          playerName={dashboardData.playerName}
-                        />
-                      </m.div>
+                  {/* Top Row — Composite Rating + Trend Dashboard (full width, side by side) */}
+                  <m.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4 }}
+                    className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6"
+                  >
+                    <CompositeRatingCard
+                      profileData={profileData ?? undefined}
+                      playerState={dashboardData.playerState}
+                      playerName={dashboardData.playerName}
+                    />
+                    <TrendDashboard
+                      trendData={trendData ?? undefined}
+                      playerState={dashboardData.playerState}
+                    />
+                  </m.div>
 
-                      {/* Performance Prediction */}
+                  {/* Main Content — 2 columns */}
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
+                    {/* Left Column — AI Insights (with evidence metrics visible) */}
+                    <div className="lg:col-span-7 space-y-6">
                       <m.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.4, delay: 0.05 }}
                       >
-                        <PerformancePrediction
-                          prediction={dashboardData.prediction}
-                          playerState={dashboardData.playerState}
+                        <AIInsightsPanel
+                          insights={dashboardData.insights}
+                          maxDisplay={5}
                         />
                       </m.div>
+                    </div>
 
-                      {/* Focus Areas */}
+                    {/* Right Column — Focus Areas, Prediction */}
+                    <div className="lg:col-span-5 space-y-6">
                       <m.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -221,32 +243,66 @@ export function PlayerCoachHelmDashboard({
                       >
                         <FocusAreasGrid focusAreas={dashboardData.focusAreas} />
                       </m.div>
-                    </div>
 
-                    {/* Right Column - Insights & Recent Rounds */}
-                    <div className="lg:col-span-7 space-y-6">
-                      {/* AI Insights */}
                       <m.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.4, delay: 0.15 }}
                       >
-                        <AIInsightsPanel
-                          insights={dashboardData.insights}
-                          maxDisplay={5}
+                        <PerformancePrediction
+                          prediction={dashboardData.prediction}
+                          playerState={dashboardData.playerState}
                         />
-                      </m.div>
-
-                      {/* Recent Round Reviews */}
-                      <m.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4, delay: 0.2 }}
-                      >
-                        <RecentRoundReviews rounds={dashboardData.recentRounds} />
                       </m.div>
                     </div>
                   </div>
+
+                  {/* Bottom Row — Tabbed: Shot Analysis | What If */}
+                  <m.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: 0.2 }}
+                  >
+                    <GolfTabBar
+                      tabs={bottomTabs}
+                      value={activeBottomTab}
+                      onChange={setActiveBottomTab}
+                      ariaLabel="Analysis sections"
+                      compact
+                    />
+                    <div className="mt-4">
+                      <AnimatePresence mode="popLayout">
+                        {activeBottomTab === 'shot-analysis' && (
+                          <m.div
+                            key="shot-analysis"
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 20 }}
+                            transition={{ duration: 0.3 }}
+                          >
+                            <ShotAnalysisCard
+                              shotData={shotData ?? undefined}
+                              playerId={playerId}
+                            />
+                          </m.div>
+                        )}
+                        {activeBottomTab === 'what-if' && (
+                          <m.div
+                            key="what-if"
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            transition={{ duration: 0.3 }}
+                          >
+                            <WhatIfPanel
+                              playerId={playerId}
+                              profileData={profileData ?? undefined}
+                            />
+                          </m.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </m.div>
                 </m.div>
               )}
 

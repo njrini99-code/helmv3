@@ -154,7 +154,7 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
           <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-warm-200 py-1 z-20">
             <button
               onClick={() => {
-                router.push(`/golf/dashboard/roster/${playerId}`);
+                router.push(`/golf/dashboard/players/${playerId}`);
                 setShowMenu(false);
               }}
               className="w-full px-4 py-2 text-left text-sm hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2 text-warm-700"

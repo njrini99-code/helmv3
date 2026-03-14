@@ -123,10 +123,20 @@ function InsightCard({
           </p>
 
           {/* Meta info */}
-          <div className="flex items-center gap-2 mt-2">
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
             <span className="text-xs text-warm-400 tabular-nums">
               {confidencePercent}% confidence
             </span>
+            {insight.strokeImpact && (
+              <span className={cn(
+                'text-xs font-semibold px-2 py-0.5 rounded-full',
+                Math.abs(insight.strokeImpact) >= 1.5 ? 'bg-red-100 text-red-700' :
+                Math.abs(insight.strokeImpact) >= 0.5 ? 'bg-amber-100 text-amber-700' :
+                'bg-warm-100 text-warm-600'
+              )}>
+                {insight.strokeImpact > 0 ? '+' : ''}{insight.strokeImpact.toFixed(1)} strokes
+              </span>
+            )}
             {insight.reasoning && (
               <span className="text-xs px-1.5 py-0.5 bg-white/70 rounded-full text-warm-500">
                 AI Reasoning
@@ -160,6 +170,18 @@ function InsightCard({
               <p className="text-sm text-warm-700 leading-relaxed">
                 {insight.body}
               </p>
+
+              {/* Evidence metrics */}
+              {insight.evidenceMetrics && insight.evidenceMetrics.length > 0 && (
+                <div className="grid grid-cols-2 gap-2 mt-3">
+                  {insight.evidenceMetrics.map((metric, i) => (
+                    <div key={i} className="flex items-center justify-between px-3 py-2 rounded-lg bg-warm-50/50">
+                      <span className="text-xs text-warm-500">{metric.label}</span>
+                      <span className="text-xs font-bold text-warm-900 tabular-nums">{metric.value}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {/* Reasoning chain */}
               {insight.reasoning?.reasoningChain && insight.reasoning.reasoningChain.length > 0 && (

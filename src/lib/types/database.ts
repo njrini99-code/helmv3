@@ -5798,6 +5798,33 @@ export type Database = {
           },
         ]
       }
+      golf_coach_behavior_log: {
+        Row: {
+          action_type: string
+          coach_id: string
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          target_id: string | null
+        }
+        Insert: {
+          action_type: string
+          coach_id: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          target_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          coach_id?: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          target_id?: string | null
+        }
+        Relationships: []
+      }
       golf_coach_blocked_time: {
         Row: {
           coach_id: string
@@ -6828,6 +6855,48 @@ export type Database = {
           },
         ]
       }
+      golf_insight_feedback_scores: {
+        Row: {
+          accuracy_rate: number | null
+          helpfulness_rate: number | null
+          id: string
+          insight_type: string
+          team_id: string | null
+          threshold_adjustment: number | null
+          total_accurate: number | null
+          total_acted: number | null
+          total_dismissed: number | null
+          total_shown: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          accuracy_rate?: number | null
+          helpfulness_rate?: number | null
+          id?: string
+          insight_type: string
+          team_id?: string | null
+          threshold_adjustment?: number | null
+          total_accurate?: number | null
+          total_acted?: number | null
+          total_dismissed?: number | null
+          total_shown?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          accuracy_rate?: number | null
+          helpfulness_rate?: number | null
+          id?: string
+          insight_type?: string
+          team_id?: string | null
+          threshold_adjustment?: number | null
+          total_accurate?: number | null
+          total_acted?: number | null
+          total_dismissed?: number | null
+          total_shown?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       golf_insight_generation_log: {
         Row: {
           created_at: string | null
@@ -7133,6 +7202,44 @@ export type Database = {
           },
         ]
       }
+      golf_percentile_cache: {
+        Row: {
+          calculated_at: string | null
+          division_percentile: number | null
+          id: string
+          metric_name: string
+          platform_percentile: number | null
+          player_id: string
+          team_percentile: number | null
+        }
+        Insert: {
+          calculated_at?: string | null
+          division_percentile?: number | null
+          id?: string
+          metric_name: string
+          platform_percentile?: number | null
+          player_id: string
+          team_percentile?: number | null
+        }
+        Update: {
+          calculated_at?: string | null
+          division_percentile?: number | null
+          id?: string
+          metric_name?: string
+          platform_percentile?: number | null
+          player_id?: string
+          team_percentile?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_percentile_cache_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_platform_metrics_daily: {
         Row: {
           active_teams: number | null
@@ -7252,6 +7359,50 @@ export type Database = {
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "golf_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_player_baselines: {
+        Row: {
+          decay_factor: number | null
+          ewma_value: number | null
+          id: string
+          last_updated_at: string | null
+          metric_name: string
+          player_id: string
+          rolling_mean: number | null
+          rolling_stddev: number | null
+          sample_size: number | null
+        }
+        Insert: {
+          decay_factor?: number | null
+          ewma_value?: number | null
+          id?: string
+          last_updated_at?: string | null
+          metric_name: string
+          player_id: string
+          rolling_mean?: number | null
+          rolling_stddev?: number | null
+          sample_size?: number | null
+        }
+        Update: {
+          decay_factor?: number | null
+          ewma_value?: number | null
+          id?: string
+          last_updated_at?: string | null
+          metric_name?: string
+          player_id?: string
+          rolling_mean?: number | null
+          rolling_stddev?: number | null
+          sample_size?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_player_baselines_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
             referencedColumns: ["id"]
           },
         ]
@@ -7920,6 +8071,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      golf_prediction_validations: {
+        Row: {
+          actual_value: number | null
+          direction: string | null
+          error: number | null
+          error_pct: number | null
+          id: string
+          player_id: string
+          predicted_value: number | null
+          prediction_id: string | null
+          validated_at: string | null
+          within_interval: boolean | null
+        }
+        Insert: {
+          actual_value?: number | null
+          direction?: string | null
+          error?: number | null
+          error_pct?: number | null
+          id?: string
+          player_id: string
+          predicted_value?: number | null
+          prediction_id?: string | null
+          validated_at?: string | null
+          within_interval?: boolean | null
+        }
+        Update: {
+          actual_value?: number | null
+          direction?: string | null
+          error?: number | null
+          error_pct?: number | null
+          id?: string
+          player_id?: string
+          predicted_value?: number | null
+          prediction_id?: string | null
+          validated_at?: string | null
+          within_interval?: boolean | null
+        }
+        Relationships: []
       }
       golf_predictions: {
         Row: {

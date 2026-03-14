@@ -131,6 +131,22 @@ export default async function PlayerCoachHelmPage() {
     getPlayerShotAnalytics(player.id, 30),
   ]);
 
+  // Fetch additional V3 data (optional — new components)
+  let profileData = null;
+  let trendData = null;
+  let shotData = null;
+  try {
+    const { getPlayerProfile, getPlayerTrendAnalysis, getPlayerShotContext } = await import('@/app/golf/actions/coachhelm-data');
+    const [profileResult, trendResult, shotResult] = await Promise.all([
+      getPlayerProfile(player.id),
+      getPlayerTrendAnalysis(player.id),
+      getPlayerShotContext(player.id),
+    ]);
+    profileData = profileResult.success ? profileResult.data : null;
+    trendData = trendResult.success ? trendResult.data : null;
+    shotData = shotResult.success ? shotResult.data : null;
+  } catch { /* V3 actions not yet available — degrade gracefully */ }
+
   // Handle CoachHelm disabled or other errors
   if (!dashboardResult.success) {
     const error = dashboardResult.error || 'Failed to load AI dashboard';
@@ -155,6 +171,9 @@ export default async function PlayerCoachHelmPage() {
           data={dashboardResult.data}
           playerId={player.id}
           initialShotAnalytics={analyticsResult.success ? analyticsResult.data : null}
+          profileData={profileData}
+          trendData={trendData}
+          shotData={shotData}
         />
       </AnimatedItem>
     </AnimatedPage>
