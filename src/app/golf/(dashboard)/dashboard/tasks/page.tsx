@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 import { m, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
-import { IconPlus, IconClipboardList, IconChevronRight, IconChevronDown, IconMenu } from '@/components/icons';
-import { useSidebar } from '@/contexts/sidebar-context';
+import { IconPlus, IconClipboardList, IconChevronRight, IconChevronDown } from '@/components/icons';
+import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
 import { CreateTaskModal } from '@/components/golf/tasks/CreateTaskModal';
 import { TasksList } from '@/components/golf/tasks/TasksList';
 import { TaskTemplateList } from '@/components/golf/tasks/TaskTemplateList';
@@ -45,7 +45,6 @@ interface Player {
 }
 
 export default function GolfTasksPage() {
-  const { toggleMobile } = useSidebar();
   const golfUser = useGolfUser();
   const [initialLoading, setInitialLoading] = useState(true);
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -160,19 +159,8 @@ export default function GolfTasksPage() {
         >
           <div>
             <div className="flex items-center gap-3">
-              <button
-                onClick={toggleMobile}
-                className={cn(
-                  'lg:hidden p-2.5 -ml-2 rounded-xl',
-                  'text-warm-500 hover:text-warm-700 hover:bg-warm-100/80',
-                  'transition-colors duration-150 active:scale-95',
-                  'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
-                )}
-                aria-label="Open navigation menu"
-              >
-                <IconMenu size={22} />
-              </button>
-              <h1 className="text-2xl font-semibold text-warm-900">Tasks</h1>
+              <MobileMenuButton />
+              <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">Tasks</h1>
               {/* Real-time indicator */}
               <span className="inline-flex items-center gap-1.5 text-xs font-medium text-primary-600 bg-primary-50 px-2 py-1 rounded-full">
                 <span className="relative flex h-1.5 w-1.5">
@@ -297,7 +285,7 @@ export default function GolfTasksPage() {
                 className="sticky top-6"
               >
                 {/* Templates Section */}
-                <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/20 shadow-lg overflow-clip">
+                <div className="glass-standard rounded-2xl overflow-clip">
                   <button
                     onClick={() => setShowTemplates(!showTemplates)}
                     className="w-full flex items-center justify-between p-4 hover:bg-warm-50/50 transition-colors"
@@ -338,7 +326,7 @@ export default function GolfTasksPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
-                  className="mt-4 bg-white/70 backdrop-blur-xl rounded-2xl border border-white/20 shadow-lg p-4"
+                  className="mt-4 glass-standard rounded-2xl p-4"
                 >
                   <h3 className="text-sm font-semibold text-warm-400 uppercase tracking-wider mb-3">
                     Quick Stats

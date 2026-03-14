@@ -561,7 +561,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               </div>
             ) : (
               <div>
-                <h1 className="text-2xl font-semibold text-warm-900">Documents</h1>
+                <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">Documents</h1>
                 <p className="text-warm-500 text-sm mt-0.5">
                   {documents.length} file{documents.length !== 1 ? 's' : ''}{folders.length > 0 ? ` across ${folders.length} folder${folders.length !== 1 ? 's' : ''}` : ''}
                 </p>

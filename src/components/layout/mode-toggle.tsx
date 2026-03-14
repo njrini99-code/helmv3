@@ -11,14 +11,14 @@ interface ModeToggleProps {
 
 export function ModeToggle({ currentMode, onModeChange }: ModeToggleProps) {
   return (
-    <div className="flex items-center gap-2 p-1 bg-slate-100 rounded-lg">
+    <div className="flex items-center gap-2 p-1 bg-warm-100 rounded-lg">
       <button
         onClick={() => onModeChange('recruiting')}
         className={cn(
           'flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-all',
           currentMode === 'recruiting'
             ? 'bg-white text-primary-700 shadow-sm'
-            : 'text-slate-600 hover:text-slate-900'
+            : 'text-warm-600 hover:text-warm-900'
         )}
       >
         Recruiting
@@ -29,7 +29,7 @@ export function ModeToggle({ currentMode, onModeChange }: ModeToggleProps) {
           'flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-all',
           currentMode === 'team'
             ? 'bg-white text-primary-700 shadow-sm'
-            : 'text-slate-600 hover:text-slate-900'
+            : 'text-warm-600 hover:text-warm-900'
         )}
       >
         Team

@@ -56,7 +56,7 @@ export default function ResetPasswordPage() {
 
   return (
     <LazyMotion features={domAnimation}>
-    <div className="min-h-dvh flex items-center justify-center relative p-4 bg-auth-golf">
+    <div className="min-h-dvh flex items-center justify-center relative p-4 sm:p-6 bg-auth-golf">
       {/* Animated floating orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Large primary orb - top right */}
@@ -75,7 +75,7 @@ export default function ResetPasswordPage() {
         />
         {/* Medium orb - bottom left */}
         <m.div
-          className="auth-orb auth-orb-2 w-[250px] h-[250px] sm:w-[400px] sm:h-[400px] -bottom-16 -left-16 sm:-bottom-24 sm:-left-24 bg-gradient-to-tr from-teal-400/30 to-primary-400/25 motion-reduce:animate-none"
+          className="auth-orb auth-orb-2 w-[250px] h-[250px] sm:w-[400px] sm:h-[400px] -bottom-16 -left-16 sm:-bottom-24 sm:-left-24 bg-gradient-to-tr from-primary-400/30 to-primary-400/25 motion-reduce:animate-none"
           animate={{
             x: [0, -25, 0],
             y: [0, 25, 0],

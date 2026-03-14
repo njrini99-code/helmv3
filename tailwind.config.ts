@@ -115,21 +115,6 @@ const config: Config = {
         },
         'field': 'rgb(var(--field) / <alpha-value>)',
         'fairway': 'rgb(var(--fairway) / <alpha-value>)',
-        // Onboarding-specific colors (consider migrating to primary/warm)
-        onboarding: {
-          'kelly-green': '#169B45',      // Similar to primary-600
-          'kelly-green-hover': '#128A3D', // Similar to primary-700
-          'kelly-green-muted': 'rgba(22, 155, 69, 0.1)',
-          'cream': '#FFFDF7',
-          'warm-white': '#FAFAF8',
-          'black': '#000000',
-          'rich-black': '#0A0A0A',
-          'text-primary': '#1A1A1A',     // Similar to warm-900
-          'text-secondary': '#6B6B6B',   // Similar to warm-500
-          'text-muted': '#9B9B9B',       // Similar to warm-400
-          'border-light': 'rgba(0, 0, 0, 0.08)',
-          'border-medium': 'rgba(0, 0, 0, 0.12)',
-        },
         border: {
           light: '#ECEAE6',
           DEFAULT: '#E0DED9',

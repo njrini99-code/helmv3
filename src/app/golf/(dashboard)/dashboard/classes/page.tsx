@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { IconBook, IconPlus, IconUpload, IconClock, IconMapPin, IconCalendar } from '@/components/icons';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { createClient } from '@/lib/supabase/client';
+import { useToast } from '@/components/ui/toast';
 import { useGolfUser } from '@/contexts/golf-user-context';
 import { AddClassModal, type ClassFormData } from '@/components/golf/classes/AddClassModal';
 import { UploadScheduleModal } from '@/components/golf/classes/UploadScheduleModal';
@@ -36,6 +37,7 @@ interface PlayerClass {
 
 export default function GolfClassesPage() {
   const golfUser = useGolfUser();
+  const { showToast } = useToast();
   const [classes, setClasses] = useState<PlayerClass[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -83,7 +85,7 @@ export default function GolfClassesPage() {
 
       setClasses(processedClasses);
     } catch (err) {
-      console.error('[GolfHelm] Error loading classes:', err);
+      showToast('Failed to load classes. Please refresh.', 'error');
     } finally {
       setLoading(false);
     }
@@ -190,7 +192,7 @@ export default function GolfClassesPage() {
 
   const handleConfirmClasses = async (confirmed: ParsedClass[]) => {
     if (!playerId) {
-      alert('Error: No player ID found. Please refresh the page.');
+      showToast('Error: No player ID found. Please refresh the page.', 'error');
       return;
     }
     
@@ -226,7 +228,7 @@ export default function GolfClassesPage() {
         .select();
 
       if (error) {
-        alert(`Error saving classes: ${error.message}`);
+        showToast(`Error saving classes: ${error.message}`, 'error');
         throw error;
       }
 
@@ -329,8 +331,7 @@ export default function GolfClassesPage() {
 
       await fetchClasses();
     } catch (err) {
-      console.error('[GolfHelm] Error deleting class:', err);
-      alert('Error deleting classes. Please try again.');
+      showToast('Error deleting classes. Please try again.', 'error');
     }
   };
 
@@ -390,8 +391,8 @@ export default function GolfClassesPage() {
       <AnimatedPage className="p-4 md:p-6 max-w-7xl mx-auto">
         <AnimatedItem className="min-h-[60vh] flex items-center justify-center">
           <div className="text-center max-w-md">
-            <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
-              <IconBook size={32} className="text-amber-500" />
+            <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
+              <IconBook size={32} className="text-warm-400" />
             </div>
             <h2 className="text-xl font-semibold text-warm-900 mb-2">Join a Team First</h2>
             <p className="text-warm-500 mb-6">
@@ -467,7 +468,7 @@ export default function GolfClassesPage() {
             <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
               <IconBook size={32} className="text-warm-300" />
             </div>
-            <h3 className="text-lg font-medium text-warm-900 mb-2">
+            <h3 className="text-lg font-semibold text-warm-900 mb-2">
               No Classes Added
             </h3>
             <p className="text-warm-500 mb-6 max-w-md mx-auto">
@@ -496,7 +497,7 @@ export default function GolfClassesPage() {
                   <IconBook size={20} className="text-primary-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-semibold text-warm-900">{classes.length}</p>
+                  <p className="text-2xl font-bold tabular-nums text-warm-900">{classes.length}</p>
                   <p className="text-xs text-warm-500">Classes</p>
                 </div>
               </div>
@@ -507,7 +508,7 @@ export default function GolfClassesPage() {
                   <IconCalendar size={20} className="text-warm-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-semibold text-warm-900 tabular-nums">{totalCredits}</p>
+                  <p className="text-2xl font-bold tabular-nums text-warm-900">{totalCredits}</p>
                   <p className="text-xs text-warm-500">Credits</p>
                 </div>
               </div>
@@ -518,7 +519,7 @@ export default function GolfClassesPage() {
                   <IconClock size={20} className="text-warm-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-semibold text-warm-900">
+                  <p className="text-2xl font-bold tabular-nums text-warm-900">
                     {Object.keys(classesByDay).length}
                   </p>
                   <p className="text-xs text-warm-500">Days/Week</p>
@@ -531,7 +532,7 @@ export default function GolfClassesPage() {
                   <IconMapPin size={20} className="text-amber-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-semibold text-warm-900">
+                  <p className="text-2xl font-bold tabular-nums text-warm-900">
                     {classes && classes.length > 0
                       ? new Set(classes.map(c => c.building).filter(Boolean)).size
                       : 0}
@@ -597,7 +598,7 @@ export default function GolfClassesPage() {
               </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mb-3">
+                  <div className="w-12 h-12 rounded-2xl bg-warm-100 flex items-center justify-center mb-3">
                     <IconCalendar size={24} className="text-warm-400" />
                   </div>
                   <p className="text-sm text-warm-500">No scheduled classes this week</p>
@@ -667,7 +668,7 @@ export default function GolfClassesPage() {
                   );
                 }) : (
                   <div className="flex flex-col items-center justify-center py-8 text-center">
-                    <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mb-3">
+                    <div className="w-12 h-12 rounded-2xl bg-warm-100 flex items-center justify-center mb-3">
                       <IconBook size={24} className="text-warm-400" />
                     </div>
                     <p className="text-sm text-warm-500">No classes to display</p>

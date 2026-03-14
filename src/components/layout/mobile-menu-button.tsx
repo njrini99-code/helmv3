@@ -12,7 +12,7 @@ function AnimatedMenuIcon({ open }: { open: boolean }) {
       <span
         className={cn(
           'block h-[2px] w-5 bg-current rounded-full transition-all duration-300 ease-out origin-center',
-          open && 'rotate-45 translate-y-[7px]'
+          open && 'rotate-45 tranwarm-y-[7px]'
         )}
       />
       <span
@@ -24,7 +24,7 @@ function AnimatedMenuIcon({ open }: { open: boolean }) {
       <span
         className={cn(
           'block h-[2px] w-5 bg-current rounded-full transition-all duration-300 ease-out origin-center',
-          open && '-rotate-45 -translate-y-[7px]'
+          open && '-rotate-45 -tranwarm-y-[7px]'
         )}
       />
     </div>
@@ -68,7 +68,7 @@ interface MobileMenuButtonProps {
 }
 
 const themeStyles: Record<MobileMenuButtonTheme, string> = {
-  light: 'text-slate-500 hover:text-slate-700 hover:bg-slate-100 active:bg-slate-200',
+  light: 'text-warm-500 hover:text-warm-700 hover:bg-warm-100 active:bg-warm-200',
   warm: 'text-warm-400 hover:text-warm-700 hover:bg-warm-100 active:bg-warm-200',
   dark: 'text-warm-400 hover:text-white hover:bg-white/10 active:bg-white/15',
 };

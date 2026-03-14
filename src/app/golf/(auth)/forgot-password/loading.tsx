@@ -1,7 +1,7 @@
 export default function Loading() {
   return (
-    <div className="min-h-screen bg-auth-golf flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-6">
+    <div className="min-h-dvh bg-auth-golf flex items-center justify-center p-4">
+      <div className="w-full max-w-[420px] space-y-6">
         {/* Logo placeholder */}
         <div className="flex justify-center">
           <div className="skeleton-shimmer h-10 w-32 rounded-lg" />

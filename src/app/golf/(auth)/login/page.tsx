@@ -72,7 +72,7 @@ function LoginContent() {
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Large primary orb - top right */}
         <m.div
-          className="auth-orb auth-orb-1 w-[500px] h-[500px] -top-32 -right-32 bg-gradient-to-br from-primary-400/40 to-primary-500/30 motion-reduce:animate-none"
+          className="auth-orb auth-orb-1 w-[300px] h-[300px] sm:w-[500px] sm:h-[500px] -top-20 -right-20 sm:-top-32 sm:-right-32 bg-gradient-to-br from-primary-400/40 to-primary-500/30 motion-reduce:animate-none"
           animate={{
             x: [0, 30, 0],
             y: [0, -20, 0],
@@ -86,7 +86,7 @@ function LoginContent() {
         />
         {/* Medium orb - bottom left */}
         <m.div
-          className="auth-orb auth-orb-2 w-[400px] h-[400px] -bottom-24 -left-24 bg-gradient-to-tr from-primary-400/30 to-primary-400/25 motion-reduce:animate-none"
+          className="auth-orb auth-orb-2 w-[250px] h-[250px] sm:w-[400px] sm:h-[400px] -bottom-16 -left-16 sm:-bottom-24 sm:-left-24 bg-gradient-to-tr from-primary-400/30 to-primary-400/25 motion-reduce:animate-none"
           animate={{
             x: [0, -25, 0],
             y: [0, 25, 0],
@@ -101,7 +101,7 @@ function LoginContent() {
         />
         {/* Small accent orb - top left */}
         <m.div
-          className="auth-orb auth-orb-3 w-[200px] h-[200px] top-20 left-[10%] bg-gradient-to-br from-primary-300/25 to-primary-400/20 motion-reduce:animate-none"
+          className="auth-orb auth-orb-3 hidden sm:block w-[200px] h-[200px] top-20 left-[10%] bg-gradient-to-br from-primary-300/25 to-primary-400/20 motion-reduce:animate-none"
           animate={{
             x: [0, 20, 0],
             y: [0, -15, 0],
@@ -115,7 +115,7 @@ function LoginContent() {
         />
         {/* Tiny floating dot */}
         <m.div
-          className="absolute w-3 h-3 rounded-full bg-primary-500/40 top-[30%] right-[20%] motion-reduce:animate-none"
+          className="absolute w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-primary-500/40 top-[30%] right-[15%] sm:right-[20%] motion-reduce:animate-none"
           animate={{
             y: [0, -10, 0],
             opacity: [0.4, 0.8, 0.4],
@@ -144,7 +144,7 @@ function LoginContent() {
           initial={{ opacity: 0, y: 20, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="auth-glass-card rounded-3xl p-8 sm:p-10"
+          className="auth-glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8"
         >
           {/* Back to landing */}
           <m.div
@@ -164,41 +164,41 @@ function LoginContent() {
 
           {/* Logo with glow effect */}
           <m.div
-            className="flex flex-col items-center mb-8"
+            className="flex flex-col items-center mb-6 sm:mb-8"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.5 }}
           >
             <div className="relative">
               <div className="absolute inset-0 bg-primary-500/30 rounded-full blur-xl scale-150" />
-              <div className="relative w-14 h-14 flex items-center justify-center mb-4">
+              <div className="relative w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center mb-3 sm:mb-4">
                 <Image
                   src="/helm-golf-logo-transparent.png"
                   alt="GolfHelm Logo"
                   width={56}
                   height={56}
-                  className="w-14 h-14 object-contain"
+                  className="w-12 h-12 sm:w-14 sm:h-14 object-contain"
                   priority
                   unoptimized
                 />
               </div>
             </div>
-            <h1 className="text-xl font-bold bg-gradient-to-r from-warm-900 to-warm-700 bg-clip-text text-transparent">
+            <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-warm-900 to-warm-700 bg-clip-text text-transparent">
               GolfHelm
             </h1>
           </m.div>
 
           {/* Header */}
           <m.div
-            className="text-center mb-8"
+            className="text-center mb-6 sm:mb-8"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.5 }}
           >
-            <h2 className="text-2xl font-bold text-warm-900 mb-2">
+            <h2 className="text-xl sm:text-2xl font-bold text-warm-900 mb-1 sm:mb-2">
               Welcome back
             </h2>
-            <p className="text-warm-500">Sign in to continue to your dashboard</p>
+            <p className="text-warm-500 text-sm sm:text-base">Sign in to continue to your dashboard</p>
           </m.div>
 
           {/* Success message */}
@@ -233,14 +233,14 @@ function LoginContent() {
                 </div>
                 <button
                   onClick={() => router.push(returnTo || (isAdmin ? '/golf/admin' : '/golf/dashboard'))}
-                  className="w-full py-3 bg-primary-600 text-white font-medium text-sm rounded-[10px] shadow-sm transition-all duration-200 hover:bg-primary-700 hover:shadow-md"
+                  className="w-full py-3 bg-primary-600 text-white font-semibold text-sm rounded-xl shadow-lg shadow-primary-600/25 transition-all duration-200 hover:bg-primary-700 hover:shadow-primary-600/30"
                 >
                   {returnTo ? 'Continue' : isAdmin ? 'Continue to Admin Dashboard' : 'Continue to Dashboard'}
                 </button>
                 <button
                   onClick={handleSignOut}
                   disabled={isLoggingOut}
-                  className="w-full py-3 bg-warm-100 text-warm-700 font-medium text-sm rounded-[10px] transition-all duration-200 hover:bg-warm-200 disabled:opacity-50"
+                  className="w-full py-3 bg-warm-100 text-warm-700 font-semibold text-sm rounded-xl transition-all duration-200 hover:bg-warm-200 disabled:opacity-50"
                 >
                   {isLoggingOut ? 'Signing out...' : 'Sign out & use a different account'}
                 </button>
@@ -258,7 +258,7 @@ function LoginContent() {
           transition={{ delay: 0.6, duration: 0.5 }}
         >
           {!isLoggedIn && !checkingAuth && (
-            <p className="text-center mt-6 text-warm-600 text-sm">
+            <p className="text-center mt-5 sm:mt-6 text-warm-600 text-sm">
               Don&apos;t have an account?{' '}
               <Link
                 href={signupHref}

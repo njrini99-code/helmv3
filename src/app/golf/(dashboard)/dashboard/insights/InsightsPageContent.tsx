@@ -277,7 +277,7 @@ export function InsightsPageContent({
     <div className="relative">
       {/* Header */}
       <div className="golf-mobile-page-header">
-        <div className="max-w-7xl mx-auto px-6 py-5">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <MobileMenuButton />
@@ -338,7 +338,7 @@ export function InsightsPageContent({
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-8">
         {/* Stats Cards */}
         {stats && (
           <m.div
@@ -379,7 +379,7 @@ export function InsightsPageContent({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="sticky top-[var(--golf-mobile-header-offset)] z-10 bg-white/60 backdrop-blur-xl -mx-6 px-6 py-4 mb-6 lg:top-[89px]"
+          className="sticky top-[var(--golf-mobile-header-offset)] z-10 bg-white/60 backdrop-blur-xl -mx-4 md:-mx-6 px-4 md:px-6 py-4 mb-6 lg:top-[89px]"
         >
           <div className="space-y-4">
             {/* Search Bar */}

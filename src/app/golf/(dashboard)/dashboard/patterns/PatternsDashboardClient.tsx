@@ -6,10 +6,9 @@ import { cn } from '@/lib/utils';
 import {
   IconRefresh,
   IconSparkles,
-  IconArrowLeft,
-  IconMenu,
+  IconChevronLeft,
 } from '@/components/icons';
-import { useSidebar } from '@/contexts/sidebar-context';
+import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
 import { PatternDashboard } from '@/components/golf/coachhelm/patterns';
 import type { ExtendedPattern, PatternSeverity } from '@/app/golf/actions/pattern-management';
 
@@ -41,7 +40,6 @@ export function PatternsDashboardClient({
   initialStats,
 }: PatternsDashboardClientProps) {
   const router = useRouter();
-  const { toggleMobile } = useSidebar();
   const [isPending, startTransition] = useTransition();
   const [patterns] = useState(initialPatterns);
   const [stats] = useState(initialStats);
@@ -55,27 +53,16 @@ export function PatternsDashboardClient({
   return (
     <div className="min-h-full bg-transparent">
       {/* Header */}
-      <div className="bg-white/70 backdrop-blur-xl border-b border-white/20 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+      <div className="golf-mobile-page-header">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <button
-                onClick={toggleMobile}
-                className={cn(
-                  'lg:hidden p-2.5 -ml-2 rounded-xl',
-                  'text-warm-500 hover:text-warm-700 hover:bg-warm-100/80',
-                  'transition-colors duration-150 active:scale-95',
-                  'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
-                )}
-                aria-label="Open navigation menu"
-              >
-                <IconMenu size={22} />
-              </button>
+              <MobileMenuButton />
               <button
                 onClick={() => router.push('/golf/dashboard')}
                 className="hidden lg:block p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 transition-colors"
               >
-                <IconArrowLeft size={20} />
+                <IconChevronLeft size={20} />
               </button>
 
               {/* Title */}
@@ -84,7 +71,7 @@ export function PatternsDashboardClient({
                   <IconSparkles size={20} className="text-white" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-semibold text-warm-900">
+                  <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">
                     Pattern Management
                   </h1>
                   <p className="text-sm text-warm-500">
@@ -115,7 +102,7 @@ export function PatternsDashboardClient({
       </div>
 
       {/* Main content */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-8">
         <PatternDashboard
           patterns={patterns}
           stats={stats}

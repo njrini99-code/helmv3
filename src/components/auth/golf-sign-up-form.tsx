@@ -110,10 +110,10 @@ export function GolfSignUpForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+    <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5" noValidate>
       {error && (
         <div
-          className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-[10px] flex items-start gap-2.5"
+          className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl flex items-start gap-2.5"
           role="alert"
         >
           <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
@@ -194,7 +194,7 @@ export function GolfSignUpForm() {
               bg-white border border-warm-200 rounded-[10px]
               text-warm-900 text-base lg:text-sm placeholder:text-warm-400
               transition-colors duration-200
-              focus:outline-none focus:border-primary-600 focus:ring-[3px] focus:ring-primary-600/10
+              focus:outline-none focus:border-primary-500 focus:ring-[3px] focus:ring-primary-500/10
             "
           />
         </div>
@@ -215,7 +215,7 @@ export function GolfSignUpForm() {
               bg-white border border-warm-200 rounded-[10px]
               text-warm-900 text-base lg:text-sm placeholder:text-warm-400
               transition-colors duration-200
-              focus:outline-none focus:border-primary-600 focus:ring-[3px] focus:ring-primary-600/10
+              focus:outline-none focus:border-primary-500 focus:ring-[3px] focus:ring-primary-500/10
             "
           />
         </div>
@@ -237,7 +237,7 @@ export function GolfSignUpForm() {
               bg-white border border-warm-200 rounded-[10px]
               text-warm-900 text-base lg:text-sm
               transition-colors duration-200
-              focus:outline-none focus:border-primary-600 focus:ring-[3px] focus:ring-primary-600/10
+              focus:outline-none focus:border-primary-500 focus:ring-[3px] focus:ring-primary-500/10
               appearance-none
             "
           >
@@ -276,7 +276,7 @@ export function GolfSignUpForm() {
             bg-white border border-warm-200 rounded-[10px]
             text-warm-900 text-base lg:text-sm placeholder:text-warm-400
             transition-colors duration-200
-            focus:outline-none focus:border-primary-600 focus:ring-[3px] focus:ring-primary-600/10
+            focus:outline-none focus:border-primary-500 focus:ring-[3px] focus:ring-primary-500/10
           "
         />
       </div>
@@ -300,7 +300,7 @@ export function GolfSignUpForm() {
             bg-white border border-warm-200 rounded-[10px]
             text-warm-900 text-base lg:text-sm placeholder:text-warm-400
             transition-colors duration-200
-            focus:outline-none focus:border-primary-600 focus:ring-[3px] focus:ring-primary-600/10
+            focus:outline-none focus:border-primary-500 focus:ring-[3px] focus:ring-primary-500/10
           "
         />
         <PasswordStrengthIndicator password={formData.password} />
@@ -312,13 +312,14 @@ export function GolfSignUpForm() {
         disabled={isLoading}
         className="
           w-full py-3
-          bg-primary-600 text-white font-medium text-sm
-          rounded-[10px] shadow-sm
-          transition-colors duration-200
-          hover:bg-primary-700 hover:shadow-md
+          bg-primary-600 text-white font-semibold text-sm
+          rounded-xl shadow-lg shadow-primary-600/25
+          transition-all duration-200
+          hover:bg-primary-700 hover:shadow-primary-600/30
           active:scale-[0.98]
           disabled:opacity-50 disabled:cursor-not-allowed
           flex items-center justify-center
+          focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2
         "
       >
         {isLoading ? (

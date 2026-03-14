@@ -4,10 +4,9 @@ import { useRouter } from 'next/navigation';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import Link from 'next/link';
 import type { PlayerQualifierInfo } from '@/app/golf/actions/golf';
-import { IconTrophy, IconChevronRight, IconCalendar, IconMapPin, IconGolf, IconMenu } from '@/components/icons';
+import { IconTrophy, IconChevronRight, IconCalendar, IconMapPin, IconGolf } from '@/components/icons';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
-import { useSidebar } from '@/contexts/sidebar-context';
-import { cn } from '@/lib/utils';
+import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
 
 interface MyQualifiersClientProps {
   qualifiers: PlayerQualifierInfo[];
@@ -15,7 +14,6 @@ interface MyQualifiersClientProps {
 }
 
 export function MyQualifiersClient({ qualifiers, error }: MyQualifiersClientProps) {
-  const { toggleMobile } = useSidebar();
   const router = useRouter();
 
   const getStatusBadge = (status: string, roundsCompleted: number, numRounds: number) => {
@@ -53,23 +51,12 @@ export function MyQualifiersClient({ qualifiers, error }: MyQualifiersClientProp
       <div className="max-w-4xl mx-auto px-4 md:px-6 py-6 md:py-8">
         {/* Header */}
         <AnimatedItem className="flex items-center gap-3 mb-8">
-          <button
-            onClick={toggleMobile}
-            className={cn(
-              'lg:hidden p-2.5 -ml-2 rounded-xl',
-              'text-warm-500 hover:text-warm-700 hover:bg-warm-100/80',
-              'transition-colors duration-150 active:scale-95',
-              'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
-            )}
-            aria-label="Open navigation menu"
-          >
-            <IconMenu size={22} />
-          </button>
-          <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+          <MobileMenuButton />
+          <div className="w-10 h-10 rounded-2xl bg-amber-100 flex items-center justify-center">
             <IconTrophy size={20} className="text-amber-600" />
           </div>
           <div>
-            <h1 className="text-2xl font-semibold text-warm-900">My Qualifiers</h1>
+            <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">My Qualifiers</h1>
             <p className="text-warm-500 text-sm">View your qualifier progress and leaderboards</p>
           </div>
         </AnimatedItem>
@@ -83,10 +70,10 @@ export function MyQualifiersClient({ qualifiers, error }: MyQualifiersClientProp
         ) : qualifiers.length === 0 ? (
           <div className="relative glass-standard rounded-2xl overflow-clip p-8 md:p-12 text-center">
             <ShineEffect />
-            <div className="w-16 h-16 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
               <IconTrophy size={32} className="text-warm-400" />
             </div>
-            <h3 className="text-lg font-medium text-warm-900 mb-2">No Qualifiers Yet</h3>
+            <h3 className="text-lg font-semibold text-warm-900 mb-2">No Qualifiers Yet</h3>
             <p className="text-warm-500 text-sm max-w-md mx-auto">
               You haven&apos;t been entered into any qualifiers yet. Your coach will add you to qualifiers when they&apos;re created.
             </p>
@@ -154,7 +141,7 @@ export function MyQualifiersClient({ qualifiers, error }: MyQualifiersClientProp
                                 <p className="text-xs text-warm-500 uppercase font-medium mb-1">To Par</p>
                                 <p className={`text-lg font-semibold ${
                                   (qualifier.totalToPar || 0) < 0 ? 'text-primary-600' :
-                                  (qualifier.totalToPar || 0) > 0 ? 'text-red-600' :
+                                  (qualifier.totalToPar || 0) > 0 ? 'text-amber-600' :
                                   'text-warm-900'
                                 }`}>
                                   {formatToPar(qualifier.totalToPar)}

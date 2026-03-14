@@ -207,7 +207,40 @@ export default function AlertsPage() {
   ];
 
   if (isLoading) {
-    return null;
+    return (
+      <div className="min-h-full bg-transparent">
+        <div className="golf-mobile-page-header glass-standard border-white/30 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
+          <div className="max-w-4xl mx-auto px-4 md:px-6 py-5">
+            <div className="flex items-center gap-4">
+              <div className="h-5 w-5 skeleton-shimmer rounded-lg lg:hidden" />
+              <div>
+                <div className="h-6 w-40 skeleton-shimmer rounded-lg" />
+                <div className="h-3 w-64 skeleton-shimmer rounded mt-2" />
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="max-w-4xl mx-auto px-4 md:px-6 py-6 space-y-4">
+          <div className="flex gap-2 mb-6">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="h-8 w-20 skeleton-shimmer rounded-full" />
+            ))}
+          </div>
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="glass-standard rounded-2xl p-5 space-y-3">
+              <div className="flex items-start gap-3">
+                <div className="h-10 w-10 skeleton-shimmer rounded-xl flex-shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 w-3/4 skeleton-shimmer rounded" />
+                  <div className="h-3 w-full skeleton-shimmer rounded" />
+                  <div className="h-3 w-1/2 skeleton-shimmer rounded" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -235,7 +268,7 @@ export default function AlertsPage() {
                 <IconChevronLeft size={20} />
               </button>
               <div>
-                <h1 className="text-2xl font-bold tracking-tight text-warm-900 flex items-center gap-2">
+                <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900 flex items-center gap-2">
                   <IconBell size={24} className="text-primary-600" />
                   Player Alerts
                 </h1>

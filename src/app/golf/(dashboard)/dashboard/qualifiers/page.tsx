@@ -123,7 +123,7 @@ export default async function GolfQualifiersPage() {
                     opacity: 0,
                   }}
                 >
-                  <div className="relative glass-standard rounded-2xl overflow-clip p-6 min-h-[80px] hover:shadow-lg hover:-translate-y-0.5 active:bg-warm-50 transition-all duration-300">
+                  <div className="relative glass-standard rounded-2xl overflow-clip p-6 min-h-[80px] hover:shadow-lg hover:-translate-y-0.5 active:bg-warm-50 transition-all duration-200">
                     <ShineEffect />
                     {/* Header */}
                     <div className="flex items-start justify-between mb-4">

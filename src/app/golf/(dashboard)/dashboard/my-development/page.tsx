@@ -99,7 +99,7 @@ export default async function MyDevelopmentPage() {
   return (
     <AnimatedPage className="min-h-full">
       <AnimatedItem>
-        <div className="border-b border-warm-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+        <div className="golf-mobile-page-header border-warm-200/60">
           <div className="max-w-5xl mx-auto px-4 md:px-6 py-5">
             <div className="flex items-center gap-3">
               <MobileMenuButton />
@@ -107,7 +107,7 @@ export default async function MyDevelopmentPage() {
                 <IconTarget size={20} className="text-primary-600" />
               </div>
               <div>
-                <h1 className="text-2xl font-semibold tracking-tight text-warm-900">
+                <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">
                   My Development
                 </h1>
                 <p className="text-sm text-warm-500 mt-0.5">

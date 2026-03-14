@@ -172,12 +172,7 @@ export default async function GolfCalendarPage() {
   return (
     <AnimatedPage>
       <AnimatedItem>
-        <div
-          className="min-h-full flex flex-col"
-          style={{
-            background: 'linear-gradient(180deg, #FFFEFA 0%, #FDF9F0 33%, #FAF5EB 66%, #F5F0E6 100%)',
-          }}
-        >
+        <div className="min-h-full flex flex-col">
           <MobileNavHeader title="Calendar" />
           {events.length > 0 && (
             <div className="flex-shrink-0 px-4 md:px-6 pb-2">

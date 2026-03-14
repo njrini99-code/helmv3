@@ -13,9 +13,8 @@ import {
 import { THRESHOLD_RANGES } from '@/lib/coachhelm/constants';
 import type { CoachPhilosophy } from '@/lib/coachhelm/types';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
-import { IconArrowLeft, IconCheck, IconMenu } from '@/components/icons';
-import { useSidebar } from '@/contexts/sidebar-context';
-import { cn } from '@/lib/utils';
+import { IconArrowLeft, IconCheck } from '@/components/icons';
+import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
 import Link from 'next/link';
 
 type PriorityValues = Pick<
@@ -32,7 +31,6 @@ type DisplayKey = DisplayToggleKey | 'insightVerbosity';
 
 export default function CoachingIntelligenceSettingsPage() {
     const [coachId, setCoachId] = useState<string | null>(null);
-    const { toggleMobile } = useSidebar();
     const supabase = createClient();
 
     useEffect(() => {
@@ -85,8 +83,8 @@ export default function CoachingIntelligenceSettingsPage() {
     if (loading || !philosophy) {
         return (
             <div className="min-h-full pb-20">
-                <div className="bg-white/70 backdrop-blur-xl border-b border-white/20 sticky top-0 z-10">
-                    <div className="max-w-3xl mx-auto px-6 h-16 flex items-center gap-4">
+                <div className="golf-mobile-page-header">
+                    <div className="max-w-3xl mx-auto px-4 md:px-6 h-16 flex items-center gap-4">
                         <div className="h-5 w-5 skeleton-shimmer rounded-lg lg:hidden" />
                         <div className="h-5 w-40 skeleton-shimmer rounded-lg" />
                     </div>
@@ -114,21 +112,10 @@ export default function CoachingIntelligenceSettingsPage() {
     return (
         <AnimatedPage className="min-h-full pb-20">
             {/* Header */}
-            <AnimatedItem className="bg-white/70 backdrop-blur-xl border-b border-white/20 sticky top-0 z-10">
-                <div className="max-w-3xl mx-auto px-6 h-16 flex items-center justify-between">
+            <AnimatedItem className="golf-mobile-page-header">
+                <div className="max-w-3xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <button
-                            onClick={toggleMobile}
-                            className={cn(
-                                'lg:hidden p-2.5 -ml-2 rounded-xl',
-                                'text-warm-500 hover:text-warm-700 hover:bg-warm-100/80',
-                                'transition-colors duration-150 active:scale-95',
-                                'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
-                            )}
-                            aria-label="Open navigation menu"
-                        >
-                            <IconMenu size={22} />
-                        </button>
+                        <MobileMenuButton />
                         <Link
                             href="/golf/dashboard/settings"
                             className="hidden lg:flex p-2 -ml-2 rounded-lg hover:bg-warm-100 text-warm-500 transition-colors"

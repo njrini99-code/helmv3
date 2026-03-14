@@ -123,7 +123,7 @@ export default function SignupPage() {
                 </div>
                 <button
                   type="submit"
-                  className="w-full h-12 rounded-xl bg-primary-600 text-white font-semibold hover:bg-primary-500 active:bg-primary-700 transition-colors"
+                  className="w-full h-12 rounded-xl bg-primary-600 text-white font-semibold hover:bg-primary-700 active:bg-primary-800 transition-colors"
                 >
                   Continue
                 </button>

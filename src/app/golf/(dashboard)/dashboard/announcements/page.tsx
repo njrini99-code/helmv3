@@ -82,7 +82,7 @@ export default async function GolfAnnouncementsPage() {
   return (
     <AnimatedPage>
       {/* Header */}
-      <AnimatedItem className="border-b border-warm-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+      <AnimatedItem className="golf-mobile-page-header">
         <div className="max-w-4xl mx-auto px-4 md:px-6 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">

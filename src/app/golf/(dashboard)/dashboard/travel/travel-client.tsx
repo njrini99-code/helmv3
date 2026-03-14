@@ -323,8 +323,8 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
       if (budgetsResult.success) {
         setBudgets(budgetsResult.data || []);
       }
-    } catch (err) {
-      console.error('Error loading expenses:', err);
+    } catch {
+      showToast('Failed to load expense data. Please try again.', 'error');
     } finally {
       setLoadingExpenses(false);
     }

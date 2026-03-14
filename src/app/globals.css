@@ -74,11 +74,14 @@
   --radius-xl: 24px;
   --radius-2xl: 32px;
 
+  /* LEGACY: --shadow-sm/md/lg/xl duplicated in tokens.css — tokens.css is canonical.
+     These override with slightly different values for the cinematic hero section.
+     TODO: Consolidate with tokens.css definitions in a future cleanup pass. */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.05);
   --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
   --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15), 0 10px 10px rgba(0, 0, 0, 0.04);
-  --shadow-glow: 0 0 60px rgba(16, 185, 129, 0.15);
+  --shadow-glow: 0 0 60px rgba(22, 163, 74, 0.15);
 
   --duration-fast: 150ms;
   --duration-base: 220ms;
@@ -305,7 +308,7 @@
 
   .aurora-blob-2 {
     @apply w-[500px] h-[500px] top-[20%] -right-[100px];
-    background: radial-gradient(circle, rgba(34, 197, 94, 0.3) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(22, 163, 74, 0.3) 0%, transparent 70%);
     animation-delay: -5s;
   }
 
@@ -358,7 +361,7 @@
 
   .gradient-text-hero {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, #ffffff 0%, #94a3b8 100%);
+    background-image: linear-gradient(135deg, #ffffff 0%, #a8a29e 100%);
   }
 
   /* ===== BENTO GRID SYSTEM ===== */
@@ -546,7 +549,7 @@
   }
 
   .mesh-bg-cream {
-    @apply bg-[#FAF6F1];
+    @apply bg-[#FDF9F3]; /* cream-100 */
     background-image:
       radial-gradient(at 40% 20%, rgba(22, 163, 74, 0.03) 0px, transparent 50%),
       radial-gradient(at 80% 0%, rgba(59, 130, 246, 0.02) 0px, transparent 50%);
@@ -1682,7 +1685,7 @@
     footer,
     [role="tablist"],
     [role="toolbar"] {
-      -webkit-tap-highlight-color: rgba(34, 197, 94, 0.1);
+      -webkit-tap-highlight-color: rgba(22, 163, 74, 0.1);
       -webkit-touch-callout: none;
       -webkit-user-select: none;
       user-select: none;
@@ -1937,9 +1940,9 @@ body {
 /* Golf Auth - Animated mesh gradient */
 .bg-auth-golf {
   background:
-    radial-gradient(ellipse 80% 50% at 20% 40%, rgba(34, 197, 94, 0.15) 0%, transparent 50%),
-    radial-gradient(ellipse 60% 60% at 80% 20%, rgba(16, 185, 129, 0.12) 0%, transparent 50%),
-    radial-gradient(ellipse 50% 80% at 60% 80%, rgba(52, 211, 153, 0.1) 0%, transparent 50%),
+    radial-gradient(ellipse 80% 50% at 20% 40%, rgba(22, 163, 74, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse 60% 60% at 80% 20%, rgba(22, 163, 74, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 80% at 60% 80%, rgba(74, 222, 128, 0.1) 0%, transparent 50%),
     linear-gradient(160deg, #FFFEFA 0%, #F8FDF9 50%, #F0FDF4 100%);
   position: relative;
   overflow: hidden;
@@ -1953,8 +1956,8 @@ body {
   width: 200%;
   height: 200%;
   background:
-    radial-gradient(circle at 30% 40%, rgba(34, 197, 94, 0.08) 0%, transparent 25%),
-    radial-gradient(circle at 70% 60%, rgba(16, 185, 129, 0.06) 0%, transparent 25%);
+    radial-gradient(circle at 30% 40%, rgba(22, 163, 74, 0.08) 0%, transparent 25%),
+    radial-gradient(circle at 70% 60%, rgba(22, 163, 74, 0.06) 0%, transparent 25%);
   animation: auth-float 20s ease-in-out infinite;
   pointer-events: none;
 }

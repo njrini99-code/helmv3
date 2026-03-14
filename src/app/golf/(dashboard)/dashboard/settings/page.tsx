@@ -27,13 +27,12 @@ import {
   IconShield,
   IconPalette,
   IconSparkles,
-  IconMenu,
   IconCopy,
   IconRefresh,
   IconCheck,
 } from '@/components/icons';
-import { useSidebar } from '@/contexts/sidebar-context';
 import { useGolfUser } from '@/contexts/golf-user-context';
+import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
 import { JoinTeamSection } from '@/components/golf/settings/JoinTeamSection';
 import { CoachHelmToggle } from '@/components/golf/coachhelm/v2';
 import {
@@ -91,7 +90,6 @@ export default function GolfSettingsPage() {
   const [expanded, setExpanded] = useState<ExpandedSection>(null);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const { showToast } = useToast();
-  const { toggleMobile } = useSidebar();
   const golfUser = useGolfUser();
 
   const loadProfile = useCallback(async () => {
@@ -214,7 +212,7 @@ export default function GolfSettingsPage() {
   if (loading) {
     return (
       <AnimatedPage className="min-h-full">
-        <div className="border-b border-warm-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+        <div className="golf-mobile-page-header border-warm-200/60">
           <div className="max-w-2xl mx-auto px-4 md:px-6 py-4 md:py-5">
             <div className="h-7 w-32 bg-warm-200 rounded-lg animate-pulse" />
             <div className="h-4 w-56 bg-warm-100 rounded mt-2 animate-pulse" />
@@ -251,16 +249,10 @@ export default function GolfSettingsPage() {
     <AnimatedPage className="min-h-full" key={profile.userId}>
       {/* Header */}
       <AnimatedItem>
-        <div className="border-b border-warm-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+        <div className="golf-mobile-page-header border-warm-200/60">
           <div className="max-w-2xl mx-auto px-4 md:px-6 py-4 md:py-5">
             <div className="flex items-center gap-3">
-              <button
-                onClick={toggleMobile}
-                className="lg:hidden p-2 -ml-2 rounded-xl text-warm-500 hover:text-warm-700 hover:bg-warm-100/80 transition-colors active:scale-95"
-                aria-label="Open navigation menu"
-              >
-                <IconMenu size={22} />
-              </button>
+              <MobileMenuButton />
               <div>
                 <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">Settings</h1>
                 <p className="text-warm-500 mt-0.5 text-sm">Manage your account and preferences</p>
@@ -995,9 +987,6 @@ function AppearancePanel() {
     } catch { /* defaults */ }
   }, []);
 
-  // TODO: These preferences are saved to localStorage but not yet consumed by
-  // other components. Planned for a future pass to wire up density, dateFormat,
-  // showAnimations, and scoreDisplay across the dashboard.
   function handleSave() {
     setSaving(true);
     try {
@@ -1249,7 +1238,7 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
         <select
           value={handicapSystem}
           onChange={(e) => setHandicapSystem(e.target.value)}
-          className="w-full px-3 py-2.5 rounded-lg border border-warm-200 text-sm text-warm-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 transition-colors"
+          className="w-full px-3 py-2.5 rounded-lg border border-warm-200 text-sm text-warm-900 focus:border-primary-500 focus-visible:ring-2 focus-visible:ring-primary-500/40 transition-colors"
         >
           <option value="usga">USGA Handicap</option>
           <option value="world">World Handicap System</option>
@@ -1280,7 +1269,7 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
         <select
           value={timezone}
           onChange={(e) => setTimezone(e.target.value)}
-          className="w-full px-3 py-2.5 rounded-lg border border-warm-200 text-sm text-warm-900 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 transition-colors"
+          className="w-full px-3 py-2.5 rounded-lg border border-warm-200 text-sm text-warm-900 focus:border-primary-500 focus-visible:ring-2 focus-visible:ring-primary-500/40 transition-colors"
         >
           <option value="America/New_York">Eastern (ET)</option>
           <option value="America/Chicago">Central (CT)</option>

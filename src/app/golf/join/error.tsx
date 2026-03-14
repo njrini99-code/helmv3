@@ -1,7 +1,5 @@
 'use client';
 
-import { useEffect } from 'react';
-
 export default function Error({
   error,
   reset,
@@ -9,10 +7,6 @@ export default function Error({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  useEffect(() => {
-    console.error(error);
-  }, [error]);
-
   return (
     <div className="flex min-h-[60vh] items-center justify-center p-6">
       <div className="text-center max-w-md">
@@ -22,7 +16,7 @@ export default function Error({
           </svg>
         </div>
         <h2 className="text-xl font-semibold text-warm-900 mb-2">Something went wrong</h2>
-        <p className="text-warm-500 mb-6">An unexpected error occurred. Please try again.</p>
+        <p className="text-warm-500 mb-6">{error.message || 'An unexpected error occurred. Please try again.'}</p>
         <button
           onClick={reset}
           className="px-4 py-2 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors font-medium"

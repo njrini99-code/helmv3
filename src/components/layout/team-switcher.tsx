@@ -47,7 +47,7 @@ export function TeamSwitcher({ collapsed = false }: TeamSwitcherProps) {
         <button
           onClick={() => setIsOpen(!isOpen)}
           title={selectedTeam?.name || 'Select team'}
-          className="p-2 rounded-lg hover:bg-slate-100 active:bg-slate-200 transition-colors"
+          className="p-2 rounded-lg hover:bg-warm-100 active:bg-warm-200 transition-colors"
         >
           {selectedTeam?.logo_url ? (
             <img
@@ -66,9 +66,9 @@ export function TeamSwitcher({ collapsed = false }: TeamSwitcherProps) {
         </button>
 
         {isOpen && (
-          <div className="absolute left-full ml-2 top-0 w-56 bg-white rounded-xl border border-slate-200 shadow-lg py-2 z-50">
-            <div className="px-3 py-2 border-b border-slate-100">
-              <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+          <div className="absolute left-full ml-2 top-0 w-56 bg-white rounded-xl border border-warm-200 shadow-lg py-2 z-50">
+            <div className="px-3 py-2 border-b border-warm-100">
+              <p className="text-xs font-medium text-warm-400 uppercase tracking-wider">
                 Switch Team
               </p>
             </div>
@@ -78,7 +78,7 @@ export function TeamSwitcher({ collapsed = false }: TeamSwitcherProps) {
                   key={team.id}
                   onClick={() => handleTeamSelect(team)}
                   className={cn(
-                    'w-full px-3 py-2 flex items-center gap-3 hover:bg-slate-50 active:bg-slate-100 transition-colors',
+                    'w-full px-3 py-2 flex items-center gap-3 hover:bg-warm-50 active:bg-warm-100 transition-colors',
                     team.id === selectedTeamId && 'bg-primary-50'
                   )}
                 >
@@ -97,8 +97,8 @@ export function TeamSwitcher({ collapsed = false }: TeamSwitcherProps) {
                     </div>
                   )}
                   <div className="flex-1 text-left">
-                    <p className="text-sm font-medium text-slate-900 truncate">{team.name}</p>
-                    <p className="text-xs text-slate-500">{team.team_type}</p>
+                    <p className="text-sm font-medium text-warm-900 truncate">{team.name}</p>
+                    <p className="text-xs text-warm-500">{team.team_type}</p>
                   </div>
                   {team.id === selectedTeamId && (
                     <IconCheck size={16} className="text-primary-600" />
@@ -122,7 +122,7 @@ export function TeamSwitcher({ collapsed = false }: TeamSwitcherProps) {
           'flex items-center gap-3 text-left',
           isOpen
             ? 'border-primary-500 ring-2 ring-primary-100 bg-white'
-            : 'border-slate-200 bg-white hover:border-slate-300'
+            : 'border-warm-200 bg-white hover:border-warm-300'
         )}
       >
         {selectedTeam?.logo_url ? (
@@ -140,26 +140,26 @@ export function TeamSwitcher({ collapsed = false }: TeamSwitcherProps) {
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-slate-900 truncate">
+          <p className="text-sm font-medium text-warm-900 truncate">
             {selectedTeam?.name || 'Select Team'}
           </p>
-          <p className="text-xs text-slate-500 truncate">
+          <p className="text-xs text-warm-500 truncate">
             {selectedTeam?.team_type || 'No team selected'}
           </p>
         </div>
         <IconChevronDown
           size={16}
           className={cn(
-            'text-slate-400 transition-transform duration-200',
+            'text-warm-400 transition-transform duration-200',
             isOpen && 'rotate-180'
           )}
         />
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 right-0 mt-2 bg-white rounded-xl border border-slate-200 shadow-lg py-2 z-50">
-          <div className="px-3 py-2 border-b border-slate-100">
-            <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+        <div className="absolute left-0 right-0 mt-2 bg-white rounded-xl border border-warm-200 shadow-lg py-2 z-50">
+          <div className="px-3 py-2 border-b border-warm-100">
+            <p className="text-xs font-medium text-warm-400 uppercase tracking-wider">
               Your Teams ({teams.length})
             </p>
           </div>
@@ -169,7 +169,7 @@ export function TeamSwitcher({ collapsed = false }: TeamSwitcherProps) {
                 key={team.id}
                 onClick={() => handleTeamSelect(team)}
                 className={cn(
-                  'w-full px-3 py-2.5 flex items-center gap-3 hover:bg-slate-50 active:bg-slate-100 transition-colors',
+                  'w-full px-3 py-2.5 flex items-center gap-3 hover:bg-warm-50 active:bg-warm-100 transition-colors',
                   team.id === selectedTeamId && 'bg-primary-50'
                 )}
               >
@@ -188,8 +188,8 @@ export function TeamSwitcher({ collapsed = false }: TeamSwitcherProps) {
                   </div>
                 )}
                 <div className="flex-1 text-left min-w-0">
-                  <p className="text-sm font-medium text-slate-900 truncate">{team.name}</p>
-                  <div className="flex items-center gap-2 text-xs text-slate-500">
+                  <p className="text-sm font-medium text-warm-900 truncate">{team.name}</p>
+                  <div className="flex items-center gap-2 text-xs text-warm-500">
                     <span>{team.team_type}</span>
                     {team.member_count !== undefined && (
                       <>
@@ -208,7 +208,7 @@ export function TeamSwitcher({ collapsed = false }: TeamSwitcherProps) {
               </button>
             ))}
           </div>
-          <div className="border-t border-slate-100 px-3 py-2 mt-1">
+          <div className="border-t border-warm-100 px-3 py-2 mt-1">
             <button
               onClick={() => {
                 setIsOpen(false);

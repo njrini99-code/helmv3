@@ -99,7 +99,7 @@ export function Header({ title, subtitle, children, backHref }: HeaderProps) {
             <Link
               href={backHref}
               aria-label="Go back"
-              className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 active:bg-slate-200 transition-all duration-200 active:scale-95"
+              className="p-1.5 text-warm-400 hover:text-warm-600 rounded-lg hover:bg-warm-100 active:bg-warm-200 transition-all duration-200 active:scale-95"
             >
               <IconChevronLeft size={20} aria-hidden="true" />
             </Link>
@@ -108,8 +108,8 @@ export function Header({ title, subtitle, children, backHref }: HeaderProps) {
           {/* Title */}
           {title && (
             <div className="min-w-0">
-              <h1 className="text-lg font-semibold text-slate-900 tracking-tight truncate">{title}</h1>
-              {subtitle && <p className="text-sm leading-relaxed text-slate-500 truncate">{subtitle}</p>}
+              <h1 className="text-lg font-semibold text-warm-900 tracking-tight truncate">{title}</h1>
+              {subtitle && <p className="text-sm leading-relaxed text-warm-500 truncate">{subtitle}</p>}
             </div>
           )}
         </div>
@@ -119,11 +119,11 @@ export function Header({ title, subtitle, children, backHref }: HeaderProps) {
           onClick={() => {
             document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }));
           }}
-          className="hidden md:flex items-center gap-3 px-4 py-2 text-sm text-slate-500 bg-slate-50 hover:bg-slate-100 active:bg-slate-200 rounded-xl border border-slate-200 transition-all duration-200 hover:border-slate-300 min-w-[200px] max-w-[280px]"
+          className="hidden md:flex items-center gap-3 px-4 py-2 text-sm text-warm-500 bg-warm-50 hover:bg-warm-100 active:bg-warm-200 rounded-xl border border-warm-200 transition-all duration-200 hover:border-warm-300 min-w-[200px] max-w-[280px]"
         >
-          <IconSearch size={16} className="text-slate-400" />
+          <IconSearch size={16} className="text-warm-400" />
           <span className="flex-1 text-left truncate">Search...</span>
-          <kbd className="hidden sm:inline-flex px-1.5 py-0.5 text-micro font-medium text-slate-400 bg-white rounded border border-slate-200">
+          <kbd className="hidden sm:inline-flex px-1.5 py-0.5 text-micro font-medium text-warm-400 bg-white rounded border border-warm-200">
             ⌘K
           </kbd>
         </button>
@@ -133,7 +133,7 @@ export function Header({ title, subtitle, children, backHref }: HeaderProps) {
           {children}
 
           {isJucoCoach && (
-            <div className="hidden md:flex items-center rounded-lg bg-slate-100 p-1">
+            <div className="hidden md:flex items-center rounded-lg bg-warm-100 p-1">
               <JUCOModeToggle />
             </div>
           )}
@@ -144,7 +144,7 @@ export function Header({ title, subtitle, children, backHref }: HeaderProps) {
               document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }));
             }}
             aria-label="Open search"
-            className="md:hidden p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 active:bg-slate-200 rounded-lg transition-colors"
+            className="md:hidden p-2 text-warm-500 hover:text-warm-700 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
           >
             <IconSearch size={20} aria-hidden="true" />
           </button>
@@ -165,18 +165,18 @@ export function Header({ title, subtitle, children, backHref }: HeaderProps) {
               aria-expanded={showUserMenu}
               className={cn(
                 "flex items-center gap-2 p-1.5 rounded-xl transition-all duration-200",
-                showUserMenu ? "bg-slate-100" : "hover:bg-slate-50 active:bg-slate-100"
+                showUserMenu ? "bg-warm-100" : "hover:bg-warm-50 active:bg-warm-100"
               )}
             >
               <Avatar name={name} size="sm" src={avatarUrl} />
               <div className="hidden lg:block text-left max-w-[120px]">
-                <div className="text-sm font-medium text-slate-900 truncate">{name || 'User'}</div>
-                <div className="text-xs text-slate-500 truncate">{role}</div>
+                <div className="text-sm font-medium text-warm-900 truncate">{name || 'User'}</div>
+                <div className="text-xs text-warm-500 truncate">{role}</div>
               </div>
               <IconChevronDown
                 size={16}
                 className={cn(
-                  "hidden lg:block text-slate-400 transition-transform duration-200",
+                  "hidden lg:block text-warm-400 transition-transform duration-200",
                   showUserMenu && "rotate-180"
                 )}
               />
@@ -190,8 +190,8 @@ export function Header({ title, subtitle, children, backHref }: HeaderProps) {
                   <div className="flex items-center gap-3">
                     <Avatar name={name} size="md" src={avatarUrl} />
                     <div className="min-w-0 flex-1">
-                      <div className="font-medium text-slate-900 truncate">{name || 'User'}</div>
-                      <div className="text-sm leading-relaxed text-slate-500 truncate">{email}</div>
+                      <div className="font-medium text-warm-900 truncate">{name || 'User'}</div>
+                      <div className="text-sm leading-relaxed text-warm-500 truncate">{email}</div>
                     </div>
                   </div>
                 </div>
@@ -222,7 +222,7 @@ export function Header({ title, subtitle, children, backHref }: HeaderProps) {
                 <div className="p-2 border-t border-white/20">
                   <button
                     onClick={handleSignOut}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-600 hover:bg-white/50 active:bg-slate-50 rounded-lg transition-colors"
+                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-600 hover:bg-white/50 active:bg-warm-50 rounded-lg transition-colors"
                   >
                     <IconLogOut size={16} />
                     Sign out
@@ -252,9 +252,9 @@ function UserMenuItem({
     <Link
       href={href}
       onClick={onClick}
-      className="flex items-center gap-3 px-3 py-2 text-sm text-slate-700 hover:bg-white/50 active:bg-slate-50 rounded-lg transition-colors"
+      className="flex items-center gap-3 px-3 py-2 text-sm text-warm-700 hover:bg-white/50 active:bg-warm-50 rounded-lg transition-colors"
     >
-      <Icon size={16} className="text-slate-400" />
+      <Icon size={16} className="text-warm-400" />
       {label}
     </Link>
   );

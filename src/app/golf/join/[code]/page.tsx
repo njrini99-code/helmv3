@@ -58,23 +58,31 @@ export default async function GolfJoinTeamPage({ params }: PageProps) {
 
   if (teamError || !team) {
     return (
-      <div className="min-h-screen bg-cream flex items-center justify-center p-6">
-        <div className="max-w-md w-full bg-white rounded-2xl border border-warm-200 p-8 text-center">
-          <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+      <div className="min-h-dvh bg-auth-golf relative">
+        {/* Floating Orbs */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="auth-orb auth-orb-1 w-[400px] h-[400px] sm:w-[500px] sm:h-[500px] -top-24 -right-24 bg-gradient-to-br from-helm-green-400/40 to-helm-green-500/25" />
+          <div className="auth-orb auth-orb-2 w-[350px] h-[350px] sm:w-[400px] sm:h-[400px] -bottom-20 -left-20 bg-gradient-to-tr from-helm-green-400/25 to-helm-green-400/15" />
+        </div>
+
+        <div className="relative min-h-dvh flex items-center justify-center p-4 sm:p-6 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+          <div className="max-w-md w-full auth-glass-card rounded-3xl p-6 sm:p-8 text-center">
+            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-warm-900 mb-2">Invalid Invite Code</h1>
+            <p className="text-warm-600 mt-2 text-sm sm:text-base mb-6">
+              This team invitation code is invalid or does not exist.
+            </p>
+            <a
+              href="/golf/dashboard"
+              className="inline-block px-6 py-2.5 bg-primary-600 text-white font-semibold rounded-xl hover:bg-primary-700 transition-colors shadow-lg shadow-primary-900/10"
+            >
+              Go to Dashboard
+            </a>
           </div>
-          <h1 className="text-xl font-semibold text-warm-900 mb-2">Invalid Invite Code</h1>
-          <p className="text-warm-600 mb-6">
-            This team invitation code is invalid or does not exist.
-          </p>
-          <a
-            href="/golf/dashboard"
-            className="inline-block px-6 py-2.5 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
-          >
-            Go to Dashboard
-          </a>
         </div>
       </div>
     );

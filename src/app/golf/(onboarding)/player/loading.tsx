@@ -1,7 +1,7 @@
 export default function Loading() {
   return (
     <div className="min-h-dvh bg-[#FFFEFA] flex items-center justify-center p-4">
-      <div className="w-full max-w-lg space-y-8">
+      <div className="w-full max-w-[460px] space-y-8">
         {/* Logo placeholder */}
         <div className="flex justify-center">
           <div className="skeleton-shimmer h-10 w-32 rounded-lg" />
@@ -14,7 +14,7 @@ export default function Loading() {
               {index > 0 && (
                 <div className="h-[2px] w-8 sm:w-12 bg-warm-200 skeleton-shimmer" />
               )}
-              <div className="w-9 h-9 rounded-full skeleton-shimmer" />
+              <div className="w-8 h-8 rounded-full skeleton-shimmer" />
             </div>
           ))}
         </div>

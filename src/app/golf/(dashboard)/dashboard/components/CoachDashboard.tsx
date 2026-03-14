@@ -317,7 +317,6 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
             {/* HEADER — z-10 is sufficient inside the isolate main container */}
             <div className={cn(
                 'golf-mobile-page-header',
-                'bg-white/80 md:backdrop-blur-xl',
                 'border-warm-200/40',
             )}>
                 <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-4">
@@ -325,7 +324,7 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
                         <div className="flex items-center gap-3 min-w-0">
                             <MobileMenuButton />
                             <div className="min-w-0">
-                                <h1 className="text-lg md:text-xl font-bold tracking-tight text-warm-900 truncate">
+                                <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900 truncate">
                                     {greeting}, {firstName}
                                 </h1>
                                 <div className="flex items-center gap-2 mt-0.5">

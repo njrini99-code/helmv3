@@ -165,7 +165,7 @@ function KPICard({
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm text-warm-500 font-medium">{label}</p>
-          <p className="text-2xl font-bold text-warm-900 mt-1">{value}</p>
+          <p className="text-2xl font-bold tabular-nums text-warm-900 mt-1">{value}</p>
           {subtext && (
             <p className="text-sm text-warm-500 mt-1 flex items-center gap-1">
               {trend === 'up' && <IconTrendingUp size={14} className="text-primary-600" />}
@@ -480,7 +480,7 @@ export default function StatsClient({
     try {
       return generateStatisticalStrengthsWeaknesses(detailedStats);
     } catch (err) {
-      console.error('[GolfHelm] Error generating strengths/weaknesses:', err);
+      // Strengths/weaknesses computation failed — degrade gracefully
       return null;
     }
   }, [detailedStats]);
@@ -728,7 +728,6 @@ export default function StatsClient({
       detailedStatsCache.current.set(cacheKey, stats);
       setDetailedStats(stats);
     } catch (error) {
-      console.error('Failed to load detailed stats:', error);
       setStatsError('Failed to load stats. Please try again.');
     } finally {
       loadingDetailedRef.current = false;
@@ -749,7 +748,7 @@ export default function StatsClient({
       setWorstHoleData(holes);
       setTrendData(trends);
     } catch (error) {
-      console.error('Failed to load player analytics:', error);
+      setStatsError('Failed to load analytics data.');
     }
   }, []);
 
@@ -783,7 +782,7 @@ export default function StatsClient({
         setSprayChartData(response);
       }
     } catch (error) {
-      console.error('Failed to load spray chart data:', error);
+      // Spray chart load failed — handled by null state below
       if (latestSprayChartRequest.current === cacheKey) {
         setSprayChartData(null);
       }
@@ -946,7 +945,7 @@ export default function StatsClient({
             <div className="flex items-center gap-3">
               <MobileMenuButton className="p-2 -ml-2" />
               <div>
-                <h1 className="text-xl md:text-2xl font-bold text-warm-900">Team Stats</h1>
+                <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">Team Stats</h1>
                 <p className="text-warm-500 text-sm md:text-base">{players.length} players on your roster</p>
               </div>
             </div>
@@ -1150,7 +1149,7 @@ export default function StatsClient({
                 <MobileMenuButton />
               )}
               <div className="min-w-0">
-                <h1 className="truncate text-lg font-semibold tracking-tight text-warm-900">
+                <h1 className="truncate text-xl md:text-2xl font-semibold tracking-tight text-warm-900">
                   {userRole === 'coach' ? (playerName ? `${playerName}'s Stats` : 'Player Stats') : 'My Stats'}
                 </h1>
                 <p className="truncate text-xs text-warm-500">

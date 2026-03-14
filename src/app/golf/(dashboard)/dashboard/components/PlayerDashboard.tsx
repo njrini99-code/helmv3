@@ -164,7 +164,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                     <div className="flex items-center gap-3">
                         <MobileMenuButton />
                         <div className="flex-1 min-w-0">
-                            <h1 className="text-lg md:text-xl font-bold tracking-tight text-warm-900 truncate">
+                            <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900 truncate">
                                 {greeting}, {player.first_name}
                             </h1>
                             <div className="flex items-center gap-2 mt-0.5">
@@ -199,7 +199,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                                             <IconGolf size={28} className="text-primary-500 md:hidden" />
                                             <IconGolf size={32} className="text-primary-500 hidden md:block" />
                                         </div>
-                                        <h3 className="text-lg font-bold text-warm-900 mb-2">Ready to Track Your Game</h3>
+                                        <h3 className="text-lg font-semibold text-warm-900 mb-2">Ready to Track Your Game</h3>
                                         <p className="text-sm text-warm-500 max-w-md mx-auto mb-6 leading-relaxed">
                                             Submit your first round to unlock scoring averages, performance trends, and AI-powered coaching insights.
                                         </p>
@@ -336,11 +336,11 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                                         <SectionHeader title="Scoring Trend" />
                                         <PremiumGlassCard>
                                             <div className="flex flex-col items-center justify-center py-8 text-center">
-                                                <div className="w-12 h-12 rounded-full bg-warm-100/80 flex items-center justify-center mb-3">
-                                                    <IconChartBar size={20} className="text-warm-400" />
+                                                <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mb-3">
+                                                    <IconChartBar size={24} className="text-warm-400" />
                                                 </div>
-                                                <p className="text-sm font-medium text-warm-700 mb-1">Not enough data yet</p>
-                                                <p className="text-xs text-warm-400">Submit 2+ rounds to see your scoring trend</p>
+                                                <p className="text-lg font-semibold text-warm-900 mb-1">Not enough data yet</p>
+                                                <p className="text-sm text-warm-500">Submit 2+ rounds to see your scoring trend</p>
                                             </div>
                                         </PremiumGlassCard>
                                     </>

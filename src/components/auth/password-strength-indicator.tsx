@@ -53,13 +53,13 @@ function evaluatePassword(password: string): StrengthResult {
   } else if (metCount <= 3) {
     score = 3;
     label = 'Good';
-    color = 'bg-emerald-400';
-    bgColor = 'bg-emerald-50';
+    color = 'bg-primary-400';
+    bgColor = 'bg-primary-50';
   } else {
     score = 4;
     label = 'Strong';
-    color = 'bg-emerald-600';
-    bgColor = 'bg-emerald-50';
+    color = 'bg-primary-600';
+    bgColor = 'bg-primary-50';
   }
 
   return { score, label, color, bgColor, checks };
@@ -79,8 +79,8 @@ export function PasswordStrengthIndicator({ password, className }: PasswordStren
   const labelColors: Record<string, string> = {
     Weak: 'text-red-600',
     Fair: 'text-amber-600',
-    Good: 'text-emerald-500',
-    Strong: 'text-emerald-700',
+    Good: 'text-primary-500',
+    Strong: 'text-primary-700',
   };
 
   return (
@@ -110,7 +110,7 @@ export function PasswordStrengthIndicator({ password, className }: PasswordStren
         {strength.checks.map((check) => (
           <div key={check.label} className="flex items-center gap-1.5">
             {check.met ? (
-              <svg className="w-3 h-3 text-emerald-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="w-3 h-3 text-primary-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
             ) : (

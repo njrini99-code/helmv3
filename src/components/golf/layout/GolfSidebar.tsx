@@ -396,17 +396,17 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
           onClick={handleNavClick}
           title={isCollapsed ? 'Settings' : undefined}
           aria-label={isCollapsed ? 'Settings' : undefined}
-          aria-current={pathname === '/golf/dashboard/settings' ? 'page' : undefined}
+          aria-current={pathname.startsWith('/golf/dashboard/settings') ? 'page' : undefined}
           className={cn(
             'relative flex items-center gap-3 py-3 lg:py-2.5 rounded-[10px] text-[13px] font-medium touch-manipulation overflow-hidden',
             'transition-colors duration-150 ease-out active:scale-[0.98]',
-            pathname === '/golf/dashboard/settings'
+            pathname.startsWith('/golf/dashboard/settings')
               ? 'bg-white/10 text-primary-400'
               : 'text-white/60 hover:bg-white/5 hover:text-white/90',
             isCollapsed ? 'justify-center px-2' : 'px-3'
           )}
         >
-          {pathname === '/golf/dashboard/settings' && (
+          {pathname.startsWith('/golf/dashboard/settings') && (
             <div className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-primary-500" />
           )}
           <IconSettings size={18} className="flex-shrink-0 text-white/50" aria-hidden="true" />
