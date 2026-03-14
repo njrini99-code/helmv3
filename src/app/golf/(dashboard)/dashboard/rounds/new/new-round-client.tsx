@@ -172,7 +172,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
     courseSlope: '',
     teesPlayed: 'White',
     roundType: 'practice',
-    roundDate: new Date().toISOString().split('T')[0]!,
+    roundDate: '', // Set on mount to avoid hydration mismatch (server UTC vs client local)
   });
   const [currentHoleIndex, setCurrentHoleIndex] = useState(0);
   const [holes, setHoles] = useState<Hole[]>([]);
@@ -206,6 +206,14 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
   // Ref for stale closure prevention in async auto-save (#20)
   const inProgressShotsByHoleRef = useRef(inProgressShotsByHole);
   inProgressShotsByHoleRef.current = inProgressShotsByHole;
+
+  // Set roundDate on mount to avoid server/client timezone hydration mismatch
+  useEffect(() => {
+    if (!roundSetup.roundDate) {
+      setRoundSetup(prev => ({ ...prev, roundDate: new Date().toISOString().split('T')[0]! }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Emergency save recovery state
   const [showNewRoundRecovery, setShowNewRoundRecovery] = useState(false);

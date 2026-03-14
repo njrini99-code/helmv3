@@ -6,6 +6,9 @@
  */
 
 import type { LieMissAnalysis } from './mining/lie-specific-analysis';
+import type { MultiWindowAnalysis } from './trends/multi-window';
+import type { Anomaly } from './stats/anomaly-detector';
+import type { Streak } from './trends/streak-detector';
 
 // Re-export for convenience
 export type { LieMissAnalysis };
@@ -622,6 +625,11 @@ export interface PlayerAnalysis {
 
   recommendations: string[];
   alertLevel: 'none' | 'info' | 'warning' | 'critical';
+
+  // V3 statistical analysis results
+  trendAnalysis?: MultiWindowAnalysis;
+  anomalies?: Anomaly[];
+  streaks?: Streak[];
 }
 
 /** Intelligent round review (V2 enhanced) */

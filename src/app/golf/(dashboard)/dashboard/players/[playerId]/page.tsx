@@ -27,6 +27,7 @@ interface PlayerProfile {
 interface RoundRow {
   id: string;
   created_at: string;
+  round_date: string | null;
   total_score: number | null;
   holes_played: number | null;
   course_name: string | null;
@@ -34,6 +35,8 @@ interface RoundRow {
   fairways_hit: number | null;
   greens_in_regulation: number | null;
   total_putts: number | null;
+  total_fairways: number | null;
+  total_gir_possible: number | null;
 }
 
 interface PatternRow {
@@ -145,10 +148,10 @@ export default async function PlayerInsightPage({
     // Recent rounds (last 10)
     supabase
       .from('golf_rounds')
-      .select('id, created_at, total_score, holes_played, course_name, course_par, fairways_hit, greens_in_regulation, total_putts')
+      .select('id, created_at, round_date, total_score, holes_played, course_name, course_par, fairways_hit, greens_in_regulation, total_putts, total_fairways, total_gir_possible')
       .eq('player_id', playerId)
       .not('total_score', 'is', null)
-      .order('created_at', { ascending: false })
+      .order('round_date', { ascending: false })
       .limit(10),
 
     // Active patterns
@@ -268,16 +271,22 @@ function computeCategoryBreakdown(rounds: RoundRow[]): CategoryBreakdown {
 
   const recent = rounds.slice(0, 5);
 
-  // Tee Game — fairways hit percentage
+  // Tee Game — fairways hit percentage (use actual total_fairways per round, fallback to 14)
   const fairwayRounds = recent.filter((r) => r.fairways_hit !== null);
   const teeGame = fairwayRounds.length > 0
-    ? Math.round((fairwayRounds.reduce((s, r) => s + (r.fairways_hit ?? 0), 0) / fairwayRounds.length / 14) * 100)
+    ? Math.round(
+        (fairwayRounds.reduce((s, r) => s + (r.fairways_hit ?? 0), 0) /
+         fairwayRounds.reduce((s, r) => s + (r.total_fairways ?? 14), 0)) * 100
+      )
     : 50;
 
-  // Approach — GIR percentage
+  // Approach — GIR percentage (use actual total_gir_possible per round, fallback to 18)
   const girRounds = recent.filter((r) => r.greens_in_regulation !== null);
   const approach = girRounds.length > 0
-    ? Math.round((girRounds.reduce((s, r) => s + (r.greens_in_regulation ?? 0), 0) / girRounds.length / 18) * 100)
+    ? Math.round(
+        (girRounds.reduce((s, r) => s + (r.greens_in_regulation ?? 0), 0) /
+         girRounds.reduce((s, r) => s + (r.total_gir_possible ?? 18), 0)) * 100
+      )
     : 50;
 
   // Putting — based on putts per round (30 putts = 60, 36+ = 30, 25 = 90)
@@ -290,7 +299,7 @@ function computeCategoryBreakdown(rounds: RoundRow[]): CategoryBreakdown {
       )
     : 50;
 
-  // Short game — inferred as the average of other categories (no randomness)
+  // Short game — estimated as the average of other categories (no direct data available)
   const shortGame = Math.round((teeGame + approach + putting) / 3);
 
   // Scoring — based on total_score vs par

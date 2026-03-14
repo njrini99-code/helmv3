@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
+import { logServerError } from '@/lib/server-error-logger';
 
 // ============================================================================
 // TYPES
@@ -450,6 +451,16 @@ export async function getTeamCategoryInsights(): Promise<TeamCategoryInsightsRes
 
       const insights = generateCategoryInsights(catDef, playerStats, teamAvg);
 
+      // For short game, per-round trend data is unavailable (requires shot-level data).
+      // Add an insight indicating the trend is based on aggregate stats only.
+      if (catDef.id === 'short_game' && categoryTrend === 'stable' && playerStats.every((p) => p.trend === 'stable')) {
+        insights.unshift({
+          id: `${catDef.id}-trend-unavailable`,
+          message: 'Short game trend based on aggregate scramble stats — per-round trend data unavailable',
+          tone: 'neutral',
+        });
+      }
+
       categories.push({
         id: catDef.id,
         label: catDef.label,
@@ -493,6 +504,7 @@ export async function getTeamCategoryInsights(): Promise<TeamCategoryInsightsRes
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
+    await logServerError(message, { action: 'getTeamCategoryInsights' }, 'error');
     return { success: false, error: message };
   }
 }

@@ -159,7 +159,8 @@ const WINDOW_CONFIGS: Array<{
  */
 export function analyzeMultiWindowTrends(
   values: number[],
-  metric: string
+  metric: string,
+  lowerIsBetter = false
 ): MultiWindowAnalysis {
   if (values.length === 0) {
     return {
@@ -182,7 +183,8 @@ export function analyzeMultiWindowTrends(
 
     const windowValues = values.slice(-windowSize);
     const reg = linearRegression(windowValues);
-    const direction = classifyDirection(reg.slope, directionThreshold);
+    const effectiveSlope = lowerIsBetter ? -reg.slope : reg.slope;
+    const direction = classifyDirection(effectiveSlope, directionThreshold);
     const magnitude = Math.abs(reg.slope) / (overallStd || 1);
     const confidence = computeConfidence(reg.rSquared, windowSize);
 

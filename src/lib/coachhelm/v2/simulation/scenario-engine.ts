@@ -32,7 +32,8 @@ export interface ImprovementProjection {
   projectedScoringImpact: number;   // Strokes per round improvement
   difficulty: 'easy' | 'moderate' | 'hard';
   timeEstimate: string;
-  priority: number;                 // Rank by impact/difficulty ratio
+  priorityRatio: number;            // Impact/difficulty ratio (higher = more impactful per unit effort)
+  priorityRank: number;             // Ordinal rank (1 = highest priority)
 }
 
 // ---------------------------------------------------------------------------
@@ -196,7 +197,7 @@ export function rankImprovementOpportunities(
     // SG improvement directly translates to scoring improvement
     const scoringImpact = improvementNeeded;
     const difficulty = classifyDifficulty(improvementNeeded);
-    const priority =
+    const priorityRatio =
       Math.round((scoringImpact / difficultyMultiplier(difficulty)) * 100) /
       100;
 
@@ -207,13 +208,14 @@ export function rankImprovementOpportunities(
       projectedScoringImpact: Math.round(scoringImpact * 100) / 100,
       difficulty,
       timeEstimate: timeEstimate(difficulty),
-      priority,
+      priorityRatio,
+      priorityRank: 0, // Will be assigned after sorting
     });
   }
 
-  // Sort by priority descending (highest impact/difficulty ratio first)
-  projections.sort((a, b) => b.priority - a.priority);
+  // Sort by priorityRatio descending (highest impact/difficulty ratio first)
+  projections.sort((a, b) => b.priorityRatio - a.priorityRatio);
 
   // Assign ordinal priority ranks (1 = highest)
-  return projections.map((p, i) => ({ ...p, priority: i + 1 }));
+  return projections.map((p, i) => ({ ...p, priorityRank: i + 1 }));
 }

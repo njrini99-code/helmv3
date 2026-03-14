@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import Link from 'next/link';
+import { m, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { GlassCard } from '@/components/ui/glass-card';
 import {
@@ -85,7 +84,7 @@ function InsightCard({
   const confidencePercent = Math.round(insight.confidence * 100);
 
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, x: -20 }}
@@ -146,19 +145,19 @@ function InsightCard({
         </div>
 
         {/* Expand indicator */}
-        <motion.div
+        <m.div
           animate={{ rotate: expanded ? 180 : 0 }}
           transition={{ duration: 0.2 }}
           className="text-warm-400 flex-shrink-0"
         >
           <IconChevronDown size={18} />
-        </motion.div>
+        </m.div>
       </button>
 
       {/* Expanded content */}
       <AnimatePresence>
         {expanded && (
-          <motion.div
+          <m.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
@@ -242,10 +241,10 @@ function InsightCard({
                 </div>
               )}
             </div>
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </m.div>
   );
 }
 
@@ -255,7 +254,8 @@ export function AIInsightsPanel({
   onDismiss,
   onAcknowledge,
 }: AIInsightsPanelProps) {
-  const displayInsights = insights.slice(0, maxDisplay);
+  const [showAll, setShowAll] = useState(false);
+  const displayInsights = showAll ? insights : insights.slice(0, maxDisplay);
   const hasMore = insights.length > maxDisplay;
 
   // Empty state
@@ -317,22 +317,22 @@ export function AIInsightsPanel({
         </AnimatePresence>
       </div>
 
-      {/* View all link */}
+      {/* Show all / collapse toggle */}
       {hasMore && (
-        <motion.div
+        <m.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
           className="mt-4 pt-4 border-t border-white/20"
         >
-          <Link
-            href="/golf/dashboard/coachhelm"
-            className="flex items-center justify-center gap-2 text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors"
+          <button
+            onClick={() => setShowAll(!showAll)}
+            className="flex items-center justify-center gap-2 text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors w-full"
           >
-            View all {insights.length} insights
-            <IconChevronRight size={16} />
-          </Link>
-        </motion.div>
+            {showAll ? 'Show fewer insights' : `View all ${insights.length} insights`}
+            <IconChevronRight size={16} className={cn('transition-transform', showAll && 'rotate-90')} />
+          </button>
+        </m.div>
       )}
     </GlassCard>
   );

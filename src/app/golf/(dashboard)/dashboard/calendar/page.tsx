@@ -158,7 +158,9 @@ export default async function GolfCalendarPage() {
     return acc;
   }, {} as Record<string, number>);
 
-  const upcomingEvents = events.filter(e => new Date(e.start_time || e.start_date) >= new Date()).length;
+  // Count upcoming events using a stable server timestamp to avoid hydration mismatch
+  const serverNow = new Date().toISOString();
+  const upcomingEvents = events.filter(e => (e.start_time || e.start_date) >= serverNow).length;
 
   const eventTypeConfig: Record<string, { label: string; dot: string }> = {
     practice: { label: 'Practice', dot: 'bg-primary-500' },
@@ -177,7 +179,7 @@ export default async function GolfCalendarPage() {
           {events.length > 0 && (
             <div className="flex-shrink-0 px-4 md:px-6 pb-2">
               <div className="flex items-center gap-4 overflow-x-auto scrollbar-hide">
-                <span className="text-sm font-medium text-warm-600 whitespace-nowrap">
+                <span className="text-sm font-medium text-warm-600 whitespace-nowrap" suppressHydrationWarning>
                   {upcomingEvents} upcoming event{upcomingEvents !== 1 ? 's' : ''}
                 </span>
                 <span className="text-warm-300">|</span>

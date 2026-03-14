@@ -176,7 +176,7 @@ export function CoachHelmHeader({
             )}
 
             {/* Last updated */}
-            <span className="text-xs text-warm-400 hidden sm:block">
+            <span className="text-xs text-warm-400 hidden sm:block" suppressHydrationWarning>
               Updated {formatLastUpdated(lastUpdated)}
             </span>
 

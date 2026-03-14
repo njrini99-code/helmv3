@@ -1,12 +1,13 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { GlassCard } from '@/components/ui/glass-card';
 import {
   IconTrendingUp,
   IconTrendingDown,
   IconMinus,
+  IconInfo,
 } from '@/components/icons';
 
 interface CompositeRatingCardProps {
@@ -80,13 +81,36 @@ export function CompositeRatingCard({
   playerName: _playerName,
 }: CompositeRatingCardProps) {
   // Resolve props: prefer typed props, fall back to parsing from profileData
-  const resolvedComposite = composite ?? (profileData?.composite as number | undefined) ?? 0;
-  const resolvedCategories = categories ?? (profileData?.categories as typeof categories | undefined) ?? { teeGame: 50, approach: 50, shortGame: 50, putting: 50, scoring: 50 };
+  const resolvedComposite = composite ?? (profileData?.composite as number | undefined);
+  const resolvedCategories = categories ?? (profileData?.categories as typeof categories | undefined);
   const resolvedPercentiles = percentiles ?? (profileData?.percentiles as typeof percentiles | undefined);
   const resolvedTrend = trend ?? (profileData?.trend as typeof trend | undefined);
 
+  // Show empty state when no real data exists (avoids contradictory 0 composite / 50 categories)
+  const hasData = resolvedComposite != null || resolvedCategories != null;
+  if (!hasData) {
+    return (
+      <GlassCard className="relative overflow-hidden" glow="subtle">
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600" />
+        <div className="flex flex-col items-center gap-4 py-8">
+          <p className="text-sm font-semibold uppercase tracking-wider text-warm-500">
+            Game Strength
+          </p>
+          <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center">
+            <IconInfo size={24} className="text-warm-400" />
+          </div>
+          <p className="text-sm text-warm-600">Not enough data yet</p>
+          <p className="text-xs text-warm-400">Complete more rounds to unlock your game rating</p>
+        </div>
+      </GlassCard>
+    );
+  }
+
+  const displayComposite = resolvedComposite ?? 0;
+  const displayCategories = resolvedCategories ?? { teeGame: 50, approach: 50, shortGame: 50, putting: 50, scoring: 50 };
+
   const circumference = 2 * Math.PI * 54;
-  const strokeDashoffset = circumference - (resolvedComposite / 100) * circumference;
+  const strokeDashoffset = circumference - (displayComposite / 100) * circumference;
 
   return (
     <GlassCard className="relative overflow-hidden" glow="subtle">
@@ -99,7 +123,7 @@ export function CompositeRatingCard({
         </p>
 
         {/* Composite ring */}
-        <motion.div
+        <m.div
           className="relative flex items-center justify-center"
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -114,14 +138,14 @@ export function CompositeRatingCard({
               strokeWidth="8"
               className="stroke-warm-100"
             />
-            <motion.circle
+            <m.circle
               cx="70"
               cy="70"
               r="54"
               fill="none"
               strokeWidth="8"
               strokeLinecap="round"
-              className={getRingColor(resolvedComposite)}
+              className={getRingColor(displayComposite)}
               strokeDasharray={circumference}
               initial={{ strokeDashoffset: circumference }}
               animate={{ strokeDashoffset }}
@@ -129,15 +153,15 @@ export function CompositeRatingCard({
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className={cn('text-5xl font-bold tabular-nums', getRatingColor(resolvedComposite))}>
-              {resolvedComposite}
+            <span className={cn('text-5xl font-bold tabular-nums', getRatingColor(displayComposite))}>
+              {displayComposite}
             </span>
           </div>
-        </motion.div>
+        </m.div>
 
         {/* Trend indicator */}
         {resolvedTrend && (
-          <motion.div
+          <m.div
             className={cn('flex items-center gap-1.5 text-sm font-medium', trendConfig[resolvedTrend.direction].color)}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -154,14 +178,14 @@ export function CompositeRatingCard({
               </span>{' '}
               over 30 days
             </span>
-          </motion.div>
+          </m.div>
         )}
 
         {/* Category bars */}
         <div className="w-full space-y-3">
-          {(Object.entries(resolvedCategories) as [keyof typeof resolvedCategories, number][]).map(
+          {(Object.entries(displayCategories) as [keyof typeof displayCategories, number][]).map(
             ([key, value], i) => (
-              <motion.div
+              <m.div
                 key={key}
                 className="flex items-center gap-3"
                 initial={{ opacity: 0, x: -12 }}
@@ -172,7 +196,7 @@ export function CompositeRatingCard({
                   {categoryLabels[key]}
                 </span>
                 <div className={cn('flex-1 h-2.5 rounded-full overflow-hidden', getBarBgColor(value))}>
-                  <motion.div
+                  <m.div
                     className={cn('h-full rounded-full', getBarColor(value))}
                     initial={{ width: 0 }}
                     animate={{ width: `${value}%` }}
@@ -187,7 +211,7 @@ export function CompositeRatingCard({
                     {resolvedPercentiles[key].team}th %ile
                   </span>
                 )}
-              </motion.div>
+              </m.div>
             )
           )}
         </div>

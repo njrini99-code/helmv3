@@ -50,6 +50,16 @@ const categoryIconMap: Record<string, typeof IconCrosshair> = {
   scoring: IconTrendingUp,
 };
 
+/** Format functions per category — these match the server-side definitions
+ *  in team-category-insights.ts but are defined here as client-safe functions. */
+const categoryFormatMap: Record<string, (v: number) => string> = {
+  driving: (v: number) => `${v.toFixed(0)}%`,
+  approach: (v: number) => `${v.toFixed(0)}%`,
+  short_game: (v: number) => `${v.toFixed(0)}%`,
+  putting: (v: number) => v.toFixed(1),
+  scoring: (v: number) => (v > 0 ? `+${v.toFixed(1)}` : v.toFixed(1)),
+};
+
 function getCategoryIcon(id: string) {
   return categoryIconMap[id] ?? IconActivity;
 }
@@ -157,6 +167,7 @@ export function TeamCategoryView({
             <CategoryDrillDown
               players={activeCategory.players}
               primaryMetric={activeCategory.primaryMetric}
+              formatValue={categoryFormatMap[activeCategory.id]}
               lowerIsBetter={activeCategory.id === 'putting' || activeCategory.id === 'scoring'}
               onPlayerClick={onPlayerClick}
             />

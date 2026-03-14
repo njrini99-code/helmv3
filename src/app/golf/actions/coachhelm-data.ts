@@ -14,6 +14,7 @@
 // ============================================================================
 
 import { createClient } from '@/lib/supabase/server';
+import { logServerError } from '@/lib/server-error-logger';
 
 // Stats module
 import {
@@ -247,8 +248,6 @@ const STAT_METRICS = [
   'sgApproach',
   'sgAroundGreen',
   'sgPutting',
-  'birdieRate',
-  'bogeyAvoidance',
 ] as const;
 
 /**
@@ -279,8 +278,6 @@ function mapStatsCacheToMetrics(
     sgApproach: row.strokes_gained_approach ?? 0,
     sgAroundGreen: row.strokes_gained_around_green ?? 0,
     sgPutting: row.strokes_gained_putting ?? 0,
-    birdieRate: 0,       // Not directly in stats cache; set to 0 as fallback
-    bogeyAvoidance: 0,   // Not directly in stats cache; set to 0 as fallback
   };
 }
 
@@ -439,6 +436,7 @@ export async function getPlayerProfile(
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error in getPlayerProfile';
+    await logServerError(message, { action: 'getPlayerProfile', extra: { playerId } }, 'error');
     return { success: false, error: message };
   }
 }
@@ -503,8 +501,8 @@ export async function getPlayerTrendAnalysis(
 
     const baseline = buildPlayerBaseline(baselineRounds, playerId);
 
-    // Run multi-window trend analysis on score_to_par
-    const trends = analyzeMultiWindowTrends(scoreValues, 'scoreToPar');
+    // Run multi-window trend analysis on score_to_par (lower is better for golf scores)
+    const trends = analyzeMultiWindowTrends(scoreValues, 'scoreToPar', true);
 
     // Detect streaks against baseline mean
     const baselineMean = baseline.metrics['scoreToPar']?.mean ?? 0;
@@ -543,6 +541,7 @@ export async function getPlayerTrendAnalysis(
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error in getPlayerTrendAnalysis';
+    await logServerError(message, { action: 'getPlayerTrendAnalysis', extra: { playerId } }, 'error');
     return { success: false, error: message };
   }
 }
@@ -615,13 +614,18 @@ export async function getPlayerShotContext(
     const shots: ShotData[] = shotsData
       .filter((s) => s.lie_before && s.distance_to_hole_before != null)
       .map((s) => {
-        // Convert feet to yards if needed
-        const distBefore = s.distance_unit_before === 'feet'
-          ? (s.distance_to_hole_before ?? 0) / 3
-          : (s.distance_to_hole_before ?? 0);
-        const distAfter = s.distance_unit_after === 'feet'
-          ? (s.distance_to_hole_after ?? 0) / 3
-          : (s.distance_to_hole_after ?? 0);
+        // Convert feet to yards if needed — but keep feet for green lies
+        // because shot-level-sg.ts expects FEET for putting distances
+        const distBefore = s.lie_before === 'green'
+          ? (s.distance_to_hole_before ?? 0)  // Keep in feet for putting
+          : s.distance_unit_before === 'feet'
+            ? (s.distance_to_hole_before ?? 0) / 3
+            : (s.distance_to_hole_before ?? 0);
+        const distAfter = s.lie_after === 'green'
+          ? (s.distance_to_hole_after ?? 0)  // Keep in feet for putting
+          : s.distance_unit_after === 'feet'
+            ? (s.distance_to_hole_after ?? 0) / 3
+            : (s.distance_to_hole_after ?? 0);
 
         return {
           id: s.id,
@@ -707,6 +711,7 @@ export async function getPlayerShotContext(
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error in getPlayerShotContext';
+    await logServerError(message, { action: 'getPlayerShotContext', extra: { playerId, periodDays } }, 'error');
     return { success: false, error: message };
   }
 }
@@ -809,6 +814,7 @@ export async function getTeamSimulation(
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error in getTeamSimulation';
+    await logServerError(message, { action: 'getTeamSimulation', extra: { teamId } }, 'error');
     return { success: false, error: message };
   }
 }
@@ -902,27 +908,36 @@ export async function getPlayerWhatIf(
         .eq('status', 'active');
 
       if (teamMembers && teamMembers.length > 1) {
-        const profiles: PlayerProfile[] = [];
+        // Batch fetch all team members' rounds in a single query to avoid N+1
+        const otherPlayerIds = teamMembers
+          .filter((m) => m.player_id !== playerId)
+          .map((m) => m.player_id);
+
+        const { data: allTeamRounds } = otherPlayerIds.length > 0
+          ? await supabase
+              .from('golf_rounds')
+              .select('player_id, score_to_par')
+              .in('player_id', otherPlayerIds)
+              .eq('status', 'completed')
+              .not('score_to_par', 'is', null)
+              .order('round_date', { ascending: false })
+          : { data: [] as { player_id: string; score_to_par: number | null }[] };
+
+        // Group rounds by player
+        const roundsByPlayer = new Map<string, number[]>();
+        for (const r of allTeamRounds ?? []) {
+          const scores = roundsByPlayer.get(r.player_id) ?? [];
+          scores.push(r.score_to_par ?? 0);
+          roundsByPlayer.set(r.player_id, scores);
+        }
+
+        const profiles: PlayerProfile[] = [playerProfile];
 
         for (const m of teamMembers) {
           const info = m.golf_players as { id: string; first_name: string | null; last_name: string | null } | null;
-          if (!info) continue;
+          if (!info || m.player_id === playerId) continue;
 
-          if (m.player_id === playerId) {
-            profiles.push(playerProfile);
-            continue;
-          }
-
-          const { data: mRounds } = await supabase
-            .from('golf_rounds')
-            .select('score_to_par')
-            .eq('player_id', m.player_id)
-            .eq('status', 'completed')
-            .not('score_to_par', 'is', null)
-            .order('round_date', { ascending: false })
-            .limit(20);
-
-          const mScores = (mRounds ?? []).map((r) => r.score_to_par ?? 0);
+          const mScores = (roundsByPlayer.get(m.player_id) ?? []).slice(0, 20);
           if (mScores.length < 3) continue;
 
           const mMean = mScores.reduce((s, v) => s + v, 0) / mScores.length;
@@ -957,6 +972,7 @@ export async function getPlayerWhatIf(
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error in getPlayerWhatIf';
+    await logServerError(message, { action: 'getPlayerWhatIf', extra: { playerId } }, 'error');
     return { success: false, error: message };
   }
 }

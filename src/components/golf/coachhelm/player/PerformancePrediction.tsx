@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { GlassCard } from '@/components/ui/glass-card';
 import {
@@ -64,8 +64,8 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
 
   const getTrendIcon = () => {
     if (isNeutral) return <IconTarget size={24} className="text-warm-400" />;
-    if (isPositive) return <IconTrendingDown size={24} className="text-primary-500" />;
-    return <IconTrendingUp size={24} className="text-red-500" />;
+    if (isPositive) return <IconTrendingUp size={24} className="text-primary-500" />;
+    return <IconTrendingDown size={24} className="text-red-500" />;
   };
 
   const formatScore = (value: number) => {
@@ -114,7 +114,7 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
 
       {/* Main Prediction */}
       <div className="flex items-center justify-center gap-6 mb-6">
-        <motion.div
+        <m.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 0.3 }}
@@ -130,7 +130,7 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
             </span>
             {getTrendIcon()}
           </div>
-        </motion.div>
+        </m.div>
       </div>
 
       {/* Confidence Range Bar */}
@@ -145,7 +145,7 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
             <div className="absolute inset-0 bg-gradient-to-r from-primary-200 via-warm-200 to-red-200 opacity-50" />
 
             {/* Confidence fill */}
-            <motion.div
+            <m.div
               initial={{ width: 0 }}
               animate={{ width: `${confidencePercent}%` }}
               transition={{ duration: 0.6, delay: 0.2, ease: 'easeOut' }}
@@ -153,7 +153,7 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
             />
 
             {/* Predicted value marker */}
-            <motion.div
+            <m.div
               initial={{ opacity: 0, scale: 0 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.3, delay: 0.5 }}
@@ -175,7 +175,7 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
           </h4>
           <div className="space-y-2">
             {factors.slice(0, 3).map((factor, i) => (
-              <motion.div
+              <m.div
                 key={i}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -189,7 +189,7 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
                 )}>
                   {factor.contribution > 0 ? '+' : ''}{factor.contribution.toFixed(1)}
                 </span>
-              </motion.div>
+              </m.div>
             ))}
           </div>
         </div>
@@ -215,7 +215,7 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
 
       {/* State Message */}
       {stateMessage && (
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
@@ -225,7 +225,7 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
           <span className={cn('text-sm font-medium', stateMessage.color)}>
             {stateMessage.text}
           </span>
-        </motion.div>
+        </m.div>
       )}
     </GlassCard>
   );

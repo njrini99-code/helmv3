@@ -1,6 +1,7 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
+import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { GlassCard } from '@/components/ui/glass-card';
 import {
@@ -64,14 +65,14 @@ function getStrokesColor(value: number) {
   return 'text-warm-600';
 }
 
-function FocusAreaCard({
+function FocusAreaCardContent({
   focusArea,
   index,
-  onClick,
+  interactive,
 }: {
   focusArea: FocusArea;
   index: number;
-  onClick?: () => void;
+  interactive: boolean;
 }) {
   const trendConfig = getTrendConfig(focusArea.trend);
   const TrendIcon = trendConfig.icon;
@@ -79,18 +80,7 @@ function FocusAreaCard({
   const isPositive = focusArea.strokesGained > 0;
 
   return (
-    <motion.button
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay: index * 0.08 }}
-      onClick={onClick}
-      className={cn(
-        'relative w-full p-4 rounded-xl border text-left transition-all duration-200',
-        'glass-standard',
-        'hover:bg-white/90 hover:shadow-lg hover:-translate-y-0.5',
-        'group cursor-pointer'
-      )}
-    >
+    <>
       {/* Priority indicator */}
       <div className={cn(
         'absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold',
@@ -110,7 +100,10 @@ function FocusAreaCard({
           <TrendIcon size={16} className={trendConfig.color} />
         </div>
         <div className="flex-1 min-w-0">
-          <h4 className="font-semibold text-warm-900 text-sm truncate group-hover:text-primary-600 transition-colors">
+          <h4 className={cn(
+            'font-semibold text-warm-900 text-sm truncate transition-colors',
+            interactive && 'group-hover:text-primary-600'
+          )}>
             {focusArea.area}
           </h4>
           <span className={cn('text-xs font-medium', trendConfig.color)}>
@@ -129,7 +122,7 @@ function FocusAreaCard({
 
       {/* Visual bar for strokes */}
       <div className="relative h-2 bg-warm-100 rounded-full overflow-hidden mb-3">
-        <motion.div
+        <m.div
           initial={{ width: 0 }}
           animate={{
             width: `${Math.min(Math.abs(focusArea.strokesGained) * 20, 100)}%`,
@@ -153,12 +146,61 @@ function FocusAreaCard({
         {focusArea.recommendation}
       </p>
 
-      {/* View details hint */}
-      <div className="flex items-center text-xs font-medium text-primary-600 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-        View details
-        <IconChevronRight size={14} className="ml-1" />
-      </div>
-    </motion.button>
+      {/* View details hint (only when interactive) */}
+      {interactive && (
+        <div className="flex items-center text-xs font-medium text-primary-600 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+          View details
+          <IconChevronRight size={14} className="ml-1" />
+        </div>
+      )}
+    </>
+  );
+}
+
+function FocusAreaCard({
+  focusArea,
+  index,
+  onClick,
+}: {
+  focusArea: FocusArea;
+  index: number;
+  onClick?: () => void;
+}) {
+  const interactive = !!onClick;
+
+  const sharedClassName = cn(
+    'relative w-full p-4 rounded-xl border text-left transition-all duration-200',
+    'glass-standard',
+    interactive && 'hover:bg-white/90 hover:shadow-lg hover:-translate-y-0.5 group cursor-pointer'
+  );
+
+  if (interactive) {
+    return (
+      <m.button
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: index * 0.08 }}
+        onClick={onClick}
+        className={sharedClassName}
+      >
+        <FocusAreaCardContent focusArea={focusArea} index={index} interactive />
+      </m.button>
+    );
+  }
+
+  return (
+    <m.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay: index * 0.08 }}
+    >
+      <Link
+        href="/golf/dashboard/my-development"
+        className={sharedClassName}
+      >
+        <FocusAreaCardContent focusArea={focusArea} index={index} interactive />
+      </Link>
+    </m.div>
   );
 }
 
@@ -218,7 +260,7 @@ export function FocusAreasGrid({ focusAreas, onAreaClick }: FocusAreasGridProps)
       </div>
 
       {/* Legend */}
-      <motion.div
+      <m.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.5 }}
@@ -232,7 +274,7 @@ export function FocusAreasGrid({ focusAreas, onAreaClick }: FocusAreasGridProps)
           <div className="w-3 h-3 rounded-full bg-red-400" />
           <span className="text-xs text-warm-500">Losing strokes</span>
         </div>
-      </motion.div>
+      </m.div>
     </GlassCard>
   );
 }

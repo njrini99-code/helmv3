@@ -64,17 +64,6 @@ export function identifyScoringOpportunities(
     const converted = scoreToPar < 0; // birdie or better
     const roundId = hole.roundId ?? '';
 
-    // GIR = birdie putt chance
-    if (hole.gir) {
-      opportunities.push({
-        holeNumber: hole.holeNumber,
-        roundId,
-        type: 'gir_birdie_chance',
-        converted,
-        result: scoreToPar,
-      });
-    }
-
     // Reachable par 5 — reached in 2 means GIR with putts from eagle range
     // We approximate: par 5 + GIR + 2 putts or fewer = reached green early
     if (hole.par === 5 && hole.gir) {
@@ -82,6 +71,15 @@ export function identifyScoringOpportunities(
         holeNumber: hole.holeNumber,
         roundId,
         type: 'reachable_par5',
+        converted,
+        result: scoreToPar,
+      });
+    } else if (hole.gir) {
+      // GIR = birdie putt chance (skip for par 5s already counted as reachable_par5)
+      opportunities.push({
+        holeNumber: hole.holeNumber,
+        roundId,
+        type: 'gir_birdie_chance',
         converted,
         result: scoreToPar,
       });

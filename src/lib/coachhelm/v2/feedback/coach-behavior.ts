@@ -150,7 +150,7 @@ export async function recordAction(action: CoachAction): Promise<void> {
   const supabase = createAdminClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const table = supabase.from('golf_coach_actions' as any) as any;
+  const table = supabase.from('golf_coach_behavior_log' as any) as any;
 
   await table.insert({
     coach_id: action.coachId,
@@ -171,7 +171,7 @@ export async function queryActions(
   const supabase = createAdminClient();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const table = supabase.from('golf_coach_actions' as any) as any;
+  const table = supabase.from('golf_coach_behavior_log' as any) as any;
 
   const { data } = (await table
     .select('*')

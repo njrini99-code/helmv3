@@ -73,7 +73,9 @@ export function detectAnomalies(
   // IQR anomaly on the full value set
   if (values.length >= 4) {
     const iqrResult = detectIQRAnomalies(values);
-    if (iqrResult.outliers.includes(latest)) {
+    if (iqrResult.iqr === 0) {
+      // All values identical or near-identical — no IQR outliers possible
+    } else if (iqrResult.outliers.includes(latest)) {
       const deviation = latest > iqrResult.q3
         ? (latest - iqrResult.q3) / iqrResult.iqr
         : (iqrResult.q1 - latest) / iqrResult.iqr;

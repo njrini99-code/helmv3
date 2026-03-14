@@ -118,23 +118,15 @@ function calculateFeedbackAdjustment(feedback: InsightFeedback[]): number {
   const actionRate = feedback.filter((f) => f.wasActedUpon).length / feedback.length;
   const dismissRate = feedback.filter((f) => f.wasDismissed).length / feedback.length;
 
-  const ratedFeedback = feedback.filter((f) => f.wasHelpful !== null);
-  const helpfulRate =
-    ratedFeedback.length > 0
-      ? ratedFeedback.filter((f) => f.wasHelpful === true).length / ratedFeedback.length
-      : 0;
-
-  // High dismiss rate is a strong negative signal
+  // High dismiss rate is a strong negative signal — override continuous scaling
   if (dismissRate > 0.7) {
     return -0.2;
   }
 
-  // Acted upon AND found helpful is a positive signal
-  if (actionRate > 0.5 && helpfulRate > 0.5) {
-    return 0.1;
-  }
+  // Continuous adjustment: actionRate centered at 0.5 yields range [-0.2, +0.2]
+  const adjustment = (actionRate - 0.5) * 0.4;
 
-  return 0;
+  return clamp(adjustment, -0.2, 0.2);
 }
 
 function clamp(value: number, min: number, max: number): number {

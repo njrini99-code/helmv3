@@ -102,16 +102,38 @@ export default function RoundReviewPage() {
 
   const supabase = useMemo(() => createClient(), []);
 
-  // Fetch round data
+  // Fetch round data with auth check — only allow viewing own rounds
   useEffect(() => {
     async function fetchRound() {
       setLoadingRound(true);
       try {
-        const { data, error: fetchError } = await supabase
+        // Get current user to verify ownership
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setError('Not authenticated');
+          return;
+        }
+
+        // Get the player ID for the current user
+        const { data: playerRecord } = await supabase
+          .from('golf_players')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        const currentPlayerId = playerRecord?.id;
+
+        // Fetch round — if user is a player, restrict to their own rounds
+        let query = supabase
           .from('golf_rounds')
           .select('*, holes:golf_holes(*)')
-          .eq('id', roundId)
-          .maybeSingle();
+          .eq('id', roundId);
+
+        if (currentPlayerId) {
+          query = query.eq('player_id', currentPlayerId);
+        }
+
+        const { data, error: fetchError } = await query.maybeSingle();
 
         if (fetchError || !data) {
           setError('Round not found');

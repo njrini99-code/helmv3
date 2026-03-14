@@ -90,7 +90,7 @@ export function buildPlayerBaseline(
     const ewma = calculateEWMA(values);
     const mean = values.reduce((s, v) => s + v, 0) / values.length;
     const variance =
-      values.reduce((s, v) => s + (v - mean) ** 2, 0) / values.length;
+      values.reduce((s, v) => s + (v - mean) ** 2, 0) / Math.max(values.length - 1, 1);
     const stdDev = Math.sqrt(variance);
     const trend = linearRegressionSlope(values);
     const volatility = calculateRollingVolatility(values, 10);

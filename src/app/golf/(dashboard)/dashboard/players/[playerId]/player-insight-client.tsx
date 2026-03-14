@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
@@ -20,6 +20,7 @@ import {
   IconChevronDown,
   IconChevronUp,
 } from '@/components/icons';
+import { acknowledgeInsight, dismissInsight } from '@/app/golf/actions/insights';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -37,6 +38,7 @@ interface PlayerProfile {
 interface RoundRow {
   id: string;
   created_at: string;
+  round_date: string | null;
   total_score: number | null;
   holes_played: number | null;
   course_name: string | null;
@@ -125,7 +127,10 @@ interface PlayerInsightClientProps {
 
 function formatHandicap(handicap: number | null): string {
   if (handicap === null) return '--';
-  if (handicap > 0) return `+${handicap.toFixed(1)}`;
+  // In golf, a "plus" handicap means the player is better than scratch.
+  // Positive handicap values (e.g. 5.2) are normal handicaps — no prefix.
+  // Negative values (e.g. -2.0) are plus handicaps — display as "+2.0".
+  if (handicap < 0) return `+${Math.abs(handicap).toFixed(1)}`;
   return handicap.toFixed(1);
 }
 
@@ -255,6 +260,9 @@ export function PlayerInsightClient({
   predictions,
 }: PlayerInsightClientProps) {
   const [expandedInsights, setExpandedInsights] = useState<Set<string>>(new Set());
+  const [acknowledgedIds, setAcknowledgedIds] = useState<Set<string>>(new Set());
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
+  const [isPending, startTransition] = useTransition();
   const playerName = `${player.first_name ?? ''} ${player.last_name ?? ''}`.trim() || 'Player';
 
   const toggleInsight = (id: string) => {
@@ -263,6 +271,24 @@ export function PlayerInsightClient({
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
+    });
+  };
+
+  const handleAcknowledge = (insightId: string) => {
+    startTransition(async () => {
+      const result = await acknowledgeInsight(insightId);
+      if (result.success) {
+        setAcknowledgedIds((prev) => new Set(prev).add(insightId));
+      }
+    });
+  };
+
+  const handleDismiss = (insightId: string) => {
+    startTransition(async () => {
+      const result = await dismissInsight(insightId);
+      if (result.success) {
+        setDismissedIds((prev) => new Set(prev).add(insightId));
+      }
     });
   };
 
@@ -345,7 +371,7 @@ export function PlayerInsightClient({
                 <div className="space-y-3">
                   <CategoryBar label="Tee Game" value={categoryBreakdown.teeGame} />
                   <CategoryBar label="Approach" value={categoryBreakdown.approach} />
-                  <CategoryBar label="Short Game" value={categoryBreakdown.shortGame} />
+                  <CategoryBar label="Short Game (Est.)" value={categoryBreakdown.shortGame} />
                   <CategoryBar label="Putting" value={categoryBreakdown.putting} />
                   <CategoryBar label="Scoring" value={categoryBreakdown.scoring} />
                 </div>
@@ -474,8 +500,9 @@ export function PlayerInsightClient({
                   </div>
                 ) : (
                   <div className="space-y-3 max-h-[480px] overflow-y-auto pr-1">
-                    {insights.map((insight) => {
+                    {insights.filter((i) => !dismissedIds.has(i.id)).map((insight) => {
                       const isExpanded = expandedInsights.has(insight.id);
+                      const isAcknowledged = insight.acknowledged || acknowledgedIds.has(insight.id);
                       return (
                         <div key={insight.id} className="bg-warm-50/60 rounded-xl p-4 space-y-2">
                           <div className="flex items-start justify-between gap-2">
@@ -520,13 +547,27 @@ export function PlayerInsightClient({
                           )}
 
                           <div className="flex items-center gap-2 pt-1">
-                            {!insight.acknowledged && (
-                              <button className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 font-medium transition-colors">
+                            {!isAcknowledged && (
+                              <button
+                                onClick={() => handleAcknowledge(insight.id)}
+                                disabled={isPending}
+                                className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 font-medium transition-colors disabled:opacity-50"
+                              >
                                 <IconCheck size={12} />
                                 Acknowledge
                               </button>
                             )}
-                            <button className="flex items-center gap-1 text-xs text-warm-400 hover:text-warm-600 font-medium transition-colors">
+                            {isAcknowledged && (
+                              <span className="flex items-center gap-1 text-xs text-emerald-600 font-medium">
+                                <IconCheck size={12} />
+                                Acknowledged
+                              </span>
+                            )}
+                            <button
+                              onClick={() => handleDismiss(insight.id)}
+                              disabled={isPending}
+                              className="flex items-center gap-1 text-xs text-warm-400 hover:text-warm-600 font-medium transition-colors disabled:opacity-50"
+                            >
                               <IconX size={12} />
                               Dismiss
                             </button>
@@ -678,7 +719,7 @@ export function PlayerInsightClient({
                               {round.course_name ?? 'Unknown Course'}
                             </p>
                             <p className="text-[11px] text-warm-400 mt-0.5">
-                              {formatRelativeDate(round.created_at)}
+                              {formatRelativeDate(round.round_date ?? round.created_at)}
                               {round.holes_played && ` \u00B7 ${round.holes_played} holes`}
                             </p>
                           </div>

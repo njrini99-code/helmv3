@@ -133,9 +133,15 @@ export function updateCalibrationRecord(
   }
   const expectedCalibrationError = eceWeight > 0 ? eceNumerator / eceWeight : 0;
 
+  // Incrementally update Brier score: running mean of (confidence - outcome)^2
+  const outcome = prediction.wasAccurate ? 1 : 0;
+  const squaredError = Math.pow(prediction.confidence - outcome, 2);
+  const brierScore =
+    (record.brierScore * record.totalPredictions + squaredError) / totalPredictions;
+
   return {
     buckets: newBuckets,
-    brierScore: record.brierScore, // Brier score requires full history; unchanged here
+    brierScore,
     expectedCalibrationError,
     totalPredictions,
   };

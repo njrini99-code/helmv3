@@ -202,19 +202,13 @@ class CoachHelmIntelligence {
     // Fetch comprehensive stats for stats-based insights
     const stats = await this.fetchPlayerStats(playerId);
 
-    // === NEW: Multi-window trend analysis ===
+    // === V3 Statistical Analysis ===
     const scoreToPars = (recentRounds ?? []).map(r => r.score_to_par ?? 0);
-    // TODO: Feed trendAnalysis into insight generation in next iteration
-    void analyzeMultiWindowTrends(scoreToPars, 'scoreToPar');
+    const trendAnalysis = analyzeMultiWindowTrends(scoreToPars, 'scoreToPar', true);
 
-    // === NEW: Anomaly detection ===
     const scoreBaseline = playerBaseline.metrics['scoreToPar'];
-    // TODO: Feed anomalies into insight generation in next iteration
-    if (scoreBaseline) void detectAnomalies(scoreToPars, scoreBaseline, 'scoreToPar');
-
-    // === NEW: Streak detection ===
-    // TODO: Feed streaks into insight generation in next iteration
-    void detectStreaks(scoreToPars, scoreBaseline?.ewma ?? 0);
+    const anomalies = scoreBaseline ? detectAnomalies(scoreToPars, scoreBaseline, 'scoreToPar') : [];
+    const streaks = detectStreaks(scoreToPars, scoreBaseline?.ewma ?? 0);
 
     // Generate insights (including shot patterns, stats-based, and lie-specific)
     const insights = this.prioritizeInsights(await this.generateInsights(
@@ -229,12 +223,16 @@ class CoachHelmIntelligence {
       shotStateAnalysis ?? undefined
     ));
 
-    // === NEW: Score and filter insights ===
+    // === Score and filter insights ===
     const scoredInsights = insights
-      .map(insight => ({
-        ...insight,
-        feedbackScore: scoreInsight(insight.confidence, insight.strokeImpact ?? 0, 'pattern', []).finalScore,
-      }))
+      .map(insight => {
+        // Derive insight type from reasoning chain or tone rather than hardcoding 'pattern'
+        const insightType = insight.reasoning?.reasoningChain?.[0]?.type ?? insight.tone ?? 'pattern';
+        return {
+          ...insight,
+          feedbackScore: scoreInsight(insight.confidence, insight.strokeImpact ?? 0, insightType, []).finalScore,
+        };
+      })
       .filter(insight => shouldShowInsight({ baseScore: insight.confidence, feedbackAdjustment: 0, finalScore: insight.feedbackScore, shouldShow: true }))
       .sort((a, b) => b.feedbackScore - a.feedbackScore);
 
@@ -272,6 +270,9 @@ class CoachHelmIntelligence {
       primaryInsight,
       recommendations,
       alertLevel,
+      trendAnalysis,
+      anomalies,
+      streaks,
     };
   }
 

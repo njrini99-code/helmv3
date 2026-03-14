@@ -91,8 +91,24 @@ export default async function MyDevelopmentPage() {
   const activeAreas = (focusAreas || []).filter(fa => fa.status === 'active' || fa.status === 'in_progress');
   const completedAreas = (focusAreas || []).filter(fa => fa.status === 'completed');
 
-  const getProgressPercent = (current: number | null, target: number | null) => {
-    if (!current || !target || target === 0) return 0;
+  const getProgressPercent = (current: number | null, target: number | null, targetMetric?: string | null) => {
+    if (current == null || target == null || target === 0) return 0;
+
+    // For "lower is better" metrics (e.g., putts, penalties, score), progress means
+    // the current value has decreased toward (or past) the target.
+    const lowerIsBetterKeywords = ['putt', 'penalty', 'bogey', 'score', 'three_putt'];
+    const isLowerBetter = lowerIsBetterKeywords.some(kw =>
+      (targetMetric ?? '').toLowerCase().includes(kw)
+    );
+
+    if (isLowerBetter && target < current) {
+      // Starting value is implicitly the original current; progress = how far we've come toward target
+      // We treat target as the floor and use ratio of (reduction achieved / total reduction needed)
+      // Without a stored baseline, we estimate progress as target/current (closer to 1 = closer to goal)
+      return Math.min(100, Math.round((target / current) * 100));
+    }
+
+    if (target < 0) return 0;
     return Math.min(100, Math.round((current / target) * 100));
   };
 
@@ -176,7 +192,7 @@ export default async function MyDevelopmentPage() {
                 <div className="space-y-4 mobile-stagger">
                   {activeAreas.map((fa) => {
                     const areaConfig = AREA_TYPES[fa.area_type || 'other'] ?? DEFAULT_AREA;
-                    const progress = getProgressPercent(fa.current_value, fa.target_value);
+                    const progress = getProgressPercent(fa.current_value, fa.target_value, fa.target_metric);
                     const statusConfig = STATUS_CONFIG[fa.status || 'active'] ?? STATUS_CONFIG.active!;
                     const AreaIcon = areaConfig.icon;
 

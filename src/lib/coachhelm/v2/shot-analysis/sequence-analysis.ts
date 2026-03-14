@@ -54,7 +54,7 @@ function classifySG(sg: number): ShotQuality {
 /**
  * Calculate a resilience score from a sequence of SG values.
  *
- * Resilience = avgSG_after_bad / avgSG_overall
+ * Resilience = 1.0 + (avgSG_after_bad - avgSG_overall)
  * - 1.0 means the player performs the same after bad shots (no mental effect)
  * - < 1.0 means performance drops further after bad shots (compounds)
  * - > 1.0 means the player bounces back stronger after bad shots

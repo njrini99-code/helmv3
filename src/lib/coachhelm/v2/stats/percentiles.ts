@@ -29,6 +29,8 @@ const LOWER_IS_BETTER: Set<string> = new Set([
   'bogeyRate',
   'doubleBogeyRate',
   'penaltyRate',
+  'threePuttsPerRound',
+  'penaltyStrokesPerRound',
 ]);
 
 // ============================================================================

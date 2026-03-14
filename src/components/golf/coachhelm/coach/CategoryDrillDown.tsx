@@ -63,7 +63,7 @@ export function CategoryDrillDown({
     }
   };
 
-  const defaultFormat = (v: number) => `${v}%`;
+  const defaultFormat = (v: number) => v.toFixed(1);
   const fmt = formatValue ?? defaultFormat;
 
   if (sortedPlayers.length === 0) {
@@ -148,7 +148,7 @@ export function CategoryDrillDown({
                   )}
                 >
                   <TrendIcon size={13} />
-                  <span>{deltaPrefix}{player.trendDelta}{lowerIsBetter ? '' : '%'}</span>
+                  <span>{deltaPrefix}{player.trendDelta}</span>
                 </span>
 
                 {/* Attention badge */}
