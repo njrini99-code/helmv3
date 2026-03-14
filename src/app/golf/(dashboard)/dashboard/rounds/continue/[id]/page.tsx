@@ -73,13 +73,13 @@ function parseApproachMissLieType(shot: GolfShot): ShotRecord['approachMissLieTy
 function derivePuttDistanceFeet(shot: GolfShot): number | undefined {
   const shotType = shot.shot_type ?? '';
   if (shotType !== 'putting' && shotType !== 'putt') return undefined;
-  if (shot.putt_distance_feet != null) return Math.min(shot.putt_distance_feet, 200);
+  if (shot.putt_distance_feet != null) return Math.min(shot.putt_distance_feet, 500);
   if (shot.distance_to_hole_before == null) return undefined;
   const feet = shot.distance_unit_before === 'yards'
     ? shot.distance_to_hole_before * 3
     : shot.distance_to_hole_before;
-  // Clamp to DB CHECK constraint max (200 feet)
-  return Math.min(feet, 200);
+  // Clamp to DB CHECK constraint max (500 feet)
+  return Math.min(feet, 500);
 }
 
 function mapShotToRecord(

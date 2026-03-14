@@ -181,10 +181,17 @@ export function useAutoSaveRound(
     if (data.step !== 'tracking' && data.step !== 'review') return;
 
     // Skip save if data hasn't changed since last successful save
+    // Include shot details (miss direction, putt break, lie) so detail edits trigger saves
     const fingerprint = JSON.stringify({
       step: data.step,
       currentHoleIndex: data.currentHoleIndex,
-      holes: data.holes?.map(h => ({ score: h.score, putts: h.putts, shots: h.shots?.length })),
+      holes: data.holes?.map(h => ({
+        score: h.score,
+        putts: h.putts,
+        sc: h.shots?.length,
+        sd: h.shots?.map(s => `${s.result ?? ''}${s.missDirection ?? ''}${s.puttBreak ?? ''}${s.lieAfter ?? ''}`).join(','),
+      })),
+      ip: data.inProgressShots?.length,
     });
     if (fingerprint === lastSavedFingerprintRef.current) return;
 
