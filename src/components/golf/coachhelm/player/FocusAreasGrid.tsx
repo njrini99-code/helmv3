@@ -25,7 +25,8 @@ interface FocusAreasGridProps {
 }
 
 // Format strokes gained/lost for display
-function formatStrokesGained(value: number): string {
+function formatStrokesGained(value: number | undefined | null): string {
+  if (value == null || typeof value !== 'number' || isNaN(value)) return '0.0';
   if (value === 0) return '0.0';
   return value > 0 ? `+${value.toFixed(1)}` : value.toFixed(1);
 }

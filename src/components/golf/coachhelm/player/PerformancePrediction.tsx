@@ -45,7 +45,7 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
     );
   }
 
-  const predictedValue = prediction.predictedValue;
+  const predictedValue = typeof prediction.predictedValue === 'number' ? prediction.predictedValue : 0;
   const isPositive = predictedValue < 0;
   const isNeutral = Math.abs(predictedValue) < 0.5;
   const confidencePercent = Math.round((prediction.calibratedConfidence ?? prediction.confidence) * 100);
@@ -68,7 +68,8 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
     return <IconTrendingDown size={24} className="text-red-500" />;
   };
 
-  const formatScore = (value: number) => {
+  const formatScore = (value: number | undefined | null) => {
+    if (value == null || typeof value !== 'number' || isNaN(value)) return '--';
     if (value === 0) return 'E';
     return value > 0 ? `+${value.toFixed(1)}` : value.toFixed(1);
   };
@@ -187,7 +188,7 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
                   'font-medium tabular-nums',
                   factor.contribution > 0 ? 'text-red-500' : 'text-primary-500'
                 )}>
-                  {factor.contribution > 0 ? '+' : ''}{factor.contribution.toFixed(1)}
+                  {(factor.contribution ?? 0) > 0 ? '+' : ''}{(factor.contribution ?? 0).toFixed(1)}
                 </span>
               </m.div>
             ))}
