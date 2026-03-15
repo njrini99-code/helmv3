@@ -42,18 +42,19 @@ import { usePlayerTeams } from '@/hooks/use-player-teams';
 import { useUnreadCount } from '@/hooks/use-unread-count';
 import { useSidebar } from '@/contexts/sidebar-context';
 
+// ARCHIVED: Recruiting features hidden — re-enable when recruiting is ready
 // College/JUCO Coach - Recruiting Mode
-const coachRecruitingNav = [
-  { name: 'Dashboard', href: '/baseball/dashboard', icon: IconHome },
-  { name: 'Command Center', href: '/baseball/dashboard/command-center', icon: IconLayers },
-  { name: 'Discover', href: '/baseball/dashboard/discover', icon: IconSearch },
-  { name: 'Pipeline', href: '/baseball/dashboard/pipeline', icon: IconStar },
-  { name: 'Watchlist', href: '/baseball/dashboard/watchlist', icon: IconBookmark },
-  { name: 'Compare', href: '/baseball/dashboard/compare', icon: IconTarget },
-  { name: 'Calendar', href: '/baseball/dashboard/calendar', icon: IconCalendar },
-  { name: 'Camps', href: '/baseball/dashboard/camps', icon: IconBuilding },
-  { name: 'Messages', href: '/baseball/dashboard/messages', icon: IconMessage, badge: true },
-];
+// const coachRecruitingNav = [
+//   { name: 'Dashboard', href: '/baseball/dashboard', icon: IconHome },
+//   { name: 'Command Center', href: '/baseball/dashboard/command-center', icon: IconLayers },
+//   { name: 'Discover', href: '/baseball/dashboard/discover', icon: IconSearch },
+//   { name: 'Pipeline', href: '/baseball/dashboard/pipeline', icon: IconStar },
+//   { name: 'Watchlist', href: '/baseball/dashboard/watchlist', icon: IconBookmark },
+//   { name: 'Compare', href: '/baseball/dashboard/compare', icon: IconTarget },
+//   { name: 'Calendar', href: '/baseball/dashboard/calendar', icon: IconCalendar },
+//   { name: 'Camps', href: '/baseball/dashboard/camps', icon: IconBuilding },
+//   { name: 'Messages', href: '/baseball/dashboard/messages', icon: IconMessage, badge: true },
+// ];
 
 // HS Coach - Team Mode (HS-specific dashboard)
 const hsCoachTeamNav = [
@@ -81,6 +82,9 @@ const collegeTeamNav = [
   { name: 'Calendar', href: '/baseball/dashboard/calendar', icon: IconCalendar },
   { name: 'Messages', href: '/baseball/dashboard/messages', icon: IconMessage, badge: true },
   { name: 'Announcements', href: '/baseball/dashboard/announcements', icon: IconBell },
+  { name: 'Tasks', href: '/baseball/dashboard/tasks', icon: IconClipboardList },
+  { name: 'Documents', href: '/baseball/dashboard/documents', icon: IconFileText },
+  { name: 'Travel', href: '/baseball/dashboard/travel', icon: IconAirplane },
 ];
 
 // JUCO Coach - Team Mode (includes Academics)
@@ -120,16 +124,17 @@ const showcaseTeamNav = [
   { name: 'Documents', href: '/baseball/dashboard/documents', icon: IconFileText },
 ];
 
+// ARCHIVED: Recruiting features hidden — re-enable when recruiting is ready
 // Player - Recruiting Mode
-const playerRecruitingNav = [
-  { name: 'Dashboard', href: '/baseball/dashboard', icon: IconHome },
-  { name: 'My Profile', href: '/baseball/dashboard/profile', icon: IconUser },
-  { name: 'Colleges', href: '/baseball/dashboard/colleges', icon: IconBuilding },
-  { name: 'Journey', href: '/baseball/dashboard/journey', icon: IconTarget },
-  { name: 'Camps', href: '/baseball/dashboard/camps', icon: IconCalendar },
-  { name: 'Messages', href: '/baseball/dashboard/messages', icon: IconMessage, badge: true },
-  { name: 'Analytics', href: '/baseball/dashboard/analytics', icon: IconChart },
-];
+// const playerRecruitingNav = [
+//   { name: 'Dashboard', href: '/baseball/dashboard', icon: IconHome },
+//   { name: 'My Profile', href: '/baseball/dashboard/profile', icon: IconUser },
+//   { name: 'Colleges', href: '/baseball/dashboard/colleges', icon: IconBuilding },
+//   { name: 'Journey', href: '/baseball/dashboard/journey', icon: IconTarget },
+//   { name: 'Camps', href: '/baseball/dashboard/camps', icon: IconCalendar },
+//   { name: 'Messages', href: '/baseball/dashboard/messages', icon: IconMessage, badge: true },
+//   { name: 'Analytics', href: '/baseball/dashboard/analytics', icon: IconChart },
+// ];
 
 // Player - Team Mode (used for college players + non-recruiting-activated players)
 const playerTeamNav = [
@@ -199,25 +204,15 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
   const currentMode = coachMode as Mode;
 
   // Determine navigation based on role, coach type, and mode
+  // ARCHIVED: Recruiting mode branches removed — all users see team mode only
   const getNavigation = () => {
     if (isGolf) {
       return golfCoachNav;
     }
     if (user?.role === 'coach') {
       if (coach?.coach_type === 'college') {
-        if (currentMode === 'team') {
-          return collegeTeamNav;
-        }
-        // Point Dashboard directly to the college coach page — avoids redirect bounce
-        return coachRecruitingNav.map(item =>
-          item.href === '/baseball/dashboard' ? { ...item, href: '/baseball/coach/college' } : item
-        );
+        return collegeTeamNav;
       } else if (coach?.coach_type === 'juco') {
-        if (currentMode === 'recruiting') {
-          return coachRecruitingNav.map(item =>
-            item.href === '/baseball/dashboard' ? { ...item, href: '/baseball/coach/juco' } : item
-          );
-        }
         return jucoTeamNav;
       } else if (coach?.coach_type === 'showcase') {
         return showcaseOrgNav;
@@ -229,13 +224,10 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
         return hsCoachTeamNav;
       }
     } else if (user?.role === 'player') {
-      if (player?.player_type === 'college' || !player?.recruiting_activated) {
-        return playerTeamNav;
-      } else {
-        return currentMode === 'recruiting' ? playerRecruitingNav : playerTeamNav;
-      }
+      // ARCHIVED: All players now see team nav only — recruiting nav disabled
+      return playerTeamNav;
     }
-    return coachRecruitingNav;
+    return collegeTeamNav;
   };
 
   const getTeamNavigation = () => {
@@ -376,11 +368,12 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
         'transition-[padding] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
         isCollapsed ? 'px-2' : 'px-3'
       )}>
-        {showModeToggle && !isCollapsed && (
+        {/* ARCHIVED: Recruiting mode toggle hidden — re-enable when recruiting is ready */}
+        {/* {showModeToggle && !isCollapsed && (
           <div className="mb-4 px-1 animate-fade-in">
             <ModeToggle currentMode={currentMode} onModeChange={handleModeChange} />
           </div>
-        )}
+        )} */}
 
         {/* Team Switcher */}
         {(isShowcaseCoach || (user?.role === 'player' && hasMultipleTeams)) && hasMultipleTeams && (
@@ -391,10 +384,8 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
         {!isCollapsed && (
           <p className="px-3 py-2 text-label font-semibold text-white/40 uppercase tracking-wider whitespace-nowrap">
             {user?.role === 'coach'
-              ? (coach?.coach_type === 'showcase' ? 'Organization'
-                 : currentMode === 'recruiting' ? 'Recruiting'
-                 : 'Team')
-              : (currentMode === 'recruiting' ? 'Recruiting' : 'Team')}
+              ? (coach?.coach_type === 'showcase' ? 'Organization' : 'Team')
+              : 'Team'}
           </p>
         )}
 
