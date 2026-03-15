@@ -76,8 +76,12 @@ export function ShotAnalysisCard({
   const resolvedDeadZones = deadZones ?? (shotData?.deadZones as typeof deadZones | undefined);
   const resolvedWeaknesses = weaknesses ?? (shotData?.weaknesses as typeof weaknesses | undefined);
   const resolvedResilience = resilience ?? (shotData?.resilience as typeof resilience | undefined);
-  const resolvedScrambleRate = scrambleRate ?? (shotData?.scrambleRate as typeof scrambleRate | undefined);
-  const resolvedTeamScrambleRate = teamScrambleRate ?? (shotData?.teamScrambleRate as typeof teamScrambleRate | undefined);
+  // shotData.scrambleRate may be a ScrambleAnalysis object (with .scrambleRate field) or a raw number
+  const rawScramble = scrambleRate ?? shotData?.scrambleRate;
+  const resolvedScrambleRate = typeof rawScramble === 'object' && rawScramble !== null
+    ? Number((rawScramble as Record<string, unknown>).scrambleRate ?? 0)
+    : rawScramble != null ? Number(rawScramble) : undefined;
+  const resolvedTeamScrambleRate = teamScrambleRate ?? (shotData?.teamScrambleRate != null ? Number(shotData.teamScrambleRate) : undefined);
   const hasSomething = resolvedYardageCurve?.buckets?.length || resolvedWeaknesses?.length || resolvedResilience != null || resolvedScrambleRate != null;
 
   if (!hasSomething) {

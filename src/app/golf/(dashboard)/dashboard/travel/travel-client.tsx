@@ -454,7 +454,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                         {(() => {
                           const status = getTripStatus(itinerary);
                           return (
-                            <span className={`flex-shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${status.color}`}>
+                            <span className={`flex-shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${status.color}`} suppressHydrationWarning>
                               <span className={`w-1.5 h-1.5 rounded-full ${status.dotColor} ${status.pulse ? 'animate-pulse' : ''}`} />
                               {status.label}
                             </span>
