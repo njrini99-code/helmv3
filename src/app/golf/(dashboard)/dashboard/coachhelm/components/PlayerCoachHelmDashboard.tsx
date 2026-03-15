@@ -145,7 +145,10 @@ export function PlayerCoachHelmDashboard({
   const hasData = dashboardData.insights.length > 0 ||
                   dashboardData.focusAreas.length > 0 ||
                   dashboardData.prediction !== null ||
-                  dashboardData.recentRounds.length > 0;
+                  dashboardData.recentRounds.length > 0 ||
+                  profileData != null ||
+                  trendData != null ||
+                  shotData != null;
 
   return (
     <div className="min-h-full">

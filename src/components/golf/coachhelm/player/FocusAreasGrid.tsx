@@ -26,9 +26,9 @@ interface FocusAreasGridProps {
 
 // Format strokes gained/lost for display
 function formatStrokesGained(value: number | string | undefined | null): string {
-  if (value == null) return '0.0';
+  if (value == null) return '--';
   const num = Number(value);
-  if (isNaN(num)) return '0.0';
+  if (isNaN(num)) return '--';
   if (num === 0) return '0.0';
   return num > 0 ? `+${num.toFixed(1)}` : num.toFixed(1);
 }
@@ -134,10 +134,10 @@ function FocusAreaCardContent({
           transition={{ duration: 0.5, delay: 0.2 + index * 0.1 }}
           className={cn(
             'absolute h-full rounded-full',
-            isPositive ? 'bg-primary-400 right-0' : 'bg-red-400 left-0'
+            isPositive ? 'bg-primary-400' : 'bg-red-400'
           )}
           style={{
-            [isPositive ? 'right' : 'left']: '50%',
+            [isPositive ? 'left' : 'right']: '50%',
             transformOrigin: isPositive ? 'right' : 'left',
           }}
         />
@@ -258,7 +258,7 @@ export function FocusAreasGrid({ focusAreas, onAreaClick }: FocusAreasGridProps)
             key={area.area}
             focusArea={area}
             index={index}
-            onClick={() => onAreaClick?.(area)}
+            onClick={onAreaClick ? () => onAreaClick(area) : undefined}
           />
         ))}
       </div>

@@ -209,8 +209,8 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
 
   // Set roundDate on mount to avoid server/client timezone hydration mismatch
   useEffect(() => {
-    if (!roundSetup.roundDate) {
-      setRoundSetup(prev => ({ ...prev, roundDate: new Date().toISOString().split('T')[0]! }));
+    if (!setupData.roundDate) {
+      setSetupData(prev => ({ ...prev, roundDate: new Date().toISOString().split('T')[0]! }));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

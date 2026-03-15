@@ -106,7 +106,7 @@ export function CompositeRatingCard({
     );
   }
 
-  const displayComposite = Number(resolvedComposite ?? 0);
+  const displayComposite = Math.max(0, Math.min(100, Number(resolvedComposite ?? 0)));
   const displayCategories = resolvedCategories ?? { teeGame: 50, approach: 50, shortGame: 50, putting: 50, scoring: 50 };
 
   const circumference = 2 * Math.PI * 54;
@@ -174,7 +174,7 @@ export function CompositeRatingCard({
             <span>
               {trendConfig[resolvedTrend.direction].label}{' '}
               <span className="tabular-nums">
-                {Number(resolvedTrend.delta ?? 0) > 0 ? '+' : ''}{Number(resolvedTrend.delta ?? 0)}
+                {Number(resolvedTrend.delta ?? 0) > 0 ? '+' : ''}{Number(resolvedTrend.delta ?? 0).toFixed(1)}
               </span>{' '}
               over 30 days
             </span>
@@ -199,7 +199,7 @@ export function CompositeRatingCard({
                   <m.div
                     className={cn('h-full rounded-full', getBarColor(value))}
                     initial={{ width: 0 }}
-                    animate={{ width: `${value}%` }}
+                    animate={{ width: `${Math.min(Math.max(value, 0), 100)}%` }}
                     transition={{ duration: 0.8, delay: 0.4 + i * 0.08, ease: 'easeOut' }}
                   />
                 </div>

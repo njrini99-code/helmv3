@@ -123,6 +123,12 @@ export default function RoundReviewPage() {
 
         const currentPlayerId = playerRecord?.id;
 
+        if (!currentPlayerId) {
+          // Non-player users cannot view round reviews
+          setError('You must be a player to view round reviews.');
+          return;
+        }
+
         // Fetch round — if user is a player, restrict to their own rounds
         let query = supabase
           .from('golf_rounds')

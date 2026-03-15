@@ -446,14 +446,21 @@ export async function getCoachDashboardData(
         teamPulse.roundsThisWeek = weekRoundsResult.count || 0;
 
         if (allRounds.length > 0) {
-            // Team scoring average + trend
-            const scores = allRounds.map(r => r.total_score).filter((s): s is number => s !== null);
-            if (scores.length > 0) {
-                teamScoringAverage = scores.reduce((a, b) => a + b, 0) / scores.length;
+            // Team scoring average + trend (normalized to 18-hole equivalents)
+            const normalizedScores = allRounds
+                .filter(r => r.total_score != null && r.total_score > 0)
+                .map(r => {
+                    const holes = (r as { holes_played?: number | null }).holes_played ?? 18;
+                    if (holes <= 0) return null;
+                    return holes < 18 ? (r.total_score! / holes) * 18 : r.total_score!;
+                })
+                .filter((s): s is number => s !== null);
+            if (normalizedScores.length > 0) {
+                teamScoringAverage = normalizedScores.reduce((a, b) => a + b, 0) / normalizedScores.length;
             }
-            if (scores.length >= 10) {
-                const midpoint = Math.floor(scores.length / 2);
-                const olderScores = scores.slice(midpoint);
+            if (normalizedScores.length >= 10) {
+                const midpoint = Math.floor(normalizedScores.length / 2);
+                const olderScores = normalizedScores.slice(midpoint);
                 previousAverage = olderScores.reduce((a, b) => a + b, 0) / olderScores.length;
             }
 
@@ -462,14 +469,21 @@ export async function getCoachDashboardData(
             players.forEach(p => {
                 const pRounds = allRounds.filter(r => r.player_id === p.id);
                 if (pRounds.length > 0) {
-                    const pScores = pRounds.map(r => r.total_score).filter((s): s is number => s !== null);
-                    if (pScores.length > 0) {
-                        const avg = pScores.reduce((a, b) => a + b, 0) / pScores.length;
+                    const pNormScores = pRounds
+                        .filter(r => r.total_score != null && r.total_score > 0)
+                        .map(r => {
+                            const holes = (r as { holes_played?: number | null }).holes_played ?? 18;
+                            if (holes <= 0) return null;
+                            return holes < 18 ? (r.total_score! / holes) * 18 : r.total_score!;
+                        })
+                        .filter((s): s is number => s !== null);
+                    if (pNormScores.length > 0) {
+                        const avg = pNormScores.reduce((a, b) => a + b, 0) / pNormScores.length;
                         playerAvgs.push({
                             id: p.id,
                             name: `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Unknown',
                             avg_score: avg,
-                            rounds: pScores.length
+                            rounds: pNormScores.length
                         });
                     }
                 }
@@ -484,7 +498,11 @@ export async function getCoachDashboardData(
                 const sortKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
                 const label = d.toLocaleString('default', { month: 'short', year: '2-digit' });
                 if (!roundsByYearMonth[sortKey]) roundsByYearMonth[sortKey] = { label, scores: [] };
-                roundsByYearMonth[sortKey].scores.push(round.total_score);
+                const holes = (round as { holes_played?: number | null }).holes_played ?? 18;
+                const normalizedScore = holes > 0 && holes < 18
+                    ? Math.round((round.total_score / holes) * 18)
+                    : round.total_score;
+                roundsByYearMonth[sortKey].scores.push(normalizedScore);
             });
             teamScoringTrend = Object.entries(roundsByYearMonth)
                 .sort(([a], [b]) => a.localeCompare(b))
@@ -527,7 +545,7 @@ export async function getCoachDashboardData(
                     label: 'Team Scoring Avg',
                     value: teamScoringAverage ? Number(teamScoringAverage.toFixed(1)) : null,
                     sparkline: scoringSparkline,
-                    trend: computeTrend(scores),
+                    trend: computeTrend(normalizedScores),
                 },
                 girPct: {
                     label: 'Team GIR%',
@@ -698,7 +716,7 @@ export async function getPlayerDashboardData(
             : Promise.resolve({ data: null }),
         supabase
             .from('golf_rounds')
-            .select('id, course_name, total_score, score_to_par, round_date, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible')
+            .select('id, course_name, total_score, score_to_par, round_date, holes_played, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible')
             .eq('player_id', playerId)
             .eq('status', 'completed')
             .not('total_score', 'is', null)
@@ -784,11 +802,18 @@ export async function getPlayerDashboardData(
         }
     }
 
-    // Compute stats
-    const scores = rounds.map(r => r.total_score).filter((s): s is number => s !== null);
-    const scoringAverage = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
-    const bestRound = scores.length > 0 ? Math.min(...scores) : null;
-    const recentTrend = computeTrend(scores);
+    // Compute stats (normalized to 18-hole equivalents)
+    const normalizedScores = rounds
+        .filter(r => r.total_score != null && r.total_score > 0)
+        .map(r => {
+            const holes = (r as { holes_played?: number | null }).holes_played ?? 18;
+            if (holes <= 0) return null;
+            return holes < 18 ? (r.total_score! / holes) * 18 : r.total_score!;
+        })
+        .filter((s): s is number => s !== null);
+    const scoringAverage = normalizedScores.length > 0 ? normalizedScores.reduce((a, b) => a + b, 0) / normalizedScores.length : null;
+    const bestRound = normalizedScores.length > 0 ? Math.min(...normalizedScores) : null;
+    const recentTrend = computeTrend(normalizedScores);
 
     // Sparklines
     const scoringSparkline = buildSparkline(rounds.map(r => ({ round_date: r.round_date, value: r.total_score })));

@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { GlassCard } from '@/components/ui/glass-card';
 import {
@@ -124,7 +124,7 @@ export function ShotAnalysisCard({
                 const isPositive = Number(bucket.avgSG ?? 0) >= 0;
 
                 return (
-                  <motion.div
+                  <m.div
                     key={`${bucket.rangeStart}-${bucket.rangeEnd}`}
                     className={cn(
                       'flex items-center gap-2 px-2 py-1.5 rounded-lg',
@@ -142,7 +142,7 @@ export function ShotAnalysisCard({
                     <div className="flex-1 flex items-center h-4">
                       <div className="w-1/2 flex justify-end">
                         {!isPositive && (
-                          <motion.div
+                          <m.div
                             className="h-3 rounded-l-sm bg-red-400"
                             initial={{ width: 0 }}
                             animate={{ width: `${barWidth}%` }}
@@ -153,7 +153,7 @@ export function ShotAnalysisCard({
                       <div className="w-px h-4 bg-warm-300 shrink-0" />
                       <div className="w-1/2">
                         {isPositive && (
-                          <motion.div
+                          <m.div
                             className="h-3 rounded-r-sm bg-primary-500"
                             initial={{ width: 0 }}
                             animate={{ width: `${barWidth}%` }}
@@ -179,7 +179,7 @@ export function ShotAnalysisCard({
                     {isDead && (
                       <IconWarning size={12} className="text-red-400 shrink-0" />
                     )}
-                  </motion.div>
+                  </m.div>
                 );
               })}
             </div>
@@ -214,7 +214,7 @@ export function ShotAnalysisCard({
             <p className="text-sm font-semibold text-warm-700">Key Weaknesses</p>
             <div className="grid gap-2">
               {topWeaknesses.map((weakness, i) => (
-                <motion.div
+                <m.div
                   key={i}
                   className="flex items-center justify-between p-3 rounded-xl bg-white/40 border border-white/20"
                   initial={{ opacity: 0, y: 8 }}
@@ -237,7 +237,7 @@ export function ShotAnalysisCard({
                       {weakness.shotCount} shots
                     </p>
                   </div>
-                </motion.div>
+                </m.div>
               ))}
             </div>
           </div>
@@ -248,7 +248,7 @@ export function ShotAnalysisCard({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-white/10">
             {/* Resilience */}
             {resolvedResilience != null && (
-              <motion.div
+              <m.div
                 className="flex items-center gap-3 p-3 rounded-xl bg-white/40 border border-white/20"
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -289,12 +289,12 @@ export function ShotAnalysisCard({
                     {Number(resolvedResilience ?? 0) >= 1.0 ? 'Good recovery' : 'Compounds errors'}
                   </p>
                 </div>
-              </motion.div>
+              </m.div>
             )}
 
             {/* Scramble rate */}
             {resolvedScrambleRate != null && (
-              <motion.div
+              <m.div
                 className="flex items-center gap-3 p-3 rounded-xl bg-white/40 border border-white/20"
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -306,7 +306,7 @@ export function ShotAnalysisCard({
                 <div>
                   <p className="text-sm font-semibold text-warm-800">Scramble Rate</p>
                   <p className="text-xs text-warm-600">
-                    <span className="font-semibold text-warm-900 tabular-nums">{resolvedScrambleRate}%</span>
+                    <span className="font-semibold text-warm-900 tabular-nums">{Number(resolvedScrambleRate ?? 0).toFixed(0)}%</span>
                     {resolvedTeamScrambleRate != null && (
                       <span className="text-warm-400">
                         {' '}(team avg: {resolvedTeamScrambleRate}%)
@@ -314,7 +314,7 @@ export function ShotAnalysisCard({
                     )}
                   </p>
                 </div>
-              </motion.div>
+              </m.div>
             )}
           </div>
         )}

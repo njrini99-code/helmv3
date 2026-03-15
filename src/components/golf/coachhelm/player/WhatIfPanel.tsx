@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { m, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { GlassCard } from '@/components/ui/glass-card';
 import {
@@ -44,6 +44,7 @@ export function WhatIfPanel({
 }: WhatIfPanelProps) {
   // Resolve props: prefer typed props, fall back to parsing from profileData
   const resolvedCurrentPrediction = currentPrediction ?? (profileData?.currentPrediction as number | undefined) ?? 0;
+  const hasPrediction = currentPrediction != null || (profileData?.currentPrediction != null);
   const resolvedImprovements = improvements ?? (profileData?.improvements as typeof improvements | undefined) ?? [];
   const [simulating, setSimulating] = useState<string | null>(null);
   const [simResult, setSimResult] = useState<{
@@ -95,7 +96,7 @@ export function WhatIfPanel({
         </div>
 
         {/* Current prediction */}
-        <motion.div
+        <m.div
           className="flex items-center justify-center gap-2 py-3 rounded-xl bg-white/40 border border-white/20"
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -104,14 +105,16 @@ export function WhatIfPanel({
           <IconTarget size={18} className="text-warm-500" />
           <span className="text-sm font-medium text-warm-600">Predicted:</span>
           <span className="text-2xl font-bold text-warm-900 tabular-nums">
-            {Number(resolvedCurrentPrediction ?? 0) > 0 ? '+' : ''}{Number(resolvedCurrentPrediction ?? 0).toFixed(1)}
+            {hasPrediction ? (
+              <>{Number(resolvedCurrentPrediction ?? 0) > 0 ? '+' : ''}{Number(resolvedCurrentPrediction ?? 0).toFixed(1)}</>
+            ) : '--'}
           </span>
-        </motion.div>
+        </m.div>
 
         {/* Simulation result */}
         <AnimatePresence>
           {simResult && (
-            <motion.div
+            <m.div
               className="flex items-center justify-between px-4 py-3 rounded-xl bg-primary-50 border border-primary-200"
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
@@ -133,7 +136,7 @@ export function WhatIfPanel({
                   </p>
                 )}
               </div>
-            </motion.div>
+            </m.div>
           )}
         </AnimatePresence>
 
@@ -143,7 +146,7 @@ export function WhatIfPanel({
             const diffConfig = difficultyConfig[item.difficulty];
 
             return (
-              <motion.div
+              <m.div
                 key={item.metric}
                 className="p-3 rounded-xl bg-white/40 border border-white/20"
                 initial={{ opacity: 0, y: 8 }}
@@ -193,7 +196,7 @@ export function WhatIfPanel({
                     </button>
                   )}
                 </div>
-              </motion.div>
+              </m.div>
             );
           })}
         </div>

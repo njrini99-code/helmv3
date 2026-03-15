@@ -33,11 +33,13 @@ export function MyQualifiersClient({ qualifiers, error }: MyQualifiersClientProp
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const parts = dateStr.split('T')[0]?.split('-');
+    if (parts && parts.length === 3) {
+      const month = months[parseInt(parts[1]!, 10) - 1] ?? parts[1];
+      return `${month} ${parseInt(parts[2]!, 10)}, ${parts[0]}`;
+    }
+    return dateStr;
   };
 
   const formatToPar = (toPar: number | null) => {
@@ -144,8 +146,8 @@ export function MyQualifiersClient({ qualifiers, error }: MyQualifiersClientProp
                               <div>
                                 <p className="text-xs text-warm-500 uppercase font-medium mb-1">To Par</p>
                                 <p className={`text-lg font-semibold ${
-                                  (qualifier.totalToPar || 0) < 0 ? 'text-primary-600' :
-                                  (qualifier.totalToPar || 0) > 0 ? 'text-amber-600' :
+                                  (qualifier.totalToPar ?? 0) < 0 ? 'text-primary-600' :
+                                  (qualifier.totalToPar ?? 0) > 0 ? 'text-amber-600' :
                                   'text-warm-900'
                                 }`}>
                                   {formatToPar(qualifier.totalToPar)}

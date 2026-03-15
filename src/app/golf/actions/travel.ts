@@ -129,6 +129,16 @@ export async function createGolfTravelItinerary(input: CreateTravelItineraryInpu
       return { success: false, error: 'Not authenticated' };
     }
 
+    // Verify user is a coach
+    const { data: coach } = await supabase
+      .from('golf_coaches')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (!coach) {
+      return { success: false, error: 'Only coaches can manage travel itineraries' };
+    }
+
     // DB column types: flight_info=jsonb, room_assignments=jsonb, gear_list=text[]
     // check_in_date and check_out_date don't exist in the database
     // Convert empty strings to null for time/date columns (Postgres rejects "" for time type)
@@ -200,6 +210,37 @@ export async function updateGolfTravelItinerary(input: UpdateTravelItineraryInpu
     if (!user) {
       return { success: false, error: 'Not authenticated' };
     }
+
+    // Verify user is a coach
+    const { data: coach } = await supabase
+      .from('golf_coaches')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (!coach) {
+      return { success: false, error: 'Only coaches can manage travel itineraries' };
+    }
+
+    // Verify itinerary belongs to coach's team
+    const { data: itineraryRecord } = await supabase
+      .from('golf_travel_itineraries')
+      .select('team_id')
+      .eq('id', validatedData.id)
+      .maybeSingle();
+    if (!itineraryRecord) return { success: false, error: 'Itinerary not found' };
+    // Check team membership via coach's organization
+    const { data: coachTeam } = await supabase
+      .from('golf_coaches')
+      .select('organization_id')
+      .eq('user_id', user.id)
+      .single();
+    const { data: teamMatch } = await supabase
+      .from('golf_teams')
+      .select('id')
+      .eq('organization_id', coachTeam?.organization_id)
+      .eq('id', itineraryRecord.team_id)
+      .maybeSingle();
+    if (!teamMatch) return { success: false, error: 'Not authorized for this team' };
 
     // Extract update data (omit id and fields that don't exist in the database)
     const { id, check_in_date: _checkIn, check_out_date: _checkOut, ...rawUpdateData } = validatedData;
@@ -283,6 +324,36 @@ export async function deleteGolfTravelItinerary(itineraryId: string) {
   if (!user) {
     return { success: false, error: 'Not authenticated' };
   }
+
+  // Verify user is a coach
+  const { data: coach } = await supabase
+    .from('golf_coaches')
+    .select('id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+  if (!coach) {
+    return { success: false, error: 'Only coaches can manage travel itineraries' };
+  }
+
+  // Verify itinerary belongs to coach's team
+  const { data: itineraryRecord } = await supabase
+    .from('golf_travel_itineraries')
+    .select('team_id')
+    .eq('id', parsed.data)
+    .maybeSingle();
+  if (!itineraryRecord) return { success: false, error: 'Itinerary not found' };
+  const { data: coachTeam } = await supabase
+    .from('golf_coaches')
+    .select('organization_id')
+    .eq('user_id', user.id)
+    .single();
+  const { data: teamMatch } = await supabase
+    .from('golf_teams')
+    .select('id')
+    .eq('organization_id', coachTeam?.organization_id)
+    .eq('id', itineraryRecord.team_id)
+    .maybeSingle();
+  if (!teamMatch) return { success: false, error: 'Not authorized for this team' };
 
   const { error } = await supabase
     .from('golf_travel_itineraries')
@@ -400,6 +471,16 @@ export async function createTravelExpense(input: CreateExpenseInput) {
       return { success: false, error: 'Unauthorized' };
     }
 
+    // Verify user is a coach
+    const { data: coach } = await supabase
+      .from('golf_coaches')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (!coach) {
+      return { success: false, error: 'Only coaches can manage expenses' };
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
       .from('golf_travel_expenses')
@@ -446,6 +527,16 @@ export async function updateTravelExpense(input: UpdateExpenseInput) {
       return { success: false, error: 'Not authenticated' };
     }
 
+    // Verify user is a coach
+    const { data: coach } = await supabase
+      .from('golf_coaches')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (!coach) {
+      return { success: false, error: 'Only coaches can manage expenses' };
+    }
+
     const { id, ...updateData } = validatedData;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -484,6 +575,16 @@ export async function deleteTravelExpense(expenseId: string) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return { success: false, error: 'Not authenticated' };
+  }
+
+  // Verify user is a coach
+  const { data: coach } = await supabase
+    .from('golf_coaches')
+    .select('id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+  if (!coach) {
+    return { success: false, error: 'Only coaches can manage expenses' };
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -695,6 +796,16 @@ export async function exportExpensesToCSV(itineraryId: string): Promise<{ succes
     return { success: false, error: 'Not authenticated' };
   }
 
+  // Verify user is a coach
+  const { data: coach } = await supabase
+    .from('golf_coaches')
+    .select('id')
+    .eq('user_id', user.id)
+    .maybeSingle();
+  if (!coach) {
+    return { success: false, error: 'Only coaches can manage expenses' };
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: itinerary } = await (supabase as any)
     .from('golf_travel_itineraries')
@@ -763,6 +874,16 @@ export async function setBudget(input: { itinerary_id: string; category: Expense
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       return { success: false, error: 'Not authenticated' };
+    }
+
+    // Verify user is a coach
+    const { data: coach } = await supabase
+      .from('golf_coaches')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (!coach) {
+      return { success: false, error: 'Only coaches can manage expenses' };
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

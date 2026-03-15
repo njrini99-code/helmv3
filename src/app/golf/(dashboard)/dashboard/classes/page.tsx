@@ -152,7 +152,8 @@ export default function GolfClassesPage() {
         color: formData.color,
         notes: formData.notes || null,
       })
-      .eq('id', formData.id);
+      .eq('id', formData.id)
+      .eq('player_id', playerId);
 
     if (error) throw error;
 
@@ -175,7 +176,8 @@ export default function GolfClassesPage() {
     const { error } = await supabase
       .from('golf_player_classes')
       .delete()
-      .eq('id', selectedClass.id);
+      .eq('id', selectedClass.id)
+      .eq('player_id', playerId);
 
     if (error) throw error;
 
@@ -383,7 +385,7 @@ export default function GolfClassesPage() {
   };
 
   // Calculate total credits
-  const totalCredits = classes.reduce((sum, cls) => sum + (cls.credits || 0), 0);
+  const totalCredits = classes.reduce((sum, cls) => sum + (cls.credits ?? 0), 0);
 
   // No team — show helpful empty state instead of silently failing on add/edit
   if (!teamId) {

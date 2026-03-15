@@ -162,7 +162,7 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
               transition={{ duration: 0.3, delay: 0.5 }}
               className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white border-2 border-primary-600 rounded-full shadow-md"
               style={{
-                left: `${Math.min(Math.max(((predictedValue - rangeLow) / (rangeHigh - rangeLow)) * 100, 5), 95)}%`,
+                left: `${Math.min(Math.max(((Number(rangeHigh) - Number(rangeLow)) > 0 ? ((predictedValue - Number(rangeLow)) / (Number(rangeHigh) - Number(rangeLow))) * 100 : 50), 5), 95)}%`,
                 transform: 'translate(-50%, -50%)',
               }}
             />

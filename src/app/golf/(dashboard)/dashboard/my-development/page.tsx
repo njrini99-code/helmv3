@@ -101,11 +101,12 @@ export default async function MyDevelopmentPage() {
       (targetMetric ?? '').toLowerCase().includes(kw)
     );
 
-    if (isLowerBetter && target < current) {
-      // Starting value is implicitly the original current; progress = how far we've come toward target
-      // We treat target as the floor and use ratio of (reduction achieved / total reduction needed)
-      // Without a stored baseline, we estimate progress as target/current (closer to 1 = closer to goal)
-      return Math.min(100, Math.round((target / current) * 100));
+    // For lower-is-better: show how close current is to target
+    // If current <= target, progress = 100% (goal met)
+    // If current > target, progress = target / current * 100 (percentage of way there)
+    if (isLowerBetter) {
+      if (current <= target) return 100;
+      return Math.round((target / current) * 100);
     }
 
     if (target < 0) return 0;

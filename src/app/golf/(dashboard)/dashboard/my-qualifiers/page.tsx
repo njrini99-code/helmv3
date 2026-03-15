@@ -27,7 +27,8 @@ export default async function MyQualifiersPage() {
         course_name,
         start_date,
         end_date,
-        status
+        status,
+        num_rounds
       )
     `)
     .eq('player_id', player.id);
@@ -67,6 +68,7 @@ export default async function MyQualifiersPage() {
       start_date: string;
       end_date: string | null;
       status: string;
+      num_rounds: number | null;
     } | null;
   };
 
@@ -81,6 +83,7 @@ export default async function MyQualifiersPage() {
         start_date: string;
         end_date: string | null;
         status: string;
+        num_rounds: number | null;
       };
 
       const qualifierRounds = (rounds || []).filter((r) => r.qualifier_id === q.id);
@@ -89,14 +92,15 @@ export default async function MyQualifiersPage() {
         .map((r) => r.qualifier_round_number as number)
         .sort((a, b) => a - b);
 
-      const totalScore = qualifierRounds.reduce((sum, r) => sum + (r.total_score || 0), 0);
-      const totalToPar = qualifierRounds.reduce((sum, r) => sum + (r.score_to_par || 0), 0);
+      const totalScore = qualifierRounds.reduce((sum, r) => sum + (r.total_score ?? 0), 0);
+      const totalToPar = qualifierRounds.reduce((sum, r) => sum + (r.score_to_par ?? 0), 0);
       const roundsCompleted = qualifierRounds.length > 0
         ? qualifierRounds.length
         : (entry.rounds_completed ?? 0);
       const inferredNumRounds = q.status === 'completed'
         ? Math.max(roundsCompleted, 1)
         : Math.max(roundsCompleted + 1, 1);
+      const numRounds = q.num_rounds ?? inferredNumRounds;
 
       return {
         id: q.id,
@@ -104,7 +108,7 @@ export default async function MyQualifiersPage() {
         description: q.description,
         courseName: q.course_name,
         location: null,
-        numRounds: inferredNumRounds,
+        numRounds,
         holesPerRound: 18,
         startDate: q.start_date,
         endDate: q.end_date,

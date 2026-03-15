@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { GlassCard } from '@/components/ui/glass-card';
 import {
@@ -140,7 +140,7 @@ export function TrendDashboard({ trends, streaks, volatility, trendData, playerS
             const meta = windowLabels[window.name];
 
             return (
-              <motion.div
+              <m.div
                 key={window.name}
                 className="flex items-center gap-3"
                 initial={{ opacity: 0, x: -12 }}
@@ -153,7 +153,7 @@ export function TrendDashboard({ trends, streaks, volatility, trendData, playerS
                 </div>
 
                 <div className={cn('flex-1 h-3 rounded-full overflow-hidden', config.barBg)}>
-                  <motion.div
+                  <m.div
                     className={cn('h-full rounded-full', config.barColor)}
                     initial={{ width: 0 }}
                     animate={{ width: `${Math.min(Number(window.magnitude ?? 0) * 100, 100)}%` }}
@@ -169,7 +169,7 @@ export function TrendDashboard({ trends, streaks, volatility, trendData, playerS
                 <span className="text-xs text-warm-400 tabular-nums w-10 text-right shrink-0">
                   {Math.round(Number(window.confidence ?? 0) * 100)}%
                 </span>
-              </motion.div>
+              </m.div>
             );
           })}
         </div>
@@ -178,7 +178,7 @@ export function TrendDashboard({ trends, streaks, volatility, trendData, playerS
         {ongoingStreaks.length > 0 && (
           <div className="space-y-2 pt-2 border-t border-white/10">
             {ongoingStreaks.map((streak, i) => (
-              <motion.div
+              <m.div
                 key={i}
                 className={cn(
                   'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium',
@@ -199,16 +199,16 @@ export function TrendDashboard({ trends, streaks, volatility, trendData, playerS
                   {streak.length}-round {streak.type} streak
                 </span>
                 <span className="text-xs opacity-70 tabular-nums">
-                  ({Number(streak.magnitude ?? 0) > 0 ? '+' : ''}{Number(streak.magnitude ?? 0).toFixed(1)} strokes)
+                  ({Math.abs(Number(streak.magnitude ?? 0)).toFixed(1)} strokes {streak.type === 'hot' ? 'below' : 'above'} avg)
                 </span>
-              </motion.div>
+              </m.div>
             ))}
           </div>
         )}
 
         {/* Volatility warning */}
         {resolvedVolatility?.isElevated && (
-          <motion.div
+          <m.div
             className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-700"
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -219,7 +219,7 @@ export function TrendDashboard({ trends, streaks, volatility, trendData, playerS
             <span className="text-xs opacity-70 tabular-nums ml-auto">
               {Number(resolvedVolatility.current ?? 0).toFixed(1)} vs {Number(resolvedVolatility.historical ?? 0).toFixed(1)} avg
             </span>
-          </motion.div>
+          </m.div>
         )}
       </div>
     </GlassCard>

@@ -126,7 +126,7 @@ function InsightCard({
             <span className="text-xs text-warm-400 tabular-nums">
               {confidencePercent}% confidence
             </span>
-            {insight.strokeImpact && (
+            {insight.strokeImpact != null && (
               <span className={cn(
                 'text-xs font-semibold px-2 py-0.5 rounded-full',
                 Math.abs(Number(insight.strokeImpact ?? 0)) >= 1.5 ? 'bg-red-100 text-red-700' :

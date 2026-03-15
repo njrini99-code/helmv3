@@ -169,6 +169,7 @@ export default async function RoundsPage() {
     const normalizedScores: number[] = [];
     for (const r of scoredRounds) {
       const hp = r.holes_played ?? 18;
+      if (hp <= 0) continue;
       totalStrokes += r.total_score!;
       totalHoles += hp;
       normalizedScores.push(Math.round(r.total_score! * (18 / hp)));

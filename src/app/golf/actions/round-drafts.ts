@@ -491,76 +491,11 @@ export async function clearRoundDraft(roundId: string): Promise<ActionResult<voi
 }
 
 // ============================================================================
-// CLEANUP ORPHANED DRAFTS
+// CLEANUP ORPHANED DRAFTS (REMOVED)
 // ============================================================================
-
-/**
- * Delete draft rounds (status='in_progress') older than 48 hours for the current player.
- * Called automatically when starting a new round to prevent orphaned drafts from accumulating.
- * Returns the number of deleted drafts.
- *
- * Bug #5: Uses created_at instead of updated_at so auto-save can't defeat cleanup.
- * Bug #5: Increased cutoff from 24h to 48h to give players more time.
- * Bug #5: Simplified query (removed joins) to avoid timeouts.
- */
-export async function cleanupOrphanedDrafts(): Promise<ActionResult<{ deletedCount: number }>> {
-  try {
-    const supabase = await createClient();
-
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return { success: false, error: 'You must be signed in' };
-    }
-
-    const { data: player } = await supabase
-      .from('golf_players')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!player) {
-      return { success: false, error: 'Player profile not found' };
-    }
-
-    // Calculate 48 hours ago
-    const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
-
-    // Delete orphaned drafts older than 48 hours by created_at
-    const { data: deleted, error } = await supabase
-      .from('golf_rounds')
-      .delete()
-      .eq('player_id', player.id)
-      .eq('status', 'in_progress')
-      .lt('created_at', cutoff)
-      .select('id');
-
-    if (error) {
-      await logServerError(`Failed to clean up orphaned round drafts: ${error.message}`, {
-        action: 'cleanupOrphanedDrafts',
-        featureArea: 'round_draft',
-        playerId: player.id,
-        userId: user.id,
-        userEmail: user.email,
-        errorCode: error.code,
-        errorHint: error.hint,
-        errorDetails: error.details,
-        extra: { cutoff },
-      });
-      return { success: false, error: 'Failed to clean up old drafts' };
-    }
-
-    return { success: true, data: { deletedCount: deleted?.length ?? 0 } };
-  } catch (error) {
-    await logServerError(`cleanupOrphanedDrafts unexpected error: ${error instanceof Error ? error.message : String(error)}`, {
-      action: 'cleanupOrphanedDrafts.catch',
-      featureArea: 'round_draft',
-      extra: {
-        stack: error instanceof Error ? error.stack : undefined,
-      },
-    }, 'critical');
-    return { success: false, error: 'Failed to clean up old drafts' };
-  }
-}
+// Timed round cleanup has been intentionally removed.
+// In-progress rounds are never automatically deleted based on age.
+// Players can manually discard drafts via clearRoundDraft() above.
 
 // ============================================================================
 // CHECK ROUND STALENESS (Multi-Device Conflict Detection)
