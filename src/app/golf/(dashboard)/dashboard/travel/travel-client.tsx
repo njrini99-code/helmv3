@@ -165,11 +165,14 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
+    // Parse date parts directly to avoid timezone shift (new Date("2026-03-15") = midnight UTC = Mar 14 in US timezones)
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const parts = dateStr.split('T')[0]?.split('-');
+    if (parts && parts.length === 3) {
+      const month = months[parseInt(parts[1]!, 10) - 1] ?? parts[1];
+      return `${month} ${parseInt(parts[2]!, 10)}, ${parts[0]}`;
+    }
+    return dateStr;
   };
 
   const resetForm = () => {
@@ -372,7 +375,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
               <MobileMenuButton />
               <div>
               <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">Travel</h1>
-              <p className="text-sm text-warm-500 mt-0.5">
+              <p className="text-sm text-warm-500 mt-0.5" suppressHydrationWarning>
                 {itineraries.length === 0
                   ? 'Tournament travel itineraries & expenses'
                   : (() => {
