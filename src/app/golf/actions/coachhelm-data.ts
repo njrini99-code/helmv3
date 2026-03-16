@@ -19,6 +19,7 @@ import { logServerError } from '@/lib/server-error-logger';
 // Stats module
 import {
   normalizePlayerMetrics,
+  computeCompositeRating,
   computeCategoryRatings,
   buildPlayerBaseline,
   buildPercentileProfile,
@@ -394,12 +395,54 @@ export async function getPlayerProfile(
     const allZScores = normalizePlayerMetrics(teamPlayerMetrics, metricKeys);
     const playerZScores = allZScores.find((z) => z.playerId === playerId);
 
-    const composite = playerZScores?.composite ?? null;
-    const categories = playerZScores?.categories ?? computeCategoryRatings({});
+    let composite = playerZScores?.composite ?? null;
+    let categories = playerZScores?.categories ?? computeCategoryRatings({});
     const zScores = playerZScores?.zScores ?? {};
 
     // Build percentile profile
     const playerStatsRow = teamStats.find((s) => s.player_id === playerId);
+
+    // When there are fewer than 3 players, z-score normalization can't produce
+    // a meaningful composite (returns null) and categories default to 50.
+    // Fall back to benchmark-based rating using the player's own stats.
+    if (composite == null && playerStatsRow) {
+      const pm = mapStatsCacheToMetrics(playerStatsRow);
+      // D2/D3 benchmark values (approximate averages)
+      const benchmarks: Record<string, { mean: number; good: number; lowerIsBetter: boolean }> = {
+        scoringAvg:    { mean: 76, good: 72, lowerIsBetter: true },
+        girPct:        { mean: 50, good: 67, lowerIsBetter: false },
+        fairwayPct:    { mean: 55, good: 70, lowerIsBetter: false },
+        puttsPerRound: { mean: 32, good: 28, lowerIsBetter: true },
+        scramblePct:   { mean: 35, good: 55, lowerIsBetter: false },
+        sgTotal:       { mean: 0,  good: 3,  lowerIsBetter: false },
+        sgOffTee:      { mean: 0,  good: 1,  lowerIsBetter: false },
+        sgApproach:    { mean: 0,  good: 1,  lowerIsBetter: false },
+        sgAroundGreen: { mean: 0,  good: 0.5, lowerIsBetter: false },
+        sgPutting:     { mean: 0,  good: 0.5, lowerIsBetter: false },
+      };
+
+      // Compute a 0-100 rating per metric based on where the player falls
+      // between the benchmark mean (->50) and benchmark good (->80)
+      const metricRatings: Record<string, number> = {};
+      for (const key of metricKeys) {
+        const bench = benchmarks[key];
+        if (!bench) continue;
+        const val = pm[key] ?? 0;
+        const range = bench.good - bench.mean; // Could be negative for lowerIsBetter
+        if (range === 0) { metricRatings[key] = 50; continue; }
+        const normalized = (val - bench.mean) / range; // 0 = at mean, 1 = at good
+        metricRatings[key] = Math.max(0, Math.min(100, 50 + normalized * 30));
+      }
+
+      // Recompute categories using benchmark-based z-like scores
+      // Convert each metric rating back to a z-like score: (rating - 50) / 10
+      const benchZScores: Record<string, number> = {};
+      for (const [key, rating] of Object.entries(metricRatings)) {
+        benchZScores[key] = (rating - 50) / 10;
+      }
+      categories = computeCategoryRatings(benchZScores);
+      composite = computeCompositeRating(benchZScores);
+    }
     const playerMetricsForPercentile = playerStatsRow
       ? mapStatsCacheToMetrics(playerStatsRow)
       : {};

@@ -75,14 +75,24 @@ export function ShotAnalysisCard({
   const resolvedYardageCurve = yardageCurve ?? (shotData?.yardageCurve as typeof yardageCurve | undefined);
   const resolvedDeadZones = deadZones ?? (shotData?.deadZones as typeof deadZones | undefined);
   const resolvedWeaknesses = weaknesses ?? (shotData?.weaknesses as typeof weaknesses | undefined);
-  const resolvedResilience = resilience ?? (shotData?.resilience as typeof resilience | undefined);
+  // shotData.resilience may be a SequenceAnalysis object (with .resilienceScore) or a raw number
+  const rawResilience = resilience ?? shotData?.resilience;
+  const parsedResilience = typeof rawResilience === 'object' && rawResilience !== null
+    ? Number((rawResilience as Record<string, unknown>).resilienceScore ?? 0)
+    : rawResilience != null ? Number(rawResilience) : undefined;
+  // Guard against NaN
+  const safeResilience = parsedResilience != null && !isNaN(parsedResilience) ? parsedResilience : undefined;
   // shotData.scrambleRate may be a ScrambleAnalysis object (with .scrambleRate field) or a raw number
   const rawScramble = scrambleRate ?? shotData?.scrambleRate;
-  const resolvedScrambleRate = typeof rawScramble === 'object' && rawScramble !== null
+  const rawScrambleValue = typeof rawScramble === 'object' && rawScramble !== null
     ? Number((rawScramble as Record<string, unknown>).scrambleRate ?? 0)
     : rawScramble != null ? Number(rawScramble) : undefined;
+  // scrambleRate from the engine is a 0-1 fraction; convert to 0-100 for display
+  const resolvedScrambleRate = rawScrambleValue != null && !isNaN(rawScrambleValue)
+    ? (rawScrambleValue <= 1 ? rawScrambleValue * 100 : rawScrambleValue)
+    : undefined;
   const resolvedTeamScrambleRate = teamScrambleRate ?? (shotData?.teamScrambleRate != null ? Number(shotData.teamScrambleRate) : undefined);
-  const hasSomething = resolvedYardageCurve?.buckets?.length || resolvedWeaknesses?.length || resolvedResilience != null || resolvedScrambleRate != null;
+  const hasSomething = resolvedYardageCurve?.buckets?.length || resolvedWeaknesses?.length || safeResilience != null || resolvedScrambleRate != null;
 
   if (!hasSomething) {
     return (
@@ -244,10 +254,10 @@ export function ShotAnalysisCard({
         )}
 
         {/* Bottom row: Resilience + Scramble */}
-        {(resolvedResilience != null || resolvedScrambleRate != null) && (
+        {(safeResilience != null || resolvedScrambleRate != null) && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-white/10">
             {/* Resilience */}
-            {resolvedResilience != null && (
+            {safeResilience != null && (
               <m.div
                 className="flex items-center gap-3 p-3 rounded-xl bg-white/40 border border-white/20"
                 initial={{ opacity: 0, y: 8 }}
@@ -271,22 +281,22 @@ export function ShotAnalysisCard({
                       fill="none"
                       strokeWidth="4"
                       strokeLinecap="round"
-                      className={Number(resolvedResilience ?? 0) >= 1.0 ? 'stroke-primary-500' : 'stroke-amber-500'}
+                      className={Number(safeResilience ?? 0) >= 1.0 ? 'stroke-primary-500' : 'stroke-amber-500'}
                       strokeDasharray={2 * Math.PI * 18}
-                      strokeDashoffset={2 * Math.PI * 18 * (1 - Math.min(Number(resolvedResilience ?? 0) / 2, 1))}
+                      strokeDashoffset={2 * Math.PI * 18 * (1 - Math.min(Number(safeResilience ?? 0) / 2, 1))}
                     />
                   </svg>
                   <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-warm-900 tabular-nums">
-                    {Number(resolvedResilience ?? 0).toFixed(1)}
+                    {Number(safeResilience ?? 0).toFixed(1)}
                   </span>
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-warm-800">Resilience</p>
                   <p className={cn(
                     'text-xs font-medium',
-                    Number(resolvedResilience ?? 0) >= 1.0 ? 'text-primary-600' : 'text-amber-600'
+                    Number(safeResilience ?? 0) >= 1.0 ? 'text-primary-600' : 'text-amber-600'
                   )}>
-                    {Number(resolvedResilience ?? 0) >= 1.0 ? 'Good recovery' : 'Compounds errors'}
+                    {Number(safeResilience ?? 0) >= 1.0 ? 'Good recovery' : 'Compounds errors'}
                   </p>
                 </div>
               </m.div>

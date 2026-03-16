@@ -160,7 +160,7 @@ const WINDOW_CONFIGS: Array<{
 export function analyzeMultiWindowTrends(
   values: number[],
   metric: string,
-  lowerIsBetter = false
+  lowerIsBetter = false,
 ): MultiWindowAnalysis {
   if (values.length === 0) {
     return {
@@ -211,7 +211,7 @@ export function analyzeMultiWindowTrends(
 
   const alignment = determineAlignment(windows);
   const signal = determineSignal(windows, alignment);
-  const description = composeDescription(metric, windows, alignment, signal);
+  const description = composeDescription(metric, windows, alignment, signal, lowerIsBetter);
 
   return { metric, windows, alignment, signal, description };
 }
@@ -290,11 +290,17 @@ function composeDescription(
   metric: string,
   windows: TrendWindow[],
   alignment: WindowAlignment,
-  signal: MultiWindowAnalysis['signal']
+  signal: MultiWindowAnalysis['signal'],
+  lowerIsBetter = false,
 ): string {
+  // When lowerIsBetter (e.g. scoreToPar), "improving" means values are going
+  // down, so we flip the wording: "trending downward" → "improving" and vice versa.
+  const improvingDirection = lowerIsBetter ? 'downward (improving)' : 'upward';
+  const decliningDirection = lowerIsBetter ? 'upward (declining)' : 'downward';
+
   const signalDescriptions: Record<MultiWindowAnalysis['signal'], string> = {
-    strong_improving: `${metric} is trending upward across all time windows — sustained improvement.`,
-    strong_declining: `${metric} is trending downward across all time windows — sustained decline.`,
+    strong_improving: `${metric} is trending ${improvingDirection} across all time windows — sustained improvement.`,
+    strong_declining: `${metric} is trending ${decliningDirection} across all time windows — sustained decline.`,
     short_term_dip: `${metric} has dipped recently, but the longer-term trend remains positive.`,
     short_term_spike: `${metric} has spiked recently, but the longer-term trend is different — could be a hot streak.`,
     trajectory_change: `${metric} shows a recent shift in trajectory compared to the long-term trend.`,

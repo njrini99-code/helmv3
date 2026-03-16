@@ -260,6 +260,286 @@ function generateCategoryInsights(
 // MAIN ACTION
 // ============================================================================
 
+// ============================================================================
+// TEAM OVERVIEW TYPES
+// ============================================================================
+
+export interface TeamOverviewResult {
+  success: boolean;
+  data?: {
+    teamComposite: number;
+    teamCategories: { teeGame: number; approach: number; shortGame: number; putting: number; scoring: number };
+    teamShotAnalysis: {
+      yardageCurve: Array<{ rangeStart: number; rangeEnd: number; avgSG: number; shotCount: number }>;
+      deadZones: Array<{ rangeStart: number; rangeEnd: number; deficit: number }>;
+      topWeaknesses: Array<{ context: string; lie: string; distanceRange: string; avgSG: number; shotCount: number }>;
+    };
+    playerCount: number;
+  };
+  error?: string;
+}
+
+// ============================================================================
+// GET TEAM OVERVIEW
+// ============================================================================
+
+/**
+ * Aggregates team-level composite rating, category breakdown, and shot analysis.
+ * Returns data suitable for the TeamCompositeCard and TeamShotOverview components.
+ */
+export async function getTeamOverview(): Promise<TeamOverviewResult> {
+  try {
+    // 1. Auth check — verify user is a coach
+    const session = await getGolfSessionProfile();
+    if (!session?.coach) {
+      return { success: false, error: 'Unauthorized: coach role required' };
+    }
+
+    const supabase = await createClient();
+    const { organization_id: orgId } = session.coach;
+
+    if (!orgId) {
+      return { success: false, error: 'No organization found for this coach' };
+    }
+
+    // 2. Get team via organization_id
+    const { data: team, error: teamError } = await supabase
+      .from('golf_teams')
+      .select('id')
+      .eq('organization_id', orgId)
+      .limit(1)
+      .single();
+
+    if (teamError || !team) {
+      return { success: false, error: 'Team not found' };
+    }
+
+    // 3. Get active players via golf_team_members
+    const { data: members, error: membersError } = await supabase
+      .from('golf_team_members')
+      .select('player_id')
+      .eq('team_id', team.id)
+      .eq('status', 'active');
+
+    if (membersError || !members || members.length === 0) {
+      return {
+        success: true,
+        data: {
+          teamComposite: 0,
+          teamCategories: { teeGame: 50, approach: 50, shortGame: 50, putting: 50, scoring: 50 },
+          teamShotAnalysis: { yardageCurve: [], deadZones: [], topWeaknesses: [] },
+          playerCount: 0,
+        },
+      };
+    }
+
+    const playerIds = members.map((m) => m.player_id);
+
+    // 4. Fetch stats cache for all players
+    const { data: statsData, error: statsError } = await supabase
+      .from('golf_player_stats_cache')
+      .select(
+        'player_id, driving_accuracy_percentage, driving_distance_average, gir_percentage, approach_proximity_average, strokes_gained_approach, scrambling_percentage, strokes_gained_around_green, putts_per_round, three_putt_percentage, strokes_gained_putting, putt_make_pct_5_10ft, scoring_average, scoring_average_vs_par, par3_average, par4_average, par5_average, penalty_strokes_per_round',
+      )
+      .in('player_id', playerIds);
+
+    if (statsError) {
+      return { success: false, error: 'Failed to load player stats' };
+    }
+
+    // 5. Build team-level composite using z-score normalization
+    const { normalizePlayerMetrics } = await import('@/lib/coachhelm/v2/stats');
+
+    const metricsMap: Record<string, string> = {
+      drivingDistance: 'driving_distance_average',
+      fairwayPct: 'driving_accuracy_percentage',
+      girPct: 'gir_percentage',
+      sgApproach: 'strokes_gained_approach',
+      proximityToHole: 'approach_proximity_average',
+      scramblePct: 'scrambling_percentage',
+      sgAroundGreen: 'strokes_gained_around_green',
+      sgPutting: 'strokes_gained_putting',
+      puttsPerRound: 'putts_per_round',
+      threePuttAvoidance: 'three_putt_percentage',
+      scoringAvg: 'scoring_average_vs_par',
+    };
+
+    const metricKeys = Object.keys(metricsMap);
+    const playerMetrics = (statsData ?? []).map((row) => {
+      const metrics: Record<string, number> = {};
+      for (const [metricKey, dbCol] of Object.entries(metricsMap)) {
+        const val = Number((row as Record<string, unknown>)[dbCol] ?? 0);
+        // Invert "lower is better" metrics so higher z-score = better
+        if (['puttsPerRound', 'threePuttAvoidance', 'scoringAvg', 'proximityToHole'].includes(metricKey)) {
+          metrics[metricKey] = -val;
+        } else {
+          metrics[metricKey] = val;
+        }
+      }
+      return { playerId: row.player_id, metrics };
+    });
+
+    let teamComposite = 50;
+    let teamCategories = { teeGame: 50, approach: 50, shortGame: 50, putting: 50, scoring: 50 };
+
+    if (playerMetrics.length > 0) {
+      const normalized = normalizePlayerMetrics(playerMetrics, metricKeys);
+      // Team average: average the composite and category ratings across all players
+      const composites = normalized.map((p) => p.composite ?? 50);
+      teamComposite = Math.round(composites.reduce((a, b) => a + b, 0) / composites.length);
+      teamComposite = Math.max(0, Math.min(100, teamComposite));
+
+      const catKeys = ['teeGame', 'approach', 'shortGame', 'putting', 'scoring'] as const;
+      const catAvgs: Record<string, number> = {};
+      for (const key of catKeys) {
+        const values = normalized.map((p) => p.categories[key]);
+        catAvgs[key] = Math.round(values.reduce((a, b) => a + b, 0) / values.length);
+        catAvgs[key] = Math.max(0, Math.min(100, catAvgs[key]));
+      }
+      teamCategories = {
+        teeGame: catAvgs['teeGame'] ?? 50,
+        approach: catAvgs['approach'] ?? 50,
+        shortGame: catAvgs['shortGame'] ?? 50,
+        putting: catAvgs['putting'] ?? 50,
+        scoring: catAvgs['scoring'] ?? 50,
+      };
+    }
+
+    // 6. Aggregate shot data for yardage curve (last 90 days)
+    const {
+      buildDefaultBaseline,
+      buildYardageCurve,
+      findDeadZones,
+      analyzeShotsByContext,
+      rankWeaknessContexts,
+    } = await import('@/lib/coachhelm/v2/shot-analysis');
+
+    const sinceDate = new Date();
+    sinceDate.setDate(sinceDate.getDate() - 90);
+    const sinceDateStr = sinceDate.toISOString().split('T')[0];
+
+    // Fetch round IDs for all team players in period
+    const { data: roundsData } = await supabase
+      .from('golf_rounds')
+      .select('id')
+      .in('player_id', playerIds)
+      .eq('status', 'completed')
+      .gte('round_date', sinceDateStr);
+
+    let yardageCurve: Array<{ rangeStart: number; rangeEnd: number; avgSG: number; shotCount: number }> = [];
+    let deadZones: Array<{ rangeStart: number; rangeEnd: number; deficit: number }> = [];
+    let topWeaknesses: Array<{ context: string; lie: string; distanceRange: string; avgSG: number; shotCount: number }> = [];
+
+    if (roundsData && roundsData.length > 0) {
+      const roundIds = roundsData.map((r) => r.id);
+
+      // Fetch shots in batches if needed (supabase .in has limits with large arrays)
+      const batchSize = 100;
+      const allShotsRaw: Array<Record<string, unknown>> = [];
+
+      for (let i = 0; i < roundIds.length; i += batchSize) {
+        const batch = roundIds.slice(i, i + batchSize);
+        const { data: shotsData } = await supabase
+          .from('golf_shots')
+          .select('id, round_id, hole_number, shot_number, lie_before, lie_after, distance_to_hole_before, distance_to_hole_after, distance_unit_before, distance_unit_after, club_type, result')
+          .in('round_id', batch)
+          .order('round_id')
+          .order('hole_number')
+          .order('shot_number');
+        if (shotsData) {
+          allShotsRaw.push(...(shotsData as unknown as Array<Record<string, unknown>>));
+        }
+      }
+
+      // Map DB shots to ShotData interface (same logic as coachhelm-data.ts)
+      type ShotDataType = { id: string; roundId: string; holeNumber: number; shotNumber: number; lieBefore: string; distanceBefore: number; lieAfter: string; distanceAfter: number; club?: string; result?: string };
+      const shots: ShotDataType[] = allShotsRaw
+        .filter((s) => s.lie_before && s.distance_to_hole_before != null)
+        .map((s) => {
+          const lieBefore = (s.lie_before as string) ?? 'fairway';
+          const lieAfter = (s.lie_after as string) ?? 'fairway';
+          const distBefore = lieBefore === 'green'
+            ? Number(s.distance_to_hole_before ?? 0)
+            : (s.distance_unit_before as string) === 'feet'
+              ? Number(s.distance_to_hole_before ?? 0) / 3
+              : Number(s.distance_to_hole_before ?? 0);
+          const distAfter = lieAfter === 'green'
+            ? Number(s.distance_to_hole_after ?? 0)
+            : (s.distance_unit_after as string) === 'feet'
+              ? Number(s.distance_to_hole_after ?? 0) / 3
+              : Number(s.distance_to_hole_after ?? 0);
+
+          return {
+            id: s.id as string,
+            roundId: s.round_id as string,
+            holeNumber: Number(s.hole_number),
+            shotNumber: Number(s.shot_number),
+            lieBefore,
+            distanceBefore: distBefore,
+            lieAfter,
+            distanceAfter: distAfter,
+            club: (s.club_type as string) ?? undefined,
+            result: (s.result as string) ?? undefined,
+          };
+        });
+
+      if (shots.length > 0) {
+        const sgBaseline = buildDefaultBaseline();
+
+        // Build team yardage curve
+        const teamCurve = buildYardageCurve(shots, sgBaseline, 25, 'team');
+        yardageCurve = teamCurve.buckets.map((b) => ({
+          rangeStart: b.rangeStart,
+          rangeEnd: b.rangeEnd,
+          avgSG: Math.round(b.avgSG * 1000) / 1000,
+          shotCount: b.shotCount,
+        }));
+
+        // Build synthetic baseline for dead zone detection (SG = 0)
+        const syntheticBaseline = {
+          playerId: 'baseline',
+          buckets: teamCurve.buckets.map((b) => ({ ...b, avgSG: 0 })),
+        };
+        const rawDeadZones = findDeadZones(teamCurve, syntheticBaseline, 0.2, 15);
+        deadZones = rawDeadZones.map((dz) => ({
+          rangeStart: dz.rangeStart,
+          rangeEnd: dz.rangeEnd,
+          deficit: Math.round(dz.deficit * 1000) / 1000,
+        }));
+
+        // Analyze by context and rank weaknesses
+        const contextAnalyses = analyzeShotsByContext(shots, sgBaseline);
+        const ranked = rankWeaknessContexts(contextAnalyses, 15);
+        topWeaknesses = ranked.slice(0, 5).map((w) => ({
+          context: w.context,
+          lie: w.lie,
+          distanceRange: w.distanceRange,
+          avgSG: Math.round(w.avgSG * 1000) / 1000,
+          shotCount: w.shotCount,
+        }));
+      }
+    }
+
+    return {
+      success: true,
+      data: {
+        teamComposite,
+        teamCategories,
+        teamShotAnalysis: { yardageCurve, deadZones, topWeaknesses },
+        playerCount: playerIds.length,
+      },
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    await logServerError(message, { action: 'getTeamOverview' }, 'error');
+    return { success: false, error: message };
+  }
+}
+
+// ============================================================================
+// MAIN ACTION — getTeamCategoryInsights
+// ============================================================================
+
 export async function getTeamCategoryInsights(): Promise<TeamCategoryInsightsResult> {
   try {
     // 1. Auth check — verify user is a coach

@@ -68,6 +68,20 @@ const directionConfig = {
   },
 };
 
+const signalLabels: Record<string, string> = {
+  strong_improving: 'Strongly Improving',
+  strong_declining: 'Strongly Declining',
+  short_term_dip: 'Short-Term Dip',
+  short_term_spike: 'Short-Term Spike',
+  trajectory_change: 'Trajectory Change',
+  mixed: 'Mixed Signals',
+  stable: 'Stable',
+};
+
+function formatSignalLabel(signal: string): string {
+  return signalLabels[signal] ?? signal.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 function getSignalBadgeStyle(signal: string): string {
   const lower = signal.toLowerCase();
   if (lower.includes('strong') && lower.includes('improv')) {
@@ -125,7 +139,7 @@ export function TrendDashboard({ trends, streaks, volatility, trendData, playerS
               getSignalBadgeStyle(resolvedTrends.signal)
             )}
           >
-            {resolvedTrends.signal}
+            {formatSignalLabel(resolvedTrends.signal)}
           </span>
         </div>
 

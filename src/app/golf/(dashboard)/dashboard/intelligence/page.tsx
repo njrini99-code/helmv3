@@ -5,8 +5,8 @@ import { getGolfSessionProfile } from '@/lib/auth/session';
 import { PageLoading } from '@/components/ui/loading';
 import { IntelligenceCommandCenter } from '@/components/golf/coachhelm/v2';
 import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
-import { getTeamCategoryInsights } from '@/app/golf/actions/team-category-insights';
-import { TeamCategoryView } from '@/components/golf/coachhelm/coach';
+import { getTeamCategoryInsights, getTeamOverview } from '@/app/golf/actions/team-category-insights';
+import { TeamCategoryView, TeamCompositeCard, TeamShotOverview } from '@/components/golf/coachhelm/coach';
 
 // ============================================================================
 // METADATA
@@ -48,8 +48,11 @@ export default async function IntelligenceDashboardPage() {
     redirect('/golf/dashboard');
   }
 
-  // Fetch categorized insights
-  const result = await getTeamCategoryInsights();
+  // Fetch team overview and categorized insights in parallel
+  const [overviewResult, result] = await Promise.all([
+    getTeamOverview(),
+    getTeamCategoryInsights(),
+  ]);
 
   return (
     <div className="flex flex-col min-h-full">
@@ -70,6 +73,22 @@ export default async function IntelligenceDashboardPage() {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8 w-full">
+        {/* Team Overview Section */}
+        {overviewResult.success && overviewResult.data && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <TeamCompositeCard
+              composite={overviewResult.data.teamComposite}
+              categories={overviewResult.data.teamCategories}
+              playerCount={overviewResult.data.playerCount}
+            />
+            <TeamShotOverview
+              yardageCurve={overviewResult.data.teamShotAnalysis.yardageCurve}
+              deadZones={overviewResult.data.teamShotAnalysis.deadZones}
+              topWeaknesses={overviewResult.data.teamShotAnalysis.topWeaknesses}
+            />
+          </div>
+        )}
+
         {result.success && result.data ? (
           <TeamCategoryView
             categories={result.data.categories}

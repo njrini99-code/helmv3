@@ -183,8 +183,9 @@ export function CompositeRatingCard({
 
         {/* Category bars */}
         <div className="w-full space-y-3">
-          {(Object.entries(displayCategories) as [keyof typeof displayCategories, number][]).map(
-            ([key, value], i) => (
+          {(Object.entries(displayCategories) as [keyof typeof displayCategories, number][])
+            .filter(([key]) => key in categoryLabels)
+            .map(([key, value], i) => (
               <m.div
                 key={key}
                 className="flex items-center gap-3"
