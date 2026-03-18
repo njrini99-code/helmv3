@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { IconChevronRight, IconSearch, IconWarning, IconSparkles, IconTarget } from '@/components/icons';
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
@@ -135,8 +135,8 @@ function TeamSection({
 
       {/* Members table */}
       {isExpanded && (
-        <div className="px-2 pb-2">
-          <table className="w-full">
+        <div className="px-2 pb-2 overflow-x-auto">
+          <table className="w-full min-w-[400px]">
             <thead>
               <tr className="border-b border-warm-100">
                 <th className="px-3 py-2 text-left text-micro font-semibold text-warm-400 uppercase tracking-wider">User</th>
@@ -160,20 +160,29 @@ function TeamSection({
 
 function MemberRow({ member, onSelect }: { member: TeamMember; onSelect?: (id: string) => void }) {
   const lifecycle = computeLifecycleStage(member);
+  const showOnboardingWarning = !member.onboardingCompleted && member.created_at &&
+    Math.floor((Date.now() - new Date(member.created_at).getTime()) / 86400000) > 7;
 
   return (
     <tr
       onClick={() => onSelect?.(member.id)}
       className={cn(
         'border-b border-warm-50 transition-colors duration-150',
-        'hover:bg-warm-50/50 cursor-pointer'
+        'hover:bg-warm-50/50 cursor-pointer',
+        showOnboardingWarning && 'bg-orange-50/20'
       )}
     >
       <td className="px-3 py-2.5">
         <div className="flex items-center gap-2.5">
           <div className="relative">
-            <div className="w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
-              <span className="text-xs font-bold text-primary-600">
+            <div className={cn(
+              'w-8 h-8 rounded-lg flex items-center justify-center',
+              member.role === 'coach' ? 'bg-blue-50' : 'bg-primary-50'
+            )}>
+              <span className={cn(
+                'text-xs font-bold',
+                member.role === 'coach' ? 'text-blue-600' : 'text-primary-600'
+              )}>
                 {getInitials(member.name, member.email)}
               </span>
             </div>
@@ -185,6 +194,11 @@ function MemberRow({ member, onSelect }: { member: TeamMember; onSelect?: (id: s
             <div className="flex items-center gap-1.5">
               <p className="text-sm font-medium text-warm-900 truncate">{member.name || member.email.split('@')[0]}</p>
               <LifecycleBadge stage={lifecycle} />
+              {showOnboardingWarning && (
+                <span className="text-micro font-semibold px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 whitespace-nowrap">
+                  Onboarding
+                </span>
+              )}
             </div>
             <p className="text-label text-warm-400 truncate">{member.email}</p>
           </div>
@@ -221,6 +235,18 @@ export function TeamUserDirectory({ teams, unassigned, onSelectUser, expandedTea
     else if (teams.length > 0 && teams[0]) initial.add(teams[0].teamId);
     return initial;
   });
+
+  // React to expandedTeamId prop changes (e.g. clicking a team health card)
+  useEffect(() => {
+    if (expandedTeamId) {
+      setExpanded((prev) => {
+        if (prev.has(expandedTeamId)) return prev;
+        const next = new Set(prev);
+        next.add(expandedTeamId);
+        return next;
+      });
+    }
+  }, [expandedTeamId]);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
   const [activityFilter, setActivityFilter] = useState<ActivityFilter>('all');
@@ -243,7 +269,7 @@ export function TeamUserDirectory({ teams, unassigned, onSelectUser, expandedTea
     return unassigned.filter((u) => {
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
-        if (!u.email.toLowerCase().includes(q)) return false;
+        if (!u.email.toLowerCase().includes(q) && !(u.name ?? '').toLowerCase().includes(q)) return false;
       }
       if (roleFilter !== 'all' && u.role !== roleFilter) return false;
       if (activityFilter === 'active_7d' && u.activityStatus !== 'active_today' && u.activityStatus !== 'active_week') return false;
@@ -260,9 +286,9 @@ export function TeamUserDirectory({ teams, unassigned, onSelectUser, expandedTea
       'shadow-glass overflow-hidden'
     )}>
       {/* Filter bar */}
-      <div className="flex flex-wrap items-center gap-2 px-4 py-3 border-b border-warm-100 bg-warm-50/30">
+      <div className="flex flex-wrap items-center gap-2 px-3 sm:px-4 py-3 border-b border-warm-100 bg-warm-50/30">
         {/* Search */}
-        <div className="relative flex-1 min-w-[200px] max-w-xs">
+        <div className="relative flex-1 min-w-0 sm:min-w-[200px] max-w-xs w-full sm:w-auto">
           <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
           <input
             value={searchQuery}
@@ -279,13 +305,13 @@ export function TeamUserDirectory({ teams, unassigned, onSelectUser, expandedTea
         </div>
 
         {/* Role pills */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
           {roles.map((r) => (
             <button
               key={r.value}
               onClick={() => setRoleFilter(r.value)}
               className={cn(
-                'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors duration-200',
+                'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors duration-200 flex-shrink-0 whitespace-nowrap',
                 roleFilter === r.value
                   ? 'bg-warm-900 text-white'
                   : 'bg-white/60 text-warm-600 hover:bg-warm-100 active:bg-warm-200 border border-warm-200/50'
@@ -353,38 +379,72 @@ export function TeamUserDirectory({ teams, unassigned, onSelectUser, expandedTea
               </button>
 
               {expanded.has('__unassigned__') && (
-                <div className="px-2 pb-2">
-                  <table className="w-full">
+                <div className="px-2 pb-2 overflow-x-auto">
+                  <table className="w-full min-w-[400px]">
+                    <thead>
+                      <tr className="border-b border-warm-100">
+                        <th className="px-3 py-2 text-left text-micro font-semibold text-warm-400 uppercase tracking-wider">User</th>
+                        <th className="px-3 py-2 text-left text-micro font-semibold text-warm-400 uppercase tracking-wider">Role</th>
+                        <th className="px-3 py-2 text-left text-micro font-semibold text-warm-400 uppercase tracking-wider hidden md:table-cell">Last Active</th>
+                      </tr>
+                    </thead>
                     <tbody>
-                      {filteredUnassigned.map((u) => (
-                        <tr
-                          key={u.id}
-                          onClick={() => onSelectUser?.(u.id)}
-                          className="border-b border-warm-50 hover:bg-warm-50/50 cursor-pointer transition-colors"
-                        >
-                          <td className="px-3 py-2.5">
-                            <div className="flex items-center gap-2.5">
-                              <div className="relative">
-                                <div className="w-8 h-8 rounded-lg bg-warm-100 flex items-center justify-center">
-                                  <span className="text-xs font-bold text-warm-500">
-                                    {(u.email[0] ?? '?').toUpperCase()}
-                                  </span>
+                      {filteredUnassigned.map((u) => {
+                        const displayName = u.name || u.email.split('@')[0] || 'Unknown';
+                        const showOnboardingTag = !u.onboardingCompleted && u.created_at &&
+                          Math.floor((Date.now() - new Date(u.created_at).getTime()) / 86400000) > 7;
+
+                        return (
+                          <tr
+                            key={u.id}
+                            onClick={() => onSelectUser?.(u.id)}
+                            className={cn(
+                              'border-b border-warm-50 hover:bg-warm-50/50 cursor-pointer transition-colors',
+                              showOnboardingTag && 'bg-orange-50/20'
+                            )}
+                          >
+                            <td className="px-3 py-2.5">
+                              <div className="flex items-center gap-2.5">
+                                <div className="relative">
+                                  <div className={cn(
+                                    'w-8 h-8 rounded-lg flex items-center justify-center',
+                                    u.role === 'coach' ? 'bg-blue-50' : u.role === 'admin' ? 'bg-violet-50' : 'bg-primary-50'
+                                  )}>
+                                    <span className={cn(
+                                      'text-xs font-bold',
+                                      u.role === 'coach' ? 'text-blue-600' : u.role === 'admin' ? 'text-violet-600' : 'text-primary-600'
+                                    )}>
+                                      {getInitials(u.name, u.email)}
+                                    </span>
+                                  </div>
+                                  <div className="absolute -bottom-0.5 -right-0.5">
+                                    <ActivityDot status={u.activityStatus} size="sm" />
+                                  </div>
                                 </div>
-                                <div className="absolute -bottom-0.5 -right-0.5">
-                                  <ActivityDot status={u.activityStatus} size="sm" />
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-1.5">
+                                    <p className="text-sm font-medium text-warm-900 truncate">{displayName}</p>
+                                    {showOnboardingTag && (
+                                      <span className="text-micro font-semibold px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 whitespace-nowrap">
+                                        Onboarding
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-label text-warm-400 truncate">{u.email}</p>
                                 </div>
                               </div>
-                              <div className="min-w-0">
-                                <p className="text-sm font-medium text-warm-900 truncate">{u.email}</p>
-                                <p className="text-label text-warm-400">{u.role}</p>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-3 py-2.5 hidden md:table-cell">
-                            <ActivityDot status={u.activityStatus} showLabel labelOverride={timeAgo(u.last_seen)} />
-                          </td>
-                        </tr>
-                      ))}
+                            </td>
+                            <td className="px-3 py-2.5">
+                              <span className={cn('text-micro font-semibold px-2 py-0.5 rounded-full uppercase', roleColors[u.role] ?? 'bg-warm-100 text-warm-500')}>
+                                {u.role}
+                              </span>
+                            </td>
+                            <td className="px-3 py-2.5 hidden md:table-cell">
+                              <ActivityDot status={u.activityStatus} showLabel labelOverride={timeAgo(u.last_seen)} />
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

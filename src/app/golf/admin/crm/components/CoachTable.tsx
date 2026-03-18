@@ -214,8 +214,8 @@ export function CoachTable({
   }
 
   return (
-    <div className="overflow-hidden">
-      <table className="w-full table-fixed">
+    <div className="overflow-x-auto">
+      <table className="w-full table-fixed min-w-[600px]">
         <thead>
           <tr className="border-b border-warm-100">
             <th className="w-10 px-4 py-3">

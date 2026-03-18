@@ -532,16 +532,19 @@ export interface AdminDashboardData {
         avgScore: number | null;
         insightsReceived: number;
         roundReviews: number;
+        onboardingCompleted: boolean;
       }[];
     }[];
     unassigned: {
       id: string;
       email: string;
+      name: string | null;
       role: string;
       created_at: string;
       last_seen: string | null;
       daysSinceLastSeen: number | null;
       activityStatus: 'active_today' | 'active_week' | 'active_month' | 'inactive' | 'never';
+      onboardingCompleted: boolean;
     }[];
     summary: {
       totalUsers: number;
@@ -550,6 +553,7 @@ export interface AdminDashboardData {
       activeThisWeek: number;
       inactivePlus14d: number;
       churnRisk: number;
+      stuckInOnboarding: number;
     };
   };
   // Error detection and classification
@@ -1344,7 +1348,7 @@ function buildFunnelSteps(stages: { step: string; count: number }[]): BIFunnelSt
 // ============================================
 
 export async function getAdminDashboardData(): Promise<AdminDashboardData> {
-  const startTime = Date.now();
+  const startTime = performance.now();
   const supabase = await createClient();
 
   // Auth check
@@ -1565,6 +1569,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     userToPlayerMapRes,
     platformHealthStatsRes,
     statsCacheLastUpdatedRes,
+    coachOrgRes,
   ] = await Promise.all([
     // Teams with org
     adminDb.from('golf_teams').select('id, name, organization_id, organizations(name)'),
@@ -1591,6 +1596,8 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     adminDb.rpc('get_platform_health_stats' as never) as unknown as { data: PlatformHealthStatsResult | null; error: unknown },
     // Cache freshness check for golf_player_stats_cache
     adminDb.from('golf_player_stats_cache').select('updated_at').order('updated_at', { ascending: false }).limit(1),
+    // Coach org mapping (for team coach counts)
+    adminDb.from('golf_coaches').select('organization_id'),
   ]);
 
   // ============================================
@@ -1738,8 +1745,6 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
 
   // Count coaches per team (coaches are linked via organization, not directly via team_id)
   const teamCoachCounts: Record<string, number> = {};
-  // Approximate: count coaches per org, then map to teams
-  const coachOrgRes = await adminDb.from('golf_coaches').select('organization_id');
   const orgCoachCounts: Record<string, number> = {};
   for (const c of (coachOrgRes.data ?? [])) {
     if (c.organization_id) {
@@ -1934,7 +1939,8 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   const realActiveUsers30d = phs?.active_users_30d ?? 0;
 
   // --- Diagnostics ---
-  const responseTime = Date.now() - startTime;
+  // Measure cumulative server-side fetch time (all batches so far)
+  const responseTime = Math.round(performance.now() - startTime);
   const lastRoundTimestamp = (lastRoundRes.data?.[0]?.created_at as string) ?? null;
   const lastInsightTimestamp = (lastInsightRes.data?.[0]?.created_at as string) ?? null;
   const systemErrors = errorsRes.count ?? 0;
@@ -1990,12 +1996,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     detail: `${dbSizeMB} MB · ${totalConns} connections`,
   });
 
-  // API response time
-  diagnostics.push({
-    label: 'Dashboard API',
-    status: responseTime < 3000 ? 'healthy' : responseTime < 6000 ? 'warning' : 'critical',
-    detail: `${responseTime}ms response time`,
-  });
+  // responseTime now reflects the real server-side query duration (all batches).
 
   const dataFreshness: AdminDashboardData['health']['dataFreshness'] = lastRoundTimestamp
     ? (Date.now() - new Date(lastRoundTimestamp).getTime()) < 86400000 ? 'live' : 'stale'
@@ -2013,6 +2014,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     signupsDaily30dRes,
     visitsDaily30dRes,
     userLastActiveRes,
+    aiCoachPhilosophyRes,
   ] = await Promise.all([
     // All users for directory
     adminDb.from('users').select('id, email, role, created_at, last_seen').order('created_at', { ascending: false }),
@@ -2030,6 +2032,8 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     adminDb.from('golf_rounds').select('player_id, created_at').gte('created_at', ago30d).order('created_at', { ascending: true }),
     // User auth details (last_sign_in_at from auth.users via RPC)
     adminDb.rpc('get_users_with_auth' as never) as unknown as { data: { id: string; last_sign_in_at: string | null; last_seen: string | null }[] | null; error: unknown },
+    // Coach philosophy IDs (for CoachHelm ROI comparison)
+    adminDb.from('golf_coach_philosophy').select('coach_id'),
   ]);
 
   // --- Build player maps ---
@@ -2896,8 +2900,8 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     needsAttention.push({
       label: `${stuckInOnboarding.length} player${stuckInOnboarding.length > 1 ? 's' : ''} stuck in onboarding > 7 days`,
       severity: 'warning',
-      detail: 'Consider sending a reminder or checking for UX issues',
-      tab: 'users',
+      detail: 'Consider sending a reminder or checking for onboarding UX issues',
+      tab: 'people',
     });
   }
 
@@ -2910,21 +2914,22 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   });
   if (inactiveCoaches.length > 0) {
     needsAttention.push({
-      label: `${inactiveCoaches.length} coach${inactiveCoaches.length > 1 ? 'es' : ''} inactive > 14 days`,
+      label: `${inactiveCoaches.length} coach${inactiveCoaches.length > 1 ? 'es' : ''} inactive 14+ days`,
       severity: 'warning',
-      detail: 'Coaches who haven\'t logged in recently',
-      tab: 'users',
+      detail: 'These coaches have not logged in recently and may need outreach',
+      tab: 'people',
     });
   }
 
-  // Critical errors
+  // Critical errors — only alert on UNRESOLVED critical incidents
   const criticalCount = errorLogsCriticalRes.count ?? 0;
-  if (criticalCount > 0) {
+  const unresolvedCriticalCount = incidentCounts.openCritical;
+  if (unresolvedCriticalCount > 0) {
     needsAttention.push({
-      label: `${criticalCount} critical error${criticalCount > 1 ? 's' : ''} in last 7 days`,
+      label: `${unresolvedCriticalCount} unresolved critical error${unresolvedCriticalCount > 1 ? 's' : ''}`,
       severity: 'critical',
-      detail: 'Check Health & Issues tab for details',
-      tab: 'health',
+      detail: 'Immediate attention required — review and resolve in System tab',
+      tab: 'system',
     });
   }
 
@@ -2933,18 +2938,19 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
       label: `${unresolvedServerIncidents.length} unresolved server incident${unresolvedServerIncidents.length > 1 ? 's' : ''}`,
       severity: unresolvedServerIncidents.length > 2 ? 'critical' : 'warning',
       detail: (newestUnresolvedServerIncident.message || newestUnresolvedServerIncident.title).slice(0, 140),
-      tab: 'health',
+      tab: 'system',
     });
   }
 
-  // Error count > 10
+  // Error count > 10 — only warn if there are unresolved incidents
   const totalErrors7d = errorLogs7dCountRes.count ?? 0;
-  if (totalErrors7d > 10 && criticalCount === 0) {
+  const hasUnresolvedIncidents = incidentCounts.open > 0 || incidentCounts.active > 0;
+  if (totalErrors7d > 10 && unresolvedCriticalCount === 0 && hasUnresolvedIncidents) {
     needsAttention.push({
-      label: `${totalErrors7d} errors logged in last 7 days`,
+      label: `${totalErrors7d} errors logged (${incidentCounts.open + incidentCounts.active} unresolved)`,
       severity: 'warning',
-      detail: 'Elevated error rate — review in Health tab',
-      tab: 'health',
+      detail: 'Unresolved incidents need review in System tab',
+      tab: 'system',
     });
   }
 
@@ -2954,8 +2960,8 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     needsAttention.push({
       label: `${lockedAccountCount} locked account${lockedAccountCount > 1 ? 's' : ''}`,
       severity: 'warning',
-      detail: 'Users locked out due to failed login attempts',
-      tab: 'audit',
+      detail: 'Users locked out due to failed login attempts — unlock in People tab',
+      tab: 'people',
     });
   }
 
@@ -2970,8 +2976,8 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     needsAttention.push({
       label: `${stuckCoachesOnboarding.length} coach${stuckCoachesOnboarding.length > 1 ? 'es' : ''} haven't completed onboarding`,
       severity: 'warning',
-      detail: 'Signed up > 7 days ago but never finished setup',
-      tab: 'users',
+      detail: 'Signed up over 7 days ago but never finished setup',
+      tab: 'people',
     });
   }
 
@@ -2982,30 +2988,13 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
       label: `${pendingDemoCount} pending demo request${pendingDemoCount > 1 ? 's' : ''}`,
       severity: 'info',
       detail: 'New inbound leads waiting for follow-up',
-      tab: 'command',
+      tab: 'bi',
     });
   }
 
-  // New users this week (positive signal)
-  const newUsersCount = newUsersThisWeekRes.count ?? 0;
-  if (newUsersCount > 0 && totalErrors7d === 0 && criticalCount === 0) {
-    needsAttention.push({
-      label: `${newUsersCount} new user${newUsersCount > 1 ? 's' : ''} signed up this week`,
-      severity: 'info',
-      detail: 'Growth is happening!',
-      tab: 'users',
-    });
-  }
-
-  // No errors = good news
-  if (totalErrors7d === 0 && lockedAccountCount === 0 && stuckInOnboarding.length === 0 && stuckCoachesOnboarding.length === 0) {
-    needsAttention.push({
-      label: 'All clear — no issues detected',
-      severity: 'info',
-      detail: 'Platform is running smoothly',
-      tab: 'dashboard',
-    });
-  }
+  // Positive signals (new users, all-clear) are intentionally omitted from alerts.
+  // The overview KPI cards already surface growth data; alerts should only show
+  // items that require action.
 
   // --- Process strokes gained averages ---
   const sgRows = strokesGainedRes.data ?? [];
@@ -3034,8 +3023,6 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
 
   // --- CoachHelm ROI: proper AI vs non-AI comparison ---
   // Get coaches who HAVE philosophy set (AI-using coaches)
-  // Query their team's players' scoring averages vs players whose coach has NO philosophy
-  const aiCoachPhilosophyRes = await adminDb.from('golf_coach_philosophy').select('coach_id');
   const aiCoachIds = new Set((aiCoachPhilosophyRes.data ?? []).map(c => c.coach_id));
 
   // Map coach_id -> org_id to find which teams use AI
@@ -3426,8 +3413,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   };
 
   // --- INFRA HEALTH ---
-  // API performance: aggregate analytics events by page_path for response times
-  // Since we don't have server-side timing, use DB health data we already have
+  // API performance: responseTime is the real server-side fetch duration (ms)
   const infraHealth: AdminDashboardData['infraHealth'] = {
     apiPerf: [], // Would need server-side instrumentation
     clientErrors: (errorSummary?.top_errors ?? []).slice(0, 10).map(e => ({
@@ -3694,6 +3680,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
         avgScore: statEntry?.scoring_average != null ? Math.round(Number(statEntry.scoring_average) * 10) / 10 : null,
         insightsReceived: playerInsightCounts.get(m.player_id) ?? 0,
         roundReviews: playerReviewCounts.get(m.player_id) ?? 0,
+        onboardingCompleted: player.onboardingCompleted,
       });
     }
 
@@ -3726,6 +3713,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
         avgScore: null,
         insightsReceived: 0,
         roundReviews: 0,
+        onboardingCompleted: coachDetail?.onboardingCompleted ?? false,
       });
     }
 
@@ -3777,15 +3765,31 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     .filter(u => !usersOnTeams.has(u.id))
     .map(u => {
       const lastSeenTs = userLastActive.get(u.id) ?? null;
+      const player = userIdToPlayerDetail.get(u.id);
+      const coach = userIdToCoachDetail.get(u.id);
+      const userName = player
+        ? `${player.firstName} ${player.lastName}`.trim() || null
+        : coach
+          ? `${coach.firstName} ${coach.lastName}`.trim() || null
+          : null;
       return {
         id: u.id,
         email: u.email,
+        name: userName,
         role: u.role ?? 'unknown',
         created_at: u.created_at ?? '',
         last_seen: lastSeenTs,
         daysSinceLastSeen: computeDaysSince(lastSeenTs),
         activityStatus: getActivityStatus(lastSeenTs),
+        onboardingCompleted: player?.onboardingCompleted ?? coach?.onboardingCompleted ?? false,
       };
+    })
+    .sort((a, b) => {
+      // Sort by most recently active first
+      if (a.last_seen && b.last_seen) return b.last_seen.localeCompare(a.last_seen);
+      if (a.last_seen) return -1;
+      if (b.last_seen) return 1;
+      return 0;
     });
 
   // Summary stats across all users
@@ -3809,6 +3813,15 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     return ls != null && ls < ago14d;
   }).length;
 
+  // Players stuck in onboarding > 7 days (for summary stat)
+  const summaryStuckInOnboarding = allUsersList.filter(u => {
+    if (!u.created_at) return false;
+    const daysSinceSignup = (Date.now() - new Date(u.created_at).getTime()) / 86400000;
+    const player = userIdToPlayerDetail.get(u.id);
+    const coach = userIdToCoachDetail.get(u.id);
+    return daysSinceSignup > 7 && ((player && !player.onboardingCompleted) || (coach && !coach.onboardingCompleted));
+  }).length;
+
   const userActivityData: AdminDashboardData['userActivity'] = {
     teams: userActivityTeams,
     unassigned: unassignedUsers,
@@ -3819,6 +3832,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
       activeThisWeek: summaryActiveWeek,
       inactivePlus14d: summaryInactive14d,
       churnRisk: summaryChurnRisk,
+      stuckInOnboarding: summaryStuckInOnboarding,
     },
   };
 

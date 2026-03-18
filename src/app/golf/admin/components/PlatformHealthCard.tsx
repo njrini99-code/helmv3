@@ -7,6 +7,7 @@ import { timeAgo, formatBytes } from './admin-utils';
 
 interface Props {
   health: AdminDashboardData['health'];
+  infraHealth?: AdminDashboardData['infraHealth'];
   statsCacheLastUpdated?: string | null;
 }
 
@@ -28,7 +29,7 @@ const statusGradients = {
   critical: 'bg-gradient-to-r from-red-50/80 to-red-50/30',
 };
 
-export function PlatformHealthCard({ health, statsCacheLastUpdated }: Props) {
+export function PlatformHealthCard({ health, infraHealth, statsCacheLastUpdated }: Props) {
   const overallHealth = health.diagnostics.some((d) => d.status === 'critical')
     ? 'critical'
     : health.diagnostics.some((d) => d.status === 'warning')
@@ -142,12 +143,12 @@ export function PlatformHealthCard({ health, statsCacheLastUpdated }: Props) {
             Errors (7d)
           </p>
         </div>
-        <div className="bg-white/50 rounded-xl p-2.5 sm:p-3 text-center">
-          <p className="text-lg sm:text-xl font-semibold text-warm-900 tabular-nums">
-            {health.avgResponseTimeMs}ms
+        <div className="bg-white/50 rounded-xl p-2.5 sm:p-3 text-center overflow-hidden">
+          <p className="text-base sm:text-xl font-semibold text-warm-900 tabular-nums truncate">
+            {Math.round(infraHealth?.totals?.avgResponseMs ?? 0)}ms
           </p>
           <p className="text-[10px] sm:text-label text-warm-500 mt-0.5 leading-tight">
-            API Speed
+            API Latency
           </p>
         </div>
       </div>
@@ -166,24 +167,25 @@ export function PlatformHealthCard({ health, statsCacheLastUpdated }: Props) {
             </span>
           </div>
           <div className="bg-white/40 rounded-lg px-3 py-2.5 flex items-center justify-between gap-2">
-            <span className="text-xs text-warm-500">Connections</span>
-            <span className="text-xs font-medium text-warm-700 tabular-nums">
+            <span className="text-xs text-warm-500 shrink-0">Connections</span>
+            <span className="text-xs font-medium text-warm-700 tabular-nums text-right">
               {health.activeConnections} active · {health.idleConnections} idle
             </span>
           </div>
           <div className="bg-white/40 rounded-lg px-3 py-2.5 flex items-center justify-between gap-2">
-            <span className="text-xs text-warm-500">Sessions</span>
-            <span className="text-xs font-medium text-warm-700 tabular-nums">
+            <span className="text-xs text-warm-500 shrink-0">Sessions</span>
+            <span className="text-xs font-medium text-warm-700 tabular-nums text-right">
               {health.activeSessions} active / {health.totalSessions}
             </span>
           </div>
           <div className="bg-white/40 rounded-lg px-3 py-2.5 flex items-center justify-between gap-2">
             <span className="text-xs text-warm-500">Dormant Users</span>
             <span className={cn(
-              'text-xs font-medium tabular-nums',
+              'text-xs font-medium tabular-nums text-right',
               health.usersNeverSignedIn > 5 ? 'text-amber-600' : 'text-warm-700'
             )}>
-              {health.usersNeverSignedIn} never signed in
+              <span className="hidden sm:inline">{health.usersNeverSignedIn} never signed in</span>
+              <span className="sm:hidden">{health.usersNeverSignedIn} never in</span>
             </span>
           </div>
         </div>
@@ -198,8 +200,8 @@ export function PlatformHealthCard({ health, statsCacheLastUpdated }: Props) {
               {health.largestTables.slice(0, 5).map((t) => {
                 const pct = health.dbSizeBytes > 0 ? (t.size_bytes / health.dbSizeBytes) * 100 : 0;
                 return (
-                  <div key={t.table_name} className="flex items-center gap-2">
-                    <span className="text-label text-warm-500 w-24 sm:w-28 truncate shrink-0">
+                  <div key={t.table_name} className="flex items-center gap-1.5 sm:gap-2">
+                    <span className="text-[10px] sm:text-label text-warm-500 w-20 sm:w-28 truncate shrink-0">
                       {t.table_name.replace('golf_', '')}
                     </span>
                     <div className="flex-1 h-1.5 bg-warm-100 rounded-full overflow-hidden min-w-0">
@@ -208,10 +210,10 @@ export function PlatformHealthCard({ health, statsCacheLastUpdated }: Props) {
                         style={{ width: `${Math.max(pct, 1)}%` }}
                       />
                     </div>
-                    <span className="text-[10px] sm:text-micro text-warm-400 tabular-nums w-14 sm:w-16 text-right shrink-0">
+                    <span className="text-[10px] sm:text-micro text-warm-400 tabular-nums w-12 sm:w-16 text-right shrink-0">
                       {formatBytes(t.size_bytes)}
                     </span>
-                    <span className="text-[10px] sm:text-micro text-warm-300 tabular-nums w-10 sm:w-12 text-right shrink-0">
+                    <span className="hidden sm:inline text-micro text-warm-300 tabular-nums w-12 text-right shrink-0">
                       {t.row_count.toLocaleString()}
                     </span>
                   </div>

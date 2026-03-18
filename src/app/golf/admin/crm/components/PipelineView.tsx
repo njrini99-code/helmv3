@@ -166,7 +166,7 @@ export function PipelineView({
       )}
 
       {/* Pipeline Funnel Summary — pill-shaped stages */}
-      <div className="flex items-center gap-2 p-3 bg-white/70 backdrop-blur-xl rounded-2xl border border-white/20 shadow-glass">
+      <div className="flex items-center gap-2 p-3 bg-white/70 backdrop-blur-xl rounded-2xl border border-white/20 shadow-glass overflow-x-auto scrollbar-hide">
         {pipelineStages.map((stage, index) => {
           const count = coachesByStage[stage.id]?.length || 0;
           return (

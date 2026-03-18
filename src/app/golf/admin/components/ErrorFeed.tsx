@@ -119,7 +119,7 @@ function CompactStat({ label, value, detail, tone = 'default' }: {
 }) {
   return (
     <div className={cn(
-      'rounded-xl border px-3 py-2',
+      'rounded-xl border px-2.5 py-2 sm:px-3 min-w-0 overflow-hidden',
       tone === 'danger'
         ? 'border-red-100 bg-red-50/65'
         : tone === 'success'
@@ -127,7 +127,7 @@ function CompactStat({ label, value, detail, tone = 'default' }: {
           : 'border-white/35 bg-white/60'
     )}>
       <p className={cn(
-        'text-[10px] font-semibold uppercase tracking-[0.16em]',
+        'text-[10px] font-semibold uppercase tracking-[0.14em] sm:tracking-[0.16em] truncate',
         tone === 'danger'
           ? 'text-red-500'
           : tone === 'success'
@@ -136,9 +136,9 @@ function CompactStat({ label, value, detail, tone = 'default' }: {
       )}>
         {label}
       </p>
-      <div className="mt-1 flex items-end gap-2">
+      <div className="mt-1 flex items-end gap-1.5 sm:gap-2 min-w-0">
         <p className={cn(
-          'text-base font-semibold tabular-nums',
+          'text-base font-semibold tabular-nums shrink-0',
           tone === 'danger'
             ? 'text-red-700'
             : tone === 'success'
@@ -148,7 +148,7 @@ function CompactStat({ label, value, detail, tone = 'default' }: {
           {value}
         </p>
         <p className={cn(
-          'pb-0.5 text-[11px]',
+          'pb-0.5 text-[10px] sm:text-[11px] truncate min-w-0',
           tone === 'danger'
             ? 'text-red-600'
             : tone === 'success'
@@ -166,10 +166,10 @@ function MetaItem({ label, value, mono = false }: { label: string; value: string
   if (!value) return null;
 
   return (
-    <div className="rounded-xl border border-white/40 bg-white/65 px-3 py-2">
+    <div className="rounded-xl border border-white/40 bg-white/65 px-3 py-2 min-w-0 overflow-hidden">
       <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">{label}</p>
       <p className={cn(
-        'mt-1 break-words text-xs leading-5 text-warm-800',
+        'mt-1 break-all text-xs leading-5 text-warm-800',
         mono && 'font-mono'
       )}>
         {value}
@@ -180,9 +180,9 @@ function MetaItem({ label, value, mono = false }: { label: string; value: string
 
 function NarrativePanel({ label, body }: { label: string; body: string }) {
   return (
-    <div className="rounded-xl border border-white/40 bg-white/65 p-3">
+    <div className="rounded-xl border border-white/40 bg-white/65 p-3 min-w-0">
       <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">{label}</p>
-      <p className="mt-1.5 text-sm leading-6 text-warm-700">{body}</p>
+      <p className="mt-1.5 text-sm leading-6 text-warm-700 break-words">{body}</p>
     </div>
   );
 }
@@ -198,7 +198,7 @@ export function ErrorFeed({ errorLogs }: Props) {
   const [optimisticallyResolved, setOptimisticallyResolved] = useState<Set<string>>(new Set());
   const [isPending, startTransition] = useTransition();
 
-  const { totalErrors7d, criticalErrors7d, recentErrors: serverErrors, incidentCounts } = errorLogs;
+  const { totalErrors7d, criticalErrors7d, recentErrors: serverErrors } = errorLogs;
 
   // Apply optimistic resolution status to incidents
   const recentErrors = serverErrors.map((incident) => {
@@ -297,22 +297,41 @@ export function ErrorFeed({ errorLogs }: Props) {
     .map((incident, index) => `${queueTab === 'resolved' ? 'Resolved' : 'Active'} Incident ${index + 1}\n${incident.copySummary}`)
     .join('\n\n====================\n\n');
 
-  const repeatedCount = incidentCounts.repeated;
+  // Recompute incident counts from the optimistic-aware list so the summary
+  // tiles stay in sync with the tab badges after marking incidents resolved.
+  const liveCounts = recentErrors.reduce(
+    (acc, incident) => {
+      acc[incident.status] += 1;
+      if (incident.occurrences > 1) acc.repeated += 1;
+      if (incident.status === 'open' && incident.severity === 'critical') acc.openCritical += 1;
+      if (
+        incident.status === 'resolved' &&
+        incident.resolvedAt &&
+        new Date(incident.resolvedAt).getTime() >= Date.now() - 24 * 60 * 60 * 1000
+      ) {
+        acc.resolvedRecently += 1;
+      }
+      return acc;
+    },
+    { open: 0, active: 0, resolved: 0, historical: 0, repeated: 0, openCritical: 0, resolvedRecently: 0 }
+  );
+
+  const repeatedCount = liveCounts.repeated;
   const headerNote = queueTab === 'resolved'
     ? 'Resolved incidents are archived here with operator attribution and resolution timestamps.'
     : 'The active queue keeps open, recent, and older unresolved incidents in one compact operator feed.';
 
   return (
-    <div className="glass-standard rounded-2xl p-3.5 md:p-4">
-      <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+    <div className="glass-standard rounded-2xl p-3 sm:p-3.5 md:p-4 min-w-0 overflow-hidden">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-2xl bg-red-50">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-red-50">
               <IconShieldAlert size={16} className="text-red-600" />
             </div>
-            <div>
+            <div className="min-w-0">
               <h3 className="text-sm font-semibold text-warm-900">Incident Command Feed</h3>
-              <p className="text-xs text-warm-500">{headerNote}</p>
+              <p className="text-xs text-warm-500 line-clamp-2 sm:line-clamp-none">{headerNote}</p>
             </div>
           </div>
         </div>
@@ -321,7 +340,7 @@ export function ErrorFeed({ errorLogs }: Props) {
           type="button"
           onClick={() => handleCopy(visibleFeedSummary || 'No incidents in the current view.', 'feed')}
           className={cn(
-            'inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-colors',
+            'inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs sm:text-sm font-medium transition-colors shrink-0',
             copyState?.target === 'feed' && copyState.status === 'success'
               ? 'border-primary-200 bg-primary-50 text-primary-700'
               : copyState?.target === 'feed' && copyState.status === 'error'
@@ -351,12 +370,12 @@ export function ErrorFeed({ errorLogs }: Props) {
         </div>
       )}
 
-      <div className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-2 xl:grid-cols-5">
+      <div className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-5">
         <CompactStat label="Raw Errors" value={totalErrors7d} detail="7d rows" />
-        <CompactStat label="Open Queue" value={incidentCounts.open} detail={`${incidentCounts.active} active`} tone={incidentCounts.open > 0 ? 'danger' : 'default'} />
-        <CompactStat label="Resolved" value={incidentCounts.resolved} detail={`${incidentCounts.resolvedRecently} in 24h`} tone={incidentCounts.resolved > 0 ? 'success' : 'default'} />
+        <CompactStat label="Open" value={liveCounts.open} detail={`${liveCounts.active} active`} tone={liveCounts.open > 0 ? 'danger' : 'default'} />
+        <CompactStat label="Resolved" value={liveCounts.resolved} detail={`${liveCounts.resolvedRecently} in 24h`} tone={liveCounts.resolved > 0 ? 'success' : 'default'} />
         <CompactStat label="Repeated" value={repeatedCount} detail="multi-hit incidents" />
-        <CompactStat label="Critical" value={criticalErrors7d} detail={`${incidentCounts.openCritical} open critical`} tone={criticalErrors7d > 0 ? 'danger' : 'default'} />
+        <CompactStat label="Critical" value={criticalErrors7d} detail={`${liveCounts.openCritical} open critical`} tone={liveCounts.openCritical > 0 ? 'danger' : 'default'} />
       </div>
 
       <div className="mt-4 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
@@ -393,9 +412,9 @@ export function ErrorFeed({ errorLogs }: Props) {
         <div className="mt-3 flex flex-wrap gap-2">
           {([
             { value: 'all', label: 'All active', count: activeIncidents.length },
-            { value: 'open', label: 'Open only', count: incidentCounts.open },
-            { value: 'recent', label: 'Open + 24h', count: incidentCounts.open + incidentCounts.active },
-            { value: 'backlog', label: 'Backlog', count: incidentCounts.historical },
+            { value: 'open', label: 'Open only', count: liveCounts.open },
+            { value: 'recent', label: 'Open + Active', count: liveCounts.open + liveCounts.active },
+            { value: 'backlog', label: 'Backlog', count: liveCounts.historical },
           ] as { value: FeedMode; label: string; count: number }[]).map((option) => (
             <button
               key={option.value}
@@ -446,9 +465,9 @@ export function ErrorFeed({ errorLogs }: Props) {
                   incident.status === 'open' && 'ring-1 ring-red-100'
                 )}
               >
-                <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+                <div className="flex flex-col gap-3 sm:gap-3 xl:flex-row xl:items-start xl:justify-between">
                   <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-1.5">
+                    <div className="flex flex-wrap items-center gap-1 sm:gap-1.5">
                       <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]', severityStyle.badge)}>
                         {incident.severity}
                       </span>
@@ -480,19 +499,25 @@ export function ErrorFeed({ errorLogs }: Props) {
                         <p className="mt-1 text-xs leading-5 text-warm-500">
                           {incident.diagnosisBasis}
                         </p>
-                        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-warm-500">
-                          <span>{footerTimestamp}</span>
-                          {incident.action && <span className="font-mono">{incident.action}</span>}
-                          {(incident.route ?? incident.url) && <span className="truncate font-mono">{incident.route ?? incident.url}</span>}
+                        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-warm-500 min-w-0">
+                          <span
+                            className="shrink-0"
+                            title={incident.status === 'resolved'
+                              ? new Date(incident.resolvedAt ?? incident.lastSeen).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })
+                              : new Date(incident.lastSeen).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })
+                            }
+                          >{footerTimestamp}</span>
+                          {incident.action && <span className="font-mono truncate max-w-[200px] sm:max-w-none">{incident.action}</span>}
+                          {(incident.route ?? incident.url) && <span className="truncate max-w-[180px] sm:max-w-[300px] font-mono">{incident.route ?? incident.url}</span>}
                           {incident.status === 'resolved' && incident.resolvedBy && (
-                            <span>Resolved by {incident.resolvedBy}</span>
+                            <span className="truncate">Resolved by {incident.resolvedBy}</span>
                           )}
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2 xl:justify-end">
+                  <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                     {incident.status !== 'resolved' && (
                       <button
                         type="button"
@@ -552,14 +577,14 @@ export function ErrorFeed({ errorLogs }: Props) {
 
                 {isExpanded && (
                   <div className="mt-3 space-y-3">
-                    <div className="grid gap-3 lg:grid-cols-4">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                       <NarrativePanel label="Diagnosis Basis" body={incident.diagnosisBasis} />
                       <NarrativePanel label="Likely Cause" body={incident.likelyCause} />
                       <NarrativePanel label="User Impact" body={incident.userImpact} />
                       <NarrativePanel label="Next Step" body={incident.nextStep} />
                     </div>
 
-                    <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-5">
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-5">
                       <MetaItem label="First seen" value={`${formatTimestamp(incident.firstSeen)} (${timeAgo(incident.firstSeen)})`} />
                       <MetaItem label="Last seen" value={`${formatTimestamp(incident.lastSeen)} (${timeAgo(incident.lastSeen)})`} />
                       <MetaItem label="Resolved at" value={incident.resolvedAt ? `${formatTimestamp(incident.resolvedAt)} (${timeAgo(incident.resolvedAt)})` : null} />
@@ -574,39 +599,39 @@ export function ErrorFeed({ errorLogs }: Props) {
                       <MetaItem label="Trace source" value={incident.source} mono />
                     </div>
 
-                    <div className="rounded-xl border border-white/40 bg-white/65 p-3">
+                    <div className="rounded-xl border border-white/40 bg-white/65 p-3 min-w-0">
                       <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">Raw message</p>
-                      <p className="mt-1.5 break-words text-sm leading-6 text-warm-800">{incident.message}</p>
+                      <p className="mt-1.5 break-all text-sm leading-6 text-warm-800">{incident.message}</p>
                     </div>
 
                     {(incident.errorHint || incident.errorDetails) && (
-                      <div className="rounded-xl border border-amber-100 bg-amber-50/65 p-3">
+                      <div className="rounded-xl border border-amber-100 bg-amber-50/65 p-3 min-w-0">
                         <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-600">Database guidance</p>
                         {incident.errorHint && (
-                          <p className="mt-1.5 text-sm leading-6 text-amber-800">
+                          <p className="mt-1.5 text-sm leading-6 text-amber-800 break-words">
                             <span className="font-medium">Hint:</span> {incident.errorHint}
                           </p>
                         )}
                         {incident.errorDetails && (
-                          <p className="mt-1.5 text-sm leading-6 text-amber-800">
+                          <p className="mt-1.5 text-sm leading-6 text-amber-800 break-words">
                             <span className="font-medium">Details:</span> {incident.errorDetails}
                           </p>
                         )}
                       </div>
                     )}
 
-                    <div className="grid gap-3 lg:grid-cols-2">
-                      <div className="rounded-xl border border-white/40 bg-white/65 p-3">
+                    <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                      <div className="rounded-xl border border-white/40 bg-white/65 p-3 min-w-0">
                         <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">Copy-ready brief</p>
-                        <pre className="mt-2 max-h-[240px] overflow-auto whitespace-pre-wrap break-words text-xs leading-6 text-warm-700">
+                        <pre className="mt-2 max-h-[240px] overflow-x-auto overflow-y-auto whitespace-pre-wrap break-all text-[11px] sm:text-xs leading-6 text-warm-700">
                           {incident.copySummary}
                         </pre>
                       </div>
 
-                      <div className="rounded-xl border border-white/40 bg-white/65 p-3">
+                      <div className="rounded-xl border border-white/40 bg-white/65 p-3 min-w-0">
                         <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">Stack trace</p>
                         {incident.stack ? (
-                          <pre className="mt-2 max-h-[240px] overflow-auto whitespace-pre-wrap break-words text-xs leading-6 text-warm-700">
+                          <pre className="mt-2 max-h-[240px] overflow-x-auto overflow-y-auto whitespace-pre-wrap break-all text-[11px] sm:text-xs leading-6 text-warm-700">
                             {incident.stack}
                           </pre>
                         ) : (

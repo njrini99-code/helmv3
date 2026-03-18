@@ -213,13 +213,13 @@ export function CRMDashboard({
             You have <span className="font-semibold text-warm-700">{stats.total} coaches</span> ready to work.
             Start by contacting your top prospects — prioritize by conference, division, or star your favorites first.
           </p>
-          <div className="flex items-center justify-center gap-3">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <button
               onClick={() => handleResearchNext(10)}
               disabled={processing === 'research'}
-              className="px-5 py-2.5 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-[background-color,box-shadow] text-sm shadow-sm shadow-primary-500/25 disabled:opacity-50 hover:shadow-md"
+              className="w-full sm:w-auto px-5 py-2.5 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-[background-color,box-shadow] text-sm shadow-sm shadow-primary-500/25 disabled:opacity-50 hover:shadow-md"
             >
-              <span className="flex items-center gap-2">
+              <span className="flex items-center justify-center gap-2">
                 <IconZap size={16} />
                 Research Top 10
               </span>
@@ -227,15 +227,15 @@ export function CRMDashboard({
             <button
               onClick={() => handleResearchNext(25)}
               disabled={processing === 'research'}
-              className="px-5 py-2.5 bg-white border border-warm-200/50 text-warm-700 rounded-xl font-medium hover:bg-warm-50 active:bg-warm-100 transition-colors text-sm disabled:opacity-50"
+              className="w-full sm:w-auto px-5 py-2.5 bg-white border border-warm-200/50 text-warm-700 rounded-xl font-medium hover:bg-warm-50 active:bg-warm-100 transition-colors text-sm disabled:opacity-50"
             >
               Research Top 25
             </button>
             <button
               onClick={() => onNavigate('list')}
-              className="px-5 py-2.5 text-warm-500 hover:text-warm-700 rounded-xl font-medium transition-colors text-sm"
+              className="w-full sm:w-auto px-5 py-2.5 text-warm-500 hover:text-warm-700 rounded-xl font-medium transition-colors text-sm"
             >
-              View All →
+              View All &rarr;
             </button>
           </div>
         </div>
@@ -262,9 +262,9 @@ export function CRMDashboard({
               const maxCount = Math.max(...funnelData.map(s => s.count), 1);
               const widthPct = (stage.count / maxCount) * 100;
               return (
-                <div key={stage.id} className="flex items-center gap-4 group">
-                  <div className="w-24 text-right flex-shrink-0">
-                    <p className="text-sm font-medium text-warm-700 group-hover:text-warm-900 transition-colors">{stage.label}</p>
+                <div key={stage.id} className="flex items-center gap-2 sm:gap-4 group">
+                  <div className="w-16 sm:w-24 text-right flex-shrink-0">
+                    <p className="text-xs sm:text-sm font-medium text-warm-700 group-hover:text-warm-900 transition-colors truncate">{stage.label}</p>
                   </div>
                   <div className="flex-1 relative">
                     <div className="h-9 rounded-lg bg-warm-50/80 overflow-hidden">
@@ -479,9 +479,9 @@ export function CRMDashboard({
         {/* Quick Actions — cleaner callout */}
         {!allNewLeads && (
           <div className="bg-white/70 backdrop-blur-xl border border-primary-100/40 rounded-2xl shadow-glass p-5">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center flex-shrink-0">
                   <IconZap size={18} className="text-primary-600" />
                 </div>
                 <div>
@@ -491,17 +491,17 @@ export function CRMDashboard({
                   </p>
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 w-full sm:w-auto">
                 <button
                   onClick={() => handleResearchNext(10)}
                   disabled={processing === 'research' || (stats.byStatus.new_lead || 0) === 0}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm bg-primary-600 text-white hover:bg-primary-700 transition-[background-color,transform,box-shadow] shadow-sm shadow-primary-500/25 disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5 hover:shadow-md"
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm bg-primary-600 text-white hover:bg-primary-700 transition-[background-color,transform,box-shadow] shadow-sm shadow-primary-500/25 disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5 hover:shadow-md flex-1 sm:flex-initial"
                 >
                   <IconZap size={16} /> Research Next 10
                 </button>
                 <button
                   onClick={() => onNavigate('pipeline')}
-                  className="px-4 py-2.5 bg-white border border-warm-200/50 text-warm-700 rounded-xl font-medium hover:bg-warm-50 active:bg-warm-100 transition-[background-color,transform] text-sm hover:-translate-y-0.5"
+                  className="px-4 py-2.5 bg-white border border-warm-200/50 text-warm-700 rounded-xl font-medium hover:bg-warm-50 active:bg-warm-100 transition-[background-color,transform] text-sm hover:-translate-y-0.5 flex-1 sm:flex-initial"
                 >
                   Open Pipeline
                 </button>

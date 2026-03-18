@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
-import { IconUsers, IconWarning, IconUserX, IconCheckCircle2, IconMail, IconDownload } from '@/components/icons';
+import { IconUsers, IconWarning, IconUserX, IconCheckCircle2, IconMail, IconDownload, IconClock } from '@/components/icons';
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { TeamHealthCards } from './TeamHealthCards';
 import { TeamUserDirectory } from './TeamUserDirectory';
@@ -100,11 +100,52 @@ export function PeopleTab({ data }: Props) {
   }
 
   function handleEmailReengagement() {
-    console.log('[PeopleTab] Email re-engagement triggered for users:', Array.from(selectedAtRiskIds.size > 0 ? selectedAtRiskIds : allAtRiskIds));
+    // TODO: integrate with email service to send re-engagement emails
+    const ids = Array.from(selectedAtRiskIds.size > 0 ? selectedAtRiskIds : allAtRiskIds);
+    void ids; // placeholder until email integration
   }
 
   function handleExportCsv() {
-    console.log('[PeopleTab] Export CSV triggered for at-risk users:', allAtRiskIds);
+    // Collect at-risk user data and generate a CSV download
+    const rows: { name: string; email: string; role: string; team: string; lastSeen: string; daysSinceLastSeen: string }[] = [];
+    for (const team of userActivity.teams) {
+      for (const m of team.members) {
+        if (isAtRisk(m)) {
+          rows.push({
+            name: m.name || m.email.split('@')[0] || 'Unknown',
+            email: m.email,
+            role: m.role,
+            team: team.teamName,
+            lastSeen: m.last_seen ?? 'Never',
+            daysSinceLastSeen: m.daysSinceLastSeen !== null ? String(m.daysSinceLastSeen) : 'N/A',
+          });
+        }
+      }
+    }
+    for (const u of userActivity.unassigned) {
+      if (isAtRisk(u)) {
+        rows.push({
+          name: u.name || u.email.split('@')[0] || 'Unknown',
+          email: u.email,
+          role: u.role,
+          team: 'Unassigned',
+          lastSeen: u.last_seen ?? 'Never',
+          daysSinceLastSeen: u.daysSinceLastSeen !== null ? String(u.daysSinceLastSeen) : 'N/A',
+        });
+      }
+    }
+    if (rows.length === 0) return;
+    const header = 'Name,Email,Role,Team,Last Seen,Days Inactive';
+    const csvContent = [header, ...rows.map(r =>
+      `"${r.name}","${r.email}","${r.role}","${r.team}","${r.lastSeen}","${r.daysSinceLastSeen}"`
+    )].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `at-risk-users-${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
   }
 
   function handleSelectTeam(teamId: string) {
@@ -113,10 +154,37 @@ export function PeopleTab({ data }: Props) {
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
+  // Compute coach/player counts for tab badges
+  const coachCount = useMemo(() => {
+    let count = 0;
+    for (const team of userActivity.teams) {
+      for (const m of team.members) {
+        if (m.role === 'coach') count++;
+      }
+    }
+    for (const u of userActivity.unassigned) {
+      if (u.role === 'coach') count++;
+    }
+    return count;
+  }, [userActivity.teams, userActivity.unassigned]);
+
+  const playerCount = useMemo(() => {
+    let count = 0;
+    for (const team of userActivity.teams) {
+      for (const m of team.members) {
+        if (m.role === 'player') count++;
+      }
+    }
+    for (const u of userActivity.unassigned) {
+      if (u.role === 'player') count++;
+    }
+    return count;
+  }, [userActivity.teams, userActivity.unassigned]);
+
   const viewTabs: { label: string; value: ViewMode; count?: number }[] = [
     { label: 'All Users', value: 'all', count: summary.totalUsers },
-    { label: 'Coaches', value: 'coaches' },
-    { label: 'Players', value: 'players' },
+    { label: 'Coaches', value: 'coaches', count: coachCount },
+    { label: 'Players', value: 'players', count: playerCount },
     { label: 'Teams', value: 'teams', count: userActivity.teams.length },
     { label: 'At-Risk', value: 'at_risk', count: atRiskCount },
   ];
@@ -127,13 +195,13 @@ export function PeopleTab({ data }: Props) {
   return (
     <div className="space-y-6">
       {/* View Mode Sub-Tabs */}
-      <div className="flex items-center gap-1 p-1 bg-warm-50/60 rounded-full border border-warm-100/50 w-fit">
+      <div className="flex items-center gap-1 p-1 bg-warm-50/60 rounded-full border border-warm-100/50 w-full sm:w-fit overflow-x-auto scrollbar-hide">
         {viewTabs.map((tab) => (
           <button
             key={tab.value}
             onClick={() => setViewMode(tab.value)}
             className={cn(
-              'px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200',
+              'px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0',
               viewMode === tab.value
                 ? 'bg-white shadow text-warm-900'
                 : 'text-warm-500 hover:text-warm-700 hover:bg-white/40',
@@ -161,10 +229,10 @@ export function PeopleTab({ data }: Props) {
           'bg-red-50/60 border border-red-200/30',
           'backdrop-blur-sm'
         )}>
-          <p className="text-sm font-semibold text-red-800">
+          <p className="text-sm font-semibold text-red-800 w-full sm:w-auto">
             {atRiskCount} user{atRiskCount !== 1 ? 's' : ''} at risk
           </p>
-          <div className="flex items-center gap-2 ml-auto">
+          <div className="flex items-center gap-2 w-full sm:w-auto sm:ml-auto overflow-x-auto scrollbar-hide">
             <button
               onClick={handleSelectAll}
               className={cn(
@@ -229,6 +297,27 @@ export function PeopleTab({ data }: Props) {
       {/* Alert Banners - only show in 'all' mode */}
       {viewMode === 'all' && (
         <div className="space-y-2">
+          {summary.stuckInOnboarding > 0 && (
+            <div className={cn(
+              'flex items-start gap-3 p-4 rounded-2xl',
+              'bg-orange-50/80 border border-orange-200/40',
+              'backdrop-blur-sm'
+            )}>
+              <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <IconClock size={18} className="text-orange-600" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-orange-900">
+                  {summary.stuckInOnboarding} user{summary.stuckInOnboarding !== 1 ? 's' : ''} stuck in onboarding for 7+ days
+                </p>
+                <p className="text-xs text-orange-700 mt-1">
+                  These users signed up but never completed onboarding. Check for UX issues or send a reminder.
+                </p>
+                <OnboardingStuckList teams={userActivity.teams} unassigned={userActivity.unassigned} />
+              </div>
+            </div>
+          )}
+
           {summary.neverLoggedIn > 0 && (
             <div className={cn(
               'flex items-start gap-3 p-4 rounded-2xl',
@@ -273,11 +362,12 @@ export function PeopleTab({ data }: Props) {
 
       {/* Summary Stats Row */}
       {!showAtRiskEmptyState && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
           <SummaryCard label="Total Users" value={summary.totalUsers} icon={<IconUsers size={14} />} />
           <SummaryCard label="Active Today" value={summary.activeToday} color={summary.activeToday > 0 ? 'green' : undefined} icon={<div className="w-2 h-2 rounded-full bg-primary-500" />} />
           <SummaryCard label="Active 7d" value={summary.activeThisWeek} color={summary.activeThisWeek > 5 ? 'green' : undefined} />
           <SummaryCard label="Never Logged In" value={summary.neverLoggedIn} color={summary.neverLoggedIn > 0 ? 'amber' : undefined} />
+          <SummaryCard label="Stuck Onboarding" value={summary.stuckInOnboarding} color={summary.stuckInOnboarding > 0 ? 'orange' : undefined} />
           <SummaryCard label="Inactive 14d+" value={summary.inactivePlus14d} color={summary.inactivePlus14d > 0 ? 'red' : undefined} />
           <SummaryCard label="Churn Risk" value={summary.churnRisk} color={summary.churnRisk > 0 ? 'red' : undefined} />
         </div>
@@ -331,11 +421,72 @@ function SummaryCard({ label, value, color, icon }: { label: string; value: numb
           'text-xl font-bold tabular-nums',
           color === 'green' ? 'text-primary-600' :
           color === 'amber' ? 'text-amber-600' :
+          color === 'orange' ? 'text-orange-600' :
           color === 'red' ? 'text-red-600' :
           'text-warm-900'
         )}>{value}</p>
       </div>
       <p className="text-micro text-warm-400 uppercase tracking-wider font-medium">{label}</p>
+    </div>
+  );
+}
+
+/** Shows specific users stuck in onboarding */
+function OnboardingStuckList({ teams, unassigned }: {
+  teams: AdminDashboardData['userActivity']['teams'];
+  unassigned: AdminDashboardData['userActivity']['unassigned'];
+}) {
+  const stuckUsers: { name: string; email: string; role: string; daysSinceSignup: number }[] = [];
+
+  for (const team of teams) {
+    for (const m of team.members) {
+      if (!m.onboardingCompleted && m.created_at) {
+        const daysSince = Math.floor((Date.now() - new Date(m.created_at).getTime()) / 86400000);
+        if (daysSince > 7) {
+          stuckUsers.push({
+            name: m.name || m.email.split('@')[0] || 'Unknown',
+            email: m.email,
+            role: m.role,
+            daysSinceSignup: daysSince,
+          });
+        }
+      }
+    }
+  }
+
+  for (const u of unassigned) {
+    if (!u.onboardingCompleted && u.created_at) {
+      const daysSince = Math.floor((Date.now() - new Date(u.created_at).getTime()) / 86400000);
+      if (daysSince > 7) {
+        stuckUsers.push({
+          name: u.name || u.email.split('@')[0] || 'Unknown',
+          email: u.email,
+          role: u.role,
+          daysSinceSignup: daysSince,
+        });
+      }
+    }
+  }
+
+  if (stuckUsers.length === 0) return null;
+
+  return (
+    <div className="mt-2 space-y-1">
+      {stuckUsers.slice(0, 5).map((user) => (
+        <div key={user.email} className="flex items-center gap-2 text-xs flex-wrap">
+          <span className={cn(
+            'px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase flex-shrink-0',
+            user.role === 'coach' ? 'bg-blue-100 text-blue-700' : 'bg-primary-100 text-primary-700'
+          )}>
+            {user.role}
+          </span>
+          <span className="font-medium text-orange-800 truncate">{user.name}</span>
+          <span className="text-orange-600 flex-shrink-0">signed up {user.daysSinceSignup}d ago</span>
+        </div>
+      ))}
+      {stuckUsers.length > 5 && (
+        <p className="text-[10px] text-orange-500">and {stuckUsers.length - 5} more...</p>
+      )}
     </div>
   );
 }

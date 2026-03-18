@@ -72,6 +72,19 @@ const severityPills: Record<NonNullable<TimelineItem['severity']>, string> = {
   critical: 'bg-red-50 text-red-700',
 };
 
+function getDateGroupLabel(dateStr: string | null): string {
+  if (!dateStr) return 'Unknown';
+  const date = new Date(dateStr);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today.getTime() - 86400000);
+  const itemDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+  if (itemDate.getTime() === today.getTime()) return 'Today';
+  if (itemDate.getTime() === yesterday.getTime()) return 'Yesterday';
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
 function formatScore(totalScore: number | null, totalToPar: number | null): string | null {
   if (totalScore == null && totalToPar == null) return null;
   const score = totalScore != null ? `${totalScore}` : 'Round';
@@ -83,21 +96,20 @@ function formatScore(totalScore: number | null, totalToPar: number | null): stri
 function formatAdminEventDetail(event: Props['activity']['recentAdminEvents'][number]): string | null {
   const parts = [
     event.userEmail,
-    event.url ? event.url.replace(/\/:id/g, '/…') : null,
+    event.url ? event.url.replace(/\/:id/g, '/...') : null,
     event.message,
   ].filter(Boolean);
 
-  return parts.length > 0 ? parts.join(' • ') : null;
+  return parts.length > 0 ? parts.join(' · ') : null;
 }
 
 function formatAuditDetail(event: Props['activity']['recentAuditEvents'][number]): string | null {
   const parts = [
     event.userEmail,
-    event.tableName,
-    event.recordId,
+    event.tableName ? event.tableName.replace(/^golf_/, '').replace(/_/g, ' ') : null,
   ].filter(Boolean);
 
-  return parts.length > 0 ? parts.join(' • ') : null;
+  return parts.length > 0 ? parts.join(' · ') : null;
 }
 
 function mapRealtimeEventToTimelineItem(
@@ -154,16 +166,18 @@ export function ActivityFeed({ activity }: Props) {
     }
 
     for (const round of activity.recentRounds) {
+      const scoreStr = formatScore(round.total_score, round.total_to_par);
       items.set(`round-${round.id}`, {
         id: `round-${round.id}`,
         kind: 'round',
         filter: 'golf',
-        title: `${round.player_name} submitted a round`,
+        title: scoreStr
+          ? `${round.player_name} shot ${scoreStr}`
+          : `${round.player_name} submitted a round`,
         detail: [
-          formatScore(round.total_score, round.total_to_par),
           round.course_name ? `at ${round.course_name}` : null,
-          round.round_type,
-        ].filter(Boolean).join(' • ') || null,
+          round.round_type ? round.round_type.replace(/_/g, ' ') : null,
+        ].filter(Boolean).join(' · ') || null,
         timestamp: round.created_at,
         badge: 'Round',
         live: false,
@@ -212,11 +226,13 @@ export function ActivityFeed({ activity }: Props) {
     }
 
     for (const event of activity.recentAuditEvents) {
+      const formattedAction = event.action.replace(/_/g, ' ');
+      const capitalizedAction = formattedAction.charAt(0).toUpperCase() + formattedAction.slice(1);
       items.set(`audit-${event.id}`, {
         id: `audit-${event.id}`,
         kind: 'audit',
         filter: 'ops',
-        title: event.action.replace(/_/g, ' '),
+        title: capitalizedAction,
         detail: formatAuditDetail(event),
         timestamp: event.createdAt,
         badge: 'Audit',
@@ -283,52 +299,52 @@ export function ActivityFeed({ activity }: Props) {
         </div>
       </div>
 
-      {/* Stats mini-grid — 2-col on mobile, 5-col on xl */}
-      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
-        <div className="rounded-2xl border border-white/35 bg-white/60 px-3 py-3 sm:px-4">
-          <p className="text-[11px] sm:text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">
-            Stream items
+      {/* Stats mini-grid — 2-col on mobile, 3-col on sm, 5-col on xl */}
+      <div className="mt-4 grid grid-cols-2 gap-1.5 sm:gap-2 sm:grid-cols-3 xl:grid-cols-5">
+        <div className="rounded-2xl border border-white/35 bg-white/60 px-3 py-2.5 sm:py-3 sm:px-4">
+          <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.14em] sm:tracking-[0.16em] text-warm-400">
+            Stream
           </p>
           <p className="mt-1 text-lg sm:text-xl font-semibold tabular-nums text-warm-900">
             {timelineItems.length}
           </p>
-          <p className="mt-0.5 text-xs text-warm-500">last 20 per source</p>
+          <p className="mt-0.5 text-[10px] sm:text-xs text-warm-500">last 20/source</p>
         </div>
-        <div className="rounded-2xl border border-white/35 bg-white/60 px-3 py-3 sm:px-4">
-          <p className="text-[11px] sm:text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">
+        <div className="rounded-2xl border border-white/35 bg-white/60 px-3 py-2.5 sm:py-3 sm:px-4">
+          <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.14em] sm:tracking-[0.16em] text-warm-400">
             Live now
           </p>
           <p className="mt-1 text-lg sm:text-xl font-semibold tabular-nums text-warm-900">
             {counts.live}
           </p>
-          <p className="mt-0.5 text-xs text-warm-500">realtime events</p>
+          <p className="mt-0.5 text-[10px] sm:text-xs text-warm-500">realtime</p>
         </div>
-        <div className="rounded-2xl border border-white/35 bg-white/60 px-3 py-3 sm:px-4">
-          <p className="text-[11px] sm:text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">
+        <div className="rounded-2xl border border-white/35 bg-white/60 px-3 py-2.5 sm:py-3 sm:px-4">
+          <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.14em] sm:tracking-[0.16em] text-warm-400">
             Users
           </p>
           <p className="mt-1 text-lg sm:text-xl font-semibold tabular-nums text-warm-900">
             {counts.users}
           </p>
-          <p className="mt-0.5 text-xs text-warm-500">signups and logins</p>
+          <p className="mt-0.5 text-[10px] sm:text-xs text-warm-500">signups &amp; logins</p>
         </div>
-        <div className="rounded-2xl border border-white/35 bg-white/60 px-3 py-3 sm:px-4">
-          <p className="text-[11px] sm:text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">
+        <div className="rounded-2xl border border-white/35 bg-white/60 px-3 py-2.5 sm:py-3 sm:px-4">
+          <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.14em] sm:tracking-[0.16em] text-warm-400">
             Golf
           </p>
           <p className="mt-1 text-lg sm:text-xl font-semibold tabular-nums text-warm-900">
             {counts.golf}
           </p>
-          <p className="mt-0.5 text-xs text-warm-500">rounds and AI output</p>
+          <p className="mt-0.5 text-[10px] sm:text-xs text-warm-500">rounds &amp; AI</p>
         </div>
-        <div className="rounded-2xl border border-white/35 bg-white/60 px-3 py-3 sm:px-4 col-span-2 sm:col-span-1">
-          <p className="text-[11px] sm:text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">
+        <div className="rounded-2xl border border-white/35 bg-white/60 px-3 py-2.5 sm:py-3 sm:px-4 col-span-2 sm:col-span-1">
+          <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.14em] sm:tracking-[0.16em] text-warm-400">
             Ops / issues
           </p>
           <p className="mt-1 text-lg sm:text-xl font-semibold tabular-nums text-warm-900">
             {counts.ops + counts.issues}
           </p>
-          <p className="mt-0.5 text-xs text-warm-500">{counts.issues} issue signals</p>
+          <p className="mt-0.5 text-[10px] sm:text-xs text-warm-500">{counts.issues} issue signals</p>
         </div>
       </div>
 
@@ -371,10 +387,10 @@ export function ActivityFeed({ activity }: Props) {
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-warm-500">
                 Lead item
               </p>
-              <p className="mt-2 text-sm sm:text-base font-semibold text-warm-900 truncate">
+              <p className="mt-2 text-sm sm:text-base font-semibold text-warm-900 break-words line-clamp-2">
                 {leadItem.title}
               </p>
-              <p className="mt-1 text-xs sm:text-sm leading-6 text-warm-600 line-clamp-3">
+              <p className="mt-1 text-xs sm:text-sm leading-5 sm:leading-6 text-warm-600 line-clamp-3 break-words">
                 {leadItem.detail ?? 'No additional detail captured.'}
               </p>
               <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -429,64 +445,92 @@ export function ActivityFeed({ activity }: Props) {
                 const itemStyle = itemStyles[item.kind];
                 const showLine = index < Math.min(visibleItems.length, 28) - 1;
 
+                // Show date header when the date group changes
+                const currentGroup = getDateGroupLabel(item.timestamp);
+                const prevGroup = index > 0 ? getDateGroupLabel(visibleItems[index - 1]!.timestamp) : null;
+                const showDateHeader = currentGroup !== prevGroup;
+
                 return (
-                  <div key={item.id} className="relative flex items-start gap-3 py-3">
-                    {showLine && (
-                      <div className="absolute left-[15px] top-9 bottom-0 w-px bg-warm-100" />
+                  <div key={item.id}>
+                    {showDateHeader && (
+                      <div className={cn('flex items-center gap-3 pb-2', index === 0 ? 'pt-0' : 'pt-4')}>
+                        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-warm-200 to-transparent" />
+                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-warm-500 bg-white/80 px-2.5 py-1 rounded-full border border-warm-100 shrink-0">
+                          {currentGroup}
+                        </span>
+                        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-warm-200 to-transparent" />
+                      </div>
                     )}
+                    <div className="relative flex items-start gap-3 py-3">
+                      {showLine && (
+                        <div className="absolute left-[15px] top-9 bottom-0 w-px bg-warm-100" />
+                      )}
 
-                    <div className={cn(
-                      'relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl',
-                      itemStyle.chip
-                    )}>
-                      {itemStyle.icon}
-                    </div>
+                      <div className={cn(
+                        'relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl',
+                        itemStyle.chip
+                      )}>
+                        {itemStyle.icon}
+                      </div>
 
-                    <div className={cn('absolute left-[14px] top-8 h-3 w-1 rounded-full', itemStyle.rail)} />
+                      <div className={cn('absolute left-[14px] top-8 h-3 w-1 rounded-full', itemStyle.rail)} />
 
-                    <div className="min-w-0 flex-1 rounded-2xl border border-white/35 bg-white/72 px-3 py-3 sm:px-4">
-                      <div className="flex flex-wrap items-start justify-between gap-2">
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                            {/* Title — truncate long names on mobile */}
-                            <p className="text-xs sm:text-sm font-semibold text-warm-900 truncate max-w-[180px] sm:max-w-none">
-                              {item.title}
-                            </p>
-                            <span className={cn(
-                              'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]',
-                              itemStyle.chip
-                            )}>
-                              {item.badge}
-                            </span>
-                            {item.severity && (
+                      <div className={cn(
+                        'min-w-0 flex-1 rounded-2xl border px-3 py-3 sm:px-4',
+                        item.severity === 'error' || item.severity === 'critical'
+                          ? 'border-red-100 bg-red-50/40'
+                          : item.badge.toLowerCase() === 'login' || item.badge.toLowerCase() === 'page view'
+                            ? 'border-white/20 bg-white/50'
+                            : 'border-white/35 bg-white/72'
+                      )}>
+                        <div className="flex flex-wrap items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                              {/* Title — truncate long names on mobile, muted for login events */}
+                              <p className={cn(
+                                'text-xs sm:text-sm truncate max-w-[180px] sm:max-w-none',
+                                item.badge.toLowerCase() === 'login' || item.badge.toLowerCase() === 'page view'
+                                  ? 'font-medium text-warm-500'
+                                  : 'font-semibold text-warm-900'
+                              )}>
+                                {item.title}
+                              </p>
                               <span className={cn(
                                 'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]',
-                                severityPills[item.severity]
+                                itemStyle.chip
                               )}>
-                                {item.severity}
+                                {item.badge}
                               </span>
-                            )}
-                            {item.live && (
-                              <span className="inline-flex items-center rounded-full bg-primary-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-700">
-                                live
-                              </span>
+                              {item.severity && (
+                                <span className={cn(
+                                  'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]',
+                                  severityPills[item.severity]
+                                )}>
+                                  {item.severity}
+                                </span>
+                              )}
+                              {item.live && (
+                                <span className="inline-flex items-center rounded-full bg-primary-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-700">
+                                  live
+                                </span>
+                              )}
+                            </div>
+                            {item.detail && (
+                              <p className="mt-1 text-xs sm:text-sm leading-5 text-warm-600 line-clamp-2 break-words">
+                                {item.detail}
+                              </p>
                             )}
                           </div>
-                          {item.detail && (
-                            <p className="mt-1 text-xs sm:text-sm leading-5 text-warm-600 line-clamp-2">
-                              {item.detail}
-                            </p>
-                          )}
-                        </div>
 
-                        {/* Timestamp — always abbreviated, right-aligned */}
-                        <div className="flex items-center gap-1 text-xs text-warm-400 tabular-nums shrink-0">
-                          {item.filter === 'issues'
-                            ? <IconWarning size={11} />
-                            : item.filter === 'ops'
-                              ? <IconRoute size={11} />
-                              : <IconClock3 size={11} />}
-                          <span>{timeAgo(item.timestamp)}</span>
+                          {/* Timestamp — always abbreviated, right-aligned */}
+                          <div className="flex items-center gap-1 text-xs text-warm-400 tabular-nums shrink-0">
+                            {item.filter === 'issues'
+                              ? <IconWarning size={11} />
+                              : item.filter === 'ops'
+                                ? <IconRoute size={11} />
+                                : <IconClock3 size={11} />}
+                            <span>{timeAgo(item.timestamp)}</span>
+                          </div>
                         </div>
                       </div>
                     </div>

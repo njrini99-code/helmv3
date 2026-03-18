@@ -37,7 +37,7 @@ function getOverallStatus(data: AdminDashboardData): HealthStatus {
   if (
     data.errorLogs.incidentCounts.open > 0 ||
     data.loginSecurity.lockedAccounts > 0 ||
-    data.health.avgResponseTimeMs > 3000
+    (data.infraHealth?.totals?.avgResponseMs ?? 0) > 3000
   ) {
     return 'watch';
   }
@@ -79,11 +79,13 @@ interface StatTileProps {
   value: string | number;
   tone?: 'default' | 'ok' | 'warn' | 'danger';
   icon?: React.ReactNode;
+  tooltip?: string;
 }
 
-function StatTile({ label, value, tone = 'default', icon }: StatTileProps) {
+function StatTile({ label, value, tone = 'default', icon, tooltip }: StatTileProps) {
   return (
     <div
+      title={tooltip}
       className={cn(
         'flex min-w-0 flex-col gap-0.5 rounded-xl border px-3 py-2.5',
         tone === 'danger'
@@ -172,8 +174,8 @@ function SystemOverviewBar({ data }: { data: AdminDashboardData }) {
           />
           <StatTile
             label="API Latency"
-            value={`${data.health.avgResponseTimeMs}ms`}
-            tone={data.health.avgResponseTimeMs > 3000 ? 'warn' : 'ok'}
+            value={`${Math.round(data.infraHealth?.totals?.avgResponseMs ?? 0)}ms`}
+            tone={(data.infraHealth?.totals?.avgResponseMs ?? 0) > 3000 ? 'warn' : 'ok'}
             icon={<IconGauge size={12} />}
           />
           <StatTile
@@ -191,6 +193,9 @@ function SystemOverviewBar({ data }: { data: AdminDashboardData }) {
             label="Last Round"
             value={formatRelativeTime(data.health.lastRoundSubmitted)}
             icon={<IconClock size={12} />}
+            tooltip={data.health.lastRoundSubmitted
+              ? new Date(data.health.lastRoundSubmitted).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })
+              : undefined}
           />
           <StatTile
             label="Locked Accounts"
@@ -338,11 +343,53 @@ function FeatureAdoptionGrid({ features }: { features: AdminDashboardData['usage
 
 // ─── Background Jobs Config ─────────────────────────────────────────────────
 
-const SYSTEM_JOBS = [
-  { name: 'Stats Cache Refresh', expectedInterval: '1h', icon: IconRefresh },
-  { name: 'CoachHelm Insight Generation', expectedInterval: '24h', icon: IconBrain },
-  { name: 'Platform Metrics Snapshot', expectedInterval: '24h', icon: IconChartBar },
+interface SystemJobConfig {
+  name: string;
+  expectedInterval: string;
+  expectedIntervalMs: number;
+  icon: typeof IconRefresh;
+  getLastRun: (data: AdminDashboardData) => string | null;
+}
+
+const SYSTEM_JOBS: SystemJobConfig[] = [
+  {
+    name: 'Stats Cache Refresh',
+    expectedInterval: '1h',
+    expectedIntervalMs: 60 * 60 * 1000,
+    icon: IconRefresh,
+    getLastRun: (data) => data.statsCacheLastUpdated ?? null,
+  },
+  {
+    name: 'CoachHelm Insight Generation',
+    expectedInterval: '24h',
+    expectedIntervalMs: 24 * 60 * 60 * 1000,
+    icon: IconBrain,
+    getLastRun: (data) => data.health.lastInsightGenerated ?? null,
+  },
+  {
+    name: 'Platform Metrics Snapshot',
+    expectedInterval: '24h',
+    expectedIntervalMs: 24 * 60 * 60 * 1000,
+    icon: IconChartBar,
+    getLastRun: (data) => data.health.lastRoundSubmitted ?? null,
+  },
 ];
+
+function getJobStatus(lastRun: string | null, expectedIntervalMs: number): {
+  status: 'ok' | 'warn' | 'stale';
+  label: string;
+  dotClass: string;
+} {
+  if (!lastRun) return { status: 'stale', label: 'No data', dotClass: 'bg-warm-300' };
+  const elapsed = Date.now() - new Date(lastRun).getTime();
+  if (elapsed <= expectedIntervalMs * 1.5) {
+    return { status: 'ok', label: formatRelativeTime(lastRun), dotClass: 'bg-primary-500' };
+  }
+  if (elapsed <= expectedIntervalMs * 3) {
+    return { status: 'warn', label: formatRelativeTime(lastRun), dotClass: 'bg-amber-400' };
+  }
+  return { status: 'stale', label: formatRelativeTime(lastRun), dotClass: 'bg-red-400' };
+}
 
 // ─── External Services Config ───────────────────────────────────────────────
 
@@ -365,17 +412,17 @@ export function SystemTab({ data }: Props) {
   return (
     <div className="space-y-6">
       {/* ── Deployment Info ── */}
-      <div className="flex items-center justify-between rounded-2xl border border-white/30 bg-white/65 backdrop-blur-[16px] px-5 py-3">
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary-50">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-white/30 bg-white/65 backdrop-blur-[16px] px-4 py-3 sm:px-5">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary-50">
             <IconRocket size={16} className="text-primary-600" />
           </div>
-          <div>
-            <p className="text-sm font-semibold text-warm-900">Production</p>
-            <p className="text-xs text-warm-500">Next.js &middot; Vercel &middot; Supabase</p>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-warm-900 truncate">Production</p>
+            <p className="text-xs text-warm-500 truncate">Next.js &middot; Vercel &middot; Supabase</p>
           </div>
         </div>
-        <div className="text-right">
+        <div className="text-right shrink-0">
           <p className="text-xs text-warm-400">Environment healthy</p>
         </div>
       </div>
@@ -399,23 +446,35 @@ export function SystemTab({ data }: Props) {
           <div className="space-y-3">
             {SYSTEM_JOBS.map((job) => {
               const JobIcon = job.icon;
+              const lastRun = job.getLastRun(data);
+              const jobStatus = getJobStatus(lastRun, job.expectedIntervalMs);
               return (
                 <div
                   key={job.name}
-                  className="flex items-center justify-between rounded-xl border border-white/30 bg-white/50 px-4 py-3"
+                  className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between rounded-xl border border-white/30 bg-white/50 px-3 py-2.5 sm:px-4 sm:py-3"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/70">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/70">
                       <JobIcon size={14} className="text-warm-500" />
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-warm-900">{job.name}</p>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-warm-900 truncate">{job.name}</p>
                       <p className="text-[11px] text-warm-400">Every {job.expectedInterval}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-amber-400" />
-                    <span className="text-xs text-warm-400">No data yet</span>
+                  <div
+                    className="flex items-center gap-2 shrink-0 pl-11 sm:pl-0"
+                    title={lastRun ? new Date(lastRun).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : undefined}
+                  >
+                    <span className={cn('h-2 w-2 rounded-full', jobStatus.dotClass)} />
+                    <span className={cn(
+                      'text-xs tabular-nums',
+                      jobStatus.status === 'ok' ? 'text-primary-600' :
+                      jobStatus.status === 'warn' ? 'text-amber-600' :
+                      'text-warm-400'
+                    )}>
+                      {jobStatus.label}
+                    </span>
                   </div>
                 </div>
               );
@@ -439,7 +498,7 @@ export function SystemTab({ data }: Props) {
           {/* Right: Data quality ring + infra snapshot + storage quota */}
           <div className="glass-standard rounded-2xl p-5 md:p-6 space-y-4">
             <DataQualityRing quality={dataQuality} />
-            <InfraSnapshotPanel health={data.health} />
+            <InfraSnapshotPanel health={data.health} infraHealth={data.infraHealth} />
 
             {/* Storage Quota */}
             <div className="rounded-2xl border border-white/35 bg-white/55 p-4">
@@ -492,13 +551,13 @@ export function SystemTab({ data }: Props) {
             {SERVICES.map((service) => (
               <div
                 key={service.name}
-                className="flex items-center gap-3 rounded-xl border border-white/30 bg-white/50 px-4 py-3"
+                className="flex items-center gap-3 rounded-xl border border-white/30 bg-white/50 px-3 py-2.5 sm:px-4 sm:py-3"
               >
-                <IconGlobe size={14} className="text-warm-400" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-warm-900">{service.name}</p>
+                <IconGlobe size={14} className="text-warm-400 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-warm-900 truncate">{service.name}</p>
                 </div>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 shrink-0">
                   <span className="h-2 w-2 rounded-full bg-primary-500" />
                   <span className="text-xs text-primary-600 font-medium">Operational</span>
                 </div>
@@ -533,7 +592,7 @@ export function SystemTab({ data }: Props) {
 
 // ─── Infra Snapshot (compact, lives inside Platform Health right column) ─────
 
-function InfraSnapshotPanel({ health }: { health: AdminDashboardData['health'] }) {
+function InfraSnapshotPanel({ health, infraHealth }: { health: AdminDashboardData['health']; infraHealth: AdminDashboardData['infraHealth'] }) {
   const { formatBytes } = {
     formatBytes: (bytes: number) => {
       if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -542,14 +601,16 @@ function InfraSnapshotPanel({ health }: { health: AdminDashboardData['health'] }
     },
   };
 
+  const apiLatencyMs = Math.round(infraHealth?.totals?.avgResponseMs ?? 0);
+
   const tiles = [
     { label: 'DB Size', value: formatBytes(health.dbSizeBytes) },
     { label: 'DB Conns', value: health.activeConnections + health.idleConnections },
     { label: 'Sessions', value: health.activeSessions },
     {
-      label: 'Latency',
-      value: `${health.avgResponseTimeMs}ms`,
-      warn: health.avgResponseTimeMs > 3000,
+      label: 'Avg Latency',
+      value: `${apiLatencyMs}ms`,
+      warn: apiLatencyMs > 3000,
     },
   ];
 

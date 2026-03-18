@@ -7,15 +7,31 @@ interface Props {
   funnel: AdminDashboardData['playerFunnel']['funnel'];
 }
 
+// Clean stage labels: "signed_up" → "Signed Up", "active_this_week" → "Active This Week"
+function formatStageLabel(raw: string): string {
+  return raw
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 export function UserFunnelViz({ funnel }: Props) {
-  if (funnel.length === 0) return null;
+  if (funnel.length === 0) {
+    return (
+      <div className={cn(
+        'glass-standard rounded-2xl',
+        'p-4 sm:p-5 md:p-6',
+        'h-full flex flex-col items-center justify-center text-center'
+      )}>
+        <h3 className="text-sm font-semibold text-warm-900 mb-2">User Funnel</h3>
+        <p className="text-xs text-warm-400">No funnel data available yet.</p>
+      </div>
+    );
+  }
   const maxCount = funnel[0]?.count ?? 1;
 
   return (
     <div className={cn(
-      'bg-white/70 backdrop-blur-xl',
-      'border border-white/20 rounded-2xl',
-      'shadow-glass',
+      'glass-standard rounded-2xl',
       'p-4 sm:p-5 md:p-6',
       'h-full'
     )}>
@@ -34,7 +50,7 @@ export function UserFunnelViz({ funnel }: Props) {
               {/* Label — narrower on mobile, fixed on sm+ */}
               <div className="w-[90px] sm:w-[130px] text-right flex-shrink-0">
                 <p className="text-[11px] sm:text-xs font-medium text-warm-700 leading-tight">
-                  {step.stage}
+                  {formatStageLabel(step.stage)}
                 </p>
               </div>
 
@@ -56,7 +72,7 @@ export function UserFunnelViz({ funnel }: Props) {
                   >
                     {widthPercent > 20 && (
                       <span className="text-[10px] sm:text-micro font-bold text-white tabular-nums">
-                        {step.count}
+                        {step.count.toLocaleString()}
                       </span>
                     )}
                   </div>
@@ -74,7 +90,7 @@ export function UserFunnelViz({ funnel }: Props) {
 
               {/* Count — abbreviated on mobile to save space */}
               <div className="w-12 sm:w-16 text-right flex-shrink-0">
-                <span className="text-sm font-bold text-warm-900 tabular-nums">{step.count}</span>
+                <span className="text-sm font-bold text-warm-900 tabular-nums">{step.count.toLocaleString()}</span>
                 <span className="hidden sm:inline text-micro text-warm-400 ml-1">
                   ({step.percentage}%)
                 </span>
@@ -93,7 +109,7 @@ export function UserFunnelViz({ funnel }: Props) {
         <div className="mt-4 pt-3 border-t border-warm-100">
           <div className="flex flex-wrap items-center justify-between gap-1 text-xs">
             <span className="text-warm-400 leading-snug">
-              Overall: {funnel[0]?.stage} → {funnel[funnel.length - 1]?.stage}
+              Overall: {formatStageLabel(funnel[0]?.stage ?? '')} → {formatStageLabel(funnel[funnel.length - 1]?.stage ?? '')}
             </span>
             <span className={cn(
               'font-semibold tabular-nums',

@@ -56,7 +56,19 @@ const ACTIVITY_CONFIG: Record<
     icon: IconCheckCircle2,
     color: 'text-green-500',
     bg: 'bg-green-50',
-    label: 'Completed round',
+    label: 'Submitted round',
+  },
+  round_in_progress: {
+    icon: IconCircleDot,
+    color: 'text-amber-500',
+    bg: 'bg-amber-50',
+    label: 'In progress',
+  },
+  round_stuck: {
+    icon: IconWarning,
+    color: 'text-red-500',
+    bg: 'bg-red-50',
+    label: 'Stuck',
   },
   round_error: {
     icon: IconXCircle,
@@ -79,9 +91,14 @@ const ACTIVITY_CONFIG: Record<
 function ActivityRow({ event }: { event: TracerActivityEvent }) {
   const cfg = ACTIVITY_CONFIG[event.type] ?? ACTIVITY_CONFIG.round_started!;
   const Icon = cfg.icon;
+  const isStuck = event.type === 'round_stuck';
+  const isInProgress = event.type === 'round_in_progress';
 
   return (
-    <div className="flex items-start gap-3 px-5 py-3 hover:bg-white/40 transition-colors">
+    <div className={cn(
+      'flex items-start gap-2.5 sm:gap-3 px-3 sm:px-5 py-3 hover:bg-white/40 transition-colors',
+      isStuck && 'bg-red-50/30'
+    )}>
       {/* Icon */}
       <div
         className={cn(
@@ -95,14 +112,14 @@ function ActivityRow({ event }: { event: TracerActivityEvent }) {
       {/* Content */}
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-1.5 flex-wrap">
-          <span className="text-sm font-medium text-warm-900">
+          <span className="text-sm font-medium text-warm-900 truncate max-w-[120px] sm:max-w-none">
             {event.player_name}
           </span>
-          <span className="text-xs text-warm-500">{cfg.label}</span>
+          <span className={cn('text-xs', isStuck ? 'text-red-600 font-semibold' : 'text-warm-500')}>{cfg.label}</span>
           {event.course_name && (
             <>
-              <span className="text-warm-300 text-xs">at</span>
-              <span className="text-xs text-warm-600">{event.course_name}</span>
+              <span className="text-warm-300 text-xs hidden sm:inline">at</span>
+              <span className="text-xs text-warm-600 truncate max-w-[100px] sm:max-w-none">{event.course_name}</span>
             </>
           )}
           {event.score != null && (
@@ -125,16 +142,34 @@ function ActivityRow({ event }: { event: TracerActivityEvent }) {
               )}
             </span>
           )}
+          {/* Hole progress for in-progress/stuck */}
+          {(isInProgress || isStuck) && event.current_hole != null && (
+            <span className={cn(
+              'text-xs font-medium tabular-nums',
+              isStuck ? 'text-red-500' : 'text-amber-600'
+            )}>
+              hole {event.current_hole}/{event.expected_holes ?? 18}
+            </span>
+          )}
+          {/* Hours stuck */}
+          {isStuck && event.hours_stuck != null && (
+            <span className="text-xs font-semibold text-red-500 tabular-nums">
+              {Math.round(event.hours_stuck)}h idle
+            </span>
+          )}
         </div>
         {event.error_message && (
-          <p className="text-xs text-red-500 mt-1 leading-relaxed">
+          <p className={cn('text-xs mt-1 leading-relaxed break-words', isStuck ? 'text-red-600' : 'text-red-500')}>
             {event.error_message}
           </p>
         )}
       </div>
 
       {/* Timestamp */}
-      <span className="text-[11px] text-warm-400 flex-shrink-0 tabular-nums mt-0.5">
+      <span
+        className="text-[10px] sm:text-[11px] text-warm-400 flex-shrink-0 tabular-nums mt-0.5"
+        title={new Date(event.timestamp).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}
+      >
         {timeAgo(event.timestamp)}
       </span>
     </div>
@@ -235,7 +270,7 @@ export default function TracerHealthOverview({
         )}
       >
         {/* Header */}
-        <div className="px-5 pt-5 pb-3">
+        <div className="px-3 sm:px-5 pt-4 sm:pt-5 pb-3">
           <h3 className="text-sm font-semibold text-warm-900 uppercase tracking-wider">
             Recent Activity
           </h3>
@@ -243,7 +278,7 @@ export default function TracerHealthOverview({
 
         {/* Activity list */}
         {recentActivity.length === 0 ? (
-          <div className="px-5 pb-6 text-center">
+          <div className="px-3 sm:px-5 pb-6 text-center">
             <p className="text-warm-400 text-sm">No recent activity</p>
           </div>
         ) : (

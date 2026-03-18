@@ -70,12 +70,26 @@ export function CriticalAlertsBanner({ items, onNavigateTab }: Props) {
     } catch { /* ignore */ }
   }
 
-  // Only show non-"all clear" items
+  // Only show actionable alerts — no "all clear" or purely informational "growth" items
   const alertItems = items
-    .filter((item) => !(item.severity === 'info' && item.label.includes('All clear')))
+    .filter((item) => {
+      if (item.severity === 'info' && item.label.includes('All clear')) return false;
+      if (item.severity === 'info' && item.label.includes('signed up this week')) return false;
+      return true;
+    })
     .sort((a, b) => (severityOrder[a.severity] ?? 2) - (severityOrder[b.severity] ?? 2));
 
-  const visible = alertItems.filter((item) => !dismissed.has(item.label));
+  // Deduplicate alerts with overlapping content (e.g. two error-related alerts)
+  const seen = new Set<string>();
+  const deduped = alertItems.filter((item) => {
+    // Normalize key: strip numbers to catch "3 unresolved" vs "5 unresolved" dupes
+    const key = item.label.replace(/\d+/g, '#').trim();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  const visible = deduped.filter((item) => !dismissed.has(item.label));
   if (visible.length === 0) return null;
 
   const maxVisible = 3;
@@ -121,11 +135,12 @@ export function CriticalAlertsBanner({ items, onNavigateTab }: Props) {
                 <button
                   onClick={() => onNavigateTab(item.tab)}
                   className={cn(
-                    'min-h-[44px] min-w-[44px] text-xs font-medium px-3 py-2.5 rounded-lg transition-colors flex items-center',
+                    'min-h-[44px] min-w-[44px] text-xs font-semibold px-3 py-2.5 rounded-lg transition-colors flex items-center gap-1',
                     config.btnColor
                   )}
                 >
-                  View
+                  {item.severity === 'critical' ? 'Fix Now' : item.severity === 'warning' ? 'Review' : 'View'}
+                  <span aria-hidden="true">&rarr;</span>
                 </button>
               )}
               <button

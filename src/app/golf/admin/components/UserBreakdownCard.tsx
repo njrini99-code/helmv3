@@ -16,7 +16,8 @@ export function UserBreakdownCard({ users }: Props) {
   }));
 
   const signupDelta = users.newUsersThisWeek - users.newUsersLastWeek;
-  const isGrowth = signupDelta >= 0;
+  const isGrowth = signupDelta > 0;
+  const isFlat = signupDelta === 0;
 
   const statusData = users.playersByStatus.filter((s) => s.count > 0).map((s) => ({
     label: s.status.charAt(0).toUpperCase() + s.status.slice(1),
@@ -58,32 +59,32 @@ export function UserBreakdownCard({ users }: Props) {
         </div>
         <div className={cn(
           'flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-full min-h-[32px]',
-          isGrowth ? 'bg-primary-50 text-primary-700' : 'bg-red-50 text-red-700'
+          isGrowth ? 'bg-primary-50 text-primary-700' : isFlat ? 'bg-warm-100 text-warm-500' : 'bg-red-50 text-red-700'
         )}>
-          {isGrowth ? <IconTrendingUp size={12} /> : <IconTrendingDown size={12} />}
+          {isGrowth ? <IconTrendingUp size={12} /> : !isFlat ? <IconTrendingDown size={12} /> : null}
           {isGrowth ? '+' : ''}{signupDelta} this week
         </div>
       </div>
 
       {/* Role breakdown — 3-col, responsive text size */}
-      <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-5">
-        <div className="bg-white/50 rounded-xl p-2.5 sm:p-3 text-center">
-          <p className="text-xl sm:text-2xl font-semibold text-warm-900 tabular-nums">
+      <div className="grid grid-cols-3 gap-1.5 sm:gap-3 mb-5">
+        <div className="bg-white/50 rounded-xl p-2 sm:p-3 text-center">
+          <p className="text-lg sm:text-2xl font-semibold text-warm-900 tabular-nums">
             {users.totalCoaches}
           </p>
-          <p className="text-xs text-warm-500 mt-0.5">Coaches</p>
+          <p className="text-[11px] sm:text-xs text-warm-500 mt-0.5">Coaches</p>
         </div>
-        <div className="bg-white/50 rounded-xl p-2.5 sm:p-3 text-center">
-          <p className="text-xl sm:text-2xl font-semibold text-warm-900 tabular-nums">
+        <div className="bg-white/50 rounded-xl p-2 sm:p-3 text-center">
+          <p className="text-lg sm:text-2xl font-semibold text-warm-900 tabular-nums">
             {users.totalPlayers}
           </p>
-          <p className="text-xs text-warm-500 mt-0.5">Players</p>
+          <p className="text-[11px] sm:text-xs text-warm-500 mt-0.5">Players</p>
         </div>
-        <div className="bg-white/50 rounded-xl p-2.5 sm:p-3 text-center">
-          <p className="text-xl sm:text-2xl font-semibold text-warm-900 tabular-nums">
+        <div className="bg-white/50 rounded-xl p-2 sm:p-3 text-center">
+          <p className="text-lg sm:text-2xl font-semibold text-warm-900 tabular-nums">
             {users.totalAdmins}
           </p>
-          <p className="text-xs text-warm-500 mt-0.5">Admins</p>
+          <p className="text-[11px] sm:text-xs text-warm-500 mt-0.5">Admins</p>
         </div>
       </div>
 

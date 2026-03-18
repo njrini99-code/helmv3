@@ -38,25 +38,30 @@ function isStuckRound(round: FlatRound): boolean {
   return (
     round.status === 'in_progress' &&
     !!round.updated_at &&
-    Date.now() - new Date(round.updated_at).getTime() > 2 * 60 * 60 * 1000
+    Date.now() - new Date(round.updated_at).getTime() > 1 * 60 * 60 * 1000
   );
 }
 
 function getChecks(round: FlatRound) {
   const isComplete = round.status === 'completed';
   const isInProgress = round.status === 'in_progress';
+  const stuck = isStuckRound(round);
 
   return [
-    { label: 'Holes', ok: round.actual_holes > 0, detail: `${round.actual_holes}/${round.expected_holes}` },
-    { label: 'Shots', ok: round.total_shots > 0, detail: `${round.total_shots}` },
-    { label: 'Submitted', ok: isComplete, detail: isComplete ? 'Yes' : isInProgress ? 'No' : 'Draft' },
+    { label: 'Holes Recorded', ok: round.actual_holes > 0, detail: `${round.actual_holes}/${round.expected_holes}` },
+    { label: 'Shots Recorded', ok: round.total_shots > 0, detail: `${round.total_shots}` },
+    {
+      label: 'Status',
+      ok: isComplete,
+      detail: isComplete ? 'Submitted' : stuck ? `Stuck (${Math.round((Date.now() - new Date(round.updated_at!).getTime()) / 3600000)}h)` : isInProgress ? 'In Progress' : 'Draft',
+    },
     { label: 'Putts', ok: round.has_putts, detail: round.has_putts ? 'Yes' : 'No' },
-    { label: 'FW', ok: round.has_fairways, detail: round.has_fairways ? 'Yes' : 'No' },
+    { label: 'Fairways', ok: round.has_fairways, detail: round.has_fairways ? 'Yes' : 'No' },
     { label: 'GIR', ok: round.has_gir, detail: round.has_gir ? 'Yes' : 'No' },
     { label: 'Putt Details', ok: round.putt_details_count > 0, detail: `${round.putt_details_count}` },
-    { label: 'Appr Details', ok: round.approach_details_count > 0, detail: `${round.approach_details_count}` },
+    { label: 'Approach Details', ok: round.approach_details_count > 0, detail: `${round.approach_details_count}` },
     { label: 'Stats Cached', ok: round.stats_cached, detail: round.stats_cached ? 'Yes' : 'No' },
-    { label: 'SG', ok: round.has_strokes_gained, detail: round.has_strokes_gained ? 'Yes' : 'No' },
+    { label: 'Strokes Gained', ok: round.has_strokes_gained, detail: round.has_strokes_gained ? 'Yes' : 'No' },
   ];
 }
 
@@ -195,9 +200,9 @@ export function TracerRoundInspector({ rounds, onDiagnose }: TracerRoundInspecto
   return (
     <div className="space-y-4">
       {/* Filter Bar */}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         {/* Search */}
-        <div className="relative flex-1 min-w-[200px]">
+        <div className="relative w-full sm:w-auto sm:flex-1 min-w-0 sm:min-w-[200px]">
           <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
           <input
             type="text"
@@ -237,14 +242,14 @@ export function TracerRoundInspector({ rounds, onDiagnose }: TracerRoundInspecto
         <button
           onClick={() => setStuckOnly((prev) => !prev)}
           className={cn(
-            'flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
+            'flex items-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all duration-200',
             stuckOnly
               ? 'bg-amber-100 border border-amber-300 text-amber-800'
               : 'bg-white/60 border border-white/30 text-warm-500 hover:bg-white/80 hover:text-warm-700'
           )}
         >
           <IconClock size={14} />
-          Stuck only
+          Stuck
           {stuckCount > 0 && (
             <span className={cn(
               'inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold',
@@ -259,14 +264,14 @@ export function TracerRoundInspector({ rounds, onDiagnose }: TracerRoundInspecto
         <button
           onClick={() => setHasErrorsOnly((prev) => !prev)}
           className={cn(
-            'flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
+            'flex items-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all duration-200',
             hasErrorsOnly
               ? 'bg-red-100 border border-red-300 text-red-800'
               : 'bg-white/60 border border-white/30 text-warm-500 hover:bg-white/80 hover:text-warm-700'
           )}
         >
           <IconWarning size={14} />
-          Has errors
+          Errors
           {errorCount > 0 && (
             <span className={cn(
               'inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold',
@@ -297,9 +302,9 @@ export function TracerRoundInspector({ rounds, onDiagnose }: TracerRoundInspecto
       </p>
 
       {/* Table */}
-      <div className="bg-white/65 backdrop-blur-[16px] border border-white/30 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)] overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+      <div className="bg-white/65 backdrop-blur-[16px] border border-white/30 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)] overflow-hidden min-w-0">
+        <div className="overflow-x-auto -mx-px">
+          <table className="w-full text-sm min-w-[640px] sm:min-w-0">
             <thead>
               <tr className="border-b border-warm-100/80">
                 <th className="w-10 px-3 py-3.5" />
@@ -409,7 +414,7 @@ function RoundRow({
       <tr
         className={cn(
           'border-b border-warm-50/80 cursor-pointer transition-colors',
-          stuck && 'border-l-[3px] border-l-amber-400',
+          stuck && 'border-l-[3px] border-l-red-400 bg-red-50/20',
           isExpanded ? 'bg-warm-50/40' : 'hover:bg-white/50'
         )}
         onClick={onToggle}
@@ -462,7 +467,10 @@ function RoundRow({
         </td>
 
         {/* Submitted */}
-        <td className="hidden lg:table-cell px-4 py-3.5 text-center text-warm-500 text-xs whitespace-nowrap">
+        <td
+          className="hidden lg:table-cell px-4 py-3.5 text-center text-warm-500 text-xs whitespace-nowrap"
+          title={round.updated_at ? new Date(round.updated_at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : undefined}
+        >
           {round.updated_at ? timeAgo(round.updated_at) : <span className="text-warm-300">&mdash;</span>}
         </td>
 
@@ -487,7 +495,7 @@ function RoundRow({
 
         {/* Status */}
         <td className="px-4 py-3.5 text-center">
-          <StatusBadge status={round.status} stuck={stuck} currentHole={round.current_hole} expectedHoles={round.expected_holes} />
+          <StatusBadge status={round.status} stuck={stuck} currentHole={round.current_hole} expectedHoles={round.expected_holes} updatedAt={round.updated_at} />
         </td>
 
         {/* Holes */}
@@ -553,14 +561,14 @@ function RoundRow({
                 transition={{ duration: 0.2, ease: 'easeInOut' }}
                 className="overflow-hidden"
               >
-                <div className="px-6 py-4">
+                <div className="px-3 py-3 sm:px-6 sm:py-4">
                   {/* Checks grid */}
                   <div className="mb-3">
                     <span className="text-[11px] font-semibold text-warm-500 uppercase tracking-wider">
                       Recorded Round Snapshot
                     </span>
                   </div>
-                  <div className="flex flex-wrap gap-1.5 mb-3">
+                  <div className="flex flex-wrap gap-1.5 mb-3 overflow-hidden">
                     {checks.map((check) => (
                       <span
                         key={check.label}
@@ -610,10 +618,19 @@ function RoundRow({
                   </div>
 
                   {/* Meta info */}
-                  <div className="flex items-center gap-4 mt-3 pt-3 border-t border-warm-200/30 text-[11px] text-warm-400">
-                    <span>Round ID: <span className="font-mono text-warm-500">{round.round_id.slice(0, 8)}...</span></span>
-                    {round.created_at && <span>Created: {timeAgo(round.created_at)}</span>}
-                    {round.updated_at && <span>Updated: {timeAgo(round.updated_at)}</span>}
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 pt-3 border-t border-warm-200/30 text-[11px] text-warm-400">
+                    <span className="break-all">Round ID: <span className="font-mono text-warm-500">{round.round_id.slice(0, 8)}...</span></span>
+                    {round.created_at && (
+                      <span title={new Date(round.created_at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}>
+                        Created: {timeAgo(round.created_at)}
+                      </span>
+                    )}
+                    {round.updated_at && (
+                      <span title={new Date(round.updated_at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}>
+                        Last updated: <span className={cn(stuck ? 'text-red-500 font-medium' : 'text-warm-500')}>{timeAgo(round.updated_at)}</span>
+                      </span>
+                    )}
+                    {round.current_hole != null && round.current_hole > 0 && <span>Current hole: <span className="text-warm-500 font-medium">{round.current_hole}/{round.expected_holes}</span></span>}
                   </div>
                 </div>
               </motion.div>
@@ -629,11 +646,11 @@ function RoundRow({
 // STATUS BADGE
 // ============================================================================
 
-function StatusBadge({ status, stuck, currentHole, expectedHoles }: { status: string; stuck: boolean; currentHole?: number | null; expectedHoles?: number }) {
+function StatusBadge({ status, stuck, currentHole, expectedHoles, updatedAt }: { status: string; stuck: boolean; currentHole?: number | null; expectedHoles?: number; updatedAt?: string | null }) {
   if (status === 'completed') {
     return (
       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-green-50 text-green-700">
-        Completed
+        Submitted
       </span>
     );
   }
@@ -643,17 +660,28 @@ function StatusBadge({ status, stuck, currentHole, expectedHoles }: { status: st
       <div className="inline-flex flex-col items-center gap-0.5">
         <span className={cn(
           'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold',
-          stuck ? 'bg-amber-100 text-amber-800' : 'bg-amber-50 text-amber-700'
+          stuck ? 'bg-red-100 text-red-800' : 'bg-amber-50 text-amber-700'
         )}>
           <span className={cn(
-            'w-1.5 h-1.5 rounded-full bg-amber-400',
-            stuck ? 'animate-pulse' : ''
+            'w-1.5 h-1.5 rounded-full',
+            stuck ? 'bg-red-500 animate-pulse' : 'bg-amber-400'
           )} />
-          {stuck ? 'Stuck' : 'In Progress'}
+          {stuck ? 'Stuck' : 'Active'}
         </span>
         {currentHole != null && currentHole > 0 && (
-          <span className="text-[10px] font-medium text-warm-500 tabular-nums">
+          <span className={cn(
+            'text-[10px] font-medium tabular-nums',
+            stuck ? 'text-red-500' : 'text-warm-500'
+          )}>
             Hole {currentHole}{expectedHoles ? `/${expectedHoles}` : ''}
+          </span>
+        )}
+        {stuck && updatedAt && (
+          <span
+            className="text-[9px] text-red-400 tabular-nums"
+            title={new Date(updatedAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}
+          >
+            {timeAgo(updatedAt)}
           </span>
         )}
       </div>
@@ -680,7 +708,7 @@ function InlineError({ error }: { error: TracerIncident }) {
   };
 
   return (
-    <div className="flex items-start gap-2 rounded-lg bg-red-50/50 px-3 py-2 text-xs text-red-600">
+    <div className="flex items-start gap-2 rounded-lg bg-red-50/50 px-2.5 sm:px-3 py-2 text-xs text-red-600 min-w-0 overflow-hidden">
       <span className={cn(
         'font-bold uppercase text-[9px] px-1.5 py-0.5 rounded flex-shrink-0 mt-px',
         badgeColors[error.severity] || 'bg-warm-100 text-warm-600'
@@ -695,7 +723,10 @@ function InlineError({ error }: { error: TracerIncident }) {
         <p className="mt-0.5 break-words text-warm-600">{error.summary}</p>
       </div>
       {error.lastSeen && (
-        <span className="ml-auto flex-shrink-0 whitespace-nowrap text-[10px] text-warm-400">
+        <span
+          className="ml-auto flex-shrink-0 whitespace-nowrap text-[10px] text-warm-400 hidden sm:inline"
+          title={new Date(error.lastSeen).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}
+        >
           {timeAgo(error.lastSeen)}
         </span>
       )}

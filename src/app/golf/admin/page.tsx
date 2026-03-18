@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, lazy, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -24,14 +24,12 @@ import {
   IconMenu as Menu,
 } from '@/components/icons';
 
-// Tab components
+// Tab components — lazy loaded for faster initial render
 import { OverviewTab } from './components/OverviewTab';
-import { PeopleTab } from './components/PeopleTab';
-import { SystemTab } from './components/SystemTab';
-// GrowthTab preserved for reference — replaced by BusinessIntelligenceTab
-// import { GrowthTab } from './components/GrowthTab';
-import { BusinessIntelligenceTab } from './components/BusinessIntelligenceTab';
-import { TracerTab } from './components/TracerTab';
+const PeopleTab = lazy(() => import('./components/PeopleTab').then(m => ({ default: m.PeopleTab })));
+const SystemTab = lazy(() => import('./components/SystemTab').then(m => ({ default: m.SystemTab })));
+const BusinessIntelligenceTab = lazy(() => import('./components/BusinessIntelligenceTab').then(m => ({ default: m.BusinessIntelligenceTab })));
+const TracerTab = lazy(() => import('./components/TracerTab').then(m => ({ default: m.TracerTab })));
 
 // Real-time components
 import { AdminRealtimeProvider, useAdminRealtimeContext } from './components/AdminRealtimeProvider';
@@ -99,6 +97,22 @@ const AUTO_REFRESH_INTERVAL = 60000;
 const StatSkeleton = ImprovedStatSkeleton;
 const CardSkeleton = ImprovedCardSkeleton;
 
+function TabLoadingSkeleton() {
+  return (
+    <div className="space-y-6 animate-pulse">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <StatSkeleton key={i} />
+        ))}
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <CardSkeleton />
+        <CardSkeleton />
+      </div>
+    </div>
+  );
+}
+
 function AdminBrand({ compact = false }: { compact?: boolean }) {
   if (compact) {
     return (
@@ -155,8 +169,7 @@ export default function AdminDashboardPage() {
       .then(({ data }) => {
         setCurrentUserId(data.user?.id ?? null);
       })
-      .catch((err) => {
-        console.error('Failed to get user:', err);
+      .catch(() => {
         setCurrentUserId(null);
       });
   }, []);
@@ -222,26 +235,31 @@ function AdminDashboardContent() {
     if (!silent) setLoading(true);
     else setIsRefreshing(true);
     try {
-      const result = await getAdminDashboardData();
+      // Fetch main data and CRM data in parallel
+      const supabase = createClient();
+      const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+
+      const [result, crmResult] = await Promise.all([
+        getAdminDashboardData(),
+        supabase.from('crm_coaches').select('status').gte('created_at', ninetyDaysAgo),
+      ]);
+
       setData(result);
       setLastRefresh(new Date());
       setError(null);
 
-      const supabase = createClient();
-      const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
-      const { data: crmData } = await supabase.from('crm_coaches').select('status').gte('created_at', ninetyDaysAgo);
-
+      const crmData = crmResult.data;
       if (crmData) {
         const stats: CRMStats = {
           total: crmData.length,
           newLeads: crmData.filter((c) => c.status === 'new_lead').length,
           inPipeline: crmData.filter((c) =>
-            ['initial_contact', 'follow_up', 'engaged', 'negotiating'].includes(c.status)
+            ['contacted', 'engaged', 'proposal', 'nurture'].includes(c.status as string)
           ).length,
           demosScheduled: crmData.filter(
-            (c) => c.status === 'demo_scheduled' || c.status === 'demo_completed'
+            (c) => (c.status as string) === 'proposal'
           ).length,
-          customers: crmData.filter((c) => c.status === 'closed_won').length,
+          customers: crmData.filter((c) => c.status === 'won').length,
         };
         setCrmStats(stats);
       }
@@ -268,21 +286,24 @@ function AdminDashboardContent() {
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
 
       const tabIndex = parseInt(e.key) - 1;
       if (tabIndex >= 0 && tabIndex < TABS.length) {
+        e.preventDefault();
         setActiveTab(TABS[tabIndex]!.id);
         return;
       }
       if (e.key === 'r' || e.key === 'R') {
+        e.preventDefault();
         loadData(true);
       }
     }
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
+  }, [searchParams, loadData]);
 
   async function handleSignOut() {
     const supabase = createClient();
@@ -297,13 +318,13 @@ function AdminDashboardContent() {
           label: 'Open Incidents',
           value: `${data.errorLogs.incidentCounts.open}`,
           detail: data.errorLogs.incidentCounts.open > 0
-            ? `${data.errorLogs.incidentCounts.openCritical} critical · ${data.errorLogs.incidentCounts.active} active`
+            ? `${data.errorLogs.incidentCounts.openCritical} critical · ${data.errorLogs.incidentCounts.open - data.errorLogs.incidentCounts.openCritical} non-critical open`
             : data.errorLogs.incidentCounts.active > 0
-              ? `${data.errorLogs.incidentCounts.active} active signals`
-              : 'No unresolved incident backlog',
+              ? `${data.errorLogs.incidentCounts.active} recently active (not open)`
+              : 'No unresolved incidents',
           tone: data.errorLogs.incidentCounts.openCritical > 0
             ? 'critical'
-            : data.errorLogs.incidentCounts.open > 0 || data.errorLogs.incidentCounts.active > 0
+            : data.errorLogs.incidentCounts.open > 0
               ? 'warning'
               : 'healthy',
         },
@@ -323,28 +344,34 @@ function AdminDashboardContent() {
         },
         {
           key: 'latency',
-          label: 'API Response',
-          value: `${data.health.avgResponseTimeMs}ms`,
-          detail: data.health.avgResponseTimeMs > 3000
-            ? 'Dashboard latency needs attention'
-            : 'Dashboard response time is stable',
-          tone: data.health.avgResponseTimeMs > 6000
+          label: 'Data Fetch',
+          value: (() => {
+            const ms = Math.round(data.infraHealth?.totals?.avgResponseMs ?? 0);
+            return ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${ms}ms`;
+          })(),
+          detail: (data.infraHealth?.totals?.avgResponseMs ?? 0) > 6000
+            ? 'Server query time is slow — investigate'
+            : (data.infraHealth?.totals?.avgResponseMs ?? 0) > 3000
+              ? 'Server query time is elevated'
+              : 'Server query time is healthy',
+          tone: (data.infraHealth?.totals?.avgResponseMs ?? 0) > 6000
             ? 'critical'
-            : data.health.avgResponseTimeMs > 3000
+            : (data.infraHealth?.totals?.avgResponseMs ?? 0) > 3000
               ? 'warning'
               : 'healthy',
         },
       ] as const
     : null;
 
-  const overallHealth = data?.health.diagnostics.some((d) => d.status === 'critical')
+  const overallHealth = (data?.errorLogs?.incidentCounts?.openCritical ?? 0) > 0
     ? 'critical'
-    : data?.health.diagnostics.some((d) => d.status === 'warning')
+    : (data?.errorLogs?.incidentCounts?.open ?? 0) > 0
+      || (data?.errorLogs?.incidentCounts?.active ?? 0) > 0
       ? 'warning'
       : 'healthy';
 
   return (
-    <div className="min-h-screen bg-[#FFFEF8] flex">
+    <div className="min-h-screen bg-[#FFFEF8] flex overflow-x-hidden">
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
         <div
@@ -378,8 +405,37 @@ function AdminDashboardContent() {
             {TABS.map((tab) => {
               const isActive = activeTab === tab.id;
               const TabIcon = tab.Icon;
-              const showBadge = tab.id === 'system' && alerts.unreadCount > 0;
-              const badgeCount = alerts.unreadCount;
+
+              // Compute actionable badge count per tab
+              let badgeCount = 0;
+              if (data) {
+                switch (tab.id) {
+                  case 'overview':
+                    badgeCount = data.needsAttention.filter(
+                      (n) => n.severity === 'warning' || n.severity === 'critical'
+                    ).length;
+                    break;
+                  case 'people':
+                    badgeCount = data.needsAttention.filter(
+                      (n) => n.tab === 'users' && n.severity !== 'info'
+                    ).length;
+                    break;
+                  case 'system':
+                    badgeCount = data.errorLogs.incidentCounts.open + data.errorLogs.incidentCounts.active;
+                    break;
+                  case 'bi':
+                    badgeCount = data.bi?.health?.atRiskAccounts?.length ?? 0;
+                    break;
+                  case 'tracer':
+                    // Tracer loads its own data; badge count not available from main data
+                    badgeCount = 0;
+                    break;
+                }
+              }
+              const showBadge = badgeCount > 0;
+              const badgeIsUrgent = tab.id === 'system' && data?.errorLogs.incidentCounts.openCritical
+                ? data.errorLogs.incidentCounts.openCritical > 0
+                : false;
 
               return (
                 <button
@@ -406,7 +462,20 @@ function AdminDashboardContent() {
                   {!sidebarCollapsed && (
                     <span className="text-sm font-medium flex-1 text-left">{tab.label}</span>
                   )}
-                  {!sidebarCollapsed && (
+                  {!sidebarCollapsed && showBadge ? (
+                    <span
+                      className={cn(
+                        'flex items-center justify-center min-w-[18px] h-[18px] px-1 text-white text-micro font-bold rounded-full',
+                        badgeIsUrgent
+                          ? 'bg-red-500 animate-pulse'
+                          : tab.id === 'system'
+                            ? 'bg-amber-500'
+                            : 'bg-warm-500/60'
+                      )}
+                    >
+                      {badgeCount > 99 ? '99+' : badgeCount}
+                    </span>
+                  ) : !sidebarCollapsed ? (
                     <span
                       className={cn(
                         'text-micro px-1.5 py-0.5 rounded font-mono',
@@ -415,12 +484,12 @@ function AdminDashboardContent() {
                     >
                       {tab.shortcut}
                     </span>
-                  )}
-                  {showBadge && (
+                  ) : null}
+                  {sidebarCollapsed && showBadge && (
                     <span
                       className={cn(
-                        'flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-micro font-bold rounded-full',
-                        sidebarCollapsed && 'absolute -top-1 -right-1'
+                        'absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-white text-micro font-bold rounded-full',
+                        badgeIsUrgent ? 'bg-red-500 animate-pulse' : 'bg-amber-500'
                       )}
                     >
                       {badgeCount > 99 ? '99+' : badgeCount}
@@ -481,12 +550,12 @@ function AdminDashboardContent() {
               </div>
               <div
                 className={cn(
-                  'inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em]',
+                  'inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] transition-all duration-300',
                   overallHealth === 'healthy'
                     ? 'border-primary-500/20 bg-primary-500/10 text-primary-300'
                     : overallHealth === 'warning'
-                      ? 'border-amber-500/20 bg-amber-500/10 text-amber-300'
-                      : 'border-red-500/20 bg-red-500/10 text-red-300'
+                      ? 'border-amber-500/30 bg-amber-500/15 text-amber-300 shadow-[0_0_8px_rgba(245,158,11,0.15)]'
+                      : 'border-red-500/30 bg-red-500/15 text-red-300 shadow-[0_0_8px_rgba(239,68,68,0.2)]'
                 )}
               >
                 <span
@@ -495,8 +564,8 @@ function AdminDashboardContent() {
                     overallHealth === 'healthy'
                       ? 'bg-primary-400'
                       : overallHealth === 'warning'
-                        ? 'bg-amber-400'
-                        : 'bg-red-400'
+                        ? 'bg-amber-400 animate-pulse'
+                        : 'bg-red-400 animate-pulse'
                   )}
                 />
                 {overallHealth}
@@ -692,17 +761,17 @@ function AdminDashboardContent() {
             'px-4 sm:px-6 py-3'
           )}
         >
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="lg:hidden p-2 -ml-2 rounded-xl text-warm-500 hover:text-warm-700 hover:bg-warm-100/80 active:bg-warm-200 transition-colors"
+              className="lg:hidden p-2 -ml-2 rounded-xl text-warm-500 hover:text-warm-700 hover:bg-warm-100/80 active:bg-warm-200 transition-colors shrink-0"
             >
               <Menu size={22} />
             </button>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 min-w-0">
               {lastRefresh && (
-                <span className="text-xs text-warm-400 tabular-nums hidden md:block">
+                <span className="text-xs text-warm-400 tabular-nums hidden md:block truncate">
                   Updated{' '}
                   {lastRefresh.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
@@ -743,7 +812,7 @@ function AdminDashboardContent() {
         </header>
 
         {/* Content Area - Scrollable */}
-        <div className="flex-1 lg:overflow-y-auto p-4 sm:p-6">
+        <div className="flex-1 lg:overflow-y-auto p-3 sm:p-4 md:p-6 min-w-0 overflow-hidden">
           {error ? (
             <div
               className={cn(
@@ -782,10 +851,12 @@ function AdminDashboardContent() {
               {activeTab === 'overview' && (
                 <OverviewTab data={data} onNavigateTab={handleNavigateTab} />
               )}
-              {activeTab === 'people' && <PeopleTab data={data} />}
-              {activeTab === 'system' && <SystemTab data={data} />}
-              {activeTab === 'bi' && <BusinessIntelligenceTab data={data} />}
-              {activeTab === 'tracer' && <TracerTab />}
+              <Suspense fallback={<TabLoadingSkeleton />}>
+                {activeTab === 'people' && <PeopleTab data={data} />}
+                {activeTab === 'system' && <SystemTab data={data} />}
+                {activeTab === 'bi' && <BusinessIntelligenceTab data={data} />}
+                {activeTab === 'tracer' && <TracerTab />}
+              </Suspense>
             </div>
           ) : null}
         </div>

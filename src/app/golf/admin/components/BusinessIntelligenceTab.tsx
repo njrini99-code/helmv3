@@ -61,6 +61,12 @@ const CHART_AMBER = '#F59E0B';
 const CHART_RED = '#EF4444';
 const CHART_VIOLET = '#8B5CF6';
 
+/** Safe toFixed that handles non-finite / NaN values */
+function safeFixed(val: number | null | undefined, decimals: number): string {
+  if (val === null || val === undefined || !isFinite(val)) return '0';
+  return Number(val).toFixed(decimals);
+}
+
 // ============================================================================
 // ERROR BOUNDARY (per-section)
 // ============================================================================
@@ -179,7 +185,7 @@ function FunnelBars({ steps, maxCount }: { steps: BIFunnelStep[]; maxCount?: num
             </div>
             <div className="w-16 sm:w-24 text-right flex-shrink-0">
               <span className="text-sm font-bold text-warm-900 tabular-nums">{step.count}</span>
-              <span className="text-xs text-warm-400 ml-1">({step.pctOfTop.toFixed(0)}%)</span>
+              <span className="text-xs text-warm-400 ml-1">({safeFixed(step.pctOfTop, 0)}%)</span>
             </div>
           </div>
         );
@@ -244,7 +250,7 @@ export function BusinessIntelligenceTab({ data }: Props) {
             <p className="mt-1 text-sm text-warm-500">
               {bi.growth.overallActivationRate >= 40 ? 'Platform health is strong' :
                bi.growth.overallActivationRate >= 25 ? 'Platform health needs attention' :
-               'Platform health is critical'} &middot; {bi.growth.overallActivationRate.toFixed(0)}% activation rate
+               'Platform health is critical'} &middot; {safeFixed(bi.growth.overallActivationRate, 0)}% activation rate
             </p>
           </div>
           <div className={cn(
@@ -260,24 +266,24 @@ export function BusinessIntelligenceTab({ data }: Props) {
           <div className="rounded-xl bg-warm-50/60 px-3 py-2.5">
             <p className="text-[11px] font-medium text-warm-400 uppercase tracking-wider">Activation</p>
             <p className="text-lg font-bold text-warm-900 tabular-nums mt-0.5">
-              {bi.growth.overallActivationRate.toFixed(0)}%
+              {safeFixed(bi.growth.overallActivationRate, 0)}%
               {bi.growth.userGrowthRateWoW !== 0 && (
                 <span className={cn(
                   'ml-1.5 text-xs font-medium',
                   bi.growth.userGrowthRateWoW > 0 ? 'text-primary-600' : 'text-red-600'
                 )}>
-                  {bi.growth.userGrowthRateWoW > 0 ? '\u2191' : '\u2193'} {Math.abs(bi.growth.userGrowthRateWoW).toFixed(1)}%
+                  {bi.growth.userGrowthRateWoW > 0 ? '\u2191' : '\u2193'} {safeFixed(Math.abs(bi.growth.userGrowthRateWoW), 1)}%
                 </span>
               )}
             </p>
           </div>
           <div className="rounded-xl bg-warm-50/60 px-3 py-2.5">
             <p className="text-[11px] font-medium text-warm-400 uppercase tracking-wider">D7 Retention</p>
-            <p className="text-lg font-bold text-warm-900 tabular-nums mt-0.5">{bi.retention.d7.rate.toFixed(0)}%</p>
+            <p className="text-lg font-bold text-warm-900 tabular-nums mt-0.5">{safeFixed(bi.retention.d7.rate, 0)}%</p>
           </div>
           <div className="rounded-xl bg-warm-50/60 px-3 py-2.5">
             <p className="text-[11px] font-medium text-warm-400 uppercase tracking-wider">WAU Stickiness</p>
-            <p className="text-lg font-bold text-warm-900 tabular-nums mt-0.5">{bi.retention.stickinessLogins.toFixed(0)}%</p>
+            <p className="text-lg font-bold text-warm-900 tabular-nums mt-0.5">{safeFixed(bi.retention.stickinessLogins, 0)}%</p>
           </div>
           <div className="rounded-xl bg-warm-50/60 px-3 py-2.5">
             <p className="text-[11px] font-medium text-warm-400 uppercase tracking-wider">At-Risk</p>
@@ -337,8 +343,8 @@ function GrowthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
       {/* Narrative Callout */}
       <div className="rounded-xl border border-blue-100 bg-blue-50/50 px-4 py-3 text-sm text-blue-800">
         {g.userGrowthRateWoW > 0
-          ? `Growth is accelerating: +${g.userGrowthRateWoW.toFixed(1)}% WoW signup growth. Median time-to-first-value is ${g.medianTTFVDays !== null ? `${g.medianTTFVDays} days` : 'N/A'}.`
-          : `Signup growth has slowed. Focus on activation: ${g.overallActivationRate.toFixed(0)}% of users are activated.`}
+          ? `Growth is accelerating: +${safeFixed(g.userGrowthRateWoW, 1)}% WoW signup growth. Median time-to-first-value is ${g.medianTTFVDays !== null ? `${g.medianTTFVDays} days` : 'N/A'}.`
+          : `Signup growth has slowed. Focus on activation: ${safeFixed(g.overallActivationRate, 0)}% of users are activated.`}
       </div>
 
       {/* KPI Cards */}
@@ -349,7 +355,7 @@ function GrowthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
           suffix="%"
           icon={<IconZap size={20} />}
           accentColor={g.overallActivationRate >= 40 ? 'green' : g.overallActivationRate >= 20 ? 'amber' : 'red'}
-          detail={`Players ${g.playerActivationRate.toFixed(0)}% / Coaches ${g.coachActivationRate.toFixed(0)}%`}
+          detail={`Players ${safeFixed(g.playerActivationRate, 0)}% / Coaches ${safeFixed(g.coachActivationRate, 0)}%`}
           trend={g.userGrowthRateWoW !== 0 ? { value: g.userGrowthRateWoW, label: 'WoW' } : undefined}
         />
         <AdminStatCard
@@ -380,7 +386,7 @@ function GrowthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
 
       {/* Vercel visitors card (if available) */}
       {bi.vercel && (
-        <div className="grid grid-cols-3 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
           <GlassCard className="text-center">
             <p className="text-xs font-medium text-warm-400 uppercase tracking-wider mb-1">Visitors 24h</p>
             <p className="text-2xl font-bold text-warm-900 tabular-nums">{bi.vercel.visitors24h.toLocaleString()}</p>
@@ -475,8 +481,8 @@ function RetentionSection({ bi }: { bi: AdminDashboardData['bi'] }) {
     <div className="space-y-6">
       {/* Narrative Callout */}
       <div className="rounded-xl border border-blue-100 bg-blue-50/50 px-4 py-3 text-sm text-blue-800">
-        D7 retention is {r.d7.rate.toFixed(0)}% ({r.d7.rate >= 30 ? 'healthy' : 'needs improvement'}).
-        DAU/MAU stickiness: {r.stickinessLogins.toFixed(0)}% for logins.
+        D7 retention is {safeFixed(r.d7.rate, 0)}% ({r.d7.rate >= 30 ? 'healthy' : 'needs improvement'}).
+        DAU/MAU stickiness: {safeFixed(r.stickinessLogins, 0)}% for logins.
       </div>
 
       {/* KPI Cards */}
@@ -735,7 +741,7 @@ function UsageSection({ bi }: { bi: AdminDashboardData['bi'] }) {
               <BarChart
                 data={sortedFeatures}
                 layout="vertical"
-                margin={{ top: 5, right: 40, left: 10, bottom: 5 }}
+                margin={{ top: 5, right: 40, left: 0, bottom: 5 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#e7e5e4" horizontal={false} />
                 <XAxis
@@ -747,10 +753,10 @@ function UsageSection({ bi }: { bi: AdminDashboardData['bi'] }) {
                 <YAxis
                   type="category"
                   dataKey="feature"
-                  tick={{ fontSize: 11, fill: '#57534e' }}
+                  tick={{ fontSize: 10, fill: '#57534e' }}
                   tickLine={false}
                   axisLine={false}
-                  width={120}
+                  width={90}
                 />
                 <Tooltip content={<ChartTooltip />} />
                 <Bar dataKey="last30d" name="Last 30d" fill={CHART_GREEN} radius={[0, 6, 6, 0]} maxBarSize={24}>
@@ -775,7 +781,7 @@ function UsageSection({ bi }: { bi: AdminDashboardData['bi'] }) {
         <BISectionHeader title="Feature-Retention Correlation" subtitle="How each feature impacts user retention" />
         <GlassCard className="overflow-x-auto">
           {u.featureRetentionCorrelation.length > 0 ? (
-            <table className="w-full text-sm">
+            <table className="w-full text-sm min-w-[380px]">
               <thead>
                 <tr className="border-b border-white/20">
                   <th className="text-left text-warm-500 font-medium py-2 px-3">Feature</th>
@@ -944,9 +950,13 @@ function FunnelSection({ bi }: { bi: AdminDashboardData['bi'] }) {
         <GlassCard>
           {f.errorsByFeatureArea.length > 0 ? (
             <div className="space-y-0 divide-y divide-warm-100">
-              {[...f.errorsByFeatureArea].sort((a, b) => b.count - a.count).map((area) => (
-                <ErrorAreaRow key={area.area} area={area} maxCount={f.errorsByFeatureArea[0]?.count ?? 1} />
-              ))}
+              {(() => {
+                const sorted = [...f.errorsByFeatureArea].sort((a, b) => b.count - a.count);
+                const maxCount = sorted[0]?.count ?? 1;
+                return sorted.map((area) => (
+                  <ErrorAreaRow key={area.area} area={area} maxCount={maxCount} />
+                ));
+              })()}
             </div>
           ) : (
             <div className="text-center py-8 text-warm-400 text-sm">No error data available</div>
@@ -1147,7 +1157,7 @@ function HealthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
         <BISectionHeader title="Team Health Scores" subtitle="Click column headers to sort" />
         <GlassCard className="overflow-x-auto">
           {sortedTeams.length > 0 ? (
-            <table className="w-full text-sm">
+            <table className="w-full text-sm min-w-[500px]">
               <thead>
                 <tr className="border-b border-white/20">
                   <th className="text-left text-warm-500 font-medium py-3 px-3">Team</th>
@@ -1229,7 +1239,7 @@ function HealthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
         <div>
           <BISectionHeader title="At-Risk Accounts" subtitle="Users and teams showing churn signals" />
           <GlassCard className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm min-w-[400px]">
               <thead>
                 <tr className="border-b border-white/20">
                   <th className="text-left text-warm-500 font-medium py-3 px-3">Name</th>
@@ -1301,7 +1311,7 @@ function HealthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
         <BISectionHeader title="Conversion Proxy Leaderboard" subtitle="Teams ranked by conversion readiness score" />
         <GlassCard className="overflow-x-auto">
           {h.conversionProxies.length > 0 ? (
-            <table className="w-full text-sm">
+            <table className="w-full text-sm min-w-[400px]">
               <thead>
                 <tr className="border-b border-white/20">
                   <th className="hidden md:table-cell text-left text-warm-500 font-medium py-2 px-3">#</th>
@@ -1337,7 +1347,7 @@ function HealthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
                       </td>
                       <td className="py-2 px-3 text-right tabular-nums text-warm-700">{proxy.signals.playerCount}</td>
                       <td className="hidden md:table-cell py-2 px-3 text-right tabular-nums text-warm-700">{proxy.signals.activePlayerPct}%</td>
-                      <td className="hidden md:table-cell py-2 px-3 text-right tabular-nums text-warm-700">{proxy.signals.roundsPerWeek.toFixed(1)}</td>
+                      <td className="hidden md:table-cell py-2 px-3 text-right tabular-nums text-warm-700">{safeFixed(proxy.signals.roundsPerWeek, 1)}</td>
                       <td className="hidden md:table-cell py-2 px-3 text-center">
                         {proxy.signals.aiAdoption ? (
                           <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary-100 text-primary-700 text-xs font-bold">Y</span>

@@ -88,14 +88,14 @@ export function UserDetailPanel({ userId, teams, unassigned, userDirectory, onCl
 
       {/* Panel */}
       <div className={cn(
-        'relative w-full max-w-md',
+        'relative w-full max-w-[100vw] sm:max-w-md',
         'bg-[#FFFEF8] border-l border-warm-200/40',
         'shadow-2xl',
         'overflow-y-auto',
         'animate-in slide-in-from-right duration-300'
       )}>
         {/* Header */}
-        <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-xl border-b border-warm-200/40 px-6 py-4">
+        <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-xl border-b border-warm-200/40 px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold text-warm-900">User Profile</h2>
             <button
@@ -108,7 +108,7 @@ export function UserDetailPanel({ userId, teams, unassigned, userDirectory, onCl
         </div>
 
         {/* Profile section */}
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           <div className="flex items-center gap-4 mb-6">
             <div className="relative">
               <div className="w-16 h-16 rounded-2xl bg-primary-50 flex items-center justify-center">
@@ -219,7 +219,7 @@ export function UserDetailPanel({ userId, teams, unassigned, userDirectory, onCl
               <div className="p-4 rounded-xl bg-white/50 border border-white/30">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-warm-600">Scoring Average</span>
-                  <span className="text-lg font-bold text-warm-900 tabular-nums">{member.avgScore.toFixed(1)}</span>
+                  <span className="text-lg font-bold text-warm-900 tabular-nums">{Number(member.avgScore).toFixed(1)}</span>
                 </div>
               </div>
             </div>

@@ -49,6 +49,8 @@ export interface StuckRound {
   player_id: string;
   player_name: string;
   course_name: string | null;
+  current_hole: number | null;
+  expected_holes: number;
   updated_at: string;
   hours_stuck: number;
 }

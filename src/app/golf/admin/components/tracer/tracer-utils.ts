@@ -93,7 +93,7 @@ export function flattenRounds(data: TracerData): FlatRound[] {
 }
 
 // ============================================================================
-// IS STUCK ROUND (in_progress for > 2 hours)
+// IS STUCK ROUND (in_progress for > 1 hour)
 // ============================================================================
 
 export function isStuckRound(round: TracerRoundDetail): boolean {
@@ -167,7 +167,7 @@ const THRESHOLDS = {
   18: { maxScore: 120, maxShots: 150, maxPutts: 45, minScore: 55, minPutts: 18, expectedHoles: 18 },
   9: { maxScore: 65, maxShots: 80, maxPutts: 27, minScore: 28, minPutts: 9, expectedHoles: 9 },
 } as const;
-const STUCK_ROUND_WARNING_HOURS = 2;
+const STUCK_ROUND_WARNING_HOURS = 1;
 const STUCK_ROUND_FIXABLE_HOURS = 24;
 
 function getThresholds(holesPlayed: number) {
@@ -619,11 +619,14 @@ export function generateAlerts(
 
   // Stuck rounds
   for (const stuck of stuckRounds) {
+    const holeInfo = stuck.current_hole != null
+      ? `hole ${stuck.current_hole}/${stuck.expected_holes}`
+      : `hole ?/${stuck.expected_holes}`;
     alerts.push({
       id: `stuck-${stuck.round_id}`,
       severity: 'warning',
       title: 'Stuck round',
-      detail: `${stuck.player_name} at ${stuck.course_name || 'unknown course'} — ${Math.round(stuck.hours_stuck)}h in progress`,
+      detail: `${stuck.player_name} at ${stuck.course_name || 'unknown course'} — stuck on ${holeInfo}, ${Math.round(stuck.hours_stuck)}h since last update`,
       navigateTo: 'rounds',
       roundId: stuck.round_id,
     });

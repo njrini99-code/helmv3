@@ -37,9 +37,7 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
 
   return (
     <div className={cn(
-      'bg-white/70 backdrop-blur-xl',
-      'border border-white/20 rounded-2xl',
-      'shadow-glass',
+      'glass-standard rounded-2xl',
       'p-4 sm:p-5 md:p-6',
       'h-full'
     )}>
@@ -61,7 +59,7 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
           <div className="min-w-0">
             <h3 className="text-sm font-semibold text-warm-900">Error Spotlight</h3>
             <p className="text-xs text-warm-400 leading-snug">
-              Live incident pressure plus 7-day context
+              Incident status and 7-day error trends
             </p>
           </div>
         </div>
@@ -79,7 +77,7 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
       </div>
 
       {/* Stats grid — 2-col on mobile, 4-col on xl */}
-      <div className="mt-4 grid grid-cols-2 gap-2 xl:grid-cols-4">
+      <div className="mt-4 grid grid-cols-2 gap-1.5 sm:gap-2 lg:grid-cols-4">
         <div className="rounded-xl border border-white/30 bg-white/55 p-3">
           <p className="text-[11px] sm:text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">
             Open
@@ -91,7 +89,7 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
             {incidentCounts.open}
           </p>
           <p className="mt-0.5 text-[10px] sm:text-micro uppercase tracking-wider text-warm-400">
-            unresolved queue
+            unresolved
           </p>
         </div>
         <div className="rounded-xl border border-white/30 bg-white/55 p-3">
@@ -105,7 +103,7 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
             {incidentCounts.active}
           </p>
           <p className="mt-0.5 text-[10px] sm:text-micro uppercase tracking-wider text-warm-400">
-            recent repeats
+            recurring
           </p>
         </div>
         <div className="rounded-xl border border-white/30 bg-white/55 p-3">
@@ -124,16 +122,16 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
         </div>
         <div className="rounded-xl border border-white/30 bg-white/55 p-3">
           <p className="text-[11px] sm:text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">
-            Raw Rows
+            24h Volume
           </p>
           <p className={cn(
             'mt-1 text-xl font-bold tabular-nums',
             errors24h > 0 ? 'text-amber-600' : 'text-warm-900'
           )}>
-            {errors24h}
+            {errors24h.toLocaleString()}
           </p>
           <p className="mt-0.5 text-[10px] sm:text-micro uppercase tracking-wider text-warm-400">
-            24h of {totalErrors7d} in 7d
+            {totalErrors7d.toLocaleString()} in 7 days
           </p>
         </div>
       </div>
@@ -152,13 +150,13 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
             <div className="min-w-0 flex-1">
               <p className="text-[11px] sm:text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-500">
                 {leadIncident.status === 'open'
-                  ? 'Lead incident'
+                  ? 'Top Priority Incident'
                   : leadIncident.status === 'active'
-                    ? 'Most recent live signal'
-                    : 'Latest grouped incident'}
+                    ? 'Active Incident'
+                    : 'Latest Incident'}
               </p>
-              <p className="mt-1 text-sm font-semibold text-warm-900">{leadIncident.title}</p>
-              <p className="mt-1 text-sm leading-6 text-warm-700">{leadIncident.summary}</p>
+              <p className="mt-1 text-sm font-semibold text-warm-900 break-words line-clamp-2">{leadIncident.title}</p>
+              <p className="mt-1 text-xs sm:text-sm leading-5 sm:leading-6 text-warm-700 line-clamp-3">{leadIncident.summary}</p>
             </div>
             <span className={cn(
               'rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] flex-shrink-0',
@@ -172,12 +170,12 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
             </span>
           </div>
 
-          <div className="mt-3 grid gap-2 md:grid-cols-2">
+          <div className="mt-3 grid gap-2 grid-cols-1 sm:grid-cols-2">
             <div className="rounded-xl border border-white/40 bg-white/70 px-3 py-2">
               <p className="text-[11px] sm:text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">
-                Diagnosis basis
+                Root Cause
               </p>
-              <p className="mt-1 text-xs leading-5 text-warm-700">{leadIncident.diagnosisBasis}</p>
+              <p className="mt-1 text-xs leading-5 text-warm-700 break-words line-clamp-3">{leadIncident.diagnosisBasis}</p>
             </div>
             <div className="rounded-xl border border-white/40 bg-white/70 px-3 py-2">
               <p className="text-[11px] sm:text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">
@@ -185,7 +183,7 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
               </p>
               <div className="mt-1 flex items-center gap-1.5 text-xs text-warm-700">
                 <IconClock3 size={12} className="text-warm-400 flex-shrink-0" />
-                <span className="min-w-0">
+                <span className="min-w-0 break-words">
                   {timeAgo(leadIncident.lastSeen)} · {leadIncident.occurrences} occurrences
                 </span>
               </div>
@@ -193,25 +191,30 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
           </div>
         </div>
       ) : (
-        <div className="mt-4 flex flex-col items-center justify-center rounded-2xl border border-primary-100 bg-primary-50/50 px-6 py-8 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-100">
-            <IconCheckCircle2 size={22} className="text-primary-600" />
+        <div className="mt-4 flex flex-col items-center justify-center rounded-2xl border border-primary-100 bg-gradient-to-br from-primary-50/60 via-primary-50/30 to-white/50 px-6 py-8 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-100 shadow-[0_2px_8px_rgba(22,163,74,0.12)]">
+            <IconCheckCircle2 size={26} className="text-primary-600" />
           </div>
-          <p className="mt-3 text-sm font-medium text-primary-700">
-            No grouped incidents to spotlight
+          <p className="mt-3 text-sm font-bold text-primary-700">
+            All Clear
           </p>
-          <p className="mt-1 text-xs text-warm-400">
-            The overview is not seeing any recent incident groups.
+          <p className="mt-1 text-xs text-warm-500 leading-relaxed max-w-[240px]">
+            Zero unresolved incidents. Platform is healthy and running smoothly.
           </p>
+          {totalErrors7d > 0 && (
+            <p className="mt-2 text-[10px] font-medium text-warm-400 tabular-nums">
+              {totalErrors7d.toLocaleString()} error{totalErrors7d !== 1 ? 's' : ''} this week — all resolved
+            </p>
+          )}
         </div>
       )}
 
       {/* UX signals + route hotspots — stack on mobile, 2-col on lg+ */}
       {(uxSignals.length > 0 || routeHotspots.length > 0) && (
-        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <div className="mt-4 grid gap-3 sm:gap-4 sm:grid-cols-2">
           <div>
             <p className="text-[11px] sm:text-micro font-medium uppercase tracking-wider text-warm-400">
-              User-visible impact
+              User Impact
             </p>
             <div className="mt-2 space-y-1.5">
               {uxSignals.length > 0 ? uxSignals.map((signal) => (
@@ -232,7 +235,7 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
                 </div>
               )) : (
                 <div className="rounded-lg bg-white/55 px-2.5 py-2.5 text-xs text-warm-500">
-                  No user-visible impact patterns were detected.
+                  No user-facing impact detected
                 </div>
               )}
             </div>
@@ -240,7 +243,7 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
 
           <div>
             <p className="text-[11px] sm:text-micro font-medium uppercase tracking-wider text-warm-400">
-              Route hotspots
+              Route Hotspots
             </p>
             <div className="mt-2 space-y-1.5">
               {routeHotspots.length > 0 ? routeHotspots.map((route) => (
@@ -260,7 +263,7 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
                 </div>
               )) : (
                 <div className="rounded-lg bg-white/55 px-2.5 py-2.5 text-xs text-warm-500">
-                  No route hotspots were captured.
+                  No route hotspots detected
                 </div>
               )}
             </div>

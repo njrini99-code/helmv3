@@ -115,7 +115,7 @@ interface TracerAdminEventRecord {
 }
 
 export interface TracerActivityEvent {
-  type: 'round_started' | 'round_completed' | 'round_error' | 'detail_warning';
+  type: 'round_started' | 'round_completed' | 'round_in_progress' | 'round_stuck' | 'round_error' | 'detail_warning';
   player_name: string;
   player_id: string;
   round_id: string | null;
@@ -124,6 +124,16 @@ export interface TracerActivityEvent {
   score_to_par: number | null;
   error_message: string | null;
   timestamp: string;
+  /** Current hole for in-progress/stuck rounds */
+  current_hole?: number | null;
+  /** Expected holes (9 or 18) */
+  expected_holes?: number;
+  /** Actual holes recorded so far */
+  actual_holes?: number;
+  /** Total shots recorded so far */
+  total_shots?: number;
+  /** Hours stuck (only for round_stuck type) */
+  hours_stuck?: number;
 }
 
 export interface TracerData {
@@ -781,8 +791,9 @@ export async function getTracerData(): Promise<TracerData> {
       errors: [],
     });
 
-    // Activity: round started
-    if (r.created_at) {
+    // Activity: round started (only show for rounds created in the last 30 days to avoid stale feed)
+    const thirtyDaysAgoMs = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    if (r.created_at && new Date(r.created_at).getTime() > thirtyDaysAgoMs) {
       activityFeed.push({
         type: 'round_started',
         player_name: playerName,
@@ -793,10 +804,12 @@ export async function getTracerData(): Promise<TracerData> {
         score_to_par: null,
         error_message: null,
         timestamp: r.created_at,
+        current_hole: r.current_hole ?? null,
+        expected_holes: r.holes_played || 18,
       });
     }
 
-    // Activity: round completed
+    // Activity: round completed (submitted)
     if (r.status === 'completed' && r.updated_at) {
       activityFeed.push({
         type: 'round_completed',
@@ -808,6 +821,28 @@ export async function getTracerData(): Promise<TracerData> {
         score_to_par: r.score_to_par,
         error_message: null,
         timestamp: r.updated_at,
+      });
+    }
+
+    // Activity: round in progress or stuck
+    if (r.status === 'in_progress' && r.updated_at) {
+      const hoursInactive = (Date.now() - new Date(r.updated_at).getTime()) / (1000 * 60 * 60);
+      const isStuck = hoursInactive >= 1; // 1+ hours = stuck
+      activityFeed.push({
+        type: isStuck ? 'round_stuck' : 'round_in_progress',
+        player_name: playerName,
+        player_id: r.player_id,
+        round_id: r.id,
+        course_name: r.course_name,
+        score: null,
+        score_to_par: null,
+        error_message: isStuck
+          ? `Stuck at hole ${r.current_hole ?? '?'} for ${Math.round(hoursInactive)}h — no activity since ${new Date(r.updated_at).toLocaleString()}`
+          : null,
+        timestamp: r.updated_at,
+        current_hole: r.current_hole ?? null,
+        expected_holes: r.holes_played || 18,
+        hours_stuck: isStuck ? hoursInactive : undefined,
       });
     }
   }
@@ -1084,6 +1119,8 @@ export interface TracerEnrichedData {
     player_id: string;
     player_name: string;
     course_name: string | null;
+    current_hole: number | null;
+    expected_holes: number;
     updated_at: string;
     hours_stuck: number;
   }[];
@@ -1103,7 +1140,7 @@ export async function getTracerEnrichedData(): Promise<TracerEnrichedData> {
 
   const adminDb = createAdminClient();
   const ago30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-  const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+  const oneHourAgo = new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString();
 
   const [roundsResult, tracerEventsResult, stuckResult] = await Promise.all([
     // Daily round counts (last 30 days)
@@ -1120,12 +1157,12 @@ export async function getTracerEnrichedData(): Promise<TracerEnrichedData> {
       .gte('created_at', ago30d)
       .order('created_at', { ascending: true }),
 
-    // Stuck rounds (in_progress with updated_at > 2 hours ago)
+    // Stuck rounds (in_progress with updated_at > 1 hour ago)
     adminDb
       .from('golf_rounds')
-      .select('id, player_id, course_name, updated_at')
+      .select('id, player_id, course_name, current_hole, holes_played, updated_at')
       .eq('status', 'in_progress')
-      .lt('updated_at', twoHoursAgo),
+      .lt('updated_at', oneHourAgo),
   ]);
 
   // Aggregate into daily counts
@@ -1171,6 +1208,8 @@ export async function getTracerEnrichedData(): Promise<TracerEnrichedData> {
       player_id: r.player_id,
       player_name: playerNameMap.get(r.player_id) || 'Unknown',
       course_name: r.course_name,
+      current_hole: r.current_hole ?? null,
+      expected_holes: r.holes_played || 18,
       updated_at: r.updated_at,
       hours_stuck: (Date.now() - new Date(r.updated_at).getTime()) / (1000 * 60 * 60),
     }));

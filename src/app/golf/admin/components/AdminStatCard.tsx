@@ -64,7 +64,7 @@ export const AdminStatCard = memo(function AdminStatCard({
   const numericValue = typeof value === 'number' ? value : parseFloat(String(value));
   const isNumeric = !isNaN(numericValue);
   const hasSparkline = sparklineData && sparklineData.length >= 2;
-  const hasNoData = value === 0 || value === '0' || value === null || value === undefined;
+  const hasNoData = value === null || value === undefined;
 
   return (
     <m.div
@@ -78,7 +78,7 @@ export const AdminStatCard = memo(function AdminStatCard({
         'hover:shadow-[0_8px_24px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.8)]',
         'transition-shadow duration-200',
         // Bigger padding
-        'p-5 md:p-6',
+        'p-4 sm:p-5 md:p-6',
         // Accent border
         'border-l-[3px] border-t-white/30 border-r-white/30 border-b-white/30',
         accentBorders[accentColor]
@@ -92,7 +92,7 @@ export const AdminStatCard = memo(function AdminStatCard({
       {/* Hover glow effect */}
       <div className="absolute -inset-1 bg-primary-500/0 group-hover:bg-primary-500/5 rounded-2xl transition-colors duration-300 pointer-events-none" />
 
-      <div className="relative flex items-start justify-between gap-3">
+      <div className="relative flex items-start justify-between gap-2 sm:gap-3">
         <div className="flex-1 min-w-0">
           {/* Label with premium styling */}
           <p className="text-label md:text-xs font-medium text-warm-400 uppercase tracking-wider mb-2">
@@ -100,20 +100,23 @@ export const AdminStatCard = memo(function AdminStatCard({
           </p>
 
           {/* Value with AnimatedNumber */}
-          <div className="flex items-baseline gap-2" aria-live="polite">
-            <p className="text-2xl md:text-3xl font-bold tracking-tight text-warm-900 tabular-nums">
+          <div className="flex items-baseline gap-1 sm:gap-2 flex-wrap" aria-live="polite">
+            <p className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-warm-900 tabular-nums">
               {isNumeric ? (
-                <AnimatedNumber 
-                  value={numericValue} 
-                  decimals={String(value).includes('.') ? 1 : 0} 
-                  suffix={suffix || ''} 
-                />
+                <>
+                  <AnimatedNumber
+                    value={numericValue}
+                    decimals={String(value).includes('.') ? 1 : 0}
+                    suffix=""
+                  />
+                  {suffix && <span className="text-sm md:text-base font-semibold text-warm-400 ml-1">{suffix}</span>}
+                </>
               ) : hasNoData ? (
-                <span className="text-warm-400">—</span>
+                <span className="text-warm-400">&mdash;</span>
               ) : (
                 <>
                   {value}
-                  {suffix && <span className="text-lg font-normal text-warm-400 ml-0.5">{suffix}</span>}
+                  {suffix && <span className="text-sm md:text-base font-semibold text-warm-400 ml-1">{suffix}</span>}
                 </>
               )}
             </p>
@@ -134,10 +137,11 @@ export const AdminStatCard = memo(function AdminStatCard({
               >
                 {trend.value > 0 ? '↑' : trend.value < 0 ? '↓' : '→'}
                 {trend.value > 0 ? '+' : ''}{trend.value}%
+                {trend.label && <span className="ml-0.5 font-medium opacity-75">{trend.label}</span>}
               </span>
             )}
             {detail && (
-              <p className="text-xs text-warm-400">{detail}</p>
+              <p className="text-[11px] sm:text-xs text-warm-400 leading-snug break-words">{detail}</p>
             )}
           </div>
         </div>
