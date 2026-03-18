@@ -104,11 +104,13 @@ export function NotificationBadgeProvider({ children }: { children: React.ReactN
     } catch {
       // Silently fail
     }
-    // Clear delivered notifications on iOS
+    // Clear delivered notifications on iOS (Capacitor only — web throws "not implemented")
     if (isNativeApp()) {
-      import('@capacitor/push-notifications').then(({ PushNotifications }) => {
-        PushNotifications.removeAllDeliveredNotifications();
-      }).catch(() => {});
+      try {
+        import('@capacitor/push-notifications').then(({ PushNotifications }) => {
+          PushNotifications.removeAllDeliveredNotifications().catch(() => {});
+        }).catch(() => {});
+      } catch { /* Capacitor plugin not available on web */ }
     }
   }, []);
 
