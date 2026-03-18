@@ -154,7 +154,7 @@ export function CompositeRatingCard({
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span className={cn('text-5xl font-bold tabular-nums', getRatingColor(displayComposite))}>
-              {displayComposite}
+              {Math.round(displayComposite)}
             </span>
           </div>
         </m.div>
@@ -205,7 +205,7 @@ export function CompositeRatingCard({
                   />
                 </div>
                 <span className="text-sm font-semibold text-warm-900 tabular-nums w-8 text-right">
-                  {value}
+                  {Math.round(value)}
                 </span>
                 {resolvedPercentiles?.[key] && (
                   <span className="text-xs text-warm-400 tabular-nums w-16 text-right">

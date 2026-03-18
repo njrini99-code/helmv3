@@ -191,16 +191,20 @@ export function RoundReviewDisplay({
     return stp > 0 ? `+${stp}` : `${stp}`;
   };
 
-  // Format date
+  // Format date — manual parsing to avoid timezone shift (new Date("2026-03-15") = midnight UTC = Mar 14 in US)
   const formatDate = (dateStr: string | undefined) => {
     if (!dateStr) return '';
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const parts = dateStr.split('T')[0]?.split('-');
+    if (parts && parts.length === 3) {
+      const y = parseInt(parts[0]!, 10);
+      const m = parseInt(parts[1]!, 10) - 1;
+      const d = parseInt(parts[2]!, 10);
+      const date = new Date(y, m, d); // Local timezone construction
+      return `${days[date.getDay()]}, ${months[m]} ${d}, ${y}`;
+    }
+    return dateStr;
   };
 
   return (
