@@ -812,7 +812,7 @@ function AdminDashboardContent() {
         </header>
 
         {/* Content Area - Scrollable */}
-        <div className="flex-1 lg:overflow-y-auto p-3 sm:p-4 md:p-6 min-w-0 overflow-hidden">
+        <div className="flex-1 lg:overflow-y-auto p-3 sm:p-4 md:p-6 min-w-0 overflow-x-hidden">
           {error ? (
             <div
               className={cn(
