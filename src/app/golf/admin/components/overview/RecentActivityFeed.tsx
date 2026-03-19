@@ -20,6 +20,8 @@ interface FeedItem {
   toPar?: number | null;
   /** For round items: raw score for bold display */
   score?: number | null;
+  /** Sort priority — lower = shown first (rounds/signups before errors) */
+  sortPriority: number;
 }
 
 const VISIBLE_LIMIT = 15;
@@ -63,13 +65,30 @@ function simplifyErrorMessage(text: string): string {
   return text;
 }
 
+/** Kind icons rendered as small colored dots */
+function KindDot({ kind }: { kind: FeedItemKind }) {
+  const color =
+    kind === 'round'
+      ? 'bg-green-400'
+      : kind === 'signup'
+        ? 'bg-blue-400'
+        : kind === 'insight'
+          ? 'bg-purple-400'
+          : kind === 'error'
+            ? 'bg-red-300'
+            : kind === 'audit'
+              ? 'bg-warm-300'
+              : 'bg-warm-200';
+  return <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0 mt-1.5', color)} />;
+}
+
 export function RecentActivityFeed({ activity }: RecentActivityFeedProps) {
   const [showAll, setShowAll] = useState(false);
 
   const allItems = useMemo(() => {
     const feed: FeedItem[] = [];
 
-    // Round events
+    // Round events — priority 0 (highest)
     for (const r of activity.recentRounds) {
       if (!r.created_at) continue;
       const toPar =
@@ -89,10 +108,11 @@ export function RecentActivityFeed({ activity }: RecentActivityFeedProps) {
         timestamp: r.created_at,
         toPar: r.total_to_par,
         score: r.total_score,
+        sortPriority: 0,
       });
     }
 
-    // Signup events
+    // Signup events — priority 1
     for (const s of activity.recentSignups) {
       if (!s.created_at) continue;
       feed.push({
@@ -101,22 +121,11 @@ export function RecentActivityFeed({ activity }: RecentActivityFeedProps) {
         text: `${s.email} signed up`,
         detail: s.role,
         timestamp: s.created_at,
+        sortPriority: 1,
       });
     }
 
-    // Error / admin events
-    for (const e of activity.recentAdminEvents) {
-      const isError = e.severity === 'error' || e.severity === 'critical';
-      feed.push({
-        id: `event-${e.id}`,
-        kind: isError ? 'error' : 'audit',
-        text: isError ? simplifyErrorMessage(e.title) : e.title,
-        detail: e.message ? simplifyErrorMessage(e.message.slice(0, 120)) : null,
-        timestamp: e.createdAt,
-      });
-    }
-
-    // Insight events
+    // Insight events — priority 2
     for (const ins of activity.recentInsights) {
       if (!ins.created_at) continue;
       feed.push({
@@ -125,18 +134,46 @@ export function RecentActivityFeed({ activity }: RecentActivityFeedProps) {
         text: `${ins.insights_generated ?? 0} insight${(ins.insights_generated ?? 0) !== 1 ? 's' : ''} generated`,
         detail: ins.insight_type,
         timestamp: ins.created_at,
+        sortPriority: 2,
       });
     }
 
-    // Sort by timestamp descending
-    feed.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    // Admin / error events — priority 3 (errors) or 2 (audit)
+    for (const e of activity.recentAdminEvents) {
+      const isError = e.severity === 'error' || e.severity === 'critical';
+      feed.push({
+        id: `event-${e.id}`,
+        kind: isError ? 'error' : 'audit',
+        text: isError ? simplifyErrorMessage(e.title) : e.title,
+        detail: e.message ? simplifyErrorMessage(e.message.slice(0, 120)) : null,
+        timestamp: e.createdAt,
+        sortPriority: isError ? 3 : 2,
+      });
+    }
+
+    // Sort: within same day, show rounds/signups first (lower sortPriority),
+    // then by timestamp descending
+    feed.sort((a, b) => {
+      // First group by day
+      const dayA = new Date(a.timestamp).toDateString();
+      const dayB = new Date(b.timestamp).toDateString();
+      if (dayA !== dayB) {
+        return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+      }
+      // Within the same day, sort by priority first
+      if (a.sortPriority !== b.sortPriority) {
+        return a.sortPriority - b.sortPriority;
+      }
+      // Then by timestamp descending
+      return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+    });
 
     return feed;
   }, [activity]);
 
   if (allItems.length === 0) {
     return (
-      <div className="text-center py-8">
+      <div className="glass-premium rounded-2xl p-8 text-center">
         <p className="text-sm text-warm-400">No recent activity</p>
       </div>
     );
@@ -158,83 +195,91 @@ export function RecentActivityFeed({ activity }: RecentActivityFeedProps) {
   }
 
   return (
-    <div className="space-y-6">
-      {Array.from(grouped.entries()).map(([day, dayItems]) => (
-        <div key={day}>
-          {/* Date header */}
-          <div className="flex items-center gap-3 mb-3">
-            <div className="flex-1 h-px bg-warm-200/60" />
-            <span className="text-xs font-medium text-warm-400 px-2 py-0.5 rounded-full bg-warm-100/60">
-              {day}
-            </span>
-            <div className="flex-1 h-px bg-warm-200/60" />
-          </div>
+    <div className="glass-premium rounded-2xl p-5">
+      <h3 className="text-sm font-semibold uppercase tracking-wider text-warm-400 mb-4">
+        Recent Activity
+      </h3>
 
-          {/* Items */}
-          <div className="space-y-1">
-            {dayItems.map((item) => (
-              <div
-                key={item.id}
-                className={cn(
-                  'flex items-start justify-between gap-3 px-3 py-2 rounded-lg',
-                  item.kind === 'error' && 'bg-red-50/40',
-                  item.kind === 'signup' && 'text-green-800',
-                  item.kind === 'login' && 'opacity-60'
-                )}
-              >
-                <div className="min-w-0 flex-1">
-                  <p
-                    className={cn(
-                      'text-sm break-words',
-                      item.kind === 'error' ? 'text-red-800' : 'text-warm-800',
-                      item.kind === 'login' && 'text-warm-400 text-xs'
-                    )}
-                  >
-                    {item.kind === 'round' && item.score != null ? (
-                      <>
-                        {item.text.split(String(item.score))[0]}
-                        <span
-                          className={cn(
-                            'font-bold',
-                            item.toPar != null && item.toPar < 0
-                              ? 'text-green-700'
-                              : item.toPar != null && item.toPar > 0
-                                ? 'text-amber-700'
-                                : 'text-warm-900'
-                          )}
-                        >
-                          {item.score}
-                        </span>
-                        {item.text.split(String(item.score)).slice(1).join(String(item.score))}
-                      </>
-                    ) : (
-                      item.text
-                    )}
-                  </p>
-                  {item.detail && (
-                    <p className="text-xs text-warm-400 mt-0.5 truncate">{item.detail}</p>
+      <div className="space-y-5">
+        {Array.from(grouped.entries()).map(([day, dayItems]) => (
+          <div key={day}>
+            {/* Date header */}
+            <div className="flex items-center gap-3 mb-3">
+              <div className="flex-1 h-px bg-warm-200/60" />
+              <span className="text-xs font-medium text-warm-400 px-2 py-0.5 rounded-full bg-warm-100/60">
+                {day}
+              </span>
+              <div className="flex-1 h-px bg-warm-200/60" />
+            </div>
+
+            {/* Items */}
+            <div className="space-y-1">
+              {dayItems.map((item) => (
+                <div
+                  key={item.id}
+                  className={cn(
+                    'flex items-start gap-2.5 px-3 py-2 rounded-lg transition-colors',
+                    item.kind === 'error' && 'opacity-50',
+                    item.kind === 'signup' && 'bg-blue-50/30',
+                    item.kind === 'round' && 'bg-green-50/20',
+                    item.kind === 'login' && 'opacity-40'
                   )}
+                >
+                  <KindDot kind={item.kind} />
+                  <div className="min-w-0 flex-1">
+                    <p
+                      className={cn(
+                        'text-sm break-words',
+                        item.kind === 'error' ? 'text-warm-500 text-xs' : 'text-warm-800',
+                        item.kind === 'login' && 'text-warm-400 text-xs'
+                      )}
+                    >
+                      {item.kind === 'round' && item.score != null ? (
+                        <>
+                          {item.text.split(String(item.score))[0]}
+                          <span
+                            className={cn(
+                              'font-bold',
+                              item.toPar != null && item.toPar < 0
+                                ? 'text-green-700'
+                                : item.toPar != null && item.toPar > 0
+                                  ? 'text-amber-700'
+                                  : 'text-warm-900'
+                            )}
+                          >
+                            {item.score}
+                          </span>
+                          {item.text.split(String(item.score)).slice(1).join(String(item.score))}
+                        </>
+                      ) : (
+                        item.text
+                      )}
+                    </p>
+                    {item.detail && (
+                      <p className="text-xs text-warm-400 mt-0.5 truncate">{item.detail}</p>
+                    )}
+                  </div>
+                  <span className="text-xs text-warm-400 whitespace-nowrap flex-shrink-0 tabular-nums pt-0.5">
+                    {timeAgo(item.timestamp)}
+                  </span>
                 </div>
-                <span className="text-xs text-warm-400 whitespace-nowrap flex-shrink-0 tabular-nums pt-0.5">
-                  {timeAgo(item.timestamp)}
-                </span>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
 
-      {/* Show more link */}
-      {hasMore && !showAll && (
-        <div className="text-center pt-1">
-          <button
-            onClick={() => setShowAll(true)}
-            className="text-xs font-medium text-primary-600 hover:text-primary-700 transition-colors px-3 py-1.5 rounded-lg hover:bg-primary-50/60"
-          >
-            Show {allItems.length - VISIBLE_LIMIT} more items
-          </button>
-        </div>
-      )}
+        {/* Show more link */}
+        {hasMore && !showAll && (
+          <div className="text-center pt-1">
+            <button
+              onClick={() => setShowAll(true)}
+              className="text-xs font-medium text-primary-600 hover:text-primary-700 transition-colors px-3 py-1.5 rounded-lg hover:bg-primary-50/60"
+            >
+              Show {allItems.length - VISIBLE_LIMIT} more items
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

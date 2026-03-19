@@ -15,8 +15,14 @@ export function StatusBar({
   activeUsersWeek,
   roundsThisWeek,
 }: StatusBarProps) {
+  // Status is driven by open incidents, NOT healthScore alone
+  const incidents = Number(openIncidents);
   const healthStatus =
-    healthScore >= 70 ? 'healthy' : healthScore >= 40 ? 'warning' : 'critical';
+    incidents === 0
+      ? 'healthy'
+      : healthScore < 40
+        ? 'critical'
+        : 'warning';
 
   const healthLabel =
     healthStatus === 'healthy'
@@ -48,10 +54,10 @@ export function StatusBar({
       <span
         className={cn(
           'text-xs sm:text-sm font-semibold tabular-nums',
-          Number(openIncidents) > 0 ? 'text-red-600' : 'text-green-600'
+          incidents > 0 ? 'text-red-600' : 'text-green-600'
         )}
       >
-        {Number(openIncidents)} open incident{Number(openIncidents) !== 1 ? 's' : ''}
+        {incidents} open incident{incidents !== 1 ? 's' : ''}
       </span>
 
       <span className="hidden sm:block w-px h-4 bg-warm-200" aria-hidden="true" />

@@ -26,6 +26,28 @@ function formatCurrentDate(): string {
   });
 }
 
+/** Compact KPI stat card */
+function KpiCard({
+  label,
+  value,
+  accent,
+}: {
+  label: string;
+  value: string | number;
+  accent?: boolean;
+}) {
+  return (
+    <div className="glass-premium rounded-2xl p-4 flex flex-col items-center justify-center text-center min-w-0">
+      <span
+        className={`text-2xl font-bold tabular-nums ${accent ? 'text-green-600' : 'text-warm-900'}`}
+      >
+        {value}
+      </span>
+      <span className="text-xs font-medium text-warm-400 mt-1 truncate w-full">{label}</span>
+    </div>
+  );
+}
+
 export function OverviewTab({ data, onNavigateTab }: Props) {
   // Compute subtitles for deep dives
   const funnel = data.playerFunnel.funnel;
@@ -40,6 +62,14 @@ export function OverviewTab({ data, onNavigateTab }: Props) {
   const healthSubtitle =
     healthScore > 0 ? `Score: ${healthScore}/100` : undefined;
 
+  const totalUsers =
+    Number(data.users.totalCoaches) +
+    Number(data.users.totalPlayers) +
+    Number(data.users.totalAdmins);
+  const activeThisWeek = Number(data.userActivity.summary.activeThisWeek);
+  const roundsThisWeek = Number(data.health.roundsThisWeek);
+  const openIncidents = Number(data.errorLogs.incidentCounts.open);
+
   return (
     <div className="space-y-6">
       {/* Section title */}
@@ -50,14 +80,30 @@ export function OverviewTab({ data, onNavigateTab }: Props) {
 
       <StatusBar
         healthScore={data.growth.platformHealthScore}
-        openIncidents={data.errorLogs.incidentCounts.open}
-        activeUsersWeek={data.userActivity.summary.activeThisWeek}
-        roundsThisWeek={data.health.roundsThisWeek}
+        openIncidents={openIncidents}
+        activeUsersWeek={activeThisWeek}
+        roundsThisWeek={roundsThisWeek}
       />
+
+      {/* KPI Stat Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <KpiCard label="Total Users" value={totalUsers} />
+        <KpiCard label="Active This Week" value={activeThisWeek} accent />
+        <KpiCard label="Rounds This Week" value={roundsThisWeek} />
+        <KpiCard
+          label="Health Score"
+          value={`${healthScore}/100`}
+          accent={healthScore >= 70}
+        />
+      </div>
 
       <OverviewBriefing data={data} />
 
-      <NeedsAttentionSection items={data.needsAttention} onNavigateTab={onNavigateTab} />
+      <NeedsAttentionSection
+        items={data.needsAttention}
+        openIncidents={openIncidents}
+        onNavigateTab={onNavigateTab}
+      />
 
       <RecentActivityFeed activity={data.activity} />
 

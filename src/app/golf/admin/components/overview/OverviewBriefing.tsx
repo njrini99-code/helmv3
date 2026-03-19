@@ -24,21 +24,6 @@ function StatRow({ label, value }: { label: string; value: string | number }) {
   );
 }
 
-function SectionHeading({
-  children,
-  icon,
-}: {
-  children: React.ReactNode;
-  icon: React.ReactNode;
-}) {
-  return (
-    <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-warm-400 mb-3">
-      <span className="text-warm-300 flex-shrink-0">{icon}</span>
-      {children}
-    </h3>
-  );
-}
-
 function getWeekRangeHeader(): string {
   const now = new Date();
   const dayOfWeek = now.getDay(); // 0=Sun
@@ -86,14 +71,14 @@ export function OverviewBriefing({ data }: OverviewBriefingProps) {
     return idleHours >= 2; // idle 2+ hours counts as stuck
   });
 
-  // Errors
+  // Errors — only show card if there are OPEN incidents
   const unresolvedIncidents = Number(errorLogs.incidentCounts.open);
   const totalErrors7d = Number(errorLogs.totalErrors7d);
   const topRoute =
     errorDetection.errorsByRoute.length > 0
       ? errorDetection.errorsByRoute[0]
       : null;
-  const hasErrors = unresolvedIncidents > 0 || totalErrors7d > 0;
+  const showErrorsCard = unresolvedIncidents > 0;
 
   // Growth / Funnel
   const funnel = playerFunnel.funnel;
@@ -128,127 +113,143 @@ export function OverviewBriefing({ data }: OverviewBriefingProps) {
   const coachesUsingInsights = Number(data.engagement.coachesUsingInsights);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       {/* This Week date range header */}
       <div className="text-xs font-medium text-warm-400 tracking-wide">
         {getWeekRangeHeader()}
       </div>
 
-      {/* Platform */}
-      <section>
-        <SectionHeading icon={<IconUsers size={14} />}>Platform</SectionHeading>
-        <div className="pl-1">
-          <StatRow
-            label="Total users"
-            value={
-              totalUsers > 0
-                ? `${totalUsers} total \u2014 ${Number(users.totalCoaches)} coaches, ${Number(users.totalPlayers)} players, ${Number(users.totalAdmins)} admin`
-                : '\u2014'
-            }
-          />
-          <StatRow
-            label="Weekly active"
-            value={
-              Number(data.userActivity.summary.activeThisWeek) > 0
-                ? `${Number(data.userActivity.summary.activeThisWeek)} active this week`
-                : '\u2014'
-            }
-          />
-          {stuckOnboarding > 0 && (
+      {/* 2-column grid for main cards */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Platform Card */}
+        <div className="glass-premium rounded-2xl p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <IconUsers size={16} className="text-warm-400" />
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-warm-400">Platform</h3>
+          </div>
+          <div className="space-y-0">
             <StatRow
-              label="Stuck onboarding"
-              value={`${stuckOnboarding} stuck in onboarding > 7 days`}
+              label="Total users"
+              value={
+                totalUsers > 0
+                  ? `${totalUsers} total — ${Number(users.totalCoaches)} coaches, ${Number(users.totalPlayers)} players`
+                  : '\u2014'
+              }
             />
-          )}
-          {inactiveCoaches > 0 && (
             <StatRow
-              label="Inactive coaches"
-              value={`${inactiveCoaches} coach${inactiveCoaches !== 1 ? 'es' : ''} inactive > 14 days`}
+              label="Weekly active"
+              value={
+                Number(data.userActivity.summary.activeThisWeek) > 0
+                  ? `${Number(data.userActivity.summary.activeThisWeek)} active this week`
+                  : '\u2014'
+              }
             />
-          )}
-        </div>
-      </section>
-
-      {/* Rounds */}
-      <section>
-        <SectionHeading icon={<IconTarget size={14} />}>Rounds</SectionHeading>
-        <div className="pl-1">
-          <StatRow label="This week" value={roundsThisWeek || '\u2014'} />
-          {stuckRounds.length > 0 &&
-            stuckRounds.map((r) => {
-              const idleMs = Date.now() - new Date(r.created_at!).getTime();
-              const idleHours = Math.floor(idleMs / 3600000);
-              const idleLabel =
-                idleHours >= 24
-                  ? `${Math.floor(idleHours / 24)}d idle`
-                  : `${idleHours}h idle`;
-              return (
-                <StatRow
-                  key={r.id}
-                  label="Stuck"
-                  value={`${r.player_name}${r.course_name ? ` at ${r.course_name}` : ''} \u2014 ${idleLabel}`}
-                />
-              );
-            })}
-        </div>
-      </section>
-
-      {/* Errors — only show if there are issues */}
-      {hasErrors && (
-        <section>
-          <SectionHeading icon={<IconAlertCircle size={14} />}>Errors</SectionHeading>
-          <div className="pl-1">
-            {unresolvedIncidents > 0 && (
-              <StatRow label="Unresolved" value={`${unresolvedIncidents} incident${unresolvedIncidents !== 1 ? 's' : ''}`} />
-            )}
-            {totalErrors7d > 0 && (
-              <StatRow label="Errors (7d)" value={totalErrors7d} />
-            )}
-            {topRoute && (
+            {stuckOnboarding > 0 && (
               <StatRow
-                label="Top affected route"
-                value={`${topRoute.route} (${topRoute.count})`}
+                label="Stuck onboarding"
+                value={`${stuckOnboarding} stuck > 7 days`}
+              />
+            )}
+            {inactiveCoaches > 0 && (
+              <StatRow
+                label="Inactive coaches"
+                value={`${inactiveCoaches} coach${inactiveCoaches !== 1 ? 'es' : ''} inactive > 14d`}
               />
             )}
           </div>
-        </section>
-      )}
-
-      {/* Growth */}
-      <section>
-        <SectionHeading icon={<IconTrendingUp size={14} />}>Growth</SectionHeading>
-        <div className="pl-1">
-          {signupToActive != null ? (
-            <StatRow label="Signup \u2192 Active" value={`${signupToActive}%`} />
-          ) : (
-            <StatRow label="Signup \u2192 Active" value={'\u2014'} />
-          )}
-          {biggestDropoff && (
-            <StatRow
-              label="Biggest dropoff"
-              value={`${biggestDropoff.from} \u2192 ${biggestDropoff.to} (${biggestDropoff.pct}%)`}
-            />
-          )}
-          <StatRow
-            label="Round volume trend"
-            value={
-              roundGrowthRate === 0
-                ? 'Flat WoW'
-                : `${roundGrowthRate > 0 ? '+' : ''}${roundGrowthRate}% WoW`
-            }
-          />
         </div>
-      </section>
 
-      {/* CoachHelm */}
-      <section>
-        <SectionHeading icon={<IconBrain size={14} />}>CoachHelm</SectionHeading>
-        <div className="pl-1">
+        {/* Rounds Card */}
+        <div className="glass-premium rounded-2xl p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <IconTarget size={16} className="text-warm-400" />
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-warm-400">Rounds</h3>
+          </div>
+          <div className="space-y-0">
+            <StatRow label="This week" value={roundsThisWeek || '\u2014'} />
+            {stuckRounds.length > 0 &&
+              stuckRounds.map((r) => {
+                const idleMs = Date.now() - new Date(r.created_at!).getTime();
+                const idleHours = Math.floor(idleMs / 3600000);
+                const idleLabel =
+                  idleHours >= 24
+                    ? `${Math.floor(idleHours / 24)}d idle`
+                    : `${idleHours}h idle`;
+                return (
+                  <StatRow
+                    key={r.id}
+                    label="Stuck"
+                    value={`${r.player_name}${r.course_name ? ` at ${r.course_name}` : ''} — ${idleLabel}`}
+                  />
+                );
+              })}
+          </div>
+        </div>
+
+        {/* Errors Card — only show if open incidents exist */}
+        {showErrorsCard && (
+          <div className="glass-premium rounded-2xl p-5 border border-red-200/30">
+            <div className="flex items-center gap-2 mb-4">
+              <IconAlertCircle size={16} className="text-red-400" />
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-red-400">Errors</h3>
+            </div>
+            <div className="space-y-0">
+              <StatRow label="Unresolved" value={`${unresolvedIncidents} incident${unresolvedIncidents !== 1 ? 's' : ''}`} />
+              {totalErrors7d > 0 && (
+                <StatRow label="Errors (7d)" value={totalErrors7d} />
+              )}
+              {topRoute && (
+                <StatRow
+                  label="Top affected route"
+                  value={`${topRoute.route} (${topRoute.count})`}
+                />
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Growth Card */}
+        <div className="glass-premium rounded-2xl p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <IconTrendingUp size={16} className="text-warm-400" />
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-warm-400">Growth</h3>
+          </div>
+          <div className="space-y-0">
+            {signupToActive != null ? (
+              <StatRow label={`Signup \u2192 Active`} value={`${signupToActive}%`} />
+            ) : (
+              <StatRow label={`Signup \u2192 Active`} value={'\u2014'} />
+            )}
+            {biggestDropoff && (
+              <StatRow
+                label="Biggest dropoff"
+                value={`${biggestDropoff.from} \u2192 ${biggestDropoff.to} (${biggestDropoff.pct}%)`}
+              />
+            )}
+            <StatRow
+              label="Round volume trend"
+              value={
+                roundGrowthRate === 0
+                  ? 'Flat WoW'
+                  : `${roundGrowthRate > 0 ? '+' : ''}${roundGrowthRate}% WoW`
+              }
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* CoachHelm — full width */}
+      <div className="glass-premium rounded-2xl p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <IconBrain size={16} className="text-warm-400" />
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-warm-400">CoachHelm</h3>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6">
           <StatRow label="Insights generated" value={insightsThisWeek || '\u2014'} />
           <StatRow label="Round reviews" value={reviewsThisWeek || '\u2014'} />
           <StatRow label="Coaches using insights" value={coachesUsingInsights || '\u2014'} />
         </div>
-      </section>
+      </div>
     </div>
   );
 }
