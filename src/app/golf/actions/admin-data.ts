@@ -1593,7 +1593,13 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     // User ID to Player ID mapping (for cohort retention)
     adminDb.from('golf_players').select('id, user_id'),
     // Real platform health stats from auth sessions + DB metrics
-    adminDb.rpc('get_platform_health_stats' as never) as unknown as { data: PlatformHealthStatsResult | null; error: unknown },
+    (async () => {
+      try {
+        return await adminDb.rpc('get_platform_health_stats' as never) as unknown as { data: PlatformHealthStatsResult | null; error: unknown };
+      } catch {
+        return { data: null, error: null } as { data: PlatformHealthStatsResult | null; error: unknown };
+      }
+    })(),
     // Cache freshness check for golf_player_stats_cache
     adminDb.from('golf_player_stats_cache').select('updated_at').order('updated_at', { ascending: false }).limit(1),
     // Coach org mapping (for team coach counts)

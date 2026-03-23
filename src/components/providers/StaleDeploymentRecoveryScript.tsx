@@ -17,7 +17,8 @@ const staleDeploymentRecoveryScript = `
       (lower.includes('cannot read properties of undefined') && lower.includes("'call'")) ||
       (lower.includes('undefined is not an object') && lower.includes('.call')) ||
       (lower.includes('server action') &&
-        (lower.includes('not found on the server') || lower.includes('was not found')))
+        (lower.includes('not found on the server') || lower.includes('was not found'))) ||
+      lower === 'load failed'
     );
   }
 

@@ -50,7 +50,22 @@ export default async function GolfDashboardPage({
         }
 
         if (teamId) {
-            const payload = await getCachedCoachDashboardData(coach.id, userId, teamId, dateRange);
+            let payload;
+            try {
+                payload = await getCachedCoachDashboardData(coach.id, userId, teamId, dateRange);
+            } catch {
+                // Network/DB failure — render empty state so the page doesn't crash
+                const emptyData: CoachDashboardData = {
+                    coach: { id: coach.id, user_id: userId, organization_id: coach.organization_id || null, full_name: coach.full_name, avatar_url: coach.avatar_url || null, created_at: '' } as GolfCoach,
+                    team: { id: teamId, name: '', season: null, join_code: null, created_at: '' } as unknown as GolfTeam,
+                    stats: { rosterSize: 0, upcomingEvents: 0, activeQualifiers: 0, teamScoringAverage: null, previousAverage: null },
+                    recentRounds: [],
+                    topPlayers: [],
+                    calendarEvents: [],
+                    teamScoringTrend: undefined,
+                };
+                return <CoachDashboard data={emptyData} dateRange={dateRange} />;
+            }
 
             const data: CoachDashboardData = {
                 coach: {
@@ -107,7 +122,19 @@ export default async function GolfDashboardPage({
             .maybeSingle();
         teamId = teamMember?.team_id ?? null;
 
-        const payload = await getCachedPlayerDashboardData(player.id, userId, teamId);
+        let payload;
+        try {
+            payload = await getCachedPlayerDashboardData(player.id, userId, teamId);
+        } catch {
+            // Network/DB failure — render empty state
+            const emptyData: PlayerDashboardData = {
+                player: { id: player.id, user_id: userId, first_name: player.first_name, last_name: player.last_name, avatar_url: player.avatar_url || null, handicap: null, created_at: '' } as GolfPlayer,
+                team: teamId ? ({ id: teamId, name: '', season: null, join_code: null, created_at: '' } as unknown as GolfTeam) : null,
+                stats: { roundsPlayed: 0, scoringAverage: null, bestRound: null, handicap: null },
+                recentRounds: [],
+            };
+            return <PlayerDashboard data={emptyData} />;
+        }
         const nameParts = `${player.first_name} ${player.last_name}`.split(' ');
 
         const data: PlayerDashboardData = {
