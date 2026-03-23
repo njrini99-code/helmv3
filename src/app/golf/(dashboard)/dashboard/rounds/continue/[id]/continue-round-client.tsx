@@ -253,6 +253,9 @@ export default function ContinueRoundClient({
 
     // Trigger SYNCHRONOUS localStorage save + async server save when app goes to background
     const handlePageHide = () => {
+      // Skip save if round is being submitted — prevents "already completed" errors
+      if (isSubmittingRef.current) return;
+
       const mergedInProgress = { ...inProgressShotsByHoleRef.current };
       const holesSnapshot = holesRef.current;
       const statsSnapshot = completedHoleStatsRef.current;
@@ -285,7 +288,7 @@ export default function ContinueRoundClient({
         teesPlayed: setupData.teesPlayed || undefined,
         roundType: setupData.roundType,
         roundDate: setupData.roundDate,
-        currentHole: Math.min(currentHole + 1, holesSnapshot.length),
+        currentHole: Math.max(1, Math.min(currentHole + 1, holesSnapshot.length)),
         holesToPlay: holesSnapshot.length as 9 | 18,
         holes: statsSnapshot,
         inProgressShots: inProgressArr,
@@ -362,7 +365,7 @@ export default function ContinueRoundClient({
       roundDate: setupData.roundDate,
       qualifierId: setupData.qualifierId,
       qualifierRoundNumber: setupData.qualifierRoundNumber,
-      currentHole: Math.min(holeIndexToUse + 1, holes.length),
+      currentHole: Math.max(1, Math.min(holeIndexToUse + 1, holes.length)),
       holesToPlay: holes.length as 9 | 18,
       holes: statsToUse,
       inProgressShots: inProgressShotsArr,
