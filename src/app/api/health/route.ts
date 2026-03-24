@@ -27,6 +27,7 @@ export async function GET() {
   return NextResponse.json({
     status,
     database,
+    deploymentId: process.env.VERCEL_DEPLOYMENT_ID ?? 'dev',
     timestamp: new Date().toISOString(),
     responseTimeMs: Date.now() - startedAt,
   });

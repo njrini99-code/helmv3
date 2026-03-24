@@ -92,6 +92,9 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${playfair.variable} ${dmSans.variable}`} suppressHydrationWarning>
+      <head>
+        <meta name="x-deployment-id" content={process.env.VERCEL_DEPLOYMENT_ID ?? 'dev'} />
+      </head>
       <body className="font-sans antialiased" suppressHydrationWarning>
         <StaleDeploymentRecoveryScript />
         <DatadogProvider>

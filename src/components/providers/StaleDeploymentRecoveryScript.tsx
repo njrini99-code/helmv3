@@ -18,7 +18,8 @@ const staleDeploymentRecoveryScript = `
       (lower.includes('undefined is not an object') && lower.includes('.call')) ||
       (lower.includes('server action') &&
         (lower.includes('not found on the server') || lower.includes('was not found'))) ||
-      lower === 'load failed'
+      lower === 'load failed' ||
+      lower.includes('an unexpected response was received from the server')
     );
   }
 
@@ -132,6 +133,39 @@ const staleDeploymentRecoveryScript = `
     event.preventDefault();
     void reloadFresh();
   });
+
+  // Proactive deployment staleness check.
+  // Polls /api/health every 5 minutes while the page is visible.
+  // If the server deployment ID changes, shows a non-blocking banner.
+  const BOOT_DEPLOYMENT_ID = document.querySelector('meta[name="x-deployment-id"]')?.getAttribute('content');
+  if (BOOT_DEPLOYMENT_ID && BOOT_DEPLOYMENT_ID !== 'dev') {
+    let staleNotified = false;
+    async function checkDeployment() {
+      if (staleNotified || document.visibilityState === 'hidden') return;
+      try {
+        const res = await fetch('/api/health', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.deploymentId && data.deploymentId !== BOOT_DEPLOYMENT_ID) {
+          staleNotified = true;
+          var banner = document.createElement('div');
+          banner.id = 'stale-deploy-banner';
+          banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#1c1917;color:white;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;font-size:14px;font-family:system-ui;';
+          var text = document.createElement('span');
+          text.textContent = 'A new version is available.';
+          var btn = document.createElement('button');
+          btn.textContent = 'Update Now';
+          btn.style.cssText = 'background:#16a34a;color:white;border:none;padding:8px 16px;border-radius:8px;font-weight:600;cursor:pointer;font-size:14px;';
+          btn.onclick = function() { window.location.reload(); };
+          banner.appendChild(text);
+          banner.appendChild(btn);
+          document.body.appendChild(banner);
+        }
+      } catch {}
+    }
+    setInterval(checkDeployment, 5 * 60 * 1000);
+    setTimeout(checkDeployment, 60 * 1000);
+  }
 })();
 `;
 
