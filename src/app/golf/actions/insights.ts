@@ -3026,7 +3026,20 @@ export async function triggerPlayerInsightsAfterRound(
 
     if (!analysis) return { success: false };
 
-    // Check existing insights to avoid duplicates
+    // Archive stale V2 insights so post-round analysis can refresh them.
+    // Without this, insights from weeks ago block new ones via dedup, causing 0-insight generations.
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (admin as any)
+      .from('golf_coach_insights')
+      .update({ status: 'resolved' })
+      .eq('coach_id', coach.id)
+      .eq('player_id', playerId)
+      .eq('status', 'active')
+      .lt('created_at', threeDaysAgo)
+      .contains('metadata', { v2_engine: true });
+
+    // Check remaining active insights to avoid duplicates within the 3-day window
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: existingInsights } = await (admin as any)
       .from('golf_coach_insights')
