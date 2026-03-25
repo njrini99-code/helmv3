@@ -422,6 +422,33 @@ export async function invalidateOnRoundComplete(playerId: string, roundId: strin
     warnings.push('Round SG recalculation threw an exception.');
   }
 
+  // 3b. Copy SG from round_stats_cache back to golf_rounds so both tables stay in sync.
+  // The RPC writes SG to the cache only; without this step golf_rounds.strokes_gained_* stays null.
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: cachedSg } = await (supabase as any)
+      .from('golf_round_stats_cache')
+      .select('strokes_gained_total, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting')
+      .eq('round_id', roundId)
+      .maybeSingle();
+
+    if (cachedSg?.strokes_gained_total != null) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
+        .from('golf_rounds')
+        .update({
+          strokes_gained_total: cachedSg.strokes_gained_total,
+          strokes_gained_tee: cachedSg.strokes_gained_tee,
+          strokes_gained_approach: cachedSg.strokes_gained_approach,
+          strokes_gained_around_green: cachedSg.strokes_gained_around_green,
+          strokes_gained_putting: cachedSg.strokes_gained_putting,
+        })
+        .eq('id', roundId);
+    }
+  } catch {
+    warnings.push('Failed to sync SG data from cache to golf_rounds.');
+  }
+
   // 4. Update player stats cache with aggregated SG values
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
