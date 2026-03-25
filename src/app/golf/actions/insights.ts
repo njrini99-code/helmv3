@@ -3015,16 +3015,26 @@ export async function triggerPlayerInsightsAfterRound(
     const philosophy = await getCoachPhilosophy(coach.id, admin);
     const confidenceThreshold = getConfidenceThreshold(philosophy.alertSensitivity);
 
-    // Run analysis for this single player
-    const analysis = await coachHelmIntelligence.analyzePlayer(playerId, {
-      includePatterns: true,
-      includeCausal: true,
-      includePredictions: true,
-      includeShotPatterns: true,
-      depth: 'standard',
-    });
+    // Run analysis for this single player.
+    // analyzePlayer internally uses createClient() (user-scoped) which may fail in
+    // fire-and-forget context where the user session is no longer available.
+    // This is non-critical: the round saved successfully, only post-round insights are skipped.
+    let analysis;
+    try {
+      analysis = await coachHelmIntelligence.analyzePlayer(playerId, {
+        includePatterns: true,
+        includeCausal: true,
+        includePredictions: true,
+        includeShotPatterns: true,
+        depth: 'standard',
+      });
+    } catch {
+      return { success: false, error: 'Player analysis failed (likely session expired in background context)' };
+    }
 
-    if (!analysis) return { success: false };
+    if (!analysis) {
+      return { success: false, error: 'Player analysis returned no data (feature extraction failed)' };
+    }
 
     // Archive stale V2 insights so post-round analysis can refresh them.
     // Without this, insights from weeks ago block new ones via dedup, causing 0-insight generations.
