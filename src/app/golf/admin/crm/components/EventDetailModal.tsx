@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import { format, parseISO, differenceInMinutes } from 'date-fns';
 import type { CRMEvent, CRMEventType } from './CalendarView';
+import { IconX, IconVideo, IconPhone, IconUsers, IconMail, IconMapPin, IconCalendar, IconCheck, IconEdit, IconTrash, IconUser, IconLink, IconClock } from '@/components/icons';
 
 // ============================================================================
 // TYPES
@@ -16,26 +17,29 @@ interface EventDetailModalProps {
   onRefresh: () => void;
 }
 
-const EVENT_TYPE_CONFIG: Record<CRMEventType, { 
-  label: string; 
-  icon: string; 
-  bgColor: string; 
+const EVENT_TYPE_CONFIG: Record<CRMEventType, {
+  label: string;
+  icon: typeof IconVideo;
+  bgColor: string;
   textColor: string;
 }> = {
-  demo: { label: 'Demo', icon: '🖥️', bgColor: 'bg-violet-500', textColor: 'text-white' },
-  follow_up: { label: 'Follow-up', icon: '📞', bgColor: 'bg-blue-500', textColor: 'text-white' },
-  call: { label: 'Call', icon: '☎️', bgColor: 'bg-primary-500', textColor: 'text-white' },
-  meeting: { label: 'Meeting', icon: '🤝', bgColor: 'bg-amber-500', textColor: 'text-white' },
-  email_reminder: { label: 'Email', icon: '✉️', bgColor: 'bg-warm-500', textColor: 'text-white' },
-  other: { label: 'Other', icon: '📌', bgColor: 'bg-warm-500', textColor: 'text-white' },
+  demo: { label: 'Demo', icon: IconVideo, bgColor: 'bg-violet-500', textColor: 'text-white' },
+  follow_up: { label: 'Follow-up', icon: IconPhone, bgColor: 'bg-blue-500', textColor: 'text-white' },
+  call: { label: 'Call', icon: IconPhone, bgColor: 'bg-primary-500', textColor: 'text-white' },
+  meeting: { label: 'Meeting', icon: IconUsers, bgColor: 'bg-amber-500', textColor: 'text-white' },
+  email_reminder: { label: 'Email', icon: IconMail, bgColor: 'bg-warm-500', textColor: 'text-white' },
+  other: { label: 'Other', icon: IconMapPin, bgColor: 'bg-warm-500', textColor: 'text-white' },
 };
 
 const STATUS_OPTIONS = [
-  { value: 'scheduled', label: 'Scheduled', icon: '📅', color: 'bg-blue-100 text-blue-700' },
-  { value: 'completed', label: 'Completed', icon: '✅', color: 'bg-primary-100 text-primary-700' },
-  { value: 'cancelled', label: 'Cancelled', icon: '❌', color: 'bg-red-100 text-red-700' },
-  { value: 'rescheduled', label: 'Rescheduled', icon: '🔄', color: 'bg-amber-100 text-amber-700' },
+  { value: 'scheduled', label: 'Scheduled', icon: IconCalendar, color: 'bg-blue-100 text-blue-700' },
+  { value: 'completed', label: 'Completed', icon: IconCheck, color: 'bg-primary-100 text-primary-700' },
+  { value: 'cancelled', label: 'Cancelled', icon: IconX, color: 'bg-red-100 text-red-700' },
+  { value: 'rescheduled', label: 'Rescheduled', icon: IconClock, color: 'bg-amber-100 text-amber-700' },
 ];
+
+const inputClass = 'w-full bg-white/60 border border-warm-200 rounded-xl px-4 py-2.5 text-sm transition-colors focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 outline-none';
+const labelClass = 'text-xs font-medium text-warm-600 uppercase tracking-wider mb-1.5 block';
 
 // ============================================================================
 // MAIN COMPONENT
@@ -56,6 +60,7 @@ export function EventDetailModal({
   const endTime = parseISO(event.end_time);
   const duration = differenceInMinutes(endTime, startTime);
   const typeConfig = EVENT_TYPE_CONFIG[event.event_type];
+  const TypeIcon = typeConfig.icon;
 
   // Update event status
   const handleStatusChange = async (newStatus: string) => {
@@ -71,7 +76,7 @@ export function EventDetailModal({
         .from('crm_events')
         .update({ status: newStatus })
         .eq('id', event.id);
-      
+
       setStatus(newStatus);
       onRefresh();
     } catch (err) {
@@ -102,7 +107,7 @@ export function EventDetailModal({
           notes: `${typeConfig.label}: ${outcome || 'No notes'}`,
         });
 
-        // Update coach last contacted + auto-advance new_lead → contacted
+        // Update coach last contacted + auto-advance new_lead -> contacted
         const completedNow = new Date().toISOString();
         await supabase
           .from('crm_coaches')
@@ -127,7 +132,7 @@ export function EventDetailModal({
   // Delete event
   const handleDelete = async () => {
     if (!confirm('Are you sure you want to delete this event?')) return;
-    
+
     setSubmitting(true);
     try {
       await supabase.from('crm_events').delete().eq('id', event.id);
@@ -141,29 +146,30 @@ export function EventDetailModal({
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
       onClick={onClose}
     >
-      <div 
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200"
+      <div
+        className="bg-white/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/20 w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header with Event Type Color */}
-        <div className={cn('px-6 py-5', typeConfig.bgColor, typeConfig.textColor)}>
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-warm-100">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-3xl">{typeConfig.icon}</span>
+            <div className="flex items-center gap-2">
+              <TypeIcon size={16} className="text-warm-600" />
               <div>
-                <h2 className="text-xl font-bold">{event.title}</h2>
-                <p className="text-sm opacity-90">{typeConfig.label}</p>
+                <h2 className="text-lg font-semibold text-warm-900">{event.title}</h2>
+                <p className="text-sm text-warm-500">{typeConfig.label}</p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="p-2 rounded-lg hover:bg-white/20 transition-colors text-xl"
+              aria-label="Close"
+              className="text-warm-400 hover:text-warm-600 transition-colors"
             >
-              ✕
+              <IconX size={18} />
             </button>
           </div>
         </div>
@@ -196,7 +202,7 @@ export function EventDetailModal({
           {/* Coach Info */}
           {event.coach_name && (
             <div className="flex items-center gap-3 p-3 bg-primary-50 rounded-xl">
-              <span className="text-xl">👤</span>
+              <IconUser size={18} className="text-primary-600" />
               <div>
                 <div className="font-semibold text-warm-800">{event.coach_school}</div>
                 <div className="text-sm text-warm-600">{event.coach_name}</div>
@@ -209,7 +215,7 @@ export function EventDetailModal({
             <div className="space-y-2">
               {event.location && (
                 <div className="flex items-center gap-2 text-sm text-warm-600">
-                  <span>📍</span>
+                  <IconMapPin size={14} className="text-warm-400" />
                   <span>{event.location}</span>
                 </div>
               )}
@@ -220,7 +226,7 @@ export function EventDetailModal({
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 text-sm text-blue-600 hover:underline"
                 >
-                  <span>🔗</span>
+                  <IconLink size={14} />
                   <span>Join Meeting</span>
                 </a>
               )}
@@ -230,7 +236,7 @@ export function EventDetailModal({
           {/* Description */}
           {event.description && (
             <div>
-              <label className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1 block">
+              <label className={labelClass}>
                 Notes
               </label>
               <p className="text-sm text-warm-700 bg-warm-50 rounded-xl p-3">
@@ -241,54 +247,61 @@ export function EventDetailModal({
 
           {/* Status */}
           <div>
-            <label className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-2 block">
+            <label className={labelClass}>
               Status
             </label>
             <div className="flex flex-wrap gap-2">
-              {STATUS_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => handleStatusChange(opt.value)}
-                  disabled={submitting}
-                  className={cn(
-                    'px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
-                    status === opt.value
-                      ? `${opt.color} ring-2 ring-offset-1 ring-warm-300`
-                      : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
-                  )}
-                >
-                  {opt.icon} {opt.label}
-                </button>
-              ))}
+              {STATUS_OPTIONS.map((opt) => {
+                const OptIcon = opt.icon;
+                return (
+                  <button
+                    key={opt.value}
+                    onClick={() => handleStatusChange(opt.value)}
+                    disabled={submitting}
+                    className={cn(
+                      'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
+                      status === opt.value
+                        ? `${opt.color} ring-2 ring-offset-1 ring-warm-300`
+                        : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
+                    )}
+                  >
+                    <OptIcon size={14} />
+                    {opt.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
           {/* Outcome Form (when completing) */}
           {showOutcomeForm && (
             <div className="p-4 bg-primary-50 rounded-xl border border-primary-200 space-y-3">
-              <h4 className="font-semibold text-primary-800">✅ Mark as Completed</h4>
+              <h4 className="font-semibold text-primary-800 flex items-center gap-1.5">
+                <IconCheck size={16} className="text-primary-600" />
+                Mark as Completed
+              </h4>
               <textarea
                 value={outcome}
                 onChange={(e) => setOutcome(e.target.value)}
                 placeholder="How did it go? Any notes?"
-                className="w-full px-3 py-2 border border-primary-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+                className={`${inputClass} resize-none min-h-[100px]`}
                 rows={3}
                 autoFocus
               />
-              <div className="flex justify-end gap-2">
+              <div className="flex justify-end gap-3">
                 <button
                   onClick={() => {
                     setShowOutcomeForm(false);
                     setStatus(event.status);
                   }}
-                  className="px-3 py-1.5 text-sm text-warm-600 hover:text-warm-800"
+                  className="bg-white border border-warm-200 text-warm-700 rounded-xl px-5 py-2.5 text-sm font-medium hover:bg-warm-50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleComplete}
                   disabled={submitting}
-                  className="px-4 py-1.5 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700 transition-colors disabled:opacity-50"
+                  className="bg-primary-500 hover:bg-primary-600 text-white rounded-xl px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
                 >
                   {submitting ? 'Saving...' : 'Complete'}
                 </button>
@@ -307,21 +320,23 @@ export function EventDetailModal({
           )}
         </div>
 
-        {/* Footer Actions */}
-        <div className="px-6 py-4 bg-warm-50 border-t border-warm-200 flex items-center justify-between">
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-warm-100 flex items-center justify-between">
           <button
             onClick={handleDelete}
             disabled={submitting}
-            className="px-3 py-2 text-red-600 hover:text-red-700 font-medium text-sm disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-2 text-red-600 hover:text-red-700 font-medium text-sm disabled:opacity-50 transition-colors"
           >
-            🗑️ Delete
+            <IconTrash size={14} />
+            Delete
           </button>
-          
+
           <button
             onClick={onEdit}
-            className="px-5 py-2.5 bg-warm-800 text-white rounded-xl font-semibold hover:bg-warm-700 transition-colors"
+            className="bg-primary-500 hover:bg-primary-600 text-white rounded-xl px-5 py-2.5 text-sm font-medium transition-colors flex items-center gap-1.5"
           >
-            ✏️ Edit
+            <IconEdit size={14} />
+            Edit
           </button>
         </div>
       </div>

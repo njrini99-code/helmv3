@@ -15,6 +15,7 @@ import {
   IconTarget as MousePointerClick,
   IconShieldAlert as ShieldAlert,
   IconXCircle as Ban,
+  IconUsers,
 } from '@/components/icons';
 
 // ============================================================================
@@ -53,8 +54,17 @@ interface EmailStats {
   bounced: number;
 }
 
+interface Campaign {
+  key: string;
+  subject: string;
+  date: string;
+  emails: EmailRecord[];
+}
+
 type FilterTab = 'all' | 'delivered' | 'opened' | 'bounced';
 type SortField = 'date' | 'status';
+
+const EMPTY_STATS: EmailStats = { total_sent: 0, delivered: 0, opened: 0, clicked: 0, bounced: 0 };
 
 // ============================================================================
 // HELPERS
@@ -82,6 +92,14 @@ function formatTimestamp(dateStr: string): string {
   });
 }
 
+function formatDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
 function getEmailStatus(events: EmailEvent[]): string {
   const types = new Set(events.map(e => e.event_type));
   if (types.has('email.bounced') || types.has('email.complained')) return 'bounced';
@@ -92,14 +110,46 @@ function getEmailStatus(events: EmailEvent[]): string {
   return 'sent';
 }
 
-const STATUS_BADGE_DEFAULT = { label: 'Sent', color: 'text-warm-600', bgColor: 'bg-warm-50', icon: <IconSend size={12} /> };
+/** Group emails into campaigns: same subject + send time within 1 hour */
+function groupIntoCampaigns(emails: EmailRecord[]): Campaign[] {
+  const campaigns: Campaign[] = [];
 
-const STATUS_BADGE_CONFIG: Record<string, { label: string; color: string; bgColor: string; icon: React.ReactNode }> = {
-  sent:      { label: 'Sent',      color: 'text-warm-600',    bgColor: 'bg-warm-50',    icon: <IconSend size={12} /> },
-  delivered: { label: 'Delivered', color: 'text-blue-600',    bgColor: 'bg-blue-50',    icon: <IconCheckCircle2 size={12} /> },
-  opened:    { label: 'Opened',   color: 'text-emerald-600', bgColor: 'bg-emerald-50', icon: <IconEye size={12} /> },
-  clicked:   { label: 'Clicked',  color: 'text-violet-600',  bgColor: 'bg-violet-50',  icon: <MousePointerClick size={12} /> },
-  bounced:   { label: 'Bounced',  color: 'text-red-600',     bgColor: 'bg-red-50',     icon: <IconWarning size={12} /> },
+  for (const email of emails) {
+    const subject = email.subject || '(no subject)';
+    const sendTime = new Date(email.contact_date).getTime();
+
+    // Try to find an existing campaign with matching subject and close send time
+    let matched = false;
+    for (const campaign of campaigns) {
+      if (campaign.subject === subject) {
+        const campaignTime = new Date(campaign.date).getTime();
+        if (Math.abs(sendTime - campaignTime) <= 60 * 60 * 1000) {
+          campaign.emails.push(email);
+          matched = true;
+          break;
+        }
+      }
+    }
+
+    if (!matched) {
+      campaigns.push({
+        key: `${subject}-${email.contact_date}`,
+        subject,
+        date: email.contact_date,
+        emails: [email],
+      });
+    }
+  }
+
+  return campaigns;
+}
+
+const STATUS_ICON_CONFIG: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
+  sent:      { icon: <IconClock size={14} />,          color: 'text-warm-400',    label: 'Sent' },
+  delivered: { icon: <IconCheckCircle2 size={14} />,   color: 'text-emerald-500', label: 'Delivered' },
+  opened:    { icon: <IconEye size={14} />,            color: 'text-blue-500',    label: 'Opened' },
+  clicked:   { icon: <MousePointerClick size={14} />,  color: 'text-violet-500',  label: 'Clicked' },
+  bounced:   { icon: <Ban size={14} />,                color: 'text-red-500',     label: 'Bounced' },
 };
 
 const EVENT_TIMELINE_CONFIG: Record<string, { label: string; color: string; dotColor: string }> = {
@@ -122,11 +172,12 @@ const FILTER_TABS: { id: FilterTab; label: string }[] = [
 // MAIN COMPONENT
 // ============================================================================
 export function EmailTrackingView() {
-  const [stats, setStats] = useState<EmailStats | null>(null);
+  const [stats, setStats] = useState<EmailStats>(EMPTY_STATS);
   const [emails, setEmails] = useState<EmailRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterTab, setFilterTab] = useState<FilterTab>('all');
   const [sortField, setSortField] = useState<SortField>('date');
+  const [expandedCampaigns, setExpandedCampaigns] = useState<Set<string>>(new Set());
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [suppressingIds, setSuppressingIds] = useState<Set<string>>(new Set());
 
@@ -136,31 +187,48 @@ export function EmailTrackingView() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      // Fetch stats and emails in parallel
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const [statsRes, emailsRes] = await Promise.all([
-        (supabase as any).rpc('get_crm_email_stats'),
-        supabase
-          .from('crm_contact_log')
-          .select('*, crm_coaches!coach_id(id, name, school, email, email_status), crm_email_events(event_type, occurred_at)')
-          .not('resend_message_id', 'is', null)
-          .order('contact_date', { ascending: false }),
-      ]);
-
-      if (statsRes.data) {
-        setStats(statsRes.data as EmailStats);
-      }
+      // Fetch emails
+      const emailsRes = await supabase
+        .from('crm_contact_log')
+        .select('*, crm_coaches!coach_id(id, name, school, email, email_status), crm_email_events(event_type, occurred_at)')
+        .not('resend_message_id', 'is', null)
+        .order('contact_date', { ascending: false });
 
       if (emailsRes.data) {
         setEmails(emailsRes.data as unknown as EmailRecord[]);
       }
-    } catch (err) {
+
+      // Fetch stats via RPC — may not exist, so handle gracefully
+      try {
+        const { data: rpcData, error: rpcError } = await supabase.rpc('get_crm_email_stats');
+        if (!rpcError && rpcData) {
+          setStats(rpcData as unknown as EmailStats);
+        } else {
+          // RPC failed or doesn't exist — compute stats from emails
+          computeStatsFromEmails(emailsRes.data as unknown as EmailRecord[] ?? []);
+        }
+      } catch {
+        // RPC doesn't exist — compute stats from emails
+        computeStatsFromEmails(emailsRes.data as unknown as EmailRecord[] ?? []);
+      }
+    } catch {
       // Silently handle — stats/emails will show empty state
-      void err;
     } finally {
       setLoading(false);
     }
   }, [supabase]);
+
+  const computeStatsFromEmails = (emailList: EmailRecord[]) => {
+    const computed: EmailStats = { total_sent: emailList.length, delivered: 0, opened: 0, clicked: 0, bounced: 0 };
+    for (const email of emailList) {
+      const status = getEmailStatus(email.crm_email_events || []);
+      if (status === 'delivered' || status === 'opened' || status === 'clicked') computed.delivered++;
+      if (status === 'opened' || status === 'clicked') computed.opened++;
+      if (status === 'clicked') computed.clicked++;
+      if (status === 'bounced') computed.bounced++;
+    }
+    setStats(computed);
+  };
 
   useEffect(() => {
     fetchData();
@@ -170,8 +238,7 @@ export function EmailTrackingView() {
   const handleSuppress = async (coachId: string) => {
     setSuppressingIds(prev => new Set(prev).add(coachId));
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase as any)
+      await supabase
         .from('crm_coaches')
         .update({ email_status: 'bounced' })
         .eq('id', coachId);
@@ -191,6 +258,16 @@ export function EmailTrackingView() {
         return next;
       });
     }
+  };
+
+  // ── Toggle Campaign Expansion ──
+  const toggleCampaign = (key: string) => {
+    setExpandedCampaigns(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
   };
 
   // ── Toggle Row Expansion ──
@@ -227,10 +304,12 @@ export function EmailTrackingView() {
         return sa - sb;
       });
     }
-    // Default is already sorted by date from the query
 
     return result;
   }, [emails, filterTab, sortField]);
+
+  // ── Campaigns ──
+  const campaigns = useMemo(() => groupIntoCampaigns(filteredEmails), [filteredEmails]);
 
   // ── Bounced Coaches (unique, not yet suppressed) ──
   const bouncedCoaches = useMemo(() => {
@@ -254,101 +333,93 @@ export function EmailTrackingView() {
     return (
       <div className="space-y-6 max-w-[1400px] mx-auto">
         {/* KPI Skeleton */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-4 lg:p-5">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-5">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 space-y-2">
                   <div className="h-3 w-20 bg-warm-100 rounded animate-pulse" />
                   <div className="h-8 w-16 bg-warm-100 rounded animate-pulse" />
-                  <div className="h-3 w-24 bg-warm-50 rounded animate-pulse" />
                 </div>
-                <div className="w-10 h-10 rounded-xl bg-warm-50 animate-pulse" />
+                <div className="w-10 h-10 rounded-full bg-warm-50 animate-pulse" />
               </div>
             </div>
           ))}
         </div>
-        {/* Table Skeleton */}
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-5">
-          <div className="h-5 w-40 bg-warm-100 rounded animate-pulse mb-6" />
-          <div className="space-y-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-4">
-                <div className="h-10 flex-1 bg-warm-50 rounded-xl animate-pulse" />
+        {/* Campaign Skeleton */}
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-5">
+              <div className="flex items-center gap-4">
+                <div className="h-5 flex-1 bg-warm-50 rounded-xl animate-pulse" />
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       </div>
     );
   }
 
   // ── Empty State ──
-  if (!stats || stats.total_sent === 0) {
+  if (stats.total_sent === 0 && emails.length === 0) {
     return (
       <div className="max-w-[1400px] mx-auto">
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-12 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center mx-auto mb-5">
+        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-16 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center mx-auto mb-6">
             <IconMail size={28} className="text-blue-400" />
           </div>
           <h3 className="text-xl font-bold text-warm-900 mb-2">No emails sent yet</h3>
-          <p className="text-sm text-warm-500 max-w-md mx-auto leading-relaxed">
+          <p className="text-sm text-warm-500 max-w-md mx-auto leading-relaxed mb-6">
             When you send emails to coaches through the CRM, delivery tracking, open rates, and click
             analytics will appear here automatically.
+          </p>
+          <p className="text-xs text-warm-400 max-w-sm mx-auto">
+            Select coaches from the Pipeline tab and use Bulk Email to send your first campaign.
           </p>
         </div>
       </div>
     );
   }
 
+  const deliveryRate = stats.total_sent > 0 ? Math.round((stats.delivered / stats.total_sent) * 100) : 0;
+  const openRate = stats.total_sent > 0 ? Math.round((stats.opened / stats.total_sent) * 100) : 0;
+  const clickRate = stats.total_sent > 0 ? Math.round((stats.clicked / stats.total_sent) * 100) : 0;
+
   return (
     <div className="space-y-6 max-w-[1400px] mx-auto">
-      {/* ══════════════ A. KPI Cards ══════════════ */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <KPICard
-          icon={<IconSend size={20} />}
-          iconBg="bg-blue-50"
+      {/* ══════════════ Stats Header Cards ══════════════ */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard
+          icon={<IconMail size={20} />}
+          iconBg="bg-blue-100"
           iconColor="text-blue-600"
           label="Total Sent"
-          value={stats.total_sent.toString()}
-          detail="All time"
+          value={stats.total_sent.toLocaleString()}
         />
-        <KPICard
+        <StatCard
           icon={<IconCheckCircle2 size={20} />}
-          iconBg="bg-emerald-50"
+          iconBg="bg-emerald-100"
           iconColor="text-emerald-600"
-          label="Delivered"
-          value={`${stats.total_sent > 0 ? Math.round((stats.delivered / stats.total_sent) * 100) : 0}%`}
-          detail={`${stats.delivered} delivered`}
+          label="Delivery Rate"
+          value={`${deliveryRate}%`}
         />
-        <KPICard
+        <StatCard
           icon={<IconEye size={20} />}
-          iconBg="bg-violet-50"
+          iconBg="bg-violet-100"
           iconColor="text-violet-600"
-          label="Opened"
-          value={`${stats.total_sent > 0 ? Math.round((stats.opened / stats.total_sent) * 100) : 0}%`}
-          detail={`${stats.opened} opened`}
+          label="Open Rate"
+          value={`${openRate}%`}
         />
-        <KPICard
+        <StatCard
           icon={<MousePointerClick size={20} />}
-          iconBg="bg-indigo-50"
-          iconColor="text-indigo-600"
-          label="Clicked"
-          value={`${stats.total_sent > 0 ? Math.round((stats.clicked / stats.total_sent) * 100) : 0}%`}
-          detail={`${stats.clicked} clicked`}
-        />
-        <KPICard
-          icon={<IconWarning size={20} />}
-          iconBg="bg-red-50"
-          iconColor="text-red-600"
-          label="Bounced"
-          value={`${stats.total_sent > 0 ? Math.round((stats.bounced / stats.total_sent) * 100) : 0}%`}
-          detail={`${stats.bounced} bounced`}
-          className="col-span-2 lg:col-span-1"
+          iconBg="bg-amber-100"
+          iconColor="text-amber-600"
+          label="Click Rate"
+          value={`${clickRate}%`}
         />
       </div>
 
-      {/* ══════════════ C. Bounced Coaches Alert ══════════════ */}
+      {/* ══════════════ Bounced Coaches Alert ══════════════ */}
       {bouncedCoaches.length > 0 && (
         <div className="bg-red-50/70 backdrop-blur-xl border border-red-200/40 rounded-2xl shadow-glass p-5">
           <div className="flex items-center gap-2.5 mb-4">
@@ -358,7 +429,7 @@ export function EmailTrackingView() {
             <div>
               <h3 className="text-sm font-semibold text-red-900">Bounced Email Addresses</h3>
               <p className="text-xs text-red-600/70">
-                {bouncedCoaches.length} coach{bouncedCoaches.length !== 1 ? 'es' : ''} with delivery failures — suppress to prevent future sends
+                {bouncedCoaches.length} coach{bouncedCoaches.length !== 1 ? 'es' : ''} with delivery failures -- suppress to prevent future sends
               </p>
             </div>
           </div>
@@ -394,7 +465,7 @@ export function EmailTrackingView() {
         </div>
       )}
 
-      {/* ══════════════ B. Email Activity Table ══════════════ */}
+      {/* ══════════════ Campaign Activity ══════════════ */}
       <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass">
         {/* Header + Filter Tabs */}
         <div className="px-5 pt-5 pb-0">
@@ -404,8 +475,10 @@ export function EmailTrackingView() {
                 <IconMail size={16} className="text-blue-600" />
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-warm-900">Email Activity</h3>
-                <p className="text-xs text-warm-500">{filteredEmails.length} email{filteredEmails.length !== 1 ? 's' : ''}</p>
+                <h3 className="text-sm font-semibold text-warm-900">Email Campaigns</h3>
+                <p className="text-xs text-warm-500">
+                  {campaigns.length} campaign{campaigns.length !== 1 ? 's' : ''} &middot; {filteredEmails.length} email{filteredEmails.length !== 1 ? 's' : ''}
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -441,9 +514,9 @@ export function EmailTrackingView() {
           </div>
         </div>
 
-        {/* Table */}
-        <div className="px-5 pb-5">
-          {filteredEmails.length === 0 ? (
+        {/* Campaign List */}
+        <div className="px-5 pb-5 pt-2">
+          {campaigns.length === 0 ? (
             <div className="py-12 text-center">
               <div className="w-10 h-10 rounded-xl bg-warm-50 flex items-center justify-center mx-auto mb-2">
                 <IconMail size={18} className="text-warm-300" />
@@ -452,110 +525,145 @@ export function EmailTrackingView() {
               <p className="text-xs text-warm-400 mt-0.5">Try a different filter tab above</p>
             </div>
           ) : (
-            <div className="divide-y divide-warm-100/50">
-              {/* Desktop Header */}
-              <div className="hidden lg:grid lg:grid-cols-12 gap-4 py-3 text-xs font-semibold text-warm-400 uppercase tracking-wider">
-                <div className="col-span-3">Recipient</div>
-                <div className="col-span-4">Subject</div>
-                <div className="col-span-2">Sent</div>
-                <div className="col-span-2">Status</div>
-                <div className="col-span-1" />
-              </div>
-
-              {filteredEmails.map(email => {
-                const status = getEmailStatus(email.crm_email_events || []);
-                const badge = STATUS_BADGE_CONFIG[status] ?? STATUS_BADGE_DEFAULT;
-                const isExpanded = expandedIds.has(email.id);
-                const sortedEvents = [...(email.crm_email_events || [])].sort(
-                  (a, b) => new Date(a.occurred_at).getTime() - new Date(b.occurred_at).getTime()
-                );
+            <div className="space-y-3 mt-2">
+              {campaigns.map(campaign => {
+                const isExpanded = expandedCampaigns.has(campaign.key);
+                const recipientCount = campaign.emails.length;
+                const statuses = campaign.emails.map(e => getEmailStatus(e.crm_email_events || []));
+                const deliveredCount = statuses.filter(s => ['delivered', 'opened', 'clicked'].includes(s)).length;
+                const openedCount = statuses.filter(s => ['opened', 'clicked'].includes(s)).length;
+                const bouncedCount = statuses.filter(s => s === 'bounced').length;
 
                 return (
-                  <div key={email.id}>
-                    {/* Row */}
+                  <div key={campaign.key} className="rounded-xl border border-warm-100/60 bg-white/50 overflow-hidden">
+                    {/* Campaign Header */}
                     <button
-                      onClick={() => toggleExpanded(email.id)}
-                      className="w-full text-left grid grid-cols-1 lg:grid-cols-12 gap-2 lg:gap-4 py-3 hover:bg-warm-50/50 transition-colors rounded-lg px-1 -mx-1"
+                      onClick={() => toggleCampaign(campaign.key)}
+                      className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-warm-50/50 transition-colors"
                     >
-                      {/* Recipient */}
-                      <div className="lg:col-span-3 flex items-center gap-2 min-w-0">
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-warm-900 truncate">
-                            {email.crm_coaches?.name || 'Unknown'}
-                          </p>
-                          <p className="text-xs text-warm-400 truncate">
-                            {email.crm_coaches?.school || ''}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Subject */}
-                      <div className="lg:col-span-4 flex items-center min-w-0">
-                        <p className="text-sm text-warm-700 truncate">
-                          {email.subject || '(no subject)'}
-                        </p>
-                      </div>
-
-                      {/* Sent Date */}
-                      <div className="lg:col-span-2 flex items-center">
-                        <div className="flex items-center gap-1.5 text-xs text-warm-500">
-                          <IconClock size={12} />
-                          <span className="tabular-nums">{formatRelative(email.contact_date)}</span>
-                        </div>
-                      </div>
-
-                      {/* Status Badge */}
-                      <div className="lg:col-span-2 flex items-center">
-                        <span className={cn(
-                          'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium',
-                          badge.bgColor, badge.color
-                        )}>
-                          {badge.icon}
-                          {badge.label}
-                        </span>
-                      </div>
-
-                      {/* Expand Icon */}
-                      <div className="lg:col-span-1 flex items-center justify-end">
+                      <div className="flex-shrink-0">
                         {isExpanded
                           ? <IconChevronDown size={14} className="text-warm-400" />
                           : <IconChevronRight size={14} className="text-warm-300" />
                         }
                       </div>
-                    </button>
-
-                    {/* Expanded Timeline */}
-                    {isExpanded && sortedEvents.length > 0 && (
-                      <div className="pl-4 lg:pl-8 pb-3 pt-1">
-                        <div className="relative pl-4 border-l-2 border-warm-100 space-y-2.5">
-                          {sortedEvents.map((event, i) => {
-                            const config = EVENT_TIMELINE_CONFIG[event.event_type] || {
-                              label: event.event_type,
-                              color: 'text-warm-500',
-                              dotColor: 'bg-warm-300',
-                            };
-                            return (
-                              <div key={`${event.event_type}-${i}`} className="relative flex items-center gap-3">
-                                <div className={cn(
-                                  'absolute -left-[21px] w-2.5 h-2.5 rounded-full ring-2 ring-white',
-                                  config.dotColor
-                                )} />
-                                <span className={cn('text-xs font-medium w-20', config.color)}>
-                                  {config.label}
-                                </span>
-                                <span className="text-xs text-warm-400 tabular-nums">
-                                  {formatTimestamp(event.occurred_at)}
-                                </span>
-                              </div>
-                            );
-                          })}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-warm-900 truncate">{campaign.subject}</p>
+                        <p className="text-xs text-warm-400 mt-0.5">
+                          {formatDate(campaign.date)}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3 flex-shrink-0">
+                        {/* Recipient count */}
+                        <div className="flex items-center gap-1 text-xs text-warm-500">
+                          <IconUsers size={12} />
+                          <span className="tabular-nums">{recipientCount}</span>
+                        </div>
+                        {/* Mini status summary */}
+                        <div className="hidden sm:flex items-center gap-2 text-xs">
+                          {deliveredCount > 0 && (
+                            <span className="flex items-center gap-0.5 text-emerald-500">
+                              <IconCheckCircle2 size={12} />
+                              <span className="tabular-nums">{deliveredCount}</span>
+                            </span>
+                          )}
+                          {openedCount > 0 && (
+                            <span className="flex items-center gap-0.5 text-blue-500">
+                              <IconEye size={12} />
+                              <span className="tabular-nums">{openedCount}</span>
+                            </span>
+                          )}
+                          {bouncedCount > 0 && (
+                            <span className="flex items-center gap-0.5 text-red-500">
+                              <Ban size={12} />
+                              <span className="tabular-nums">{bouncedCount}</span>
+                            </span>
+                          )}
                         </div>
                       </div>
-                    )}
+                    </button>
 
-                    {isExpanded && sortedEvents.length === 0 && (
-                      <div className="pl-4 lg:pl-8 pb-3 pt-1">
-                        <p className="text-xs text-warm-400">No tracking events recorded</p>
+                    {/* Expanded: Per-Recipient Status */}
+                    {isExpanded && (
+                      <div className="border-t border-warm-100/60 px-4 py-2 space-y-1 bg-warm-50/30">
+                        {campaign.emails.map(email => {
+                          const status = getEmailStatus(email.crm_email_events || []);
+                          const statusConfig = STATUS_ICON_CONFIG[status] ?? STATUS_ICON_CONFIG.sent;
+                          const isEmailExpanded = expandedIds.has(email.id);
+                          const sortedEvents = [...(email.crm_email_events || [])].sort(
+                            (a, b) => new Date(a.occurred_at).getTime() - new Date(b.occurred_at).getTime()
+                          );
+
+                          return (
+                            <div key={email.id}>
+                              <button
+                                onClick={() => toggleExpanded(email.id)}
+                                className="w-full text-left flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-white/60 transition-colors"
+                              >
+                                {/* Status icon */}
+                                <div className={cn('flex-shrink-0', statusConfig.color)} title={statusConfig.label}>
+                                  {statusConfig.icon}
+                                </div>
+                                {/* Recipient info */}
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm text-warm-800 truncate">
+                                    {email.crm_coaches?.name || 'Unknown'}
+                                  </p>
+                                  <p className="text-xs text-warm-400 truncate">
+                                    {email.crm_coaches?.school || ''}
+                                    {email.crm_coaches?.email ? ` \u00B7 ${email.crm_coaches.email}` : ''}
+                                  </p>
+                                </div>
+                                {/* Time */}
+                                <div className="flex items-center gap-1.5 text-xs text-warm-400 flex-shrink-0">
+                                  <span className="tabular-nums">{formatRelative(email.contact_date)}</span>
+                                </div>
+                                {/* Expand */}
+                                <div className="flex-shrink-0">
+                                  {isEmailExpanded
+                                    ? <IconChevronDown size={12} className="text-warm-300" />
+                                    : <IconChevronRight size={12} className="text-warm-300" />
+                                  }
+                                </div>
+                              </button>
+
+                              {/* Event Timeline */}
+                              {isEmailExpanded && sortedEvents.length > 0 && (
+                                <div className="pl-10 pb-2 pt-1">
+                                  <div className="relative pl-4 border-l-2 border-warm-100 space-y-2">
+                                    {sortedEvents.map((event, i) => {
+                                      const config = EVENT_TIMELINE_CONFIG[event.event_type] || {
+                                        label: event.event_type,
+                                        color: 'text-warm-500',
+                                        dotColor: 'bg-warm-300',
+                                      };
+                                      return (
+                                        <div key={`${event.event_type}-${i}`} className="relative flex items-center gap-3">
+                                          <div className={cn(
+                                            'absolute -left-[21px] w-2.5 h-2.5 rounded-full ring-2 ring-white',
+                                            config.dotColor
+                                          )} />
+                                          <span className={cn('text-xs font-medium w-20', config.color)}>
+                                            {config.label}
+                                          </span>
+                                          <span className="text-xs text-warm-400 tabular-nums">
+                                            {formatTimestamp(event.occurred_at)}
+                                          </span>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+
+                              {isEmailExpanded && sortedEvents.length === 0 && (
+                                <div className="pl-10 pb-2 pt-1">
+                                  <p className="text-xs text-warm-400">No tracking events recorded</p>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -572,37 +680,29 @@ export function EmailTrackingView() {
 // ============================================================================
 // SUB-COMPONENTS
 // ============================================================================
-function KPICard({
-  icon, iconBg, iconColor, label, value, detail, className,
+function StatCard({
+  icon, iconBg, iconColor, label, value,
 }: {
   icon: React.ReactNode;
   iconBg: string;
   iconColor: string;
   label: string;
   value: string;
-  detail: string;
-  className?: string;
 }) {
   return (
     <div className={cn(
-      'relative overflow-hidden',
-      'bg-white/70 backdrop-blur-xl',
-      'border border-white/20 rounded-2xl',
+      'bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-5',
       'shadow-glass',
-      'p-4 lg:p-5',
       'transition-[transform,box-shadow] duration-200 group',
       'hover:-translate-y-0.5 hover:shadow-lg',
-      className
     )}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <p className="text-label font-semibold text-warm-500 uppercase tracking-wider">{label}</p>
-          <p className="text-3xl font-bold text-warm-900 tabular-nums tracking-tight mt-1">{value}</p>
-          <p className="text-xs text-warm-400 mt-1">{detail}</p>
+          <p className="text-xs text-warm-500 uppercase tracking-wider">{label}</p>
+          <p className="text-2xl font-bold text-warm-900 tabular-nums tracking-tight mt-1">{value}</p>
         </div>
         <div className={cn(
-          'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0',
-          'shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]',
+          'w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0',
           'transition-transform duration-200 group-hover:scale-105',
           iconBg, iconColor
         )}>

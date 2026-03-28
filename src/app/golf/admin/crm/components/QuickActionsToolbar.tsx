@@ -3,7 +3,19 @@
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
-import { IconZap, IconSearch, IconAlertCircle, IconUsers, IconTarget, IconArrowRight, IconX } from '@/components/icons';
+import {
+  IconZap,
+  IconAlertCircle,
+  IconUsers,
+  IconTarget,
+  IconArrowRight,
+  IconX,
+  IconMail,
+  IconPhone,
+  IconVideo,
+  IconPencil,
+  IconCheck,
+} from '@/components/icons';
 import type { Coach, CoachStatus } from '../crm-config';
 
 interface QuickActionsToolbarProps {
@@ -57,8 +69,8 @@ export function QuickActionsToolbar({
   const newLeadCount = stats.byStatus.new_lead || 0;
   const allNewLeads = newLeadCount === stats.total;
 
-  // "Contact Next 10" — move 10 coaches from new_lead to contacted
-  const handleResearchNext = async (count: number) => {
+  // "Move to Pipeline" — move coaches from new_lead to contacted
+  const handleMoveToPipeline = async (count: number) => {
     setProcessing('research');
     try {
       const newLeads = allCoaches
@@ -69,9 +81,9 @@ export function QuickActionsToolbar({
           return a.name.localeCompare(b.name);
         })
         .slice(0, count);
-      
+
       if (newLeads.length === 0) return;
-      
+
       await onBulkUpdate(
         newLeads.map(c => c.id),
         { status: 'contacted' as CoachStatus }
@@ -88,7 +100,7 @@ export function QuickActionsToolbar({
   if (!allNewLeads) return null;
 
   return (
-    <div className="bg-gradient-to-r from-primary-50 to-blue-50 rounded-2xl border border-primary-200/50 p-5 space-y-4">
+    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-5 space-y-4">
       {/* Coaching header */}
       <div className="flex items-start gap-3">
         <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center flex-shrink-0">
@@ -105,31 +117,31 @@ export function QuickActionsToolbar({
       {/* Quick Actions */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <button
-          onClick={() => handleResearchNext(10)}
+          onClick={() => handleMoveToPipeline(10)}
           disabled={processing === 'research'}
           className={cn(
             'flex items-center gap-3 p-4 rounded-xl transition-all text-left',
-            'bg-white/80 border border-white/40 shadow-sm',
+            'bg-white/60 border border-white/20 shadow-sm',
             'hover:shadow-md hover:-translate-y-0.5',
             'disabled:opacity-50 disabled:cursor-not-allowed'
           )}
         >
           <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
-            <IconSearch size={18} className="text-blue-600" />
+            <IconArrowRight size={18} className="text-blue-600" />
           </div>
           <div>
-            <div className="font-semibold text-warm-800 text-sm">Research Next 10</div>
-            <div className="text-xs text-warm-500">Move 10 leads to Researching</div>
+            <div className="font-semibold text-warm-800 text-sm">Move 10 to Pipeline</div>
+            <div className="text-xs text-warm-500">Advance 10 leads to Contacted</div>
           </div>
           <IconArrowRight size={14} className="ml-auto text-warm-400" />
         </button>
 
         <button
-          onClick={() => handleResearchNext(25)}
+          onClick={() => handleMoveToPipeline(25)}
           disabled={processing === 'research'}
           className={cn(
             'flex items-center gap-3 p-4 rounded-xl transition-all text-left',
-            'bg-white/80 border border-white/40 shadow-sm',
+            'bg-white/60 border border-white/20 shadow-sm',
             'hover:shadow-md hover:-translate-y-0.5',
             'disabled:opacity-50 disabled:cursor-not-allowed'
           )}
@@ -138,7 +150,7 @@ export function QuickActionsToolbar({
             <IconUsers size={18} className="text-violet-600" />
           </div>
           <div>
-            <div className="font-semibold text-warm-800 text-sm">Research Next 25</div>
+            <div className="font-semibold text-warm-800 text-sm">Move 25 to Pipeline</div>
             <div className="text-xs text-warm-500">Batch move 25 leads</div>
           </div>
           <IconArrowRight size={14} className="ml-auto text-warm-400" />
@@ -146,23 +158,23 @@ export function QuickActionsToolbar({
 
         <div className={cn(
           'flex items-center gap-3 p-4 rounded-xl text-left',
-          'bg-white/80 border border-white/40 shadow-sm'
+          'bg-white/60 border border-white/20 shadow-sm'
         )}>
           <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
             <IconTarget size={18} className="text-amber-600" />
           </div>
           <div>
             <div className="font-semibold text-warm-800 text-sm">Pipeline Stats</div>
-            <div className="text-xs text-warm-500">{stats.total} total • {stats.contacted} contacted</div>
+            <div className="text-xs text-warm-500">{stats.total} total &middot; {stats.contacted} contacted</div>
           </div>
         </div>
       </div>
 
       {/* Tips */}
-      <div className="flex items-center gap-2 px-3 py-2 bg-white/60 rounded-xl">
+      <div className="flex items-center gap-2 px-3 py-2 bg-white/60 rounded-xl border border-white/20">
         <IconAlertCircle size={14} className="text-blue-500 flex-shrink-0" />
         <p className="text-xs text-warm-600">
-          <strong>Tip:</strong> Star your top prospects first, then use &quot;Research Next 10&quot; to prioritize starred coaches. Use the list view to bulk-select and categorize.
+          <strong>Tip:</strong> Star your top prospects first, then use &quot;Move to Pipeline&quot; to prioritize starred coaches. Use the list view to bulk-select and categorize.
         </p>
       </div>
     </div>
@@ -185,11 +197,11 @@ interface SingleCoachQuickActionProps {
 }
 
 const CONTACT_TYPES = [
-  { value: 'email', label: 'Email', icon: '✉️' },
-  { value: 'call', label: 'Call', icon: '📞' },
-  { value: 'demo', label: 'Demo', icon: '🖥️' },
-  { value: 'meeting', label: 'Meeting', icon: '🤝' },
-  { value: 'note', label: 'Note', icon: '📝' },
+  { value: 'email', label: 'Email', icon: <IconMail size={14} /> },
+  { value: 'call', label: 'Call', icon: <IconPhone size={14} /> },
+  { value: 'demo', label: 'Demo', icon: <IconVideo size={14} /> },
+  { value: 'meeting', label: 'Meeting', icon: <IconUsers size={14} /> },
+  { value: 'note', label: 'Note', icon: <IconPencil size={14} /> },
 ];
 
 function SingleCoachQuickAction({
@@ -216,7 +228,7 @@ function SingleCoachQuickAction({
       if (coach.status === 'new_lead') {
         updates.status = 'contacted' as CoachStatus;
       }
-      
+
       await onBulkUpdate([coach.id], updates);
       setLogForm({ type: 'email', notes: '' });
       onRefresh();
@@ -230,8 +242,8 @@ function SingleCoachQuickAction({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={onClose}>
-      <div 
-        className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/30 w-full max-w-md mx-4 overflow-clip"
+      <div
+        className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 w-full max-w-md mx-4 overflow-clip"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -239,9 +251,9 @@ function SingleCoachQuickAction({
           <div className="flex items-center justify-between">
             <div>
               <h3 className="font-bold text-base">{coach.name}</h3>
-              <p className="text-warm-300 text-sm">{coach.school} • {coach.conference}</p>
+              <p className="text-warm-300 text-sm">{coach.school} &middot; {coach.conference}</p>
             </div>
-            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors">
+            <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-white/10 transition-colors">
               <IconX size={18} className="text-white/70" />
             </button>
           </div>
@@ -249,18 +261,18 @@ function SingleCoachQuickAction({
 
         {/* Log Contact Form */}
         <div className="p-5 space-y-4">
-          <h4 className="font-semibold text-warm-800 text-sm">Log Contact</h4>
-          
+          <h4 className="text-xs font-medium text-warm-600 uppercase tracking-wider">Log Contact</h4>
+
           <div className="flex flex-wrap gap-2">
             {CONTACT_TYPES.map((type) => (
               <button
                 key={type.value}
                 onClick={() => setLogForm(f => ({ ...f, type: type.value }))}
                 className={cn(
-                  'px-3 py-1.5 rounded-xl text-sm font-medium transition-all',
+                  'px-3 py-1.5 rounded-xl text-sm font-medium transition-all flex items-center gap-1.5',
                   logForm.type === type.value
-                    ? 'bg-primary-600 text-white shadow-sm'
-                    : 'bg-warm-100/50 text-warm-600 hover:bg-warm-100 active:bg-warm-200'
+                    ? 'bg-primary-500 text-white shadow-sm'
+                    : 'bg-white/60 border border-warm-200 text-warm-700 hover:bg-warm-50'
                 )}
               >
                 {type.icon} {type.label}
@@ -271,7 +283,7 @@ function SingleCoachQuickAction({
           <textarea
             value={logForm.notes}
             onChange={(e) => setLogForm(f => ({ ...f, notes: e.target.value }))}
-            className="w-full px-3 py-2.5 border border-warm-200/50 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white/50"
+            className="w-full bg-white/60 border border-warm-200 rounded-xl px-4 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/30"
             rows={3}
             placeholder="Notes about this contact..."
           />
@@ -279,16 +291,17 @@ function SingleCoachQuickAction({
           <div className="flex gap-3">
             <button
               onClick={onClose}
-              className="flex-1 py-2.5 rounded-xl text-sm font-medium text-warm-600 hover:bg-warm-50 active:bg-warm-100 transition-colors"
+              className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-white/60 border border-warm-200 text-warm-700 hover:bg-warm-50 transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={handleLogContact}
               disabled={submitting}
-              className="flex-1 py-2.5 bg-primary-600 text-white rounded-xl text-sm font-bold hover:bg-primary-700 transition-colors disabled:opacity-50 shadow-sm"
+              className="flex-1 py-2.5 bg-primary-500 text-white rounded-xl text-sm font-bold hover:bg-primary-600 transition-colors disabled:opacity-50 shadow-sm flex items-center justify-center gap-1.5"
             >
-              {submitting ? 'Saving...' : '✓ Log Contact'}
+              <IconCheck size={14} />
+              {submitting ? 'Saving...' : 'Log Contact'}
             </button>
           </div>
         </div>

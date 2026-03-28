@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import type { Coach, CoachStatus } from '../crm-config';
-import { IconX, IconMail, IconPhone, IconCalendar, IconPlus } from '@/components/icons';
+import { IconX, IconMail, IconPhone, IconCalendar, IconPlus, IconVideo, IconUsers, IconNote } from '@/components/icons';
 
 interface ContactLogModalProps {
   coach: Coach;
@@ -24,11 +24,11 @@ interface ContactLog {
 }
 
 const CONTACT_TYPES = [
-  { value: 'email', label: 'Email', icon: '✉️' },
-  { value: 'call', label: 'Call', icon: '📞' },
-  { value: 'demo', label: 'Demo', icon: '🖥️' },
-  { value: 'meeting', label: 'Meeting', icon: '🤝' },
-  { value: 'note', label: 'Note', icon: '📝' },
+  { value: 'email', label: 'Email', icon: IconMail },
+  { value: 'call', label: 'Call', icon: IconPhone },
+  { value: 'demo', label: 'Demo', icon: IconVideo },
+  { value: 'meeting', label: 'Meeting', icon: IconUsers },
+  { value: 'note', label: 'Note', icon: IconNote },
 ] as const;
 
 const STATUS_OPTIONS: { value: CoachStatus; label: string }[] = [
@@ -41,12 +41,15 @@ const STATUS_OPTIONS: { value: CoachStatus; label: string }[] = [
   { value: 'nurture', label: 'Nurture' },
 ];
 
+const inputClass = 'w-full bg-white/60 border border-warm-200 rounded-xl px-4 py-2.5 text-sm transition-colors focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 outline-none';
+const labelClass = 'text-xs font-medium text-warm-600 uppercase tracking-wider mb-1.5 block';
+
 export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalProps) {
   const [logs, setLogs] = useState<ContactLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  
+
   const [newLog, setNewLog] = useState({
     contact_type: 'email' as ContactLog['contact_type'],
     notes: '',
@@ -146,25 +149,28 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="bg-white/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/20 w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-warm-200 flex-shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100 flex-shrink-0">
           <div>
-            <h2 className="text-lg font-semibold text-warm-900">{coach.name}</h2>
-            <p className="text-sm text-warm-500">{coach.school} • {coach.conference}</p>
+            <div className="flex items-center gap-2">
+              <IconPhone size={16} className="text-warm-600" />
+              <h2 className="text-lg font-semibold text-warm-900">{coach.name}</h2>
+            </div>
+            <p className="text-sm text-warm-500 ml-6">{coach.school} &middot; {coach.conference}</p>
           </div>
           <button
             onClick={onClose}
             aria-label="Close"
-            className="p-2 rounded-lg hover:bg-warm-100 active:bg-warm-200 text-warm-500 transition-colors"
+            className="text-warm-400 hover:text-warm-600 transition-colors"
           >
-            <IconX className="w-5 h-5" />
+            <IconX size={18} />
           </button>
         </div>
 
         {/* Coach Details */}
-        <div className="px-6 py-4 bg-warm-50 border-b border-warm-200 flex-shrink-0">
+        <div className="px-6 py-4 bg-warm-50/50 border-b border-warm-100 flex-shrink-0">
           <div className="flex items-center gap-6 text-sm">
             {coach.email && (
               <a href={`mailto:${coach.email}`} className="flex items-center gap-2 text-blue-600 hover:underline">
@@ -194,7 +200,7 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
             {!showAddForm && (
               <button
                 onClick={() => setShowAddForm(true)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary-100 text-primary-700 hover:bg-primary-200 text-sm transition-colors"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-primary-50 text-primary-700 hover:bg-primary-100 text-sm font-medium transition-colors"
               >
                 <IconPlus className="w-4 h-4" />
                 Log Contact
@@ -204,61 +210,65 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
 
           {/* Add Log Form */}
           {showAddForm && (
-            <form onSubmit={handleAddLog} className="mb-6 p-4 bg-warm-50 rounded-xl space-y-4">
+            <form onSubmit={handleAddLog} className="mb-6 p-4 bg-warm-50/50 rounded-xl border border-warm-100 space-y-4">
               <div className="flex gap-2 flex-wrap">
-                {CONTACT_TYPES.map((type) => (
-                  <button
-                    key={type.value}
-                    type="button"
-                    onClick={() => setNewLog({ ...newLog, contact_type: type.value })}
-                    className={cn(
-                      'px-3 py-1.5 rounded-lg text-sm transition-colors',
-                      newLog.contact_type === type.value
-                        ? 'bg-primary-600 text-white'
-                        : 'bg-white border border-warm-200 hover:bg-warm-100 active:bg-warm-200'
-                    )}
-                  >
-                    {type.icon} {type.label}
-                  </button>
-                ))}
+                {CONTACT_TYPES.map((type) => {
+                  const TypeIcon = type.icon;
+                  return (
+                    <button
+                      key={type.value}
+                      type="button"
+                      onClick={() => setNewLog({ ...newLog, contact_type: type.value })}
+                      className={cn(
+                        'flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm transition-colors',
+                        newLog.contact_type === type.value
+                          ? 'bg-primary-500 text-white'
+                          : 'bg-white border border-warm-200 hover:bg-warm-50 text-warm-700'
+                      )}
+                    >
+                      <TypeIcon size={14} />
+                      {type.label}
+                    </button>
+                  );
+                })}
               </div>
 
               <textarea
                 placeholder="Notes about this contact..."
                 value={newLog.notes}
                 onChange={(e) => setNewLog({ ...newLog, notes: e.target.value })}
-                className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+                className={`${inputClass} resize-none min-h-[100px]`}
                 rows={3}
               />
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-warm-600 mb-1">Next Action</label>
+                  <label className={labelClass}>Next Action</label>
                   <input
                     type="text"
                     placeholder="Follow up with demo offer..."
                     value={newLog.next_action}
                     onChange={(e) => setNewLog({ ...newLog, next_action: e.target.value })}
-                    className="w-full px-3 py-2 border border-warm-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
+                    className={inputClass}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-warm-600 mb-1">Follow-up Date</label>
+                  <label className={labelClass}>Follow-up Date</label>
                   <input
                     type="date"
                     value={newLog.next_action_date}
                     onChange={(e) => setNewLog({ ...newLog, next_action_date: e.target.value })}
-                    className="w-full px-3 py-2 border border-warm-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
+                    className={inputClass}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-warm-600 mb-1">Update Status (optional)</label>
+                <label className={labelClass}>Update Status (optional)</label>
                 <select
                   value={newLog.update_status}
                   onChange={(e) => setNewLog({ ...newLog, update_status: e.target.value as CoachStatus | '' })}
-                  className="w-full px-3 py-2 border border-warm-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm bg-white"
+                  className={`${inputClass} bg-white/60`}
                 >
                   <option value="">Keep current status</option>
                   {STATUS_OPTIONS.map((opt) => (
@@ -267,18 +277,18 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
                 </select>
               </div>
 
-              <div className="flex justify-end gap-2">
+              <div className="flex justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setShowAddForm(false)}
-                  className="px-4 py-2 rounded-lg border border-warm-200 text-warm-600 hover:bg-warm-100 active:bg-warm-200 text-sm transition-colors"
+                  className="bg-white border border-warm-200 text-warm-700 rounded-xl px-5 py-2.5 text-sm font-medium hover:bg-warm-50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50 text-sm transition-colors"
+                  className="bg-primary-500 hover:bg-primary-600 text-white rounded-xl px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
                 >
                   {submitting ? 'Saving...' : 'Save Log'}
                 </button>
@@ -293,27 +303,31 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
             <div className="text-center py-8 text-warm-500">No contact history yet</div>
           ) : (
             <div className="space-y-4">
-              {logs.map((log) => (
-                <div key={log.id} className="border border-warm-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium capitalize">
-                      {CONTACT_TYPES.find(t => t.value === log.contact_type)?.icon}{' '}
-                      {log.contact_type}
-                    </span>
-                    <span className="text-xs text-warm-500">{formatDate(log.contact_date)}</span>
-                  </div>
-                  {log.notes && (
-                    <p className="text-sm text-warm-700">{log.notes}</p>
-                  )}
-                  {log.next_action && (
-                    <div className="mt-2 flex items-center gap-2 text-xs text-warm-500">
-                      <IconCalendar className="w-3 h-3" />
-                      Next: {log.next_action}
-                      {log.next_action_date && ` (${new Date(log.next_action_date).toLocaleDateString()})`}
+              {logs.map((log) => {
+                const typeConfig = CONTACT_TYPES.find(t => t.value === log.contact_type);
+                const TypeIcon = typeConfig?.icon || IconNote;
+                return (
+                  <div key={log.id} className="border border-warm-100 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium capitalize flex items-center gap-1.5">
+                        <TypeIcon size={14} className="text-warm-500" />
+                        {log.contact_type}
+                      </span>
+                      <span className="text-xs text-warm-500">{formatDate(log.contact_date)}</span>
                     </div>
-                  )}
-                </div>
-              ))}
+                    {log.notes && (
+                      <p className="text-sm text-warm-700">{log.notes}</p>
+                    )}
+                    {log.next_action && (
+                      <div className="mt-2 flex items-center gap-2 text-xs text-warm-500">
+                        <IconCalendar className="w-3 h-3" />
+                        Next: {log.next_action}
+                        {log.next_action_date && ` (${new Date(log.next_action_date).toLocaleDateString()})`}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

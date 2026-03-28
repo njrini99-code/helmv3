@@ -25,6 +25,7 @@ import {
   IconVideo as Video,
 } from '@/components/icons';
 import type { Coach, CoachStatus } from '../crm-config';
+import { STATUS_COLORS } from '../crm-config';
 import { ToastProvider, useToast } from './Toast';
 
 // ============================================================================
@@ -390,18 +391,18 @@ function CoachDetailPanelInner({
         {/* Primary accent bar */}
         <div className="h-1 bg-gradient-to-r from-primary-500 to-primary-600 flex-shrink-0" />
 
-        {/* Header */}
-        <div className="bg-white border-b border-warm-100 p-5 flex-shrink-0">
+        {/* Header — glass */}
+        <div className="bg-white/80 backdrop-blur-xl border-b border-white/20 p-5 flex-shrink-0">
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
               {editingContact ? (
                 <div className="space-y-2">
                   <input type="text" value={contactForm.name} onChange={e => setContactForm({ ...contactForm, name: e.target.value })}
-                    placeholder="Name *" className="w-full px-3 py-1.5 border border-warm-200/50 rounded-xl text-sm font-bold text-warm-900 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white/50" />
+                    placeholder="Name *" className="w-full bg-white/50 border border-warm-200/60 rounded-lg px-3 py-2 text-sm font-bold text-warm-900 focus:outline-none focus:ring-2 focus:ring-primary-500/30" />
                   <input type="text" value={contactForm.title} onChange={e => setContactForm({ ...contactForm, title: e.target.value })}
-                    placeholder="Title (e.g. Head Coach)" className="w-full px-3 py-1.5 border border-warm-200/50 rounded-xl text-sm text-warm-600 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white/50" />
+                    placeholder="Title (e.g. Head Coach)" className="w-full bg-white/50 border border-warm-200/60 rounded-lg px-3 py-2 text-sm text-warm-600 focus:outline-none focus:ring-2 focus:ring-primary-500/30" />
                   <input type="text" value={contactForm.school} onChange={e => setContactForm({ ...contactForm, school: e.target.value })}
-                    placeholder="School *" className="w-full px-3 py-1.5 border border-warm-200/50 rounded-xl text-sm font-medium text-warm-900 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white/50" />
+                    placeholder="School *" className="w-full bg-white/50 border border-warm-200/60 rounded-lg px-3 py-2 text-sm font-medium text-warm-900 focus:outline-none focus:ring-2 focus:ring-primary-500/30" />
                   <div className="flex gap-2 pt-1">
                     <button onClick={saveContactInfo} disabled={!contactForm.name.trim() || !contactForm.school.trim()}
                       className="px-3 py-1.5 bg-primary-600 text-white rounded-xl text-xs font-semibold hover:bg-primary-700 transition-colors disabled:opacity-50 shadow-sm">
@@ -412,24 +413,37 @@ function CoachDetailPanelInner({
                 </div>
               ) : (
                 <>
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2.5 mb-1">
                     <button
                       onClick={() => onUpdate({ is_starred: !coach.is_starred })}
-                      className="hover:scale-110 transition-transform"
+                      className="hover:scale-110 active:scale-95 transition-all duration-200"
                     >
-                      <IconStar size={18} className={cn(coach.is_starred ? 'fill-amber-400 text-amber-400' : 'text-warm-300 hover:text-warm-400')} />
+                      <IconStar size={20} className={cn(
+                        'transition-all duration-200',
+                        coach.is_starred ? 'fill-amber-400 text-amber-400 drop-shadow-sm' : 'text-warm-300 hover:text-amber-300'
+                      )} />
                     </button>
-                    <h2 className="text-xl font-bold text-warm-900 truncate">{coach.name}</h2>
-                    {coach.priority > 0 && (
-                      <span className={cn('text-micro font-bold px-1.5 py-0.5 rounded', priorityConfig[coach.priority]?.bgColor, priorityConfig[coach.priority]?.color)}>
-                        {priorityConfig[coach.priority]?.iconLabel} {priorityConfig[coach.priority]?.label}
+                    <h2 className="text-lg font-semibold text-warm-900 truncate">{coach.name}</h2>
+                    {coach.priority > 0 && priorityConfig[coach.priority] && (
+                      <span className={cn('flex items-center gap-1', priorityConfig[coach.priority]?.color)}>
+                        {priorityConfig[coach.priority]?.iconLabel}
                       </span>
                     )}
                   </div>
-                  <p className="text-warm-500 text-sm">{coach.title || 'Coach'}</p>
-                  <p className="text-warm-900 font-medium mt-1">{coach.school}</p>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-warm-500 text-sm">{coach.conference}</span>
+                  <p className="text-sm text-warm-500">{coach.school}</p>
+                  <div className="flex items-center gap-2 mt-2">
+                    {/* Status badge — pill-shaped, clickable */}
+                    <select value={coach.status} onChange={e => handleStatusChange(e.target.value as CoachStatus)}
+                      className={cn(
+                        'appearance-none cursor-pointer px-3 py-1 rounded-full text-xs font-semibold border transition-colors',
+                        STATUS_COLORS[coach.status]?.bg,
+                        STATUS_COLORS[coach.status]?.text,
+                        STATUS_COLORS[coach.status]?.border,
+                      )}>
+                      {ALL_STATUSES.map(s => <option key={s} value={s}>{statusConfig[s as CoachStatus]?.label}</option>)}
+                    </select>
+                    <span className="text-warm-300">&middot;</span>
+                    <span className="text-sm text-warm-500">{coach.conference}</span>
                     <span className="text-warm-300">&middot;</span>
                     <span className={cn('px-1.5 py-0.5 rounded text-micro font-bold',
                       coach.division === 'D2' ? 'bg-blue-100 text-blue-700' : 'bg-primary-100 text-primary-700')}>
@@ -442,27 +456,23 @@ function CoachDetailPanelInner({
             <div className="flex items-center gap-1">
               {!editingContact && (
                 <button onClick={() => setEditingContact(true)}
-                  className="p-2 rounded-xl hover:bg-warm-50 active:bg-warm-100 transition-colors text-warm-400 hover:text-warm-600"
+                  className="p-2 rounded-xl hover:bg-white/60 active:bg-white/80 transition-colors text-warm-400 hover:text-warm-600"
                   title="Edit contact info">
                   <Pencil size={14} />
                 </button>
               )}
-              <button onClick={handleClose} className="p-2 rounded-xl hover:bg-warm-50 active:bg-warm-100 transition-colors text-warm-400 hover:text-warm-600">
+              <button onClick={handleClose} className="p-2 rounded-xl hover:bg-white/60 active:bg-white/80 transition-colors text-warm-400 hover:text-warm-600">
                 <IconX size={18} />
               </button>
             </div>
           </div>
         </div>
 
-        {/* Status + Priority + Contact bar */}
-        <div className="flex-shrink-0 border-b border-warm-200/30 bg-white/50">
+        {/* Contact info + Priority bar */}
+        <div className="flex-shrink-0 border-b border-warm-200/30 bg-white/40">
           <div className="flex items-center gap-3 px-5 py-3">
             <div className="flex items-center gap-2 flex-1">
-              <span className="text-xs text-warm-500 font-medium">Status</span>
-              <select value={coach.status} onChange={e => handleStatusChange(e.target.value as CoachStatus)}
-                className={cn('px-2.5 py-1.5 rounded-xl text-xs font-semibold border-0 cursor-pointer', statusConfig[coach.status]?.bgColor, statusConfig[coach.status]?.color)}>
-                {ALL_STATUSES.map(s => <option key={s} value={s}>{statusConfig[s as CoachStatus]?.label}</option>)}
-              </select>
+              <span className="text-xs text-warm-500 font-medium">{coach.title || 'Coach'}</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-xs text-warm-500 font-medium">Priority</span>
@@ -478,12 +488,12 @@ function CoachDetailPanelInner({
                 <div className="flex items-center gap-1.5 flex-1 min-w-[200px]">
                   <IconMail size={12} className="text-blue-500 flex-shrink-0" />
                   <input type="email" value={contactForm.email} onChange={e => setContactForm({ ...contactForm, email: e.target.value })}
-                    placeholder="Email address" className="flex-1 px-2 py-1 border border-warm-200/50 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white/50" />
+                    placeholder="Email address" className="flex-1 bg-white/50 border border-warm-200/60 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30" />
                 </div>
                 <div className="flex items-center gap-1.5 flex-1 min-w-[160px]">
                   <IconPhone size={12} className="text-primary-500 flex-shrink-0" />
                   <input type="tel" value={contactForm.phone} onChange={e => setContactForm({ ...contactForm, phone: e.target.value })}
-                    placeholder="Phone number" className="flex-1 px-2 py-1 border border-warm-200/50 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white/50" />
+                    placeholder="Phone number" className="flex-1 bg-white/50 border border-warm-200/60 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30" />
                 </div>
               </>
             ) : (
@@ -532,7 +542,7 @@ function CoachDetailPanelInner({
             }>
             {editingNotes ? (
               <textarea value={notesValue} onChange={e => setNotesValue(e.target.value)} autoFocus rows={5}
-                className="w-full px-3 py-2 border border-warm-200/30 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white/50" placeholder="Add notes..." />
+                className="w-full bg-white/50 border border-warm-200/60 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/30" placeholder="Add notes..." />
             ) : (
               <div className="text-sm text-warm-600 whitespace-pre-wrap min-h-[40px]">
                 {coach.notes || <span className="text-warm-400 italic text-xs">Click Edit to add notes about this coach...</span>}
@@ -566,12 +576,12 @@ function CoachDetailPanelInner({
                   })}
                 </div>
                 <textarea placeholder="Notes..." value={newContact.notes} onChange={e => setNewContact({ ...newContact, notes: e.target.value })}
-                  className="w-full px-3 py-2 border border-warm-200/30 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white/50" rows={2} />
+                  className="w-full bg-white/50 border border-warm-200/60 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/30" rows={2} />
                 <div className="grid grid-cols-2 gap-2">
                   <input type="text" placeholder="Next action..." value={newContact.nextAction} onChange={e => setNewContact({ ...newContact, nextAction: e.target.value })}
-                    className="px-3 py-2 border border-warm-200/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white/50" />
+                    className="bg-white/50 border border-warm-200/60 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30" />
                   <input type="date" value={newContact.nextActionDate} onChange={e => setNewContact({ ...newContact, nextActionDate: e.target.value })}
-                    className="px-3 py-2 border border-warm-200/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white/50" />
+                    className="bg-white/50 border border-warm-200/60 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30" />
                 </div>
                 <div className="flex justify-end gap-2">
                   <button onClick={() => setShowContactForm(false)} className="px-3 py-1.5 text-sm text-warm-600 hover:text-warm-800">Cancel</button>
@@ -604,10 +614,7 @@ function CoachDetailPanelInner({
                 </button>
               </div>
             ) : (
-              <div className="space-y-0 relative">
-                {/* Vertical timeline line */}
-                <div className="absolute left-[15px] top-3 bottom-2 w-[2px] bg-warm-200" />
-
+              <div className="space-y-2.5">
                 {timeline.map((entry) => {
                   const defaultConf = { Icon: IconMessageSquare, dotColor: 'bg-warm-300', label: 'Activity' };
                   const typeConf = TIMELINE_TYPE_CONFIG[entry.type] || defaultConf;
@@ -619,79 +626,77 @@ function CoachDetailPanelInner({
                     && (Date.now() - new Date(entry.date).getTime()) < 5 * 60 * 1000;
 
                   return (
-                    <div key={entry.id} className="relative flex gap-3 pb-4 pl-4">
-                      {/* Colored dot */}
-                      <div className={cn(
-                        'absolute left-[11px] top-1.5 w-[10px] h-[10px] rounded-full border-2 border-[#FFFEF8] z-10',
-                        typeConf.dotColor,
-                        isPending && 'animate-pulse'
-                      )} />
+                    <div key={entry.id} className="bg-white/60 backdrop-blur-sm border border-white/40 rounded-xl p-3 shadow-sm hover:bg-white/70 transition-all duration-200">
+                      {/* Header row */}
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-medium text-warm-900 flex items-center gap-2 truncate">
+                          <span className={cn(
+                            'flex items-center justify-center w-6 h-6 rounded-lg flex-shrink-0',
+                            typeConf.dotColor.replace('bg-', 'bg-') + '/15'
+                          )}>
+                            <EntryIcon size={13} className={typeConf.dotColor.replace('bg-', 'text-')} />
+                          </span>
+                          {entry.source === 'event' ? entry.title : typeConf.label}
+                          {entry.source === 'event' && (
+                            <span className={cn(
+                              'text-[10px] font-semibold px-1.5 py-0.5 rounded-md',
+                              entry.eventStatus === 'completed' ? 'bg-emerald-50 text-emerald-600' :
+                              entry.eventStatus === 'cancelled' ? 'bg-red-50 text-red-600' :
+                              'bg-blue-50 text-blue-600'
+                            )}>
+                              {entry.eventStatus || 'scheduled'}
+                            </span>
+                          )}
+                        </p>
+                        <span className="text-xs text-warm-400 tabular-nums flex-shrink-0">{relativeTime(entry.date)}</span>
+                      </div>
 
-                      <div className="ml-4 flex-1 min-w-0">
-                        {/* Header row */}
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="text-sm font-medium text-warm-900 flex items-center gap-1.5 truncate">
-                            <EntryIcon size={12} className="text-warm-400 flex-shrink-0" />
-                            {entry.source === 'event' ? entry.title : typeConf.label}
-                            {entry.source === 'event' && (
-                              <span className={cn(
-                                'text-[10px] font-semibold px-1.5 py-0.5 rounded-md',
-                                entry.eventStatus === 'completed' ? 'bg-emerald-50 text-emerald-600' :
-                                entry.eventStatus === 'cancelled' ? 'bg-red-50 text-red-600' :
-                                'bg-blue-50 text-blue-600'
-                              )}>
-                                {entry.eventStatus || 'scheduled'}
-                              </span>
-                            )}
-                          </p>
-                          <span className="text-xs text-warm-400 tabular-nums flex-shrink-0">{relativeTime(entry.date)}</span>
+                      {/* Notes / description */}
+                      {entry.notes && (
+                        <p className="text-xs text-warm-600 mt-1.5 leading-relaxed ml-8">{entry.notes}</p>
+                      )}
+
+                      {/* Event-specific details */}
+                      {entry.source === 'event' && (
+                        <div className="mt-1.5 ml-8 space-y-0.5">
+                          {entry.location && (
+                            <p className="text-[11px] text-warm-500 flex items-center gap-1">
+                              <span className="text-warm-400">Location:</span> {entry.location}
+                            </p>
+                          )}
+                          {entry.meetingUrl && (
+                            <a href={entry.meetingUrl} target="_blank" rel="noopener noreferrer"
+                              className="text-[11px] text-blue-600 hover:text-blue-700 flex items-center gap-1">
+                              <Video size={10} /> Join meeting
+                            </a>
+                          )}
+                          {entry.outcome && (
+                            <p className="text-[11px] text-warm-500">
+                              <span className="text-warm-400">Outcome:</span> {entry.outcome}
+                            </p>
+                          )}
                         </div>
+                      )}
 
-                        {/* Notes / description */}
-                        {entry.notes && (
-                          <p className="text-xs text-warm-600 mt-0.5 leading-relaxed">{entry.notes}</p>
-                        )}
-
-                        {/* Event-specific details */}
-                        {entry.source === 'event' && (
-                          <div className="mt-1 space-y-0.5">
-                            {entry.location && (
-                              <p className="text-[11px] text-warm-500 flex items-center gap-1">
-                                <span className="text-warm-400">Location:</span> {entry.location}
-                              </p>
-                            )}
-                            {entry.meetingUrl && (
-                              <a href={entry.meetingUrl} target="_blank" rel="noopener noreferrer"
-                                className="text-[11px] text-blue-600 hover:text-blue-700 flex items-center gap-1">
-                                <Video size={10} /> Join meeting
-                              </a>
-                            )}
-                            {entry.outcome && (
-                              <p className="text-[11px] text-warm-500">
-                                <span className="text-warm-400">Outcome:</span> {entry.outcome}
-                              </p>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Email delivery timeline */}
-                        {entry.type === 'email' && entry.source === 'log' && (
+                      {/* Email delivery timeline */}
+                      {entry.type === 'email' && entry.source === 'log' && (
+                        <div className="ml-8">
                           <EmailDeliveryTimeline
                             events={entry.emailEvents || []}
                             isPending={!!isPending}
                             isBounced={entry.emailEvents?.some(e => e.event_type === 'email.bounced') || false}
                             isSpam={entry.emailEvents?.some(e => e.event_type === 'email.complained') || false}
                           />
-                        )}
+                        </div>
+                      )}
 
-                        {/* Next action */}
-                        {entry.nextAction && (
-                          <div className="mt-1.5 flex items-center gap-1.5 text-xs text-amber-600">
-                            <IconClock size={11} /> Next: {entry.nextAction}
-                            {entry.nextActionDate && <span className="text-warm-400">({formatShort(entry.nextActionDate)})</span>}
-                          </div>
-                        )}
-                      </div>
+                      {/* Next action */}
+                      {entry.nextAction && (
+                        <div className="mt-1.5 ml-8 flex items-center gap-1.5 text-xs text-amber-600">
+                          <IconClock size={11} /> Next: {entry.nextAction}
+                          {entry.nextActionDate && <span className="text-warm-400">({formatShort(entry.nextActionDate)})</span>}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -716,7 +721,7 @@ function CoachDetailPanelInner({
               )}
               <div className="flex items-center gap-1">
                 <input id="tag-input" type="text" value={newTag} onChange={e => setNewTag(e.target.value)} onKeyDown={e => e.key === 'Enter' && addTag()}
-                  placeholder="Add tag..." className="px-2 py-1 border border-warm-200/30 rounded-lg text-xs w-24 focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white/50" />
+                  placeholder="Add tag..." className="bg-white/50 border border-warm-200/60 rounded-lg px-3 py-2 text-sm w-28 focus:outline-none focus:ring-2 focus:ring-primary-500/30" />
                 {newTag && <button onClick={addTag} className="w-6 h-6 rounded-md bg-primary-100 text-primary-600 flex items-center justify-center hover:bg-primary-200 transition-colors"><IconPlus size={12} /></button>}
               </div>
             </div>
@@ -729,7 +734,7 @@ function CoachDetailPanelInner({
               {editingFollowUp ? (
                 <div className="flex items-center gap-1">
                   <input type="date" value={followUpDate} onChange={e => setFollowUpDate(e.target.value)}
-                    className="px-2 py-1 border border-warm-200/30 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-primary-500" />
+                    className="bg-white/50 border border-warm-200/60 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30" />
                   <button onClick={saveFollowUp} className="text-xs text-primary-600 font-semibold px-1"><IconCheck size={12} /></button>
                   <button onClick={() => setEditingFollowUp(false)} className="text-xs text-warm-400 px-1"><IconX size={12} /></button>
                 </div>
@@ -758,6 +763,42 @@ function CoachDetailPanelInner({
             <Row label="Best Contact" value={coach.best_contact_method} />
             <Row label="Timezone" value={coach.timezone} />
           </Section>
+        </div>
+
+        {/* Quick actions bar — sticky bottom */}
+        <div className="bg-white/80 backdrop-blur-xl border-t border-white/20 p-4 flex-shrink-0">
+          <div className="flex items-center gap-2">
+            {coach.email ? (
+              <a href={`mailto:${coach.email}`}
+                className="bg-primary-500 text-white rounded-xl px-4 py-2 text-sm font-medium inline-flex items-center gap-1.5 hover:bg-primary-600 transition-colors shadow-sm">
+                <IconMail size={14} /> Email
+              </a>
+            ) : (
+              <button onClick={() => setEditingContact(true)}
+                className="bg-primary-500 text-white rounded-xl px-4 py-2 text-sm font-medium inline-flex items-center gap-1.5 hover:bg-primary-600 transition-colors shadow-sm">
+                <IconMail size={14} /> Email
+              </button>
+            )}
+            {coach.phone ? (
+              <a href={`tel:${coach.phone}`}
+                className="bg-white/60 border border-warm-200 text-warm-700 rounded-xl px-4 py-2 text-sm font-medium inline-flex items-center gap-1.5 hover:bg-warm-50 transition-colors">
+                <IconPhone size={14} /> Call
+              </a>
+            ) : (
+              <button onClick={() => setEditingContact(true)}
+                className="bg-white/60 border border-warm-200 text-warm-700 rounded-xl px-4 py-2 text-sm font-medium inline-flex items-center gap-1.5 hover:bg-warm-50 transition-colors">
+                <IconPhone size={14} /> Call
+              </button>
+            )}
+            <button onClick={() => setEditingFollowUp(true)}
+              className="bg-white/60 border border-warm-200 text-warm-700 rounded-xl px-4 py-2 text-sm font-medium inline-flex items-center gap-1.5 hover:bg-warm-50 transition-colors">
+              <IconCalendar size={14} /> Schedule
+            </button>
+            <button onClick={() => setShowContactForm(true)}
+              className="bg-white/60 border border-warm-200 text-warm-700 rounded-xl px-4 py-2 text-sm font-medium inline-flex items-center gap-1.5 hover:bg-warm-50 transition-colors">
+              <IconFileText size={14} /> Note
+            </button>
+          </div>
         </div>
       </aside>
     </>

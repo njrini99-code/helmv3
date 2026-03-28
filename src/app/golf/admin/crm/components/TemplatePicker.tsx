@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import {
   IconFileText,
-  IconChevronDown,
   IconSearch,
   IconX,
+  IconPlus,
+  IconLoader,
 } from '@/components/icons';
 
 // ── Types ──
@@ -29,19 +30,37 @@ interface TemplatePickerProps {
   coachData?: { name: string; school: string; conference: string };
 }
 
-// ── Category config ──
-const CATEGORIES: { key: TemplateCategory | 'all'; label: string; color: string; bg: string; border: string }[] = [
-  { key: 'all', label: 'All', color: 'text-warm-700', bg: 'bg-warm-100', border: 'border-warm-200' },
-  { key: 'intro', label: 'Intro', color: 'text-blue-700', bg: 'bg-blue-50', border: 'border-blue-200' },
-  { key: 'follow_up', label: 'Follow Up', color: 'text-violet-700', bg: 'bg-violet-50', border: 'border-violet-200' },
-  { key: 'demo_invite', label: 'Demo Invite', color: 'text-cyan-700', bg: 'bg-cyan-50', border: 'border-cyan-200' },
-  { key: 'proposal', label: 'Proposal', color: 'text-amber-700', bg: 'bg-amber-50', border: 'border-amber-200' },
-  { key: 'check_in', label: 'Check In', color: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-200' },
-  { key: 'general', label: 'General', color: 'text-warm-600', bg: 'bg-warm-50', border: 'border-warm-200' },
+// ── Category colors ──
+const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
+  intro: { bg: 'bg-blue-50', text: 'text-blue-700' },
+  follow_up: { bg: 'bg-amber-50', text: 'text-amber-700' },
+  demo_invite: { bg: 'bg-emerald-50', text: 'text-emerald-700' },
+  proposal: { bg: 'bg-violet-50', text: 'text-violet-700' },
+  check_in: { bg: 'bg-teal-50', text: 'text-teal-700' },
+  general: { bg: 'bg-warm-50', text: 'text-warm-700' },
+};
+
+const CATEGORY_LABELS: Record<string, string> = {
+  intro: 'Intro',
+  follow_up: 'Follow Up',
+  demo_invite: 'Demo Invite',
+  proposal: 'Proposal',
+  check_in: 'Check In',
+  general: 'General',
+};
+
+const CATEGORY_OPTIONS: { key: TemplateCategory | 'all'; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'intro', label: 'Intro' },
+  { key: 'follow_up', label: 'Follow Up' },
+  { key: 'demo_invite', label: 'Demo Invite' },
+  { key: 'proposal', label: 'Proposal' },
+  { key: 'check_in', label: 'Check In' },
+  { key: 'general', label: 'General' },
 ];
 
-function getCategoryConfig(cat: TemplateCategory) {
-  return CATEGORIES.find(c => c.key === cat) ?? CATEGORIES[6]!;
+function getCategoryColor(cat: string) {
+  return CATEGORY_COLORS[cat] ?? CATEGORY_COLORS.general;
 }
 
 function replaceMergeTags(text: string, data?: { name: string; school: string; conference: string }): string {
@@ -55,63 +74,147 @@ function replaceMergeTags(text: string, data?: { name: string; school: string; c
 // ── Skeleton ──
 function TemplateSkeleton() {
   return (
-    <div className="space-y-2">
-      {[1, 2, 3].map(i => (
-        <div key={i} className="p-3 rounded-xl border border-warm-100 animate-pulse">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {[1, 2, 3, 4].map(i => (
+        <div key={i} className="bg-white/60 rounded-xl border border-white/20 p-4 animate-pulse">
           <div className="flex items-center gap-2 mb-2">
-            <div className="w-14 h-5 bg-warm-100 rounded-full" />
+            <div className="w-20 h-5 bg-warm-100 rounded-full" />
             <div className="w-28 h-4 bg-warm-100 rounded" />
           </div>
-          <div className="w-3/4 h-3.5 bg-warm-50 rounded" />
+          <div className="w-3/4 h-3.5 bg-warm-50 rounded mb-2" />
+          <div className="w-full h-3 bg-warm-50 rounded mb-1" />
+          <div className="w-2/3 h-3 bg-warm-50 rounded" />
         </div>
       ))}
     </div>
   );
 }
 
+// ── New Template Form ──
+function NewTemplateForm({ onSave, onCancel }: { onSave: () => void; onCancel: () => void }) {
+  const [name, setName] = useState('');
+  const [category, setCategory] = useState<TemplateCategory>('general');
+  const [subject, setSubject] = useState('');
+  const [body, setBody] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSave = async () => {
+    if (!name.trim() || !subject.trim() || !body.trim()) {
+      setError('Name, subject, and body are required');
+      return;
+    }
+    setSaving(true);
+    setError('');
+    try {
+      const supabase = createClient();
+      const { error: insertError } = await supabase
+        .from('crm_email_templates')
+        .insert({ name: name.trim(), category, subject: subject.trim(), body: body.trim() });
+      if (insertError) throw insertError;
+      onSave();
+    } catch {
+      setError('Failed to save template');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="bg-white/80 backdrop-blur-xl rounded-xl border border-primary-200 p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <h4 className="text-sm font-semibold text-warm-800">Create Template</h4>
+        <button onClick={onCancel} className="text-warm-400 hover:text-warm-600 transition-colors">
+          <IconX size={16} />
+        </button>
+      </div>
+
+      <div className="space-y-2">
+        <input
+          type="text"
+          value={name}
+          onChange={e => setName(e.target.value)}
+          placeholder="Template name"
+          className="w-full px-3 py-2 bg-warm-50/50 border border-warm-200/30 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-300"
+        />
+
+        <select
+          value={category}
+          onChange={e => setCategory(e.target.value as TemplateCategory)}
+          className="w-full px-3 py-2 bg-warm-50/50 border border-warm-200/30 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-300"
+        >
+          {CATEGORY_OPTIONS.filter(c => c.key !== 'all').map(c => (
+            <option key={c.key} value={c.key}>{c.label}</option>
+          ))}
+        </select>
+
+        <input
+          type="text"
+          value={subject}
+          onChange={e => setSubject(e.target.value)}
+          placeholder="Subject line"
+          className="w-full px-3 py-2 bg-warm-50/50 border border-warm-200/30 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-300"
+        />
+
+        <textarea
+          value={body}
+          onChange={e => setBody(e.target.value)}
+          placeholder="Email body..."
+          rows={4}
+          className="w-full px-3 py-2 bg-warm-50/50 border border-warm-200/30 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-300 resize-none"
+        />
+      </div>
+
+      {error && <p className="text-xs text-red-600">{error}</p>}
+
+      <div className="flex justify-end gap-2">
+        <button
+          onClick={onCancel}
+          className="px-3 py-1.5 rounded-lg text-sm text-warm-600 hover:bg-warm-100 transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-50 transition-colors"
+        >
+          {saving && <IconLoader size={14} className="animate-spin" />}
+          Save Template
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function TemplatePicker({ onSelect, coachData }: TemplatePickerProps) {
-  const [open, setOpen] = useState(false);
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [fetched, setFetched] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<TemplateCategory | 'all'>('all');
   const [search, setSearch] = useState('');
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [showNewForm, setShowNewForm] = useState(false);
 
-  // Close on click outside
-  useEffect(() => {
-    if (!open) return;
-    function handleClick(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+  const fetchTemplates = async () => {
+    setLoading(true);
+    try {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from('crm_email_templates')
+        .select('id, name, subject, body, category, merge_tags, is_default, usage_count')
+        .order('category')
+        .order('usage_count', { ascending: false });
+      setTemplates((data as EmailTemplate[] | null) ?? []);
+    } catch {
+      // silently fail — user can retry
+    } finally {
+      setLoading(false);
     }
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [open]);
+  };
 
-  // Fetch templates on first open
   useEffect(() => {
-    if (!open || fetched) return;
-    const fetchTemplates = async () => {
-      setLoading(true);
-      try {
-        const supabase = createClient();
-        const { data } = await supabase
-          .from('crm_email_templates' as 'crm_contact_log')
-          .select('id, name, subject, body, category, merge_tags, is_default, usage_count')
-          .order('category')
-          .order('usage_count', { ascending: false }) as { data: EmailTemplate[] | null };
-        setTemplates(data ?? []);
-        setFetched(true);
-      } catch {
-        // silently fail — user can retry
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchTemplates();
-  }, [open, fetched]);
+  }, []);
 
   const filtered = templates.filter(t => {
     if (activeCategory !== 'all' && t.category !== activeCategory) return false;
@@ -123,119 +226,140 @@ export function TemplatePicker({ onSelect, coachData }: TemplatePickerProps) {
   });
 
   const handleSelect = (template: EmailTemplate) => {
+    setSelectedId(template.id);
     onSelect({
       id: template.id,
       subject: replaceMergeTags(template.subject, coachData),
       body: replaceMergeTags(template.body, coachData),
     });
-    setOpen(false);
+  };
+
+  const handleNewTemplateSaved = () => {
+    setShowNewForm(false);
+    fetchTemplates();
   };
 
   return (
-    <div className="relative" ref={dropdownRef}>
-      {/* Trigger Button */}
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className={cn(
-          'flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-medium transition-all',
-          'bg-white/70 border border-warm-200/50 hover:bg-white hover:border-warm-300/60 hover:shadow-sm',
-          'text-warm-700',
-          open && 'bg-white border-warm-300/60 shadow-sm'
-        )}
-      >
-        <IconFileText size={15} className="text-warm-500" />
-        Use Template
-        <IconChevronDown size={14} className={cn('text-warm-400 transition-transform duration-200', open && 'rotate-180')} />
-      </button>
-
-      {/* Dropdown */}
-      {open && (
-        <div className="absolute left-0 top-full mt-2 z-50 w-[420px] bg-white/95 backdrop-blur-xl border border-white/40 rounded-2xl shadow-2xl overflow-hidden">
-          {/* Search */}
-          <div className="p-3 border-b border-warm-100/50">
-            <div className="relative">
-              <IconSearch size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
-              <input
-                type="text"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Search templates..."
-                className="w-full pl-9 pr-8 py-2 bg-warm-50/50 border border-warm-200/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-300"
-                autoFocus
-              />
-              {search && (
-                <button
-                  onClick={() => setSearch('')}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-warm-400 hover:text-warm-600"
-                >
-                  <IconX size={14} />
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Category Tabs */}
-          <div className="px-3 pt-2 pb-1 flex gap-1 overflow-x-auto scrollbar-hide">
-            {CATEGORIES.map(cat => (
-              <button
-                key={cat.key}
-                onClick={() => setActiveCategory(cat.key)}
-                className={cn(
-                  'px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all',
-                  activeCategory === cat.key
-                    ? `${cat.bg} ${cat.color} border ${cat.border}`
-                    : 'text-warm-500 hover:bg-warm-50 border border-transparent'
-                )}
-              >
-                {cat.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Template List */}
-          <div className="p-3 max-h-[320px] overflow-y-auto space-y-1.5">
-            {loading ? (
-              <TemplateSkeleton />
-            ) : filtered.length === 0 ? (
-              <div className="py-6 text-center text-sm text-warm-400">
-                {search ? 'No templates match your search' : 'No templates in this category'}
-              </div>
-            ) : (
-              filtered.map(template => {
-                const catConfig = getCategoryConfig(template.category)!;
-                return (
-                  <button
-                    key={template.id}
-                    onClick={() => handleSelect(template)}
-                    className="w-full text-left p-3 rounded-xl border border-warm-100/50 hover:border-warm-200 hover:bg-warm-50/50 transition-all group"
-                  >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className={cn('px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider', catConfig!.bg, catConfig!.color)}>
-                        {catConfig!.label}
-                      </span>
-                      <span className="text-sm font-semibold text-warm-800 group-hover:text-warm-900 truncate">
-                        {template.name}
-                      </span>
-                    </div>
-                    <p className="text-xs text-warm-500 truncate leading-relaxed">
-                      {template.subject}
-                    </p>
-                  </button>
-                );
-              })
-            )}
-          </div>
-
-          {/* Footer */}
-          {!loading && filtered.length > 0 && (
-            <div className="px-3 py-2 border-t border-warm-100/50 bg-warm-50/30">
-              <p className="text-[10px] text-warm-400 text-center">
-                {filtered.length} template{filtered.length !== 1 ? 's' : ''} &middot; Merge tags auto-filled on select
-              </p>
-            </div>
+    <div className="space-y-4">
+      {/* Header row: icon + search */}
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 text-warm-700">
+          <IconFileText size={16} className="text-warm-500" />
+          <span className="text-sm font-semibold">Templates</span>
+        </div>
+        <div className="relative flex-1 max-w-xs">
+          <IconSearch size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search templates..."
+            className="w-full pl-9 pr-8 py-1.5 bg-warm-50/50 border border-warm-200/30 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-300"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-warm-400 hover:text-warm-600"
+            >
+              <IconX size={14} />
+            </button>
           )}
         </div>
+      </div>
+
+      {/* Category filter tabs */}
+      <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
+        {CATEGORY_OPTIONS.map(cat => {
+          const colors = cat.key !== 'all' ? getCategoryColor(cat.key) : null;
+          const isActive = activeCategory === cat.key;
+          return (
+            <button
+              key={cat.key}
+              onClick={() => setActiveCategory(cat.key)}
+              className={cn(
+                'px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all border',
+                isActive && colors
+                  ? `${colors.bg} ${colors.text} border-current/20`
+                  : isActive
+                    ? 'bg-warm-100 text-warm-700 border-warm-200'
+                    : 'text-warm-500 hover:bg-warm-50 border-transparent'
+              )}
+            >
+              {cat.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Template card grid */}
+      {loading ? (
+        <TemplateSkeleton />
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {filtered.length === 0 && !showNewForm ? (
+            <div className="col-span-full py-8 text-center text-sm text-warm-400">
+              {search ? 'No templates match your search' : 'No templates in this category'}
+            </div>
+          ) : (
+            filtered.map(template => {
+              const colors = getCategoryColor(template.category);
+              const isSelected = selectedId === template.id;
+              return (
+                <button
+                  key={template.id}
+                  onClick={() => handleSelect(template)}
+                  className={cn(
+                    'w-full text-left bg-white/60 rounded-xl border border-white/20 p-4 cursor-pointer transition-all duration-200 hover:bg-white/80 hover:shadow-sm',
+                    isSelected && 'ring-2 ring-primary-500 border-primary-300'
+                  )}
+                >
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="font-semibold text-sm text-warm-800 truncate">
+                      {template.name}
+                    </span>
+                    <span className={cn('shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider', colors.bg, colors.text)}>
+                      {CATEGORY_LABELS[template.category] ?? template.category}
+                    </span>
+                  </div>
+                  <p className="text-sm text-warm-500 truncate leading-relaxed">
+                    {template.subject}
+                  </p>
+                  <p className="text-xs text-warm-400 line-clamp-2 mt-1 leading-relaxed">
+                    {template.body}
+                  </p>
+                  <p className="text-[10px] text-warm-400 mt-2">
+                    Used {template.usage_count ?? 0} times
+                  </p>
+                </button>
+              );
+            })
+          )}
+
+          {/* New Template card */}
+          {showNewForm ? (
+            <div className="col-span-full">
+              <NewTemplateForm
+                onSave={handleNewTemplateSaved}
+                onCancel={() => setShowNewForm(false)}
+              />
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowNewForm(true)}
+              className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-warm-200/50 p-4 cursor-pointer transition-all duration-200 hover:border-warm-300 hover:bg-warm-50/30 min-h-[120px]"
+            >
+              <IconPlus size={20} className="text-warm-400" />
+              <span className="text-sm font-medium text-warm-500">Create Template</span>
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Footer */}
+      {!loading && filtered.length > 0 && (
+        <p className="text-[10px] text-warm-400 text-center">
+          {filtered.length} template{filtered.length !== 1 ? 's' : ''} &middot; Merge tags auto-filled on select
+        </p>
       )}
     </div>
   );

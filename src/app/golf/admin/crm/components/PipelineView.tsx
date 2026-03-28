@@ -2,8 +2,9 @@
 
 import { useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { IconStar, IconArrowRight, IconRocket, IconZap } from '@/components/icons';
+import { IconStar, IconArrowRight, IconRocket, IconZap, IconUsers } from '@/components/icons';
 import type { Coach, CoachStatus, PipelineStage } from '../crm-config';
+import { STATUS_COLORS, PRIORITY_CONFIG } from '../crm-config';
 
 interface PipelineViewProps {
   coaches: Coach[];
@@ -34,6 +35,23 @@ function getNextStageStatus(stages: PipelineStage[], currentStageId: string): Co
 
 function daysSince(dateStr: string): number {
   return Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function relativeTime(dateStr: string | null): string {
+  if (!dateStr) return 'Never';
+  const days = daysSince(dateStr);
+  if (days === 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return `${days}d ago`;
+  if (days < 30) return `${Math.floor(days / 7)}w ago`;
+  if (days < 365) return `${Math.floor(days / 30)}mo ago`;
+  return `${Math.floor(days / 365)}y ago`;
+}
+
+/** Get the primary status color for a pipeline stage (uses first status in the stage) */
+function getStageStatusColor(stage: PipelineStage) {
+  const primaryStatus = stage.statuses[0];
+  return primaryStatus ? STATUS_COLORS[primaryStatus] : null;
 }
 
 export function PipelineView({
@@ -198,6 +216,7 @@ export function PipelineView({
           const visibleCoaches = isExpanded ? columnCoaches : columnCoaches.slice(0, CARDS_PER_PAGE);
           const hasMore = columnCoaches.length > CARDS_PER_PAGE && !isExpanded;
           const nextStatus = getNextStageStatus(pipelineStages, stage.id);
+          const stageColors = getStageStatusColor(stage);
 
           return (
             <div
@@ -207,26 +226,27 @@ export function PipelineView({
               onDragLeave={() => setDropTarget(null)}
               onDrop={(e) => handleDrop(e, stage)}
             >
-              {/* Column Header — clean, minimal */}
+              {/* Column Header — premium glass with status color accent */}
               <div className={cn(
-                'rounded-xl px-3 py-2.5 mb-2 border-t-[3px]',
-                'glass-standard',
-                stage.borderColor
+                'bg-white/50 backdrop-blur-sm border border-white/20 rounded-2xl overflow-hidden mb-2',
               )}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="text-sm flex-shrink-0">{stage.icon}</span>
-                    <h3 className="text-sm font-semibold text-warm-900 truncate">{stage.label}</h3>
+                {/* Status color accent bar */}
+                <div className={cn('h-1', stageColors?.dot || 'bg-warm-300')} />
+                <div className="px-3 py-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="flex-shrink-0">{stage.icon}</span>
+                      <h3 className="text-sm font-semibold text-warm-900 truncate">{stage.label}</h3>
+                    </div>
+                    <span className={cn(
+                      'px-2 py-0.5 rounded-full text-xs font-medium tabular-nums flex-shrink-0',
+                      columnCoaches.length > 0
+                        ? `${stageColors?.bg || 'bg-warm-50'} ${stageColors?.text || 'text-warm-700'}`
+                        : 'bg-warm-100 text-warm-400'
+                    )}>
+                      {columnCoaches.length}
+                    </span>
                   </div>
-                  <span className={cn(
-                    'min-w-[22px] h-[22px] px-1.5 rounded-full flex items-center justify-center flex-shrink-0',
-                    'text-label font-bold tabular-nums',
-                    columnCoaches.length > 0
-                      ? `bg-gradient-to-r ${stage.gradient} text-white`
-                      : 'bg-warm-100 text-warm-400'
-                  )}>
-                    {columnCoaches.length}
-                  </span>
                 </div>
               </div>
 
@@ -277,11 +297,11 @@ export function PipelineView({
 }
 
 // ============================================================================
-// KANBAN CARD — premium hover lift + keyboard accessibility
+// KANBAN CARD — premium glass card with hover lift + keyboard accessibility
 // ============================================================================
 function KanbanCard({
-  coach, nextStatus, isDragging,
-  onDragStart, onDragEnd, onClick, onStatusChange,
+  coach, nextStatus, isDragging, priorityConfig,
+  onDragStart, onDragEnd, onClick, onStatusChange, onToggleStar,
 }: {
   coach: Coach;
   nextStatus: CoachStatus | null;
@@ -295,6 +315,7 @@ function KanbanCard({
   onToggleStar: (coachId: string, currentStarred: boolean) => void;
 }) {
   const daysInStage = daysSince(coach.updated_at);
+  const priorityCfg = PRIORITY_CONFIG[coach.priority];
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -319,8 +340,8 @@ function KanbanCard({
       onClick={onClick}
       onKeyDown={handleKeyDown}
       className={cn(
-        'p-3 rounded-xl bg-white border border-warm-200/60 shadow-sm',
-        'hover:shadow-md hover:-translate-y-0.5 hover:border-warm-300',
+        'bg-white/70 rounded-xl p-3 shadow-sm',
+        'hover:shadow-md hover:-translate-y-0.5',
         'focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-300',
         'transition-all duration-200',
         'cursor-grab active:cursor-grabbing group',
@@ -328,44 +349,50 @@ function KanbanCard({
       )}
     >
       {/* Name + Star */}
-      <div className="flex items-start justify-between gap-2 mb-1.5">
+      <div className="flex items-start justify-between gap-2 mb-1">
         <p className="text-sm font-semibold text-warm-900 leading-tight line-clamp-1">{coach.name}</p>
-        {coach.is_starred && <IconStar size={14} className="text-amber-500 fill-amber-500 flex-shrink-0 mt-0.5" />}
+        <button
+          onClick={(e) => { e.stopPropagation(); onToggleStar(coach.id, coach.is_starred); }}
+          className="flex-shrink-0 mt-0.5"
+          tabIndex={-1}
+          aria-label={coach.is_starred ? 'Unstar coach' : 'Star coach'}
+        >
+          {coach.is_starred ? (
+            <IconStar size={14} className="text-amber-500 fill-amber-500" />
+          ) : (
+            <IconStar size={14} className="text-warm-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+          )}
+        </button>
       </div>
 
       {/* School */}
-      <p className="text-xs text-warm-500 line-clamp-1 mb-0.5">{coach.school}</p>
+      <p className="text-xs text-warm-500 line-clamp-1 mb-2">{coach.school}</p>
 
-      {/* Conference */}
-      <p className="text-label text-warm-400 line-clamp-1 mb-2">{coach.conference}</p>
-
-      {/* Bottom: Division + Days + Priority + Quick advance */}
+      {/* Bottom row: Division + Priority dot + Last contacted */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
+          {/* Division badge */}
           <span className={cn(
-            'text-micro font-bold uppercase tracking-wider px-1.5 py-0.5 rounded',
-            coach.division === 'D2' ? 'bg-blue-50 text-blue-700' : 'bg-primary-100 text-primary-700'
+            'text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full',
+            coach.division === 'D2' ? 'bg-blue-50 text-blue-700' : 'bg-primary-50 text-primary-700'
           )}>
             {coach.division}
           </span>
-          <span className={cn(
-            'text-micro font-medium tabular-nums',
-            daysInStage > 14 ? 'text-amber-600' : 'text-warm-400'
-          )}>
-            {daysInStage}d
-          </span>
-          {coach.priority > 0 && (
-            <span className={cn(
-              'text-micro font-bold uppercase tracking-wider px-1.5 py-0.5 rounded',
-              coach.priority >= 2 ? 'bg-orange-50 text-orange-600' : 'bg-amber-50 text-amber-600'
-            )}>
-              {coach.priority >= 2 ? 'Hot' : 'High'}
-            </span>
+          {/* Priority dot */}
+          {coach.priority > 0 && priorityCfg?.icon && (
+            <span className="flex-shrink-0">{priorityCfg.icon}</span>
           )}
         </div>
 
-        {/* Quick advance button */}
-        {nextStatus && (
+        {/* Last contacted — relative time */}
+        <span className="text-xs text-warm-400 tabular-nums">
+          {relativeTime(coach.last_contacted_at)}
+        </span>
+      </div>
+
+      {/* Quick advance button */}
+      {nextStatus && (
+        <div className="flex justify-end mt-1.5">
           <button
             onClick={(e) => { e.stopPropagation(); onStatusChange(coach.id, nextStatus); }}
             className="opacity-0 group-hover:opacity-100 focus:opacity-100 w-6 h-6 rounded-md flex items-center justify-center hover:bg-primary-50 active:bg-primary-100 text-primary-600 transition-all"
@@ -375,23 +402,23 @@ function KanbanCard({
           >
             <IconArrowRight size={12} />
           </button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
 
 // ============================================================================
-// EMPTY COLUMN
+// EMPTY COLUMN — clean muted state, no emoji
 // ============================================================================
 function EmptyColumn({ stage }: { stage: PipelineStage }) {
   return (
     <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
-      <div className="w-10 h-10 rounded-xl bg-warm-50 flex items-center justify-center mb-2">
-        <span className="text-lg">{stage.icon}</span>
+      <div className="w-10 h-10 rounded-xl bg-warm-50 flex items-center justify-center mb-2 text-warm-300">
+        <IconUsers size={20} />
       </div>
       <p className="text-xs text-warm-400 font-medium">No coaches here yet</p>
-      <p className="text-label text-warm-300 mt-0.5">Drag coaches here or update their status</p>
+      <p className="text-[10px] text-warm-300 mt-0.5">Drag coaches here or update their status</p>
     </div>
   );
 }

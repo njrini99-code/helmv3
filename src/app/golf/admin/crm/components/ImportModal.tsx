@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import type { Division, ProgramType } from '../crm-config';
-import { IconX, IconCheck, IconWarning } from '@/components/icons';
+import { IconX, IconCheck, IconWarning, IconUpload } from '@/components/icons';
 
 interface ImportModalProps {
   onClose: () => void;
@@ -21,6 +21,9 @@ interface ParsedCoach {
   program: ProgramType;
   isDuplicate?: boolean;
 }
+
+const inputClass = 'w-full bg-white/60 border border-warm-200 rounded-xl px-4 py-2.5 text-sm transition-colors focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 outline-none';
+const labelClass = 'text-xs font-medium text-warm-600 uppercase tracking-wider mb-1.5 block';
 
 export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
   const [step, setStep] = useState<'upload' | 'preview' | 'importing' | 'done'>('upload');
@@ -175,7 +178,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
     const importErrors: string[] = [];
 
     try {
-      // Batch insert — single .insert() call with array
+      // Batch insert -- single .insert() call with array
       const insertPayload = coachesToImport.map(coach => ({
         name: coach.name,
         title: coach.title || null,
@@ -250,17 +253,20 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="bg-white/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/20 w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-warm-200 flex-shrink-0">
-          <h2 className="text-lg font-semibold text-warm-900">Import Coaches</h2>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100 flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <IconUpload size={16} className="text-warm-600" />
+            <h2 className="text-lg font-semibold text-warm-900">Import Coaches</h2>
+          </div>
           <button
             onClick={onClose}
             aria-label="Close"
-            className="p-2 rounded-lg hover:bg-warm-100 active:bg-warm-200 text-warm-500 transition-colors"
+            className="text-warm-400 hover:text-warm-600 transition-colors"
           >
-            <IconX className="w-5 h-5" />
+            <IconX size={18} />
           </button>
         </div>
 
@@ -268,11 +274,11 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
           {step === 'upload' && (
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-2">Division</label>
+                <label className={labelClass}>Division</label>
                 <select
                   value={division}
                   onChange={(e) => setDivision(e.target.value as Division)}
-                  className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
+                  className={`${inputClass} bg-white/60`}
                 >
                   <option value="D2">Division II</option>
                   <option value="D3">Division III</option>
@@ -280,28 +286,28 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-2">Upload CSV File</label>
+                <label className={labelClass}>Upload CSV File</label>
                 <input
                   type="file"
                   accept=".csv"
                   onChange={handleFileUpload}
-                  className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className={inputClass}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-warm-700 mb-2">Or Paste CSV Data</label>
+                <label className={labelClass}>Or Paste CSV Data</label>
                 <textarea
                   value={csvText}
                   onChange={(e) => setCsvText(e.target.value)}
                   placeholder="Conference,School,Coach Name,Title,Email,Program"
-                  className="w-full px-4 py-2 border border-warm-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono text-sm resize-none"
+                  className={`${inputClass} font-mono resize-none min-h-[100px]`}
                   rows={10}
                 />
               </div>
 
               {errors.length > 0 && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
                   <p className="font-medium text-red-800 mb-2">Parse Errors:</p>
                   <ul className="text-sm text-red-600 space-y-1">
                     {errors.map((err, i) => (
@@ -320,14 +326,14 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
               <div className="flex justify-end gap-3">
                 <button
                   onClick={onClose}
-                  className="px-4 py-2 rounded-lg border border-warm-200 text-warm-600 hover:bg-warm-50 active:bg-warm-100 transition-colors"
+                  className="bg-white border border-warm-200 text-warm-700 rounded-xl px-5 py-2.5 text-sm font-medium hover:bg-warm-50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={parseCSV}
                   disabled={!csvText.trim()}
-                  className="px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50 transition-colors"
+                  className="bg-primary-500 hover:bg-primary-600 text-white rounded-xl px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
                 >
                   Parse & Preview
                 </button>
@@ -355,32 +361,32 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
               </div>
 
               {errors.length > 0 && (
-                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="text-sm text-yellow-800">
-                    <IconWarning className="w-4 h-4 inline mr-1" />
+                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-xl">
+                  <p className="text-sm text-yellow-800 flex items-center gap-1.5">
+                    <IconWarning className="w-4 h-4" />
                     {errors.length} rows skipped due to errors
                   </p>
                 </div>
               )}
 
               {duplicateCount > 0 && (
-                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                  <p className="text-sm text-amber-800">
-                    <IconWarning className="w-4 h-4 inline mr-1" />
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                  <p className="text-sm text-amber-800 flex items-center gap-1.5">
+                    <IconWarning className="w-4 h-4" />
                     {duplicateCount} coach{duplicateCount !== 1 ? 'es' : ''} already exist (matched by email) and will be skipped
                   </p>
                 </div>
               )}
 
-              <div className="border border-warm-200 rounded-lg overflow-hidden max-h-[300px] overflow-y-auto">
+              <div className="border border-warm-100 rounded-xl overflow-hidden max-h-[300px] overflow-y-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-warm-50 sticky top-0">
                     <tr>
-                      <th className="text-left px-3 py-2 text-xs font-medium text-warm-500">Name</th>
-                      <th className="text-left px-3 py-2 text-xs font-medium text-warm-500">School</th>
-                      <th className="text-left px-3 py-2 text-xs font-medium text-warm-500">Conference</th>
-                      <th className="text-left px-3 py-2 text-xs font-medium text-warm-500">Program</th>
-                      <th className="text-left px-3 py-2 text-xs font-medium text-warm-500 w-20">Status</th>
+                      <th className="text-left px-3 py-2 text-xs font-medium text-warm-500 uppercase tracking-wider">Name</th>
+                      <th className="text-left px-3 py-2 text-xs font-medium text-warm-500 uppercase tracking-wider">School</th>
+                      <th className="text-left px-3 py-2 text-xs font-medium text-warm-500 uppercase tracking-wider">Conference</th>
+                      <th className="text-left px-3 py-2 text-xs font-medium text-warm-500 uppercase tracking-wider">Program</th>
+                      <th className="text-left px-3 py-2 text-xs font-medium text-warm-500 uppercase tracking-wider w-20">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-warm-100">
@@ -411,14 +417,14 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
               <div className="flex justify-end gap-3">
                 <button
                   onClick={() => { setStep('upload'); setDuplicateCount(0); }}
-                  className="px-4 py-2 rounded-lg border border-warm-200 text-warm-600 hover:bg-warm-50 active:bg-warm-100 transition-colors"
+                  className="bg-white border border-warm-200 text-warm-700 rounded-xl px-5 py-2.5 text-sm font-medium hover:bg-warm-50 transition-colors"
                 >
                   Back
                 </button>
                 <button
                   onClick={handleImport}
                   disabled={parsedData.filter(c => !c.isDuplicate).length === 0}
-                  className="px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50 transition-colors"
+                  className="bg-primary-500 hover:bg-primary-600 text-white rounded-xl px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
                 >
                   Import {parsedData.filter(c => !c.isDuplicate).length} Coaches
                 </button>
@@ -461,7 +467,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
                   importProgress.errors === 0 ? 'text-primary-600' : 'text-yellow-600'
                 )} />
               </div>
-              <h3 className="text-lg font-semibold text-warm-900 mb-2">Import Complete!</h3>
+              <h3 className="text-lg font-semibold text-warm-900 mb-2">Import Complete</h3>
               <p className="text-warm-600">
                 Successfully imported {importProgress.total - importProgress.errors} coaches
                 {importProgress.errors > 0 && ` (${importProgress.errors} failed)`}
@@ -469,7 +475,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
               </p>
 
               {errors.length > 0 && (
-                <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-left max-h-[200px] overflow-y-auto">
+                <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-xl text-left max-h-[200px] overflow-y-auto">
                   <p className="font-medium text-red-800 mb-2">Errors:</p>
                   <ul className="text-sm text-red-600 space-y-1">
                     {errors.slice(0, 20).map((err, i) => (
@@ -484,7 +490,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
 
               <button
                 onClick={onSuccess}
-                className="mt-6 px-6 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors"
+                className="mt-6 bg-primary-500 hover:bg-primary-600 text-white rounded-xl px-5 py-2.5 text-sm font-medium transition-colors"
               >
                 Done
               </button>

@@ -81,7 +81,7 @@ export function InboundLeadsView() {
         name: request.name || request.email.split('@')[0] || 'Unknown',
         email: request.email,
         school: request.organization || request.email.split('@')[1]?.split('.')[0] || 'Unknown',
-        conference: 'Unknown',
+        conference: '',
         division: 'D3',
         program: 'both',
         status: 'new_lead',
@@ -98,13 +98,6 @@ export function InboundLeadsView() {
 
     await fetchRequests();
     setProcessing(null);
-  };
-
-  const stats = {
-    total: requests.length,
-    new: requests.filter(r => !r.status || r.status === 'new').length,
-    contacted: requests.filter(r => r.status === 'contacted').length,
-    converted: requests.filter(r => r.status === 'converted').length,
   };
 
   // Refetch all for stats regardless of filter
@@ -162,16 +155,16 @@ export function InboundLeadsView() {
 
       {/* Filter Tabs + Refresh */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1 p-1 rounded-xl bg-white/50 border border-warm-200/30">
+        <div className="flex items-center gap-1 p-1 rounded-xl bg-white/60 backdrop-blur-sm border border-white/20">
           {(['all', 'new', 'contacted', 'converted'] as FilterStatus[]).map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
               className={cn(
-                'px-4 py-2 rounded-lg text-sm font-medium transition-colors capitalize',
+                'px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 capitalize',
                 filter === f
                   ? 'bg-white shadow-sm text-warm-900'
-                  : 'text-warm-500 hover:text-warm-700'
+                  : 'text-warm-500 hover:text-warm-700 hover:bg-white/40'
               )}
             >
               {f === 'all' ? 'All' : f}
@@ -281,14 +274,14 @@ export function InboundLeadsView() {
                         <button
                           onClick={() => markContacted(request.id)}
                           disabled={isProcessing}
-                          className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white border border-warm-200/50 text-warm-600 hover:bg-warm-50 transition-colors disabled:opacity-50"
+                          className="px-3 py-1.5 rounded-xl text-xs font-medium bg-white/60 border border-warm-200 text-warm-700 hover:bg-warm-50 transition-colors disabled:opacity-50"
                         >
                           Mark Contacted
                         </button>
                         <button
                           onClick={() => addToCRM(request)}
                           disabled={isProcessing}
-                          className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary-600 text-white hover:bg-primary-700 transition-colors disabled:opacity-50 flex items-center gap-1"
+                          className="px-3 py-1.5 rounded-xl text-xs font-medium bg-primary-500 text-white hover:bg-primary-600 transition-colors disabled:opacity-50 flex items-center gap-1"
                         >
                           <IconUserPlus size={12} />
                           Add to CRM
@@ -299,7 +292,7 @@ export function InboundLeadsView() {
                       <button
                         onClick={() => addToCRM(request)}
                         disabled={isProcessing}
-                        className="px-3 py-1.5 rounded-lg text-xs font-medium bg-primary-600 text-white hover:bg-primary-700 transition-colors disabled:opacity-50 flex items-center gap-1"
+                        className="px-3 py-1.5 rounded-xl text-xs font-medium bg-primary-500 text-white hover:bg-primary-600 transition-colors disabled:opacity-50 flex items-center gap-1"
                       >
                         <IconUserPlus size={12} />
                         Add to CRM

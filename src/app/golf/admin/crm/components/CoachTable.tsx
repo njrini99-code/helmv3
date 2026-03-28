@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { IconStar, IconMoreHorizontal, IconMessageSquare, IconArrowRight, IconChevronDown, IconChevronRight, IconMail, IconUpload, IconUserPlus, IconFlame, IconZap } from '@/components/icons';
+import { STATUS_COLORS } from '../crm-config';
 import type { Coach, CoachStatus } from '../crm-config';
 
 interface CoachTableProps {
@@ -217,7 +218,7 @@ export function CoachTable({
     <div className="overflow-x-auto">
       <table className="w-full table-fixed min-w-[600px]">
         <thead>
-          <tr className="border-b border-warm-100">
+          <tr className="border-b border-warm-100 bg-warm-50/50">
             <th className="w-10 px-4 py-3">
               <input type="checkbox" checked={paginatedCoaches.length > 0 && paginatedCoaches.every(c => selectedIds.has(c.id))} onChange={toggleAll}
                 className="w-4 h-4 rounded-md border-warm-300 text-primary-600 focus:ring-primary-500/20 cursor-pointer" />
@@ -241,10 +242,10 @@ export function CoachTable({
               <tr
                 key={coach.id}
                 className={cn(
-                  'border-b border-warm-50 transition-all duration-150 cursor-pointer group',
-                  isSelected && 'bg-primary-50/50 border-l-2 border-l-primary-400',
-                  !isSelected && isFocused && 'bg-primary-50/20',
-                  !isSelected && !isFocused && 'hover:bg-primary-50/20'
+                  'border-b border-warm-50 cursor-pointer group transition-colors duration-150',
+                  isSelected && 'bg-primary-50/50 border-l-2 border-l-primary-500',
+                  !isSelected && isFocused && 'bg-white/60',
+                  !isSelected && !isFocused && 'hover:bg-white/60'
                 )}
                 onClick={() => onCoachClick(coach)}
                 onMouseEnter={() => setFocusedIndex(index)}
@@ -258,8 +259,8 @@ export function CoachTable({
                 {/* Star */}
                 <td className="px-2 py-3" onClick={e => e.stopPropagation()}>
                   <button onClick={() => onToggleStar(coach.id, coach.is_starred)}
-                    className={cn('transition-transform hover:scale-110', coach.is_starred ? 'opacity-100' : 'opacity-20 group-hover:opacity-50')}>
-                    <IconStar size={14} className={cn(coach.is_starred ? 'fill-amber-400 text-amber-400' : 'text-warm-300')} />
+                    className={cn('transition-all duration-200 hover:scale-110 active:scale-95', coach.is_starred ? 'opacity-100' : 'opacity-20 group-hover:opacity-50')}>
+                    <IconStar size={14} className={cn('transition-colors duration-200', coach.is_starred ? 'fill-amber-400 text-amber-400' : 'text-warm-300 hover:text-amber-300')} />
                   </button>
                 </td>
 
@@ -295,8 +296,8 @@ export function CoachTable({
                     <button
                       onClick={e => { e.stopPropagation(); setOpenStatusDropdown(openStatusDropdown === coach.id ? null : coach.id); setOpenActionMenu(null); }}
                       className={cn(
-                        'inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-micro font-medium transition-all',
-                        statusConfig[coach.status]?.bgColor, statusConfig[coach.status]?.color,
+                        'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border transition-all',
+                        STATUS_COLORS[coach.status]?.bg, STATUS_COLORS[coach.status]?.text, STATUS_COLORS[coach.status]?.border,
                         'hover:ring-1 hover:ring-warm-200'
                       )}
                     >
@@ -324,8 +325,10 @@ export function CoachTable({
                 {/* Priority — hidden below lg */}
                 <td className="hidden lg:table-cell px-4 py-3">
                   {coach.priority > 0 ? (
-                    <span className={cn('text-micro font-bold px-1.5 py-0.5 rounded', priorityConfig[coach.priority]?.bgColor, priorityConfig[coach.priority]?.color)}>
-                      {priorityConfig[coach.priority]?.iconLabel} {priorityConfig[coach.priority]?.label}
+                    <span className={cn('inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-full', priorityConfig[coach.priority]?.bgColor, priorityConfig[coach.priority]?.color)}>
+                      <span className={cn('w-1.5 h-1.5 rounded-full', coach.priority >= 2 ? 'bg-orange-500' : 'bg-amber-500')} />
+                      <span className="flex items-center">{priorityConfig[coach.priority]?.iconLabel}</span>
+                      {priorityConfig[coach.priority]?.label}
                     </span>
                   ) : (
                     <span className="text-micro text-warm-300">&mdash;</span>
@@ -357,22 +360,22 @@ export function CoachTable({
                     {openActionMenu === coach.id && (
                       <div className="absolute right-0 top-full mt-1 z-50 w-48 py-1 rounded-xl bg-white border border-warm-200/80 shadow-xl" onClick={e => e.stopPropagation()}>
                         <button onClick={() => { onLogContact(coach); setOpenActionMenu(null); }}
-                          className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 flex items-center gap-2">
-                          <IconMessageSquare size={14} /> Log Contact
+                          className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors flex items-center gap-2">
+                          <IconMessageSquare size={16} className="text-warm-400" /> Log Contact
                         </button>
                         {coach.email && (
                           <a href={`mailto:${coach.email}`} onClick={() => setOpenActionMenu(null)}
                             className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2">
-                            <IconMail size={14} /> Send Email
+                            <IconMail size={16} className="text-warm-400" /> Send Email
                           </a>
                         )}
                         <button onClick={() => { onStatusChange(coach.id, 'contacted' as CoachStatus); setOpenActionMenu(null); }}
                           className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2">
-                          <IconArrowRight size={14} /> Move to Contacted
+                          <IconArrowRight size={16} className="text-warm-400" /> Move to Contacted
                         </button>
                         <button onClick={() => { onToggleStar(coach.id, coach.is_starred); setOpenActionMenu(null); }}
                           className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2">
-                          <IconStar size={14} /> {coach.is_starred ? 'Unstar' : 'Star'}
+                          <IconStar size={16} className="text-warm-400" /> {coach.is_starred ? 'Unstar' : 'Star'}
                         </button>
 
                         {/* Set Priority submenu */}
@@ -382,7 +385,7 @@ export function CoachTable({
                             className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center justify-between"
                           >
                             <span className="flex items-center gap-2">
-                              <IconFlame size={14} /> Set Priority
+                              <IconFlame size={16} className="text-warm-400" /> Set Priority
                             </span>
                             <IconChevronRight size={12} className="text-warm-400" />
                           </button>
@@ -402,7 +405,7 @@ export function CoachTable({
                                   coach.priority === 1 ? 'bg-amber-50 font-semibold text-amber-700' : 'text-warm-700 hover:bg-warm-50 active:bg-warm-100'
                                 )}
                               >
-                                <IconZap size={14} className="text-amber-500" /> High
+                                <IconZap size={16} className="text-amber-500" /> High
                               </button>
                               <button
                                 onClick={() => { onPriorityChange?.(coach.id, 2); setOpenActionMenu(null); setOpenPrioritySubmenu(null); }}
@@ -410,7 +413,7 @@ export function CoachTable({
                                   coach.priority >= 2 ? 'bg-orange-50 font-semibold text-orange-700' : 'text-warm-700 hover:bg-warm-50 active:bg-warm-100'
                                 )}
                               >
-                                <IconFlame size={14} className="text-orange-500" /> Hot
+                                <IconFlame size={16} className="text-orange-500" /> Hot
                               </button>
                             </div>
                           )}
@@ -465,7 +468,7 @@ function TH({ field, label, onSort, children, className }: {
 }) {
   return (
     <th
-      className={cn('text-left px-4 py-3 text-label font-semibold text-warm-500 uppercase tracking-wider cursor-pointer hover:text-warm-700 transition-colors', className)}
+      className={cn('text-left px-4 py-3 text-xs font-medium text-warm-500 uppercase tracking-wider cursor-pointer hover:text-warm-700 transition-colors', className)}
       onClick={() => onSort(field)}
     >
       {label}{children}

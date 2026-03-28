@@ -17,6 +17,7 @@ import {
   IconMail,
   IconTrophy,
 } from '@/components/icons';
+import { STATUS_COLORS } from '../crm-config';
 import type { Coach, CoachStatus, PipelineStage } from '../crm-config';
 
 interface CRMDashboardProps {
@@ -101,13 +102,13 @@ export function CRMDashboard({
     );
   }, [allCoaches]);
 
-  // Stale leads: in pipeline (not new_lead, not closed), no contact in 14+ days
+  // Stale leads: in pipeline (not new_lead, not closed), no contact in 7+ days
   const staleLeads = useMemo(() => {
-    const fourteenDaysAgo = new Date();
-    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     return allCoaches.filter(c => {
       const inPipeline = !['new_lead', 'won', 'lost', 'nurture'].includes(c.status);
-      const noRecentContact = !c.last_contacted_at || new Date(c.last_contacted_at) < fourteenDaysAgo;
+      const noRecentContact = !c.last_contacted_at || new Date(c.last_contacted_at) < sevenDaysAgo;
       return inPipeline && noRecentContact;
     });
   }, [allCoaches]);
@@ -202,9 +203,35 @@ export function CRMDashboard({
         />
       </div>
 
+      {/* ── Today's Focus ── */}
+      <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-5 shadow-sm">
+        <div className="flex items-center gap-2.5 mb-4">
+          <div className="w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
+            <IconTarget size={16} className="text-primary-600" />
+          </div>
+          <h3 className="text-sm font-semibold text-warm-900">Today&apos;s Focus</h3>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-amber-50/60 border border-amber-100/50">
+            <IconClock size={16} className="text-amber-600 flex-shrink-0" />
+            <div>
+              <p className="text-2xl font-bold tabular-nums text-warm-900">{followUpsDueToday.length}</p>
+              <p className="text-xs text-warm-500">Follow-ups due today</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-red-50/60 border border-red-100/50">
+            <IconWarning size={16} className="text-red-600 flex-shrink-0" />
+            <div>
+              <p className="text-2xl font-bold tabular-nums text-warm-900">{staleLeads.length}</p>
+              <p className="text-xs text-warm-500">Stale leads (no contact 7+ days)</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* ── Getting Started (only when all new leads) ── */}
       {allNewLeads && (
-        <div className="glass-standard rounded-2xl p-8 text-center">
+        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-8 shadow-sm text-center">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center mx-auto mb-5">
             <IconRocket size={28} className="text-primary-600" />
           </div>
@@ -220,8 +247,8 @@ export function CRMDashboard({
               className="w-full sm:w-auto px-5 py-2.5 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-[background-color,box-shadow] text-sm shadow-sm shadow-primary-500/25 disabled:opacity-50 hover:shadow-md"
             >
               <span className="flex items-center justify-center gap-2">
-                <IconZap size={16} />
-                Research Top 10
+                <IconArrowRight size={16} />
+                Move Top 10 to Pipeline
               </span>
             </button>
             <button
@@ -229,13 +256,16 @@ export function CRMDashboard({
               disabled={processing === 'research'}
               className="w-full sm:w-auto px-5 py-2.5 bg-white border border-warm-200/50 text-warm-700 rounded-xl font-medium hover:bg-warm-50 active:bg-warm-100 transition-colors text-sm disabled:opacity-50"
             >
-              Research Top 25
+              <span className="flex items-center justify-center gap-2">
+                <IconArrowRight size={16} />
+                Move Top 25 to Pipeline
+              </span>
             </button>
             <button
               onClick={() => onNavigate('list')}
               className="w-full sm:w-auto px-5 py-2.5 text-warm-500 hover:text-warm-700 rounded-xl font-medium transition-colors text-sm"
             >
-              View All &rarr;
+              View All <IconArrowRight size={12} className="inline" />
             </button>
           </div>
         </div>
@@ -244,7 +274,7 @@ export function CRMDashboard({
       {/* ── Pipeline Funnel + Conference Breakdown ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Pipeline Funnel — 2 cols */}
-        <div className="lg:col-span-2 glass-standard rounded-2xl p-5">
+        <div className="lg:col-span-2 bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-5 shadow-sm">
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2">
               <IconChartBar size={16} className="text-warm-400" />
@@ -263,11 +293,12 @@ export function CRMDashboard({
               const widthPct = (stage.count / maxCount) * 100;
               return (
                 <div key={stage.id} className="flex items-center gap-2 sm:gap-4 group">
-                  <div className="w-16 sm:w-24 text-right flex-shrink-0">
+                  <div className="w-20 sm:w-28 flex items-center gap-2 flex-shrink-0 justify-end">
+                    <span className="flex-shrink-0">{stage.icon}</span>
                     <p className="text-xs sm:text-sm font-medium text-warm-700 group-hover:text-warm-900 transition-colors truncate">{stage.label}</p>
                   </div>
                   <div className="flex-1 relative">
-                    <div className="h-9 rounded-lg bg-warm-50/80 overflow-hidden">
+                    <div className="h-8 rounded-lg bg-warm-50/80 overflow-hidden">
                       <div
                         className={cn(
                           'h-full rounded-lg transition-[width,opacity] duration-700 ease-out flex items-center',
@@ -282,7 +313,6 @@ export function CRMDashboard({
                         )}
                       </div>
                     </div>
-                    {/* Hover tooltip showing exact numbers */}
                     <div className="absolute inset-0 flex items-center justify-end pr-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                       {widthPct <= 15 && stage.count > 0 && (
                         <span className="text-label font-semibold text-warm-600 bg-white/80 rounded px-1.5 py-0.5">{stage.pct}%</span>
@@ -299,7 +329,7 @@ export function CRMDashboard({
         </div>
 
         {/* Conference Breakdown — 1 col */}
-        <div className="glass-standard rounded-2xl p-5">
+        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-5 shadow-sm">
           <div className="flex items-center justify-between mb-5">
             <h3 className="text-sm font-semibold text-warm-500 uppercase tracking-wider">Top Conferences</h3>
             <span className="text-xs text-warm-400">{conferenceStats.length} shown</span>
@@ -333,9 +363,9 @@ export function CRMDashboard({
       {/* ── Three-column: Follow-ups + Stale Leads + Activity ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Today's Follow-ups */}
-        <div className="glass-standard rounded-2xl p-5">
+        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-5 shadow-sm">
           <div className="flex items-center gap-2.5 mb-4">
-            <div className="w-8 h-8 rounded-xl bg-amber-50 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center">
               <IconClock size={16} className="text-amber-600" />
             </div>
             <div>
@@ -369,14 +399,14 @@ export function CRMDashboard({
         </div>
 
         {/* Stale Leads */}
-        <div className="glass-standard rounded-2xl p-5">
+        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-5 shadow-sm">
           <div className="flex items-center gap-2.5 mb-4">
-            <div className="w-8 h-8 rounded-xl bg-red-50 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
               <IconWarning size={16} className="text-red-600" />
             </div>
             <div>
               <h3 className="text-sm font-semibold text-warm-900">Stale Leads</h3>
-              <p className="text-xs text-warm-500">{staleLeads.length} no contact 14+ days</p>
+              <p className="text-xs text-warm-500">{staleLeads.length} no contact 7+ days</p>
             </div>
           </div>
           {staleLeads.length === 0 ? (
@@ -405,9 +435,9 @@ export function CRMDashboard({
         </div>
 
         {/* Recent Activity */}
-        <div className="glass-standard rounded-2xl p-5">
+        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-5 shadow-sm">
           <div className="flex items-center gap-2.5 mb-4">
-            <div className="w-8 h-8 rounded-xl bg-primary-50 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
               <IconZap size={16} className="text-primary-600" />
             </div>
             <div>
@@ -435,9 +465,9 @@ export function CRMDashboard({
 
       {/* ── Email Performance ── */}
       {emailStats && emailStats.total_sent > 0 && (
-        <div className="glass-standard rounded-2xl p-5">
+        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-5 shadow-sm">
           <div className="flex items-center gap-2.5 mb-4">
-            <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
               <IconMail size={16} className="text-blue-600" />
             </div>
             <div>
@@ -478,7 +508,7 @@ export function CRMDashboard({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Quick Actions — cleaner callout */}
         {!allNewLeads && (
-          <div className="bg-white/70 backdrop-blur-xl border border-primary-100/40 rounded-2xl shadow-glass p-5">
+          <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-5">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center flex-shrink-0">
@@ -497,13 +527,13 @@ export function CRMDashboard({
                   disabled={processing === 'research' || (stats.byStatus.new_lead || 0) === 0}
                   className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm bg-primary-600 text-white hover:bg-primary-700 transition-[background-color,transform,box-shadow] shadow-sm shadow-primary-500/25 disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5 hover:shadow-md flex-1 sm:flex-initial"
                 >
-                  <IconZap size={16} /> Research Next 10
+                  <IconArrowRight size={16} /> Move to Pipeline
                 </button>
                 <button
                   onClick={() => onNavigate('pipeline')}
-                  className="px-4 py-2.5 bg-white border border-warm-200/50 text-warm-700 rounded-xl font-medium hover:bg-warm-50 active:bg-warm-100 transition-[background-color,transform] text-sm hover:-translate-y-0.5 flex-1 sm:flex-initial"
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-warm-200/50 text-warm-700 rounded-xl font-medium hover:bg-warm-50 active:bg-warm-100 transition-[background-color,transform] text-sm hover:-translate-y-0.5 flex-1 sm:flex-initial"
                 >
-                  Open Pipeline
+                  <IconChartBar size={16} /> Open Pipeline
                 </button>
               </div>
             </div>
@@ -512,7 +542,7 @@ export function CRMDashboard({
 
         {/* Division Breakdown */}
         <div className={cn(
-          'glass-standard rounded-2xl p-5',
+          'bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-5 shadow-sm',
           allNewLeads && 'lg:col-span-2'
         )}>
           <h3 className="text-sm font-semibold text-warm-500 uppercase tracking-wider mb-4">Division Breakdown</h3>
@@ -546,23 +576,22 @@ function KPICard({
     <div className={cn(
       'relative overflow-hidden',
       'bg-white/70 backdrop-blur-xl',
-      'border rounded-2xl',
-      'shadow-glass',
-      'p-4 lg:p-5',
+      'border border-white/20 rounded-2xl',
+      'shadow-sm',
+      'p-5',
       'transition-[transform,box-shadow] duration-200 group',
       'hover:-translate-y-0.5 hover:shadow-lg',
-      accent ? 'border-l-[3px] border-l-primary-500 border-t-white/20 border-r-white/20 border-b-white/20' : 'border-white/20',
+      accent && 'border-l-[3px] border-l-primary-500',
       className
     )}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <p className="text-label font-semibold text-warm-500 uppercase tracking-wider">{label}</p>
-          <p className="text-3xl font-bold text-warm-900 tabular-nums tracking-tight mt-1">{value}</p>
+          <p className="text-xs text-warm-500 uppercase tracking-wider font-semibold">{label}</p>
+          <p className="text-2xl font-bold text-warm-900 tabular-nums tracking-tight mt-1">{value}</p>
           <p className="text-xs text-warm-400 mt-1">{detail}</p>
         </div>
         <div className={cn(
-          'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0',
-          'shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]',
+          'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0',
           'transition-transform duration-200 group-hover:scale-105',
           iconBg, iconColor
         )}>
@@ -605,6 +634,7 @@ function CoachRow({
   badgeColor?: string;
   onClick?: (coach: Coach) => void;
 }) {
+  const statusColor = STATUS_COLORS[coach.status];
   return (
     <div
       onClick={() => onClick?.(coach)}
@@ -617,7 +647,10 @@ function CoachRow({
         {coach.division}
       </span>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-warm-900 truncate">{coach.name}</p>
+        <div className="flex items-center gap-1.5">
+          {statusColor && <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', statusColor.dot)} />}
+          <p className="text-sm font-medium text-warm-900 truncate">{coach.name}</p>
+        </div>
         <p className="text-label text-warm-400 truncate">{coach.school} · {coach.conference}</p>
       </div>
       {badge && (

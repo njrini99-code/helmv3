@@ -3,6 +3,15 @@
 import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
+import {
+  IconCalendar,
+  IconPencil,
+  IconUserPlus,
+  IconSearch,
+  IconPlus,
+  IconX,
+  IconArrowRight,
+} from '@/components/icons';
 import type { Coach } from '../crm-config';
 
 // ============================================================================
@@ -105,10 +114,18 @@ export function FAB({ onSchedule, onLogContact, onAddCoach }: FABProps) {
     <div ref={containerRef} className="fixed bottom-6 right-6 z-50 pb-[env(safe-area-inset-bottom)]">
       {/* Search Modal */}
       {showSearch && (
-        <div className="absolute bottom-20 right-0 w-96 bg-white rounded-2xl shadow-2xl border border-warm-200 overflow-hidden animate-in slide-in-from-bottom-4 duration-200">
-          <div className="p-4 border-b border-warm-100">
+        <div className="absolute bottom-20 right-0 w-96 bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 overflow-hidden animate-in slide-in-from-bottom-4 duration-200">
+          <div className="p-4 border-b border-warm-100/50">
             <div className="flex items-center gap-3">
-              <span className="text-2xl">{actionMode === 'schedule' ? '📅' : '✏️'}</span>
+              <div className={cn(
+                'w-10 h-10 rounded-xl flex items-center justify-center',
+                actionMode === 'schedule' ? 'bg-violet-100' : 'bg-primary-100'
+              )}>
+                {actionMode === 'schedule'
+                  ? <IconCalendar size={20} className="text-violet-600" />
+                  : <IconPencil size={20} className="text-primary-600" />
+                }
+              </div>
               <div>
                 <h3 className="font-bold text-warm-800">
                   {actionMode === 'schedule' ? 'Schedule Event' : 'Log Contact'}
@@ -120,26 +137,14 @@ export function FAB({ onSchedule, onLogContact, onAddCoach }: FABProps) {
 
           <div className="p-3">
             <div className="relative">
-              <svg
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-warm-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
+              <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
               <input
                 ref={searchInputRef}
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search coaches or schools..."
-                className="w-full pl-10 pr-4 py-3 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white"
+                className="w-full pl-10 pr-4 py-2.5 bg-white/60 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-300"
               />
               {searching && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -174,33 +179,37 @@ export function FAB({ onSchedule, onLogContact, onAddCoach }: FABProps) {
                       <div className="text-sm text-warm-500 truncate">{coach.name}</div>
                     </div>
                     <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                      <span className="text-primary-500">→</span>
+                      <IconArrowRight size={14} className="text-primary-500" />
                     </div>
                   </button>
                 ))}
               </div>
             ) : searchQuery && !searching ? (
               <div className="p-8 text-center text-warm-500">
-                <div className="text-3xl mb-2">🔍</div>
+                <div className="w-12 h-12 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-2">
+                  <IconSearch size={20} className="text-warm-400" />
+                </div>
                 <p className="text-sm">No coaches found</p>
               </div>
             ) : !searchQuery ? (
               <div className="p-6 text-center text-warm-400">
-                <div className="text-3xl mb-2">👆</div>
+                <div className="w-12 h-12 rounded-2xl bg-warm-50 flex items-center justify-center mx-auto mb-2">
+                  <IconSearch size={20} className="text-warm-300" />
+                </div>
                 <p className="text-sm">Start typing to search</p>
               </div>
             ) : null}
           </div>
 
           {/* Cancel */}
-          <div className="p-3 border-t border-warm-100">
+          <div className="p-3 border-t border-warm-100/50">
             <button
               onClick={() => {
                 setShowSearch(false);
                 setActionMode(null);
                 setSearchQuery('');
               }}
-              className="w-full py-2 text-sm text-warm-500 hover:text-warm-700 font-medium"
+              className="w-full py-2 text-sm text-warm-500 hover:text-warm-700 font-medium rounded-xl hover:bg-warm-50 transition-colors"
             >
               Cancel
             </button>
@@ -213,31 +222,31 @@ export function FAB({ onSchedule, onLogContact, onAddCoach }: FABProps) {
         <div className="absolute bottom-20 right-0 flex flex-col items-end gap-3 animate-in slide-in-from-bottom-4 duration-200">
           <button
             onClick={() => handleAction('schedule')}
-            className="flex items-center gap-3 px-5 py-3 bg-white rounded-full shadow-lg border border-warm-100 hover:shadow-xl transition-all group"
+            className="flex items-center gap-3 px-5 py-3 bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-white/20 hover:shadow-xl transition-all group"
           >
             <span className="text-sm font-semibold text-warm-700 group-hover:text-primary-600">Schedule Event</span>
-            <span className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-violet-600 flex items-center justify-center text-white text-lg shadow-lg">
-              📅
+            <span className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-violet-600 flex items-center justify-center text-white shadow-lg">
+              <IconCalendar size={20} />
             </span>
           </button>
-          
+
           <button
             onClick={() => handleAction('log')}
-            className="flex items-center gap-3 px-5 py-3 bg-white rounded-full shadow-lg border border-warm-100 hover:shadow-xl transition-all group"
+            className="flex items-center gap-3 px-5 py-3 bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-white/20 hover:shadow-xl transition-all group"
           >
             <span className="text-sm font-semibold text-warm-700 group-hover:text-primary-600">Log Contact</span>
-            <span className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-lg shadow-lg">
-              ✏️
+            <span className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white shadow-lg">
+              <IconPencil size={20} />
             </span>
           </button>
-          
+
           <button
             onClick={() => { onAddCoach(); setIsOpen(false); }}
-            className="flex items-center gap-3 px-5 py-3 bg-white rounded-full shadow-lg border border-warm-100 hover:shadow-xl transition-all group"
+            className="flex items-center gap-3 px-5 py-3 bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-white/20 hover:shadow-xl transition-all group"
           >
             <span className="text-sm font-semibold text-warm-700 group-hover:text-primary-600">Add Coach</span>
-            <span className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white text-lg shadow-lg">
-              👤
+            <span className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white shadow-lg">
+              <IconUserPlus size={20} />
             </span>
           </button>
         </div>
@@ -255,16 +264,14 @@ export function FAB({ onSchedule, onLogContact, onAddCoach }: FABProps) {
         }}
         aria-label={isOpen || showSearch ? 'Close actions menu' : 'Open actions menu'}
         className={cn(
-          'w-16 h-16 rounded-full shadow-2xl flex items-center justify-center transition-all',
-          'hover:scale-105 hover:shadow-primary-500/25',
+          'w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300',
+          'shadow-xl hover:shadow-2xl hover:shadow-primary-500/20',
           isOpen || showSearch
             ? 'bg-warm-800 text-white rotate-45'
-            : 'bg-gradient-to-br from-primary-500 to-primary-600 text-white'
+            : 'bg-gradient-to-br from-primary-500 to-primary-600 text-white hover:scale-105'
         )}
       >
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-        </svg>
+        {isOpen || showSearch ? <IconX size={28} /> : <IconPlus size={28} />}
       </button>
     </div>
   );

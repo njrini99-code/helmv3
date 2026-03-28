@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { format, addDays, addHours, parseISO } from 'date-fns';
 import type { Coach } from '../crm-config';
 import type { CRMEvent, CRMEventType } from './CalendarView';
+import { IconX, IconCalendar, IconVideo, IconPhone, IconMail, IconUsers, IconMapPin, IconTrash } from '@/components/icons';
 
 // ============================================================================
 // TYPES
@@ -30,13 +31,13 @@ interface FormState {
   coachId: string | null;
 }
 
-const EVENT_TYPES: { value: CRMEventType; label: string; icon: string; color: string }[] = [
-  { value: 'demo', label: 'Demo', icon: '🖥️', color: 'bg-violet-500' },
-  { value: 'follow_up', label: 'Follow-up', icon: '📞', color: 'bg-blue-500' },
-  { value: 'call', label: 'Call', icon: '☎️', color: 'bg-primary-500' },
-  { value: 'meeting', label: 'Meeting', icon: '🤝', color: 'bg-amber-500' },
-  { value: 'email_reminder', label: 'Email', icon: '✉️', color: 'bg-warm-500' },
-  { value: 'other', label: 'Other', icon: '📌', color: 'bg-warm-500' },
+const EVENT_TYPES: { value: CRMEventType; label: string; icon: typeof IconVideo; color: string }[] = [
+  { value: 'demo', label: 'Demo', icon: IconVideo, color: 'bg-violet-500' },
+  { value: 'follow_up', label: 'Follow-up', icon: IconPhone, color: 'bg-blue-500' },
+  { value: 'call', label: 'Call', icon: IconPhone, color: 'bg-primary-500' },
+  { value: 'meeting', label: 'Meeting', icon: IconUsers, color: 'bg-amber-500' },
+  { value: 'email_reminder', label: 'Email', icon: IconMail, color: 'bg-warm-500' },
+  { value: 'other', label: 'Other', icon: IconMapPin, color: 'bg-warm-500' },
 ];
 
 const DURATIONS = [
@@ -55,6 +56,9 @@ const QUICK_TIMES = [
   { label: 'Next week', getValue: () => ({ date: format(addDays(new Date(), 7), 'yyyy-MM-dd'), time: '10:00' }) },
 ];
 
+const inputClass = 'w-full bg-white/60 border border-warm-200 rounded-xl px-4 py-2.5 text-sm transition-colors focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 outline-none';
+const labelClass = 'text-xs font-medium text-warm-600 uppercase tracking-wider mb-1.5 block';
+
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
@@ -66,13 +70,13 @@ export function ScheduleEventModal({
   onSuccess,
 }: ScheduleEventModalProps) {
   const isEditing = !!event;
-  
+
   const getInitialForm = (): FormState => {
     if (event) {
       const startTime = parseISO(event.start_time);
       const endTime = parseISO(event.end_time);
       const durationMinutes = Math.round((endTime.getTime() - startTime.getTime()) / 60000);
-      
+
       return {
         type: event.event_type,
         title: event.title,
@@ -85,7 +89,7 @@ export function ScheduleEventModal({
         coachId: event.coach_id,
       };
     }
-    
+
     const date = initialDate || addDays(new Date(), 1);
     return {
       type: 'demo',
@@ -103,7 +107,7 @@ export function ScheduleEventModal({
   const [form, setForm] = useState<FormState>(getInitialForm);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Coach search for FAB flow
   const [coachSearchQuery, setCoachSearchQuery] = useState('');
   const [coachSearchResults, setCoachSearchResults] = useState<Coach[]>([]);
@@ -142,7 +146,7 @@ export function ScheduleEventModal({
   const handleSubmit = async () => {
     setSubmitting(true);
     setError(null);
-    
+
     try {
       const startTime = new Date(`${form.date}T${form.time}`);
       const endTime = addHours(startTime, form.duration / 60);
@@ -163,13 +167,13 @@ export function ScheduleEventModal({
           .from('crm_events')
           .update(payload)
           .eq('id', event.id);
-        
+
         if (updateError) throw updateError;
       } else {
         const { error: insertError } = await supabase
           .from('crm_events')
           .insert(payload);
-        
+
         if (insertError) throw insertError;
 
         // Update coach status if scheduling a demo
@@ -202,14 +206,14 @@ export function ScheduleEventModal({
   // Handle delete
   const handleDelete = async () => {
     if (!event || !confirm('Are you sure you want to delete this event?')) return;
-    
+
     setSubmitting(true);
     try {
       const { error } = await supabase
         .from('crm_events')
         .delete()
         .eq('id', event.id);
-      
+
       if (error) throw error;
       onSuccess();
       onClose();
@@ -222,35 +226,34 @@ export function ScheduleEventModal({
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
       onClick={onClose}
     >
-      <div 
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col"
+      <div
+        className="bg-white/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/20 w-full max-w-xl overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-violet-600 to-purple-600 text-white px-6 py-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-3xl">📅</span>
-              <div>
-                <h2 className="text-xl font-bold">
-                  {isEditing ? 'Edit Event' : 'Schedule Event'}
-                </h2>
-                {selectedCoach && (
-                  <p className="text-violet-200 text-sm">{selectedCoach.school}</p>
-                )}
-              </div>
+        <div className="px-6 py-4 border-b border-warm-100 flex items-center justify-between flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <IconCalendar size={16} className="text-warm-600" />
+            <div>
+              <h2 className="text-lg font-semibold text-warm-900">
+                {isEditing ? 'Edit Event' : 'Schedule Event'}
+              </h2>
+              {selectedCoach && (
+                <p className="text-sm text-warm-500">{selectedCoach.school}</p>
+              )}
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-lg hover:bg-white/10 transition-colors text-xl"
-            >
-              ✕
-            </button>
           </div>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="text-warm-400 hover:text-warm-600 transition-colors"
+          >
+            <IconX size={18} />
+          </button>
         </div>
 
         {/* Body */}
@@ -264,8 +267,8 @@ export function ScheduleEventModal({
           {/* Coach Selection (if not pre-selected) */}
           {!selectedCoach && !isEditing && (
             <div>
-              <label className="text-sm font-semibold text-warm-700 mb-2 block">
-                Coach <span className="text-warm-400 font-normal">(optional)</span>
+              <label className={labelClass}>
+                Coach <span className="text-warm-400 font-normal normal-case tracking-normal">(optional)</span>
               </label>
               <div className="relative">
                 <input
@@ -273,7 +276,7 @@ export function ScheduleEventModal({
                   value={coachSearchQuery}
                   onChange={(e) => setCoachSearchQuery(e.target.value)}
                   placeholder="Search coach or school..."
-                  className="w-full px-4 py-3 bg-warm-50 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:bg-white"
+                  className={inputClass}
                 />
                 {coachSearchResults.length > 0 && (
                   <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-warm-200 rounded-xl shadow-xl z-10 max-h-48 overflow-y-auto">
@@ -325,9 +328,9 @@ export function ScheduleEventModal({
                     setSelectedCoach(null);
                     setForm(f => ({ ...f, coachId: null }));
                   }}
-                  className="text-warm-400 hover:text-warm-600 text-sm"
+                  className="text-warm-400 hover:text-warm-600 transition-colors"
                 >
-                  ✕
+                  <IconX size={14} />
                 </button>
               )}
             </div>
@@ -335,42 +338,45 @@ export function ScheduleEventModal({
 
           {/* Event Type */}
           <div>
-            <label className="text-sm font-semibold text-warm-700 mb-2 block">Event Type</label>
+            <label className={labelClass}>Event Type</label>
             <div className="grid grid-cols-3 gap-2">
-              {EVENT_TYPES.map((type) => (
-                <button
-                  key={type.value}
-                  onClick={() => setForm(f => ({ ...f, type: type.value }))}
-                  className={cn(
-                    'p-3 rounded-xl text-center transition-all',
-                    form.type === type.value
-                      ? `${type.color} text-white shadow-lg`
-                      : 'bg-warm-100 text-warm-700 hover:bg-warm-200'
-                  )}
-                >
-                  <span className="text-xl block mb-1">{type.icon}</span>
-                  <span className="text-xs font-medium">{type.label}</span>
-                </button>
-              ))}
+              {EVENT_TYPES.map((type) => {
+                const TypeIcon = type.icon;
+                return (
+                  <button
+                    key={type.value}
+                    onClick={() => setForm(f => ({ ...f, type: type.value }))}
+                    className={cn(
+                      'p-3 rounded-xl text-center transition-all',
+                      form.type === type.value
+                        ? `${type.color} text-white shadow-lg`
+                        : 'bg-warm-100 text-warm-700 hover:bg-warm-200'
+                    )}
+                  >
+                    <span className="flex justify-center mb-1"><TypeIcon size={18} /></span>
+                    <span className="text-xs font-medium">{type.label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
           {/* Title */}
           <div>
-            <label className="text-sm font-semibold text-warm-700 mb-2 block">Title</label>
+            <label className={labelClass}>Title</label>
             <input
               type="text"
               value={form.title}
               onChange={(e) => setForm(f => ({ ...f, title: e.target.value }))}
               placeholder="Event title"
-              className="w-full px-4 py-3 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+              className={inputClass}
             />
           </div>
 
           {/* Quick Time Select */}
           {!isEditing && (
             <div>
-              <label className="text-sm font-semibold text-warm-700 mb-2 block">Quick Select</label>
+              <label className={labelClass}>Quick Select</label>
               <div className="flex flex-wrap gap-2">
                 {QUICK_TIMES.map((qt) => (
                   <button
@@ -379,7 +385,7 @@ export function ScheduleEventModal({
                       const { date, time } = qt.getValue();
                       setForm(f => ({ ...f, date, time }));
                     }}
-                    className="px-3 py-2 bg-warm-100 hover:bg-warm-200 rounded-lg text-sm font-medium text-warm-700 transition-colors"
+                    className="px-3 py-2 bg-warm-100 hover:bg-warm-200 rounded-xl text-sm font-medium text-warm-700 transition-colors"
                   >
                     {qt.label}
                   </button>
@@ -391,37 +397,37 @@ export function ScheduleEventModal({
           {/* Date & Time */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-semibold text-warm-700 mb-2 block">Date</label>
+              <label className={labelClass}>Date</label>
               <input
                 type="date"
                 value={form.date}
                 onChange={(e) => setForm(f => ({ ...f, date: e.target.value }))}
-                className="w-full px-4 py-3 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                className={inputClass}
               />
             </div>
             <div>
-              <label className="text-sm font-semibold text-warm-700 mb-2 block">Time</label>
+              <label className={labelClass}>Time</label>
               <input
                 type="time"
                 value={form.time}
                 onChange={(e) => setForm(f => ({ ...f, time: e.target.value }))}
-                className="w-full px-4 py-3 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                className={inputClass}
               />
             </div>
           </div>
 
           {/* Duration */}
           <div>
-            <label className="text-sm font-semibold text-warm-700 mb-2 block">Duration</label>
+            <label className={labelClass}>Duration</label>
             <div className="flex flex-wrap gap-2">
               {DURATIONS.map((d) => (
                 <button
                   key={d.value}
                   onClick={() => setForm(f => ({ ...f, duration: d.value }))}
                   className={cn(
-                    'px-4 py-2 rounded-lg text-sm font-medium transition-all',
+                    'px-4 py-2 rounded-xl text-sm font-medium transition-all',
                     form.duration === d.value
-                      ? 'bg-violet-500 text-white shadow-lg'
+                      ? 'bg-primary-500 text-white shadow-lg'
                       : 'bg-warm-100 text-warm-700 hover:bg-warm-200'
                   )}
                 >
@@ -433,74 +439,75 @@ export function ScheduleEventModal({
 
           {/* Location */}
           <div>
-            <label className="text-sm font-semibold text-warm-700 mb-2 block">
-              Location <span className="text-warm-400 font-normal">(optional)</span>
+            <label className={labelClass}>
+              Location <span className="text-warm-400 font-normal normal-case tracking-normal">(optional)</span>
             </label>
             <input
               type="text"
               value={form.location}
               onChange={(e) => setForm(f => ({ ...f, location: e.target.value }))}
               placeholder="e.g., Zoom, Phone, Office"
-              className="w-full px-4 py-3 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+              className={inputClass}
             />
           </div>
 
           {/* Meeting URL */}
           <div>
-            <label className="text-sm font-semibold text-warm-700 mb-2 block">
-              Meeting Link <span className="text-warm-400 font-normal">(optional)</span>
+            <label className={labelClass}>
+              Meeting Link <span className="text-warm-400 font-normal normal-case tracking-normal">(optional)</span>
             </label>
             <input
               type="url"
               value={form.meetingUrl}
               onChange={(e) => setForm(f => ({ ...f, meetingUrl: e.target.value }))}
               placeholder="https://zoom.us/j/..."
-              className="w-full px-4 py-3 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+              className={inputClass}
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="text-sm font-semibold text-warm-700 mb-2 block">
-              Notes <span className="text-warm-400 font-normal">(optional)</span>
+            <label className={labelClass}>
+              Notes <span className="text-warm-400 font-normal normal-case tracking-normal">(optional)</span>
             </label>
             <textarea
               value={form.description}
               onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))}
               placeholder="Add any notes for this event..."
               rows={3}
-              className="w-full px-4 py-3 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
+              className={`${inputClass} resize-none min-h-[100px]`}
             />
           </div>
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 bg-warm-50 border-t border-warm-200 flex items-center justify-between">
+        <div className="px-6 py-4 border-t border-warm-100 flex items-center justify-between flex-shrink-0">
           {isEditing ? (
             <button
               onClick={handleDelete}
               disabled={submitting}
-              className="px-4 py-2 text-red-600 hover:text-red-700 font-medium text-sm disabled:opacity-50"
+              className="flex items-center gap-1.5 px-4 py-2 text-red-600 hover:text-red-700 font-medium text-sm disabled:opacity-50 transition-colors"
             >
-              🗑️ Delete
+              <IconTrash size={14} />
+              Delete
             </button>
           ) : (
             <div />
           )}
-          
+
           <div className="flex items-center gap-3">
             <button
               onClick={onClose}
-              className="px-5 py-2.5 text-warm-600 hover:text-warm-800 font-medium"
+              className="bg-white border border-warm-200 text-warm-700 rounded-xl px-5 py-2.5 text-sm font-medium hover:bg-warm-50 transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={handleSubmit}
               disabled={submitting || !form.title || !form.date || !form.time}
-              className="px-6 py-2.5 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-primary-500 hover:bg-primary-600 text-white rounded-xl px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {submitting ? 'Saving...' : isEditing ? 'Save Changes' : '📅 Schedule'}
+              {submitting ? 'Saving...' : isEditing ? 'Save Changes' : 'Schedule'}
             </button>
           </div>
         </div>
