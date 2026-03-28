@@ -41,12 +41,16 @@ export default async function GolfDashboardPage({
         // Get team via organization
         let teamId: string | undefined;
         if (coach.organization_id) {
-            const { data: team } = await supabase
-                .from('golf_teams')
-                .select('id')
-                .eq('organization_id', coach.organization_id)
-                .maybeSingle();
-            teamId = team?.id;
+            try {
+                const { data: team } = await supabase
+                    .from('golf_teams')
+                    .select('id')
+                    .eq('organization_id', coach.organization_id!)
+                    .maybeSingle();
+                teamId = team?.id;
+            } catch {
+                // Network failure — fall through to empty state
+            }
         }
 
         if (teamId) {
@@ -114,13 +118,17 @@ export default async function GolfDashboardPage({
     if (player) {
         // Get team via membership
         let teamId: string | null = null;
-        const { data: teamMember } = await supabase
-            .from('golf_team_members')
-            .select('team_id')
-            .eq('player_id', player.id)
-            .eq('status', 'active')
-            .maybeSingle();
-        teamId = teamMember?.team_id ?? null;
+        try {
+            const { data: teamMember } = await supabase
+                .from('golf_team_members')
+                .select('team_id')
+                .eq('player_id', player.id)
+                .eq('status', 'active')
+                .maybeSingle();
+            teamId = teamMember?.team_id ?? null;
+        } catch {
+            // Network failure — proceed with null teamId
+        }
 
         let payload;
         try {

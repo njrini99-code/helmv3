@@ -15,13 +15,19 @@ export default async function NewRoundPage() {
 
   // Check for in-progress rounds so we can prompt the player to resume
   // Show ANY in_progress round (including setup-only drafts without shots)
-  const { data: inProgressRounds } = await supabase
-    .from('golf_rounds')
-    .select('id, course_name, current_hole, holes_played, updated_at')
-    .eq('player_id', player.id)
-    .eq('status', 'in_progress')
-    .order('updated_at', { ascending: false })
-    .limit(1);
+  let inProgressRounds: { id: string; course_name: string | null; current_hole: number | null; holes_played: number | null; updated_at: string | null }[] | null = null;
+  try {
+    const result = await supabase
+      .from('golf_rounds')
+      .select('id, course_name, current_hole, holes_played, updated_at')
+      .eq('player_id', player.id)
+      .eq('status', 'in_progress')
+      .order('updated_at', { ascending: false })
+      .limit(1);
+    inProgressRounds = result.data;
+  } catch {
+    // Network failure — page still loads, just won't show resume prompt
+  }
 
   let existingRound: { id: string; courseName: string; currentHole: number; holesPlayed: number } | null = null;
   if (inProgressRounds && inProgressRounds.length > 0) {

@@ -50,13 +50,18 @@ export function GolfCalendarWrapper({
     setFeedsLoading(true);
     setFeedsError(null);
 
-    const { getCalendarFeeds } = await loadCalendarFeedActions();
-    const result = await getCalendarFeeds();
-    if (result.success && result.data) {
-      setFeeds(result.data);
-    } else {
+    try {
+      const { getCalendarFeeds } = await loadCalendarFeedActions();
+      const result = await getCalendarFeeds();
+      if (result.success && result.data) {
+        setFeeds(result.data);
+      } else {
+        setFeeds([]);
+        setFeedsError(result.error || 'Failed to load calendar feeds');
+      }
+    } catch {
       setFeeds([]);
-      setFeedsError(result.error || 'Failed to load calendar feeds');
+      setFeedsError('Unable to load calendar feeds. Please check your connection and try again.');
     }
 
     setFeedsLoading(false);

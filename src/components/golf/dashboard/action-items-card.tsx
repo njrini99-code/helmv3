@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, memo } from 'react';
+import { useState, useEffect, memo } from 'react';
 import Link from 'next/link';
 import { m, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -11,10 +11,9 @@ import type { ActionItem } from '@/app/golf/actions/dashboard-data';
 // HELPERS
 // ============================================================================
 
-function formatRelativeDate(dateStr: string): string {
+function formatRelativeDate(dateStr: string, now: Date): string {
     if (!dateStr) return '';
     const date = new Date(dateStr);
-    const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffDays = Math.floor(diffMs / 86400000);
 
@@ -54,6 +53,10 @@ interface ActionItemsCardProps {
 
 export const ActionItemsCard = memo(function ActionItemsCard({ items, role }: ActionItemsCardProps) {
     const [activeTab, setActiveTab] = useState<TabKey>('tasks');
+
+    // Defer time-dependent rendering to client to avoid hydration mismatch
+    const [now, setNow] = useState<Date | null>(null);
+    useEffect(() => { setNow(new Date()); }, []);
 
     const tasks = items.filter(i => i.type === 'task');
     const announcements = items.filter(i => i.type === 'announcement');
@@ -156,8 +159,8 @@ export const ActionItemsCard = memo(function ActionItemsCard({ items, role }: Ac
                                                     {item.title}
                                                 </p>
                                                 <div className="flex items-center gap-2 mt-0.5">
-                                                    <span className="text-xs text-warm-400 tabular-nums">
-                                                        {formatRelativeDate(item.date)}
+                                                    <span className="text-xs text-warm-400 tabular-nums" suppressHydrationWarning>
+                                                        {now ? formatRelativeDate(item.date, now) : ''}
                                                     </span>
                                                     {item.overdue && (
                                                         <span className="text-micro font-semibold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700">

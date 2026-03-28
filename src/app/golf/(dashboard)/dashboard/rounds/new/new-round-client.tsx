@@ -249,7 +249,8 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
     const normalizedMessage = message.toLowerCase();
     return normalizedMessage.includes('already been completed')
       || normalizedMessage.includes('already been submitted')
-      || normalizedMessage.includes('may have already been completed');
+      || normalizedMessage.includes('may have already been completed')
+      || normalizedMessage.includes('already completed');
   }, []);
 
   const handleRoundSyncConflict = useCallback(async (fallbackMessage: string) => {
@@ -348,6 +349,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
 
     // Trigger SYNCHRONOUS localStorage save + async server save when app goes to background
     const handlePageHide = () => {
+      if (isSubmittingRef.current) return;
       const { currentHole, holesSnapshot, statsSnapshot, mergedInProgress, setup } = buildEmergencyPayload();
 
       // 1. SYNCHRONOUS localStorage write — guaranteed to complete before page freeze
@@ -1055,6 +1057,9 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
    * This is called by ShotTrackingComprehensive after each shot entry
    */
   const handleAutoSave = useCallback(async (shots: ShotRecord[], holeIndex: number) => {
+    // Skip auto-save entirely if the round has been submitted or is being submitted
+    if (isSubmittingRef.current || completedRoundId) return;
+
     // Also update parent's in-progress shots so navigation between holes stays in sync
     setInProgressShotsByHole(prev => {
       // Only update if shots actually changed (avoid unnecessary re-renders)
@@ -1078,61 +1083,91 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
     // Update pending counts in case there are any offline items
     await useOfflineSyncStore.getState().updatePendingCount();
 
-    // Background save proper shot/hole data to database (non-blocking)
+    // Server save — awaited so the hook's circuit breaker can detect failures.
+    // localStorage backup above already succeeded, so throwing here is safe and
+    // lets the hook track consecutive failures to engage the circuit breaker.
     if (navigator.onLine) {
       if (serverSaveInProgressRef.current) {
-        // Queue this save — it will execute after the current one completes
+        // Queue this save — it will execute after the current one completes.
+        // Don't throw here: the queued save will be picked up after the in-flight one finishes.
         pendingServerSaveRef.current = { shots, holeIndex };
       } else {
-        const executeServerSave = async (saveShots: ShotRecord[], saveHoleIndex: number) => {
-          serverSaveInProgressRef.current = true;
-          try {
-            const mergedInProgress = { ...inProgressShotsByHoleRef.current, [saveHoleIndex]: saveShots };
-            const result = await savePartialRound(
-              buildPartialRoundData(undefined, saveHoleIndex, mergedInProgress),
-              savedRoundIdRef.current ?? undefined
-            );
-            if (result.success) {
-              consecutiveSaveFailuresRef.current = 0;
-              if (result.data.updatedAt) lastServerUpdatedAtRef.current = result.data.updatedAt;
-              if (!savedRoundIdRef.current) {
-                savedRoundIdRef.current = result.data.roundId;
-                setSavedRoundId(result.data.roundId);
-              }
-            } else if (result.error === 'conflict') {
-              void handleRoundSyncConflict('This round was updated on another device. Please reload.');
-            } else if (isCompletedRoundError(result.error)) {
-              redirectToCompletedRound();
-            } else {
-              consecutiveSaveFailuresRef.current++;
-              if (consecutiveSaveFailuresRef.current >= 2) {
-                showAutoSaveWarning();
-              }
+        serverSaveInProgressRef.current = true;
+        try {
+          const mergedInProgress = { ...inProgressShotsByHoleRef.current, [holeIndex]: shots };
+          const result = await savePartialRound(
+            buildPartialRoundData(undefined, holeIndex, mergedInProgress),
+            savedRoundIdRef.current ?? undefined
+          );
+          if (result.success) {
+            consecutiveSaveFailuresRef.current = 0;
+            if (result.data.updatedAt) lastServerUpdatedAtRef.current = result.data.updatedAt;
+            if (!savedRoundIdRef.current) {
+              savedRoundIdRef.current = result.data.roundId;
+              setSavedRoundId(result.data.roundId);
             }
-          } catch {
+          } else if (result.error === 'conflict') {
+            void handleRoundSyncConflict('This round was updated on another device. Please reload.');
+          } else if (isCompletedRoundError(result.error)) {
+            redirectToCompletedRound();
+          } else {
             consecutiveSaveFailuresRef.current++;
             if (consecutiveSaveFailuresRef.current >= 2) {
               showAutoSaveWarning();
             }
-          } finally {
-            serverSaveInProgressRef.current = false;
-            // If a newer save was queued while we were saving, execute it now
-            const pending = pendingServerSaveRef.current;
-            if (pending) {
-              pendingServerSaveRef.current = null;
-              void executeServerSave(pending.shots, pending.holeIndex);
-            }
+            // Throw so the hook's circuit breaker can track this failure
+            throw new Error(`Auto-save server error: ${result.error}`);
           }
-        };
-        void executeServerSave(shots, holeIndex);
+        } catch (err) {
+          consecutiveSaveFailuresRef.current++;
+          if (consecutiveSaveFailuresRef.current >= 2) {
+            showAutoSaveWarning();
+          }
+          // Re-throw so the hook's circuit breaker tracks the failure.
+          // This is safe — localStorage backup already succeeded above.
+          throw err;
+        } finally {
+          serverSaveInProgressRef.current = false;
+          // If a newer save was queued while we were saving, fire-and-forget it.
+          // This is a queued follow-up, not the primary save the hook is tracking.
+          const pending = pendingServerSaveRef.current;
+          if (pending) {
+            pendingServerSaveRef.current = null;
+            void (async () => {
+              serverSaveInProgressRef.current = true;
+              try {
+                const mergedPending = { ...inProgressShotsByHoleRef.current, [pending.holeIndex]: pending.shots };
+                const r = await savePartialRound(
+                  buildPartialRoundData(undefined, pending.holeIndex, mergedPending),
+                  savedRoundIdRef.current ?? undefined
+                );
+                if (r.success) {
+                  consecutiveSaveFailuresRef.current = 0;
+                  if (r.data.updatedAt) lastServerUpdatedAtRef.current = r.data.updatedAt;
+                  if (!savedRoundIdRef.current) {
+                    savedRoundIdRef.current = r.data.roundId;
+                    setSavedRoundId(r.data.roundId);
+                  }
+                } else if (r.error === 'conflict') {
+                  void handleRoundSyncConflict('This round was updated on another device. Please reload.');
+                } else if (isCompletedRoundError(r.error)) {
+                  redirectToCompletedRound();
+                }
+              } catch { /* queued save failure — non-critical, circuit breaker tracks primary saves */ } finally {
+                serverSaveInProgressRef.current = false;
+              }
+            })();
+          }
+        }
       }
     }
   }, [
     buildPartialRoundData,
+    completedRoundId,
     handleRoundSyncConflict,
     isCompletedRoundError,
     redirectToCompletedRound,
-    showToast,
+    showAutoSaveWarning,
   ]);
 
   const handleRoundSubmit = async (allHoleStats: HoleStats[]) => {
@@ -2175,6 +2210,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
         initialShotNumber={activeShotNumber}
         onAutoSave={handleAutoSave}
         autoSaveInterval={15000}
+        autoSaveDisabled={step === 'submitting' || !!completedRoundId}
       />
 
       {/* Offline Warning Banner - shows when offline or has slow connection */}

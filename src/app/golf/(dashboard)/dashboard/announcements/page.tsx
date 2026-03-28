@@ -31,48 +31,60 @@ export default async function GolfAnnouncementsPage() {
   const supabase = await createClient();
 
   // Team lookup in parallel for coach and player paths
-  const [coachTeamResult, playerTeamResult] = await Promise.all([
-    orgId
-      ? supabase.from('golf_teams').select('id').eq('organization_id', orgId).maybeSingle()
-      : Promise.resolve({ data: null }),
-    playerId
-      ? supabase.from('golf_team_members').select('team_id').eq('player_id', playerId).maybeSingle()
-      : Promise.resolve({ data: null }),
-  ]);
-
-  const teamId = coachTeamResult.data?.id || playerTeamResult.data?.team_id || null;
+  let teamId: string | null = null;
+  try {
+    const [coachTeamResult, playerTeamResult] = await Promise.all([
+      orgId
+        ? supabase.from('golf_teams').select('id').eq('organization_id', orgId).maybeSingle()
+        : Promise.resolve({ data: null }),
+      playerId
+        ? supabase.from('golf_team_members').select('team_id').eq('player_id', playerId).maybeSingle()
+        : Promise.resolve({ data: null }),
+    ]);
+    teamId = coachTeamResult.data?.id || playerTeamResult.data?.team_id || null;
+  } catch {
+    // Network failure — proceed with null teamId (empty state below)
+  }
 
   // Fetch announcements + coach data (roster + documents) in parallel
-  const [announcementsResult, membersResult, docsResult] = await Promise.all([
-    teamId
-      ? getAnnouncementsWithMeta(teamId, userId, isCoach, playerId)
-      : Promise.resolve({ success: true as const, data: [] }),
-    isCoach && teamId
-      ? supabase
-          .from('golf_team_members')
-          .select('player_id, player:golf_players(id, first_name, last_name)')
-          .eq('team_id', teamId)
-          .eq('status', 'active')
-          .limit(100)
-      : Promise.resolve({ data: null }),
-    isCoach && teamId
-      ? supabase
-          .from('golf_documents')
-          .select('id, title, file_type, file_size')
-          .eq('team_id', teamId)
-          .order('created_at', { ascending: false })
-          .limit(200)
-      : Promise.resolve({ data: null }),
-  ]);
+  let announcements: Awaited<ReturnType<typeof getAnnouncementsWithMeta>>['data'] = [];
+  let players: { id: string; first_name: string; last_name: string }[] = [];
+  let documents: { id: string; title: string; file_type: string; file_size: number }[] = [];
 
-  const announcements = announcementsResult.data ?? [];
+  try {
+    const [announcementsResult, membersResult, docsResult] = await Promise.all([
+      teamId
+        ? getAnnouncementsWithMeta(teamId, userId, isCoach, playerId)
+        : Promise.resolve({ success: true as const, data: [] }),
+      isCoach && teamId
+        ? supabase
+            .from('golf_team_members')
+            .select('player_id, player:golf_players(id, first_name, last_name)')
+            .eq('team_id', teamId)
+            .eq('status', 'active')
+            .limit(100)
+        : Promise.resolve({ data: null }),
+      isCoach && teamId
+        ? supabase
+            .from('golf_documents')
+            .select('id, title, file_type, file_size')
+            .eq('team_id', teamId)
+            .order('created_at', { ascending: false })
+            .limit(200)
+        : Promise.resolve({ data: null }),
+    ]);
 
-  const players = (membersResult.data || [])
-    .map((m: any) => m.player) // eslint-disable-line @typescript-eslint/no-explicit-any
-    .filter(Boolean)
-    .map((p: any) => ({ id: p.id, first_name: p.first_name, last_name: p.last_name })); // eslint-disable-line @typescript-eslint/no-explicit-any
+    announcements = announcementsResult.data ?? [];
 
-  const documents = ((docsResult.data || []) as Array<{ id: string; title: string; file_type: string; file_size: number }>);
+    players = (membersResult.data || [])
+      .map((m: any) => m.player) // eslint-disable-line @typescript-eslint/no-explicit-any
+      .filter(Boolean)
+      .map((p: any) => ({ id: p.id, first_name: p.first_name, last_name: p.last_name })); // eslint-disable-line @typescript-eslint/no-explicit-any
+
+    documents = ((docsResult.data || []) as Array<{ id: string; title: string; file_type: string; file_size: number }>);
+  } catch {
+    // Network failure — render empty state
+  }
 
   const recentCount = announcements.filter(a => {
     if (!a.published_at) return false;

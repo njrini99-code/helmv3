@@ -108,6 +108,7 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
         !showAnimations && 'reduce-motion',
       )}
       style={{ overscrollBehavior: 'none' }}
+      suppressHydrationWarning
     >
       {/* Skip to main content link for keyboard navigation */}
       <a

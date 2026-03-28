@@ -62,12 +62,16 @@ export default async function RoundsPage() {
   // Get team_id from organization if coach
   let teamId: string | null = null;
   if (coach?.organization_id) {
-    const { data: orgTeam } = await supabase
-      .from('golf_teams')
-      .select('id')
-      .eq('organization_id', coach.organization_id)
-      .maybeSingle();
-    teamId = orgTeam?.id || null;
+    try {
+      const { data: orgTeam } = await supabase
+        .from('golf_teams')
+        .select('id')
+        .eq('organization_id', coach.organization_id)
+        .maybeSingle();
+      teamId = orgTeam?.id || null;
+    } catch {
+      // Network failure — proceed with null teamId
+    }
   }
 
   const playerSelectFields = `
@@ -102,51 +106,65 @@ export default async function RoundsPage() {
   `;
 
   if (userRole === 'coach' && teamId) {
-    const { data: teamMembers } = await supabase
-      .from('golf_team_members')
-      .select('player_id')
-      .eq('team_id', teamId);
+    let teamMembers: { player_id: string }[] | null = null;
+    try {
+      const result = await supabase
+        .from('golf_team_members')
+        .select('player_id')
+        .eq('team_id', teamId);
+      teamMembers = result.data;
+    } catch {
+      // Network failure
+    }
 
     const teamPlayerIds = teamMembers?.map(tm => tm.player_id) || [];
 
     if (teamPlayerIds.length > 0) {
-      const { data: completedData } = await supabase
-        .from('golf_rounds')
-        .select(playerSelectFields)
-        .in('player_id', teamPlayerIds)
-        .eq('status', 'completed')
-        .order('round_date', { ascending: false })
-        .limit(50);
+      try {
+        const { data: completedData } = await supabase
+          .from('golf_rounds')
+          .select(playerSelectFields)
+          .in('player_id', teamPlayerIds)
+          .eq('status', 'completed')
+          .order('round_date', { ascending: false })
+          .limit(50);
 
-      rounds = (completedData ?? []).map(r => ({
+        rounds = (completedData ?? []).map(r => ({
+          ...r,
+          player: r.player && !('error' in r.player) ? r.player : null
+        })) as RoundWithPlayer[];
+      } catch {
+        // Network failure — rounds stays empty
+      }
+    }
+  } else if (userRole === 'player' && player) {
+    let inProgressData: typeof inProgressRounds = [];
+    try {
+      const [completedResult, inProgressResult] = await Promise.all([
+        supabase
+          .from('golf_rounds')
+          .select(playerSelectFields)
+          .eq('player_id', player.id)
+          .eq('status', 'completed')
+          .order('round_date', { ascending: false })
+          .limit(50),
+        supabase
+          .from('golf_rounds')
+          .select(inProgressSelectFields)
+          .eq('player_id', player.id)
+          .eq('status', 'in_progress')
+          .order('updated_at', { ascending: false })
+      ]);
+
+      rounds = (completedResult.data ?? []).map(r => ({
         ...r,
         player: r.player && !('error' in r.player) ? r.player : null
       })) as RoundWithPlayer[];
-    }
-  } else if (userRole === 'player' && player) {
-    const [
-      { data: completedData },
-      { data: inProgressData }
-    ] = await Promise.all([
-      supabase
-        .from('golf_rounds')
-        .select(playerSelectFields)
-        .eq('player_id', player.id)
-        .eq('status', 'completed')
-        .order('round_date', { ascending: false })
-        .limit(50),
-      supabase
-        .from('golf_rounds')
-        .select(inProgressSelectFields)
-        .eq('player_id', player.id)
-        .eq('status', 'in_progress')
-        .order('updated_at', { ascending: false })
-    ]);
 
-    rounds = (completedData ?? []).map(r => ({
-      ...r,
-      player: r.player && !('error' in r.player) ? r.player : null
-    })) as RoundWithPlayer[];
+      inProgressData = (inProgressResult.data ?? []) as typeof inProgressRounds;
+    } catch {
+      // Network failure — both stay empty
+    }
 
     // Show ALL in-progress rounds (including setup-only drafts without shots)
     inProgressRounds = (inProgressData ?? []).map(r => ({

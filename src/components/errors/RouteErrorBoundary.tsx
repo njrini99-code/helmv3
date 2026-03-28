@@ -170,16 +170,16 @@ export function RouteErrorBoundary({
     }, 'high');
   }, [error, route, component, isChunk, isStaleAction, isTransient, isGenericLoad, retryCount]);
 
-  // Auto-retry once for transient errors
+  // Auto-retry once for transient errors OR generic load failures ("Load failed" / "Failed to fetch")
   useEffect(() => {
-    if (autoRetry && isTransient && retryCount === 0) {
+    if (autoRetry && (isTransient || isGenericLoad) && retryCount === 0) {
       const timer = setTimeout(() => {
         handleRetry();
       }, 2000);
       return () => clearTimeout(timer);
     }
     return undefined;
-  }, [autoRetry, isTransient, retryCount, handleRetry]);
+  }, [autoRetry, isTransient, isGenericLoad, retryCount, handleRetry]);
 
   // Better default messages for different error types
   const getDefaultMessage = () => {

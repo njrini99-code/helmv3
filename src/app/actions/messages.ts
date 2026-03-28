@@ -13,6 +13,7 @@ import {
 import { MessageSchemas } from '@/lib/validation/action-schemas';
 import { notifyNewMessage } from '@/lib/notifications';
 import { sendPushNotification } from '@/lib/notifications/push';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 type Sport = 'baseball' | 'golf';
 
@@ -424,8 +425,9 @@ export async function sendGolfMessage(conversationId: string, content: string) {
               message: preview,
               action_url: `/golf/dashboard/messages`,
             }));
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            await (supabase as any)
+            // Use admin client to bypass RLS — inserting notifications for other users
+            const adminClient = createAdminClient();
+            await (adminClient as any)
               .from('golf_calendar_notifications')
               .insert(inAppNotifs);
           }

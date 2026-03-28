@@ -7,6 +7,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { GolfCoach, GolfEvent, GolfEventAttendance, GolfPlayer } from '@/lib/types/golf';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 // ============================================================================
 // TYPES
@@ -204,8 +205,10 @@ export async function sendEventInvitations(
     }));
 
   if (notifications.length > 0) {
+    // Use admin client to bypass RLS — inserting notifications for other users
+    const adminClient = createAdminClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: notifError } = await (supabase as any)
+    const { error: notifError } = await (adminClient as any)
       .from('golf_calendar_notifications')
       .insert(notifications);
 
@@ -258,8 +261,10 @@ export async function notifyEventUpdate(
     action_url: `/golf/dashboard/calendar?event=${eventId}`,
   }));
 
+  // Use admin client to bypass RLS — inserting notifications for other users
+  const adminClient = createAdminClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error: notifError } = await (supabase as any)
+  const { error: notifError } = await (adminClient as any)
     .from('golf_calendar_notifications')
     .insert(notifications);
 
@@ -308,8 +313,10 @@ async function cancelEventAndNotify(
         action_url: `/golf/dashboard/calendar`,
       }));
 
+      // Use admin client to bypass RLS — inserting notifications for other users
+      const adminClient = createAdminClient();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: notifError } = await (supabase as any)
+      const { error: notifError } = await (adminClient as any)
         .from('golf_calendar_notifications')
         .insert(notifications);
 
@@ -376,8 +383,10 @@ export async function updateRSVP(
                       status === 'declined' ? 'declined' :
                       status === 'tentative' ? 'marked as tentative for' : 'updated';
 
+    // Use admin client to bypass RLS — inserting notification for another user
+    const adminClient = createAdminClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: notifError } = await (supabase as any)
+    const { error: notifError } = await (adminClient as any)
       .from('golf_calendar_notifications')
       .insert({
         user_id: event.creator.user_id,
@@ -550,8 +559,10 @@ async function sendRSVPReminders(
   });
 
   if (notifications.length > 0) {
+    // Use admin client to bypass RLS — inserting notifications for other users
+    const adminClient = createAdminClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: notifError } = await (supabase as any)
+    const { error: notifError } = await (adminClient as any)
       .from('golf_calendar_notifications')
       .insert(notifications);
 

@@ -95,7 +95,7 @@ export function AcknowledgementTracker({
               <span className="text-sm text-warm-700 flex-1 truncate">
                 {playerNames[ack.player_id] || 'Unknown Player'}
               </span>
-              <span className="text-xs text-warm-400 flex-shrink-0">
+              <span className="text-xs text-warm-400 flex-shrink-0" suppressHydrationWarning>
                 {new Date(ack.acknowledged_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
               </span>
             </div>

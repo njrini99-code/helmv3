@@ -30,20 +30,25 @@ export default async function GolfCalendarPage() {
 
   let teamId: string | null = null;
 
-  const [coachTeamResult, playerTeamResult, coachListResult] = await Promise.all([
-    orgId
-      ? supabase.from('golf_teams').select('id').eq('organization_id', orgId).maybeSingle()
-      : Promise.resolve({ data: null }),
-    playerId
-      ? supabase.from('golf_team_members').select('team_id').eq('player_id', playerId).maybeSingle()
-      : Promise.resolve({ data: null }),
-    orgId
-      ? supabase.from('golf_coaches').select('id, full_name, avatar_url').eq('organization_id', orgId).order('full_name', { ascending: true }).limit(20)
-      : Promise.resolve({ data: null }),
-  ]);
+  let coachList: { id: string; full_name: string | null; avatar_url: string | null }[] = [];
+  try {
+    const [coachTeamResult, playerTeamResult, coachListResult] = await Promise.all([
+      orgId
+        ? supabase.from('golf_teams').select('id').eq('organization_id', orgId).maybeSingle()
+        : Promise.resolve({ data: null }),
+      playerId
+        ? supabase.from('golf_team_members').select('team_id').eq('player_id', playerId).maybeSingle()
+        : Promise.resolve({ data: null }),
+      orgId
+        ? supabase.from('golf_coaches').select('id, full_name, avatar_url').eq('organization_id', orgId).order('full_name', { ascending: true }).limit(20)
+        : Promise.resolve({ data: null }),
+    ]);
 
-  teamId = coachTeamResult.data?.id || playerTeamResult.data?.team_id || null;
-  const coachList = coachListResult.data || [];
+    teamId = coachTeamResult.data?.id || playerTeamResult.data?.team_id || null;
+    coachList = coachListResult.data || [];
+  } catch {
+    // Network failure — proceed with null teamId and empty coachList
+  }
 
   let events: CalendarEvent[] = [];
   let teamMembers: { id: string; first_name: string; last_name: string; avatar_url?: string }[] = [];
@@ -54,12 +59,13 @@ export default async function GolfCalendarPage() {
   const threeMonthsAhead = new Date();
   threeMonthsAhead.setMonth(threeMonthsAhead.getMonth() + 3);
 
-  const [
-    { data: eventsData },
-    { data: teamMembersData },
-    { data: teamSettingsData },
-  ] = teamId
-    ? await Promise.all([
+  let eventsData: { id: string; team_id: string; title: string; event_type: string; start_time: string; end_time: string | null; location: string | null; description: string | null; status: string | null; all_day: boolean | null; created_by: string | null; requires_rsvp: boolean | null; rsvp_deadline: string | null; max_attendees: number | null }[] | null = null;
+  let playersData: { id: string; first_name: string | null; last_name: string | null; avatar_url: string | null }[] = [];
+  let teamTimezone: string | null = null;
+
+  if (teamId) {
+    try {
+      const [eventsResult, teamMembersResult, teamSettingsResult] = await Promise.all([
         supabase
           .from('golf_events')
           .select('id, team_id, title, event_type, start_time, end_time, location, description, status, all_day, created_by, requires_rsvp, rsvp_deadline, max_attendees')
@@ -81,13 +87,17 @@ export default async function GolfCalendarPage() {
           .select('timezone')
           .eq('team_id', teamId)
           .maybeSingle(),
-      ])
-    : [{ data: null }, { data: null }, { data: null }];
+      ]);
 
-  const teamTimezone = teamSettingsData?.timezone || null;
-
-  // Extract players from team members join result
-  const playersData = teamMembersData?.map((tm: { player: { id: string; first_name: string | null; last_name: string | null; avatar_url: string | null } | null }) => tm.player).filter((p): p is NonNullable<typeof p> => p !== null) || [];
+      eventsData = eventsResult.data;
+      playersData = (teamMembersResult.data ?? [])
+        .map((tm: { player: { id: string; first_name: string | null; last_name: string | null; avatar_url: string | null } | null }) => tm.player)
+        .filter((p): p is NonNullable<typeof p> => p !== null);
+      teamTimezone = teamSettingsResult.data?.timezone || null;
+    } catch {
+      // Network failure — proceed with empty data
+    }
+  }
 
   // Map golf_events to CalendarEvent format
   // The start_time and end_time columns are ISO datetime strings (timestamptz)

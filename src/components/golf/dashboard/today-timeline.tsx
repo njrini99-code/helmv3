@@ -25,8 +25,8 @@ const EVENT_TYPE_CONFIG: Record<string, { dot: string; bg: string; text: string;
     other: { dot: 'bg-warm-400', bg: 'bg-warm-50', text: 'text-warm-600', label: 'Event', border: 'border-warm-200' },
 };
 
-function getTimeUntil(iso: string): string {
-    const diff = new Date(iso).getTime() - Date.now();
+function getTimeUntil(iso: string, now: number): string {
+    const diff = new Date(iso).getTime() - now;
     if (diff < 0) return 'Now';
     const mins = Math.floor(diff / 60000);
     if (mins < 60) return `in ${mins}m`;
@@ -46,16 +46,33 @@ interface TodayTimelineProps {
 }
 
 export function TodayTimeline({ events, role, timezone }: TodayTimelineProps) {
-    const tz = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
     const scrollRef = useRef<HTMLDivElement>(null);
     const nowRef = useRef<HTMLDivElement>(null);
-    const [, setTick] = useState(0);
+
+    // Defer time-dependent values to client to avoid hydration mismatch
+    // (server time differs from browser time; Intl.DateTimeFormat timezone also differs)
+    const [mounted, setMounted] = useState(false);
+    const [currentHour, setCurrentHour] = useState(12); // stable default for SSR
+    const [nowTs, setNowTs] = useState(0);
+    const [tz, setTz] = useState(timezone || 'UTC');
+
+    useEffect(() => {
+        // Resolve browser timezone on mount (Intl may differ between server and client)
+        const resolvedTz = timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+        setTz(resolvedTz);
+        setMounted(true);
+        setCurrentHour(getCurrentDecimalHourInTz(resolvedTz));
+        setNowTs(Date.now());
+    }, [timezone]);
 
     // Re-render every 60s to move the "now" indicator
     useEffect(() => {
-        const interval = setInterval(() => setTick(t => t + 1), 60_000);
+        const interval = setInterval(() => {
+            setCurrentHour(getCurrentDecimalHourInTz(tz));
+            setNowTs(Date.now());
+        }, 60_000);
         return () => clearInterval(interval);
-    }, []);
+    }, [tz]);
 
     // Scroll to the current time indicator on mount
     useEffect(() => {
@@ -65,9 +82,7 @@ export function TodayTimeline({ events, role, timezone }: TodayTimelineProps) {
             const offset = indicator.offsetLeft - container.clientWidth / 3;
             container.scrollTo({ left: Math.max(0, offset), behavior: 'smooth' });
         }
-    }, []);
-
-    const currentHour = getCurrentDecimalHourInTz(tz);
+    }, [mounted]);
 
     // Determine the visible hour range (6 AM to 10 PM, or expand to fit events)
     const { startHour, endHour, hours } = useMemo(() => {
@@ -229,7 +244,7 @@ export function TodayTimeline({ events, role, timezone }: TodayTimelineProps) {
                                 </span>
                                 {isNext && (
                                     <span className="text-xs text-primary-600 font-medium tabular-nums">
-                                        {getTimeUntil(event.start_time)}
+                                        {getTimeUntil(event.start_time, nowTs)}
                                     </span>
                                 )}
                                 {role === 'coach' && event.rsvp_total !== undefined && (
@@ -282,10 +297,10 @@ export function TodayTimeline({ events, role, timezone }: TodayTimelineProps) {
                         );
                     })}
 
-                    {/* Current time indicator */}
+                    {/* Current time indicator — only shown after hydration to avoid mismatch */}
                     <div
                         ref={nowRef}
-                        className="absolute top-6 bottom-0 z-20"
+                        className={cn('absolute top-6 bottom-0 z-20', !mounted && 'invisible')}
                         style={{ left: nowX + 20 }}
                     >
                         <div className="relative">
@@ -398,7 +413,7 @@ export function TodayTimeline({ events, role, timezone }: TodayTimelineProps) {
                                                     </span>
                                                     {isNext && (
                                                         <span className="text-micro text-primary-600 font-medium tabular-nums">
-                                                            {getTimeUntil(event.start_time)}
+                                                            {getTimeUntil(event.start_time, nowTs)}
                                                         </span>
                                                     )}
                                                     {role === 'coach' && event.rsvp_total !== undefined && (

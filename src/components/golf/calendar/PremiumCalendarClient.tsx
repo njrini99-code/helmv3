@@ -200,57 +200,66 @@ export function PremiumCalendarClient({
 
     availabilityDebounceRef.current = setTimeout(() => {
       const fetchAllPlayerAvailability = async () => {
-        // Calculate date range based on current view
-        let startDate: Date;
-        let endDate: Date;
+        try {
+          // Calculate date range based on current view
+          let startDate: Date;
+          let endDate: Date;
 
-        if (view === 'day') {
-          startDate = currentDate;
-          endDate = currentDate;
-        } else if (view === 'week') {
-          startDate = startOfWeekFn(currentDate, { weekStartsOn: 0 });
-          endDate = endOfWeek(currentDate, { weekStartsOn: 0 });
-        } else {
-          startDate = startOfMonth(currentDate);
-          endDate = endOfMonth(currentDate);
+          if (view === 'day') {
+            startDate = currentDate;
+            endDate = currentDate;
+          } else if (view === 'week') {
+            startDate = startOfWeekFn(currentDate, { weekStartsOn: 0 });
+            endDate = endOfWeek(currentDate, { weekStartsOn: 0 });
+          } else {
+            startDate = startOfMonth(currentDate);
+            endDate = endOfMonth(currentDate);
+          }
+
+          // Import and use the action
+          const { getPlayerAvailability } = await import('@/app/golf/actions/golf');
+
+          // Fetch availability for all selected players in parallel
+          const results = await Promise.all(
+            selectedPlayerIds.map(async (playerId, index) => {
+              try {
+                const result = await getPlayerAvailability(
+                  playerId,
+                  format(startDate, 'yyyy-MM-dd'),
+                  format(endDate, 'yyyy-MM-dd')
+                );
+
+                const color = PLAYER_COLORS[index % PLAYER_COLORS.length];
+
+                if (result.success && result.data) {
+                  const rawPeriods = result.data as unknown as Array<Record<string, unknown> & { start: string; end: string }>;
+                  const periods = rawPeriods.map((p) => ({
+                    ...p,
+                    start: p.start,
+                    end: p.end,
+                    type: (p.type as 'event' | 'class' | 'blocked') || 'event',
+                    color,
+                    playerId,
+                  })) as Array<Record<string, unknown> & { start: string; end: string; color: typeof PLAYER_COLORS[0] }>;
+                  return { playerId, periods };
+                }
+              } catch {
+                // Individual player fetch failed — return empty so others still show
+              }
+              return { playerId, periods: [] as Array<Record<string, unknown> & { start: string; end: string; color: typeof PLAYER_COLORS[0] }> };
+            })
+          );
+
+          // Build the map of player ID -> busy periods
+          const newMap = new Map<string, Array<Record<string, unknown> & { start: string; end: string; color: typeof PLAYER_COLORS[0] }>>();
+          results.forEach(({ playerId, periods }) => {
+            newMap.set(playerId, periods);
+          });
+          setMultiPlayerBusyPeriods(newMap);
+        } catch {
+          // Entire availability fetch failed — silently degrade (calendar still works, just no availability overlay)
+          console.warn('[PremiumCalendarClient] Failed to fetch player availability');
         }
-
-        // Import and use the action
-        const { getPlayerAvailability } = await import('@/app/golf/actions/golf');
-
-        // Fetch availability for all selected players in parallel
-        const results = await Promise.all(
-          selectedPlayerIds.map(async (playerId, index) => {
-            const result = await getPlayerAvailability(
-              playerId,
-              format(startDate, 'yyyy-MM-dd'),
-              format(endDate, 'yyyy-MM-dd')
-            );
-
-            const color = PLAYER_COLORS[index % PLAYER_COLORS.length];
-
-            if (result.success && result.data) {
-              const rawPeriods = result.data as unknown as Array<Record<string, unknown> & { start: string; end: string }>;
-              const periods = rawPeriods.map((p) => ({
-                ...p,
-                start: p.start,
-                end: p.end,
-                type: (p.type as 'event' | 'class' | 'blocked') || 'event',
-                color,
-                playerId,
-              })) as Array<Record<string, unknown> & { start: string; end: string; color: typeof PLAYER_COLORS[0] }>;
-              return { playerId, periods };
-            }
-            return { playerId, periods: [] as Array<Record<string, unknown> & { start: string; end: string; color: typeof PLAYER_COLORS[0] }> };
-          })
-        );
-
-        // Build the map of player ID -> busy periods
-        const newMap = new Map<string, Array<Record<string, unknown> & { start: string; end: string; color: typeof PLAYER_COLORS[0] }>>();
-        results.forEach(({ playerId, periods }) => {
-          newMap.set(playerId, periods);
-        });
-        setMultiPlayerBusyPeriods(newMap);
       };
 
       fetchAllPlayerAvailability();
@@ -273,39 +282,44 @@ export function PremiumCalendarClient({
     }
 
     const fetchCurrentUserAvailability = async () => {
-      // Calculate date range based on current view
-      let startDate: Date;
-      let endDate: Date;
+      try {
+        // Calculate date range based on current view
+        let startDate: Date;
+        let endDate: Date;
 
-      if (view === 'day') {
-        startDate = currentDate;
-        endDate = currentDate;
-      } else if (view === 'week') {
-        startDate = startOfWeekFn(currentDate, { weekStartsOn: 0 });
-        endDate = endOfWeek(currentDate, { weekStartsOn: 0 });
-      } else {
-        startDate = startOfMonth(currentDate);
-        endDate = endOfMonth(currentDate);
-      }
+        if (view === 'day') {
+          startDate = currentDate;
+          endDate = currentDate;
+        } else if (view === 'week') {
+          startDate = startOfWeekFn(currentDate, { weekStartsOn: 0 });
+          endDate = endOfWeek(currentDate, { weekStartsOn: 0 });
+        } else {
+          startDate = startOfMonth(currentDate);
+          endDate = endOfMonth(currentDate);
+        }
 
-      // Import and use the action - this gets YOUR busy periods (events + classes)
-      const { getCurrentUserBusyPeriods } = await import('@/app/golf/actions/golf');
-      const result = await getCurrentUserBusyPeriods(
-        format(startDate, 'yyyy-MM-dd'),
-        format(endDate, 'yyyy-MM-dd')
-      );
+        // Import and use the action - this gets YOUR busy periods (events + classes)
+        const { getCurrentUserBusyPeriods } = await import('@/app/golf/actions/golf');
+        const result = await getCurrentUserBusyPeriods(
+          format(startDate, 'yyyy-MM-dd'),
+          format(endDate, 'yyyy-MM-dd')
+        );
 
-      if (result.success && result.data) {
-        // Keep as ISO strings for BusyPeriod interface
-        const rawPeriods = result.data as unknown as Array<Record<string, unknown> & { start: string; end: string }>;
-        const periods = rawPeriods.map((p) => ({
-          ...p,
-          start: p.start,
-          end: p.end,
-          type: (p.type as 'event' | 'class' | 'blocked') || 'event',
-          ownerType: isCoach ? 'coach' : 'player',
-        })) as Array<Record<string, unknown> & { start: string; end: string; ownerType?: 'coach' | 'player' }>;
-        setCoachBusyPeriods(periods);
+        if (result.success && result.data) {
+          // Keep as ISO strings for BusyPeriod interface
+          const rawPeriods = result.data as unknown as Array<Record<string, unknown> & { start: string; end: string }>;
+          const periods = rawPeriods.map((p) => ({
+            ...p,
+            start: p.start,
+            end: p.end,
+            type: (p.type as 'event' | 'class' | 'blocked') || 'event',
+            ownerType: isCoach ? 'coach' : 'player',
+          })) as Array<Record<string, unknown> & { start: string; end: string; ownerType?: 'coach' | 'player' }>;
+          setCoachBusyPeriods(periods);
+        }
+      } catch {
+        // Availability fetch failed — calendar still works, just no busy-period overlay
+        console.warn('[PremiumCalendarClient] Failed to fetch current user availability');
       }
     };
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -38,8 +38,8 @@ const defaultUrg: UrgencyStyle = urgencyConfig['normal']!;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function relativeTime(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
+function relativeTime(dateStr: string, now: number): string {
+  const diff = now - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
   if (mins < 1) return 'Just now';
   if (mins < 60) return `${mins}m ago`;
@@ -58,10 +58,14 @@ interface AnnouncementsPlayerViewProps {
 }
 
 export function AnnouncementsPlayerView({ announcements, playerId }: AnnouncementsPlayerViewProps) {
+  // Defer time-dependent values to client to avoid hydration mismatch
+  const [nowTs, setNowTs] = useState(0);
+  useEffect(() => { setNowTs(Date.now()); }, []);
+
   // Sort: unread (unacknowledged or recent) first, then by date
   const sorted = [...announcements].sort((a, b) => {
-    const aUnread = isUnread(a);
-    const bUnread = isUnread(b);
+    const aUnread = isUnread(a, nowTs);
+    const bUnread = isUnread(b, nowTs);
     if (aUnread && !bUnread) return -1;
     if (!aUnread && bUnread) return 1;
     return 0; // preserve server order (already sorted by date)
@@ -76,26 +80,26 @@ export function AnnouncementsPlayerView({ announcements, playerId }: Announcemen
     >
       {sorted.map((ann) => (
         <motion.div key={ann.id} variants={itemVariants}>
-          <PlayerAnnouncementCard announcement={ann} playerId={playerId} />
+          <PlayerAnnouncementCard announcement={ann} playerId={playerId} nowTs={nowTs} />
         </motion.div>
       ))}
     </motion.div>
   );
 }
 
-function isUnread(ann: GolfAnnouncementMeta): boolean {
+function isUnread(ann: GolfAnnouncementMeta, now: number): boolean {
   // If requires ack and player hasn't acknowledged → unread
   if (ann.requires_acknowledgement && !ann.has_player_acknowledged) return true;
   // If no ack required but posted within 24h → treat as unread/fresh
-  if (!ann.requires_acknowledgement && ann.published_at) {
-    return (Date.now() - new Date(ann.published_at).getTime()) < 24 * 3600000;
+  if (!ann.requires_acknowledgement && ann.published_at && now > 0) {
+    return (now - new Date(ann.published_at).getTime()) < 24 * 3600000;
   }
   return false;
 }
 
 // ─── Card ─────────────────────────────────────────────────────────────────────
 
-function PlayerAnnouncementCard({ announcement: ann, playerId }: { announcement: GolfAnnouncementMeta; playerId: string }) {
+function PlayerAnnouncementCard({ announcement: ann, playerId, nowTs }: { announcement: GolfAnnouncementMeta; playerId: string; nowTs: number }) {
   const router = useRouter();
   const { showToast } = useToast();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -105,9 +109,9 @@ function PlayerAnnouncementCard({ announcement: ann, playerId }: { announcement:
   const [acknowledging, setAcknowledging] = useState(false);
 
   const urg = urgencyConfig[ann.urgency || 'normal'] ?? defaultUrg;
-  const isNew = ann.published_at && (Date.now() - new Date(ann.published_at).getTime()) < 7 * 86400000;
+  const isNew = nowTs > 0 && ann.published_at && (nowTs - new Date(ann.published_at).getTime()) < 7 * 86400000;
   const needsAck = ann.requires_acknowledgement && !hasAcknowledged;
-  const unread = needsAck || (!ann.requires_acknowledgement && ann.published_at && (Date.now() - new Date(ann.published_at).getTime()) < 24 * 3600000);
+  const unread = needsAck || (nowTs > 0 && !ann.requires_acknowledgement && ann.published_at && (nowTs - new Date(ann.published_at).getTime()) < 24 * 3600000);
 
   // Count player's task progress
   const myCompletedTasks = detail?.tasks?.reduce((count, t) => {
@@ -207,8 +211,8 @@ function PlayerAnnouncementCard({ announcement: ann, playerId }: { announcement:
             <span className="text-warm-300 text-xs">|</span>
 
             {/* Time */}
-            <span className="text-xs text-warm-500 tabular-nums">
-              {ann.published_at ? relativeTime(ann.published_at) : ''}
+            <span className="text-xs text-warm-500 tabular-nums" suppressHydrationWarning>
+              {ann.published_at && nowTs > 0 ? relativeTime(ann.published_at, nowTs) : ''}
             </span>
 
             {/* Docs */}

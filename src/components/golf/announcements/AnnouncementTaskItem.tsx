@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconCheck, IconCalendar } from '@/components/icons';
@@ -42,7 +42,10 @@ export function AnnouncementTaskItem({
     setLoading(false);
   }
 
-  const isOverdue = dueDate && !isCompleted && new Date(dueDate) < new Date();
+  // Defer time-dependent check to client to avoid hydration mismatch
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => { setNow(new Date()); }, []);
+  const isOverdue = now && dueDate && !isCompleted && new Date(dueDate) < now;
 
   return (
     <motion.button
@@ -104,7 +107,7 @@ export function AnnouncementTaskItem({
             isOverdue ? 'text-red-500' : isCompleted ? 'text-primary-500' : 'text-warm-400'
           )}>
             <IconCalendar size={10} />
-            <span className="text-xs font-medium">
+            <span className="text-xs font-medium" suppressHydrationWarning>
               {isOverdue ? 'Overdue - ' : ''}
               {new Date(dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
             </span>

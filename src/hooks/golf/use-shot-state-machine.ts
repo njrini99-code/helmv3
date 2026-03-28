@@ -523,6 +523,8 @@ interface UseShotStateMachineParams {
   currentHole: RoundHole | undefined;
   onAutoSave?: (shots: ShotRecord[], currentHoleIndex: number) => Promise<void>;
   autoSaveInterval?: number;
+  /** When true, suppresses all auto-save scheduling (e.g. after round submission) */
+  autoSaveDisabled?: boolean;
 }
 
 export function useShotStateMachine({
@@ -532,6 +534,7 @@ export function useShotStateMachine({
   currentHole,
   onAutoSave,
   autoSaveInterval = 5000,
+  autoSaveDisabled = false,
 }: UseShotStateMachineParams) {
   const holeYardage = currentHole?.yardage ?? 0;
 
@@ -551,6 +554,14 @@ export function useShotStateMachine({
   const hydratedHoleIndexRef = useRef<number | null>(null);
   // Track retry attempt via ref to avoid stale closure in setTimeout callbacks
   const autoSaveRetryAttemptRef = useRef(0);
+  // Circuit breaker: track consecutive failures across ALL save cycles.
+  // Once the threshold is hit, auto-save is disabled until a manual save succeeds
+  // or the component re-mounts. This prevents 160+ error spam during deploys/outages.
+  const circuitBreakerFailuresRef = useRef(0);
+  const CIRCUIT_BREAKER_THRESHOLD = 5;
+  const circuitBreakerOpenRef = useRef(false);
+  // Cooldown: when circuit breaker opens, wait before allowing a retry probe
+  const circuitBreakerCooldownRef = useRef<NodeJS.Timeout | null>(null);
 
   // Refs for fresh values in async callbacks
   const onAutoSaveRef = useRef(onAutoSave);
@@ -571,14 +582,112 @@ export function useShotStateMachine({
     });
   }, [currentHoleIndex, holeYardage, initialShots, initialShotNumber]);
 
-  // ---- EFFECT: Auto-save ----
+  // ---- EFFECT: Auto-save with circuit breaker ----
+  // Circuit breaker prevents 160+ error spam during deploys/outages.
+  // After CIRCUIT_BREAKER_THRESHOLD consecutive failures, auto-save pauses
+  // and only sends a single probe every 60s to check if the server is back.
   useEffect(() => {
+    if (autoSaveDisabled) return;
     if (!onAutoSaveRef.current || state.shotHistory.length === 0) return;
+
+    // Circuit breaker open: skip scheduling new saves (probe timer handles recovery)
+    if (circuitBreakerOpenRef.current) return;
 
     const currentFingerprint = computeShotFingerprint(state.shotHistory);
     if (currentFingerprint === lastSavedShotsRef.current) return;
 
     if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
+
+    const handleSaveSuccess = (fingerprint: string) => {
+      lastSavedShotsRef.current = fingerprint;
+      dispatch({ type: 'SET_AUTO_SAVE_STATUS', payload: 'saved' });
+      autoSaveRetryAttemptRef.current = 0;
+      // Reset circuit breaker on success
+      circuitBreakerFailuresRef.current = 0;
+      circuitBreakerOpenRef.current = false;
+      if (circuitBreakerCooldownRef.current) {
+        clearTimeout(circuitBreakerCooldownRef.current);
+        circuitBreakerCooldownRef.current = null;
+      }
+      dispatch({ type: 'AUTO_SAVE_RESET' });
+
+      if (autoSaveRetryTimeoutRef.current) {
+        clearTimeout(autoSaveRetryTimeoutRef.current);
+        autoSaveRetryTimeoutRef.current = null;
+      }
+
+      if (autoSaveStatusTimeoutRef.current) clearTimeout(autoSaveStatusTimeoutRef.current);
+      autoSaveStatusTimeoutRef.current = setTimeout(() => {
+        dispatch({ type: 'SET_AUTO_SAVE_STATUS', payload: 'idle' });
+      }, 2000);
+    };
+
+    const handleSaveFailure = () => {
+      dispatch({ type: 'SET_AUTO_SAVE_STATUS', payload: 'error' });
+      circuitBreakerFailuresRef.current++;
+
+      // Open circuit breaker after threshold consecutive failures
+      if (circuitBreakerFailuresRef.current >= CIRCUIT_BREAKER_THRESHOLD) {
+        circuitBreakerOpenRef.current = true;
+        // Schedule a single probe attempt every 60s to check server health.
+        // If the probe succeeds, the circuit breaker resets automatically.
+        const scheduleCooldownProbe = () => {
+          if (circuitBreakerCooldownRef.current) clearTimeout(circuitBreakerCooldownRef.current);
+          circuitBreakerCooldownRef.current = setTimeout(async () => {
+            if (!isMountedRef.current || !onAutoSaveRef.current) return;
+            const probeFingerprint = computeShotFingerprint(shotHistoryRef.current);
+            if (probeFingerprint === lastSavedShotsRef.current) {
+              // Data was saved elsewhere; reset breaker
+              circuitBreakerOpenRef.current = false;
+              circuitBreakerFailuresRef.current = 0;
+              if (isMountedRef.current) dispatch({ type: 'SET_AUTO_SAVE_STATUS', payload: 'idle' });
+              return;
+            }
+            try {
+              if (isMountedRef.current) dispatch({ type: 'SET_AUTO_SAVE_STATUS', payload: 'saving' });
+              await onAutoSaveRef.current(shotHistoryRef.current, currentHoleIndexRef.current);
+              if (isMountedRef.current) handleSaveSuccess(probeFingerprint);
+            } catch {
+              // Probe failed — stay open, schedule another probe
+              if (isMountedRef.current) {
+                dispatch({ type: 'SET_AUTO_SAVE_STATUS', payload: 'error' });
+                scheduleCooldownProbe();
+              }
+            }
+          }, 60_000); // 60s cooldown between probe attempts
+        };
+        scheduleCooldownProbe();
+        return; // Don't schedule per-cycle retries when breaker is open
+      }
+
+      // Per-cycle retries with exponential backoff (max 3 attempts: 5s, 15s, 30s)
+      const RETRY_DELAYS = [5000, 15000, 30000];
+      const currentAttempt = autoSaveRetryAttemptRef.current;
+      if (currentAttempt < RETRY_DELAYS.length) {
+        const delay = RETRY_DELAYS[currentAttempt]!;
+        autoSaveRetryAttemptRef.current = currentAttempt + 1;
+        dispatch({ type: 'AUTO_SAVE_RETRY_SCHEDULED', payload: currentAttempt + 1 });
+
+        if (autoSaveRetryTimeoutRef.current) clearTimeout(autoSaveRetryTimeoutRef.current);
+        autoSaveRetryTimeoutRef.current = setTimeout(async () => {
+          const retryFingerprint = computeShotFingerprint(shotHistoryRef.current);
+          if (retryFingerprint === lastSavedShotsRef.current) {
+            dispatch({ type: 'SET_AUTO_SAVE_STATUS', payload: 'idle' });
+            autoSaveRetryAttemptRef.current = 0;
+            dispatch({ type: 'AUTO_SAVE_RESET' });
+            return;
+          }
+
+          try {
+            dispatch({ type: 'SET_AUTO_SAVE_STATUS', payload: 'saving' });
+            await onAutoSaveRef.current?.(shotHistoryRef.current, currentHoleIndexRef.current);
+            handleSaveSuccess(retryFingerprint);
+          } catch {
+            handleSaveFailure();
+          }
+        }, delay);
+      }
+    };
 
     autoSaveTimeoutRef.current = setTimeout(async () => {
       const freshFingerprint = computeShotFingerprint(shotHistoryRef.current);
@@ -587,63 +696,9 @@ export function useShotStateMachine({
       try {
         dispatch({ type: 'SET_AUTO_SAVE_STATUS', payload: 'saving' });
         await onAutoSaveRef.current?.(shotHistoryRef.current, currentHoleIndexRef.current);
-        lastSavedShotsRef.current = freshFingerprint;
-        dispatch({ type: 'SET_AUTO_SAVE_STATUS', payload: 'saved' });
-        autoSaveRetryAttemptRef.current = 0;
-        dispatch({ type: 'AUTO_SAVE_RESET' });
-
-        // Clear any pending retry since save succeeded
-        if (autoSaveRetryTimeoutRef.current) {
-          clearTimeout(autoSaveRetryTimeoutRef.current);
-          autoSaveRetryTimeoutRef.current = null;
-        }
-
-        if (autoSaveStatusTimeoutRef.current) clearTimeout(autoSaveStatusTimeoutRef.current);
-        autoSaveStatusTimeoutRef.current = setTimeout(() => {
-          dispatch({ type: 'SET_AUTO_SAVE_STATUS', payload: 'idle' });
-        }, 2000);
+        handleSaveSuccess(freshFingerprint);
       } catch {
-        dispatch({ type: 'SET_AUTO_SAVE_STATUS', payload: 'error' });
-
-        // Schedule retry with exponential backoff (max 3 attempts: 5s, 15s, 30s)
-        const RETRY_DELAYS = [5000, 15000, 30000];
-        const currentAttempt = autoSaveRetryAttemptRef.current;
-        if (currentAttempt < RETRY_DELAYS.length) {
-          const delay = RETRY_DELAYS[currentAttempt]!;
-          autoSaveRetryAttemptRef.current = currentAttempt + 1;
-          dispatch({ type: 'AUTO_SAVE_RETRY_SCHEDULED', payload: currentAttempt + 1 });
-
-          if (autoSaveRetryTimeoutRef.current) clearTimeout(autoSaveRetryTimeoutRef.current);
-          autoSaveRetryTimeoutRef.current = setTimeout(async () => {
-            const retryFingerprint = computeShotFingerprint(shotHistoryRef.current);
-            if (retryFingerprint === lastSavedShotsRef.current) {
-              // Data was saved by another path (e.g. hole complete); clear error
-              dispatch({ type: 'SET_AUTO_SAVE_STATUS', payload: 'idle' });
-              autoSaveRetryAttemptRef.current = 0;
-              dispatch({ type: 'AUTO_SAVE_RESET' });
-              return;
-            }
-
-            try {
-              dispatch({ type: 'SET_AUTO_SAVE_STATUS', payload: 'saving' });
-              await onAutoSaveRef.current?.(shotHistoryRef.current, currentHoleIndexRef.current);
-              lastSavedShotsRef.current = retryFingerprint;
-              dispatch({ type: 'SET_AUTO_SAVE_STATUS', payload: 'saved' });
-              autoSaveRetryAttemptRef.current = 0;
-              dispatch({ type: 'AUTO_SAVE_RESET' });
-
-              if (autoSaveStatusTimeoutRef.current) clearTimeout(autoSaveStatusTimeoutRef.current);
-              autoSaveStatusTimeoutRef.current = setTimeout(() => {
-                dispatch({ type: 'SET_AUTO_SAVE_STATUS', payload: 'idle' });
-              }, 2000);
-            } catch {
-              // Retry failed — keep error status visible (no auto-clear)
-              dispatch({ type: 'SET_AUTO_SAVE_STATUS', payload: 'error' });
-            }
-          }, delay);
-        }
-        // After 3 retries exhausted: error status stays visible permanently
-        // until a new shot triggers a new auto-save cycle that succeeds
+        handleSaveFailure();
       }
     }, autoSaveInterval);
 
@@ -651,8 +706,25 @@ export function useShotStateMachine({
       if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
       if (autoSaveStatusTimeoutRef.current) clearTimeout(autoSaveStatusTimeoutRef.current);
       if (autoSaveRetryTimeoutRef.current) clearTimeout(autoSaveRetryTimeoutRef.current);
+      // Note: circuitBreakerCooldownRef is NOT cleared here — it persists
+      // across effect re-runs so the probe timer keeps running even when
+      // the effect skips due to circuitBreakerOpenRef being true.
     };
-  }, [state.shotHistory, currentHoleIndex, autoSaveInterval]);
+  }, [state.shotHistory, currentHoleIndex, autoSaveInterval, autoSaveDisabled]);
+
+  // ---- EFFECT: Clean up circuit breaker probe timer on unmount ----
+  // Uses an isMounted ref so in-flight probe callbacks don't dispatch to an unmounted component
+  const isMountedRef = useRef(true);
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      if (circuitBreakerCooldownRef.current) {
+        clearTimeout(circuitBreakerCooldownRef.current);
+        circuitBreakerCooldownRef.current = null;
+      }
+    };
+  }, []);
 
   // ---- EFFECT: Auto-set distance unit based on result ----
   useEffect(() => {

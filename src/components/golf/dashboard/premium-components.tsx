@@ -17,7 +17,7 @@
  * ```
  */
 
-import { ReactNode, memo } from 'react';
+import { ReactNode, memo, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { m } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -169,7 +169,7 @@ const PremiumStatCard = memo(function PremiumStatCard({
                 <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-warm-500 mb-1">{label}</p>
                     <div className="flex items-baseline gap-2">
-                        <p className="text-3xl font-bold tracking-tight text-warm-900 tabular-nums">
+                        <p className="text-3xl font-bold tracking-tight text-warm-900 tabular-nums" suppressHydrationWarning>
                             {isNumeric ? numericValue.toLocaleString(undefined, { maximumFractionDigits: 1 }) : value}
                         </p>
                         {trend && (
@@ -391,7 +391,7 @@ export function RoundRow({
                 )}>
                     {courseName}
                 </p>
-                <p className="text-xs text-warm-400 mt-0.5">
+                <p className="text-xs text-warm-400 mt-0.5" suppressHydrationWarning>
                     {new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </p>
             </div>
@@ -411,9 +411,9 @@ export function RoundRow({
 // RECENT ROUND CARD (Premium — Coach Dashboard)
 // ============================================================================
 
-function formatRelativeDate(dateStr: string): string {
+function formatRelativeDate(dateStr: string, now?: Date | null): string {
     const date = new Date(dateStr);
-    const now = new Date();
+    if (!now) return '';
     const diffMs = now.getTime() - date.getTime();
     const diffDays = Math.floor(diffMs / 86400000);
 
@@ -467,6 +467,8 @@ export const RecentRoundCard = memo(function RecentRoundCard({
     totalGir,
     totalGirPossible,
 }: RecentRoundCardProps) {
+    const [now, setNow] = useState<Date | null>(null);
+    useEffect(() => { setNow(new Date()); }, []);
     const toParLabel = toPar === 0 ? 'E' : toPar > 0 ? `+${toPar}` : `${toPar}`;
     const accessibleLabel = `${playerName} scored ${score} (${toParLabel}) at ${courseName}`;
 
@@ -510,8 +512,8 @@ export const RecentRoundCard = memo(function RecentRoundCard({
                             <p className="font-semibold text-sm text-warm-900 truncate">
                                 {playerName}
                             </p>
-                            <span className="text-xs text-warm-400 flex-shrink-0 tabular-nums">
-                                {formatRelativeDate(date)}
+                            <span className="text-xs text-warm-400 flex-shrink-0 tabular-nums" suppressHydrationWarning>
+                                {formatRelativeDate(date, now)}
                             </span>
                         </div>
 

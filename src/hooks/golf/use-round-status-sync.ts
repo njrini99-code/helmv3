@@ -12,6 +12,11 @@ interface UseRoundStatusSyncOptions {
   syncIntervalMs?: number;
 }
 
+// Circuit breaker constants for status sync polling
+const SYNC_CIRCUIT_BREAKER_THRESHOLD = 3;
+const SYNC_BACKOFF_BASE_MS = 30_000; // Start at 30s
+const SYNC_BACKOFF_MAX_MS = 300_000; // Cap at 5 minutes
+
 export function useRoundStatusSync({
   roundId,
   expectedUpdatedAtRef,
@@ -25,6 +30,8 @@ export function useRoundStatusSync({
   const lastStaleVersionRef = useRef<string | null>(null);
   const onRoundCompletedRef = useRef(onRoundCompleted);
   const onRoundStaleRef = useRef(onRoundStale);
+  // Track consecutive failures for exponential backoff
+  const consecutiveFailuresRef = useRef(0);
 
   onRoundCompletedRef.current = onRoundCompleted;
   onRoundStaleRef.current = onRoundStale;
@@ -32,6 +39,7 @@ export function useRoundStatusSync({
   useEffect(() => {
     completionHandledRef.current = false;
     lastStaleVersionRef.current = null;
+    consecutiveFailuresRef.current = 0;
   }, [roundId]);
 
   useEffect(() => {
@@ -40,6 +48,27 @@ export function useRoundStatusSync({
     }
 
     let isCancelled = false;
+    let dynamicIntervalId: ReturnType<typeof setTimeout> | null = null;
+
+    const getBackoffDelay = (): number => {
+      const failures = consecutiveFailuresRef.current;
+      if (failures === 0) return syncIntervalMs;
+      // Exponential backoff: 30s, 60s, 120s, 240s, capped at 300s
+      const delay = Math.min(
+        SYNC_BACKOFF_BASE_MS * Math.pow(2, failures - 1),
+        SYNC_BACKOFF_MAX_MS
+      );
+      return delay;
+    };
+
+    const scheduleNextSync = () => {
+      if (isCancelled) return;
+      if (dynamicIntervalId != null) clearTimeout(dynamicIntervalId);
+      const delay = getBackoffDelay();
+      dynamicIntervalId = setTimeout(() => {
+        void syncRoundStatus();
+      }, delay);
+    };
 
     const syncRoundStatus = async () => {
       if (syncInFlightRef.current) {
@@ -50,9 +79,16 @@ export function useRoundStatusSync({
 
       try {
         const result = await checkRoundStaleness(roundId, expectedUpdatedAtRef.current);
-        if (isCancelled || !result.success) {
+        if (isCancelled) return;
+
+        if (!result.success) {
+          // Server action returned an error — count as failure for backoff
+          consecutiveFailuresRef.current++;
           return;
         }
+
+        // Success — reset failure counter
+        consecutiveFailuresRef.current = 0;
 
         const { currentUpdatedAt, status, isStale } = result.data;
 
@@ -72,22 +108,33 @@ export function useRoundStatusSync({
           lastStaleVersionRef.current = currentUpdatedAt;
           await onRoundStaleRef.current?.({ currentUpdatedAt, status });
         }
+      } catch {
+        // Network error / "unexpected response" (e.g. deploy mismatch) — backoff
+        consecutiveFailuresRef.current++;
       } finally {
         syncInFlightRef.current = false;
+        // Schedule next sync with dynamic delay based on failure count
+        scheduleNextSync();
       }
     };
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        void syncRoundStatus();
+        // On tab re-focus, only sync if we're not in heavy backoff
+        if (consecutiveFailuresRef.current < SYNC_CIRCUIT_BREAKER_THRESHOLD) {
+          void syncRoundStatus();
+        }
       }
     };
 
     const handleFocus = () => {
-      void syncRoundStatus();
+      if (consecutiveFailuresRef.current < SYNC_CIRCUIT_BREAKER_THRESHOLD) {
+        void syncRoundStatus();
+      }
     };
 
     const handlePageShow = () => {
+      // Always attempt on pageshow (user returning to tab after long absence)
       void syncRoundStatus();
     };
 
@@ -97,19 +144,13 @@ export function useRoundStatusSync({
     window.addEventListener('focus', handleFocus);
     window.addEventListener('pageshow', handlePageShow);
 
-    const intervalId = syncIntervalMs > 0
-      ? window.setInterval(() => {
-          void syncRoundStatus();
-        }, syncIntervalMs)
-      : null;
-
     return () => {
       isCancelled = true;
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('pageshow', handlePageShow);
-      if (intervalId != null) {
-        window.clearInterval(intervalId);
+      if (dynamicIntervalId != null) {
+        clearTimeout(dynamicIntervalId);
       }
     };
   }, [enabled, expectedUpdatedAtRef, roundId, syncIntervalMs]);

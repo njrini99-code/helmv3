@@ -23,6 +23,7 @@ import { triggerPlayerInsightsAfterRound } from '@/app/golf/actions/insights';
 import { logRoundSubmitted } from '@/lib/admin-logger';
 import { logCritical, logError } from '@/lib/error-monitoring';
 import { logServerError } from '@/lib/server-error-logger';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { deriveLieAfterFromResult, deriveLieAfter } from '@/lib/utils/shot-helpers';
 import type { Json } from '@/lib/types/database';
 
@@ -1603,7 +1604,6 @@ export async function submitGolfRoundComprehensive(
       return { warnings: ['Stats cache update failed.'] };
     });
     if (cacheResult.warnings.length > 0) {
-      console.warn('[Golf] Stats warnings after round submit:', cacheResult.warnings);
       await logServerError(
         `Stats cache warnings after round submit: ${cacheResult.warnings.join(' | ')}`,
         {
@@ -1824,10 +1824,13 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
             action_url: `/golf/dashboard/calendar`,
           }));
 
+          // Use admin client to bypass RLS — coach is inserting notifications
+          // for other users (team players), which is a system-level operation
+          const adminClient = createAdminClient();
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const { error: notifError } = await (supabase as any)
+          const { error: notifError } = await (adminClient as any)
             .from('golf_calendar_notifications')
-            .upsert(notifications, { onConflict: 'event_id,user_id,notification_type', ignoreDuplicates: true });
+            .insert(notifications);
 
           if (notifError) {
             await logServerError(`createGolfEvent notification insert failed: ${notifError.message}`, {
@@ -3481,6 +3484,11 @@ export async function savePartialRound(
         if (rpcResult.error === 'conflict') {
           return { success: false, error: 'conflict', };
         }
+        // Already-completed rounds are an expected race condition (auto-save fires
+        // after submit completes) — return early without logging an error event.
+        if (typeof rpcResult.error === 'string' && rpcResult.error.includes('already been completed')) {
+          return { success: false, error: rpcResult.error };
+        }
         void logServerError(`Auto-save RPC returned failure: ${rpcResult.error || 'unknown'}`, {
           action: 'savePartialRound',
           featureArea: 'shot_tracking',
@@ -3517,10 +3525,12 @@ export async function savePartialRound(
       // Extract updated_at from RPC result for optimistic locking
       const rpcUpdatedAt = rpcResult?.updated_at as string | undefined;
       if (rpcUpdatedAt) {
-        revalidatePath('/golf/dashboard/rounds');
-        updateTag(CACHE_TAGS.DASHBOARD);
-        updateTag(CACHE_TAGS.ROUNDS);
-        updateTag(CACHE_TAGS.STATS);
+        // NOTE: Do NOT call revalidatePath/updateTag here. Auto-save runs every
+        // ~15s and triggering page revalidation on each save causes the Next.js
+        // router to refetch layouts, which races with subsequent server action
+        // calls and produces "An unexpected response was received from the server"
+        // errors. Revalidation happens when the round is actually submitted via
+        // submitGolfRoundComprehensive.
         return { success: true, data: { roundId, updatedAt: rpcUpdatedAt, warnings: partialWarnings } };
       }
     } else {
@@ -3703,10 +3713,8 @@ export async function savePartialRound(
       }
     }
 
-    revalidatePath('/golf/dashboard/rounds');
-    updateTag(CACHE_TAGS.DASHBOARD);
-    updateTag(CACHE_TAGS.ROUNDS);
-    updateTag(CACHE_TAGS.STATS);
+    // NOTE: Do NOT call revalidatePath/updateTag here — see comment in the
+    // RPC path above. Auto-save should be invisible to the router.
 
     return { success: true, data: { roundId, updatedAt: undefined as string | undefined } };
 

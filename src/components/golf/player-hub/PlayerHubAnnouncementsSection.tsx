@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { m } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -23,8 +23,9 @@ const urgencyConfig: Record<string, UrgencyStyle> = {
 };
 const defaultUrg: UrgencyStyle = urgencyConfig['normal']!;
 
-function relativeTime(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
+function relativeTime(dateStr: string, nowTs: number): string {
+  if (!nowTs) return '';
+  const diff = nowTs - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
   if (mins < 1) return 'Just now';
   if (mins < 60) return `${mins}m ago`;
@@ -35,10 +36,10 @@ function relativeTime(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-function isUnread(ann: GolfAnnouncementMeta): boolean {
+function isUnread(ann: GolfAnnouncementMeta, nowTs: number): boolean {
   if (ann.requires_acknowledgement && !ann.has_player_acknowledged) return true;
-  if (!ann.requires_acknowledgement && ann.published_at) {
-    return (Date.now() - new Date(ann.published_at).getTime()) < 24 * 3600000;
+  if (!ann.requires_acknowledgement && ann.published_at && nowTs) {
+    return (nowTs - new Date(ann.published_at).getTime()) < 24 * 3600000;
   }
   return false;
 }
@@ -54,11 +55,13 @@ export function PlayerHubAnnouncementsSection({ announcements }: PlayerHubAnnoun
   const badges = useNotificationBadges();
   const [acknowledged, setAcknowledged] = useState<Set<string>>(new Set());
   const [acknowledging, setAcknowledging] = useState<string | null>(null);
+  const [nowTs, setNowTs] = useState(0);
+  useEffect(() => { setNowTs(Date.now()); }, []);
 
   // Sort unread first, limit to 3
   const sorted = [...announcements].sort((a, b) => {
-    const aU = isUnread(a) && !acknowledged.has(a.id);
-    const bU = isUnread(b) && !acknowledged.has(b.id);
+    const aU = isUnread(a, nowTs) && !acknowledged.has(a.id);
+    const bU = isUnread(b, nowTs) && !acknowledged.has(b.id);
     if (aU && !bU) return -1;
     if (!aU && bU) return 1;
     return 0;
@@ -79,7 +82,7 @@ export function PlayerHubAnnouncementsSection({ announcements }: PlayerHubAnnoun
 
   if (announcements.length === 0) return null;
 
-  const unreadCount = sorted.filter(a => isUnread(a) && !acknowledged.has(a.id)).length;
+  const unreadCount = sorted.filter(a => isUnread(a, nowTs) && !acknowledged.has(a.id)).length;
 
   return (
     <m.section
@@ -113,7 +116,7 @@ export function PlayerHubAnnouncementsSection({ announcements }: PlayerHubAnnoun
       <div className="space-y-2">
         {sorted.map((ann, i) => {
           const urg = urgencyConfig[ann.urgency || 'normal'] ?? defaultUrg;
-          const unread = isUnread(ann) && !acknowledged.has(ann.id);
+          const unread = isUnread(ann, nowTs) && !acknowledged.has(ann.id);
           const needsAck = ann.requires_acknowledgement && !ann.has_player_acknowledged && !acknowledged.has(ann.id);
           const isAcked = ann.has_player_acknowledged || acknowledged.has(ann.id);
 
@@ -165,7 +168,7 @@ export function PlayerHubAnnouncementsSection({ announcements }: PlayerHubAnnoun
                   {/* Time + action */}
                   <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
                     <span className="text-label text-warm-400 tabular-nums">
-                      {ann.published_at ? relativeTime(ann.published_at) : ''}
+                      {ann.published_at ? relativeTime(ann.published_at, nowTs) : ''}
                     </span>
                     {needsAck && (
                       <Button

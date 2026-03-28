@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { m, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { fadeUp, staggerContainer } from '@/lib/motion';
@@ -96,9 +96,9 @@ function getTransportIcon(type: string) {
   return map[type] || '\uD83D\uDE97';
 }
 
-function formatRelativeDate(dateStr: string) {
+function formatRelativeDate(dateStr: string, now?: Date | null) {
   const date = new Date(dateStr);
-  const now = new Date();
+  if (!now) return '';
   const diffMs = date.getTime() - now.getTime();
   const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
@@ -138,8 +138,8 @@ function getEventTypeStyle(type: string) {
   return styles[type] || { bg: 'bg-warm-50', text: 'text-warm-700', dot: 'bg-warm-500', label: type };
 }
 
-function getTripStatus(trip: TripData) {
-  const now = new Date();
+function getTripStatus(trip: TripData, now?: Date | null) {
+  if (!now) return { label: 'Upcoming', color: 'bg-warm-100 text-warm-600' };
   const departure = new Date(trip.departure_date);
   const returnDate = trip.return_date ? new Date(trip.return_date) : null;
   const diffMs = departure.getTime() - now.getTime();
@@ -171,7 +171,9 @@ interface TabDef {
 
 function TripCard({ trip, onExpand }: { trip: TripData; onExpand: () => void }) {
   const fmtDate = useFormatDate();
-  const status = getTripStatus(trip);
+  const [tripNow, setTripNow] = useState<Date | null>(null);
+  useEffect(() => { setTripNow(new Date()); }, []);
+  const status = getTripStatus(trip, tripNow);
 
   return (
     <m.div
@@ -368,6 +370,8 @@ function PlayerTaskCard({
   onComplete: () => void;
 }) {
   const [completing, setCompleting] = useState(false);
+  const [taskNow, setTaskNow] = useState<Date | null>(null);
+  useEffect(() => { setTaskNow(new Date()); }, []);
 
   const handleComplete = async () => {
     setCompleting(true);
@@ -449,7 +453,7 @@ function PlayerTaskCard({
                   isOverdue ? 'text-red-600 font-medium' : 'text-warm-400',
                 )}>
                   <IconClock size={12} />
-                  {isOverdue ? 'Overdue \u00b7 ' : ''}{formatRelativeDate(task.due_date)}
+                  {isOverdue ? 'Overdue \u00b7 ' : ''}{formatRelativeDate(task.due_date, taskNow)}
                 </span>
               )}
               {task.category && (
@@ -463,7 +467,7 @@ function PlayerTaskCard({
               {isCompleted && task.completed_at && (
                 <span className="flex items-center gap-1 text-primary-600">
                   <IconCheckCheck size={12} />
-                  Done {formatRelativeDate(task.completed_at)}
+                  Done {formatRelativeDate(task.completed_at, taskNow)}
                 </span>
               )}
             </div>
@@ -484,9 +488,11 @@ function EventRSVPCard({
   const [submitting, setSubmitting] = useState<string | null>(null);
   const fmtDate = useFormatDate();
   const style = getEventTypeStyle(event.event_type);
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => { setNow(new Date()); }, []);
   const eventDate = new Date(event.start_time);
-  const isToday = new Date().toDateString() === eventDate.toDateString();
-  const isPast = eventDate < new Date();
+  const isToday = now ? now.toDateString() === eventDate.toDateString() : false;
+  const isPast = now ? eventDate < now : false;
 
   const handleRSVP = async (status: 'accepted' | 'declined' | 'tentative') => {
     setSubmitting(status);
@@ -660,20 +666,22 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
   const badges = useNotificationBadges();
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [selectedTrip, setSelectedTrip] = useState<TripData | null>(null);
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => { setNow(new Date()); }, []);
 
   // Computed values
   const pendingTasks = tasks.filter(t => t.status !== 'completed');
   const overdueTasks = tasks.filter(t => t.status === 'overdue');
   const completedTasks = tasks.filter(t => t.status === 'completed');
   const pendingEvents = events.filter(e => !e.rsvp_status || e.rsvp_status === 'pending');
-  const upcomingTrips = trips.filter(t => new Date(t.departure_date) >= new Date());
+  const upcomingTrips = now ? trips.filter(t => new Date(t.departure_date) >= now) : trips;
   const urgentCount = overdueTasks.length + pendingEvents.length;
 
   const tabs: TabDef[] = [
     { id: 'overview', label: 'Overview', count: urgentCount, urgentCount },
     { id: 'trips', label: 'Trips', count: upcomingTrips.length },
     { id: 'tasks', label: 'Tasks', count: pendingTasks.length, urgentCount: overdueTasks.length },
-    { id: 'events', label: 'Events', count: events.filter(e => new Date(e.start_time) >= new Date()).length, urgentCount: pendingEvents.length },
+    { id: 'events', label: 'Events', count: now ? events.filter(e => new Date(e.start_time) >= now).length : events.length, urgentCount: pendingEvents.length },
   ];
 
   const handleCompleteTask = useCallback(async (taskId: string) => {
@@ -684,8 +692,8 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
     await onRSVP(eventId, status);
   }, [onRSVP]);
 
-  // Greeting based on time of day
-  const hour = new Date().getHours();
+  // Greeting based on time of day (deferred to avoid hydration mismatch)
+  const hour = now ? now.getHours() : 12;
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
   const firstName = playerName.split(' ')[0];
 
@@ -702,7 +710,7 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
           <div className="flex items-center gap-3">
             <MobileMenuButton />
             <div>
-              <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">
+              <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900" suppressHydrationWarning>
                 {greeting}, {firstName}
               </h1>
               {urgentCount > 0 ? (
@@ -952,7 +960,7 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
                 <div className="space-y-6">
                   {/* Upcoming events */}
                   {(() => {
-                    const upcoming = events.filter(e => new Date(e.start_time) >= new Date());
+                    const upcoming = events.filter(e => now ? new Date(e.start_time) >= now : true);
                     return upcoming.length > 0 ? (
                       <div>
                         <h2 className="text-xs font-bold text-warm-400 uppercase tracking-widest mb-3">
@@ -973,7 +981,7 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
 
                   {/* Past events */}
                   {(() => {
-                    const past = events.filter(e => new Date(e.start_time) < new Date());
+                    const past = now ? events.filter(e => new Date(e.start_time) < now) : [];
                     return past.length > 0 ? (
                       <div>
                         <h2 className="text-xs font-bold text-warm-400 uppercase tracking-widest mb-3">

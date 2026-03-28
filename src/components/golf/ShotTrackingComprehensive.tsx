@@ -31,6 +31,8 @@ interface ShotTrackingProps {
   // Auto-save props
   onAutoSave?: (shots: ShotRecord[], currentHoleIndex: number) => Promise<void>;
   autoSaveInterval?: number; // in milliseconds, default 30000 (30s)
+  /** When true, suppresses all auto-save scheduling (e.g. after round submission) */
+  autoSaveDisabled?: boolean;
 }
 
 interface ScorecardHeaderProps {
@@ -293,6 +295,7 @@ export default function ShotTrackingComprehensive({
   initialShotNumber = 1,
   onAutoSave,
   autoSaveInterval = 30000, // 30 seconds default
+  autoSaveDisabled = false,
 }: ShotTrackingProps) {
   const currentHole = holes[currentHoleIndex];
 
@@ -316,6 +319,7 @@ export default function ShotTrackingComprehensive({
     currentHole,
     onAutoSave,
     autoSaveInterval,
+    autoSaveDisabled,
   });
 
   // Destructure state for convenience

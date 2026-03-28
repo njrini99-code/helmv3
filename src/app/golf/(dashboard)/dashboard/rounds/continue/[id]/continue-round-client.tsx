@@ -141,7 +141,8 @@ export default function ContinueRoundClient({
     const normalizedMessage = message.toLowerCase();
     return normalizedMessage.includes('already been completed')
       || normalizedMessage.includes('already been submitted')
-      || normalizedMessage.includes('may have already been completed');
+      || normalizedMessage.includes('may have already been completed')
+      || normalizedMessage.includes('already completed');
   }, []);
 
   const handleRoundSyncConflict = useCallback(async (fallbackMessage: string) => {
@@ -541,6 +542,9 @@ export default function ContinueRoundClient({
    * Auto-save handler for shot tracking - persists to localStorage + IndexedDB + server
    */
   const handleAutoSave = useCallback(async (shots: ShotRecord[], holeIndex: number) => {
+    // Skip auto-save entirely if the round has been submitted or is being submitted
+    if (isSubmittingRef.current || completedRoundId) return;
+
     // Sync parent's in-progress shots so hole navigation stays consistent after edits/deletes
     let allInProgressShots: Record<number, ShotRecord[]> = {};
     setInProgressShotsByHole(prev => {
@@ -664,6 +668,7 @@ export default function ContinueRoundClient({
   }, [
     buildPartialRoundData,
     completedHoleStats,
+    completedRoundId,
     handleRoundSyncConflict,
     holes,
     isCompletedRoundError,
@@ -924,6 +929,7 @@ export default function ContinueRoundClient({
         initialShotNumber={activeShotNumber}
         onAutoSave={handleAutoSave}
         autoSaveInterval={15000}
+        autoSaveDisabled={submitting || !!completedRoundId}
       />
 
       {/* Save Round Modal */}

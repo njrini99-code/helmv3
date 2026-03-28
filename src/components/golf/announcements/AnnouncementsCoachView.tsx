@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -36,8 +36,8 @@ const defaultUrg: UrgencyStyle = urgencyConfig['normal']!;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function relativeTime(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
+function relativeTime(dateStr: string, now: number): string {
+  const diff = now - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
   if (mins < 1) return 'Just now';
   if (mins < 60) return `${mins}m ago`;
@@ -82,9 +82,13 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  // Defer time-dependent values to client to avoid hydration mismatch
+  const [nowTs, setNowTs] = useState(0);
+  useEffect(() => { setNowTs(Date.now()); }, []);
+
   const urg = urgencyConfig[ann.urgency || 'normal'] ?? defaultUrg;
-  const isRecent = ann.published_at && (Date.now() - new Date(ann.published_at).getTime()) < 24 * 3600000;
-  const isNew = ann.published_at && (Date.now() - new Date(ann.published_at).getTime()) < 7 * 86400000;
+  const isRecent = nowTs > 0 && ann.published_at && (nowTs - new Date(ann.published_at).getTime()) < 24 * 3600000;
+  const isNew = nowTs > 0 && ann.published_at && (nowTs - new Date(ann.published_at).getTime()) < 7 * 86400000;
   const ackProgress = ann.total_recipients > 0
     ? Math.round((ann.acknowledged_count / ann.total_recipients) * 100)
     : 0;
@@ -163,8 +167,8 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
               <span className="text-warm-300 text-xs">|</span>
 
               {/* Time */}
-              <span className="text-xs text-warm-500 tabular-nums">
-                {ann.published_at ? relativeTime(ann.published_at) : ''}
+              <span className="text-xs text-warm-500 tabular-nums" suppressHydrationWarning>
+                {ann.published_at && nowTs > 0 ? relativeTime(ann.published_at, nowTs) : ''}
               </span>
 
               <span className="text-warm-300 text-xs">|</span>
@@ -401,7 +405,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
                                   <span className="text-xs text-warm-700 font-medium flex-1">
                                     {player ? `${player.first_name || ''} ${player.last_name || ''}` : 'Player'}
                                   </span>
-                                  <span className="text-label text-warm-400 tabular-nums">
+                                  <span className="text-label text-warm-400 tabular-nums" suppressHydrationWarning>
                                     {new Date(ack.acknowledged_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                                   </span>
                                 </div>

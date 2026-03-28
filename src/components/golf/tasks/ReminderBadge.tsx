@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { IconBell } from '@/components/icons';
 import { cn } from '@/lib/utils';
@@ -11,8 +12,27 @@ interface ReminderBadgeProps {
 }
 
 function ReminderBadge({ reminderAt, className, size = 'md' }: ReminderBadgeProps) {
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => { setNow(new Date()); }, []);
+
   const reminderDate = new Date(reminderAt);
-  const now = new Date();
+
+  // During SSR, render a neutral placeholder to avoid hydration mismatch
+  if (!now) {
+    return (
+      <div
+        className={cn(
+          'inline-flex items-center rounded-full border font-medium bg-warm-50 text-warm-500 border-warm-200',
+          size === 'sm' ? 'px-1.5 py-0.5 text-xs gap-1' : 'px-2 py-1 text-xs gap-2',
+          className
+        )}
+      >
+        <IconBell size={size === 'sm' ? 10 : 12} />
+        <span suppressHydrationWarning>&nbsp;</span>
+      </div>
+    );
+  }
+
   const diff = reminderDate.getTime() - now.getTime();
 
   // Calculate display
@@ -73,15 +93,27 @@ function ReminderBadge({ reminderAt, className, size = 'md' }: ReminderBadgeProp
       title={`Reminder: ${reminderDate.toLocaleString()}`}
     >
       <IconBell size={iconSize} />
-      <span>{label}</span>
+      <span suppressHydrationWarning>{label}</span>
     </motion.div>
   );
 }
 
 // Compact version for use in cards/lists
 export function ReminderIcon({ reminderAt, className }: { reminderAt: string; className?: string }) {
+  const [now, setNow] = useState<Date | null>(null);
+  useEffect(() => { setNow(new Date()); }, []);
+
   const reminderDate = new Date(reminderAt);
-  const now = new Date();
+
+  // During SSR, render neutral state
+  if (!now) {
+    return (
+      <div className={cn('inline-flex items-center justify-center', className)}>
+        <IconBell size={14} className="text-warm-400" />
+      </div>
+    );
+  }
+
   const diff = reminderDate.getTime() - now.getTime();
 
   let variant: 'upcoming' | 'soon' | 'imminent' | 'past';
