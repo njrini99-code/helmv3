@@ -135,13 +135,13 @@ function NewTemplateForm({ onSave, onCancel }: { onSave: () => void; onCancel: (
           value={name}
           onChange={e => setName(e.target.value)}
           placeholder="Template name"
-          className="w-full px-3 py-2 bg-warm-50/50 border border-warm-200/30 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-300"
+          className="w-full px-3 py-2 bg-white/60 border border-warm-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 outline-none"
         />
 
         <select
           value={category}
           onChange={e => setCategory(e.target.value as TemplateCategory)}
-          className="w-full px-3 py-2 bg-warm-50/50 border border-warm-200/30 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-300"
+          className="w-full px-3 py-2 bg-white/60 border border-warm-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 outline-none"
         >
           {CATEGORY_OPTIONS.filter(c => c.key !== 'all').map(c => (
             <option key={c.key} value={c.key}>{c.label}</option>
@@ -153,7 +153,7 @@ function NewTemplateForm({ onSave, onCancel }: { onSave: () => void; onCancel: (
           value={subject}
           onChange={e => setSubject(e.target.value)}
           placeholder="Subject line"
-          className="w-full px-3 py-2 bg-warm-50/50 border border-warm-200/30 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-300"
+          className="w-full px-3 py-2 bg-white/60 border border-warm-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 outline-none"
         />
 
         <textarea
@@ -161,7 +161,7 @@ function NewTemplateForm({ onSave, onCancel }: { onSave: () => void; onCancel: (
           onChange={e => setBody(e.target.value)}
           placeholder="Email body..."
           rows={4}
-          className="w-full px-3 py-2 bg-warm-50/50 border border-warm-200/30 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-300 resize-none"
+          className="w-full px-3 py-2 bg-white/60 border border-warm-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 outline-none resize-none"
         />
       </div>
 
@@ -254,12 +254,12 @@ export function TemplatePicker({ onSelect, coachData }: TemplatePickerProps) {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search templates..."
-            className="w-full pl-9 pr-8 py-1.5 bg-warm-50/50 border border-warm-200/30 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-300"
+            className="w-full pl-9 pr-8 py-1.5 bg-white/60 border border-warm-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 outline-none"
           />
           {search && (
             <button
               onClick={() => setSearch('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-warm-400 hover:text-warm-600"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-warm-400 hover:text-warm-600 transition-colors"
             >
               <IconX size={14} />
             </button>

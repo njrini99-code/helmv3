@@ -477,7 +477,7 @@ function CoachDetailPanelInner({
             <div className="flex items-center gap-2">
               <span className="text-xs text-warm-500 font-medium">Priority</span>
               <select value={coach.priority} onChange={e => onUpdate({ priority: parseInt(e.target.value) })}
-                className="px-2.5 py-1.5 rounded-xl text-xs font-medium border border-warm-200/30 cursor-pointer bg-white/50">
+                className="px-2.5 py-1.5 rounded-xl text-xs font-medium border border-warm-200/60 cursor-pointer bg-white/50 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-300 transition-all duration-200">
                 <option value={0}>Normal</option><option value={1}>High</option><option value={2}>Hot</option>
               </select>
             </div>
@@ -568,8 +568,8 @@ function CoachDetailPanelInner({
                     const TypeIcon = type.Icon;
                     return (
                       <button key={type.value} onClick={() => setNewContact({ ...newContact, type: type.value })}
-                        className={cn('px-3 py-1.5 rounded-xl text-xs font-medium transition-all inline-flex items-center gap-1.5',
-                          newContact.type === type.value ? 'bg-primary-600 text-white shadow-sm' : 'bg-white/60 border border-warm-200/30 text-warm-600 hover:bg-warm-50 active:bg-warm-100')}>
+                        className={cn('px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 inline-flex items-center gap-1.5',
+                          newContact.type === type.value ? 'bg-primary-600 text-white shadow-sm' : 'bg-white/60 border border-warm-200/60 text-warm-600 hover:bg-warm-50 active:bg-warm-100')}>
                         <TypeIcon size={12} /> {type.label}
                       </button>
                     );
@@ -896,7 +896,7 @@ function Section({ title, icon, action, children }: { title: string; icon: React
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-xs font-semibold text-warm-500 uppercase tracking-wider flex items-center gap-1.5">
+        <h3 className="text-xs font-medium text-warm-600 uppercase tracking-wider flex items-center gap-1.5">
           {icon} {title}
         </h3>
         {action}

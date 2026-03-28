@@ -241,7 +241,7 @@ function SingleCoachQuickAction({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
       <div
         className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 w-full max-w-md mx-4 overflow-clip"
         onClick={(e) => e.stopPropagation()}
@@ -283,7 +283,7 @@ function SingleCoachQuickAction({
           <textarea
             value={logForm.notes}
             onChange={(e) => setLogForm(f => ({ ...f, notes: e.target.value }))}
-            className="w-full bg-white/60 border border-warm-200 rounded-xl px-4 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/30"
+            className="w-full bg-white/60 border border-warm-200 rounded-xl px-4 py-2.5 text-sm resize-none outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
             rows={3}
             placeholder="Notes about this contact..."
           />

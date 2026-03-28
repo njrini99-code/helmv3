@@ -226,7 +226,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm" onClick={sending ? undefined : onClose} />
+      <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" onClick={sending ? undefined : onClose} />
 
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -379,7 +379,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
                   value={subject}
                   onChange={e => setSubject(e.target.value)}
                   placeholder={mode === 'gmail' ? 'Pre-fill subject line...' : 'Email subject line...'}
-                  className="w-full bg-white/60 border border-warm-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-300 transition-all"
+                  className="w-full bg-white/60 border border-warm-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 transition-all"
                   autoFocus
                 />
               </div>
@@ -423,7 +423,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
                       ? 'Hi {name},\n\nWrite your email message here...\n\nBest,\nHelm Sports Labs'
                       : 'Pre-fill message body (you can edit everything in Gmail)...'
                   }
-                  className="w-full bg-white/60 border border-warm-200 rounded-xl px-4 py-2.5 text-sm font-mono min-h-[200px] resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-300 transition-all leading-relaxed"
+                  className="w-full bg-white/60 border border-warm-200 rounded-xl px-4 py-2.5 text-sm font-mono min-h-[200px] resize-none outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 transition-all leading-relaxed"
                 />
               </div>
 

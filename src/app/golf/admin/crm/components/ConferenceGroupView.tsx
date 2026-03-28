@@ -189,7 +189,7 @@ export function ConferenceGroupView({
                   checked={allSelected}
                   ref={el => { if (el) el.indeterminate = someSelected && !allSelected; }}
                   onChange={() => toggleGroupSelection(group)}
-                  className="w-4 h-4 rounded-md border-warm-300 text-primary-600 focus:ring-primary-500/20 cursor-pointer"
+                  className="w-4 h-4 rounded-lg border-warm-300 text-primary-600 focus:ring-primary-500/20 cursor-pointer"
                 />
               </div>
 
@@ -213,12 +213,12 @@ export function ConferenceGroupView({
 
               <div className="flex items-center gap-1.5">
                 {group.divisions.d2 > 0 && (
-                  <span className="px-2 py-0.5 rounded-md bg-blue-50 text-micro font-bold text-blue-700 tabular-nums">
+                  <span className="px-2 py-0.5 rounded-lg bg-blue-50 text-micro font-bold text-blue-700 tabular-nums">
                     D2: {group.divisions.d2}
                   </span>
                 )}
                 {group.divisions.d3 > 0 && (
-                  <span className="px-2 py-0.5 rounded-md bg-primary-50 text-micro font-bold text-primary-700 tabular-nums">
+                  <span className="px-2 py-0.5 rounded-lg bg-primary-50 text-micro font-bold text-primary-700 tabular-nums">
                     D3: {group.divisions.d3}
                   </span>
                 )}
@@ -282,7 +282,7 @@ export function ConferenceGroupView({
                                 else next.add(coach.id);
                                 onSelectionChange(next);
                               }}
-                              className="w-4 h-4 rounded-md border-warm-300 text-primary-600 focus:ring-primary-500/20 cursor-pointer"
+                              className="w-4 h-4 rounded-lg border-warm-300 text-primary-600 focus:ring-primary-500/20 cursor-pointer"
                             />
                           </td>
                           <td className="px-2 py-2.5" onClick={e => e.stopPropagation()}>
@@ -357,7 +357,7 @@ export function ConferenceGroupView({
                               {openActionMenu === coach.id && (
                                 <div className="absolute right-0 top-full mt-1 z-50 w-44 py-1 rounded-xl bg-white border border-warm-200/80 shadow-xl">
                                   <button onClick={() => { onLogContact(coach); setOpenActionMenu(null); }}
-                                    className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 flex items-center gap-2">
+                                    className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2">
                                     <IconMessageSquare size={14} /> Log Contact
                                   </button>
                                   {coach.email && (

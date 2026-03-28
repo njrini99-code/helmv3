@@ -98,7 +98,7 @@ export function CoachFilters({
             onChange={(e) => setLocalSearch(e.target.value)}
             className={cn(
               'w-full pl-9 pr-8 py-2.5 rounded-xl text-sm',
-              'bg-white/60 border border-warm-200',
+              'bg-white/50 border border-warm-200/60',
               'text-warm-900 placeholder:text-warm-400',
               'focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-300',
               'transition-all duration-200'
@@ -159,7 +159,7 @@ export function CoachFilters({
             'flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors whitespace-nowrap',
             showMore || hasSecondaryFilters
               ? 'bg-primary-50 border-primary-200 text-primary-700'
-              : 'bg-white/60 border-warm-200 text-warm-600 hover:bg-warm-50 active:bg-warm-100'
+              : 'bg-white/60 border-warm-200/60 text-warm-600 hover:bg-warm-50 active:bg-warm-100'
           )}
         >
           {showMore ? <IconChevronUp size={12} /> : <IconChevronDown size={12} />}
@@ -188,9 +188,9 @@ export function CoachFilters({
             value={filters.conference}
             onChange={(e) => setFilters(f => ({ ...f, conference: e.target.value }))}
             className={cn(
-              'px-4 py-2.5 rounded-xl text-xs font-medium',
-              'bg-white/60 border border-warm-200 text-warm-600',
-              'focus:outline-none focus:ring-2 focus:ring-primary-500/20',
+              'px-4 py-2.5 rounded-xl text-xs font-medium transition-all duration-200',
+              'bg-white/50 border border-warm-200/60 text-warm-600',
+              'focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300',
               'max-w-[180px] cursor-pointer',
               filters.conference !== 'all' && 'border-primary-300 bg-primary-50 text-primary-700'
             )}
@@ -204,9 +204,9 @@ export function CoachFilters({
             value={filters.status}
             onChange={(e) => setFilters(f => ({ ...f, status: e.target.value as Filters['status'] }))}
             className={cn(
-              'px-4 py-2.5 rounded-xl text-xs font-medium',
-              'bg-white/60 border border-warm-200 text-warm-600',
-              'focus:outline-none focus:ring-2 focus:ring-primary-500/20',
+              'px-4 py-2.5 rounded-xl text-xs font-medium transition-all duration-200',
+              'bg-white/50 border border-warm-200/60 text-warm-600',
+              'focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300',
               'cursor-pointer',
               filters.status !== 'all' && 'border-primary-300 bg-primary-50 text-primary-700'
             )}
@@ -220,9 +220,9 @@ export function CoachFilters({
             value={filters.priority}
             onChange={(e) => setFilters(f => ({ ...f, priority: e.target.value }))}
             className={cn(
-              'px-4 py-2.5 rounded-xl text-xs font-medium',
-              'bg-white/60 border border-warm-200 text-warm-600',
-              'focus:outline-none focus:ring-2 focus:ring-primary-500/20',
+              'px-4 py-2.5 rounded-xl text-xs font-medium transition-all duration-200',
+              'bg-white/50 border border-warm-200/60 text-warm-600',
+              'focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300',
               'cursor-pointer',
               filters.priority !== 'all' && 'border-primary-300 bg-primary-50 text-primary-700'
             )}
@@ -240,7 +240,7 @@ export function CoachFilters({
               'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors whitespace-nowrap',
               filters.followUpDue
                 ? 'bg-amber-50 border-amber-200 text-amber-700'
-                : 'bg-white/60 border-warm-200 text-warm-600 hover:bg-warm-50 active:bg-warm-100'
+                : 'bg-white/60 border-warm-200/60 text-warm-600 hover:bg-warm-50 active:bg-warm-100'
             )}
           >
             <IconClock size={12} /> Follow-ups Due
@@ -252,7 +252,7 @@ export function CoachFilters({
               'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors whitespace-nowrap',
               filters.starred
                 ? 'bg-amber-50 border-amber-200 text-amber-700'
-                : 'bg-white/60 border-warm-200 text-warm-600 hover:bg-warm-50 active:bg-warm-100'
+                : 'bg-white/60 border-warm-200/60 text-warm-600 hover:bg-warm-50 active:bg-warm-100'
             )}
           >
             <IconStar size={12} /> Starred
@@ -264,7 +264,7 @@ export function CoachFilters({
               'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors whitespace-nowrap',
               filters.hasNotes
                 ? 'bg-amber-50 border-amber-200 text-amber-700'
-                : 'bg-white/60 border-warm-200 text-warm-600 hover:bg-warm-50 active:bg-warm-100'
+                : 'bg-white/60 border-warm-200/60 text-warm-600 hover:bg-warm-50 active:bg-warm-100'
             )}
           >
             <IconFileText size={12} /> Has Notes
@@ -276,7 +276,7 @@ export function CoachFilters({
               'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors whitespace-nowrap',
               filters.noContact30Days
                 ? 'bg-orange-50 border-orange-200 text-orange-700'
-                : 'bg-white/60 border-warm-200 text-warm-600 hover:bg-warm-50 active:bg-warm-100'
+                : 'bg-white/60 border-warm-200/60 text-warm-600 hover:bg-warm-50 active:bg-warm-100'
             )}
           >
             <IconAlertCircle size={12} /> No Contact 30 Days

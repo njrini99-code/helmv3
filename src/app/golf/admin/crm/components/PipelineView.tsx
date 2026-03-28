@@ -168,14 +168,14 @@ export function PipelineView({
             <button
               onClick={() => handleResearchNext(10)}
               disabled={processing}
-              className="px-4 py-2.5 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors text-sm shadow-sm shadow-primary-500/25 disabled:opacity-50"
+              className="px-4 py-2.5 bg-primary-500 text-white rounded-xl font-medium hover:bg-primary-600 transition-all duration-200 text-sm shadow-sm shadow-primary-500/25 disabled:opacity-50"
             >
               <span className="flex items-center gap-2"><IconZap size={16} /> Research Top 10</span>
             </button>
             <button
               onClick={() => handleResearchNext(25)}
               disabled={processing}
-              className="px-4 py-2.5 bg-white border border-warm-200/50 text-warm-700 rounded-xl font-medium hover:bg-warm-50 active:bg-warm-100 transition-colors text-sm disabled:opacity-50"
+              className="px-4 py-2.5 bg-white/60 border border-warm-200 text-warm-700 rounded-xl font-medium hover:bg-warm-50 active:bg-warm-100 transition-all duration-200 text-sm disabled:opacity-50"
             >
               Research Top 25
             </button>
@@ -228,7 +228,7 @@ export function PipelineView({
             >
               {/* Column Header — premium glass with status color accent */}
               <div className={cn(
-                'bg-white/50 backdrop-blur-sm border border-white/20 rounded-2xl overflow-hidden mb-2',
+                'bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl overflow-hidden mb-2',
               )}>
                 {/* Status color accent bar */}
                 <div className={cn('h-1', stageColors?.dot || 'bg-warm-300')} />
@@ -276,12 +276,12 @@ export function PipelineView({
                       />
                     ))}
                     {hasMore && (
-                      <button onClick={() => toggleExpanded(stage.id)} className="w-full py-2 text-center text-sm font-medium text-primary-600 hover:bg-primary-50/50 rounded-xl transition-colors">
+                      <button onClick={() => toggleExpanded(stage.id)} className="w-full py-2 text-center text-sm font-medium text-primary-600 hover:bg-primary-50/50 rounded-xl transition-all duration-200">
                         Show {columnCoaches.length - CARDS_PER_PAGE} more…
                       </button>
                     )}
                     {isExpanded && columnCoaches.length > CARDS_PER_PAGE && (
-                      <button onClick={() => toggleExpanded(stage.id)} className="w-full py-2 text-center text-sm font-medium text-warm-500 hover:bg-warm-50/50 rounded-xl transition-colors">
+                      <button onClick={() => toggleExpanded(stage.id)} className="w-full py-2 text-center text-sm font-medium text-warm-500 hover:bg-warm-50/50 rounded-xl transition-all duration-200">
                         Show less
                       </button>
                     )}
@@ -340,7 +340,7 @@ function KanbanCard({
       onClick={onClick}
       onKeyDown={handleKeyDown}
       className={cn(
-        'bg-white/70 rounded-xl p-3 shadow-sm',
+        'bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-3 shadow-sm',
         'hover:shadow-md hover:-translate-y-0.5',
         'focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-300',
         'transition-all duration-200',

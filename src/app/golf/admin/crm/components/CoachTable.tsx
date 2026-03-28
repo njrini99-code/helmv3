@@ -358,7 +358,7 @@ export function CoachTable({
                       <IconMoreHorizontal size={16} />
                     </button>
                     {openActionMenu === coach.id && (
-                      <div className="absolute right-0 top-full mt-1 z-50 w-48 py-1 rounded-xl bg-white border border-warm-200/80 shadow-xl" onClick={e => e.stopPropagation()}>
+                      <div className="absolute right-0 top-full mt-1 z-50 w-48 py-1 rounded-xl bg-white/95 backdrop-blur-xl border border-warm-200/50 shadow-xl" onClick={e => e.stopPropagation()}>
                         <button onClick={() => { onLogContact(coach); setOpenActionMenu(null); }}
                           className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors flex items-center gap-2">
                           <IconMessageSquare size={16} className="text-warm-400" /> Log Contact
@@ -390,7 +390,7 @@ export function CoachTable({
                             <IconChevronRight size={12} className="text-warm-400" />
                           </button>
                           {openPrioritySubmenu === coach.id && (
-                            <div className="absolute left-full top-0 ml-1 z-50 w-36 py-1 rounded-xl bg-white border border-warm-200/80 shadow-xl">
+                            <div className="absolute left-full top-0 ml-1 z-50 w-36 py-1 rounded-xl bg-white/95 backdrop-blur-xl border border-warm-200/50 shadow-xl">
                               <button
                                 onClick={() => { onPriorityChange?.(coach.id, 0); setOpenActionMenu(null); setOpenPrioritySubmenu(null); }}
                                 className={cn('w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors',
@@ -443,7 +443,7 @@ export function CoachTable({
           </div>
           <div className="flex items-center gap-3">
             <select value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setPage(1); }}
-              className="text-sm px-2.5 py-1.5 rounded-lg bg-white/60 border border-warm-200/50 focus:ring-2 focus:ring-primary-500 focus:border-transparent">
+              className="text-sm px-2.5 py-1.5 rounded-lg bg-white/50 border border-warm-200/60 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-300 transition-all duration-200">
               {PAGE_SIZES.map(s => <option key={s} value={s}>{s}/page</option>)}
             </select>
             <div className="flex items-center gap-1">

@@ -144,7 +144,7 @@ export function FAB({ onSchedule, onLogContact, onAddCoach }: FABProps) {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search coaches or schools..."
-                className="w-full pl-10 pr-4 py-2.5 bg-white/60 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-300"
+                className="w-full pl-10 pr-4 py-2.5 bg-white/60 border border-warm-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
               />
               {searching && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">

@@ -244,7 +244,7 @@ export function CRMDashboard({
             <button
               onClick={() => handleResearchNext(10)}
               disabled={processing === 'research'}
-              className="w-full sm:w-auto px-5 py-2.5 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-[background-color,box-shadow] text-sm shadow-sm shadow-primary-500/25 disabled:opacity-50 hover:shadow-md"
+              className="w-full sm:w-auto px-5 py-2.5 bg-primary-500 text-white rounded-xl font-medium hover:bg-primary-600 transition-all duration-200 text-sm shadow-sm shadow-primary-500/25 disabled:opacity-50 hover:shadow-md"
             >
               <span className="flex items-center justify-center gap-2">
                 <IconArrowRight size={16} />
@@ -254,7 +254,7 @@ export function CRMDashboard({
             <button
               onClick={() => handleResearchNext(25)}
               disabled={processing === 'research'}
-              className="w-full sm:w-auto px-5 py-2.5 bg-white border border-warm-200/50 text-warm-700 rounded-xl font-medium hover:bg-warm-50 active:bg-warm-100 transition-colors text-sm disabled:opacity-50"
+              className="w-full sm:w-auto px-5 py-2.5 bg-white/60 border border-warm-200 text-warm-700 rounded-xl font-medium hover:bg-warm-50 active:bg-warm-100 transition-all duration-200 text-sm disabled:opacity-50"
             >
               <span className="flex items-center justify-center gap-2">
                 <IconArrowRight size={16} />
@@ -263,7 +263,7 @@ export function CRMDashboard({
             </button>
             <button
               onClick={() => onNavigate('list')}
-              className="w-full sm:w-auto px-5 py-2.5 text-warm-500 hover:text-warm-700 rounded-xl font-medium transition-colors text-sm"
+              className="w-full sm:w-auto px-5 py-2.5 text-warm-500 hover:text-warm-700 rounded-xl font-medium transition-all duration-200 text-sm"
             >
               View All <IconArrowRight size={12} className="inline" />
             </button>
@@ -525,13 +525,13 @@ export function CRMDashboard({
                 <button
                   onClick={() => handleResearchNext(10)}
                   disabled={processing === 'research' || (stats.byStatus.new_lead || 0) === 0}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm bg-primary-600 text-white hover:bg-primary-700 transition-[background-color,transform,box-shadow] shadow-sm shadow-primary-500/25 disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5 hover:shadow-md flex-1 sm:flex-initial"
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm bg-primary-500 text-white hover:bg-primary-600 transition-all duration-200 shadow-sm shadow-primary-500/25 disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5 hover:shadow-md flex-1 sm:flex-initial"
                 >
                   <IconArrowRight size={16} /> Move to Pipeline
                 </button>
                 <button
                   onClick={() => onNavigate('pipeline')}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-warm-200/50 text-warm-700 rounded-xl font-medium hover:bg-warm-50 active:bg-warm-100 transition-[background-color,transform] text-sm hover:-translate-y-0.5 flex-1 sm:flex-initial"
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white/60 border border-warm-200 text-warm-700 rounded-xl font-medium hover:bg-warm-50 active:bg-warm-100 transition-all duration-200 text-sm hover:-translate-y-0.5 flex-1 sm:flex-initial"
                 >
                   <IconChartBar size={16} /> Open Pipeline
                 </button>

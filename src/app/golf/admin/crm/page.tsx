@@ -335,7 +335,7 @@ export default function CRMPage() {
           <p className="text-warm-600 mb-6">{error}</p>
           <button
             onClick={() => { setError(null); fetchCoaches(); }}
-            className="px-6 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 font-medium transition-colors shadow-sm"
+            className="px-6 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 font-medium transition-all duration-200 shadow-sm"
           >
             Try Again
           </button>
@@ -350,9 +350,9 @@ export default function CRMPage() {
   return (
     <div className="min-h-screen bg-[#FFFEF8] flex">
       {/* ═══════════════════ Mobile Header ═══════════════════ */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-[#1C1917] border-b border-white/10">
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-[#1C1917]/95 backdrop-blur-xl border-b border-white/10">
         <div className="flex items-center gap-2 px-3 h-12">
-          <a href="/golf/admin" className="flex-shrink-0 p-1.5 rounded-lg text-warm-400 hover:text-white transition-colors">
+          <a href="/golf/admin" className="flex-shrink-0 p-1.5 rounded-lg text-warm-400 hover:text-white transition-all duration-200">
             <ArrowLeft size={16} />
           </a>
           <div className="flex items-center gap-1.5 flex-1 overflow-x-auto scrollbar-hide">
@@ -364,7 +364,7 @@ export default function CRMPage() {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={cn(
-                    'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors flex-shrink-0',
+                    'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all duration-200 flex-shrink-0',
                     isActive
                       ? 'bg-white/15 text-white'
                       : 'text-warm-400 hover:text-white'
@@ -378,7 +378,7 @@ export default function CRMPage() {
           </div>
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex-shrink-0 p-1.5 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors"
+            className="flex-shrink-0 p-1.5 rounded-xl bg-primary-600 text-white hover:bg-primary-700 transition-all duration-200 shadow-sm"
           >
             <IconPlus size={16} />
           </button>
@@ -456,7 +456,7 @@ export default function CRMPage() {
           <button
             onClick={() => setShowAddModal(true)}
             className={cn(
-              'w-full flex items-center justify-center gap-2 py-2.5 rounded-[10px] font-medium transition-colors',
+              'w-full flex items-center justify-center gap-2 py-2.5 rounded-[10px] font-medium transition-all duration-200',
               'bg-gradient-to-r from-primary-500 to-primary-600 text-white hover:from-primary-600 hover:to-primary-700'
             )}
           >
@@ -465,10 +465,10 @@ export default function CRMPage() {
           </button>
           {!sidebarCollapsed && (
             <div className="flex gap-2">
-              <button onClick={() => setShowImportModal(true)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[10px] text-sm font-medium bg-white/5 hover:bg-white/10 text-warm-400 transition-colors">
+              <button onClick={() => setShowImportModal(true)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[10px] text-sm font-medium bg-white/5 hover:bg-white/10 text-warm-400 transition-all duration-200">
                 <IconUpload size={14} /> Import
               </button>
-              <button onClick={exportToCSV} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[10px] text-sm font-medium bg-white/5 hover:bg-white/10 text-warm-400 transition-colors">
+              <button onClick={exportToCSV} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[10px] text-sm font-medium bg-white/5 hover:bg-white/10 text-warm-400 transition-all duration-200">
                 <IconDownload size={14} /> Export
               </button>
             </div>
@@ -478,7 +478,7 @@ export default function CRMPage() {
         {/* Collapse Toggle */}
         <button
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className="absolute -right-3 top-20 w-6 h-6 rounded-full bg-[#1C1917] border border-white/20 flex items-center justify-center text-warm-400 hover:text-white transition-colors shadow-lg"
+          className="absolute -right-3 top-20 w-6 h-6 rounded-full bg-[#1C1917] border border-white/20 flex items-center justify-center text-warm-400 hover:text-white transition-all duration-200 shadow-lg"
         >
           {sidebarCollapsed ? <IconChevronRight size={14} /> : <ChevronLeft size={14} />}
         </button>

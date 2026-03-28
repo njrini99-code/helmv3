@@ -68,8 +68,8 @@ export function PipelineStats({ coaches, statusConfig }: PipelineStatsProps) {
   return (
     <div className="space-y-4">
       {/* Stage Pipeline */}
-      <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
-        <h3 className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-4">Sales Pipeline</h3>
+      <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-sm">
+        <h3 className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-4">Sales Pipeline</h3>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {(['lead', 'active', 'closing', 'closed'] as const).map((stage, index) => {
             const config = STAGE_CONFIG[stage];
@@ -78,7 +78,7 @@ export function PipelineStats({ coaches, statusConfig }: PipelineStatsProps) {
 
             return (
               <div key={stage} className="relative">
-                <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-4 relative overflow-hidden">
+                <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-4 relative overflow-hidden shadow-sm hover:shadow-md transition-all duration-200">
                   {/* Color accent bar at top */}
                   <div className={cn('absolute top-0 left-0 right-0 h-1 bg-gradient-to-r', config.gradient)} />
 
@@ -87,7 +87,7 @@ export function PipelineStats({ coaches, statusConfig }: PipelineStatsProps) {
                       <div className={cn('w-8 h-8 rounded-xl flex items-center justify-center', config.iconBg, config.iconColor)}>
                         {config.icon}
                       </div>
-                      <span className="text-xs font-medium text-warm-500 uppercase tracking-wider">{config.label}</span>
+                      <span className="text-xs font-semibold text-warm-500 uppercase tracking-wider">{config.label}</span>
                     </div>
                     <div className="text-3xl font-bold text-warm-900 tabular-nums">{stats.count}</div>
                   </div>
@@ -137,30 +137,30 @@ export function PipelineStats({ coaches, statusConfig }: PipelineStatsProps) {
 
       {/* Quick Stats Row */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-4">
-          <div className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1">Total Coaches</div>
+        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-200">
+          <div className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1">Total Coaches</div>
           <div className="text-2xl font-bold text-warm-900 tabular-nums">{coaches.length}</div>
         </div>
 
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-4">
-          <div className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1">D2 / D3</div>
+        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-200">
+          <div className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1">D2 / D3</div>
           <div className="text-2xl font-bold text-warm-900 tabular-nums">
             <span className="text-blue-600">{divisionStats.d2}</span>
             <span className="text-warm-300 mx-1">/</span>
-            <span className="text-purple-600">{divisionStats.d3}</span>
+            <span className="text-primary-700">{divisionStats.d3}</span>
           </div>
         </div>
 
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-4">
-          <div className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1">Conversion</div>
+        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-200">
+          <div className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1">Conversion</div>
           <div className="text-2xl font-bold text-primary-600 tabular-nums">{conversionRate}%</div>
         </div>
 
         <div className={cn(
-          'backdrop-blur-xl rounded-2xl border p-4',
+          'backdrop-blur-xl rounded-2xl border p-4 shadow-sm hover:shadow-md transition-all duration-200',
           followUpsDue > 0 ? 'bg-orange-50/70 border-orange-200/50' : 'bg-white/70 border-white/20'
         )}>
-          <div className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1">Follow-ups Due</div>
+          <div className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1">Follow-ups Due</div>
           <div className={cn(
             'text-2xl font-bold tabular-nums',
             followUpsDue > 0 ? 'text-orange-600' : 'text-warm-900'
@@ -170,10 +170,10 @@ export function PipelineStats({ coaches, statusConfig }: PipelineStatsProps) {
         </div>
 
         <div className={cn(
-          'backdrop-blur-xl rounded-2xl border p-4',
+          'backdrop-blur-xl rounded-2xl border p-4 shadow-sm hover:shadow-md transition-all duration-200',
           hotLeads > 0 ? 'bg-red-50/70 border-red-200/50' : 'bg-white/70 border-white/20'
         )}>
-          <div className="text-xs font-medium text-warm-600 uppercase tracking-wider mb-1">Hot Leads</div>
+          <div className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1">Hot Leads</div>
           <div className={cn(
             'text-2xl font-bold tabular-nums',
             hotLeads > 0 ? 'text-red-600' : 'text-warm-900'

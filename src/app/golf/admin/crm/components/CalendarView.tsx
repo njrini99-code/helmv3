@@ -22,7 +22,7 @@ import {
   setHours,
   setMinutes,
 } from 'date-fns';
-import { ChevronLeft, ChevronRight, Calendar, Plus } from 'lucide-react';
+import { IconChevronLeft, IconChevronRight, IconCalendar, IconPlus } from '@/components/icons';
 
 // ============================================================================
 // TYPES
@@ -285,7 +285,7 @@ export function CalendarView({
                             onMouseEnter={() => setHoveredEvent(event.id)}
                             onMouseLeave={() => setHoveredEvent(null)}
                             className={cn(
-                              'flex items-center gap-1 text-[11px] leading-tight px-1.5 py-[3px] rounded-md truncate cursor-pointer transition-all font-medium',
+                              'flex items-center gap-1 text-[11px] leading-tight px-1.5 py-[3px] rounded-lg truncate cursor-pointer transition-all font-medium',
                               config.pillBg,
                               config.pillText,
                               hoveredEvent === event.id && 'ring-1 ring-offset-1 ring-warm-300 shadow-sm'
@@ -400,7 +400,7 @@ export function CalendarView({
                         onMouseEnter={() => setHoveredEvent(event.id)}
                         onMouseLeave={() => setHoveredEvent(null)}
                         className={cn(
-                          'absolute left-1 right-1 rounded-md px-2 py-1 cursor-pointer transition-all overflow-hidden',
+                          'absolute left-1 right-1 rounded-lg px-2 py-1 cursor-pointer transition-all overflow-hidden',
                           'border-l-[3px]',
                           config.softBg,
                           config.borderColor,
@@ -564,7 +564,7 @@ export function CalendarView({
               onClick={() => navigate('prev')}
               className="p-1.5 rounded-lg hover:bg-warm-100/70 active:bg-warm-200/70 text-warm-400 hover:text-warm-600 transition-colors"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <IconChevronLeft size={16} />
             </button>
             <button
               onClick={() => navigate('today')}
@@ -576,7 +576,7 @@ export function CalendarView({
               onClick={() => navigate('next')}
               className="p-1.5 rounded-lg hover:bg-warm-100/70 active:bg-warm-200/70 text-warm-400 hover:text-warm-600 transition-colors"
             >
-              <ChevronRight className="w-4 h-4" />
+              <IconChevronRight size={16} />
             </button>
           </div>
         </div>
@@ -592,7 +592,7 @@ export function CalendarView({
                 key={view}
                 onClick={() => setViewMode(view)}
                 className={cn(
-                  'px-3 py-1.5 rounded-md text-xs font-semibold transition-all capitalize',
+                  'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all capitalize',
                   viewMode === view
                     ? 'bg-white text-warm-900 shadow-sm'
                     : 'text-warm-500 hover:text-warm-700'
@@ -663,7 +663,7 @@ export function CalendarView({
       ) : events.length === 0 && viewMode === 'month' ? (
         <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
           <div className="w-14 h-14 rounded-2xl bg-warm-50/80 flex items-center justify-center mb-4">
-            <Calendar className="w-7 h-7 text-warm-300" />
+            <IconCalendar size={28} className="text-warm-300" />
           </div>
           <h3 className="text-lg font-bold text-warm-900 mb-1.5">No events scheduled</h3>
           <p className="text-warm-500 text-sm mb-6 max-w-sm">
@@ -673,7 +673,7 @@ export function CalendarView({
             onClick={() => onSlotClick?.(new Date())}
             className="flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-xl text-sm font-medium hover:bg-primary-700 transition-colors shadow-sm shadow-primary-500/25"
           >
-            <Plus className="w-4 h-4" />
+            <IconPlus size={16} />
             Schedule Event
           </button>
         </div>
