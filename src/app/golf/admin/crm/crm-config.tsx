@@ -8,6 +8,10 @@ import {
   IconTrophy as Trophy,
   IconXCircle as CircleX,
   IconActivity as Sprout,
+  IconCrosshair,
+  IconMessageSquare,
+  IconFlag,
+  IconFlame,
 } from '@/components/icons';
 
 // ============================================================================
@@ -64,10 +68,13 @@ export interface Coach {
 // ============================================================================
 // PIPELINE STAGES — 4 visual columns from 7 DB statuses
 // ============================================================================
+// TYPE CHANGE: `emoji: string` → `icon: React.ReactNode` (Lucide icon components replace emoji strings)
+// Downstream consumers (PipelineView, PipelineStats) that rendered `stage.emoji` in <span> elements
+// should now render `stage.icon` — works identically in JSX.
 export interface PipelineStage {
   id: string;
   label: string;
-  emoji: string;
+  icon: React.ReactNode;
   statuses: CoachStatus[];
   color: string;
   bgColor: string;
@@ -80,7 +87,7 @@ export const PIPELINE_STAGES: PipelineStage[] = [
   {
     id: 'new',
     label: 'New',
-    emoji: '🎯',
+    icon: <IconCrosshair size={16} className="text-warm-600" />,
     statuses: ['new_lead'],
     color: 'text-warm-700',
     bgColor: 'bg-warm-50',
@@ -91,7 +98,7 @@ export const PIPELINE_STAGES: PipelineStage[] = [
   {
     id: 'active',
     label: 'Active',
-    emoji: '💬',
+    icon: <IconMessageSquare size={16} className="text-blue-600" />,
     statuses: ['contacted', 'engaged'],
     color: 'text-blue-700',
     bgColor: 'bg-blue-50',
@@ -102,7 +109,7 @@ export const PIPELINE_STAGES: PipelineStage[] = [
   {
     id: 'closing',
     label: 'Closing',
-    emoji: '🤝',
+    icon: <IconTarget size={16} className="text-amber-600" />,
     statuses: ['proposal'],
     color: 'text-amber-700',
     bgColor: 'bg-amber-50',
@@ -113,7 +120,7 @@ export const PIPELINE_STAGES: PipelineStage[] = [
   {
     id: 'closed',
     label: 'Closed',
-    emoji: '🏁',
+    icon: <IconFlag size={16} className="text-primary-600" />,
     statuses: ['won', 'lost', 'nurture'],
     color: 'text-primary-700',
     bgColor: 'bg-primary-50',
@@ -136,24 +143,40 @@ export const CONFERENCE_GROUPS = [
 // ============================================================================
 // STATUS CONFIG
 // ============================================================================
+// TYPE CHANGE: `iconLabel: string` → `iconLabel: React.ReactNode` (Lucide icon components replace emoji strings)
+// Downstream consumers rendering iconLabel in <option> elements will need to switch to using the `label` field
+// or render iconLabel only in JSX contexts that accept ReactNode (not <option> text content).
 export const STATUS_CONFIG: Record<CoachStatus, {
   label: string;
   color: string;
   bgColor: string;
   ringColor: string;
   icon: React.ReactNode;
-  iconLabel: string;
+  iconLabel: React.ReactNode;
   order: number;
   gradient: string;
   stage: string;
 }> = {
-  new_lead:  { label: 'New Lead',   color: 'text-warm-700',    bgColor: 'bg-warm-100',    ringColor: 'ring-warm-300',    icon: <Inbox size={14} />,         iconLabel: '📥', order: 1, gradient: 'from-warm-400 to-warm-500',       stage: 'new' },
-  contacted: { label: 'Contacted',  color: 'text-blue-700',    bgColor: 'bg-blue-50',     ringColor: 'ring-blue-300',    icon: <PhoneOutgoing size={14} />, iconLabel: '📞', order: 2, gradient: 'from-blue-400 to-blue-500',       stage: 'active' },
-  engaged:   { label: 'Engaged',    color: 'text-violet-700',  bgColor: 'bg-violet-50',   ringColor: 'ring-violet-300',  icon: <IconSparkles size={14} />,      iconLabel: '✨', order: 3, gradient: 'from-violet-400 to-violet-500',   stage: 'active' },
-  proposal:  { label: 'Proposal',   color: 'text-amber-700',   bgColor: 'bg-amber-50',    ringColor: 'ring-amber-300',   icon: <FileCheck size={14} />,     iconLabel: '📄', order: 4, gradient: 'from-amber-400 to-amber-500',     stage: 'closing' },
-  won:       { label: 'Customer',   color: 'text-primary-700', bgColor: 'bg-primary-50',  ringColor: 'ring-primary-400', icon: <Trophy size={14} />,        iconLabel: '🏆', order: 5, gradient: 'from-primary-400 to-primary-500', stage: 'closed' },
-  lost:      { label: 'Lost',       color: 'text-red-700',     bgColor: 'bg-red-50',      ringColor: 'ring-red-300',     icon: <CircleX size={14} />,       iconLabel: '✗',  order: 6, gradient: 'from-red-400 to-red-500',         stage: 'closed' },
-  nurture:   { label: 'Nurture',    color: 'text-emerald-700', bgColor: 'bg-emerald-50',  ringColor: 'ring-emerald-300', icon: <Sprout size={14} />,        iconLabel: '🌱', order: 7, gradient: 'from-emerald-400 to-emerald-500', stage: 'closed' },
+  new_lead:  { label: 'New Lead',   color: 'text-warm-700',    bgColor: 'bg-warm-100',    ringColor: 'ring-warm-300',    icon: <Inbox size={14} />,         iconLabel: <Inbox size={14} className="text-warm-600" />, order: 1, gradient: 'from-warm-400 to-warm-500',       stage: 'new' },
+  contacted: { label: 'Contacted',  color: 'text-blue-700',    bgColor: 'bg-blue-50',     ringColor: 'ring-blue-300',    icon: <PhoneOutgoing size={14} />, iconLabel: <PhoneOutgoing size={14} className="text-blue-600" />, order: 2, gradient: 'from-blue-400 to-blue-500',       stage: 'active' },
+  engaged:   { label: 'Engaged',    color: 'text-violet-700',  bgColor: 'bg-violet-50',   ringColor: 'ring-violet-300',  icon: <IconSparkles size={14} />,  iconLabel: <IconSparkles size={14} className="text-violet-600" />, order: 3, gradient: 'from-violet-400 to-violet-500',   stage: 'active' },
+  proposal:  { label: 'Proposal',   color: 'text-amber-700',   bgColor: 'bg-amber-50',    ringColor: 'ring-amber-300',   icon: <FileCheck size={14} />,     iconLabel: <FileCheck size={14} className="text-amber-600" />, order: 4, gradient: 'from-amber-400 to-amber-500',     stage: 'closing' },
+  won:       { label: 'Customer',   color: 'text-primary-700', bgColor: 'bg-primary-50',  ringColor: 'ring-primary-400', icon: <Trophy size={14} />,        iconLabel: <Trophy size={14} className="text-primary-600" />, order: 5, gradient: 'from-primary-400 to-primary-500', stage: 'closed' },
+  lost:      { label: 'Lost',       color: 'text-red-700',     bgColor: 'bg-red-50',      ringColor: 'ring-red-300',     icon: <CircleX size={14} />,       iconLabel: <CircleX size={14} className="text-red-600" />,  order: 6, gradient: 'from-red-400 to-red-500',         stage: 'closed' },
+  nurture:   { label: 'Nurture',    color: 'text-emerald-700', bgColor: 'bg-emerald-50',  ringColor: 'ring-emerald-300', icon: <Sprout size={14} />,        iconLabel: <Sprout size={14} className="text-emerald-600" />, order: 7, gradient: 'from-emerald-400 to-emerald-500', stage: 'closed' },
+};
+
+// ============================================================================
+// STATUS COLORS — consistent Tailwind color classes for each status
+// ============================================================================
+export const STATUS_COLORS: Record<CoachStatus, { bg: string; text: string; border: string; dot: string }> = {
+  new_lead:  { bg: 'bg-warm-50',    text: 'text-warm-700',    border: 'border-warm-200',    dot: 'bg-warm-400' },
+  contacted: { bg: 'bg-blue-50',    text: 'text-blue-700',    border: 'border-blue-200',    dot: 'bg-blue-400' },
+  engaged:   { bg: 'bg-violet-50',  text: 'text-violet-700',  border: 'border-violet-200',  dot: 'bg-violet-400' },
+  proposal:  { bg: 'bg-amber-50',   text: 'text-amber-700',   border: 'border-amber-200',   dot: 'bg-amber-400' },
+  won:       { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', dot: 'bg-emerald-500' },
+  lost:      { bg: 'bg-red-50',     text: 'text-red-700',     border: 'border-red-200',     dot: 'bg-red-400' },
+  nurture:   { bg: 'bg-teal-50',    text: 'text-teal-700',    border: 'border-teal-200',    dot: 'bg-teal-400' },
 };
 
 // ============================================================================
@@ -169,8 +192,9 @@ export const AUTO_FOLLOWUP_DAYS: Partial<Record<CoachStatus, number>> = {
 // ============================================================================
 // PRIORITY CONFIG
 // ============================================================================
-export const PRIORITY_CONFIG: Record<number, { label: string; color: string; bgColor: string; icon: React.ReactNode; iconLabel: string }> = {
-  0: { label: 'Normal', color: 'text-warm-500', bgColor: 'bg-warm-50', icon: null, iconLabel: '' },
-  1: { label: 'High', color: 'text-amber-600', bgColor: 'bg-amber-50', icon: <IconZap size={14} />, iconLabel: '⚡' },
-  2: { label: 'Hot', color: 'text-orange-600', bgColor: 'bg-orange-50', icon: <IconTarget size={14} />, iconLabel: '🔥' },
+// TYPE CHANGE: `iconLabel: string` → `iconLabel: React.ReactNode` (Lucide icon components replace emoji strings)
+export const PRIORITY_CONFIG: Record<number, { label: string; color: string; bgColor: string; icon: React.ReactNode; iconLabel: React.ReactNode }> = {
+  0: { label: 'Normal', color: 'text-warm-500', bgColor: 'bg-warm-50', icon: null, iconLabel: null },
+  1: { label: 'High', color: 'text-amber-600', bgColor: 'bg-amber-50', icon: <IconZap size={14} className="text-amber-500" />, iconLabel: <IconZap size={14} className="text-amber-500" /> },
+  2: { label: 'Hot', color: 'text-orange-600', bgColor: 'bg-orange-50', icon: <IconFlame size={14} className="text-orange-500" />, iconLabel: <IconFlame size={14} className="text-orange-500" /> },
 };

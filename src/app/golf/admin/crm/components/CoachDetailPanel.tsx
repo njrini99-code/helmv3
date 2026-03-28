@@ -34,8 +34,8 @@ interface CoachDetailPanelProps {
   coach: Coach;
   onClose: () => void;
   onUpdate: (updates: Partial<Coach>) => void;
-  statusConfig: Record<CoachStatus, { label: string; color: string; bgColor: string; iconLabel: string; icon: React.ReactNode }>;
-  priorityConfig: Record<number, { label: string; color: string; bgColor: string; iconLabel: string }>;
+  statusConfig: Record<CoachStatus, { label: string; color: string; bgColor: string; iconLabel: React.ReactNode; icon: React.ReactNode }>;
+  priorityConfig: Record<number, { label: string; color: string; bgColor: string; iconLabel: React.ReactNode }>;
 }
 
 interface EmailEvent {
@@ -461,7 +461,7 @@ function CoachDetailPanelInner({
               <span className="text-xs text-warm-500 font-medium">Status</span>
               <select value={coach.status} onChange={e => handleStatusChange(e.target.value as CoachStatus)}
                 className={cn('px-2.5 py-1.5 rounded-xl text-xs font-semibold border-0 cursor-pointer', statusConfig[coach.status]?.bgColor, statusConfig[coach.status]?.color)}>
-                {ALL_STATUSES.map(s => <option key={s} value={s}>{statusConfig[s as CoachStatus]?.iconLabel} {statusConfig[s as CoachStatus]?.label}</option>)}
+                {ALL_STATUSES.map(s => <option key={s} value={s}>{statusConfig[s as CoachStatus]?.label}</option>)}
               </select>
             </div>
             <div className="flex items-center gap-2">

@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
+import { IconCrosshair, IconMessageSquare, IconTarget, IconFlag } from '@/components/icons';
 import type { Coach, CoachStatus } from '../crm-config';
 
 interface PipelineStatsProps {
@@ -16,10 +17,10 @@ interface PipelineStatsProps {
 }
 
 const STAGE_CONFIG = {
-  lead: { label: 'Leads', emoji: '🎯', color: 'from-warm-400 to-warm-500' },
-  active: { label: 'Active', emoji: '💬', color: 'from-blue-400 to-blue-500' },
-  closing: { label: 'Closing', emoji: '🤝', color: 'from-purple-400 to-purple-500' },
-  closed: { label: 'Closed', emoji: '✓', color: 'from-primary-400 to-primary-500' },
+  lead: { label: 'Leads', icon: <IconCrosshair size={14} />, color: 'from-warm-400 to-warm-500' },
+  active: { label: 'Active', icon: <IconMessageSquare size={14} />, color: 'from-blue-400 to-blue-500' },
+  closing: { label: 'Closing', icon: <IconTarget size={14} />, color: 'from-purple-400 to-purple-500' },
+  closed: { label: 'Closed', icon: <IconFlag size={14} />, color: 'from-primary-400 to-primary-500' },
 };
 
 export function PipelineStats({ coaches, statusConfig }: PipelineStatsProps) {
@@ -89,7 +90,7 @@ export function PipelineStats({ coaches, statusConfig }: PipelineStatsProps) {
                   <div className="relative">
                     <div className="text-3xl font-bold">{stats.count}</div>
                     <div className="text-sm opacity-90 font-medium">
-                      {config.emoji} {config.label}
+                      {config.icon} {config.label}
                     </div>
                   </div>
 

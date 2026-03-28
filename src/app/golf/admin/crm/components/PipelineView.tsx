@@ -175,7 +175,7 @@ export function PipelineView({
                 'flex items-center gap-2 px-3 py-2 rounded-full transition-all w-full',
                 count > 0 ? `${stage.bgColor} ${stage.color}` : 'bg-warm-50 text-warm-400'
               )}>
-                <span className="text-sm flex-shrink-0">{stage.emoji}</span>
+                <span className="text-sm flex-shrink-0">{stage.icon}</span>
                 <div className="min-w-0">
                   <div className="text-label font-medium truncate">{stage.label}</div>
                   <div className="text-base font-bold tabular-nums leading-tight">{count}</div>
@@ -215,7 +215,7 @@ export function PipelineView({
               )}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="text-sm flex-shrink-0">{stage.emoji}</span>
+                    <span className="text-sm flex-shrink-0">{stage.icon}</span>
                     <h3 className="text-sm font-semibold text-warm-900 truncate">{stage.label}</h3>
                   </div>
                   <span className={cn(
@@ -388,7 +388,7 @@ function EmptyColumn({ stage }: { stage: PipelineStage }) {
   return (
     <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
       <div className="w-10 h-10 rounded-xl bg-warm-50 flex items-center justify-center mb-2">
-        <span className="text-lg">{stage.emoji}</span>
+        <span className="text-lg">{stage.icon}</span>
       </div>
       <p className="text-xs text-warm-400 font-medium">No coaches here yet</p>
       <p className="text-label text-warm-300 mt-0.5">Drag coaches here or update their status</p>

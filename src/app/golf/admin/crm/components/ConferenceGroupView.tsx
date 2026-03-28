@@ -15,7 +15,7 @@ interface ConferenceGroupViewProps {
   onToggleStar: (coachId: string, currentStarred: boolean) => void;
   onLogContact: (coach: Coach) => void;
   statusConfig: Record<CoachStatus, { label: string; color: string; bgColor: string; icon: React.ReactNode; order: number }>;
-  priorityConfig: Record<number, { label: string; color: string; bgColor: string; icon: React.ReactNode; iconLabel: string }>;
+  priorityConfig: Record<number, { label: string; color: string; bgColor: string; icon: React.ReactNode; iconLabel: React.ReactNode }>;
 }
 
 interface ConferenceGroup {

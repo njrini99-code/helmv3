@@ -18,7 +18,7 @@ interface CoachTableProps {
   onImport?: () => void;
   onAddCoach?: () => void;
   statusConfig: Record<CoachStatus, { label: string; color: string; bgColor: string; icon: React.ReactNode; order: number }>;
-  priorityConfig: Record<number, { label: string; color: string; bgColor: string; icon: React.ReactNode; iconLabel: string }>;
+  priorityConfig: Record<number, { label: string; color: string; bgColor: string; icon: React.ReactNode; iconLabel: React.ReactNode }>;
 }
 
 const ALL_STATUSES: CoachStatus[] = [

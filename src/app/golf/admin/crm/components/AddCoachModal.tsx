@@ -7,7 +7,7 @@ import type { Division, ProgramType, CoachStatus } from '../crm-config';
 interface AddCoachModalProps {
   onClose: () => void;
   onSuccess: () => void;
-  statusConfig: Record<CoachStatus, { label: string; iconLabel: string }>;
+  statusConfig: Record<CoachStatus, { label: string; iconLabel: React.ReactNode }>;
 }
 
 export function AddCoachModal({ onClose, onSuccess, statusConfig }: AddCoachModalProps) {
@@ -189,7 +189,7 @@ export function AddCoachModal({ onClose, onSuccess, statusConfig }: AddCoachModa
                 className="w-full px-4 py-2.5 border border-warm-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
               >
                 {Object.entries(statusConfig).map(([value, config]) => (
-                  <option key={value} value={value}>{config.iconLabel} {config.label}</option>
+                  <option key={value} value={value}>{config.label}</option>
                 ))}
               </select>
             </div>
