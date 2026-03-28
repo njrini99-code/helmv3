@@ -64,11 +64,12 @@ export async function POST(request: Request) {
   try {
     // Use admin client (service role) since webhooks have no user session
     const adminClient = createAdminClient();
+    const recipientEmail = event.data.to?.[0] || null;
 
     // Look up the contact_log entry by resend_message_id
     const { data: contactLog } = await adminClient
       .from('crm_contact_log')
-      .select('id')
+      .select('id, coach_id')
       .eq('resend_message_id', event.data.email_id)
       .maybeSingle();
 
@@ -80,7 +81,7 @@ export async function POST(request: Request) {
           contact_log_id: contactLog?.id || null,
           resend_message_id: event.data.email_id,
           event_type: event.type,
-          recipient_email: event.data.to?.[0] || null,
+          recipient_email: recipientEmail,
           occurred_at: event.created_at,
           raw_payload: JSON.parse(JSON.stringify(event)),
         },
@@ -92,7 +93,45 @@ export async function POST(request: Request) {
 
     if (error) {
       console.error('[Resend Webhook] Failed to store event:', error);
-      // Still return 200 to prevent Resend from retrying
+    }
+
+    // ── Coach-level side effects based on event type ──
+    const coachId = contactLog?.coach_id;
+
+    if (coachId) {
+      // Bounce/complaint: mark coach email as invalid so future sends skip them
+      if (event.type === 'email.bounced') {
+        await adminClient
+          .from('crm_coaches')
+          .update({ email_status: 'bounced', updated_at: new Date().toISOString() })
+          .eq('id', coachId);
+      }
+
+      if (event.type === 'email.complained') {
+        await adminClient
+          .from('crm_coaches')
+          .update({ email_status: 'complained', updated_at: new Date().toISOString() })
+          .eq('id', coachId);
+      }
+
+      // Opened: if coach is still "contacted", auto-advance to "engaged"
+      // (they opened our email — that's engagement signal)
+      if (event.type === 'email.opened') {
+        await adminClient
+          .from('crm_coaches')
+          .update({ status: 'engaged', updated_at: new Date().toISOString() })
+          .eq('id', coachId)
+          .eq('status', 'contacted');
+      }
+
+      // Clicked: also advance to engaged (stronger signal)
+      if (event.type === 'email.clicked') {
+        await adminClient
+          .from('crm_coaches')
+          .update({ status: 'engaged', updated_at: new Date().toISOString() })
+          .eq('id', coachId)
+          .eq('status', 'contacted');
+      }
     }
   } catch (err) {
     console.error('[Resend Webhook] Processing error:', err);
