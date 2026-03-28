@@ -315,7 +315,7 @@ export default function CRMPage() {
     const starred = allCoaches.filter(c => c.is_starred).length;
     const hot = allCoaches.filter(c => c.priority >= 2).length;
     const followUpsDue = allCoaches.filter(c => c.next_follow_up_at && new Date(c.next_follow_up_at) <= new Date()).length;
-    const contacted = allCoaches.filter(c => c.last_contacted_at).length;
+    const contacted = allCoaches.filter(c => c.status !== 'new_lead').length;
     const inPipeline = allCoaches.filter(c => !['new_lead', 'won', 'lost', 'nurture'].includes(c.status)).length;
 
     return { total, byStatus, byStage, starred, hot, followUpsDue, contacted, inPipeline };

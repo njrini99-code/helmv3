@@ -66,10 +66,14 @@ export async function POST(request: Request) {
             notes: `Sent via Gmail (BCC): "${subject}"`,
             created_by: user.id,
           });
+          // Auto-advance new_lead → contacted on first outreach
           await supabase.from('crm_coaches').update({
             last_contacted_at: now,
             updated_at: now,
           }).eq('id', recipient.id);
+          await supabase.from('crm_coaches').update({
+            status: 'contacted',
+          }).eq('id', recipient.id).eq('status', 'new_lead');
         } catch (error) {
           loggingFailures.push({
             recipientId: recipient.id,
@@ -205,10 +209,15 @@ export async function POST(request: Request) {
             resend_message_id: resendData.id,
             created_by: user.id,
           });
+          const sendNow = new Date().toISOString();
+          // Auto-advance new_lead → contacted on first outreach
           await supabase.from('crm_coaches').update({
-            last_contacted_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
+            last_contacted_at: sendNow,
+            updated_at: sendNow,
           }).eq('id', recipient.id);
+          await supabase.from('crm_coaches').update({
+            status: 'contacted',
+          }).eq('id', recipient.id).eq('status', 'new_lead');
         } else {
           failed++;
           const failureBody = (await res.text().catch(() => '')).slice(0, 500);

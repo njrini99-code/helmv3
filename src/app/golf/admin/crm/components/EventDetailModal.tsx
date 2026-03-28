@@ -102,11 +102,17 @@ export function EventDetailModal({
           notes: `${typeConfig.label}: ${outcome || 'No notes'}`,
         });
 
-        // Update coach last contacted
+        // Update coach last contacted + auto-advance new_lead → contacted
+        const completedNow = new Date().toISOString();
         await supabase
           .from('crm_coaches')
-          .update({ last_contacted_at: new Date().toISOString() })
+          .update({ last_contacted_at: completedNow, updated_at: completedNow })
           .eq('id', event.coach_id);
+        await supabase
+          .from('crm_coaches')
+          .update({ status: 'contacted' })
+          .eq('id', event.coach_id)
+          .eq('status', 'new_lead');
       }
 
       onRefresh();
