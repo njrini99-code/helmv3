@@ -194,6 +194,7 @@ function AdminDashboardContent() {
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
+  const [sessionExpired, setSessionExpired] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [crmStats, setCrmStats] = useState<CRMStats | null>(null);
@@ -232,6 +233,9 @@ function AdminDashboardContent() {
   }
 
   const loadData = useCallback(async (silent = false) => {
+    // If session is already known to be expired, don't retry
+    if (sessionExpired) return;
+
     if (!silent) setLoading(true);
     else setIsRefreshing(true);
     try {
@@ -264,25 +268,44 @@ function AdminDashboardContent() {
         setCrmStats(stats);
       }
     } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to load dashboard';
+
+      // If the error is auth-related, stop polling and show session expired UI
+      if (message === 'Unauthorized' || message === 'Forbidden') {
+        setSessionExpired(true);
+        // Clear the auto-refresh interval immediately
+        if (refreshTimerRef.current) {
+          clearInterval(refreshTimerRef.current);
+          refreshTimerRef.current = undefined;
+        }
+        if (!silent) {
+          setError(message);
+        }
+        return;
+      }
+
       if (!silent) {
-        setError(err instanceof Error ? err.message : 'Failed to load dashboard');
+        setError(message);
       }
     } finally {
       setLoading(false);
       setIsRefreshing(false);
     }
-  }, []);
+  }, [sessionExpired]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
   useEffect(() => {
+    // Don't start auto-refresh if session is expired
+    if (sessionExpired) return;
+
     refreshTimerRef.current = setInterval(() => {
       loadData(true);
     }, AUTO_REFRESH_INTERVAL);
     return () => clearInterval(refreshTimerRef.current);
-  }, [loadData]);
+  }, [loadData, sessionExpired]);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -813,7 +836,27 @@ function AdminDashboardContent() {
 
         {/* Content Area - Scrollable */}
         <div className="flex-1 lg:overflow-y-auto p-3 sm:p-4 md:p-6 min-w-0 overflow-x-hidden">
-          {error ? (
+          {sessionExpired ? (
+            <div
+              className={cn(
+                'bg-white/70 backdrop-blur-xl border border-amber-200/50 rounded-2xl shadow-glass p-8 text-center max-w-md mx-auto mt-12'
+              )}
+            >
+              <div className="text-amber-600 mb-2">
+                <LogOut size={32} className="mx-auto" />
+              </div>
+              <h2 className="text-lg font-semibold text-warm-900 mb-2">Session Expired</h2>
+              <p className="text-sm text-warm-500 mb-4">
+                Your session has expired or you are no longer authorized. Please log in again to continue.
+              </p>
+              <button
+                onClick={() => router.push('/golf/login')}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-xl hover:bg-primary-700 transition-colors"
+              >
+                Log In Again
+              </button>
+            </div>
+          ) : error ? (
             <div
               className={cn(
                 'bg-white/70 backdrop-blur-xl border border-red-200/50 rounded-2xl shadow-glass p-6 text-center'
