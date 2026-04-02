@@ -154,7 +154,19 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
 
   // ── Send via Helm (Resend — individual branded emails) ──
   const handleSendViaHelm = async () => {
-    if (!subject.trim() || !body.trim() || coachesWithEmail.length === 0) return;
+    // Validate required fields — show explicit error instead of silently returning
+    if (coachesWithEmail.length === 0) {
+      setError('No recipients with email addresses selected.');
+      return;
+    }
+    if (!subject.trim()) {
+      setError('Subject line is required.');
+      return;
+    }
+    if (!body.trim()) {
+      setError('Message body is required.');
+      return;
+    }
 
     setSending(true);
     setError(null);
@@ -179,29 +191,43 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
         }),
       });
 
+      if (!res.ok) {
+        // Try to parse JSON error body; fall back to status text if response isn't JSON
+        let errorMessage = `Failed to send emails (${res.status})`;
+        try {
+          const data = await res.json();
+          if (res.status === 401 || res.status === 403) {
+            errorMessage = 'Your session has expired. Please log in again to send emails.';
+          } else {
+            errorMessage = data.error || errorMessage;
+          }
+        } catch {
+          // Response wasn't JSON (e.g. HTML error page)
+          errorMessage = `Server error: ${res.status} ${res.statusText}`;
+        }
+        setError(errorMessage);
+        return;
+      }
+
       const data = await res.json();
 
-      if (!res.ok) {
-        if (res.status === 401 || res.status === 403) {
-          setError('Your session has expired. Please log in again to send emails.');
-        } else {
-          setError(data.error || 'Failed to send emails');
-        }
-      } else {
-        setHelmResult({
-          sent: data.sent ?? 0,
-          skipped: data.skipped ?? 0,
-          failed: data.failed ?? 0,
-          details: data.details,
-        });
-        setSendProgress({ current: coachesWithEmail.length, total: coachesWithEmail.length });
-        setTimeout(() => {
-          onSuccess();
-          onClose();
-        }, 3000);
-      }
-    } catch {
-      setError('Network error. Please try again.');
+      setHelmResult({
+        sent: data.sent ?? 0,
+        skipped: data.skipped ?? 0,
+        failed: data.failed ?? 0,
+        details: data.details,
+      });
+      setSendProgress({ current: coachesWithEmail.length, total: coachesWithEmail.length });
+      setTimeout(() => {
+        onSuccess();
+        onClose();
+      }, 3000);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? `Network error: ${err.message}`
+          : 'Network error. Please try again.'
+      );
     } finally {
       setSending(false);
     }
@@ -542,13 +568,6 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
                 </div>
               )}
 
-              {/* Error */}
-              {error && (
-                <div className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium bg-red-50 text-red-700 border border-red-200/50">
-                  <IconAlertCircle size={16} />
-                  {error}
-                </div>
-              )}
             </div>
 
             {/* Right Pane — Live Preview (40%) */}
@@ -647,8 +666,24 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between px-6 py-4 border-t border-warm-100 bg-white/80 shrink-0">
+          <div className="shrink-0 border-t border-warm-100 bg-white/80">
+            {/* Error banner — always visible in footer */}
+            {error && (
+              <div className="flex items-center gap-2 px-6 py-2.5 text-sm font-medium bg-red-50 text-red-700 border-b border-red-200/50">
+                <IconAlertCircle size={16} className="shrink-0" />
+                <span className="flex-1">{error}</span>
+                <button
+                  type="button"
+                  onClick={() => setError(null)}
+                  className="shrink-0 p-0.5 rounded hover:bg-red-100 transition-colors"
+                >
+                  <IconX size={14} />
+                </button>
+              </div>
+            )}
+            <div className="flex items-center justify-between px-6 py-4">
             <button
+              type="button"
               onClick={onClose}
               disabled={sending}
               className="px-4 py-2 text-sm text-warm-600 hover:text-warm-800 font-medium transition-colors disabled:opacity-50"
@@ -658,6 +693,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
 
             {mode === 'gmail' ? (
               <button
+                type="button"
                 onClick={openInGmail}
                 disabled={coachesWithEmail.length === 0}
                 className={cn(
@@ -671,10 +707,9 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
               </button>
             ) : (
               <button
+                type="button"
                 onClick={handleSendViaHelm}
-                disabled={
-                  sending || !subject.trim() || !body.trim() || coachesWithEmail.length === 0 || !!helmResult
-                }
+                disabled={sending || coachesWithEmail.length === 0 || !!helmResult}
                 className={cn(
                   'flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-sm',
                   'bg-primary-600 text-white hover:bg-primary-700',
@@ -699,6 +734,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
                 )}
               </button>
             )}
+            </div>
           </div>
         </div>
       </div>
