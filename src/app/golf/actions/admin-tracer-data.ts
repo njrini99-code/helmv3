@@ -848,17 +848,35 @@ export async function getTracerData(): Promise<TracerData> {
   }
 
   // Batch 2: Hole/shot/detail counts + stats cache + tracer incidents
-  // Chunk .in() queries to avoid PostgREST URL length overflow with many round IDs
+  // Chunk .in() queries to avoid PostgREST URL length overflow with many round IDs.
+  //
+  // IMPORTANT: Supabase's PostgREST enforces a server-side `max-rows` limit
+  // (typically 1000) that caps the result set regardless of the client-side
+  // `.limit()` value.  Previously a single chunk of 200 round IDs could produce
+  // 200 × 18 = 3 600 hole rows or 200 × 75 = 15 000 shot rows, silently
+  // truncated to 1 000 — causing many rounds to report 0 holes / 0 shots.
+  //
+  // Fix: use per-query chunk sizes small enough that each chunk's result stays
+  // well within the 1 000-row PostgREST ceiling, and remove the misleading
+  // `.limit()` overrides.
   const roundIds = (allRoundsResult.data || []).map((r) => r.id);
-  const IN_CHUNK_SIZE = 200; // Safe limit for UUID-based .in() queries
+
+  // Chunk size constants — tuned so each chunk query returns < 1 000 rows.
+  // Holes:  50 rounds × 18 holes  = 900 rows  (< 1 000)
+  // Shots:  10 rounds × ~100 shots = ~1 000    (safe margin)
+  // Cache:  200 rounds × 1 row     = 200 rows  (fine)
+  const HOLE_CHUNK_SIZE = 50;
+  const SHOT_CHUNK_SIZE = 10;
+  const DEFAULT_CHUNK_SIZE = 200;
 
   async function chunkedIn<T>(
     queryFn: (ids: string[]) => PromiseLike<{ data: T[] | null; error?: { message: string } | null }>,
+    chunkSize: number = DEFAULT_CHUNK_SIZE,
   ): Promise<{ data: T[] }> {
     if (roundIds.length === 0) return { data: [] };
     const chunks: string[][] = [];
-    for (let i = 0; i < roundIds.length; i += IN_CHUNK_SIZE) {
-      chunks.push(roundIds.slice(i, i + IN_CHUNK_SIZE));
+    for (let i = 0; i < roundIds.length; i += chunkSize) {
+      chunks.push(roundIds.slice(i, i + chunkSize));
     }
     const results = await Promise.all(chunks.map((ids) => queryFn(ids)));
     for (const r of results) {
@@ -872,11 +890,11 @@ export async function getTracerData(): Promise<TracerData> {
     statsCacheResult,
     tracerEventsResult,
   ] = await Promise.all([
-    chunkedIn((ids) => adminDb.from('golf_holes').select('round_id, score, putts, fairway_hit, gir, par').in('round_id', ids).limit(10000)),
-    chunkedIn((ids) => adminDb.from('golf_shots').select('round_id').in('round_id', ids).limit(50000)),
-    chunkedIn((ids) => adminDb.from('golf_shots').select('round_id, putt_details!inner(id)').in('round_id', ids).limit(50000)),
-    chunkedIn((ids) => adminDb.from('golf_shots').select('round_id, approach_miss_details!inner(id)').in('round_id', ids).limit(50000)),
-    chunkedIn((ids) => adminDb.from('golf_round_stats_cache').select('round_id').in('round_id', ids).limit(10000)),
+    chunkedIn((ids) => adminDb.from('golf_holes').select('round_id, score, putts, fairway_hit, gir, par').in('round_id', ids), HOLE_CHUNK_SIZE),
+    chunkedIn((ids) => adminDb.from('golf_shots').select('round_id').in('round_id', ids), SHOT_CHUNK_SIZE),
+    chunkedIn((ids) => adminDb.from('golf_shots').select('round_id, putt_details!inner(id)').in('round_id', ids), SHOT_CHUNK_SIZE),
+    chunkedIn((ids) => adminDb.from('golf_shots').select('round_id, approach_miss_details!inner(id)').in('round_id', ids), SHOT_CHUNK_SIZE),
+    chunkedIn((ids) => adminDb.from('golf_round_stats_cache').select('round_id').in('round_id', ids)),
     // Tracer error events — already filtered to event_type='error' in SQL.
     // JS-side isShotTrackingTracerEvent() further filters to shot-tracking context.
     // Limit reduced from 800 to 300 (sufficient for 45-day error window at current volume).
