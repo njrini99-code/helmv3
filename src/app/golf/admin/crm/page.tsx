@@ -43,7 +43,7 @@ import { BulkActionsBar } from './components/BulkActionsBar';
 import { BulkEmailModal } from './components/BulkEmailModal';
 import { EmailTrackingView } from './components/EmailTrackingView';
 import { InboundLeadsView } from './components/InboundLeadsView';
-import { FAB } from './components/FAB';
+// FAB removed — actions available via sidebar buttons
 import { QuickActionsPanel } from './components/QuickActionsPanel';
 import { ScheduleEventModal } from './components/ScheduleEventModal';
 import { EventDetailModal } from './components/EventDetailModal';
@@ -70,9 +70,10 @@ export default function CRMPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [coaches, setCoaches] = useState<Coach[]>([]);
+  // coaches state removed — using filteredCoaches (client-side) from allCoaches instead
   const [allCoaches, setAllCoaches] = useState<Coach[]>([]);
   const [loading, setLoading] = useState(true);
+  // loading is set to false after first fetchAllCoaches completes
   const [error, setError] = useState<string | null>(null);
 
   const urlTab = searchParams.get('tab') as TabId | null;
@@ -150,47 +151,53 @@ export default function CRMPage() {
       setConferences(uniqueConferences);
     } catch (err) {
       console.error('Failed to fetch all coaches:', err);
-    }
-  }, [supabase]);
-
-  const fetchCoaches = useCallback(async () => {
-    setLoading(true);
-    try {
-      let query = supabase
-        .from('crm_coaches')
-        .select('*')
-        .order('is_starred', { ascending: false })
-        .order('priority', { ascending: false })
-        .order('updated_at', { ascending: false });
-
-      if (filters.status !== 'all') query = query.eq('status', filters.status);
-      if (filters.division !== 'all') query = query.eq('division', filters.division);
-      if (filters.conference !== 'all') query = query.eq('conference', filters.conference);
-      if (filters.program !== 'all') query = query.eq('program', filters.program);
-      if (filters.priority !== 'all') query = query.eq('priority', parseInt(filters.priority));
-      if (filters.search) {
-        query = query.or(`name.ilike.%${filters.search}%,school.ilike.%${filters.search}%,email.ilike.%${filters.search}%,conference.ilike.%${filters.search}%`);
-      }
-      if (filters.followUpDue) query = query.lte('next_follow_up_at', new Date().toISOString());
-      if (filters.starred) query = query.eq('is_starred', true);
-      if (filters.hasNotes) query = query.not('notes', 'is', null);
-      if (filters.noContact30Days) {
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        query = query.or(`last_contacted_at.is.null,last_contacted_at.lt.${thirtyDaysAgo.toISOString()}`);
-      }
-
-      const { data, error: fetchError } = await query;
-      if (fetchError) throw fetchError;
-      setCoaches((data || []) as Coach[]);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch coaches');
     } finally {
       setLoading(false);
     }
-  }, [filters, supabase]);
+  }, [supabase]);
 
-  useEffect(() => { fetchCoaches(); }, [fetchCoaches]);
+  // Client-side filtering from allCoaches — eliminates server round-trips on every keystroke
+  // and fixes the search bar flicker/reset bug caused by the fetch→re-render→state-reset loop
+  const filteredCoaches = useMemo(() => {
+    let result = [...allCoaches];
+
+    if (filters.status !== 'all') result = result.filter(c => c.status === filters.status);
+    if (filters.division !== 'all') result = result.filter(c => c.division === filters.division);
+    if (filters.conference !== 'all') result = result.filter(c => c.conference === filters.conference);
+    if (filters.program !== 'all') result = result.filter(c => c.program === filters.program);
+    if (filters.priority !== 'all') result = result.filter(c => c.priority === parseInt(filters.priority));
+    if (filters.search) {
+      const q = filters.search.toLowerCase();
+      result = result.filter(c =>
+        c.name?.toLowerCase().includes(q) ||
+        c.school?.toLowerCase().includes(q) ||
+        c.email?.toLowerCase().includes(q) ||
+        c.conference?.toLowerCase().includes(q)
+      );
+    }
+    if (filters.followUpDue) {
+      const now = new Date().toISOString();
+      result = result.filter(c => c.next_follow_up_at && c.next_follow_up_at <= now);
+    }
+    if (filters.starred) result = result.filter(c => c.is_starred);
+    if (filters.hasNotes) result = result.filter(c => c.notes);
+    if (filters.noContact30Days) {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const cutoff = thirtyDaysAgo.toISOString();
+      result = result.filter(c => !c.last_contacted_at || c.last_contacted_at < cutoff);
+    }
+
+    // Sort: starred first, then by priority desc, then by updated_at desc
+    result.sort((a, b) => {
+      if (a.is_starred !== b.is_starred) return a.is_starred ? -1 : 1;
+      if (a.priority !== b.priority) return b.priority - a.priority;
+      return (b.updated_at || '').localeCompare(a.updated_at || '');
+    });
+
+    return result;
+  }, [allCoaches, filters]);
+
   useEffect(() => { fetchAllCoaches(); }, [fetchAllCoaches]);
 
   // ============================================================================
@@ -214,12 +221,10 @@ export default function CRMPage() {
     try {
       const { error: updateError } = await supabase.from('crm_coaches').update(finalUpdates).eq('id', coachId);
       if (updateError) throw updateError;
-      setCoaches(prev => prev.map(c => c.id === coachId ? { ...c, ...finalUpdates } : c));
       setAllCoaches(prev => prev.map(c => c.id === coachId ? { ...c, ...finalUpdates } : c));
       if (selectedCoach?.id === coachId) setSelectedCoach(prev => prev ? { ...prev, ...finalUpdates } : null);
     } catch (err) {
       console.error('Failed to update coach:', err);
-      fetchCoaches();
       fetchAllCoaches();
     }
   };
@@ -233,11 +238,9 @@ export default function CRMPage() {
       const { error: updateError } = await supabase.from('crm_coaches').update(finalUpdates).in('id', ids);
       if (updateError) throw updateError;
       const idSet = new Set(ids);
-      setCoaches(prev => prev.map(c => idSet.has(c.id) ? { ...c, ...finalUpdates } : c));
       setAllCoaches(prev => prev.map(c => idSet.has(c.id) ? { ...c, ...finalUpdates } : c));
     } catch (err) {
       console.error('Failed to bulk update:', err);
-      fetchCoaches();
       fetchAllCoaches();
     }
   };
@@ -256,8 +259,7 @@ export default function CRMPage() {
     if (ids.length === 0) return;
 
     if (action === 'email') {
-      const selected = [...coaches, ...allCoaches]
-        .filter((c, i, arr) => ids.includes(c.id) && arr.findIndex(x => x.id === c.id) === i);
+      const selected = allCoaches.filter(c => ids.includes(c.id));
       setBulkEmailCoaches(selected);
       setShowBulkEmailModal(true);
       return;
@@ -270,7 +272,6 @@ export default function CRMPage() {
       else if (action === 'unstar') await bulkUpdateCoaches(ids, { is_starred: false });
       else if (action === 'delete') {
         await supabase.from('crm_coaches').delete().in('id', ids);
-        fetchCoaches();
         fetchAllCoaches();
       }
       setSelectedIds(new Set());
@@ -279,7 +280,7 @@ export default function CRMPage() {
 
   const exportToCSV = () => {
     const headers = ['Name', 'Email', 'School', 'Conference', 'Division', 'Program', 'Status', 'Priority', 'Starred', 'Last Contact', 'Notes'];
-    const rows = coaches.map(c => [
+    const rows = filteredCoaches.map((c: Coach) => [
       c.name, c.email || '', c.school, c.conference, c.division, c.program,
       STATUS_CONFIG[c.status]?.label || c.status,
       PRIORITY_CONFIG[c.priority]?.label || 'Normal',
@@ -295,7 +296,7 @@ export default function CRMPage() {
     link.click();
   };
 
-  const refreshData = () => { fetchCoaches(); fetchAllCoaches(); };
+  const refreshData = () => { fetchAllCoaches(); };
 
   // ============================================================================
   // COMPUTED
@@ -334,7 +335,7 @@ export default function CRMPage() {
           <h2 className="text-xl font-bold text-warm-900 mb-2">Error Loading CRM</h2>
           <p className="text-warm-600 mb-6">{error}</p>
           <button
-            onClick={() => { setError(null); fetchCoaches(); }}
+            onClick={() => { setError(null); fetchAllCoaches(); }}
             className="px-6 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 font-medium transition-all duration-200 shadow-sm"
           >
             Try Again
@@ -553,7 +554,7 @@ export default function CRMPage() {
               />
               <div className="rounded-2xl overflow-clip glass-standard">
                 <CoachTable
-                  coaches={coaches}
+                  coaches={filteredCoaches}
                   loading={loading}
                   selectedIds={selectedIds}
                   onSelectionChange={setSelectedIds}
@@ -594,7 +595,7 @@ export default function CRMPage() {
                 statusConfig={STATUS_CONFIG}
               />
               <ConferenceGroupView
-                coaches={coaches}
+                coaches={filteredCoaches}
                 loading={loading}
                 selectedIds={selectedIds}
                 onSelectionChange={setSelectedIds}
@@ -650,12 +651,7 @@ export default function CRMPage() {
         />
       )}
 
-      {/* FAB */}
-      <FAB
-        onSchedule={(coach) => { setScheduleModalCoach(coach); setShowScheduleModal(true); }}
-        onLogContact={(coach) => setQuickActionsCoach(coach)}
-        onAddCoach={() => setShowAddModal(true)}
-      />
+      {/* FAB removed — actions available via sidebar + toolbar */}
 
       {/* Modals */}
       {showScheduleModal && (
