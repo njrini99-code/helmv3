@@ -299,10 +299,13 @@ export async function POST(request: Request) {
   }
 }
 
-function buildEmailHtml(_recipientName: string, subject: string, body: string): string {
+function buildEmailHtml(recipientName: string, _subject: string, body: string): string {
+  // Use first name for greeting
+  const firstName = recipientName.split(' ')[0] || recipientName;
+
   const bodyHtml = body
     .split('\n')
-    .map(line => line.trim() === '' ? '<br/>' : `<p style="margin:0 0 12px 0;line-height:1.6;color:#44403c;">${escapeHtml(line)}</p>`)
+    .map(line => line.trim() === '' ? '<br/>' : `<p style="margin:0 0 12px 0;line-height:1.6;color:#44403c;font-size:15px;">${escapeHtml(line)}</p>`)
     .join('');
 
   return `<!DOCTYPE html>
@@ -311,32 +314,50 @@ function buildEmailHtml(_recipientName: string, subject: string, body: string): 
 <body style="margin:0;padding:0;background-color:#f5f5f4;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f5f4;padding:32px 16px;">
     <tr><td align="center">
-      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background-color:#FFFEFA;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
-        <!-- Header -->
-        <tr><td style="background-color:#1C1917;padding:24px 32px;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+        <!-- Green Header Bar -->
+        <tr><td style="background-color:#16A34A;padding:20px 32px;">
           <table width="100%" cellpadding="0" cellspacing="0">
             <tr>
-              <td>
-                <div style="width:36px;height:36px;background:linear-gradient(135deg,#16A34A,#15803d);border-radius:10px;display:inline-block;text-align:center;line-height:36px;color:white;font-weight:bold;font-size:16px;">H</div>
+              <td style="vertical-align:middle;width:28px;">
+                <!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" style="width:28px;height:28px;" arcsize="50%" fillcolor="#ffffff" stroked="f"><v:textbox style="mso-fit-shape-to-text:true" inset="0,0,0,0"><![endif]-->
+                <table cellpadding="0" cellspacing="0" style="width:28px;height:28px;">
+                  <tr><td align="center" valign="middle" style="width:28px;height:28px;background-color:rgba(255,255,255,0.2);border-radius:6px;font-size:14px;color:#ffffff;">&#9971;</td></tr>
+                </table>
+                <!--[if mso]></v:textbox></v:roundrect><![endif]-->
               </td>
-              <td style="padding-left:12px;">
-                <span style="color:white;font-size:18px;font-weight:700;letter-spacing:-0.02em;">Helm Sports Labs</span>
+              <td style="padding-left:10px;vertical-align:middle;">
+                <span style="color:#ffffff;font-size:17px;font-weight:700;letter-spacing:-0.01em;">Helm Sports Labs</span>
               </td>
             </tr>
           </table>
         </td></tr>
-        <!-- Green accent -->
-        <tr><td style="height:3px;background:linear-gradient(90deg,#16A34A,#15803d);"></td></tr>
+        <!-- GolfHelm Wordmark -->
+        <tr><td style="padding:24px 32px 0 32px;">
+          <p style="margin:0;font-size:20px;font-weight:800;color:#1c1917;letter-spacing:-0.02em;">GolfHelm</p>
+        </td></tr>
+        <!-- Greeting -->
+        <tr><td style="padding:16px 32px 0 32px;">
+          <p style="margin:0 0 16px 0;font-size:15px;color:#1c1917;font-weight:600;">Hi ${escapeHtml(firstName)},</p>
+        </td></tr>
         <!-- Body -->
-        <tr><td style="padding:32px;">
-          <h1 style="margin:0 0 20px 0;font-size:20px;font-weight:700;color:#1c1917;">${escapeHtml(subject)}</h1>
+        <tr><td style="padding:0 32px 32px 32px;">
           ${bodyHtml}
         </td></tr>
         <!-- Footer -->
-        <tr><td style="padding:20px 32px;background-color:#fafaf9;border-top:1px solid #e7e5e4;">
-          <p style="margin:0;font-size:12px;color:#a8a29e;text-align:center;">
-            Helm Sports Labs &bull; College Golf Team Management
-          </p>
+        <tr><td style="padding:0 32px;">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr><td style="border-top:1px solid #e5e5e5;padding-top:24px;padding-bottom:24px;">
+              <p style="margin:0 0 4px 0;font-size:13px;font-weight:600;color:#78716c;text-align:center;">Helm Sports Labs</p>
+              <p style="margin:0 0 4px 0;font-size:13px;text-align:center;">
+                <a href="https://helmsportslabs.com" style="color:#16A34A;text-decoration:none;font-weight:500;">helmsportslabs.com</a>
+              </p>
+              <p style="margin:0 0 16px 0;font-size:12px;color:#a8a29e;text-align:center;font-style:italic;">Built for College Golf</p>
+              <p style="margin:0;font-size:11px;color:#d4d4d4;text-align:center;line-height:1.5;">
+                You&rsquo;re receiving this because you&rsquo;re a college golf coach. If this isn&rsquo;t relevant, just ignore this email.
+              </p>
+            </td></tr>
+          </table>
         </td></tr>
       </table>
     </td></tr>

@@ -182,7 +182,11 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || 'Failed to send emails');
+        if (res.status === 401 || res.status === 403) {
+          setError('Your session has expired. Please log in again to send emails.');
+        } else {
+          setError(data.error || 'Failed to send emails');
+        }
       } else {
         setHelmResult({
           sent: data.sent ?? 0,
@@ -561,59 +565,65 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
                   )}
                 </div>
 
-                {/* Email Preview Card */}
-                <div className="bg-white rounded-xl border border-warm-200/60 shadow-sm overflow-hidden">
-                  {/* Branded Header Bar */}
-                  <div className="bg-[#16A34A] px-4 py-3 flex items-center gap-2.5">
-                    <div className="w-6 h-6 rounded bg-white/20 flex items-center justify-center">
-                      <span className="text-white text-[10px] font-bold leading-none">H</span>
+                {/* Email Preview Card — matches buildEmailHtml in send-email route */}
+                <div className="bg-[#f5f5f4] rounded-xl border border-warm-200/60 shadow-sm overflow-hidden p-3">
+                  <div className="bg-white rounded-lg overflow-hidden shadow-sm" style={{ maxWidth: 600 }}>
+                    {/* Green Header Bar */}
+                    <div className="bg-[#16A34A] px-5 py-3.5 flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded-md bg-white/20 flex items-center justify-center text-sm">
+                        &#9971;
+                      </div>
+                      <span className="text-white text-[15px] font-bold tracking-tight">Helm Sports Labs</span>
                     </div>
-                    <span className="text-white text-sm font-semibold tracking-wide">Helm Sports Labs</span>
-                  </div>
 
-                  {/* Email Content */}
-                  <div className="px-4 py-4 space-y-3">
-                    {/* Subject line */}
-                    {subject.trim() ? (
-                      <p className="text-sm font-semibold text-warm-900">
-                        {mode === 'helm' ? replaceMergeTags(subject) : subject}
-                      </p>
-                    ) : (
-                      <p className="text-sm text-warm-300 italic">No subject</p>
-                    )}
-
-                    <div className="border-t border-warm-100" />
+                    {/* GolfHelm Wordmark */}
+                    <div className="px-5 pt-4">
+                      <p className="text-lg font-extrabold text-warm-900 tracking-tight">GolfHelm</p>
+                    </div>
 
                     {/* Greeting */}
-                    {firstCoach ? (
-                      <p className="text-sm text-warm-700">
-                        Hi {firstCoach.name.split(' ')[0]},
-                      </p>
-                    ) : (
-                      <p className="text-sm text-warm-300 italic">
-                        Hi &#123;first_name&#125;,
-                      </p>
-                    )}
+                    <div className="px-5 pt-3">
+                      {firstCoach ? (
+                        <p className="text-sm font-semibold text-warm-900">
+                          Hi {firstCoach.name.split(' ')[0]},
+                        </p>
+                      ) : (
+                        <p className="text-sm text-warm-300 italic">
+                          Hi &#123;name&#125;,
+                        </p>
+                      )}
+                    </div>
 
                     {/* Body */}
-                    {body.trim() ? (
-                      <div className="text-sm text-warm-700 whitespace-pre-wrap leading-relaxed">
-                        {mode === 'helm' ? replaceMergeTags(body) : body}
-                      </div>
-                    ) : (
-                      <div className="py-8 text-center">
-                        <p className="text-sm text-warm-300 italic">
-                          Start typing to see a preview...
+                    <div className="px-5 pt-3 pb-5">
+                      {body.trim() ? (
+                        <div className="text-sm text-warm-600 whitespace-pre-wrap leading-relaxed">
+                          {mode === 'helm' ? replaceMergeTags(body) : body}
+                        </div>
+                      ) : (
+                        <div className="py-8 text-center">
+                          <p className="text-sm text-warm-300 italic">
+                            Start typing to see a preview...
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Footer */}
+                    <div className="px-5 pb-5">
+                      <div className="border-t border-warm-200 pt-4">
+                        <p className="text-xs font-semibold text-warm-400 text-center mb-0.5">Helm Sports Labs</p>
+                        <p className="text-xs text-center mb-0.5">
+                          <a href="https://helmsportslabs.com" className="text-[#16A34A] font-medium no-underline hover:underline">
+                            helmsportslabs.com
+                          </a>
+                        </p>
+                        <p className="text-[11px] text-warm-400 text-center italic mb-3">Built for College Golf</p>
+                        <p className="text-[10px] text-warm-300 text-center leading-relaxed">
+                          You&apos;re receiving this because you&apos;re a college golf coach. If this isn&apos;t relevant, just ignore this email.
                         </p>
                       </div>
-                    )}
-                  </div>
-
-                  {/* Footer */}
-                  <div className="px-4 py-3 border-t border-warm-100 bg-warm-50/50">
-                    <p className="text-[11px] text-warm-400 text-center">
-                      Sent by Helm Sports Labs
-                    </p>
+                    </div>
                   </div>
                 </div>
 
