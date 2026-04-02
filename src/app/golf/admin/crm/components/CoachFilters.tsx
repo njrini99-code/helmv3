@@ -1,9 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { IconStar, IconSearch, IconX, IconClock, IconChevronDown, IconChevronUp, IconFileText, IconAlertCircle, IconLoader } from '@/components/icons';
 import type { CoachStatus } from '../crm-config';
+
+/** Track the previous value of a variable across renders. */
+function usePrevious<T>(value: T): T | undefined {
+  const ref = useRef<T | undefined>(undefined);
+  useEffect(() => {
+    ref.current = value;
+  }, [value]);
+  return ref.current;
+}
 
 export interface Filters {
   status: CoachStatus | 'all';
@@ -52,11 +61,16 @@ export function CoachFilters({
   }, [localSearch, filters.search, setFilters]);
 
   // Sync local search when parent clears filters
+  // Only reset if parent search transitioned from non-empty to empty (explicit clear),
+  // not when it's still empty because the debounce hasn't fired yet
+  const prevParentSearchRef = useRef(filters.search);
   useEffect(() => {
-    if (filters.search === '' && localSearch !== '') {
+    const prev = prevParentSearchRef.current;
+    prevParentSearchRef.current = filters.search;
+    if (prev !== '' && filters.search === '') {
       setLocalSearch('');
     }
-  }, [filters.search, localSearch]);
+  }, [filters.search]);
 
   const activeFilterCount = [
     filters.status !== 'all',
