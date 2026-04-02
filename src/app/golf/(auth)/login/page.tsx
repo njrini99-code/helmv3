@@ -29,8 +29,14 @@ function LoginContent() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const isNative = isNativeApp();
+  // Defer native detection to useEffect to avoid hydration mismatch:
+  // isNativeApp() returns false on server (no window) but may return true on client.
+  const [isNative, setIsNative] = useState(false);
   const supabase = createClient();
+
+  useEffect(() => {
+    setIsNative(isNativeApp());
+  }, []);
 
   useEffect(() => {
     async function checkAuth() {

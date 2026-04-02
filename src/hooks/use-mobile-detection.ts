@@ -34,12 +34,10 @@ const MOBILE_UI_PREF_KEY = 'helm-prefer-mobile-ui';
  * ```
  */
 export function useMobileDetection(): MobileDetectionResult {
-  const [screenWidth, setScreenWidth] = useState(
-    typeof window !== 'undefined' ? window.innerWidth : 768
-  );
-  const [screenHeight, setScreenHeight] = useState(
-    typeof window !== 'undefined' ? window.innerHeight : 1024
-  );
+  // Always initialize with server-safe defaults to avoid hydration mismatch.
+  // useEffect below will set the real values on the client after hydration.
+  const [screenWidth, setScreenWidth] = useState(768);
+  const [screenHeight, setScreenHeight] = useState(1024);
   const [isTouch, setIsTouch] = useState(false);
   const [preferMobileUIStored, setPreferMobileUIStored] = useLocalStorage<boolean | null>(
     MOBILE_UI_PREF_KEY,
