@@ -315,26 +315,29 @@ function buildEmailHtml(recipientName: string, _subject: string, body: string): 
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f5f4;padding:32px 16px;">
     <tr><td align="center">
       <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
-        <!-- Green Header Bar -->
+        <!-- Green Header Bar with Helm Logo -->
         <tr><td style="background-color:#16A34A;padding:20px 32px;">
           <table width="100%" cellpadding="0" cellspacing="0">
             <tr>
-              <td style="vertical-align:middle;width:28px;">
-                <!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" style="width:28px;height:28px;" arcsize="50%" fillcolor="#ffffff" stroked="f"><v:textbox style="mso-fit-shape-to-text:true" inset="0,0,0,0"><![endif]-->
-                <table cellpadding="0" cellspacing="0" style="width:28px;height:28px;">
-                  <tr><td align="center" valign="middle" style="width:28px;height:28px;background-color:rgba(255,255,255,0.2);border-radius:6px;font-size:14px;color:#ffffff;">&#9971;</td></tr>
-                </table>
-                <!--[if mso]></v:textbox></v:roundrect><![endif]-->
+              <td style="vertical-align:middle;width:36px;">
+                <img src="https://helmsportslabs.com/Helm-Logo-New-Main.png" alt="Helm" width="36" height="36" style="display:block;border-radius:8px;" />
               </td>
-              <td style="padding-left:10px;vertical-align:middle;">
-                <span style="color:#ffffff;font-size:17px;font-weight:700;letter-spacing:-0.01em;">Helm Sports Labs</span>
+              <td style="padding-left:12px;vertical-align:middle;">
+                <span style="color:#ffffff;font-size:18px;font-weight:700;letter-spacing:-0.01em;">Helm Sports Labs</span>
               </td>
             </tr>
           </table>
         </td></tr>
-        <!-- GolfHelm Wordmark -->
+        <!-- GolfHelm Logo + Wordmark -->
         <tr><td style="padding:24px 32px 0 32px;">
-          <p style="margin:0;font-size:20px;font-weight:800;color:#1c1917;letter-spacing:-0.02em;">GolfHelm</p>
+          <table cellpadding="0" cellspacing="0"><tr>
+            <td style="vertical-align:middle;width:32px;">
+              <img src="https://helmsportslabs.com/helm-golf-logo-transparent.png" alt="GolfHelm" width="32" height="32" style="display:block;" />
+            </td>
+            <td style="padding-left:10px;vertical-align:middle;">
+              <span style="font-size:22px;font-weight:800;color:#1c1917;letter-spacing:-0.02em;">GolfHelm</span>
+            </td>
+          </tr></table>
         </td></tr>
         <!-- Greeting -->
         <tr><td style="padding:16px 32px 0 32px;">
@@ -347,13 +350,14 @@ function buildEmailHtml(recipientName: string, _subject: string, body: string): 
         <!-- Footer -->
         <tr><td style="padding:0 32px;">
           <table width="100%" cellpadding="0" cellspacing="0">
-            <tr><td style="border-top:1px solid #e5e5e5;padding-top:24px;padding-bottom:24px;">
-              <p style="margin:0 0 4px 0;font-size:13px;font-weight:600;color:#78716c;text-align:center;">Helm Sports Labs</p>
-              <p style="margin:0 0 4px 0;font-size:13px;text-align:center;">
+            <tr><td style="border-top:1px solid #e5e5e5;padding-top:24px;padding-bottom:24px;text-align:center;">
+              <img src="https://helmsportslabs.com/Helm-Logo-New-Main.png" alt="Helm" width="24" height="24" style="display:inline-block;opacity:0.4;margin-bottom:8px;" />
+              <p style="margin:0 0 4px 0;font-size:13px;font-weight:600;color:#78716c;">Helm Sports Labs</p>
+              <p style="margin:0 0 4px 0;font-size:13px;">
                 <a href="https://helmsportslabs.com" style="color:#16A34A;text-decoration:none;font-weight:500;">helmsportslabs.com</a>
               </p>
-              <p style="margin:0 0 16px 0;font-size:12px;color:#a8a29e;text-align:center;font-style:italic;">Built for College Golf</p>
-              <p style="margin:0;font-size:11px;color:#d4d4d4;text-align:center;line-height:1.5;">
+              <p style="margin:0 0 16px 0;font-size:12px;color:#a8a29e;font-style:italic;">Built for College Golf</p>
+              <p style="margin:0;font-size:11px;color:#d4d4d4;line-height:1.5;">
                 You&rsquo;re receiving this because you&rsquo;re a college golf coach. If this isn&rsquo;t relevant, just ignore this email.
               </p>
             </td></tr>
