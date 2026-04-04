@@ -6,6 +6,13 @@
  * Uses the premium fade-slide entrance animation from premium-components.tsx.
  * Wrap any page content to get the staggered entrance animation.
  *
+ * Reduced motion is handled by MotionConfig in GolfDashboardShell, which sets
+ * reducedMotion="always" when the user has disabled animations. We always
+ * render the m.div (motion) path so that server and client produce identical
+ * HTML during hydration — branching on useReducedMotion() produced different
+ * inline styles (opacity/transform from initial="hidden" vs none) and caused
+ * React hydration error #418 on pages like continue-round.
+ *
  * Usage:
  * ```tsx
  * // Server component page
@@ -24,7 +31,7 @@
  */
 
 import { ReactNode } from 'react';
-import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
+import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   containerVariants,
@@ -41,12 +48,8 @@ interface AnimatedPageProps {
 }
 
 export function AnimatedPage({ children, className }: AnimatedPageProps) {
-  const prefersReducedMotion = useReducedMotion();
-
-  if (prefersReducedMotion) {
-    return <div className={cn('min-h-full', className)}>{children}</div>;
-  }
-
+  // Always render m.div so server and client produce the same HTML.
+  // MotionConfig in the dashboard shell handles reduced-motion preference.
   return (
     <LazyMotion features={domAnimation}>
       <m.div
@@ -71,12 +74,6 @@ interface AnimatedItemProps {
 }
 
 export function AnimatedItem({ children, className }: AnimatedItemProps) {
-  const prefersReducedMotion = useReducedMotion();
-
-  if (prefersReducedMotion) {
-    return <div className={className}>{children}</div>;
-  }
-
   return (
     <m.div variants={itemVariants} className={className}>
       {children}
@@ -95,12 +92,6 @@ interface AnimatedListProps {
 }
 
 function AnimatedList({ children, className, staggerDelay = 0.04 }: AnimatedListProps) {
-  const prefersReducedMotion = useReducedMotion();
-
-  if (prefersReducedMotion) {
-    return <div className={className}>{children}</div>;
-  }
-
   return (
     <m.div
       variants={{

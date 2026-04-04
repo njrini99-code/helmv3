@@ -93,9 +93,10 @@ export function useOfflineSync(options: UseOfflineSyncOptions = {}): [OfflineSyn
     onConnectionChange,
   } = options;
 
-  // State
+  // State — always initialize with server-safe defaults to avoid hydration
+  // mismatch. useEffect below will set the real navigator.onLine value.
   const [state, setState] = useState<OfflineSyncState>({
-    isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
+    isOnline: true,
     isIndexedDBReady: false,
     isSyncing: false,
     pendingCount: { shots: 0, rounds: 0, total: 0 },
@@ -147,6 +148,13 @@ export function useOfflineSync(options: UseOfflineSyncOptions = {}): [OfflineSyn
   // ============================================================================
 
   useEffect(() => {
+    // Set the real navigator.onLine value now that we're on the client
+    // (useState initialized with server-safe `true` to avoid hydration mismatch)
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      setState(prev => ({ ...prev, isOnline: false }));
+      onConnectionChange?.(false);
+    }
+
     const handleOnline = () => {
       if (isMountedRef.current) {
         setState(prev => ({ ...prev, isOnline: true }));

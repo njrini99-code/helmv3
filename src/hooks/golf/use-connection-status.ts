@@ -89,10 +89,11 @@ export function useConnectionStatus(options: UseConnectionStatusOptions = {}): C
     slowConnectionThreshold = DEFAULT_SLOW_THRESHOLD,
   } = options;
 
-  // State
+  // State — always initialize with server-safe defaults to avoid hydration
+  // mismatch. useEffect below will set the real navigator.onLine value.
   const [status, setStatus] = useState<ConnectionStatus>({
-    isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
-    isConnected: typeof navigator !== 'undefined' ? navigator.onLine : true,
+    isOnline: true,
+    isConnected: true,
     isSlowConnection: false,
     lastOnline: null,
     lastCheck: null,
