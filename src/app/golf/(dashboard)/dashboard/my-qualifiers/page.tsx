@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import type { PlayerQualifierInfo } from '@/app/golf/actions/golf';
@@ -5,10 +6,14 @@ import { MyQualifiersClient } from './my-qualifiers-client';
 
 export default async function MyQualifiersPage() {
   const session = await getGolfSessionProfile();
-  if (!session) return <MyQualifiersClient qualifiers={[]} error="You must be signed in" />;
+  if (!session) return redirect('/golf/login');
 
   const { player } = session;
-  if (!player) return <MyQualifiersClient qualifiers={[]} error="Player profile not found" />;
+  if (!player) {
+    const { coach } = session;
+    if (coach) return <MyQualifiersClient qualifiers={[]} error="This feature is for players only. Coaches can view qualifier results from the qualifiers page." />;
+    return redirect('/golf/player');
+  }
 
   const supabase = await createClient();
 

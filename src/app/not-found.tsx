@@ -26,7 +26,7 @@ export default function NotFound() {
         </div>
 
         <p className="text-sm text-warm-400 mt-8">
-          Need help? <Link href="mailto:support@helmlab.com" className="text-primary-600 hover:underline">Contact support</Link>
+          Need help? <Link href="mailto:support@helmsportslabs.com" className="text-primary-600 hover:underline">Contact support</Link>
         </p>
       </div>
     </div>

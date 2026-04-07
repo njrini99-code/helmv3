@@ -5,15 +5,6 @@ import { cn } from '@/lib/utils';
 import { IconStar, IconSearch, IconX, IconClock, IconChevronDown, IconChevronUp, IconFileText, IconAlertCircle, IconLoader } from '@/components/icons';
 import type { CoachStatus } from '../crm-config';
 
-/** Track the previous value of a variable across renders. */
-function usePrevious<T>(value: T): T | undefined {
-  const ref = useRef<T | undefined>(undefined);
-  useEffect(() => {
-    ref.current = value;
-  }, [value]);
-  return ref.current;
-}
-
 export interface Filters {
   status: CoachStatus | 'all';
   division: 'all' | 'D2' | 'D3';

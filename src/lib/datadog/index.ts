@@ -46,6 +46,8 @@ export function initDatadog() {
         sessionSampleRate: 100,
         sessionReplaySampleRate: 20,
         trackUserInteractions: true,
+        trackingConsent: 'granted',
+        enableExperimentalFeatures: [],
         trackResources: true,
         trackLongTasks: true,
         defaultPrivacyLevel: 'mask-user-input',

@@ -226,7 +226,7 @@ export default function HelpPage() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <a
-              href="mailto:support@helmsportslab.com"
+              href="mailto:support@helmsportslabs.com"
               className="inline-flex items-center gap-2 px-6 py-3 bg-white text-slate-900 font-medium rounded-lg hover:bg-slate-100 transition-colors"
             >
               <Mail size={20} />

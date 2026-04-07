@@ -94,7 +94,7 @@ const PeekPanelComponent = function PeekPanel({ className }: PeekPanelProps) {
         // School peek content can be added later
         return (
           <div className="p-5 text-center text-warm-500">
-            School preview coming soon
+            School details are not available for this program.
           </div>
         );
       default:

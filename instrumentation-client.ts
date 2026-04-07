@@ -31,10 +31,13 @@ Sentry.init({
     // Browser extensions
     /^chrome-extension:\/\//,
     /^moz-extension:\/\//,
-    // Network errors that aren't actionable
+    // Network errors that aren't actionable (message varies by browser)
     'Network request failed',
     'Failed to fetch',
     'Load failed',
+    /network\s*error/i,
+    /NetworkError/i,
+    'TypeError: cancelled',
     // User-initiated navigation
     'AbortError',
   ],

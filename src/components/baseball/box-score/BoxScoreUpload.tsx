@@ -144,7 +144,7 @@ export function BoxScoreUpload({ game, teamPlayers }: BoxScoreUploadProps) {
 
     // For PDF, we show a user-friendly message — server-side parsing happens via API
     setUploadError(
-      'PDF upload: Copy the text content from your PDF box score and paste it into the CSV tab using the column format shown in the template. PDF auto-parsing coming soon.'
+      'PDF upload: Copy the text content from your PDF box score and paste it into the CSV tab using the column format shown in the template.'
     );
   }
 

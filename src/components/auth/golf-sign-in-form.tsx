@@ -94,7 +94,7 @@ export function GolfSignInForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5" noValidate>
+    <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5" noValidate aria-label="Sign in to GolfHelm">
       {/* Error message */}
       {error && (
         <div

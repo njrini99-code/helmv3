@@ -66,6 +66,7 @@ export function MobileBottomNav({ isCoach = true }: MobileBottomNavProps) {
             <Link
               key={item.href}
               href={item.href}
+              aria-label={item.label}
               onClick={(e) => {
                 triggerHaptic('light');
                 if (isActive) {
@@ -93,11 +94,13 @@ export function MobileBottomNav({ isCoach = true }: MobileBottomNavProps) {
                 {item.icon}
                 {item.label === 'Messages' && badges.messages > 0 && (
                   <span className="absolute -top-1 -right-1.5">
+                    <span aria-live="polite" aria-atomic="true" className="contents">
                     <CountBadge count={badges.messages} variant="danger" />
+                    </span>
                   </span>
                 )}
                 {item.label === 'Alerts' && badges.total > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-primary-500 ring-2 ring-white" />
+                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-primary-500 ring-2 ring-white" role="status" aria-label="New alerts available" />
                 )}
               </div>
               <span className={cn(

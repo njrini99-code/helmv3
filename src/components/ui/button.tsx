@@ -117,8 +117,11 @@ export interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>
   tooltip?: string;
 }
 
+// NOTE: Always pass aria-label when using IconButton for accessibility (icon-only buttons need text labels for screen readers)
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
-  ({ className, variant = 'default', size = 'md', children, ...props }, ref) => {
+  // NOTE: Always pass aria-label when using IconButton for accessibility (icon-only buttons need text labels for screen readers)
+  ({ className, variant = 'default', size = 'md', tooltip, children, ...props }, ref) => {
+    const ariaLabel = props['aria-label'] || tooltip;
     const baseStyles = cn(
       'relative overflow-hidden inline-flex items-center justify-center rounded-[10px]',
       'transition-all duration-200 ease-out',
@@ -143,7 +146,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
       <button
         ref={ref}
         className={cn(baseStyles, variants[variant], sizes[size], className)}
-        {...props}
+        aria-label={ariaLabel} title={tooltip} {...props}
       >
         {children}
       </button>

@@ -24,6 +24,7 @@ const API_CACHE = `${CACHE_VERSION}-api`;
 // Assets to cache immediately on install
 const STATIC_ASSETS = [
   '/manifest.json',
+  '/offline.html',
 ];
 
 // API routes to cache for offline access
@@ -391,7 +392,15 @@ function isStaticAsset(url) {
   return url.pathname.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/);
 }
 
-function getOfflinePage() {
+async function getOfflinePage() {
+  // Try to serve the cached offline.html first
+  const cache = await caches.open(STATIC_CACHE);
+  const cachedOffline = await cache.match('/offline.html');
+  if (cachedOffline) {
+    return cachedOffline;
+  }
+
+  // Fallback to inline HTML if cache miss
   return new Response(
     `<!DOCTYPE html>
     <html lang="en">

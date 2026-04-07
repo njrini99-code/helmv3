@@ -210,7 +210,7 @@ export async function sendEventInvitations(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: notifError } = await (adminClient as any)
       .from('golf_calendar_notifications')
-      .insert(notifications);
+      .upsert(notifications, { onConflict: 'event_id,user_id,notification_type', ignoreDuplicates: true });
 
     if (notifError) {
       console.error('[sendEventInvitations] Failed to insert notifications:', notifError.message);
@@ -266,7 +266,7 @@ export async function notifyEventUpdate(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error: notifError } = await (adminClient as any)
     .from('golf_calendar_notifications')
-    .insert(notifications);
+    .upsert(notifications, { onConflict: 'event_id,user_id,notification_type', ignoreDuplicates: true });
 
   if (notifError) {
     console.error('[notifyEventUpdate] Failed to insert notifications:', notifError.message);
@@ -318,7 +318,7 @@ async function cancelEventAndNotify(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error: notifError } = await (adminClient as any)
         .from('golf_calendar_notifications')
-        .insert(notifications);
+        .upsert(notifications, { onConflict: 'event_id,user_id,notification_type', ignoreDuplicates: true });
 
       if (notifError) {
         console.error('[cancelEventAndNotify] Failed to insert notifications:', notifError.message);
@@ -388,14 +388,14 @@ export async function updateRSVP(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: notifError } = await (adminClient as any)
       .from('golf_calendar_notifications')
-      .insert({
+      .upsert({
         user_id: event.creator.user_id,
         event_id: eventId,
         notification_type: 'rsvp_response',
         title: `${player?.first_name} ${statusText}`,
         message: `${player?.first_name} ${player?.last_name} has ${statusText} "${event.title}"`,
         action_url: `/golf/dashboard/calendar?event=${eventId}`,
-      });
+      }, { onConflict: 'event_id,user_id,notification_type', ignoreDuplicates: true });
 
     if (notifError) {
       console.error('[notifyRSVPResponse] Failed to insert notification:', notifError.message);
@@ -564,7 +564,7 @@ async function sendRSVPReminders(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: notifError } = await (adminClient as any)
       .from('golf_calendar_notifications')
-      .insert(notifications);
+      .upsert(notifications, { onConflict: 'event_id,user_id,notification_type', ignoreDuplicates: true });
 
     if (notifError) {
       console.error('[sendRSVPReminders] Failed to insert notifications:', notifError.message);

@@ -122,7 +122,7 @@ export default async function PlayerCoachHelmPage() {
 
   if (!player) {
     if (coach) return <NotPlayerState />;
-    return <ErrorState error="Player profile not found. Please complete onboarding first." />;
+    return redirect('/golf/player');
   }
 
   // Fetch CoachHelm dashboard data and shot analytics in parallel

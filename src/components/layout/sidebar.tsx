@@ -555,9 +555,9 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
         >
           <div className="flex items-center gap-2 mb-1">
             <span className="text-sm font-medium text-white">Free Plan</span>
-            <span className="px-1.5 py-0.5 text-micro font-medium bg-primary-600 text-white rounded">BETA</span>
+            
           </div>
-          <div className="text-xs text-white/50">Pro plans coming soon</div>
+          <div className="text-xs text-white/50">Free for all teams</div>
         </div>
 
         {/* User info */}

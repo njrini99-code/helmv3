@@ -69,7 +69,7 @@ export default function GlobalError({
 
             <p className="text-sm text-slate-400 mt-8">
               If this problem persists,{' '}
-              <a href="mailto:support@helmlab.com" className="text-primary-600 hover:underline">
+              <a href="mailto:support@helmsportslabs.com" className="text-primary-600 hover:underline">
                 contact support
               </a>
             </p>

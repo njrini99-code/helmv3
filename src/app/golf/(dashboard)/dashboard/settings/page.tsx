@@ -497,7 +497,7 @@ export default function GolfSettingsPage() {
                   Permanently remove your account and all data.
                 </p>
               </div>
-              <Button variant="danger" isLoading={deletingAccount} onClick={handleDeleteAccount}>
+              <Button variant="danger" isLoading={deletingAccount} onClick={handleDeleteAccount} aria-label="Delete your account permanently">
                 Delete Account
               </Button>
             </div>
@@ -508,7 +508,7 @@ export default function GolfSettingsPage() {
         <AnimatedItem>
           <button
             onClick={handleSignOut}
-            className="relative w-full glass-premium rounded-2xl overflow-clip p-4 flex items-center gap-3 hover:border-red-200 hover:bg-red-50/50 transition-colors group"
+            className="relative w-full glass-premium rounded-2xl overflow-clip p-4 flex items-center gap-3 hover:border-red-200 hover:bg-red-50/50 transition-colors group" aria-label="Sign out of your account"
           >
             <ShineEffect />
             <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center group-hover:bg-red-100 transition-colors">
@@ -1010,7 +1010,7 @@ function AppearancePanel() {
     <div className="space-y-5">
       <div className="flex items-center gap-2.5 px-3.5 py-2.5 bg-primary-50/60 border border-primary-200/40 rounded-xl">
         <IconSparkles size={14} className="text-primary-400 flex-shrink-0" />
-        <p className="text-xs text-primary-700/70">Dashboard-wide theme support coming soon. Save your preferences now — they&apos;ll apply automatically.</p>
+        <p className="text-xs text-primary-700/70">Customize your dashboard appearance. Your preferences are saved automatically.</p>
       </div>
       {/* Density */}
       <div>

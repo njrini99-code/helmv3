@@ -1830,7 +1830,7 @@ export async function createGolfEvent(data: GolfEventInput): Promise<ActionResul
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const { error: notifError } = await (adminClient as any)
             .from('golf_calendar_notifications')
-            .insert(notifications);
+            .upsert(notifications, { onConflict: 'event_id,user_id,notification_type', ignoreDuplicates: true });
 
           if (notifError) {
             await logServerError(`createGolfEvent notification insert failed: ${notifError.message}`, {

@@ -145,7 +145,7 @@ function LoginContent() {
       />
 
       {/* Glass card */}
-      <div id="login-form" className="relative z-10 w-full max-w-[420px]">
+      <div id="login-form" role="region" aria-label="Login form" className="relative z-10 w-full max-w-[420px]">
         <m.div
           initial={{ opacity: 0, y: 20, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -161,7 +161,7 @@ function LoginContent() {
           >
             <Link
               href="/"
-              className="inline-flex items-center gap-1.5 text-sm text-warm-500 hover:text-warm-700 transition-colors px-2 py-1.5 -ml-2 rounded-lg hover:bg-warm-100/50"
+              className="inline-flex items-center gap-1.5 text-sm text-warm-500 hover:text-warm-700 transition-colors px-2 py-1.5 -ml-2 rounded-lg hover:bg-warm-100/50" aria-label="Back to home page"
             >
               <IconChevronLeft size={16} />
               Back
@@ -239,14 +239,14 @@ function LoginContent() {
                 </div>
                 <button
                   onClick={() => router.push(returnTo || (isAdmin ? '/golf/admin' : '/golf/dashboard'))}
-                  className="w-full py-3 bg-primary-600 text-white font-semibold text-sm rounded-xl shadow-lg shadow-primary-600/25 transition-all duration-200 hover:bg-primary-700 hover:shadow-primary-600/30"
+                  className="w-full py-3 bg-primary-600 text-white font-semibold text-sm rounded-xl shadow-lg shadow-primary-600/25 transition-all duration-200 hover:bg-primary-700 hover:shadow-primary-600/30" aria-label="Continue to dashboard"
                 >
                   {returnTo ? 'Continue' : isAdmin ? 'Continue to Admin Dashboard' : 'Continue to Dashboard'}
                 </button>
                 <button
                   onClick={handleSignOut}
                   disabled={isLoggingOut}
-                  className="w-full py-3 bg-warm-100 text-warm-700 font-semibold text-sm rounded-xl transition-all duration-200 hover:bg-warm-200 disabled:opacity-50"
+                  className="w-full py-3 bg-warm-100 text-warm-700 font-semibold text-sm rounded-xl transition-all duration-200 hover:bg-warm-200 disabled:opacity-50" aria-label="Sign out and use a different account"
                 >
                   {isLoggingOut ? 'Signing out...' : 'Sign out & use a different account'}
                 </button>

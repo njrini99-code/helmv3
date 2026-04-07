@@ -122,7 +122,7 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
       <CommandPalette isCoach={isCoach} />
 
       {/* Desktop Sidebar */}
-      <div className="hidden lg:block">
+      <div className="hidden lg:block" role="navigation" aria-label="Main navigation">
         <GolfSidebar
           userRole={userData.role}
           userName={userData.name}
@@ -170,7 +170,7 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
           layout thrashing during sidebar collapse.
           isolation: isolate prevents child stacking contexts from leaking out
           and interfering with the fixed bottom nav. */}
-      <main
+      <main role="main" aria-label="Dashboard content"
         id="main-content"
         className={cn(
           'flex-1 overflow-y-auto isolate',

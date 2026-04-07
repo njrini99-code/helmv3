@@ -48,6 +48,7 @@ export function detectAnomalies(
 
   const anomalies: Anomaly[] = [];
   const latest = values[values.length - 1];
+  if (latest === undefined) return [];
 
   // Z-score anomaly against baseline
   if (baseline.stdDev > 0) {

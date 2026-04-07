@@ -104,7 +104,12 @@ export function PremiumCalendarClient({
   const prefersReducedMotion = useReducedMotion();
 
   const [view, setView] = useState<CalendarView>('week');
-  const [currentDate, setCurrentDate] = useState(new Date());
+  // Initialize to midnight today so server and client produce identical HTML
+  // during hydration (avoids React error #418 when SSR timestamp differs).
+  const [currentDate, setCurrentDate] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  });
   const [selectedPlayerIds, setSelectedPlayerIds] = useState<string[]>([]);
   const [showPlayerFilter, setShowPlayerFilter] = useState(false);
   const [secondaryTimezone, setSecondaryTimezone] = useState<string | null>(null);
