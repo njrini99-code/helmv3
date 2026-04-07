@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { initCapacitor, isNativeApp, hideSplashScreen, setStatusBarStyle } from '@/lib/utils/capacitor';
+import { registerForPushNotifications } from '@/lib/utils/push-registration';
 
 export function CapacitorProvider() {
   useEffect(() => {
@@ -15,6 +16,9 @@ export function CapacitorProvider() {
       const rafId = requestAnimationFrame(() => {
         hideSplashScreen();
       });
+
+      // Register for push notifications (requests permission + saves token)
+      registerForPushNotifications();
 
       return () => cancelAnimationFrame(rafId);
     }

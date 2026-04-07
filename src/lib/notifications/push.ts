@@ -77,6 +77,30 @@ function generatePushPayload(
         body: String(data.qualifierName || ''),
         data: { url: `${baseUrl}/golf/dashboard/qualifiers`, type },
       };
+    case 'round_submitted':
+      return {
+        title: 'Round Submitted',
+        body: `${data.playerName || 'A player'} shot ${data.totalScore}${data.scoreToPar ? ` (${Number(data.scoreToPar) > 0 ? '+' : ''}${data.scoreToPar})` : ''} at ${data.courseName || 'a course'}`,
+        data: { url: `${baseUrl}/golf/dashboard/stats/team`, type },
+      };
+    case 'coachhelm_insight':
+      return {
+        title: 'New CoachHelm Insight',
+        body: String(data.insightTitle || 'New coaching insight available'),
+        data: { url: `${baseUrl}/golf/dashboard/coachhelm`, type },
+      };
+    case 'qualifier_updated':
+      return {
+        title: 'Qualifier Updated',
+        body: String(data.qualifierName || 'A qualifier has been updated'),
+        data: { url: `${baseUrl}/golf/dashboard/qualifiers`, type },
+      };
+    case 'task_completed':
+      return {
+        title: 'Task Completed',
+        body: `${data.playerName || 'A player'} completed "${data.taskTitle || 'a task'}"`,
+        data: { url: `${baseUrl}/golf/dashboard/tasks`, type },
+      };
     case 'dev_plan_assigned':
       return {
         title: 'New Development Plan',

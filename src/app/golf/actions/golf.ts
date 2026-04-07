@@ -1685,6 +1685,40 @@ export async function submitGolfRoundComprehensive(
       });
     });
 
+    // Push notification to coaches: player submitted a round (fire-and-forget)
+    if (teamId) {
+      (async () => {
+        try {
+          // Get player name for the notification
+          const { data: playerInfo } = await supabase
+            .from('golf_players')
+            .select('first_name, last_name')
+            .eq('id', player.id)
+            .single();
+
+          // Get coaches for this team via golf_coaches (has user_id)
+          const { data: teamCoaches } = await supabase
+            .from('golf_coaches')
+            .select('user_id')
+            .eq('team_id', teamId);
+
+          if (teamCoaches?.length) {
+            const { sendBulkPushNotification } = await import('@/lib/notifications/push');
+            const playerName = playerInfo?.first_name && playerInfo?.last_name
+              ? `${playerInfo.first_name} ${playerInfo.last_name}`
+              : 'A player';
+            await sendBulkPushNotification(
+              'round_submitted',
+              teamCoaches.map(c => c.user_id),
+              { playerName, courseName: data.courseName, totalScore, scoreToPar: totalToPar }
+            );
+          }
+        } catch (pushErr) {
+          console.error('[Push] round_submitted notification failed:', pushErr);
+        }
+      })();
+    }
+
     return { success: true, data: { roundId: round.id, warnings: detailWarnings } };
 
   } catch (error) {
@@ -2251,6 +2285,14 @@ export async function createGolfQualifier(data: GolfQualifierInput): Promise<Act
                   : Promise.resolve()
               )
             );
+
+            // Push notifications for qualifier creation
+            const { sendBulkPushNotification } = await import('@/lib/notifications/push');
+            await sendBulkPushNotification(
+              'qualifier_created',
+              userRows.map(u => u.id),
+              { qualifierName: validatedData.name, startDate: formattedDate }
+            ).catch(() => {});
           }
         }
       } catch (notifErr) {
