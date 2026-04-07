@@ -152,8 +152,8 @@ export default function PrivacyPage() {
             <h2 className="text-2xl font-semibold text-slate-900">Contact us</h2>
             <p>
               If you have questions about this policy, email us at{' '}
-              <a href="mailto:admin@helmsportslabs.com" className="text-primary-700 hover:text-primary-800">
-                admin@helmsportslabs.com
+              <a href="mailto:support@helmsportslabs.com" className="text-primary-700 hover:text-primary-800">
+                support@helmsportslabs.com
               </a>.
             </p>
           </section>
