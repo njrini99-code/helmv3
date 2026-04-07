@@ -90,7 +90,17 @@ async function sendToAPI(event: ClientEventInput & { browserInfo: BrowserInfo })
 /**
  * Log an event from the client
  */
+// Rate limiter: max 3 of the same error per minute to prevent spam
+const _dedupMap = new Map<string, { n: number; t: number }>();
+
 async function logClientEvent(input: ClientEventInput): Promise<boolean> {
+  if (input.eventType === "error") {
+    const k = (input.title || "").slice(0, 80) + ":" + (input.message || "").slice(0, 80);
+    const now = Date.now();
+    const e = _dedupMap.get(k);
+    if (e && now - e.t < 60000 && e.n >= 3) return false;
+    _dedupMap.set(k, { n: (e && now - e.t < 60000) ? e.n + 1 : 1, t: now });
+  }
   const browserInfo = getBrowserInfo();
   const url = input.url ?? window.location.href;
   
