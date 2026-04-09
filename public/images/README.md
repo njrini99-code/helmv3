@@ -16,5 +16,5 @@ For the auth pages (Layout E design), add the following images:
   - Style: Warm, aspirational
   - Format: JPG optimized for web (< 500KB)
 
-## Placeholder
+## Image Assets
 Until high-quality images are added, the auth pages will use gradient overlays with decorative elements.

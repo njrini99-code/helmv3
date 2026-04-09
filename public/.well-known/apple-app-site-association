@@ -1,0 +1,14 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appIDs": ["MK49MSX29G.com.helmsportslabs.golfhelm"],
+        "components": [
+          { "/": "/golf/*" },
+          { "/": "/baseball/*" }
+        ]
+      }
+    ]
+  }
+}
