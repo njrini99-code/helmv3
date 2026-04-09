@@ -7,6 +7,7 @@ import {
   IconX,
   IconMail,
   IconPhone,
+  IconExternalLink,
   IconPlus,
   IconClock,
   IconMessageSquare,
@@ -515,6 +516,11 @@ function CoachDetailPanelInner({
                   <button onClick={() => setEditingContact(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-dashed border-warm-300 text-xs text-warm-400 hover:border-warm-400 hover:text-warm-500 transition-colors">
                     <IconPhone size={12} /> Add phone
                   </button>
+                )}
+                {coach.athletics_url && (
+                  <a href={coach.athletics_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-50 text-violet-700 hover:bg-violet-100 text-xs font-medium transition-colors">
+                    <IconExternalLink size={12} /> Golf Staff Page
+                  </a>
                 )}
               </>
             )}

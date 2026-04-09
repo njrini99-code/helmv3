@@ -63,6 +63,7 @@ export interface Coach {
   archived_by: string | null;
   created_at: string;
   updated_at: string;
+  athletics_url: string | null;
 }
 
 // ============================================================================
