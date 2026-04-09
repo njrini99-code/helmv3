@@ -3140,6 +3140,26 @@ export async function triggerPlayerInsightsAfterRound(
       if (insertError) {
         throw new Error(`Failed to persist post-round CoachHelm insights: ${insertError.message}`);
       }
+
+      // Push notification to coach: new insights generated (fire-and-forget)
+      (async () => {
+        try {
+          const { data: coachUser } = await admin
+            .from('golf_coaches')
+            .select('user_id')
+            .eq('id', coach.id)
+            .single();
+
+          if (coachUser?.user_id) {
+            const { sendPushNotification } = await import('@/lib/notifications/push');
+            await sendPushNotification('coachhelm_insight', coachUser.user_id, {
+              insightTitle: `${newInsights.length} new insight${newInsights.length > 1 ? 's' : ''} after round`,
+            });
+          }
+        } catch (pushErr) {
+          console.error('[Push] coachhelm_insight notification failed:', pushErr);
+        }
+      })();
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

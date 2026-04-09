@@ -8,10 +8,19 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         guard let windowScene = scene as? UIWindowScene else { return }
 
-        // Capacitor's CAPBridgeViewController is set as the initial view controller
-        // in Main.storyboard — UIKit instantiates it automatically via the scene
-        // configuration's storyboard reference. We just need to hold the window.
-        self.window = windowScene.windows.first
+        // Create our own window with the native home screen as root.
+        // This replaces the storyboard-created window entirely so the
+        // web view never shows until the user taps Sign In.
+        let window = UIWindow(windowScene: windowScene)
+
+        let homeVC = HomeViewController()
+        homeVC.onGolfHelmSignIn = { [weak self] in
+            self?.transitionToWebApp()
+        }
+
+        window.rootViewController = homeVC
+        window.makeKeyAndVisible()
+        self.window = window
 
         // Handle any URLs passed at launch
         if let urlContext = connectionOptions.urlContexts.first {
@@ -30,6 +39,41 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                 restorationHandler: { _ in }
             )
         }
+    }
+
+    // MARK: - Transition to Capacitor Web App
+
+    private func transitionToWebApp() {
+        guard let window = self.window else { return }
+
+        // Instantiate the Capacitor bridge from the storyboard
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        guard let bridgeVC = storyboard.instantiateInitialViewController() as? GolfBridgeViewController else { return }
+
+        // If the user navigates away from /golf/ (e.g. hits "back" to landing page),
+        // return them to the native home screen instead
+        bridgeVC.onNavigateAway = { [weak self] in
+            self?.transitionToHomeScreen()
+        }
+
+        UIView.transition(with: window, duration: 0.35, options: .transitionCrossDissolve, animations: {
+            window.rootViewController = bridgeVC
+        })
+    }
+
+    // MARK: - Return to Native Home Screen
+
+    private func transitionToHomeScreen() {
+        guard let window = self.window else { return }
+
+        let homeVC = HomeViewController()
+        homeVC.onGolfHelmSignIn = { [weak self] in
+            self?.transitionToWebApp()
+        }
+
+        UIView.transition(with: window, duration: 0.35, options: .transitionCrossDissolve, animations: {
+            window.rootViewController = homeVC
+        })
     }
 
     func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
