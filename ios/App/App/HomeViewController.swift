@@ -225,13 +225,14 @@ class HomeViewController: UIViewController {
 
         // Title
         titleLabel.text = "Helm Sports Labs"
-        titleLabel.font = .systemFont(ofSize: 28, weight: .bold)
+        titleLabel.accessibilityTraits = .header
+        titleLabel.font = .preferredFont(forTextStyle: .title1)
         titleLabel.textColor = Design.textPrimary
         titleLabel.textAlignment = .center
 
         // Subtitle
         subtitleLabel.text = "College sports technology"
-        subtitleLabel.font = .systemFont(ofSize: 15, weight: .regular)
+        subtitleLabel.font = .preferredFont(forTextStyle: .subheadline)
         subtitleLabel.textColor = Design.textSecondary
         subtitleLabel.textAlignment = .center
 
@@ -318,7 +319,7 @@ class HomeViewController: UIViewController {
 
         let title = UILabel()
         title.text = "GolfHelm"
-        title.font = .systemFont(ofSize: 24, weight: .bold)
+        title.font = .preferredFont(forTextStyle: .title2)
         title.textColor = Design.textPrimary
 
         let tagline = UILabel()
@@ -341,7 +342,7 @@ class HomeViewController: UIViewController {
         // Description
         let desc = UILabel()
         desc.text = "Track every shot. Develop every player.\nAI-powered coaching intelligence for college golf programs."
-        desc.font = .systemFont(ofSize: 15, weight: .regular)
+        desc.font = .preferredFont(forTextStyle: .subheadline)
         desc.textColor = Design.textSecondary
         desc.numberOfLines = 0
         desc.lineBreakMode = .byWordWrapping
@@ -371,10 +372,12 @@ class HomeViewController: UIViewController {
         config.imagePadding = 8
         config.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
             var outgoing = incoming
-            outgoing.font = UIFont.systemFont(ofSize: 17, weight: .semibold)
+            outgoing.font = UIFont.preferredFont(forTextStyle: .headline)
             return outgoing
         }
         signInButton.configuration = config
+        signInButton.accessibilityLabel = "Sign in to GolfHelm"
+        signInButton.accessibilityHint = "Opens the GolfHelm login page"
         signInButton.configurationUpdateHandler = { button in
             var updatedConfig = button.configuration
             updatedConfig?.baseBackgroundColor = button.isHighlighted
@@ -442,7 +445,7 @@ class HomeViewController: UIViewController {
 
         let title = UILabel()
         title.text = "BaseballHelm"
-        title.font = .systemFont(ofSize: 24, weight: .bold)
+        title.font = .preferredFont(forTextStyle: .title2)
         title.textColor = Design.textPrimary
 
         let tagline = UILabel()
@@ -459,7 +462,7 @@ class HomeViewController: UIViewController {
         // Description
         let desc = UILabel()
         desc.text = "Find talent. Build champions. The complete college baseball recruiting platform."
-        desc.font = .systemFont(ofSize: 15, weight: .regular)
+        desc.font = .preferredFont(forTextStyle: .subheadline)
         desc.textColor = Design.textSecondary
         desc.numberOfLines = 0
 
@@ -473,7 +476,7 @@ class HomeViewController: UIViewController {
 
         let pillLabel = UILabel()
         pillLabel.text = "Launching Summer 2026"
-        pillLabel.font = .systemFont(ofSize: 14, weight: .medium)
+        pillLabel.font = .preferredFont(forTextStyle: .subheadline)
         pillLabel.textColor = Design.textSecondary
         pillLabel.translatesAutoresizingMaskIntoConstraints = false
         pill.addSubview(pillLabel)

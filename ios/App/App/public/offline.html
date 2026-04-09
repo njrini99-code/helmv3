@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Helm Sports Labs - Offline</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            background: #FFFEFA;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: env(safe-area-inset-top, 20px) 24px env(safe-area-inset-bottom, 20px);
+            -webkit-text-size-adjust: 100%;
+        }
+        .container { text-align: center; max-width: 320px; }
+        .icon {
+            width: 80px; height: 80px; border-radius: 20px;
+            background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .icon svg { width: 40px; height: 40px; stroke: #16A34A; fill: none; }
+        h1 { font-size: 24px; font-weight: 600; color: #1c1917; margin-bottom: 8px; }
+        p { font-size: 16px; color: #78716c; line-height: 1.5; margin-bottom: 32px; }
+        button {
+            background: #16A34A; color: white; border: none; border-radius: 12px;
+            padding: 14px 32px; font-size: 16px; font-weight: 600;
+            cursor: pointer; -webkit-tap-highlight-color: transparent;
+            min-height: 48px; width: 100%; transition: background 0.15s;
+        }
+        button:active { background: #15803d; transform: scale(0.98); }
+        .sub { font-size: 13px; color: #a8a29e; margin-top: 16px; }
+        .sub a { color: #16A34A; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="container" role="main">
+        <div class="icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 1l22 22"/>
+                <path d="M16.72 11.06A10.94 10.94 0 0119 12.55"/>
+                <path d="M5 12.55a10.94 10.94 0 015.17-2.39"/>
+                <path d="M10.71 5.05A16 16 0 0122.56 9"/>
+                <path d="M1.42 9a15.91 15.91 0 014.7-2.88"/>
+                <path d="M8.53 16.11a6 6 0 016.95 0"/>
+                <line x1="12" y1="20" x2="12.01" y2="20"/>
+            </svg>
+        </div>
+        <h1>No Connection</h1>
+        <p>Helm Sports Labs needs an internet connection. Please check your connection and try again.</p>
+        <button onclick="window.location.reload()" aria-label="Retry connection">Try Again</button>
+        <p class="sub"><a href="mailto:support@helmsportslabs.com">support@helmsportslabs.com</a></p>
+    </div>
+</body>
+</html>
