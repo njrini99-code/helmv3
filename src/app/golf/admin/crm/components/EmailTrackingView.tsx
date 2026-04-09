@@ -174,6 +174,7 @@ const FILTER_TABS: { id: FilterTab; label: string }[] = [
 export function EmailTrackingView() {
   const [stats, setStats] = useState<EmailStats>(EMPTY_STATS);
   const [emails, setEmails] = useState<EmailRecord[]>([]);
+  const [allOutreach, setAllOutreach] = useState<EmailRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterTab, setFilterTab] = useState<FilterTab>('all');
   const [sortField, setSortField] = useState<SortField>('date');
@@ -196,6 +197,17 @@ export function EmailTrackingView() {
 
       if (emailsRes.data) {
         setEmails(emailsRes.data as unknown as EmailRecord[]);
+      }
+
+      // Also fetch ALL email contacts (including Gmail BCC)
+      const allEmailsRes = await supabase
+        .from('crm_contact_log')
+        .select('*, crm_coaches!coach_id(id, name, school, email, email_status)')
+        .eq('contact_type', 'email')
+        .order('contact_date', { ascending: false });
+
+      if (allEmailsRes.data) {
+        setAllOutreach(allEmailsRes.data as unknown as EmailRecord[]);
       }
 
       // Fetch stats via RPC — may not exist, so handle gracefully
@@ -361,7 +373,7 @@ export function EmailTrackingView() {
   }
 
   // ── Empty State ──
-  if (stats.total_sent === 0 && emails.length === 0) {
+  if (stats.total_sent === 0 && emails.length === 0 && allOutreach.length === 0) {
     return (
       <div className="max-w-[1400px] mx-auto">
         <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-16 text-center">
@@ -385,6 +397,32 @@ export function EmailTrackingView() {
   const openRate = stats.total_sent > 0 ? Math.round((stats.opened / stats.total_sent) * 100) : 0;
   const clickRate = stats.total_sent > 0 ? Math.round((stats.clicked / stats.total_sent) * 100) : 0;
 
+  // Compute outreach summary from ALL contacts (Gmail + Helm)
+  const totalOutreach = allOutreach.length;
+  const gmailOutreach = allOutreach.filter(e => !e.resend_message_id).length;
+  const helmOutreach = allOutreach.filter(e => e.resend_message_id).length;
+
+  // Unique coaches contacted
+  const contactedCoachMap = new Map<string, { name: string; school: string; email: string | null; lastDate: string; method: string; subject: string | null }>();
+  for (const entry of allOutreach) {
+    const coach = entry.crm_coaches;
+    if (!coach) continue;
+    const existing = contactedCoachMap.get(coach.id);
+    if (!existing || new Date(entry.contact_date) > new Date(existing.lastDate)) {
+      contactedCoachMap.set(coach.id, {
+        name: coach.name,
+        school: coach.school,
+        email: coach.email,
+        lastDate: entry.contact_date,
+        method: entry.resend_message_id ? 'Helm' : 'Gmail',
+        subject: entry.subject,
+      });
+    }
+  }
+  const contactedCoaches = Array.from(contactedCoachMap.values()).sort(
+    (a, b) => new Date(b.lastDate).getTime() - new Date(a.lastDate).getTime()
+  );
+
   return (
     <div className="space-y-6 max-w-[1400px] mx-auto">
       {/* ══════════════ Stats Header Cards ══════════════ */}
@@ -393,31 +431,77 @@ export function EmailTrackingView() {
           icon={<IconMail size={20} />}
           iconBg="bg-blue-100"
           iconColor="text-blue-600"
-          label="Total Sent"
-          value={stats.total_sent.toLocaleString()}
+          label="Total Outreach"
+          value={totalOutreach.toLocaleString()}
+          subtitle={`${helmOutreach} via Helm · ${gmailOutreach} via Gmail`}
         />
         <StatCard
-          icon={<IconCheckCircle2 size={20} />}
-          iconBg="bg-emerald-100"
-          iconColor="text-emerald-600"
-          label="Delivery Rate"
-          value={`${deliveryRate}%`}
+          icon={<IconUsers size={20} />}
+          iconBg="bg-indigo-100"
+          iconColor="text-indigo-600"
+          label="Coaches Contacted"
+          value={contactedCoaches.length.toLocaleString()}
         />
         <StatCard
           icon={<IconEye size={20} />}
           iconBg="bg-violet-100"
           iconColor="text-violet-600"
           label="Open Rate"
-          value={`${openRate}%`}
+          value={helmOutreach > 0 ? `${openRate}%` : '—'}
+          subtitle={helmOutreach > 0 ? `${stats.opened} of ${helmOutreach} Helm emails` : 'Helm emails only'}
         />
         <StatCard
-          icon={<MousePointerClick size={20} />}
-          iconBg="bg-amber-100"
-          iconColor="text-amber-600"
-          label="Click Rate"
-          value={`${clickRate}%`}
+          icon={<IconCheckCircle2 size={20} />}
+          iconBg="bg-emerald-100"
+          iconColor="text-emerald-600"
+          label="Delivery Rate"
+          value={helmOutreach > 0 ? `${deliveryRate}%` : '—'}
+          subtitle={helmOutreach > 0 ? `${stats.delivered} of ${helmOutreach} Helm emails` : 'Helm emails only'}
         />
       </div>
+
+      {/* ══════════════ Coaches Contacted ══════════════ */}
+      {contactedCoaches.length > 0 && (
+        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass">
+          <div className="px-5 pt-5 pb-3">
+            <div className="flex items-center gap-2.5 mb-1">
+              <div className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center">
+                <IconUsers size={16} className="text-indigo-600" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-warm-900">Coaches Contacted</h3>
+                <p className="text-xs text-warm-500">
+                  {contactedCoaches.length} unique coach{contactedCoaches.length !== 1 ? 'es' : ''} emailed
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="px-5 pb-4">
+            <div className="space-y-1 max-h-[320px] overflow-y-auto">
+              {contactedCoaches.map((coach, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-warm-50/50 transition-colors"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-warm-800 truncate">{coach.name}</p>
+                    <p className="text-xs text-warm-400 truncate">{coach.school}{coach.email ? ` · ${coach.email}` : ''}</p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className={cn(
+                      'px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider',
+                      coach.method === 'Helm' ? 'bg-primary-50 text-primary-700' : 'bg-blue-50 text-blue-700'
+                    )}>
+                      {coach.method}
+                    </span>
+                    <span className="text-xs text-warm-400 tabular-nums whitespace-nowrap">{formatRelative(coach.lastDate)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ══════════════ Bounced Coaches Alert ══════════════ */}
       {bouncedCoaches.length > 0 && (
@@ -588,7 +672,7 @@ export function EmailTrackingView() {
                       <div className="border-t border-warm-100/60 px-4 py-2 space-y-1 bg-warm-50/30">
                         {campaign.emails.map(email => {
                           const status = getEmailStatus(email.crm_email_events || []);
-                          const statusConfig = STATUS_ICON_CONFIG[status] ?? STATUS_ICON_CONFIG.sent;
+                          const statusConfig = STATUS_ICON_CONFIG[status] ?? STATUS_ICON_CONFIG.sent!;
                           const isEmailExpanded = expandedIds.has(email.id);
                           const sortedEvents = [...(email.crm_email_events || [])].sort(
                             (a, b) => new Date(a.occurred_at).getTime() - new Date(b.occurred_at).getTime()
@@ -681,13 +765,14 @@ export function EmailTrackingView() {
 // SUB-COMPONENTS
 // ============================================================================
 function StatCard({
-  icon, iconBg, iconColor, label, value,
+  icon, iconBg, iconColor, label, value, subtitle,
 }: {
   icon: React.ReactNode;
   iconBg: string;
   iconColor: string;
   label: string;
   value: string;
+  subtitle?: string;
 }) {
   return (
     <div className={cn(
@@ -700,6 +785,7 @@ function StatCard({
         <div className="flex-1 min-w-0">
           <p className="text-xs text-warm-500 uppercase tracking-wider">{label}</p>
           <p className="text-2xl font-bold text-warm-900 tabular-nums tracking-tight mt-1">{value}</p>
+          {subtitle && <p className="text-[11px] text-warm-400 mt-0.5">{subtitle}</p>}
         </div>
         <div className={cn(
           'w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0',
