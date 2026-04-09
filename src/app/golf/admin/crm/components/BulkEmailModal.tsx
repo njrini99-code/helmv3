@@ -34,12 +34,16 @@ interface HelmSendResult {
 
 const MERGE_TAGS = [
   { label: '{name}', value: '{name}' },
+  { label: '{first_name}', value: '{first_name}' },
+  { label: '{last_name}', value: '{last_name}' },
   { label: '{school}', value: '{school}' },
   { label: '{conference}', value: '{conference}' },
+  { label: '{title}', value: '{title}' },
+  { label: '{division}', value: '{division}' },
 ] as const;
 
 export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalProps) {
-  const [mode, setMode] = useState<SendMode>('gmail');
+  const [mode, setMode] = useState<SendMode>('helm');
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
   const [sending, setSending] = useState(false);
@@ -49,6 +53,13 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
   const [copied, setCopied] = useState<'bcc' | 'body' | null>(null);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [showResultDetails, setShowResultDetails] = useState(false);
+
+  // AI Personalization state
+  const [personalizing, setPersonalizing] = useState(false);
+  const [personalizedDrafts, setPersonalizedDrafts] = useState<Map<string, { subject: string; body: string }>>(new Map());
+  const [showOriginal, setShowOriginal] = useState(false);
+  const [originalBody, setOriginalBody] = useState('');
+  const [originalSubject, setOriginalSubject] = useState('');
 
   const bodyRef = useRef<HTMLTextAreaElement>(null);
   const cursorPosRef = useRef<number>(0);
@@ -93,11 +104,94 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
   // Replace merge tags with actual data for preview
   const replaceMergeTags = useCallback((text: string): string => {
     if (!firstCoach) return text;
+    const nameParts = firstCoach.name.split(' ');
     return text
-      .replace(/\{name\}/g, firstCoach.name || 'Coach Name')
+      .replace(/\{name\}/g, firstCoach.name || 'Coach')
+      .replace(/\{first_name\}/g, nameParts[0] || '')
+      .replace(/\{last_name\}/g, nameParts.slice(1).join(' ') || '')
       .replace(/\{school\}/g, firstCoach.school || 'University')
-      .replace(/\{conference\}/g, firstCoach.conference || 'Conference');
+      .replace(/\{conference\}/g, firstCoach.conference || 'Conference')
+      .replace(/\{title\}/g, firstCoach.title || '')
+      .replace(/\{division\}/g, firstCoach.division || '')
+      .replace(/\{program\}/g, firstCoach.program || '')
+      .replace(/\{team_size\}/g, String(firstCoach.team_size || ''))
+      .replace(/\{current_software\}/g, firstCoach.current_software || '');
   }, [firstCoach]);
+
+  // ── AI Personalization ──
+  const handlePersonalize = async () => {
+    if (!body.trim() || !firstCoach) return;
+    setPersonalizing(true);
+    setOriginalBody(body);
+    setOriginalSubject(subject);
+    try {
+      const { personalizeEmail } = await import('@/lib/crm/personalize');
+      const result = await personalizeEmail(body, subject, {
+        name: firstCoach.name,
+        school: firstCoach.school,
+        conference: firstCoach.conference,
+        division: firstCoach.division || undefined,
+        program: firstCoach.program || undefined,
+        team_size: firstCoach.team_size || undefined,
+        current_software: firstCoach.current_software || undefined,
+        pain_points: firstCoach.pain_points || undefined,
+        notes: firstCoach.notes || undefined,
+        tags: firstCoach.tags || undefined,
+        decision_timeline: firstCoach.decision_timeline || undefined,
+      });
+      setSubject(result.subject);
+      setBody(result.body);
+    } catch (err) {
+      console.error('Personalization failed:', err);
+      setError('AI personalization failed. You can still edit and send manually.');
+    } finally {
+      setPersonalizing(false);
+    }
+  };
+
+  const handlePersonalizeBulk = async () => {
+    if (!body.trim() || coachesWithEmail.length === 0) return;
+    setPersonalizing(true);
+    setOriginalBody(body);
+    setOriginalSubject(subject);
+    const drafts = new Map<string, { subject: string; body: string }>();
+
+    try {
+      const { personalizeEmail } = await import('@/lib/crm/personalize');
+      for (let i = 0; i < coachesWithEmail.length; i++) {
+        const coach = coachesWithEmail[i]!;
+        try {
+          const result = await personalizeEmail(body, subject, {
+            name: coach.name,
+            school: coach.school,
+            conference: coach.conference,
+            division: coach.division || undefined,
+            program: coach.program || undefined,
+            team_size: coach.team_size || undefined,
+            current_software: coach.current_software || undefined,
+            pain_points: coach.pain_points || undefined,
+            notes: coach.notes || undefined,
+            tags: coach.tags || undefined,
+            decision_timeline: coach.decision_timeline || undefined,
+          });
+          drafts.set(coach.id, result);
+        } catch {
+          drafts.set(coach.id, { subject, body });
+        }
+        setSendProgress({ current: i + 1, total: coachesWithEmail.length });
+        if (i < coachesWithEmail.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+      }
+      setPersonalizedDrafts(drafts);
+    } catch (err) {
+      console.error('Bulk personalization failed:', err);
+      setError('AI personalization failed for some coaches. Standard merge tags will be used as fallback.');
+    } finally {
+      setPersonalizing(false);
+      setSendProgress(null);
+    }
+  };
 
   // ── Open in Gmail with BCC ──
   const openInGmail = () => {
@@ -174,17 +268,81 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
     setSendProgress({ current: 0, total: coachesWithEmail.length });
 
     try {
+      // If we have AI-personalized drafts, send individually
+      if (personalizedDrafts.size > 0) {
+        let sentCount = 0;
+        let failedCount = 0;
+
+        for (let i = 0; i < coachesWithEmail.length; i++) {
+          const coach = coachesWithEmail[i]!;
+          const draft = personalizedDrafts.get(coach.id);
+          const nameParts = coach.name.split(' ');
+
+          try {
+            const res = await fetch('/api/admin/crm/send-email', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                recipients: [{
+                  id: coach.id,
+                  email: coach.email!,
+                  name: coach.name,
+                  first_name: nameParts[0],
+                  last_name: nameParts.slice(1).join(' '),
+                  school: coach.school,
+                  conference: coach.conference,
+                }],
+                subject: draft?.subject || subject.trim(),
+                body: draft?.body || body.trim(),
+                templateId: selectedTemplateId,
+              }),
+            });
+
+            if (res.ok) {
+              sentCount++;
+            } else {
+              failedCount++;
+            }
+          } catch {
+            failedCount++;
+          }
+
+          setSendProgress({ current: i + 1, total: coachesWithEmail.length });
+          if (i < coachesWithEmail.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 200));
+          }
+        }
+
+        setHelmResult({ sent: sentCount, skipped: 0, failed: failedCount });
+        setSendProgress({ current: coachesWithEmail.length, total: coachesWithEmail.length });
+        if (sentCount > 0) {
+          setTimeout(() => { onSuccess(); onClose(); }, 3000);
+        }
+        setSending(false);
+        return; // Skip the normal send path
+      }
+
       const res = await fetch('/api/admin/crm/send-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          recipients: coachesWithEmail.map(c => ({
-            id: c.id,
-            email: c.email!,
-            name: c.name,
-            school: c.school,
-            conference: c.conference,
-          })),
+          recipients: coachesWithEmail.map(c => {
+            const nameParts = c.name.split(' ');
+            return {
+              id: c.id,
+              email: c.email!,
+              name: c.name,
+              first_name: nameParts[0],
+              last_name: nameParts.slice(1).join(' '),
+              title: c.title || undefined,
+              school: c.school,
+              conference: c.conference,
+              division: c.division || undefined,
+              program: c.program || undefined,
+              team_size: c.team_size || undefined,
+              current_software: c.current_software || undefined,
+            };
+          }),
           subject: subject.trim(),
           body: body.trim(),
           templateId: selectedTemplateId,
@@ -250,7 +408,18 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
   }, [onClose, sending]);
 
   const coachData = firstCoach
-    ? { name: firstCoach.name, school: firstCoach.school, conference: firstCoach.conference }
+    ? {
+        name: firstCoach.name,
+        first_name: firstCoach.name.split(' ')[0],
+        last_name: firstCoach.name.split(' ').slice(1).join(' '),
+        school: firstCoach.school,
+        conference: firstCoach.conference,
+        title: firstCoach.title || undefined,
+        division: firstCoach.division || undefined,
+        program: firstCoach.program || undefined,
+        team_size: String(firstCoach.team_size || ''),
+        current_software: firstCoach.current_software || undefined,
+      }
     : undefined;
 
   return (
@@ -282,49 +451,31 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
                 </p>
               </div>
             </div>
-            <button
-              onClick={onClose}
-              disabled={sending}
-              className="p-2 rounded-xl hover:bg-warm-50 text-warm-400 hover:text-warm-600 transition-colors disabled:opacity-50"
-            >
-              <IconX size={18} />
-            </button>
-          </div>
-
-          {/* Mode Tabs */}
-          <div className="px-6 pt-4 pb-3 shrink-0">
-            <div className="flex gap-2">
+            <div className="flex items-center gap-3">
+              {mode === 'helm' && (
+                <button
+                  type="button"
+                  onClick={() => { setMode('gmail'); setError(null); setHelmResult(null); }}
+                  className="text-xs text-warm-400 hover:text-warm-600 font-medium transition-colors underline"
+                >
+                  Use Gmail BCC instead
+                </button>
+              )}
+              {mode === 'gmail' && (
+                <button
+                  type="button"
+                  onClick={() => { setMode('helm'); setError(null); setHelmResult(null); }}
+                  className="text-xs text-primary-500 hover:text-primary-700 font-medium transition-colors underline"
+                >
+                  Back to Send from Helm
+                </button>
+              )}
               <button
-                onClick={() => { setMode('gmail'); setError(null); setHelmResult(null); }}
-                className={cn(
-                  'rounded-lg px-4 py-2 text-sm font-medium transition-colors flex items-center gap-2',
-                  mode === 'gmail'
-                    ? 'bg-primary-500 text-white'
-                    : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
-                )}
+                onClick={onClose}
+                disabled={sending}
+                className="p-2 rounded-xl hover:bg-warm-50 text-warm-400 hover:text-warm-600 transition-colors disabled:opacity-50"
               >
-                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none">
-                  <path d="M22 6L12 13L2 6V4L12 11L22 4V6Z" fill={mode === 'gmail' ? '#fff' : '#EA4335'} />
-                  <path d="M2 6L2 18H6V10L12 14L18 10V18H22V6L12 13L2 6Z" fill={mode === 'gmail' ? '#fff' : '#4285F4'} />
-                </svg>
-                Gmail (BCC)
-              </button>
-              <button
-                onClick={() => { setMode('helm'); setError(null); setHelmResult(null); }}
-                className={cn(
-                  'rounded-lg px-4 py-2 text-sm font-medium transition-colors flex items-center gap-2',
-                  mode === 'helm'
-                    ? 'bg-primary-500 text-white'
-                    : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
-                )}
-              >
-                <div className={cn(
-                  'w-4 h-4 rounded flex items-center justify-center',
-                  mode === 'helm' ? 'bg-white/20' : 'bg-gradient-to-br from-primary-500 to-primary-600'
-                )}>
-                  <span className={cn('text-[8px] font-bold leading-none', mode === 'helm' ? 'text-white' : 'text-white')}>H</span>
-                </div>
-                Send from Helm
+                <IconX size={18} />
               </button>
             </div>
           </div>
@@ -394,6 +545,47 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
                         <IconX size={12} />
                       </button>
                     </span>
+                  )}
+                </div>
+              )}
+
+              {/* AI Personalize */}
+              {mode === 'helm' && body.trim() && (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={coachesWithEmail.length === 1 ? handlePersonalize : handlePersonalizeBulk}
+                    disabled={personalizing || !body.trim()}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-50 transition-all shadow-sm"
+                  >
+                    {personalizing ? (
+                      <>
+                        <IconLoader size={14} className="animate-spin" />
+                        Personalizing...
+                      </>
+                    ) : (
+                      <>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+                        </svg>
+                        {coachesWithEmail.length === 1 ? 'Personalize with AI' : `Personalize All (${coachesWithEmail.length})`}
+                      </>
+                    )}
+                  </button>
+                  {originalBody && !personalizing && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (showOriginal) {
+                          // Already showing original, do nothing special
+                        } else {
+                          setShowOriginal(!showOriginal);
+                        }
+                      }}
+                      className="text-xs text-warm-500 hover:text-warm-700 font-medium underline"
+                    >
+                      {showOriginal ? 'Showing original' : 'View original'}
+                    </button>
                   )}
                 </div>
               )}
@@ -505,6 +697,26 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
                 </div>
               )}
 
+              {/* Personalizing Progress */}
+              {personalizing && sendProgress && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-violet-700 font-medium">
+                      Personalizing {sendProgress.current} of {sendProgress.total}...
+                    </span>
+                    <span className="text-warm-500 text-xs">
+                      {Math.round((sendProgress.current / sendProgress.total) * 100)}%
+                    </span>
+                  </div>
+                  <div className="w-full bg-violet-100 rounded-full h-2 overflow-hidden">
+                    <div
+                      className="h-full bg-violet-500 rounded-full transition-all duration-500"
+                      style={{ width: `${(sendProgress.current / sendProgress.total) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
               {/* Helm Result Card */}
               {mode === 'helm' && helmResult && (
                 <div className="rounded-xl border border-warm-200/50 overflow-hidden">
@@ -584,30 +796,18 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
                   )}
                 </div>
 
-                {/* Email Preview Card — matches buildEmailHtml in send-email route */}
+                {/* Email Preview Card — clean style */}
                 <div className="bg-[#f5f5f4] rounded-xl border border-warm-200/60 shadow-sm overflow-hidden p-3">
                   <div className="bg-white rounded-lg overflow-hidden shadow-sm" style={{ maxWidth: 600 }}>
-                    {/* Green Header Bar with Helm Logo */}
-                    <div className="bg-[#16A34A] px-5 py-3.5 flex items-center gap-3">
-                      <img src="/Helm-Logo-New-Main.png" alt="Helm" className="w-9 h-9 rounded-lg" />
-                      <span className="text-white text-[16px] font-bold tracking-tight">Helm Sports Labs</span>
-                    </div>
-
-                    {/* GolfHelm Logo + Wordmark */}
-                    <div className="px-5 pt-4 flex items-center gap-2.5">
-                      <img src="/helm-golf-logo-transparent.png" alt="GolfHelm" className="w-8 h-8" />
-                      <p className="text-[20px] font-extrabold text-warm-900 tracking-tight">GolfHelm</p>
-                    </div>
-
                     {/* Greeting */}
-                    <div className="px-5 pt-3">
+                    <div className="px-5 pt-5">
                       {firstCoach ? (
                         <p className="text-sm font-semibold text-warm-900">
-                          Hi {firstCoach.name.split(' ')[0]},
+                          Coach {firstCoach.name.split(' ').length > 1 ? firstCoach.name.split(' ').slice(-1)[0] : firstCoach.name},
                         </p>
                       ) : (
                         <p className="text-sm text-warm-300 italic">
-                          Hi &#123;name&#125;,
+                          Coach &#123;last_name&#125;,
                         </p>
                       )}
                     </div>
@@ -627,18 +827,15 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
                       )}
                     </div>
 
-                    {/* Footer */}
+                    {/* Signature */}
                     <div className="px-5 pb-5">
-                      <div className="border-t border-warm-200 pt-4 flex flex-col items-center gap-1">
-                        <img src="/Helm-Logo-New-Main.png" alt="Helm" className="w-6 h-6 mb-1 opacity-40" />
-                        <p className="text-xs font-semibold text-warm-400">Helm Sports Labs</p>
-                        <a href="https://helmsportslabs.com" className="text-xs text-[#16A34A] font-medium no-underline hover:underline">
+                      <div className="border-t border-warm-200 pt-4">
+                        <p className="text-sm text-warm-600">Best,</p>
+                        <p className="text-sm font-semibold text-warm-800 mt-1">Rick Nini</p>
+                        <p className="text-xs text-warm-500">Founder, Helm Sports Labs</p>
+                        <a href="https://helmsportslabs.com" className="text-xs text-primary-600 no-underline hover:underline">
                           helmsportslabs.com
                         </a>
-                        <p className="text-[11px] text-warm-400 italic">Built for College Golf</p>
-                        <p className="text-[10px] text-warm-300 text-center leading-relaxed mt-2">
-                          You&apos;re receiving this because you&apos;re a college golf coach. If this isn&apos;t relevant, just ignore this email.
-                        </p>
                       </div>
                     </div>
                   </div>

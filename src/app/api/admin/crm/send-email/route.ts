@@ -6,8 +6,15 @@ interface Recipient {
   id: string;
   email: string;
   name: string;
+  first_name?: string;
+  last_name?: string;
+  title?: string;
   school?: string;
   conference?: string;
+  division?: string;
+  program?: string;
+  team_size?: number;
+  current_software?: string;
 }
 
 interface SendEmailRequest {
@@ -176,13 +183,27 @@ export async function POST(request: Request) {
         // Replace merge tags with recipient-specific data
         const personalizedSubject = subject
           .replace(/\{name\}/g, recipient.name)
+          .replace(/\{first_name\}/g, recipient.first_name ?? recipient.name.split(' ')[0] ?? '')
+          .replace(/\{last_name\}/g, recipient.last_name ?? recipient.name.split(' ').slice(1).join(' ') ?? '')
+          .replace(/\{title\}/g, recipient.title ?? '')
           .replace(/\{school\}/g, recipient.school ?? '')
-          .replace(/\{conference\}/g, recipient.conference ?? '');
+          .replace(/\{conference\}/g, recipient.conference ?? '')
+          .replace(/\{division\}/g, recipient.division ?? '')
+          .replace(/\{program\}/g, recipient.program ?? '')
+          .replace(/\{team_size\}/g, String(recipient.team_size ?? ''))
+          .replace(/\{current_software\}/g, recipient.current_software ?? '');
 
         const personalizedBody = body
           .replace(/\{name\}/g, recipient.name)
+          .replace(/\{first_name\}/g, recipient.first_name ?? recipient.name.split(' ')[0] ?? '')
+          .replace(/\{last_name\}/g, recipient.last_name ?? recipient.name.split(' ').slice(1).join(' ') ?? '')
+          .replace(/\{title\}/g, recipient.title ?? '')
           .replace(/\{school\}/g, recipient.school ?? '')
-          .replace(/\{conference\}/g, recipient.conference ?? '');
+          .replace(/\{conference\}/g, recipient.conference ?? '')
+          .replace(/\{division\}/g, recipient.division ?? '')
+          .replace(/\{program\}/g, recipient.program ?? '')
+          .replace(/\{team_size\}/g, String(recipient.team_size ?? ''))
+          .replace(/\{current_software\}/g, recipient.current_software ?? '');
 
         const res = await fetch('https://api.resend.com/emails', {
           method: 'POST',
@@ -191,7 +212,7 @@ export async function POST(request: Request) {
             Authorization: `Bearer ${apiKey}`,
           },
           body: JSON.stringify({
-            from: 'Helm Sports Labs <admin@helmsportslabs.com>',
+            from: 'Rick Nini <rick@helmsportslabs.com>',
             to: [recipient.email],
             subject: personalizedSubject,
             html: buildEmailHtml(recipient.name, personalizedSubject, personalizedBody),
@@ -300,8 +321,20 @@ export async function POST(request: Request) {
 }
 
 function buildEmailHtml(recipientName: string, _subject: string, body: string): string {
-  // Use first name for greeting
-  const firstName = recipientName.split(' ')[0] || recipientName;
+  // Extract last name for greeting, handling suffixes like Jr., Sr., III, IV, II
+  const knownSuffixes = ['jr.', 'sr.', 'iii', 'iv', 'ii'];
+  const nameParts = recipientName.split(' ');
+  let lastName: string;
+  if (nameParts.length > 1) {
+    const lastWord = nameParts[nameParts.length - 1]!.toLowerCase();
+    if (knownSuffixes.includes(lastWord) && nameParts.length > 2) {
+      lastName = nameParts[nameParts.length - 2]!;
+    } else {
+      lastName = nameParts[nameParts.length - 1]!;
+    }
+  } else {
+    lastName = nameParts[0]!;
+  }
 
   const bodyHtml = body
     .split('\n')
@@ -315,50 +348,23 @@ function buildEmailHtml(recipientName: string, _subject: string, body: string): 
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f5f4;padding:32px 16px;">
     <tr><td align="center">
       <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
-        <!-- Green Header Bar with Helm Logo -->
-        <tr><td style="background-color:#16A34A;padding:20px 32px;">
-          <table width="100%" cellpadding="0" cellspacing="0">
-            <tr>
-              <td style="vertical-align:middle;width:36px;">
-                <img src="https://helmsportslabs.com/Helm-Logo-New-Main.png" alt="Helm" width="36" height="36" style="display:block;border-radius:8px;" />
-              </td>
-              <td style="padding-left:12px;vertical-align:middle;">
-                <span style="color:#ffffff;font-size:18px;font-weight:700;letter-spacing:-0.01em;">Helm Sports Labs</span>
-              </td>
-            </tr>
-          </table>
-        </td></tr>
-        <!-- GolfHelm Logo + Wordmark -->
-        <tr><td style="padding:24px 32px 0 32px;">
-          <table cellpadding="0" cellspacing="0"><tr>
-            <td style="vertical-align:middle;width:32px;">
-              <img src="https://helmsportslabs.com/helm-golf-logo-transparent.png" alt="GolfHelm" width="32" height="32" style="display:block;" />
-            </td>
-            <td style="padding-left:10px;vertical-align:middle;">
-              <span style="font-size:22px;font-weight:800;color:#1c1917;letter-spacing:-0.02em;">GolfHelm</span>
-            </td>
-          </tr></table>
-        </td></tr>
         <!-- Greeting -->
-        <tr><td style="padding:16px 32px 0 32px;">
-          <p style="margin:0 0 16px 0;font-size:15px;color:#1c1917;font-weight:600;">Hi ${escapeHtml(firstName)},</p>
+        <tr><td style="padding:32px 32px 0 32px;">
+          <p style="margin:0 0 16px 0;font-size:15px;color:#1c1917;font-weight:600;">Coach ${escapeHtml(lastName)},</p>
         </td></tr>
         <!-- Body -->
         <tr><td style="padding:0 32px 32px 32px;">
           ${bodyHtml}
         </td></tr>
-        <!-- Footer -->
-        <tr><td style="padding:0 32px;">
+        <!-- Signature -->
+        <tr><td style="padding:0 32px 32px 32px;">
           <table width="100%" cellpadding="0" cellspacing="0">
-            <tr><td style="border-top:1px solid #e5e5e5;padding-top:24px;padding-bottom:24px;text-align:center;">
-              <img src="https://helmsportslabs.com/Helm-Logo-New-Main.png" alt="Helm" width="24" height="24" style="display:inline-block;opacity:0.4;margin-bottom:8px;" />
-              <p style="margin:0 0 4px 0;font-size:13px;font-weight:600;color:#78716c;">Helm Sports Labs</p>
-              <p style="margin:0 0 4px 0;font-size:13px;">
+            <tr><td style="border-top:1px solid #e7e5e4;padding-top:20px;">
+              <p style="margin:0 0 2px 0;font-size:15px;color:#44403c;line-height:1.6;">Best,</p>
+              <p style="margin:0 0 2px 0;font-size:15px;color:#1c1917;font-weight:600;line-height:1.6;">Rick Nini</p>
+              <p style="margin:0 0 2px 0;font-size:13px;color:#78716c;line-height:1.6;">Founder, Helm Sports Labs</p>
+              <p style="margin:0;font-size:13px;line-height:1.6;">
                 <a href="https://helmsportslabs.com" style="color:#16A34A;text-decoration:none;font-weight:500;">helmsportslabs.com</a>
-              </p>
-              <p style="margin:0 0 16px 0;font-size:12px;color:#a8a29e;font-style:italic;">Built for College Golf</p>
-              <p style="margin:0;font-size:11px;color:#d4d4d4;line-height:1.5;">
-                You&rsquo;re receiving this because you&rsquo;re a college golf coach. If this isn&rsquo;t relevant, just ignore this email.
               </p>
             </td></tr>
           </table>

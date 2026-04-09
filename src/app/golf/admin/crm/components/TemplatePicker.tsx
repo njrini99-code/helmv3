@@ -23,11 +23,11 @@ interface EmailTemplate {
   usage_count: number;
 }
 
-type TemplateCategory = 'intro' | 'follow_up' | 'demo_invite' | 'proposal' | 'check_in' | 'general';
+type TemplateCategory = 'intro' | 'follow_up' | 'demo_invite' | 'proposal' | 'check_in' | 'general' | 'cold_outreach' | 'active_conversation' | 're_engage' | 'close' | 'post_close';
 
 interface TemplatePickerProps {
   onSelect: (template: { subject: string; body: string; id: string }) => void;
-  coachData?: { name: string; school: string; conference: string };
+  coachData?: Record<string, string | undefined>;
 }
 
 // ── Category colors ──
@@ -38,6 +38,11 @@ const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
   proposal: { bg: 'bg-violet-50', text: 'text-violet-700' },
   check_in: { bg: 'bg-teal-50', text: 'text-teal-700' },
   general: { bg: 'bg-warm-50', text: 'text-warm-700' },
+  cold_outreach: { bg: 'bg-sky-50', text: 'text-sky-700' },
+  active_conversation: { bg: 'bg-indigo-50', text: 'text-indigo-700' },
+  re_engage: { bg: 'bg-orange-50', text: 'text-orange-700' },
+  close: { bg: 'bg-rose-50', text: 'text-rose-700' },
+  post_close: { bg: 'bg-lime-50', text: 'text-lime-700' },
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -47,6 +52,11 @@ const CATEGORY_LABELS: Record<string, string> = {
   proposal: 'Proposal',
   check_in: 'Check In',
   general: 'General',
+  cold_outreach: 'Cold Outreach',
+  active_conversation: 'Active',
+  re_engage: 'Re-Engage',
+  close: 'Close',
+  post_close: 'Post-Close',
 };
 
 const CATEGORY_OPTIONS: { key: TemplateCategory | 'all'; label: string }[] = [
@@ -57,18 +67,30 @@ const CATEGORY_OPTIONS: { key: TemplateCategory | 'all'; label: string }[] = [
   { key: 'proposal', label: 'Proposal' },
   { key: 'check_in', label: 'Check In' },
   { key: 'general', label: 'General' },
+  { key: 'cold_outreach', label: 'Cold Outreach' },
+  { key: 'active_conversation', label: 'Active' },
+  { key: 're_engage', label: 'Re-Engage' },
+  { key: 'close', label: 'Close' },
+  { key: 'post_close', label: 'Post-Close' },
 ];
 
 function getCategoryColor(cat: string) {
   return CATEGORY_COLORS[cat] ?? CATEGORY_COLORS.general;
 }
 
-function replaceMergeTags(text: string, data?: { name: string; school: string; conference: string }): string {
+function replaceMergeTags(text: string, data?: Record<string, string | undefined>): string {
   if (!data) return text;
   return text
-    .replace(/\{name\}/g, data.name)
-    .replace(/\{school\}/g, data.school)
-    .replace(/\{conference\}/g, data.conference);
+    .replace(/\{name\}/g, data.name ?? '')
+    .replace(/\{first_name\}/g, data.first_name ?? data.name?.split(' ')[0] ?? '')
+    .replace(/\{last_name\}/g, data.last_name ?? data.name?.split(' ').slice(1).join(' ') ?? '')
+    .replace(/\{school\}/g, data.school ?? '')
+    .replace(/\{conference\}/g, data.conference ?? '')
+    .replace(/\{title\}/g, data.title ?? '')
+    .replace(/\{division\}/g, data.division ?? '')
+    .replace(/\{program\}/g, data.program ?? '')
+    .replace(/\{team_size\}/g, data.team_size ?? '')
+    .replace(/\{current_software\}/g, data.current_software ?? '');
 }
 
 // ── Skeleton ──
@@ -317,7 +339,7 @@ export function TemplatePicker({ onSelect, coachData }: TemplatePickerProps) {
                     <span className="font-semibold text-sm text-warm-800 truncate">
                       {template.name}
                     </span>
-                    <span className={cn('shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider', colors.bg, colors.text)}>
+                    <span className={cn('shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider', colors?.bg, colors?.text)}>
                       {CATEGORY_LABELS[template.category] ?? template.category}
                     </span>
                   </div>
