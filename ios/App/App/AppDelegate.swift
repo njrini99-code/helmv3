@@ -11,8 +11,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Set notification delegate so foreground notifications display properly
         UNUserNotificationCenter.current().delegate = self
 
-        // Register for remote notifications
-        application.registerForRemoteNotifications()
+        // Push notification registration deferred to after login
+        // (handled by Capacitor PushNotifications plugin when user grants permission)
         return true
     }
 

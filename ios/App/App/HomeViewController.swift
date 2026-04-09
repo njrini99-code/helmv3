@@ -472,7 +472,7 @@ class HomeViewController: UIViewController {
         pill.layer.borderColor = UIColor.black.withAlphaComponent(0.04).cgColor
 
         let pillLabel = UILabel()
-        pillLabel.text = "Coming Soon"
+        pillLabel.text = "Launching Summer 2026"
         pillLabel.font = .systemFont(ofSize: 14, weight: .medium)
         pillLabel.textColor = Design.textSecondary
         pillLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -502,7 +502,7 @@ class HomeViewController: UIViewController {
             innerStack.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -24)
         ])
 
-        card.accessibilityLabel = "BaseballHelm. College baseball recruiting platform. Coming soon."
+        card.accessibilityLabel = "BaseballHelm. College baseball recruiting platform. Launching Summer 2026."
         card.accessibilityTraits = .notEnabled
 
         return card
