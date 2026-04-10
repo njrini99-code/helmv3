@@ -144,7 +144,8 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
         aria-hidden="true"
       />
 
-      {/* Mobile Sidebar */}
+      {/* Mobile Sidebar — explicit width + h-dvh on wrapper so child fills 100% cleanly.
+          max-w prevents overflow on tiny iPhones (SE). Safe-area-left handles landscape notches. */}
       <div
         id="mobile-sidebar"
         ref={mobileSidebarRef}
@@ -152,7 +153,9 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
         aria-label="Navigation menu"
         aria-modal="true"
         className={cn(
-          'fixed inset-y-0 left-0 z-50 lg:hidden',
+          'fixed top-0 bottom-0 left-0 z-50 lg:hidden',
+          'h-dvh w-72 max-w-[85vw]',
+          'pl-[env(safe-area-inset-left)]',
           'transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         )}

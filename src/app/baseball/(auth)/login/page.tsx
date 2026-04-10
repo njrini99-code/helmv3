@@ -7,6 +7,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { BaseballSignInForm } from '@/components/auth/baseball-sign-in-form';
 import { createClient } from '@/lib/supabase/client';
+import { isNativeApp } from '@/lib/utils/capacitor';
 
 function LoginContent() {
   const searchParams = useSearchParams();
@@ -26,7 +27,14 @@ function LoginContent() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  // Defer native detection to useEffect to avoid hydration mismatch:
+  // isNativeApp() returns false on server (no window) but may return true on client.
+  const [isNative, setIsNative] = useState(false);
   const supabase = createClient();
+
+  useEffect(() => {
+    setIsNative(isNativeApp());
+  }, []);
 
   useEffect(() => {
     async function checkAuth() {
@@ -228,7 +236,7 @@ function LoginContent() {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6, duration: 0.5 }}
         >
-          {!isLoggedIn && !checkingAuth && (
+          {!isLoggedIn && !checkingAuth && !isNative && (
             <p className="text-center mt-6 text-warm-600 text-sm">
               Don&apos;t have an account?{' '}
               <Link
@@ -240,14 +248,16 @@ function LoginContent() {
             </p>
           )}
 
-          <p className="text-center mt-4 text-warm-500 text-sm">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1 hover:text-warm-700 transition-colors px-3 py-3 -my-3 min-h-[44px] rounded-lg active:bg-warm-100/50"
-            >
-              ← Back to HelmLabs
-            </Link>
-          </p>
+          {!isNative && (
+            <p className="text-center mt-4 text-warm-500 text-sm">
+              <Link
+                href="/"
+                className="inline-flex items-center gap-1 hover:text-warm-700 transition-colors px-3 py-3 -my-3 min-h-[44px] rounded-lg active:bg-warm-100/50"
+              >
+                ← Back to HelmLabs
+              </Link>
+            </p>
+          )}
 
           <div className="flex items-center justify-center gap-2 mt-3">
             <Link

@@ -152,21 +152,23 @@ function LoginContent() {
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="auth-glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8"
         >
-          {/* Back to landing */}
-          <m.div
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.15, duration: 0.4 }}
-            className="mb-4"
-          >
-            <Link
-              href="/"
-              className="inline-flex items-center gap-1.5 text-sm text-warm-500 hover:text-warm-700 transition-colors px-2 py-1.5 -ml-2 rounded-lg hover:bg-warm-100/50" aria-label="Back to home page"
+          {/* Back to landing — hidden in native app (members-only experience) */}
+          {!isNative && (
+            <m.div
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.15, duration: 0.4 }}
+              className="mb-4"
             >
-              <IconChevronLeft size={16} />
-              Back
-            </Link>
-          </m.div>
+              <Link
+                href="/"
+                className="inline-flex items-center gap-1.5 text-sm text-warm-500 hover:text-warm-700 transition-colors px-2 py-1.5 -ml-2 rounded-lg hover:bg-warm-100/50" aria-label="Back to home page"
+              >
+                <IconChevronLeft size={16} />
+                Back
+              </Link>
+            </m.div>
+          )}
 
           {/* Logo with glow effect */}
           <m.div
@@ -263,7 +265,7 @@ function LoginContent() {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6, duration: 0.5 }}
         >
-          {!isLoggedIn && !checkingAuth && (
+          {!isLoggedIn && !checkingAuth && !isNative && (
             <p className="text-center mt-5 sm:mt-6 text-warm-600 text-sm">
               Don&apos;t have an account?{' '}
               <Link

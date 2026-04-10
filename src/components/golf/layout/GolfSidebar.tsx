@@ -146,12 +146,17 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
       className={cn(
         // Dark sidebar per Batch 3 spec
         'bg-[rgba(28,25,23,0.97)] backdrop-blur-xl',
-        'h-dvh flex flex-col relative',
+        'flex flex-col relative',
         'transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
         'will-change-[width]',
-        isCollapsed ? 'w-[72px]' : 'w-64',
-        !isMobile && 'fixed left-0 top-0 z-40',
-        isMobile && 'pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]'
+        // Mobile: fill the parent drawer wrapper (which is already sized + safe-area aware).
+        // Desktop: fixed sidebar with its own width + h-dvh.
+        isMobile
+          ? 'w-full h-full pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]'
+          : cn(
+              'h-dvh fixed left-0 top-0 z-40',
+              isCollapsed ? 'w-[72px]' : 'w-64'
+            )
       )}
     >
       {/* Collapse Toggle Button (desktop only) */}

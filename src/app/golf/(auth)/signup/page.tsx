@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Suspense, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { GolfSignUpForm } from '@/components/auth/golf-sign-up-form';
 import { isNativeApp } from '@/lib/utils/capacitor';
@@ -26,10 +26,21 @@ function SignInLink() {
 }
 
 export default function SignupPage() {
-  const isNative = isNativeApp();
+  const router = useRouter();
+  // Defer native detection to useEffect to avoid hydration mismatch.
+  const [isNative, setIsNative] = useState(false);
   const [accessGranted, setAccessGranted] = useState(false);
   const [code, setCode] = useState('');
   const [codeError, setCodeError] = useState(false);
+
+  useEffect(() => {
+    if (isNativeApp()) {
+      // Helm Sports Labs memberships are purchased on the web.
+      // The iOS app is for existing members only — redirect to login.
+      setIsNative(true);
+      router.replace('/golf/login');
+    }
+  }, [router]);
 
   async function handleCodeSubmit(e: React.FormEvent) {
     e.preventDefault();
