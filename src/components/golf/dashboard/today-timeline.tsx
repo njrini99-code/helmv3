@@ -123,15 +123,15 @@ export function TodayTimeline({ events, role, timezone }: TodayTimelineProps) {
     if (events.length === 0) {
         return (
             <div className={cn(
-                'relative overflow-hidden rounded-2xl h-full min-h-[180px]',
+                'relative overflow-clip rounded-2xl h-full min-h-[200px]',
                 'glass-premium',
             )}>
-                <div className="relative z-10 flex flex-col items-center justify-center text-center p-6 md:p-10 h-full">
-                    <div className="w-11 h-11 rounded-xl bg-warm-50 border border-warm-100 flex items-center justify-center mb-4">
-                        <IconCalendar size={20} className="text-warm-300" />
+                <div className="relative z-10 flex flex-col items-center justify-center text-center p-8 md:p-10 h-full">
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary-50 to-emerald-50 flex items-center justify-center mb-5">
+                        <IconCalendar size={26} className="text-primary-600/70" />
                     </div>
-                    <p className="text-warm-600 text-sm font-medium mb-1">Clear schedule today</p>
-                    <p className="text-warm-400 text-xs mb-5 max-w-[220px]">No events scheduled. Use this time for practice or recovery.</p>
+                    <p className="text-[15px] font-semibold text-warm-900 tracking-tight mb-1.5">Clear schedule today</p>
+                    <p className="text-xs leading-relaxed text-warm-500 mb-6 max-w-[240px]">No events scheduled. Use this time for practice or recovery.</p>
                     <Link
                         href="/golf/dashboard/calendar"
                         className={cn(
@@ -157,14 +157,14 @@ export function TodayTimeline({ events, role, timezone }: TodayTimelineProps) {
             aria-label="Today's schedule"
             aria-roledescription="timeline"
             className={cn(
-                'relative overflow-hidden rounded-2xl',
+                'relative overflow-clip rounded-2xl',
                 'glass-premium',
             )}
         >
             {/* Header */}
             <div className="flex items-center justify-between px-5 pt-4 pb-2">
                 <div className="flex items-center gap-2.5">
-                    <div className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary-500" />
                     <h3 className="text-[13px] font-semibold text-warm-600 tracking-wide">
                         Today&apos;s Schedule
                     </h3>

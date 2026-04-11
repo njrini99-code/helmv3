@@ -17,6 +17,7 @@ import { useRoundReviewV2 } from '@/hooks/coachhelm/useRoundReviewV2';
 import { useToast } from '@/components/ui/toast';
 import { RoundReviewDisplay } from '@/components/golf/coachhelm/RoundReviewDisplay';
 import { RoundStatsComparison } from '@/components/golf/coachhelm/RoundStatsComparison';
+import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
 import {
   getRoundReview,
   generateAndStoreRoundReview,
@@ -358,41 +359,32 @@ export default function RoundReviewPage() {
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className="max-w-2xl mx-auto px-4 py-6 pb-[calc(var(--golf-mobile-bottom-nav-offset)+1rem)] lg:pb-6"
+      className="pb-[calc(var(--golf-mobile-bottom-nav-offset)+1rem)] lg:pb-6"
     >
       {/* Header */}
-      <m.div variants={itemVariants} className="flex items-center justify-between mb-6">
-        <Link
-          href="/golf/dashboard/rounds"
-          className="flex items-center gap-2 text-sm text-warm-500 hover:text-warm-700 px-3 py-2.5 -mx-3 -my-2.5 min-h-[44px] rounded-lg active:bg-warm-100 transition-colors"
+      <MobileNavHeader
+        title="Round Review"
+        subtitle={round.course_name ?? undefined}
+        backHref="/golf/dashboard/rounds"
+        backLabel="Rounds"
+      >
+        {isV2Enabled && v2Review && (
+          <span className="hidden sm:flex items-center gap-1.5 text-xs px-2 py-1 bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 rounded-full font-medium">
+            <IconSparkles size={12} />
+            CoachHelm AI
+          </span>
+        )}
+        <button
+          onClick={() => generateReview()}
+          disabled={generatingReview}
+          className="flex items-center gap-1.5 px-3 py-2.5 min-h-[44px] text-xs font-medium text-warm-600 hover:text-warm-900 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
         >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          Back to Rounds
-        </Link>
+          <IconRefresh size={14} className={generatingReview ? 'animate-spin' : ''} />
+          Refresh
+        </button>
+      </MobileNavHeader>
 
-        <div className="flex items-center gap-3">
-          {/* V2 Badge */}
-          {isV2Enabled && v2Review && (
-            <span className="flex items-center gap-1.5 text-xs px-2 py-1 bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 rounded-full font-medium">
-              <IconSparkles size={12} />
-              CoachHelm AI
-            </span>
-          )}
-
-          {/* Regenerate button */}
-          <button
-            onClick={() => generateReview()}
-            disabled={generatingReview}
-            className="flex items-center gap-1.5 px-3 py-2.5 min-h-[44px] text-xs font-medium text-warm-600 hover:text-warm-900 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
-          >
-            <IconRefresh size={14} className={generatingReview ? 'animate-spin' : ''} />
-            Refresh
-          </button>
-        </div>
-      </m.div>
-
+      <div className="max-w-2xl mx-auto px-4 py-6">
       {/* Content */}
       <m.div variants={itemVariants} className="space-y-4">
         {/* Primary Review Display - New Component */}
@@ -457,6 +449,7 @@ export default function RoundReviewPage() {
           v1Review && !storedReview?.review_content && <ReviewSummary review={v1Review} />
         )}
       </m.div>
+      </div>
 
       {/* Bottom actions */}
       <m.div variants={itemVariants} className="fixed bottom-0 left-0 right-0 z-30 p-4 pb-[var(--golf-mobile-bottom-nav-offset)] bg-gradient-to-t from-white via-white to-transparent lg:relative lg:z-auto lg:bg-none lg:p-0 lg:pb-0 lg:mt-6">

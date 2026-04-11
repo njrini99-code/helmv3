@@ -57,7 +57,7 @@ export default function Error({
 
         <p className="text-sm text-slate-400 mt-8">
           If this problem persists,{' '}
-          <Link href="mailto:support@helmsportslabs.com" className="text-primary-600 hover:underline">
+          <Link href="mailto:admin@helmsportslabs.com" className="text-primary-600 hover:underline">
             contact support
           </Link>
         </p>

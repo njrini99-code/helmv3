@@ -5,7 +5,7 @@ import { m, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { GolfTabBar } from '@/components/golf/GolfTabBar';
-import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
+import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import {
   IconBell,
   IconCheck,
@@ -25,6 +25,7 @@ import {
   generateAlerts,
 } from '@/app/golf/actions/alerts';
 import { containerVariants, itemVariants } from '@/components/golf/dashboard/premium-components';
+import { PullToRefresh } from '@/components/golf/PullToRefresh';
 
 type FilterLevel = AlertLevel | 'all';
 
@@ -180,6 +181,24 @@ export default function AlertsPage() {
     });
   };
 
+  const handlePullToRefresh = async () => {
+    if (!coachId) return;
+    try {
+      const result = await getCoachAlerts(coachId, teamId || '', {
+        includeAcknowledged: showAcknowledged,
+        limit: 100,
+      });
+      if (result.success && result.alerts) {
+        setAlerts(result.alerts);
+        setError(null);
+      } else {
+        setError(result.error || 'Failed to refresh alerts.');
+      }
+    } catch {
+      setError('Something went wrong refreshing alerts.');
+    }
+  };
+
   // Filter alerts
   const filteredAlerts = alerts.filter(alert => {
     if (filterLevel !== 'all' && alert.level !== filterLevel) return false;
@@ -250,53 +269,42 @@ export default function AlertsPage() {
       animate="visible"
     >
       {/* Header */}
-      <m.div variants={itemVariants} className="golf-mobile-page-header">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <MobileMenuButton />
-              <div>
-                <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">
-                  Player Alerts
-                </h1>
-                <p className="text-sm text-warm-500 mt-0.5">
-                  AI-generated insights about players who need attention
-                </p>
-              </div>
-            </div>
-
-            <button
-              onClick={handleRefresh}
-              disabled={isPending}
-              className={cn(
-                'flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-xl font-medium transition-all active:scale-95',
-                isPending
-                  ? 'bg-warm-100 text-warm-400 cursor-not-allowed'
-                  : 'bg-primary-600 text-white hover:bg-primary-700 shadow-md'
-              )}
-            >
-              {isPending ? (
-                <>
-                  <m.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                  >
-                    <IconRefresh size={18} />
-                  </m.div>
-                  Scanning...
-                </>
-              ) : (
-                <>
-                  <IconSparkles size={18} />
-                  Scan Team
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </m.div>
+      <LargeTitleHeader
+        title="Player Alerts"
+        subtitle="AI-generated insights about players who need attention"
+      >
+        <button
+          onClick={handleRefresh}
+          disabled={isPending}
+          className={cn(
+            'flex items-center gap-2 px-3 sm:px-4 py-2.5 min-h-[44px] rounded-xl font-medium transition-all active:scale-95',
+            isPending
+              ? 'bg-warm-100 text-warm-400 cursor-not-allowed'
+              : 'bg-primary-600 text-white hover:bg-primary-700 shadow-md'
+          )}
+        >
+          {isPending ? (
+            <>
+              <m.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+              >
+                <IconRefresh size={16} />
+              </m.div>
+              <span className="hidden sm:inline">Scanning...</span>
+            </>
+          ) : (
+            <>
+              <IconSparkles size={16} />
+              <span className="hidden sm:inline">Scan Team</span>
+              <span className="sm:hidden">Scan</span>
+            </>
+          )}
+        </button>
+      </LargeTitleHeader>
 
       {/* Main Content */}
+      <PullToRefresh onRefresh={handlePullToRefresh}>
       <m.div variants={itemVariants} className="max-w-4xl mx-auto px-4 md:px-6 py-6 md:py-8">
         {/* Error Banner */}
         <AnimatePresence>
@@ -385,6 +393,7 @@ export default function AlertsPage() {
           </AnimatePresence>
         </div>
       </m.div>
+      </PullToRefresh>
     </m.div>
   );
 }

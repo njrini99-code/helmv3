@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Modal } from '@/components/ui/modal';
+import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -102,7 +102,7 @@ export function ExpenseForm({
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Add Expense" size="lg">
+    <BottomSheet open={isOpen} onClose={onClose} title="Add Expense">
       <form onSubmit={handleSubmit} className="space-y-5">
         {error && (
           <motion.div
@@ -221,6 +221,6 @@ export function ExpenseForm({
           </Button>
         </div>
       </form>
-    </Modal>
+    </BottomSheet>
   );
 }

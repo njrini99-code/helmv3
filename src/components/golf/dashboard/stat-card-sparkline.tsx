@@ -55,7 +55,7 @@ export const StatCardSparkline = memo(function StatCardSparkline({
             role={href ? 'link' : 'region'}
             aria-label={`${label}: ${displayValue}${suffix}`}
             className={cn(
-                'relative overflow-hidden group',
+                'relative overflow-clip group',
                 'glass-premium',
                 'rounded-2xl',
                 'transition-shadow duration-200',

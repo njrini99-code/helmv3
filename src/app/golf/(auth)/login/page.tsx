@@ -65,7 +65,7 @@ function LoginContent() {
 
   return (
     <LazyMotion features={domAnimation}>
-    <div className="min-h-dvh flex items-center justify-center relative p-4 sm:p-6 bg-auth-golf">
+    <div className="auth-shell min-h-dvh flex items-center justify-center relative p-4 sm:p-6 bg-auth-golf">
       {/* Skip to main content link for keyboard navigation */}
       <a
         href="#login-form"
@@ -203,7 +203,7 @@ function LoginContent() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.5 }}
           >
-            <h2 className="text-xl sm:text-2xl font-bold text-warm-900 mb-1 sm:mb-2">
+            <h2 className="text-[26px] sm:text-[28px] leading-tight font-bold tracking-[-0.02em] text-warm-900 mb-1.5 sm:mb-2">
               Welcome back
             </h2>
             <p className="text-warm-500 text-sm sm:text-base">Sign in to continue to your dashboard</p>
@@ -241,16 +241,16 @@ function LoginContent() {
                 </div>
                 <button
                   onClick={() => router.push(returnTo || (isAdmin ? '/golf/admin' : '/golf/dashboard'))}
-                  className="w-full py-3 bg-primary-600 text-white font-semibold text-sm rounded-xl shadow-lg shadow-primary-600/25 transition-all duration-200 hover:bg-primary-700 hover:shadow-primary-600/30" aria-label="Continue to dashboard"
+                  className="w-full min-h-[50px] py-3 bg-primary-600 text-white font-semibold text-[15px] tracking-[-0.01em] rounded-xl shadow-lg shadow-primary-600/25 transition-all duration-200 ease-ios hover:bg-primary-700 hover:shadow-primary-600/30 active:scale-[0.97] active:duration-75" aria-label="Continue to dashboard"
                 >
                   {returnTo ? 'Continue' : isAdmin ? 'Continue to Admin Dashboard' : 'Continue to Dashboard'}
                 </button>
                 <button
                   onClick={handleSignOut}
                   disabled={isLoggingOut}
-                  className="w-full py-3 bg-warm-100 text-warm-700 font-semibold text-sm rounded-xl transition-all duration-200 hover:bg-warm-200 disabled:opacity-50" aria-label="Sign out and use a different account"
+                  className="w-full min-h-[50px] py-3 bg-warm-100 text-warm-700 font-semibold text-[15px] tracking-[-0.01em] rounded-xl transition-all duration-200 ease-ios hover:bg-warm-200 active:scale-[0.97] active:duration-75 disabled:opacity-50 disabled:active:scale-100" aria-label="Sign out and use a different account"
                 >
-                  {isLoggingOut ? 'Signing out...' : 'Sign out & use a different account'}
+                  {isLoggingOut ? 'Signing out…' : 'Sign out & use a different account'}
                 </button>
               </div>
             ) : (

@@ -125,13 +125,13 @@ function FocusAreaCardContent({
       </div>
 
       {/* Visual bar for strokes */}
-      <div className="relative h-2 bg-warm-100 rounded-full overflow-hidden mb-3">
+      <div className="relative h-2 bg-warm-100 rounded-full overflow-clip mb-3">
         <m.div
           initial={{ width: 0 }}
           animate={{
             width: `${Math.min(Math.abs(Number(focusArea.strokesGained ?? 0)) * 20, 100)}%`,
           }}
-          transition={{ duration: 0.5, delay: 0.2 + index * 0.1 }}
+          transition={{ duration: 0.4, delay: 0.05 + index * 0.03, ease: [0.25, 0.1, 0.25, 1] }}
           className={cn(
             'absolute h-full rounded-full',
             isPositive ? 'bg-primary-400' : 'bg-red-400'
@@ -180,31 +180,16 @@ function FocusAreaCard({
 
   if (interactive) {
     return (
-      <m.button
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, delay: index * 0.08 }}
-        onClick={onClick}
-        className={sharedClassName}
-      >
+      <button onClick={onClick} className={sharedClassName}>
         <FocusAreaCardContent focusArea={focusArea} index={index} interactive />
-      </m.button>
+      </button>
     );
   }
 
   return (
-    <m.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay: index * 0.08 }}
-    >
-      <Link
-        href="/golf/dashboard/my-development"
-        className={sharedClassName}
-      >
-        <FocusAreaCardContent focusArea={focusArea} index={index} interactive />
-      </Link>
-    </m.div>
+    <Link href="/golf/dashboard/my-development" className={sharedClassName}>
+      <FocusAreaCardContent focusArea={focusArea} index={index} interactive />
+    </Link>
   );
 }
 

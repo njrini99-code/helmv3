@@ -20,13 +20,17 @@ export const motion = {
   },
 } as const;
 
-// Framer Motion variants
+// Framer Motion variants — standardized to iOS-native motion tokens.
+// See src/lib/ios-animations.ts for the canonical duration + easing constants.
+// (These values are intentionally kept inline to avoid a circular dep with
+// components that import `motion` from this file.)
 export const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
+  hidden: { opacity: 0, y: 8 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.5, ease: motion.ease.smooth }
+    // 250ms / iOS ease-out — the standard UI reveal
+    transition: { duration: 0.25, ease: [0.25, 0.1, 0.25, 1] as const },
   },
 };
 
@@ -34,16 +38,17 @@ export const staggerContainer = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.08 },
+    // Fast 40ms stagger — slow staggers feel sluggish on iOS.
+    transition: { staggerChildren: 0.04 },
   },
 };
 
 export const scaleIn = {
-  hidden: { opacity: 0, scale: 0.95 },
+  hidden: { opacity: 0, scale: 0.96 },
   visible: {
     opacity: 1,
     scale: 1,
-    transition: { duration: 0.2, ease: motion.ease.out }
+    transition: { duration: 0.15, ease: [0.25, 0.1, 0.25, 1] as const },
   },
 };
 

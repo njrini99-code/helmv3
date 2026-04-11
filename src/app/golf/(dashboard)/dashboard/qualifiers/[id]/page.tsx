@@ -2,10 +2,10 @@ import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
-import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
+import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
-import { IconChevronLeft, IconTrophy } from '@/components/icons';
+import { IconTrophy } from '@/components/icons';
 import type { GolfQualifier, GolfQualifierEntry } from '@/lib/types/golf';
 import type { Metadata } from 'next';
 import { QualifierLeaderboardRealtime } from '@/components/golf/qualifiers/QualifierLeaderboardRealtime';
@@ -169,21 +169,15 @@ export default async function QualifierDetailPage({ params }: PageProps) {
 
   return (
     <AnimatedPage className="min-h-full bg-transparent">
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
-        {/* Back Button */}
-        <AnimatedItem>
-        <div className="flex items-center gap-3 mb-6">
-          <MobileMenuButton />
-          <Link
-            href={isCoach ? '/golf/dashboard/qualifiers' : '/golf/dashboard/my-qualifiers'}
-            className="inline-flex items-center gap-2 text-sm text-warm-600 hover:text-warm-900"
-          >
-            <IconChevronLeft size={16} />
-            Back to Qualifiers
-          </Link>
-        </div>
-        </AnimatedItem>
+      <AnimatedItem>
+        <MobileNavHeader
+          title={qualifierData.name || 'Qualifier'}
+          backHref={isCoach ? '/golf/dashboard/qualifiers' : '/golf/dashboard/my-qualifiers'}
+          backLabel="Qualifiers"
+        />
+      </AnimatedItem>
 
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
         {/* Qualifier Header */}
         <AnimatedItem>
         <div className="relative glass-standard rounded-2xl overflow-clip p-6 mb-6">

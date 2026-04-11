@@ -211,9 +211,10 @@ export function QuickActionsPanel({
             </div>
             <button
               onClick={onClose}
+              aria-label="Close"
               className="p-2 rounded-xl hover:bg-white/10 transition-colors"
             >
-              <IconX size={18} className="text-white/70" />
+              <IconX size={18} className="text-white/70" aria-hidden="true" />
             </button>
           </div>
 

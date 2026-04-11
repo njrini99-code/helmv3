@@ -12,7 +12,7 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
 // VAPID keys for Web Push (must match the service worker)
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
-const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:support@helmsportslabs.com';
+const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:admin@helmsportslabs.com';
 
 /**
  * Extended task type with user relations for notifications

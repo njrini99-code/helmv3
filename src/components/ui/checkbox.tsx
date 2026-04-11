@@ -2,6 +2,7 @@
 
 import { forwardRef, useId, useState } from 'react';
 import { cn } from '@/lib/utils';
+import { triggerHaptic } from '@/lib/utils/capacitor';
 
 interface CheckboxProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> {
   label?: string;
@@ -36,7 +37,10 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
             type="checkbox"
             id={checkboxId}
             checked={checked}
-            onChange={onChange}
+            onChange={(e) => {
+              void triggerHaptic('light');
+              onChange?.(e);
+            }}
             className="peer sr-only"
             {...props}
           />

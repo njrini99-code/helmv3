@@ -22,7 +22,7 @@ export default function PrivacyPage() {
 
         <div className="space-y-10 text-slate-700 leading-relaxed">
           <section className="space-y-3">
-            <p className="text-sm text-slate-500">Last updated: March 1, 2026</p>
+            <p className="text-sm text-slate-500">Last updated: April 11, 2026</p>
             <p>
               This Privacy Policy explains how Helm Sports Labs collects, uses, and protects your
               information when you use our websites, products, and services (collectively, the
@@ -33,10 +33,13 @@ export default function PrivacyPage() {
           <section className="space-y-3">
             <h2 className="text-2xl font-semibold text-slate-900">Information we collect</h2>
             <ul className="list-disc pl-5 space-y-2">
-              <li>Account information such as name, email, role, and team details.</li>
-              <li>Profile data you choose to provide, including performance and recruiting details.</li>
-              <li>Usage data such as interactions, features used, and device information.</li>
-              <li>Communications with support or within the platform.</li>
+              <li><strong>Account information</strong> such as name, email, password (hashed), role, avatar, and team details.</li>
+              <li><strong>Profile data</strong> you choose to provide, including handicap, graduation year, hometown, and recruiting details.</li>
+              <li><strong>Athletic performance data</strong> you enter, such as golf rounds, shots, scores, practice sessions, and qualifier results.</li>
+              <li><strong>Team content</strong> including messages, announcements, tasks, documents, and travel itineraries within your authorized team.</li>
+              <li><strong>Device data</strong> such as push notification tokens and basic device information needed to deliver the Services.</li>
+              <li><strong>Usage data</strong> such as features used and aggregated page views (via privacy-friendly analytics).</li>
+              <li><strong>Communications</strong> with our support team or within the platform.</li>
             </ul>
           </section>
 
@@ -64,7 +67,13 @@ export default function PrivacyPage() {
             <ul className="list-disc pl-5 space-y-2">
               <li>Update profile and privacy settings from your account.</li>
               <li>Opt out of non-essential communications.</li>
-              <li>Request account deletion through the settings page.</li>
+              <li>
+                Delete your account at any time from Settings &rarr; Delete Account in the iOS
+                app, or by emailing{' '}
+                <a href="mailto:admin@helmsportslabs.com" className="text-primary-700 hover:text-primary-800">
+                  admin@helmsportslabs.com
+                </a>.
+              </li>
             </ul>
           </section>
 
@@ -87,8 +96,8 @@ export default function PrivacyPage() {
             <p>
               If you are a parent or guardian and believe your child under 13 has provided personal
               information to us, please contact us at{' '}
-              <a href="mailto:support@helmsportslabs.com" className="text-primary-700 hover:text-primary-800">
-                support@helmsportslabs.com
+              <a href="mailto:admin@helmsportslabs.com" className="text-primary-700 hover:text-primary-800">
+                admin@helmsportslabs.com
               </a>{' '}
               so we can take appropriate action.
             </p>
@@ -102,12 +111,13 @@ export default function PrivacyPage() {
               privacy policies:
             </p>
             <ul className="list-disc pl-5 space-y-2">
+              <li><strong>Supabase</strong> &mdash; Database, authentication, and file storage. Your data is encrypted in transit (TLS) and at rest.</li>
+              <li><strong>Vercel</strong> &mdash; Web hosting, edge delivery, and Vercel Analytics (aggregated, privacy-friendly page view metrics; no cross-site tracking).</li>
               <li><strong>Sentry</strong> &mdash; Error tracking and performance monitoring.</li>
-              <li><strong>Datadog</strong> &mdash; Real user monitoring and analytics.</li>
-              <li><strong>Vercel</strong> &mdash; Hosting and edge analytics.</li>
-              <li><strong>Resend</strong> &mdash; Transactional email delivery.</li>
-              <li><strong>Supabase</strong> &mdash; Database and authentication services.</li>
+              <li><strong>Datadog</strong> &mdash; Real user monitoring and diagnostics.</li>
+              <li><strong>Resend</strong> &mdash; Transactional email delivery (password resets, notifications).</li>
               <li><strong>Apple Push Notification service (APNs)</strong> &mdash; Push notifications on iOS.</li>
+              <li><strong>Upstash Redis</strong> &mdash; Rate limiting and ephemeral caching.</li>
             </ul>
           </section>
 
@@ -117,8 +127,8 @@ export default function PrivacyPage() {
               <li>Account data is retained as long as the account is active.</li>
               <li>
                 Users can request account deletion by contacting{' '}
-                <a href="mailto:support@helmsportslabs.com" className="text-primary-700 hover:text-primary-800">
-                  support@helmsportslabs.com
+                <a href="mailto:admin@helmsportslabs.com" className="text-primary-700 hover:text-primary-800">
+                  admin@helmsportslabs.com
                 </a>.
               </li>
               <li>Deleted account data is purged within 30 days of the deletion request.</li>
@@ -142,8 +152,8 @@ export default function PrivacyPage() {
             </ul>
             <p>
               To exercise any of these rights, please contact us at{' '}
-              <a href="mailto:support@helmsportslabs.com" className="text-primary-700 hover:text-primary-800">
-                support@helmsportslabs.com
+              <a href="mailto:admin@helmsportslabs.com" className="text-primary-700 hover:text-primary-800">
+                admin@helmsportslabs.com
               </a>.
             </p>
           </section>
@@ -152,8 +162,8 @@ export default function PrivacyPage() {
             <h2 className="text-2xl font-semibold text-slate-900">Contact us</h2>
             <p>
               If you have questions about this policy, email us at{' '}
-              <a href="mailto:support@helmsportslabs.com" className="text-primary-700 hover:text-primary-800">
-                support@helmsportslabs.com
+              <a href="mailto:admin@helmsportslabs.com" className="text-primary-700 hover:text-primary-800">
+                admin@helmsportslabs.com
               </a>.
             </p>
           </section>

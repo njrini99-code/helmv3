@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { toast } from '@/components/ui/toast';
 import { useMobileDetection } from '@/hooks/use-mobile-detection';
+import { triggerHaptic } from '@/lib/utils/capacitor';
 import {
   DndContext,
   DragEndEvent,
@@ -577,6 +578,8 @@ export function PremiumCalendarClient({
     // Find the dragged event
     const draggedEvent = initialEvents.find((e) => e.id === eventId);
     if (!draggedEvent) return;
+
+    void triggerHaptic('medium');
 
     // Calculate new date and time
     const newDate = dropData.date;

@@ -2,6 +2,7 @@
 
 import { ButtonHTMLAttributes, forwardRef, useRef, useCallback } from 'react';
 import { cn } from '@/lib/utils';
+import { triggerHaptic } from '@/lib/utils/capacitor';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline' | 'success';
@@ -9,14 +10,27 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   isLoading?: boolean;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
+  /** Haptic intensity on tap (native only). Defaults to 'light'. Pass 'none' to disable. */
+  haptic?: 'none' | 'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'error';
   children: React.ReactNode;
 }
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = 'primary', size = 'md', isLoading = false, disabled, leftIcon, rightIcon, children, onClick, ...props }, ref) => {
+  ({ className, variant = 'primary', size = 'md', isLoading = false, disabled, leftIcon, rightIcon, haptic, children, onClick, ...props }, ref) => {
     const rippleRef = useRef<HTMLSpanElement>(null);
 
     const handleClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+      // Native haptic feedback — light impact by default, or variant-based default.
+      const hapticStyle = haptic ?? (
+        variant === 'danger' ? 'warning' :
+        variant === 'success' ? 'success' :
+        'light'
+      );
+      if (hapticStyle !== 'none') {
+        // Fire and forget — triggerHaptic no-ops on web
+        void triggerHaptic(hapticStyle);
+      }
+
       // Ripple effect
       const button = e.currentTarget;
       const ripple = document.createElement('span');
@@ -33,10 +47,11 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       setTimeout(() => ripple.remove(), 600);
 
       onClick?.(e);
-    }, [onClick]);
+    }, [onClick, haptic, variant]);
 
     const baseStyles = cn(
       'relative overflow-hidden inline-flex items-center justify-center gap-2 font-medium rounded-[10px]',
+      'whitespace-nowrap', // Prevent label text from wrapping ("Add First Class" -> single line)
       'transition-all duration-200 ease-out',
       'disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none',
       'active:scale-[0.97] active:duration-75',
@@ -60,46 +75,53 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       icon: 'h-12 w-12 p-0',
     };
 
+    // iOS-native loading pattern: keep the original label visible, prepend an
+    // inline spinner, and block pointer events. We do NOT replace the label
+    // with a "Loading..." placeholder — that causes layout shift and loses
+    // context for the user.
     return (
       <button
         ref={ref}
-        className={cn(baseStyles, variants[variant], sizes[size], className)}
+        className={cn(
+          baseStyles,
+          variants[variant],
+          sizes[size],
+          isLoading && 'pointer-events-none cursor-wait',
+          className,
+        )}
         disabled={disabled || isLoading}
+        aria-busy={isLoading || undefined}
         onClick={handleClick}
         {...props}
       >
         <span ref={rippleRef} />
         {isLoading ? (
-          <div className="flex items-center justify-center gap-2">
-            <svg
-              className="animate-spin h-4 w-4"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="3"
-              />
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              />
-            </svg>
-            <span className="text-sm">Loading...</span>
-          </div>
+          <svg
+            className="animate-spin h-4 w-4 flex-shrink-0 -ml-0.5"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="3"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            />
+          </svg>
         ) : (
-          <>
-            {leftIcon && <span className="flex-shrink-0 -ml-0.5">{leftIcon}</span>}
-            {children}
-            {rightIcon && <span className="flex-shrink-0 -mr-0.5">{rightIcon}</span>}
-          </>
+          leftIcon && <span className="flex-shrink-0 -ml-0.5">{leftIcon}</span>
         )}
+        {children}
+        {!isLoading && rightIcon && <span className="flex-shrink-0 -mr-0.5">{rightIcon}</span>}
       </button>
     );
   }

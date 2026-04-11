@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { cn } from '@/lib/utils';
-import { Modal } from '@/components/ui/modal';
+import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { Button } from '@/components/ui/button';
 import { GlassCard } from '@/components/ui/glass-card';
 import {
@@ -131,13 +131,13 @@ export function InsightExportModal({
   };
 
   return (
-    <Modal
+    <BottomSheet
       open={open}
       onClose={handleClose}
       title="Export Insights"
       description={`Export ${selectedIds.length} selected insight${selectedIds.length !== 1 ? 's' : ''}`}
     >
-      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="modal-title" className="space-y-6">
+      <div ref={modalRef} className="space-y-6">
         {/* Format Selection */}
         <div>
           <label className="block text-sm font-medium text-warm-700 mb-3">
@@ -231,6 +231,6 @@ export function InsightExportModal({
           </Button>
         </div>
       </div>
-    </Modal>
+    </BottomSheet>
   );
 }

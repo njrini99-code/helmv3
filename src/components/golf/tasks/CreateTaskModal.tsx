@@ -6,10 +6,11 @@ import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { createClient } from '@/lib/supabase/client';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { useToast } from '@/components/ui/toast';
-import { Modal } from '@/components/ui/modal';
-import { Input } from '@/components/ui/input';
+import { BottomSheet } from '@/components/ui/bottom-sheet';
+import { Input, Textarea } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ReminderPicker } from './ReminderPicker';
+import { triggerHaptic } from '@/lib/utils/capacitor';
 
 interface CreateTaskModalProps {
   isOpen: boolean;
@@ -97,6 +98,7 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
 
       if (assignError) throw assignError;
 
+      void triggerHaptic('success');
       showToast('Task created and assigned successfully', 'success');
       setTitle('');
       setDescription('');
@@ -107,6 +109,7 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
       onTaskCreated();
       onClose();
     } catch (error) {
+      void triggerHaptic('error');
       showToast(error instanceof Error ? error.message : 'Failed to create task', 'error');
     } finally {
       setLoading(false);
@@ -122,8 +125,8 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Create New Task">
-      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <BottomSheet open={isOpen} onClose={onClose} title="Create New Task">
+      <div ref={modalRef}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
           label="Task Title"
@@ -132,22 +135,17 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
           placeholder="Complete shot tracking drill"
           required
           autoFocus
+          enterKeyHint="next"
         />
 
-        <div>
-          <label className="text-sm font-medium text-warm-700 block mb-1">
-            Description (Optional)
-          </label>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Add more details about this task..."
-            rows={3}
-            className="w-full px-4 py-2.5 rounded-lg border border-warm-200
-                     focus:border-primary-500 focus:ring-2 focus:ring-primary-100
-                     text-warm-900 placeholder:text-warm-400 transition-colors resize-none"
-          />
-        </div>
+        <Textarea
+          label="Description (Optional)"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Add more details about this task..."
+          rows={3}
+          enterKeyHint="done"
+        />
 
         <div className="flex items-end gap-4">
           <div className="flex-1">
@@ -251,6 +249,6 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
         </div>
       </form>
       </div>
-    </Modal>
+    </BottomSheet>
   );
 }

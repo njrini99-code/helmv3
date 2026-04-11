@@ -11,6 +11,7 @@ import {
   type OfflineRound as ModernOfflineRound
 } from '@/lib/offline/indexed-db';
 import { clearEmergencySave } from '@/lib/utils/emergency-save';
+import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
 
 // Legacy IndexedDB access kept for older locally saved drafts
 const LEGACY_DB_NAME = 'golf_offline_db';
@@ -389,10 +390,16 @@ export default function RecoverRoundClient({ playerId }: { playerId: string }) {
   }
 
   return (
-    <div className="min-h-full bg-transparent flex items-center justify-center p-4">
+    <div className="min-h-full bg-transparent">
+      <MobileNavHeader
+        title="Recover Round"
+        subtitle="Restore from offline storage"
+        backHref="/golf/dashboard/rounds"
+        backLabel="Rounds"
+      />
+      <div className="flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
         <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6 sm:p-8">
-          <h1 className="text-2xl font-semibold text-warm-900 mb-2">Recover Round</h1>
           <p className="text-warm-500 text-sm mb-6">
             Found {rounds.length} recoverable round{rounds.length !== 1 ? 's' : ''} in your browser&apos;s offline storage.
           </p>
@@ -474,6 +481,7 @@ export default function RecoverRoundClient({ playerId }: { playerId: string }) {
             </div>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

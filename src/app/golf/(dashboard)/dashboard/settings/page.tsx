@@ -14,6 +14,7 @@ import { AvatarUpload } from '@/components/ui/avatar-upload';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/toast';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import {
   IconSettings,
   IconUser,
@@ -23,7 +24,6 @@ import {
   IconChevronRight,
   IconChevronDown,
   IconMail,
-  IconMapPin,
   IconShield,
   IconPalette,
   IconSparkles,
@@ -32,9 +32,11 @@ import {
   IconCheck,
 } from '@/components/icons';
 import { useGolfUser } from '@/contexts/golf-user-context';
-import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
+import { triggerHaptic } from '@/lib/utils/capacitor';
+import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { JoinTeamSection } from '@/components/golf/settings/JoinTeamSection';
 import { CoachHelmToggle } from '@/components/golf/coachhelm/v2';
+import { useAppearancePreferences } from '@/hooks/golf/use-appearance-preferences';
 import {
   getNotificationPreferences,
   updateNotificationPreferences,
@@ -89,6 +91,7 @@ export default function GolfSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<ExpandedSection>(null);
   const [deletingAccount, setDeletingAccount] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const { showToast } = useToast();
   const golfUser = useGolfUser();
 
@@ -181,43 +184,43 @@ export default function GolfSettingsPage() {
   }
 
   async function handleSignOut() {
+    void triggerHaptic('heavy');
     const supabase = createClient();
     await supabase.auth.signOut();
     window.location.href = '/golf/login';
   }
 
-  async function handleDeleteAccount() {
-    const confirmed = window.confirm(
-      'This will permanently delete your account and all associated data. This action cannot be undone.'
-    );
-    if (!confirmed) return;
+  function handleDeleteAccount() {
+    void triggerHaptic('warning');
+    setDeleteConfirmOpen(true);
+  }
 
+  async function confirmDeleteAccount() {
     setDeletingAccount(true);
     try {
       const response = await fetch('/api/account/delete', { method: 'DELETE' });
       if (!response.ok) {
         const payload = await response.json().catch(() => ({}));
+        void triggerHaptic('error');
         showToast(payload.error || 'Failed to delete account', 'error');
         return;
       }
+      void triggerHaptic('success');
       showToast('Account deleted successfully', 'success');
       window.location.href = '/';
     } catch {
+      void triggerHaptic('error');
       showToast('Failed to delete account', 'error');
     } finally {
       setDeletingAccount(false);
+      setDeleteConfirmOpen(false);
     }
   }
 
   if (loading) {
     return (
       <AnimatedPage className="min-h-full">
-        <div className="golf-mobile-page-header">
-          <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
-            <div className="h-7 w-32 bg-warm-200 rounded-lg animate-pulse" />
-            <div className="h-4 w-56 bg-warm-100 rounded mt-2 animate-pulse" />
-          </div>
-        </div>
+        <LargeTitleHeader title="Settings" subtitle="Manage your account and preferences" />
         <div className="max-w-2xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6">
           <div className="glass-premium rounded-2xl p-5 animate-pulse">
             <div className="flex items-center gap-4">
@@ -249,19 +252,7 @@ export default function GolfSettingsPage() {
     <AnimatedPage className="min-h-full" key={profile.userId}>
       {/* Header */}
       <AnimatedItem>
-        <div className="golf-mobile-page-header">
-          <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <MobileMenuButton />
-                <div>
-                  <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">Settings</h1>
-                  <p className="text-sm text-warm-500 mt-0.5">Manage your account and preferences</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <LargeTitleHeader title="Settings" subtitle="Manage your account and preferences" />
       </AnimatedItem>
 
       {/* Content */}
@@ -347,19 +338,9 @@ export default function GolfSettingsPage() {
               description="Display density, date format, animations"
               isExpanded={expanded === 'appearance'}
               onToggle={() => toggle('appearance')}
-            >
-              <AppearancePanel />
-            </SettingsExpandableRow>
-
-            <SettingsExpandableRow
-              icon={<IconMapPin size={18} />}
-              label="Location Defaults"
-              description="Default course and location"
-              isExpanded={expanded === 'location'}
-              onToggle={() => toggle('location')}
               isLast={profile.role !== 'coach'}
             >
-              <LocationPanel />
+              <AppearancePanel />
             </SettingsExpandableRow>
 
             {profile.role === 'coach' && (
@@ -524,6 +505,17 @@ export default function GolfSettingsPage() {
           <p className="text-xs mt-1">© 2026 Helm Sports Labs</p>
         </AnimatedItem>
       </div>
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        title="Delete account?"
+        message="This will permanently delete your account and all associated data. This action cannot be undone."
+        confirmLabel="Delete Account"
+        cancelLabel="Cancel"
+        variant="danger"
+        isLoading={deletingAccount}
+        onConfirm={confirmDeleteAccount}
+        onCancel={() => setDeleteConfirmOpen(false)}
+      />
     </AnimatedPage>
   );
 }
@@ -658,7 +650,10 @@ function ToggleSwitch({
   return (
     <button
       type="button"
-      onClick={onChange}
+      onClick={() => {
+        void triggerHaptic('light');
+        onChange();
+      }}
       role="switch"
       aria-checked={checked}
       className="w-full flex items-center justify-between py-2.5 group"
@@ -667,17 +662,21 @@ function ToggleSwitch({
         <p className="text-sm font-medium text-warm-900">{label}</p>
         {description && <p className="text-xs text-warm-500">{description}</p>}
       </div>
+      {/* iOS UISwitch: 51×31pt track, 27pt knob, SF green when on */}
       <div
         aria-hidden="true"
         className={cn(
-          'w-11 h-6 rounded-full transition-colors relative flex-shrink-0',
-          checked ? 'bg-primary-600' : 'bg-warm-200'
+          'relative flex-shrink-0 rounded-full transition-colors duration-200 ease-out',
+          'w-[51px] h-[31px]',
+          checked ? 'bg-[#34C759]' : 'bg-warm-200'
         )}
       >
         <div
           className={cn(
-            'absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform',
-            checked && 'translate-x-5'
+            'absolute top-[2px] left-[2px] h-[27px] w-[27px] rounded-full bg-white',
+            'shadow-[0_3px_8px_rgba(0,0,0,0.15),0_3px_1px_rgba(0,0,0,0.06)]',
+            'transition-transform duration-200 ease-out',
+            checked && 'translate-x-[20px]'
           )}
         />
       </div>
@@ -965,52 +964,15 @@ function NotificationsPanel() {
 // PANEL: Appearance
 // ============================================================================
 
-type DisplayDensity = 'comfortable' | 'compact';
-type DateFormat = 'MM/DD/YYYY' | 'DD/MM/YYYY' | 'YYYY-MM-DD';
-
 function AppearancePanel() {
-  const { showToast } = useToast();
-  const [saving, setSaving] = useState(false);
-  const [density, setDensity] = useState<DisplayDensity>('comfortable');
-  const [dateFormat, setDateFormat] = useState<DateFormat>('MM/DD/YYYY');
-  const [showAnimations, setShowAnimations] = useState(true);
-  const [scoreDisplay, setScoreDisplay] = useState<'to_par' | 'raw'>('to_par');
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem('golf_appearance_preferences');
-      if (stored) {
-        const p = JSON.parse(stored);
-        setDensity(p.display_density || 'comfortable');
-        setDateFormat(p.date_format || 'MM/DD/YYYY');
-        setShowAnimations(p.show_animations ?? true);
-        setScoreDisplay(p.score_display || 'to_par');
-      }
-    } catch { /* defaults */ }
-  }, []);
-
-  function handleSave() {
-    setSaving(true);
-    try {
-      localStorage.setItem('golf_appearance_preferences', JSON.stringify({
-        display_density: density,
-        date_format: dateFormat,
-        show_animations: showAnimations,
-        score_display: scoreDisplay,
-      }));
-      showToast('Appearance updated', 'success');
-    } catch {
-      showToast('Failed to save preferences', 'error');
-    } finally {
-      setSaving(false);
-    }
-  }
+  const { displayDensity, dateFormat, showAnimations, scoreDisplay, updatePreferences } =
+    useAppearancePreferences();
 
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-2.5 px-3.5 py-2.5 bg-primary-50/60 border border-primary-200/40 rounded-xl">
         <IconSparkles size={14} className="text-primary-400 flex-shrink-0" />
-        <p className="text-xs text-primary-700/70">Customize your dashboard appearance. Your preferences are saved automatically.</p>
+        <p className="text-xs text-primary-700/70">Changes apply instantly across the app.</p>
       </div>
       {/* Density */}
       <div>
@@ -1019,10 +981,10 @@ function AppearancePanel() {
           {(['comfortable', 'compact'] as const).map((opt) => (
             <button
               key={opt}
-              onClick={() => setDensity(opt)}
+              onClick={() => updatePreferences({ displayDensity: opt })}
               className={cn(
-                'p-3 rounded-lg border-2 text-left transition-colors',
-                density === opt ? 'border-primary-600 bg-primary-50' : 'border-warm-200 hover:border-warm-300'
+                'p-3 rounded-lg border-2 text-left transition-colors min-h-[48px]',
+                displayDensity === opt ? 'border-primary-600 bg-primary-50' : 'border-warm-200 hover:border-warm-300'
               )}
             >
               <p className="text-sm font-medium text-warm-900 capitalize">{opt}</p>
@@ -1043,14 +1005,14 @@ function AppearancePanel() {
           ]).map(({ val, ex }) => (
             <button
               key={val}
-              onClick={() => setDateFormat(val)}
+              onClick={() => updatePreferences({ dateFormat: val })}
               className={cn(
-                'w-full p-2.5 rounded-lg border-2 text-left text-sm flex justify-between items-center transition-colors',
+                'w-full p-2.5 rounded-lg border-2 text-left text-sm flex justify-between items-center transition-colors min-h-[48px]',
                 dateFormat === val ? 'border-primary-600 bg-primary-50' : 'border-warm-200 hover:border-warm-300'
               )}
             >
-              <span className="font-medium text-warm-900">{val}</span>
-              <span className="text-warm-500 text-xs">{ex}</span>
+              <span className="font-medium text-warm-900 whitespace-nowrap">{val}</span>
+              <span className="text-warm-500 text-xs whitespace-nowrap">{ex}</span>
             </button>
           ))}
         </div>
@@ -1061,9 +1023,9 @@ function AppearancePanel() {
         <p className="text-sm font-medium text-warm-700 mb-2">Score Display</p>
         <div className="grid grid-cols-2 gap-2">
           <button
-            onClick={() => setScoreDisplay('to_par')}
+            onClick={() => updatePreferences({ scoreDisplay: 'to_par' })}
             className={cn(
-              'p-3 rounded-lg border-2 text-left transition-colors',
+              'p-3 rounded-lg border-2 text-left transition-colors min-h-[48px]',
               scoreDisplay === 'to_par' ? 'border-primary-600 bg-primary-50' : 'border-warm-200 hover:border-warm-300'
             )}
           >
@@ -1071,9 +1033,9 @@ function AppearancePanel() {
             <p className="text-xs text-warm-500 mt-0.5">E, +2, -1</p>
           </button>
           <button
-            onClick={() => setScoreDisplay('raw')}
+            onClick={() => updatePreferences({ scoreDisplay: 'raw' })}
             className={cn(
-              'p-3 rounded-lg border-2 text-left transition-colors',
+              'p-3 rounded-lg border-2 text-left transition-colors min-h-[48px]',
               scoreDisplay === 'raw' ? 'border-primary-600 bg-primary-50' : 'border-warm-200 hover:border-warm-300'
             )}
           >
@@ -1088,62 +1050,8 @@ function AppearancePanel() {
         label="Animations"
         description="Enable smooth transitions and effects"
         checked={showAnimations}
-        onChange={() => setShowAnimations(!showAnimations)}
+        onChange={() => updatePreferences({ showAnimations: !showAnimations })}
       />
-
-      <SaveBar onSave={handleSave} loading={saving} />
-    </div>
-  );
-}
-
-// ============================================================================
-// PANEL: Location
-// ============================================================================
-
-function LocationPanel() {
-  const { showToast } = useToast();
-  const [saving, setSaving] = useState(false);
-  const [defaultCourse, setDefaultCourse] = useState('');
-  const [defaultCity, setDefaultCity] = useState('');
-  const [defaultState, setDefaultState] = useState('');
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem('golf_location_preferences');
-      if (stored) {
-        const p = JSON.parse(stored);
-        setDefaultCourse(p.default_course || '');
-        setDefaultCity(p.default_city || '');
-        setDefaultState(p.default_state || '');
-      }
-    } catch { /* defaults */ }
-  }, []);
-
-  function handleSave() {
-    setSaving(true);
-    try {
-      localStorage.setItem('golf_location_preferences', JSON.stringify({
-        default_course: defaultCourse.trim(),
-        default_city: defaultCity.trim(),
-        default_state: defaultState.trim(),
-      }));
-      showToast('Location preferences updated', 'success');
-    } catch {
-      showToast('Failed to save', 'error');
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <div className="space-y-3">
-      <Input label="Default Course" value={defaultCourse} onChange={(e) => setDefaultCourse(e.target.value)} placeholder="Pebble Beach Golf Links" />
-      <div className="grid grid-cols-2 gap-3">
-        <Input label="City" value={defaultCity} onChange={(e) => setDefaultCity(e.target.value)} placeholder="Pebble Beach" />
-        <Input label="State" value={defaultState} onChange={(e) => setDefaultState(e.target.value)} placeholder="CA" maxLength={2} />
-      </div>
-      <p className="text-xs text-warm-500">Pre-filled when creating new rounds or tracking shots.</p>
-      <SaveBar onSave={handleSave} loading={saving} />
     </div>
   );
 }

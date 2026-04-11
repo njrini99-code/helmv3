@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useFocusTrap } from '@/hooks/use-focus-trap';
-import { Modal } from '@/components/ui/modal';
+import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/toast';
@@ -88,8 +88,8 @@ export function CreateFromTemplateModal({
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Create Task from Template">
-      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <BottomSheet open={isOpen} onClose={onClose} title="Create Task from Template">
+      <div ref={modalRef}>
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Template Info */}
         <div className="bg-warm-50 rounded-lg p-3 mb-4">
@@ -225,6 +225,6 @@ export function CreateFromTemplateModal({
         </div>
       </form>
       </div>
-    </Modal>
+    </BottomSheet>
   );
 }

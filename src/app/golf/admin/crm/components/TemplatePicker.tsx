@@ -146,8 +146,8 @@ function NewTemplateForm({ onSave, onCancel }: { onSave: () => void; onCancel: (
     <div className="bg-white/80 backdrop-blur-xl rounded-xl border border-primary-200 p-4 space-y-3">
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold text-warm-800">Create Template</h4>
-        <button onClick={onCancel} className="text-warm-400 hover:text-warm-600 transition-colors">
-          <IconX size={16} />
+        <button onClick={onCancel} aria-label="Cancel" className="text-warm-400 hover:text-warm-600 transition-colors">
+          <IconX size={16} aria-hidden="true" />
         </button>
       </div>
 

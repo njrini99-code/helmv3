@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { ShineEffect } from '@/components/ui/shine-effect';
-import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
+import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { Avatar } from '@/components/ui/avatar';
 import { redirect } from 'next/navigation';
@@ -217,7 +217,7 @@ export default async function RoundsPage() {
     <AnimatedPage className="min-h-full">
       {/* Header Section */}
       <AnimatedItem>
-        <MobileNavHeader
+        <LargeTitleHeader
           title="Rounds"
           subtitle={`${rounds.length} round${rounds.length !== 1 ? 's' : ''} recorded`}
         >
@@ -229,7 +229,7 @@ export default async function RoundsPage() {
               </button>
             </Link>
           )}
-        </MobileNavHeader>
+        </LargeTitleHeader>
       </AnimatedItem>
 
       {/* Main Content */}

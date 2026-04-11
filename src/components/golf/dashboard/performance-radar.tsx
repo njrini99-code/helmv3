@@ -57,7 +57,7 @@ export const PerformanceRadar = memo(function PerformanceRadar({ data }: Perform
     if (!hasData) {
         return (
             <div className={cn(
-                'relative overflow-hidden',
+                'relative overflow-clip',
                 'bg-glass-subtle backdrop-blur-glass-prominent',
                 'border border-white/30 rounded-2xl',
                 'shadow-glass p-5'
@@ -68,12 +68,12 @@ export const PerformanceRadar = memo(function PerformanceRadar({ data }: Perform
                         Strokes Gained
                     </h3>
                 </div>
-                <div className="flex flex-col items-center justify-center py-8 text-center">
-                    <div className="w-12 h-12 rounded-full bg-warm-100/80 flex items-center justify-center mb-3">
-                        <IconChartBar size={22} className="text-warm-400" />
+                <div className="flex flex-col items-center justify-center py-10 text-center">
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary-50 to-emerald-50 flex items-center justify-center mb-4">
+                        <IconChartBar size={26} className="text-primary-600/70" />
                     </div>
-                    <p className="text-sm font-medium text-warm-700 mb-1">No strokes gained data</p>
-                    <p className="text-xs text-warm-400 max-w-[200px]">
+                    <p className="text-[15px] font-semibold text-warm-900 tracking-tight mb-1.5">No strokes gained data</p>
+                    <p className="text-xs leading-relaxed text-warm-500 max-w-[240px]">
                         Submit rounds with shot tracking to see your strokes gained breakdown
                     </p>
                 </div>
@@ -83,7 +83,7 @@ export const PerformanceRadar = memo(function PerformanceRadar({ data }: Perform
 
     return (
         <div className={cn(
-            'relative overflow-hidden',
+            'relative overflow-clip',
             'glass-premium',
             'rounded-2xl p-5'
         )}>

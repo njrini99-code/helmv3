@@ -23,7 +23,7 @@ import type {
   SprayChartResponse,
 } from '@/app/golf/actions/stats-data-types';
 import Image from 'next/image';
-import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
+import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import GolfStatsDisplay, { Sparkline } from '@/components/golf/stats/GolfStatsDisplay';
 import { generateStatisticalStrengthsWeaknesses } from '@/lib/golf/strokes-gained';
 import { DetailedStatsSkeleton, StatsPageSkeleton } from '@/components/golf/GolfSkeletons';
@@ -939,19 +939,10 @@ export default function StatsClient({
   if (userRole === 'coach' && !selectedPlayerId) {
     return (
       <div className="min-h-full bg-transparent">
-        <div className="golf-mobile-page-header">
-          <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <MobileMenuButton />
-                <div>
-                  <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">Team Stats</h1>
-                  <p className="text-sm text-warm-500 mt-0.5">{players.length} players on your roster</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <LargeTitleHeader
+          title="Team Stats"
+          subtitle={`${players.length} players on your roster`}
+        />
         <div className="max-w-6xl mx-auto p-4 md:p-6">
 
           {/* Format Toggle */}
@@ -1136,45 +1127,26 @@ export default function StatsClient({
   // Player stats view
   return (
     <div className="relative">
-      <div className="golf-mobile-page-header lg:hidden">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex min-w-0 items-center gap-3">
-              {userRole === 'coach' ? (
-                <button
-                  onClick={handleBackClick}
-                  aria-label="Go back"
-                  className="flex h-11 w-11 items-center justify-center rounded-xl text-warm-500 transition-colors hover:bg-warm-100/80 hover:text-warm-700 lg:hidden"
-                >
-                  <IconChevronLeft size={20} />
-                </button>
-              ) : (
-                <MobileMenuButton />
-              )}
-              <div className="min-w-0">
-                <h1 className="truncate text-xl md:text-2xl font-semibold tracking-tight text-warm-900">
-                  {userRole === 'coach' ? (playerName ? `${playerName}'s Stats` : 'Player Stats') : 'My Stats'}
-                </h1>
-                <p className="truncate text-sm text-warm-500 mt-0.5">
-                  {rounds.length > 0
-                    ? `${rounds.length} round${rounds.length === 1 ? '' : 's'} available`
-                    : 'Detailed performance view'}
-                </p>
-              </div>
-            </div>
-
-            <button
-              onClick={handleRefresh}
-              disabled={loadingDetailed}
-              className="flex h-11 w-11 items-center justify-center rounded-xl border border-warm-200 bg-white/80 text-warm-600 shadow-sm transition-colors hover:border-primary-300 hover:text-primary-600 disabled:opacity-50"
-              title="Refresh stats"
-              aria-label="Refresh stats"
-            >
-              <IconRefresh size={18} className={loadingDetailed ? 'animate-spin' : undefined} />
-            </button>
-          </div>
-        </div>
-      </div>
+      <LargeTitleHeader
+        title={userRole === 'coach' ? (playerName ? `${playerName}'s Stats` : 'Player Stats') : 'My Stats'}
+        subtitle={
+          rounds.length > 0
+            ? `${rounds.length} round${rounds.length === 1 ? '' : 's'} available`
+            : 'Detailed performance view'
+        }
+        backHref={userRole === 'coach' ? '/golf/dashboard/stats' : undefined}
+        backLabel={userRole === 'coach' ? 'Team Stats' : undefined}
+      >
+        <button
+          onClick={handleRefresh}
+          disabled={loadingDetailed}
+          className="flex h-10 w-10 items-center justify-center rounded-xl border border-warm-200 bg-white/80 text-warm-600 shadow-sm transition-colors hover:border-primary-300 hover:text-primary-600 disabled:opacity-50"
+          title="Refresh stats"
+          aria-label="Refresh stats"
+        >
+          <IconRefresh size={18} className={loadingDetailed ? 'animate-spin' : undefined} />
+        </button>
+      </LargeTitleHeader>
 
       {/* Floating Back Button for Coaches */}
       {userRole === 'coach' && (
@@ -1187,21 +1159,6 @@ export default function StatsClient({
           <IconChevronLeft size={20} className="text-warm-600 group-hover:text-primary-600 transition-colors" />
         </button>
       )}
-
-      {/* Refresh Button */}
-      <button
-        onClick={handleRefresh}
-        disabled={loadingDetailed}
-        className="group fixed right-4 z-50 hidden h-12 w-12 items-center justify-center rounded-xl border border-warm-200 bg-white/90 backdrop-blur-sm shadow-lg transition-colors hover:bg-white hover:shadow-xl disabled:opacity-50 lg:flex"
-        style={{ top: 'max(1rem, env(safe-area-inset-top, 0.5rem))' }}
-        title="Refresh stats"
-        aria-label="Refresh stats"
-      >
-        <IconRefresh
-          size={20}
-          className={`text-warm-600 group-hover:text-primary-600 transition-colors ${loadingDetailed ? 'animate-spin' : ''}`}
-        />
-      </button>
 
       {/* Stats Display */}
       {loadingDetailed && !detailedStats ? (

@@ -3,7 +3,7 @@
 import { m } from 'framer-motion';
 import { IconUsers, IconMail, IconCalendar, IconUser, IconClipboardList } from '@/components/icons';
 import { PremiumGlassCard, SectionHeader } from '@/components/golf/dashboard';
-import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
+import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 
 interface TeamInfoPlayerProps {
   team: {
@@ -60,22 +60,12 @@ export function TeamInfoPlayer({ team, coach, roster, announcements, tasks = [] 
   const pendingTasks = tasks.filter(t => t.status !== 'completed');
   const completedTasks = tasks.filter(t => t.status === 'completed');
   return (
-    <div className="p-6 lg:p-8 max-w-4xl mx-auto">
-      {/* Header */}
-      <m.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-8"
-      >
-        <div className="flex items-center gap-3 min-w-0">
-          <MobileMenuButton />
-          <div className="min-w-0">
-            <h1 className="text-xl md:text-2xl font-semibold text-warm-900 truncate">{team.name}</h1>
-            <p className="text-warm-500 mt-1 text-sm md:text-base">Season: {team.season || 'Current'}</p>
-          </div>
-        </div>
-      </m.div>
-
+    <>
+      <LargeTitleHeader
+        title={team.name}
+        subtitle={`Season: ${team.season || 'Current'}`}
+      />
+      <div className="p-4 md:p-6 lg:p-8 max-w-4xl mx-auto">
       <m.div
         variants={containerVariants}
         initial="hidden"
@@ -244,6 +234,7 @@ export function TeamInfoPlayer({ team, coach, roster, announcements, tasks = [] 
           </PremiumGlassCard>
         </m.div>
       </m.div>
-    </div>
+      </div>
+    </>
   );
 }

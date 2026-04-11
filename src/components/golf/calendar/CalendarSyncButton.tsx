@@ -32,6 +32,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Tooltip } from '@/components/ui/tooltip';
+import { openExternalUrl } from '@/lib/utils/capacitor';
 
 async function loadCalendarFeedActions() {
   return import('@/app/golf/actions/calendar-feeds');
@@ -296,10 +297,9 @@ export function CalendarSyncButton({
                   </p>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {/* Google Calendar */}
-                    <a
-                      href={calendarUrls?.google}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      type="button"
+                      onClick={() => calendarUrls?.google && void openExternalUrl(calendarUrls.google)}
                       className={cn(
                         'flex flex-col items-center gap-2 p-4 rounded-xl',
                         'border-2 border-warm-200 hover:border-blue-300',
@@ -311,11 +311,12 @@ export function CalendarSyncButton({
                       <span className="text-xs font-medium text-warm-700 group-hover:text-blue-700">
                         Google
                       </span>
-                    </a>
+                    </button>
 
                     {/* Apple Calendar */}
-                    <a
-                      href={calendarUrls?.apple}
+                    <button
+                      type="button"
+                      onClick={() => calendarUrls?.apple && void openExternalUrl(calendarUrls.apple)}
                       className={cn(
                         'flex flex-col items-center gap-2 p-4 rounded-xl',
                         'border-2 border-warm-200 hover:border-warm-400',
@@ -327,13 +328,12 @@ export function CalendarSyncButton({
                       <span className="text-xs font-medium text-warm-700 group-hover:text-warm-900">
                         Apple
                       </span>
-                    </a>
+                    </button>
 
                     {/* Outlook */}
-                    <a
-                      href={calendarUrls?.outlook}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      type="button"
+                      onClick={() => calendarUrls?.outlook && void openExternalUrl(calendarUrls.outlook)}
                       className={cn(
                         'flex flex-col items-center gap-2 p-4 rounded-xl',
                         'border-2 border-warm-200 hover:border-blue-300',
@@ -345,7 +345,7 @@ export function CalendarSyncButton({
                       <span className="text-xs font-medium text-warm-700 group-hover:text-blue-700">
                         Outlook
                       </span>
-                    </a>
+                    </button>
                   </div>
                 </div>
 

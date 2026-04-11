@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
+import { triggerHaptic } from '@/lib/utils/capacitor';
 
 export interface GolfTabBarItem<T extends string> {
   id: T;
@@ -34,9 +35,10 @@ export function GolfTabBar<T extends string>({
   scrollable = false,
   compact = false,
 }: GolfTabBarProps<T>) {
+  // iOS UISegmentedControl sizing: ~32pt compact / ~40pt regular
   const sizeClasses = compact
-    ? 'min-h-[38px] px-3 py-1.5 text-xs'
-    : 'min-h-[42px] px-3.5 py-2 text-sm';
+    ? 'min-h-[32px] px-3 py-1 text-xs'
+    : 'min-h-[40px] px-3.5 py-1.5 text-[13px]';
 
   return (
     <div
@@ -50,7 +52,9 @@ export function GolfTabBar<T extends string>({
         role="tablist"
         aria-label={ariaLabel}
         className={cn(
-          'inline-flex items-center gap-1 rounded-2xl border border-warm-200/70 bg-warm-100/80 p-1 shadow-sm backdrop-blur-sm',
+          // iOS segmented control: fully rounded pill with subtle inset background
+          'inline-flex items-center gap-0.5 rounded-full bg-warm-100 p-1',
+          'shadow-[inset_0_0_0_0.5px_rgba(0,0,0,0.04)]',
           stretch ? 'w-full' : 'w-max',
           listClassName,
         )}
@@ -63,14 +67,19 @@ export function GolfTabBar<T extends string>({
               type="button"
               role="tab"
               aria-selected={isActive}
-              onClick={() => onChange(tab.id)}
+              onClick={() => {
+                if (!isActive) void triggerHaptic('light');
+                onChange(tab.id);
+              }}
               className={cn(
-                'relative flex items-center justify-center gap-2 whitespace-nowrap rounded-xl font-medium transition-colors',
+                // iOS: active pill slides with spring via transform-friendly shadow/bg
+                'relative flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full font-medium',
+                'transition-[background-color,box-shadow,color,transform] duration-200 ease-out',
                 sizeClasses,
                 stretch && 'flex-1',
                 isActive
-                  ? 'bg-white text-warm-900 shadow-sm ring-1 ring-white/80'
-                  : 'text-warm-500 hover:bg-white/60 hover:text-warm-700 active:bg-white/80',
+                  ? 'bg-white text-warm-900 shadow-[0_1px_2px_rgba(0,0,0,0.12),0_0_0_0.5px_rgba(0,0,0,0.04)]'
+                  : 'text-warm-500 hover:text-warm-700 active:scale-[0.97]',
               )}
             >
               {tab.icon}

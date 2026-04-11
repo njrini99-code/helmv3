@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { ShineEffect } from '@/components/ui/shine-effect';
-import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
+import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
@@ -82,12 +82,12 @@ export default async function GolfQualifiersPage() {
     <AnimatedPage className="min-h-full">
       {/* Header Section */}
       <AnimatedItem>
-      <MobileNavHeader
+      <LargeTitleHeader
         title="Qualifiers"
         subtitle={`${activeCount} active qualifier${activeCount !== 1 ? 's' : ''}`}
       >
         {isCoach && <CreateQualifierButton />}
-      </MobileNavHeader>
+      </LargeTitleHeader>
       </AnimatedItem>
 
       {/* Main Content */}

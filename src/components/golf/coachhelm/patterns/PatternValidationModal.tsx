@@ -11,6 +11,7 @@ import {
 } from '@/components/icons';
 import type { ExtendedPattern, PatternSeverity } from '@/app/golf/actions/pattern-management';
 import { useFocusTrap } from '@/hooks/use-focus-trap';
+import { triggerHaptic } from '@/lib/utils/capacitor';
 
 // ============================================================================
 // TYPES
@@ -272,7 +273,10 @@ export function PatternValidationModal({
                     type="button"
                     role="switch"
                     aria-checked={createFocusArea}
-                    onClick={() => setCreateFocusArea(!createFocusArea)}
+                    onClick={() => {
+                      void triggerHaptic('light');
+                      setCreateFocusArea(!createFocusArea);
+                    }}
                     className={cn(
                       'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
                       createFocusArea ? 'bg-primary-600' : 'bg-warm-300'

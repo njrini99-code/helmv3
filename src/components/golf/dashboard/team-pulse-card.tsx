@@ -25,7 +25,7 @@ export const TeamPulseCard = memo(function TeamPulseCard({ data }: TeamPulseCard
 
     return (
         <div className={cn(
-            'relative overflow-hidden',
+            'relative overflow-clip',
             'bg-glass-subtle backdrop-blur-glass-prominent',
             'border border-white/30 rounded-2xl',
             'shadow-glass p-5'
@@ -118,9 +118,12 @@ export const TeamPulseCard = memo(function TeamPulseCard({ data }: TeamPulseCard
                         )}
                     </>
                 ) : (
-                    <div className="text-center py-4">
-                        <p className="text-sm text-warm-500">No player trends available yet</p>
-                        <p className="text-xs text-warm-400 mt-1">Trends appear after players submit 6+ rounds</p>
+                    <div className="flex flex-col items-center justify-center text-center py-6">
+                        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary-50 to-emerald-50 flex items-center justify-center mb-3">
+                            <IconActivity size={22} className="text-primary-600/70" />
+                        </div>
+                        <p className="text-[15px] font-semibold text-warm-900 tracking-tight mb-1">No player trends yet</p>
+                        <p className="text-xs leading-relaxed text-warm-500 max-w-[240px]">Trends appear after players submit 6+ rounds</p>
                     </div>
                 )}
             </div>

@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { JoinRequestsModal } from './JoinRequestsModal';
 import { getTeamJoinRequests } from '@/app/golf/actions/teams';
 import { RosterToolbar, exportRosterCSV } from './RosterToolbar';
+import { PullToRefresh } from '@/components/golf/PullToRefresh';
 
 type SortField = 'name' | 'handicap' | 'rounds' | 'avg_score';
 type SortDirection = 'asc' | 'desc';
@@ -29,8 +31,14 @@ interface RosterPageClientProps {
  * Client wrapper for roster page that provides sorting, export, and join request modal
  */
 export function RosterPageClient({ children, players }: RosterPageClientProps) {
+  const router = useRouter();
   const [showModal, setShowModal] = useState(false);
   const [hasChecked, setHasChecked] = useState(false);
+
+  const handleRefresh = async () => {
+    router.refresh();
+    await new Promise((resolve) => setTimeout(resolve, 600));
+  };
   // Sort state tracked for toolbar sync (sorting applied server-side on refresh)
   const [, setSortField] = useState<SortField>('name');
   const [, setSortDirection] = useState<SortDirection>('asc');
@@ -68,18 +76,20 @@ export function RosterPageClient({ children, players }: RosterPageClientProps) {
 
   return (
     <>
-      {/* Toolbar is injected via CSS grid order or portal - for now render before children */}
-      {players && players.length > 0 && (
-        <div className="max-w-6xl mx-auto px-4 md:px-6 pt-2" data-roster-toolbar>
-          <RosterToolbar
-            playerCount={players.length}
-            onSortChange={handleSortChange}
-            onExport={handleExport}
-          />
-        </div>
-      )}
+      <PullToRefresh onRefresh={handleRefresh}>
+        {/* Toolbar is injected via CSS grid order or portal - for now render before children */}
+        {players && players.length > 0 && (
+          <div className="max-w-6xl mx-auto px-4 md:px-6 pt-2" data-roster-toolbar>
+            <RosterToolbar
+              playerCount={players.length}
+              onSortChange={handleSortChange}
+              onExport={handleExport}
+            />
+          </div>
+        )}
 
-      {children}
+        {children}
+      </PullToRefresh>
 
       {showModal && hasChecked && (
         <JoinRequestsModal onClose={() => setShowModal(false)} />

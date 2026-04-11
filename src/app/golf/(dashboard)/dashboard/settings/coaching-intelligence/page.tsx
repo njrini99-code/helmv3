@@ -13,9 +13,8 @@ import {
 import { THRESHOLD_RANGES } from '@/lib/coachhelm/constants';
 import type { CoachPhilosophy } from '@/lib/coachhelm/types';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
-import { IconArrowLeft, IconCheck } from '@/components/icons';
-import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
-import Link from 'next/link';
+import { IconCheck } from '@/components/icons';
+import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
 
 type PriorityValues = Pick<
     CoachPhilosophy,
@@ -112,30 +111,21 @@ export default function CoachingIntelligenceSettingsPage() {
     return (
         <AnimatedPage className="min-h-full pb-20">
             {/* Header */}
-            <AnimatedItem className="golf-mobile-page-header">
-                <div className="max-w-3xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <MobileMenuButton />
-                        <Link
-                            href="/golf/dashboard/settings"
-                            className="hidden lg:flex p-2 -ml-2 rounded-lg hover:bg-warm-100 text-warm-500 transition-colors"
-                        >
-                            <IconArrowLeft size={20} />
-                        </Link>
-                        <h1 className="text-lg font-semibold text-warm-900">Coaching Philosophy</h1>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        {saving ? (
-                            <span className="text-xs text-warm-400">Saving...</span>
-                        ) : (
-                            <span className="flex items-center gap-1.5 text-xs font-medium text-primary-600 bg-primary-50 px-2 py-1 rounded-full">
-                                <IconCheck size={12} />
-                                Saved
-                            </span>
-                        )}
-                    </div>
-                </div>
+            <AnimatedItem>
+                <MobileNavHeader
+                    title="Coaching Philosophy"
+                    backHref="/golf/dashboard/settings"
+                    backLabel="Settings"
+                >
+                    {saving ? (
+                        <span className="text-xs text-warm-400">Saving...</span>
+                    ) : (
+                        <span className="flex items-center gap-1.5 text-xs font-medium text-primary-600 bg-primary-50 px-2 py-1 rounded-full">
+                            <IconCheck size={12} />
+                            Saved
+                        </span>
+                    )}
+                </MobileNavHeader>
             </AnimatedItem>
 
             <div className="max-w-3xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-8">

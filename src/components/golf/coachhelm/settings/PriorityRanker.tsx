@@ -20,6 +20,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { cn } from '@/lib/utils';
 import { IconTarget, IconFlag, IconCircleDot, IconMap, IconBrain } from '@/components/icons';
+import { triggerHaptic } from '@/lib/utils/capacitor';
 import { PRIORITY_METRICS, PriorityMetric, CoachPhilosophy } from '@/lib/coachhelm/types';
 
 const METRIC_ICONS: Record<string, React.ReactNode> = {
@@ -139,6 +140,7 @@ export function PriorityRanker({ values, onChange }: PriorityRankerProps) {
     function handleDragEnd(event: DragEndEvent) {
         const { active, over } = event;
         if (!over || active.id === over.id) return;
+        void triggerHaptic('medium');
 
         const oldIndex = items.indexOf(active.id as PriorityKeys);
         const newIndex = items.indexOf(over.id as PriorityKeys);

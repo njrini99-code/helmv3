@@ -83,12 +83,14 @@ export async function setStatusBarStyle(style: 'light' | 'dark' = 'dark'): Promi
 }
 
 /**
- * Hide the native splash screen.
+ * Hide the native splash screen with a smooth fade.
+ * Using fadeOutDuration avoids the abrupt cut from splash → login screen
+ * that feels jarring on iOS.
  */
 export async function hideSplashScreen(): Promise<void> {
   if (!isNativeApp()) return;
   try {
-    await SplashScreen.hide();
+    await SplashScreen.hide({ fadeOutDuration: 250 });
   } catch {
     // SplashScreen not available
   }

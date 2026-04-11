@@ -12,7 +12,7 @@ import { AddClassModal, type ClassFormData } from '@/components/golf/classes/Add
 import { UploadScheduleModal } from '@/components/golf/classes/UploadScheduleModal';
 import { ConfirmClassesModal } from '@/components/golf/classes/ConfirmClassesModal';
 import { ClassDetailModal } from '@/components/golf/classes/ClassDetailModal';
-import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
+import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { formatTimeDisplay, formatDaysDisplay, generateClassColor, type ParsedClass } from '@/lib/utils/schedule-parser';
 import { syncClassToCalendar, removeClassFromCalendar } from '@/app/golf/actions/calendar-sync';
 
@@ -415,42 +415,37 @@ export default function GolfClassesPage() {
   return (
     <AnimatedPage className="min-h-full">
       {/* Header */}
-      <AnimatedItem className="golf-mobile-page-header">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <MobileMenuButton />
-              <div className="min-w-0">
-                <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900 truncate">My Classes</h1>
-                <p className="text-sm text-warm-500 mt-0.5 truncate">
-                  {classes.length > 0
-                    ? `${classes.length} class${classes.length !== 1 ? 'es' : ''} • ${totalCredits} credits`
-                    : 'Academic schedule'
-                  }
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3 sm:justify-end flex-shrink-0">
-              {classes.length > 0 && (
-                <Button
-                  variant="danger"
-                  onClick={handleDeleteAllClasses}
-                  className="gap-2"
-                >
-                  Delete All
-                </Button>
-              )}
-              <Button variant="secondary" onClick={() => setShowUploadModal(true)} className="gap-2">
-                <IconUpload size={18} />
-                Import Schedule
-              </Button>
-              <Button onClick={() => { setEditingClass(null); setShowAddModal(true); }} className="gap-2">
-                <IconPlus size={18} />
-                Add Class
-              </Button>
-            </div>
-          </div>
-        </div>
+      <AnimatedItem>
+        <LargeTitleHeader
+          title="My Classes"
+          subtitle={
+            classes.length > 0
+              ? `${classes.length} class${classes.length !== 1 ? 'es' : ''} • ${totalCredits} credits`
+              : 'Academic schedule'
+          }
+        >
+          {classes.length > 0 && (
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={handleDeleteAllClasses}
+              className="gap-2"
+            >
+              <span className="hidden sm:inline">Delete All</span>
+              <span className="sm:hidden">Delete</span>
+            </Button>
+          )}
+          <Button variant="secondary" size="sm" onClick={() => setShowUploadModal(true)} className="gap-2">
+            <IconUpload size={16} />
+            <span className="hidden sm:inline">Import Schedule</span>
+            <span className="sm:hidden">Import</span>
+          </Button>
+          <Button size="sm" onClick={() => { setEditingClass(null); setShowAddModal(true); }} className="gap-2">
+            <IconPlus size={16} />
+            <span className="hidden sm:inline">Add Class</span>
+            <span className="sm:hidden">Add</span>
+          </Button>
+        </LargeTitleHeader>
       </AnimatedItem>
 
       <div className="p-4 md:p-6 max-w-7xl mx-auto">

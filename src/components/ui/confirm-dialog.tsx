@@ -1,8 +1,10 @@
 'use client';
 
+import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { IconWarning, IconX } from '@/components/icons';
 import { useFocusTrap } from '@/hooks/use-focus-trap';
+import { triggerHaptic, isNativeApp } from '@/lib/utils/capacitor';
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -29,12 +31,24 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   const { modalRef } = useFocusTrap(open, onCancel);
 
+  useEffect(() => {
+    if (open) {
+      void triggerHaptic(variant === 'danger' ? 'warning' : 'light');
+    }
+  }, [open, variant]);
+
   if (!open) return null;
+
+  const handleConfirm = () => {
+    void triggerHaptic(variant === 'danger' ? 'heavy' : 'medium');
+    onConfirm();
+  };
 
   const variantStyles = {
     danger: {
-      icon: 'bg-red-50 text-red-600',
-      button: 'bg-red-600 hover:bg-red-700 text-white',
+      icon: 'bg-red-50 text-[#FF3B30]',
+      // iOS SF Red (#FF3B30) for destructive
+      button: 'bg-[#FF3B30] hover:bg-[#E0352B] text-white',
     },
     warning: {
       icon: 'bg-amber-50 text-amber-600',
@@ -47,6 +61,52 @@ export function ConfirmDialog({
   };
 
   const styles = variantStyles[variant];
+
+  // iOS-style action sheet (danger on native): bottom-anchored, red destructive
+  // button on top, Cancel as a separate rounded card below. Matches UIAlertController
+  // with UIAlertControllerStyleActionSheet.
+  if (variant === 'danger' && isNativeApp()) {
+    return (
+      <div
+        className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm animate-fade-in"
+        onClick={onCancel}
+      >
+        <div
+          ref={modalRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label={title}
+          className="w-full max-w-md px-3 pb-[max(12px,env(safe-area-inset-bottom))] space-y-2 animate-slide-up"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Sheet body: title + message + destructive action */}
+          <div className="overflow-hidden rounded-2xl bg-white/95 backdrop-blur-xl shadow-xl">
+            <div className="px-5 pt-4 pb-3 text-center border-b border-warm-200/70">
+              <h2 className="text-[13px] font-semibold text-warm-900">{title}</h2>
+              <p className="mt-1 text-[12px] leading-snug text-warm-600">{message}</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleConfirm}
+              disabled={isLoading}
+              className="w-full px-5 py-3.5 text-[17px] font-semibold text-[#FF3B30] active:bg-warm-100/80 transition-colors disabled:opacity-50"
+            >
+              {isLoading ? 'Please wait…' : confirmLabel}
+            </button>
+          </div>
+          {/* Cancel as separate card */}
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isLoading}
+            className="w-full rounded-2xl bg-white/95 backdrop-blur-xl px-5 py-3.5 text-[17px] font-semibold text-warm-900 shadow-xl active:bg-warm-100/80 transition-colors disabled:opacity-50"
+          >
+            {cancelLabel}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -89,7 +149,7 @@ export function ConfirmDialog({
             {cancelLabel}
           </Button>
           <button
-            onClick={onConfirm}
+            onClick={handleConfirm}
             disabled={isLoading}
             className={`px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 ${styles.button}`}
           >

@@ -32,6 +32,7 @@ import { HoleConfigurationForm } from '@/components/golf/HoleConfigurationForm';
 import { SaveRoundModal } from '@/components/golf/SaveRoundModal';
 import { RoundSubmitOverlay } from '@/components/golf/RoundSubmitOverlay';
 import { useToast } from '@/components/ui/toast';
+import { triggerHaptic } from '@/lib/utils/capacitor';
 // DraftIndicator removed - was too noisy
 import type { HoleConfig } from '@/lib/types/golf-course';
 import { useMobileNav } from '@/contexts/mobile-nav-context';
@@ -1266,6 +1267,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
       clearEmergencySave(savedRoundIdRef.current);
 
       // Show success celebration — the overlay auto-navigates to round review
+      void triggerHaptic('success');
       setCompletedRoundId(result.data.roundId);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to submit round';
@@ -1281,6 +1283,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
         return;
       }
 
+      void triggerHaptic('error');
       setError(message);
       isSubmittingRef.current = false;
       // Stay on submitting step so the overlay can show the error state

@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { cn } from '@/lib/utils';
-import { Modal, ModalFooter } from '@/components/ui/modal';
+import { ModalFooter } from '@/components/ui/modal';
+import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { SearchBar } from '@/components/ui/search-bar';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -214,15 +215,13 @@ export function GolfNewMessageModal({
   };
 
   return (
-    <Modal
-      isOpen={isOpen}
+    <BottomSheet
+      open={isOpen}
       onClose={onClose}
       title="New Message"
       description={currentUserRole === 'coach' ? 'Select a player to start a conversation' : 'Select a team member to start a conversation'}
-      size="md"
-     
     >
-      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div ref={modalRef}>
       <div className="space-y-4">
         {/* No Team Error */}
         {noTeamError && (
@@ -314,6 +313,6 @@ export function GolfNewMessageModal({
         </Button>
       </ModalFooter>
       </div>
-    </Modal>
+    </BottomSheet>
   );
 }

@@ -266,12 +266,12 @@ export function EmptyState({
   // ============================================================================
   if (variant === 'compact') {
     return (
-      <div className={cn('flex flex-col items-center justify-center text-center py-8', className)}>
-        <div className="w-16 h-16 rounded-full bg-warm-100 flex items-center justify-center text-warm-400 mb-4 animate-pulse-subtle">
+      <div className={cn('flex flex-col items-center justify-center text-center py-12 px-6', className)}>
+        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary-50 to-emerald-50 flex items-center justify-center text-primary-600/80 mb-5">
           {finalIcon}
         </div>
-        <h3 className="text-base font-semibold text-warm-900 mb-2">{finalTitle}</h3>
-        <p className="text-sm text-warm-500 max-w-sm mb-6">{finalDescription}</p>
+        <h3 className="text-base font-semibold text-warm-900 tracking-tight mb-2">{finalTitle}</h3>
+        <p className="text-sm leading-relaxed text-warm-500 max-w-sm mb-6">{finalDescription}</p>
         {(finalAction || finalSecondaryAction) && (
           <div className="flex flex-col sm:flex-row items-center gap-3">
             {finalAction && renderAction(finalAction, true)}
@@ -287,12 +287,12 @@ export function EmptyState({
   // ============================================================================
   if (variant === 'card') {
     const cardContent = (
-      <div className="p-8 text-center animate-fade-in">
-        <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-primary-50 to-emerald-50 flex items-center justify-center text-primary-600">
+      <div className="p-10 text-center animate-fade-in">
+        <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-gradient-to-br from-primary-50 to-emerald-50 flex items-center justify-center text-primary-600/80">
           {finalIcon}
         </div>
-        <h3 className="text-lg font-semibold text-warm-900 tracking-tight mb-2">{finalTitle}</h3>
-        <p className="text-sm leading-relaxed text-warm-500 mb-6 max-w-md mx-auto">{finalDescription}</p>
+        <h3 className="text-[17px] font-semibold text-warm-900 tracking-tight mb-2">{finalTitle}</h3>
+        <p className="text-sm leading-relaxed text-warm-500 mb-7 max-w-md mx-auto">{finalDescription}</p>
         {suggestion && (
           <p className="text-xs text-warm-400 mb-4">{suggestion}</p>
         )}
@@ -320,27 +320,27 @@ export function EmptyState({
     }
 
     return (
-      <div className={cn('bg-white rounded-2xl border border-warm-200 shadow-sm', className)}>
+      <div className={cn('bg-white rounded-2xl border border-warm-200/70 shadow-sm overflow-clip', className)}>
         {cardContent}
       </div>
     );
   }
 
   // ============================================================================
-  // Default Variant
+  // Default Variant (iOS-native: large soft tinted circle, generous spacing)
   // ============================================================================
   return (
-    <div className={cn('text-center py-16 px-4 animate-fade-in', className)}>
+    <div className={cn('text-center py-20 px-6 animate-fade-in', className)}>
       <div className="relative w-20 h-20 mx-auto mb-6">
-        <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary-100/50 to-emerald-100/50 animate-pulse" />
-        <div className="relative w-full h-full rounded-2xl bg-warm-100 flex items-center justify-center text-warm-400">
+        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary-100/60 to-emerald-100/50" />
+        <div className="relative w-full h-full rounded-full flex items-center justify-center text-primary-600/80">
           {finalIcon}
         </div>
       </div>
-      <h3 className="text-lg font-semibold text-warm-900 tracking-tight mb-2">{finalTitle}</h3>
-      <p className="text-sm leading-relaxed text-warm-500 mb-6 max-w-sm mx-auto">{finalDescription}</p>
+      <h3 className="text-[17px] font-semibold text-warm-900 tracking-tight mb-2">{finalTitle}</h3>
+      <p className="text-sm leading-relaxed text-warm-500 mb-7 max-w-sm mx-auto">{finalDescription}</p>
       {suggestion && (
-        <p className="text-xs text-warm-400 mb-4">
+        <p className="text-xs text-warm-400 mb-5">
           {suggestion}
         </p>
       )}
@@ -366,11 +366,11 @@ export interface SearchEmptyStateProps {
 
 export function SearchEmptyState({ query, filters, onClearFilters }: SearchEmptyStateProps) {
   return (
-    <div className="text-center py-16 px-4 animate-fade-in">
-      <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-warm-100 flex items-center justify-center">
+    <div className="text-center py-20 px-6 animate-fade-in">
+      <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-warm-100 to-warm-50 flex items-center justify-center">
         <IconSearch size={32} className="text-warm-400" />
       </div>
-      <h3 className="text-lg font-semibold text-warm-900 tracking-tight mb-2">
+      <h3 className="text-[17px] font-semibold text-warm-900 tracking-tight mb-2">
         No results found
       </h3>
       <p className="text-sm leading-relaxed text-warm-500 mb-4 max-w-sm mx-auto">

@@ -11,6 +11,7 @@ import {
   updateTeam,
   regenerateJoinCode,
 } from '@/app/golf/actions/teams';
+import { triggerHaptic } from '@/lib/utils/capacitor';
 
 interface TeamSettingsClientProps {
   coach: {
@@ -54,9 +55,11 @@ export function TeamSettingsClient({ team }: TeamSettingsClientProps) {
       const result = await createTeam(teamName, season);
 
       if (result.success) {
+        void triggerHaptic('success');
         showToast('Team created successfully!', 'success');
         router.refresh();
       } else {
+        void triggerHaptic('error');
         showToast(result.error || 'Failed to create team', 'error');
       }
     });
@@ -72,9 +75,11 @@ export function TeamSettingsClient({ team }: TeamSettingsClientProps) {
       });
 
       if (result.success) {
+        void triggerHaptic('success');
         showToast('Team updated successfully!', 'success');
         router.refresh();
       } else {
+        void triggerHaptic('error');
         showToast(result.error || 'Failed to update team', 'error');
       }
     });
@@ -85,20 +90,24 @@ export function TeamSettingsClient({ team }: TeamSettingsClientProps) {
 
     const inviteUrl = `${window.location.origin}/golf/join/${team.join_code}`;
     await navigator.clipboard.writeText(inviteUrl);
+    void triggerHaptic('light');
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   const handleRegenerateInviteCode = () => {
     if (!team) return;
+    void triggerHaptic('warning');
 
     startTransition(async () => {
       const result = await regenerateJoinCode(team.id);
 
       if (result.success) {
+        void triggerHaptic('success');
         showToast('Invite code regenerated', 'success');
         router.refresh();
       } else {
+        void triggerHaptic('error');
         showToast(result.error || 'Failed to regenerate invite code', 'error');
       }
     });

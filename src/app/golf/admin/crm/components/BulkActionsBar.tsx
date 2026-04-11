@@ -106,8 +106,8 @@ export function BulkActionsBar({
       <div className="w-px h-5 bg-warm-200" />
 
       {/* Dismiss */}
-      <button onClick={onClear} className="p-1.5 rounded-xl hover:bg-warm-50 transition-colors text-warm-500">
-        <IconX size={16} />
+      <button onClick={onClear} aria-label="Clear selection" className="p-1.5 rounded-xl hover:bg-warm-50 transition-colors text-warm-500">
+        <IconX size={16} aria-hidden="true" />
       </button>
     </div>
   );

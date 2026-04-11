@@ -5,16 +5,16 @@ import { m, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { IconPlus, IconClipboardList, IconChevronRight, IconChevronDown } from '@/components/icons';
-import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
+import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { CreateTaskModal } from '@/components/golf/tasks/CreateTaskModal';
 import { TasksList } from '@/components/golf/tasks/TasksList';
 import { TaskTemplateList } from '@/components/golf/tasks/TaskTemplateList';
 import { CreateFromTemplateModal } from '@/components/golf/tasks/CreateFromTemplateModal';
 import { cn } from '@/lib/utils';
-import { fadeUp } from '@/lib/motion';
 import { useGolfUser } from '@/contexts/golf-user-context';
 import { useTaskRealtime } from '@/hooks/golf/use-task-realtime';
 import type { TaskTemplate } from '@/app/golf/actions/tasks';
+import { PullToRefresh } from '@/components/golf/PullToRefresh';
 
 type FilterType = 'all' | 'active' | 'completed';
 
@@ -63,6 +63,10 @@ export default function GolfTasksPage() {
     playerId: userRole === 'player' ? playerId : undefined,
     assignedToPlayerOnly: userRole === 'player',
   });
+
+  const handleRefresh = async () => {
+    await refetch();
+  };
 
   // Transform real-time tasks to expected format
   const tasks: Task[] = realtimeTasks.map(task => ({
@@ -150,44 +154,27 @@ export default function GolfTasksPage() {
   return (
     <div className="min-h-full bg-transparent">
       {/* Header */}
-      <m.div
-        variants={fadeUp}
-        initial="hidden"
-        animate="visible"
-        className="golf-mobile-page-header"
+      <LargeTitleHeader
+        title="Tasks"
+        subtitle={userRole === 'coach' ? 'Assign and track player tasks' : 'View and complete your assigned tasks'}
       >
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <MobileMenuButton />
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">Tasks</h1>
-                  <span className="inline-flex items-center gap-1.5 text-xs font-medium text-primary-600 bg-primary-50 px-2 py-1 rounded-full">
-                    <span className="relative flex h-1.5 w-1.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-75" />
-                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary-500" />
-                    </span>
-                    Live
-                  </span>
-                </div>
-                <p className="text-sm text-warm-500 mt-0.5">
-                  {userRole === 'coach' ? 'Assign and track player tasks' : 'View and complete your assigned tasks'}
-                </p>
-              </div>
-            </div>
-            {userRole === 'coach' && (
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <Button onClick={() => setCreateModalOpen(true)}>
-                  <IconPlus size={18} />
-                  Create Task
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
-      </m.div>
+        <span className="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium text-primary-600 bg-primary-50 px-2 py-1 rounded-full">
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary-500" />
+          </span>
+          Live
+        </span>
+        {userRole === 'coach' && (
+          <Button onClick={() => setCreateModalOpen(true)} size="sm">
+            <IconPlus size={16} />
+            <span className="hidden sm:inline">Create Task</span>
+            <span className="sm:hidden">New</span>
+          </Button>
+        )}
+      </LargeTitleHeader>
 
+      <PullToRefresh onRefresh={handleRefresh}>
       <div className="max-w-4xl mx-auto px-4 md:px-6 py-6 md:py-8">
 
         {/* Due Date Alert Banner */}
@@ -355,6 +342,7 @@ export default function GolfTasksPage() {
           )}
         </div>
       </div>
+      </PullToRefresh>
 
       {/* Create Task Modal */}
       {userRole === 'coach' && teamId && (

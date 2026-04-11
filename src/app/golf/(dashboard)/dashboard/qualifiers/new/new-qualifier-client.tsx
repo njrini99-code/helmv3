@@ -6,7 +6,8 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input, Textarea } from '@/components/ui/input';
 import { ShineEffect } from '@/components/ui/shine-effect';
-import { IconArrowLeft, IconFlag, IconCalendar, IconMapPin, IconUsers, IconCheck } from '@/components/icons';
+import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
+import { IconFlag, IconCalendar, IconMapPin, IconUsers, IconCheck } from '@/components/icons';
 import { createGolfQualifier } from '@/app/golf/actions/golf';
 
 interface Player {
@@ -75,23 +76,12 @@ export default function NewQualifierClient({ players }: NewQualifierClientProps)
 
   return (
     <div className="min-h-full bg-transparent">
-      {/* Header */}
-      <div className="border-b border-warm-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-3xl mx-auto px-6 py-4">
-          <div className="flex items-center gap-4">
-            <Link
-              href="/golf/dashboard/qualifiers"
-              className="p-2 -ml-2 rounded-lg text-warm-500 hover:text-warm-700 hover:bg-warm-100 active:bg-warm-200 transition-colors"
-            >
-              <IconArrowLeft size={20} />
-            </Link>
-            <div>
-              <h1 className="text-xl font-semibold text-warm-900">Create Qualifier</h1>
-              <p className="text-sm text-warm-500">Set up a new team qualifier</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <MobileNavHeader
+        title="New Qualifier"
+        subtitle="Set up a new team qualifier"
+        backHref="/golf/dashboard/qualifiers"
+        backLabel="Qualifiers"
+      />
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="max-w-3xl mx-auto px-6 py-8">

@@ -109,9 +109,13 @@ export function CountBadge({ count, max = 99, variant = 'danger', className }: C
 
   const variantClasses = {
     primary: 'bg-primary-600 text-white',
-    danger: 'bg-red-500 text-white',
+    // iOS system red — matches native notification badges on the home screen
+    danger: 'text-white',
     warning: 'bg-amber-500 text-white',
   };
+
+  const inlineStyle =
+    variant === 'danger' ? { backgroundColor: '#FF3B30' } : undefined;
 
   return (
     <span
@@ -122,6 +126,7 @@ export function CountBadge({ count, max = 99, variant = 'danger', className }: C
         variantClasses[variant],
         className
       )}
+      style={inlineStyle}
     >
       {displayCount}
     </span>

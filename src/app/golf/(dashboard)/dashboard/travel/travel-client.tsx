@@ -17,7 +17,7 @@ import {
   IconDownload,
   IconChartBar,
 } from '@/components/icons';
-import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
+import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import { markTravelSeen } from '@/app/golf/actions/player-notifications';
 import {
@@ -368,41 +368,33 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
   return (
     <div className="min-h-full">
       {/* Header */}
-      <div className="golf-mobile-page-header">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <MobileMenuButton />
-              <div>
-              <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">Travel</h1>
-              <p className="text-sm text-warm-500 mt-0.5" suppressHydrationWarning>
-                {itineraries.length === 0
-                  ? 'Tournament travel itineraries & expenses'
-                  : (() => {
-                      const now = new Date();
-                      const upcoming = itineraries.filter(i => new Date(i.departure_date) > now).length;
-                      const past = itineraries.length - upcoming;
-                      return `${upcoming} upcoming trip${upcoming !== 1 ? 's' : ''}${past > 0 ? ` \u00b7 ${past} completed` : ''}`;
-                    })()
-                }
-              </p>
-              </div>
-            </div>
-            {isCoach && (
-              <button
-                onClick={() => {
-                  resetForm();
-                  setShowModal(true);
-                }}
-                className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
-              >
-                <IconPlus size={18} />
-                Add Itinerary
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
+      <LargeTitleHeader
+        title="Travel"
+        subtitle={
+          itineraries.length === 0
+            ? 'Tournament travel itineraries & expenses'
+            : (() => {
+                const now = new Date();
+                const upcoming = itineraries.filter(i => new Date(i.departure_date) > now).length;
+                const past = itineraries.length - upcoming;
+                return `${upcoming} upcoming trip${upcoming !== 1 ? 's' : ''}${past > 0 ? ` \u00b7 ${past} completed` : ''}`;
+              })()
+        }
+      >
+        {isCoach && (
+          <button
+            onClick={() => {
+              resetForm();
+              setShowModal(true);
+            }}
+            className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+          >
+            <IconPlus size={18} />
+            <span className="hidden sm:inline">Add Itinerary</span>
+            <span className="sm:hidden">Add</span>
+          </button>
+        )}
+      </LargeTitleHeader>
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">

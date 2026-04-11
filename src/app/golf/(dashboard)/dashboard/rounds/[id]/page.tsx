@@ -4,9 +4,9 @@ import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Metadata } from 'next';
 import { Button } from '@/components/ui/button';
-import { IconArrowLeft, IconChartBar } from '@/components/icons';
+import { IconChartBar } from '@/components/icons';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
-import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
+import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
 import { RoundReviewViewer } from '@/components/golf/coachhelm/RoundReviewViewer';
 import { PremiumRoundHeader } from '@/components/golf/rounds/PremiumRoundHeader';
 
@@ -138,27 +138,25 @@ export default async function RoundDetailPage({
   const playerAvatarUrl = roundData.player?.avatar_url || null;
 
   return (
-    <AnimatedPage className="p-4 md:p-6 max-w-5xl mx-auto">
+    <AnimatedPage className="max-w-5xl mx-auto">
       {/* Navigation */}
       <AnimatedItem>
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <MobileMenuButton />
-          <Link href="/golf/dashboard/rounds">
+        <MobileNavHeader
+          title={roundData.course_name || 'Round'}
+          subtitle={playerName}
+          backHref="/golf/dashboard/rounds"
+          backLabel="Rounds"
+        >
+          <Link href="/golf/dashboard/stats">
             <Button variant="secondary" size="sm">
-              <IconArrowLeft size={16} className="mr-2" />
-              Back
+              <IconChartBar size={16} className="mr-2" />
+              <span className="hidden sm:inline">View All Stats</span>
+              <span className="sm:hidden">Stats</span>
             </Button>
           </Link>
-        </div>
-        <Link href="/golf/dashboard/stats">
-          <Button variant="secondary" size="sm">
-            <IconChartBar size={16} className="mr-2" />
-            View All Stats
-          </Button>
-        </Link>
-      </div>
+        </MobileNavHeader>
       </AnimatedItem>
+      <div className="p-4 md:p-6">
 
       {/* Premium Header - player info, score, stats */}
       <AnimatedItem>
@@ -191,6 +189,7 @@ export default async function RoundDetailPage({
       <RoundReviewViewer roundId={id} isCoach={isCoach} className="mt-6" />
       </AnimatedItem>
 
+      </div>
     </AnimatedPage>
   );
 }

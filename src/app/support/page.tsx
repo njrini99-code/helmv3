@@ -7,7 +7,6 @@ import {
   BookOpen,
   Shield,
   FileText,
-  MessageSquare,
   ArrowRight,
 } from 'lucide-react';
 
@@ -28,11 +27,11 @@ const faqs = [
   },
   {
     q: 'I forgot my password. How do I reset it?',
-    a: 'On the login screen, tap "Forgot Password" and enter the email associated with your account. We\'ll send you a secure reset link. If it doesn\'t arrive within a few minutes, check your spam folder or email us at support@helmsportslabs.com.',
+    a: 'On the login screen, tap "Forgot Password" and enter the email associated with your account. We\'ll send you a secure reset link. If it doesn\'t arrive within a few minutes, check your spam folder or email us at admin@helmsportslabs.com.',
   },
   {
     q: 'How do I delete my account?',
-    a: 'Open the app, go to Settings, and tap "Delete Account". This permanently removes your profile, stats, and personal data. You can also email support@helmsportslabs.com and we\'ll process the deletion within 7 days.',
+    a: 'Open the app, go to Settings, and tap "Delete Account". This permanently removes your profile, stats, and personal data. You can also email admin@helmsportslabs.com and we\'ll process the deletion within 7 days.',
   },
   {
     q: 'Is Helm Sports Labs free to use?',
@@ -48,7 +47,7 @@ const faqs = [
   },
   {
     q: 'I\'m experiencing a bug or crash. What should I do?',
-    a: 'Please email support@helmsportslabs.com with a description of the issue, the device and iOS version you\'re using, and any screenshots. We typically respond within 1 business day.',
+    a: 'Please email admin@helmsportslabs.com with a description of the issue, the device and iOS version you\'re using, and any screenshots. We typically respond within 1 business day.',
   },
   {
     q: 'Can I use the app without an internet connection?',
@@ -96,7 +95,7 @@ export default function SupportPage() {
         {/* Contact Cards */}
         <div className="grid md:grid-cols-2 gap-4 mb-12">
           <a
-            href="mailto:support@helmsportslabs.com"
+            href="mailto:admin@helmsportslabs.com"
             className="group bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6 hover:bg-white/80 hover:shadow-card-hover transition-all duration-200"
           >
             <div className="flex items-start gap-4">
@@ -111,7 +110,7 @@ export default function SupportPage() {
                   The fastest way to reach our team.
                 </p>
                 <span className="inline-flex items-center gap-1 text-sm font-medium text-primary-600 group-hover:gap-2 transition-all">
-                  support@helmsportslabs.com
+                  admin@helmsportslabs.com
                   <ArrowRight size={14} />
                 </span>
               </div>
@@ -172,7 +171,7 @@ export default function SupportPage() {
           <h2 className="text-2xl font-bold text-warm-900 mb-6">
             More Resources
           </h2>
-          <div className="grid sm:grid-cols-2 gap-4">
+          <div className="grid sm:grid-cols-3 gap-4">
             <Link
               href="/privacy"
               className="flex items-center gap-3 p-5 bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass hover:bg-white/80 hover:shadow-card-hover transition-all duration-200"
@@ -194,16 +193,6 @@ export default function SupportPage() {
               <BookOpen size={18} className="text-primary-600 flex-shrink-0" />
               <span className="font-medium text-warm-900">About Helm</span>
             </Link>
-            <a
-              href="mailto:support@helmsportslabs.com?subject=Feedback"
-              className="flex items-center gap-3 p-5 bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass hover:bg-white/80 hover:shadow-card-hover transition-all duration-200"
-            >
-              <MessageSquare
-                size={18}
-                className="text-primary-600 flex-shrink-0"
-              />
-              <span className="font-medium text-warm-900">Send Feedback</span>
-            </a>
           </div>
         </section>
 
@@ -212,10 +201,10 @@ export default function SupportPage() {
           <p>
             Helm Sports Labs &middot;{' '}
             <a
-              href="mailto:support@helmsportslabs.com"
+              href="mailto:admin@helmsportslabs.com"
               className="text-primary-600 hover:underline"
             >
-              support@helmsportslabs.com
+              admin@helmsportslabs.com
             </a>
           </p>
           <p className="mt-2">

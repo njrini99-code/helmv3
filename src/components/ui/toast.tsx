@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { CheckCircle, XCircle, AlertTriangle, Info, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { triggerHaptic } from '@/lib/utils/capacitor';
 
 interface Toast {
   id: string;
@@ -30,6 +31,11 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     const id = Math.random().toString(36).substr(2, 9);
     const duration = toast.duration ?? 5000;
     setToasts(prev => [...prev, { ...toast, id, duration }]);
+
+    // Native haptic feedback — fire-and-forget, no-ops on web.
+    if (toast.type === 'success') void triggerHaptic('success');
+    else if (toast.type === 'error') void triggerHaptic('error');
+    else if (toast.type === 'warning') void triggerHaptic('warning');
 
     setTimeout(() => {
       setToasts(prev => prev.filter(t => t.id !== id));
@@ -81,7 +87,13 @@ export function useToast() {
 function ToastContainerInternal({ toasts, onRemove }: { toasts: Toast[]; onRemove: (id: string) => void }) {
   return (
     <div
-      className="fixed bottom-6 right-6 z-[60] flex flex-col gap-3 pointer-events-none pb-[env(safe-area-inset-bottom)]"
+      className={cn(
+        'fixed z-[60] flex flex-col gap-3 pointer-events-none',
+        // Mobile: centered bottom (iOS-native banner position), clear of tab bar + safe area.
+        'bottom-[calc(env(safe-area-inset-bottom)+5rem)] left-4 right-4 items-center',
+        // Desktop: bottom-right stack, tighter to the edge.
+        'md:bottom-6 md:right-6 md:left-auto md:items-end md:pb-[env(safe-area-inset-bottom)]',
+      )}
       role="region"
       aria-label="Notifications"
     >
@@ -168,10 +180,12 @@ function ToastItem({ toast, onRemove, index }: { toast: Toast; onRemove: () => v
       role="alert"
       className={cn(
         'pointer-events-auto w-full max-w-[380px] bg-white border border-warm-200 border-l-4 rounded-[14px] shadow-lg overflow-hidden',
-        'transition-all duration-200 ease-out',
+        // iOS spring easing — matches native banner feel.
+        'transition-all duration-300 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)]',
+        // Mobile slides up from below; desktop keeps a subtle slide-in-right.
         isExiting
-          ? 'opacity-0 translate-x-[120%] scale-95'
-          : 'opacity-100 translate-x-0 scale-100 animate-slide-in-right',
+          ? 'opacity-0 translate-y-6 md:translate-y-0 md:translate-x-[120%] scale-95'
+          : 'opacity-100 translate-y-0 translate-x-0 scale-100 animate-slide-up md:animate-slide-in-right',
         colors.border,
       )}
       style={{ animationDelay: `${index * 50}ms` }}

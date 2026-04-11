@@ -11,7 +11,7 @@ import { PlayerActionsMenu } from '@/components/golf/roster/PlayerActionsMenu';
 import { PendingJoinRequests } from '@/components/golf/roster/PendingJoinRequests';
 import { RosterPageClient } from '@/components/golf/roster/RosterPageClient';
 import { PlayerRosterView } from '@/components/golf/roster/PlayerRosterView';
-import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
+import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { IconUsers, IconChartBar, IconMessage, IconAlertCircle } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -325,12 +325,12 @@ export default async function GolfRosterPage() {
     <AnimatedPage className="min-h-full bg-transparent">
       {/* Header Section */}
       <AnimatedItem>
-      <MobileNavHeader
+      <LargeTitleHeader
         title="Team Roster"
         subtitle={`${playersWithStats.length} ${playersWithStats.length === 1 ? 'player' : 'players'} on ${teamName}`}
       >
         <InvitePlayerButton teamName={teamName} existingCode={inviteCode} />
-      </MobileNavHeader>
+      </LargeTitleHeader>
       </AnimatedItem>
 
       {/* Main Content */}

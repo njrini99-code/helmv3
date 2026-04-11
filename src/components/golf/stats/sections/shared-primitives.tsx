@@ -9,27 +9,26 @@ import { useAnimatedNumber } from '@/hooks/useAnimatedNumber';
 // ANIMATION VARIANTS
 // ============================================================================
 
+// iOS-native: snappy entrance, quick stagger, no delayChildren.
 export const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.05,
-      delayChildren: 0.1,
+      staggerChildren: 0.04,
+      delayChildren: 0,
     },
   },
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 20, scale: 0.95 },
+  hidden: { opacity: 0, y: 8 },
   visible: {
     opacity: 1,
     y: 0,
-    scale: 1,
     transition: {
-      type: 'spring' as const,
-      stiffness: 300,
-      damping: 24,
+      duration: 0.25,
+      ease: [0.25, 0.1, 0.25, 1] as [number, number, number, number],
     },
   },
 };

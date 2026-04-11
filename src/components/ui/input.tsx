@@ -16,6 +16,54 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   onClear?: () => void;
 }
 
+// Map input type to sensible iOS keyboard / autocomplete defaults.
+// Consumers can still override via explicit props — we merge props LAST so
+// caller values always win. This gets ~90% of iOS keyboard polish for free.
+function getIOSDefaults(type?: string): Partial<React.InputHTMLAttributes<HTMLInputElement>> {
+  switch (type) {
+    case 'email':
+      return {
+        inputMode: 'email',
+        autoComplete: 'email',
+        autoCapitalize: 'none',
+        autoCorrect: 'off',
+        spellCheck: false,
+      };
+    case 'tel':
+      return {
+        inputMode: 'tel',
+        autoComplete: 'tel',
+        autoCorrect: 'off',
+      };
+    case 'url':
+      return {
+        inputMode: 'url',
+        autoCapitalize: 'none',
+        autoCorrect: 'off',
+        spellCheck: false,
+      };
+    case 'search':
+      return {
+        inputMode: 'search',
+        autoCorrect: 'off',
+        autoCapitalize: 'none',
+      };
+    case 'number':
+      return {
+        inputMode: 'decimal',
+        autoComplete: 'off',
+      };
+    case 'password':
+      return {
+        autoCapitalize: 'none',
+        autoCorrect: 'off',
+        spellCheck: false,
+      };
+    default:
+      return {};
+  }
+}
+
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className, label, error, success, hint, leftIcon, rightIcon, onRightIconClick, type, id, variant = 'default', clearable = false, onClear, value, onChange, ...props }, ref) => {
     const [showPassword, setShowPassword] = useState(false);
@@ -26,6 +74,13 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     const inputType = isPassword ? (showPassword ? 'text' : 'password') : type;
 
     const hasValue = value !== undefined && value !== '';
+
+    // iOS keyboard defaults from type — caller props override via spread order below.
+    const iosDefaults = getIOSDefaults(type);
+
+    const errorId = error ? `${inputId}-error` : undefined;
+    const hintId = hint && !error && !success ? `${inputId}-hint` : undefined;
+    const describedBy = props['aria-describedby'] || errorId || hintId;
 
     const handleClear = useCallback(() => {
       if (onClear) {
@@ -39,8 +94,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       }
     }, [onClear, onChange]);
 
+    // iOS-native input: 48pt tap target, 12px rounding, subtle warm border,
+    // 16px base font (lg:text-sm desktop), primary-500 ring on focus.
     const baseStyles = cn(
-      'w-full px-4 py-2.5 rounded-[10px] text-warm-900 text-base lg:text-sm',
+      'w-full min-h-[48px] px-4 py-3 rounded-xl text-warm-900 text-base lg:text-sm',
       'placeholder:text-warm-400',
       'transition-all duration-200',
       'focus:outline-none',
@@ -49,18 +106,18 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 
     const variants = {
       default: cn(
-        'bg-white border border-warm-200',
+        'bg-white/90 border border-warm-200',
         error
-          ? 'border-red-300 focus:border-red-500 focus:ring-[3px] focus:ring-red-500/10'
+          ? 'border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-500/20'
           : success
-          ? 'border-primary-300 focus:border-primary-500 focus:ring-[3px] focus:ring-primary-500/10'
-          : 'focus:border-primary-600 focus:ring-[3px] focus:ring-primary-600/10 hover:border-warm-300'
+          ? 'border-primary-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/25'
+          : 'hover:border-warm-300 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30'
       ),
       glass: cn(
         'bg-white/60 backdrop-blur-sm border border-white/30',
         error
-          ? 'focus:bg-white/80 focus:border-red-500 focus:ring-[3px] focus:ring-red-500/10'
-          : 'focus:bg-white/80 focus:border-primary-600 focus:ring-[3px] focus:ring-primary-600/10'
+          ? 'focus:bg-white/80 focus:border-red-500 focus:ring-2 focus:ring-red-500/20'
+          : 'focus:bg-white/80 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30'
       ),
     };
 
@@ -85,12 +142,16 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             </div>
           )}
           <input
+            {...iosDefaults}
+            {...props}
             ref={ref}
             id={inputId}
             type={inputType}
             value={value}
             onChange={onChange}
-            aria-invalid={!!error}
+            aria-invalid={!!error || props['aria-invalid']}
+            aria-required={props.required || props['aria-required']}
+            aria-describedby={describedBy}
             onFocus={(e) => {
               setIsFocused(true);
               props.onFocus?.(e);
@@ -106,7 +167,6 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               (rightIcon || isPassword || (clearable && hasValue)) && 'pr-11',
               className
             )}
-            {...props}
           />
           {/* Clear button */}
           {clearable && hasValue && !isPassword && !rightIcon && (
@@ -168,10 +228,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           )}
         </div>
         {hint && !error && !success && (
-          <p className="mt-1.5 text-xs text-warm-500">{hint}</p>
+          <p id={hintId} className="mt-1.5 text-xs text-warm-500">{hint}</p>
         )}
         {error && (
-          <p className="mt-1.5 text-xs text-red-600 flex items-center gap-1 animate-fade-in">
+          <p id={errorId} className="mt-1.5 text-xs text-red-600 flex items-center gap-1 animate-fade-in">
             <svg className="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
             </svg>
@@ -209,6 +269,10 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
     const isNearLimit = maxLength ? charCount > maxLength * 0.9 : false;
     const isOverLimit = maxLength ? charCount > maxLength : false;
 
+    const errorId = error ? `${textareaId}-error` : undefined;
+    const hintId = hint && !error ? `${textareaId}-hint` : undefined;
+    const describedBy = props['aria-describedby'] || errorId || hintId;
+
     return (
       <div className="w-full">
         {label && (
@@ -221,11 +285,14 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           </label>
         )}
         <textarea
+          {...props}
           ref={ref}
           id={textareaId}
           value={value}
           maxLength={maxLength}
-          aria-invalid={!!error}
+          aria-invalid={!!error || props['aria-invalid']}
+          aria-required={props.required || props['aria-required']}
+          aria-describedby={describedBy}
           onFocus={(e) => {
             setIsFocused(true);
             props.onFocus?.(e);
@@ -235,26 +302,25 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
             props.onBlur?.(e);
           }}
           className={cn(
-            'w-full px-4 py-3 rounded-[10px] border bg-white text-warm-900 text-base lg:text-sm',
+            'w-full px-4 py-3 rounded-xl border bg-white/90 text-warm-900 text-base lg:text-sm',
             'placeholder:text-warm-400',
             'transition-all duration-200 resize-none',
-            'focus:outline-none focus:ring-[3px] focus:border-primary-600 focus:ring-primary-600/10',
+            'focus:outline-none focus:ring-2 focus:border-primary-500 focus:ring-primary-500/30',
             'hover:border-warm-300',
             'disabled:opacity-50 disabled:cursor-not-allowed',
             error
-              ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10'
+              ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20'
               : 'border-warm-200',
             className
           )}
-          {...props}
         />
         <div className="flex items-center justify-between mt-1.5">
           <div>
             {hint && !error && (
-              <p className="text-xs text-warm-500">{hint}</p>
+              <p id={hintId} className="text-xs text-warm-500">{hint}</p>
             )}
             {error && (
-              <p className="text-xs text-red-600 flex items-center gap-1 animate-fade-in">
+              <p id={errorId} className="text-xs text-red-600 flex items-center gap-1 animate-fade-in">
                 <svg className="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                 </svg>

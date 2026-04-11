@@ -452,6 +452,13 @@ const config: Config = {
       transitionTimingFunction: {
         'DEFAULT': 'cubic-bezier(0.4, 0, 0.2, 1)',
         'bounce': 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+        // ═══════════════════════════════════════════════════════════════
+        // iOS SYSTEM EASING — use these for native-feeling animations
+        // ═══════════════════════════════════════════════════════════════
+        'ios': 'cubic-bezier(0.25, 0.1, 0.25, 1)',           // standard ease-out
+        'ios-spring': 'cubic-bezier(0.32, 0.72, 0, 1)',      // iOS sheet / bottom sheet
+        'ios-smooth': 'cubic-bezier(0.16, 1, 0.3, 1)',       // iOS nav transition
+        'ios-sharp': 'cubic-bezier(0.4, 0, 0.6, 1)',         // iOS alert dismiss
         // Legacy timings
         'out': 'cubic-bezier(0.33, 1, 0.68, 1)',
         'smooth': 'cubic-bezier(0.16, 1, 0.3, 1)',

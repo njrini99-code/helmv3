@@ -3,6 +3,7 @@
 import { cn } from '@/lib/utils';
 import { IconMenu } from '@/components/icons';
 import { useSidebar } from '@/contexts/sidebar-context';
+import { triggerHaptic } from '@/lib/utils/capacitor';
 
 interface MobileMenuButtonProps {
   className?: string;
@@ -26,10 +27,19 @@ interface MobileMenuButtonProps {
 export function MobileMenuButton({ className, onClick, label = 'Open navigation menu' }: MobileMenuButtonProps) {
   const { toggleMobile, mobileOpen } = useSidebar();
 
+  const handleClick = () => {
+    void triggerHaptic('light');
+    if (onClick) {
+      onClick();
+    } else {
+      toggleMobile();
+    }
+  };
+
   return (
     <button
       type="button"
-      onClick={onClick ?? toggleMobile}
+      onClick={handleClick}
       className={cn(
         'lg:hidden p-2.5 -ml-2 rounded-xl flex-shrink-0',
         'text-warm-500 hover:text-warm-700 hover:bg-warm-100/80',

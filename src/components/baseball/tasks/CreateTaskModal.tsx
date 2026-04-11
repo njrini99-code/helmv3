@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Modal } from '@/components/ui/modal';
+import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/toast';
@@ -109,7 +109,7 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Create New Task">
+    <BottomSheet open={isOpen} onClose={onClose} title="Create New Task">
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
           label="Task Title"
@@ -284,6 +284,6 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
           </Button>
         </div>
       </form>
-    </Modal>
+    </BottomSheet>
   );
 }

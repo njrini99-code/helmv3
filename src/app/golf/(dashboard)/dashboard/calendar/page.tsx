@@ -3,7 +3,7 @@ import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { GolfCalendarWrapper } from '@/components/golf/calendar/GolfCalendarWrapper';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
-import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
+import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { Metadata } from 'next';
 
@@ -185,7 +185,7 @@ export default async function GolfCalendarPage() {
     <AnimatedPage>
       <AnimatedItem>
         <div className="min-h-full flex flex-col">
-          <MobileNavHeader title="Calendar" />
+          <LargeTitleHeader title="Calendar" />
           {events.length > 0 && (
             <div className="flex-shrink-0 px-4 md:px-6 pb-2">
               <div className="flex items-center gap-4 overflow-x-auto scrollbar-hide">

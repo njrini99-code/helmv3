@@ -365,7 +365,7 @@ async function sendPushNotification(supabase: any, task: any): Promise<void> {
   // Get VAPID configuration from environment
   const vapidPublicKey = Deno.env.get("VAPID_PUBLIC_KEY");
   const vapidPrivateKey = Deno.env.get("VAPID_PRIVATE_KEY");
-  const vapidSubject = Deno.env.get("VAPID_SUBJECT") || "mailto:support@helmsportslabs.com";
+  const vapidSubject = Deno.env.get("VAPID_SUBJECT") || "mailto:admin@helmsportslabs.com";
 
   if (!vapidPublicKey || !vapidPrivateKey) {
     console.log("Push notification skipped: VAPID keys not configured");

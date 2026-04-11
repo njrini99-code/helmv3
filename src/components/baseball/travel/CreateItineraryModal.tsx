@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Modal } from '@/components/ui/modal';
+import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -115,11 +115,10 @@ export function CreateItineraryModal({
   }
 
   return (
-    <Modal
-      isOpen={isOpen}
+    <BottomSheet
+      open={isOpen}
       onClose={onClose}
       title={itinerary ? 'Edit Trip' : 'Create Trip'}
-      size="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-5">
         {error && (
@@ -198,6 +197,6 @@ export function CreateItineraryModal({
           </Button>
         </div>
       </form>
-    </Modal>
+    </BottomSheet>
   );
 }

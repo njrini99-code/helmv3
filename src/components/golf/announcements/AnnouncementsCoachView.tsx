@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { ConfirmModal } from '@/components/ui/modal';
 import { useToast } from '@/components/ui/toast';
 import { deleteAnnouncement, getAnnouncementDetail } from '@/app/golf/actions/announcements';
+import { openExternalUrl } from '@/lib/utils/capacitor';
 import type { GolfAnnouncementMeta, GolfAnnouncementEnriched } from '@/lib/types/golf';
 
 // ─── Animation ────────────────────────────────────────────────────────────────
@@ -288,18 +289,20 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
                         <p className="text-label font-semibold text-warm-400 uppercase tracking-widest mb-2.5">Attachments</p>
                         <div className="flex flex-wrap gap-2">
                           {detail.documents.map((d) => (
-                            <a
+                            <button
+                              type="button"
                               key={d.document_id}
-                              href={d.document?.file_url || '#'}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                              onClick={() => {
+                                const url = d.document?.file_url;
+                                if (url) void openExternalUrl(url);
+                              }}
                               className="flex items-center gap-2 px-3 py-2 bg-warm-50 rounded-xl border border-warm-200 hover:bg-warm-100 hover:border-warm-300 active:scale-[0.98] transition-all"
                             >
                               <div className="w-7 h-7 rounded-lg bg-white border border-warm-200 flex items-center justify-center">
                                 <IconFile size={13} className="text-warm-400" />
                               </div>
                               <span className="text-xs font-medium text-warm-700">{d.document?.title || 'Document'}</span>
-                            </a>
+                            </button>
                           ))}
                         </div>
                       </div>

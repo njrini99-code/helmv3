@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { PageLoading } from '@/components/ui/loading';
 import { IntelligenceCommandCenter } from '@/components/golf/coachhelm/v2';
-import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
+import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { getTeamCategoryInsights, getTeamOverview } from '@/app/golf/actions/team-category-insights';
 import { TeamCategoryView, TeamCompositeCard, TeamShotOverview } from '@/components/golf/coachhelm/coach';
 
@@ -57,19 +57,10 @@ export default async function IntelligenceDashboardPage() {
   return (
     <div className="flex flex-col min-h-full">
       {/* Header */}
-      <div className="golf-mobile-page-header">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <MobileMenuButton />
-              <div>
-                <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">CoachHelm AI</h1>
-                <p className="text-sm text-warm-500 mt-0.5">Team intelligence by category</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <LargeTitleHeader
+        title="CoachHelm AI"
+        subtitle="Team intelligence by category"
+      />
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8 w-full">

@@ -7,7 +7,6 @@ import { cn } from '@/lib/utils';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
 import {
-  IconArrowLeft,
   IconMessage,
   IconTarget,
   IconChartBar,
@@ -296,15 +295,12 @@ export function PlayerInsightClient({
     <AnimatedPage className="min-h-full bg-transparent">
       {/* Header */}
       <AnimatedItem>
-        <MobileNavHeader title="Player Insight" subtitle={playerName}>
-          <Link
-            href="/golf/dashboard/roster"
-            className="flex items-center gap-1.5 text-sm text-warm-500 hover:text-warm-700 transition-colors"
-          >
-            <IconArrowLeft size={16} />
-            <span className="hidden sm:inline">Roster</span>
-          </Link>
-        </MobileNavHeader>
+        <MobileNavHeader
+          title={playerName || 'Player Insight'}
+          subtitle="Player Insight"
+          backHref="/golf/dashboard/roster"
+          backLabel="Roster"
+        />
       </AnimatedItem>
 
       <AnimatedItem>

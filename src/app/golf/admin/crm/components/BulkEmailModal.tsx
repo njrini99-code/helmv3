@@ -473,6 +473,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
               <button
                 onClick={onClose}
                 disabled={sending}
+                aria-label="Close"
                 className="p-2 rounded-xl hover:bg-warm-50 text-warm-400 hover:text-warm-600 transition-colors disabled:opacity-50"
               >
                 <IconX size={18} />

@@ -1,6 +1,5 @@
 'use client';
 
-import { m } from 'framer-motion';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import {
@@ -105,15 +104,15 @@ export function CoachHelmHeader({
   const { toggleMobile } = useSidebar();
 
   return (
-    <div className="golf-mobile-page-header relative bg-white/50 backdrop-blur-sm">
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-5">
-        <div className="flex items-center justify-between">
-          {/* Left side: hamburger, icon, and title */}
-          <div className="flex items-center gap-3 md:gap-4">
+    <div className="golf-mobile-page-header">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
+        <div className="flex items-center justify-between gap-3">
+          {/* Left: hamburger + sparkle icon + title */}
+          <div className="flex items-center gap-2.5 md:gap-4 min-w-0 flex-1">
             <button
               onClick={toggleMobile}
               className={cn(
-                'lg:hidden p-2.5 -ml-2 rounded-xl touch-manipulation',
+                'lg:hidden p-2 -ml-2 rounded-xl touch-manipulation flex-shrink-0',
                 'text-warm-500 hover:text-warm-700 hover:bg-warm-100/80',
                 'transition-colors duration-150 active:scale-95',
                 'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
@@ -122,45 +121,38 @@ export function CoachHelmHeader({
             >
               <IconMenu size={22} />
             </button>
-            <m.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/20"
-            >
-              <IconSparkles size={24} className="text-white" />
-            </m.div>
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight text-warm-900">
+            <div className="w-9 h-9 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/20 flex-shrink-0">
+              <IconSparkles size={18} className="text-white md:hidden" />
+              <IconSparkles size={24} className="text-white hidden md:block" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-lg md:text-2xl font-semibold tracking-tight text-warm-900 truncate">
                 CoachHelm AI
               </h1>
-              <p className="text-warm-500 text-sm">
+              <p className="text-warm-500 text-xs md:text-sm truncate">
                 Your personal golf intelligence
               </p>
             </div>
           </div>
 
-          {/* Right side: Badges and actions */}
-          <div className="flex items-center gap-3">
-            {/* State badge */}
-            <m.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
+          {/* Right: badges + actions — badge hidden on mobile, icons-only */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* State badge (desktop only — icon pill takes over on mobile) */}
+            <div
               className={cn(
-                'px-3 py-1.5 rounded-full text-xs font-medium',
+                'hidden md:flex px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap',
                 stateLabel.bgColor,
                 stateLabel.color
               )}
             >
               {stateLabel.text}
-            </m.div>
+            </div>
 
-            {/* Alert level badge - only show if not 'none' */}
+            {/* Alert level badge (desktop only, if non-none) */}
             {alertLevel !== 'none' && (
-              <m.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
+              <div
                 className={cn(
-                  'px-3 py-1.5 rounded-full text-xs font-medium hidden sm:flex items-center gap-1.5',
+                  'hidden md:flex px-3 py-1.5 rounded-full text-xs font-medium items-center gap-1.5 whitespace-nowrap',
                   alertConfig.bgColor,
                   alertConfig.textColor
                 )}
@@ -172,13 +164,27 @@ export function CoachHelmHeader({
                   'bg-blue-500'
                 )} />
                 {alertConfig.label}
-              </m.div>
+              </div>
             )}
 
-            {/* Last updated */}
-            <span className="text-xs text-warm-400 hidden sm:block" suppressHydrationWarning>
+            {/* Last updated (desktop only) */}
+            <span className="text-xs text-warm-400 hidden lg:block whitespace-nowrap" suppressHydrationWarning>
               Updated {formatLastUpdated(lastUpdated)}
             </span>
+
+            {/* Mobile-only state dot — visually signals status without eating space */}
+            <span
+              className={cn(
+                'md:hidden w-2 h-2 rounded-full',
+                alertLevel === 'critical' ? 'bg-red-500 animate-pulse' :
+                alertLevel === 'warning' ? 'bg-amber-500' :
+                playerState === 'improving' ? 'bg-primary-500' :
+                playerState === 'struggling' ? 'bg-amber-500' :
+                'bg-warm-400'
+              )}
+              aria-label={stateLabel.text}
+              title={stateLabel.text}
+            />
 
             {/* Refresh button */}
             {onRefresh && (
@@ -186,7 +192,7 @@ export function CoachHelmHeader({
                 onClick={onRefresh}
                 disabled={isRefreshing}
                 className={cn(
-                  'p-2 rounded-lg text-warm-500 hover:text-warm-700 hover:bg-white/50 active:bg-white/70 transition-all',
+                  'p-2 rounded-lg text-warm-500 hover:text-warm-700 hover:bg-white/50 active:bg-white/70 transition-all flex-shrink-0',
                   isRefreshing && 'animate-spin pointer-events-none'
                 )}
                 title="Refresh insights"
@@ -199,8 +205,9 @@ export function CoachHelmHeader({
             {/* Settings link */}
             <Link
               href="/golf/dashboard/settings"
-              className="p-2 rounded-lg text-warm-500 hover:text-warm-700 hover:bg-white/50 active:bg-white/70 transition-all"
+              className="p-2 rounded-lg text-warm-500 hover:text-warm-700 hover:bg-white/50 active:bg-white/70 transition-all flex-shrink-0"
               title="AI Settings"
+              aria-label="AI Settings"
             >
               <IconSettings size={18} />
             </Link>

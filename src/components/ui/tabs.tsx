@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
+import { triggerHaptic } from '@/lib/utils/capacitor';
 
 const TabsContext = createContext<{
   value: string;
@@ -97,7 +98,10 @@ export function TabsTrigger({ value, children, icon, badge, className }: {
       ref={ref}
       role="tab"
       aria-selected={isActive}
-      onClick={() => ctx.onChange(value)}
+      onClick={() => {
+        if (!isActive) void triggerHaptic('light');
+        ctx.onChange(value);
+      }}
       className={cn(
         'relative z-10 px-4 py-2 min-h-[44px] text-sm font-medium rounded-md',
         'transition-colors duration-200 ease-out',

@@ -1,6 +1,7 @@
 'use client';
 
 import { CoachPhilosophy, ALERT_GROUPS } from '@/lib/coachhelm/types';
+import { triggerHaptic } from '@/lib/utils/capacitor';
 
 interface AlertTypeTogglesProps {
     values: CoachPhilosophy;
@@ -27,7 +28,10 @@ export function AlertTypeToggles({ values, onChange }: AlertTypeTogglesProps) {
                                         <input
                                             type="checkbox"
                                             checked={isChecked}
-                                            onChange={(e) => onChange(alert.key, e.target.checked)}
+                                            onChange={(e) => {
+                                                void triggerHaptic('light');
+                                                onChange(alert.key, e.target.checked);
+                                            }}
                                             className="peer h-5 w-5 rounded border-warm-300 text-primary-600 focus:ring-primary-500/20"
                                         />
                                     </div>

@@ -304,9 +304,10 @@ export function OfflineIndicator({
               {(syncError || (!isOnline && pendingCount.total === 0)) && onDismissError && (
                 <button
                   onClick={onDismissError}
+                  aria-label="Dismiss"
                   className="p-1 text-white/60 hover:text-white transition-colors"
                 >
-                  <CloseIcon className="w-4 h-4" />
+                  <CloseIcon className="w-4 h-4" aria-hidden="true" />
                 </button>
               )}
             </div>

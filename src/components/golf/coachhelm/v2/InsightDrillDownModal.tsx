@@ -13,7 +13,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useFocusTrap } from '@/hooks/use-focus-trap';
-import { Modal } from '@/components/ui/modal';
+import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { cn } from '@/lib/utils';
 import { GolfTabBar } from '@/components/golf/GolfTabBar';
 import {
@@ -111,8 +111,8 @@ export function InsightDrillDownModal({
   };
 
   return (
-    <Modal open={open} onClose={onClose} size="xl">
-      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="insight-drilldown-title" className="min-h-[500px] flex flex-col -mx-6 -mb-6">
+    <BottomSheet open={open} onClose={onClose}>
+      <div ref={modalRef} className="min-h-[500px] flex flex-col -mx-6 -mb-6">
         {/* Header with tone accent */}
         <div className={cn('px-6 pt-4 pb-3 border-b', toneStyle.bg, toneStyle.border)}>
           {/* Tone indicator */}
@@ -296,7 +296,7 @@ export function InsightDrillDownModal({
           </AnimatePresence>
         </div>
       </div>
-    </Modal>
+    </BottomSheet>
   );
 }
 

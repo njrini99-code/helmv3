@@ -168,51 +168,36 @@ export function PlayerCoachHelmDashboard({
       />
 
       {/* Main Content */}
-      <div className="relative max-w-7xl mx-auto px-4 md:px-6 py-8">
+      <div className="relative max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
         {/* Empty state */}
-        {!hasData && (
-          <m.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <EmptyState />
-          </m.div>
-        )}
+        {!hasData && <EmptyState />}
 
-        {/* Dashboard content */}
+        {/* Dashboard content — animations simplified for mobile performance.
+            Only the section switch animates; interior content renders instantly. */}
         {hasData && (
           <>
             {/* Section Toggle */}
-            <m.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-6"
-            >
+            <div className="mb-6">
               <GolfTabBar
                 tabs={sectionTabs}
                 value={activeSection}
                 onChange={setActiveSection}
                 ariaLabel="CoachHelm sections"
               />
-            </m.div>
+            </div>
 
             {/* Insights Section */}
-            <AnimatePresence mode="popLayout">
+            <AnimatePresence mode="wait" initial={false}>
               {activeSection === 'insights' && (
                 <m.div
                   key="insights"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  transition={{ duration: 0.3 }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.15 }}
                 >
-                  {/* Top Row — Composite Rating + Trend Dashboard (full width, side by side) */}
-                  <m.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4 }}
-                    className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6"
-                  >
+                  {/* Top Row — Composite Rating + Trend Dashboard */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                     <CompositeRatingCard
                       profileData={profileData ?? undefined}
                       playerState={dashboardData.playerState}
@@ -222,93 +207,68 @@ export function PlayerCoachHelmDashboard({
                       trendData={trendData ?? undefined}
                       playerState={dashboardData.playerState}
                     />
-                  </m.div>
+                  </div>
 
                   {/* Main Content — 2 columns */}
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
-                    {/* Left Column — AI Insights (with evidence metrics visible) */}
+                    {/* Left Column — AI Insights */}
                     <div className="lg:col-span-7 space-y-6">
-                      <m.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4, delay: 0.05 }}
-                      >
-                        <AIInsightsPanel
-                          insights={dashboardData.insights}
-                          maxDisplay={5}
-                        />
-                      </m.div>
+                      <AIInsightsPanel
+                        insights={dashboardData.insights}
+                        maxDisplay={5}
+                      />
                     </div>
 
                     {/* Right Column — Focus Areas, Prediction */}
                     <div className="lg:col-span-5 space-y-6">
-                      <m.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4, delay: 0.1 }}
-                      >
-                        <FocusAreasGrid focusAreas={dashboardData.focusAreas} />
-                      </m.div>
-
-                      <m.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.4, delay: 0.15 }}
-                      >
-                        <PerformancePrediction
-                          prediction={dashboardData.prediction}
-                          playerState={dashboardData.playerState}
-                        />
-                      </m.div>
+                      <FocusAreasGrid focusAreas={dashboardData.focusAreas} />
+                      <PerformancePrediction
+                        prediction={dashboardData.prediction}
+                        playerState={dashboardData.playerState}
+                      />
                     </div>
                   </div>
 
                   {/* Bottom Row — Tabbed: Shot Analysis | What If */}
-                  <m.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, delay: 0.2 }}
-                  >
-                    <GolfTabBar
-                      tabs={bottomTabs}
-                      value={activeBottomTab}
-                      onChange={setActiveBottomTab}
-                      ariaLabel="Analysis sections"
-                      compact
-                    />
-                    <div className="mt-4">
-                      <AnimatePresence mode="popLayout">
-                        {activeBottomTab === 'shot-analysis' && (
-                          <m.div
-                            key="shot-analysis"
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: 20 }}
-                            transition={{ duration: 0.3 }}
-                          >
-                            <ShotAnalysisCard
-                              shotData={shotData ?? undefined}
-                              playerId={playerId}
-                            />
-                          </m.div>
-                        )}
-                        {activeBottomTab === 'what-if' && (
-                          <m.div
-                            key="what-if"
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -20 }}
-                            transition={{ duration: 0.3 }}
-                          >
-                            <WhatIfPanel
-                              playerId={playerId}
-                              profileData={profileData ?? undefined}
-                            />
-                          </m.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  </m.div>
+                  <GolfTabBar
+                    tabs={bottomTabs}
+                    value={activeBottomTab}
+                    onChange={setActiveBottomTab}
+                    ariaLabel="Analysis sections"
+                    compact
+                  />
+                  <div className="mt-4">
+                    <AnimatePresence mode="wait" initial={false}>
+                      {activeBottomTab === 'shot-analysis' && (
+                        <m.div
+                          key="shot-analysis"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.15 }}
+                        >
+                          <ShotAnalysisCard
+                            shotData={shotData ?? undefined}
+                            playerId={playerId}
+                          />
+                        </m.div>
+                      )}
+                      {activeBottomTab === 'what-if' && (
+                        <m.div
+                          key="what-if"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.15 }}
+                        >
+                          <WhatIfPanel
+                            playerId={playerId}
+                            profileData={profileData ?? undefined}
+                          />
+                        </m.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 </m.div>
               )}
 
@@ -316,10 +276,10 @@ export function PlayerCoachHelmDashboard({
               {activeSection === 'analytics' && (
                 <m.div
                   key="analytics"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3 }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.15 }}
                 >
                   <ShotAnalyticsPanel
                     playerId={playerId}

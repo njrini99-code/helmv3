@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import {
   IconRefresh,
 } from '@/components/icons';
-import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
+import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { PatternDashboard } from '@/components/golf/coachhelm/patterns';
 import type { ExtendedPattern, PatternSeverity } from '@/app/golf/actions/pattern-management';
 
@@ -51,40 +51,24 @@ export function PatternsDashboardClient({
   return (
     <div className="min-h-full bg-transparent">
       {/* Header */}
-      <div className="golf-mobile-page-header">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <MobileMenuButton />
-              <div>
-                <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">
-                  Pattern Management
-                </h1>
-                <p className="text-sm text-warm-500 mt-0.5">
-                  Review and manage AI-detected performance patterns
-                </p>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex items-center gap-3">
-              <button
-                onClick={handleRefresh}
-                disabled={isPending}
-                className={cn(
-                  'flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors',
-                  'bg-white border border-warm-200 text-warm-700',
-                  'hover:bg-warm-50 active:bg-warm-100 hover:border-warm-300',
-                  isPending && 'opacity-50 cursor-not-allowed'
-                )}
-              >
-                <IconRefresh size={16} className={isPending ? 'animate-spin' : ''} />
-                Refresh
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <LargeTitleHeader
+        title="Pattern Management"
+        subtitle="Review and manage AI-detected performance patterns"
+      >
+        <button
+          onClick={handleRefresh}
+          disabled={isPending}
+          className={cn(
+            'flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors',
+            'bg-white border border-warm-200 text-warm-700',
+            'hover:bg-warm-50 active:bg-warm-100 hover:border-warm-300',
+            isPending && 'opacity-50 cursor-not-allowed'
+          )}
+        >
+          <IconRefresh size={16} className={isPending ? 'animate-spin' : ''} />
+          <span className="hidden sm:inline">Refresh</span>
+        </button>
+      </LargeTitleHeader>
 
       {/* Main content */}
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-8">

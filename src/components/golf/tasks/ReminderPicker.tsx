@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { REMINDER_PRESETS, ReminderType, ReminderPreset } from '@/lib/types/golf';
+import { triggerHaptic } from '@/lib/utils/capacitor';
 
 interface ReminderPickerProps {
   dueDate?: string;
@@ -86,6 +87,7 @@ export function ReminderPicker({
 
   // Handle toggle
   const handleToggle = () => {
+    void triggerHaptic('light');
     if (isEnabled) {
       setIsEnabled(false);
       setSelectedPreset('');
@@ -143,6 +145,7 @@ export function ReminderPicker({
           type="button"
           role="switch"
           aria-checked={isEnabled}
+          aria-label="Toggle reminder"
           onClick={handleToggle}
           disabled={disabled || !dueDate}
           className={cn(

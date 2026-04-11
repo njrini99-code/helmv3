@@ -18,7 +18,7 @@ import {
     IconGolf,
     IconTarget,
 } from '@/components/icons';
-import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
+import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { cn } from '@/lib/utils';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -295,9 +295,12 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
     // Defer time-dependent values to client to avoid hydration mismatch
     // (server timezone differs from browser timezone)
     const [greeting, setGreeting] = useState('');
+    const [todayStr, setTodayStr] = useState('');
     useEffect(() => {
-        const hour = new Date().getHours();
+        const now = new Date();
+        const hour = now.getHours();
         setGreeting(hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening');
+        setTodayStr(now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }));
     }, []);
 
     const firstName = coach.full_name?.split(' ')[0] || 'Coach';
@@ -307,45 +310,38 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
 
     const hasTrendData = teamScoringTrend && teamScoringTrend.length >= 2;
 
-    const [todayStr, setTodayStr] = useState('');
-    useEffect(() => {
-        setTodayStr(new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }));
-    }, []);
-
     return (
         <div className="min-h-full bg-transparent">
-            {/* HEADER — z-10 is sufficient inside the isolate main container */}
-            <div className="golf-mobile-page-header">
-                <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
-                    <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                            <MobileMenuButton />
-                            <div className="min-w-0">
-                                <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900 truncate">
-                                    {greeting}, {firstName}
-                                </h1>
-                                <div className="flex items-center gap-2 mt-0.5">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse flex-shrink-0" />
-                                    <span className="text-warm-500 text-xs font-medium truncate">{team?.name || 'Golf Team'}</span>
-                                    <span className="hidden md:inline text-warm-300">&middot;</span>
-                                    <span className="hidden md:inline text-warm-400 text-xs">{todayStr}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                            <DateRangeSelector value={dateRange} onChange={handleDateRangeChange} />
-                            <div className={cn(
-                                'hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg',
-                                'bg-warm-50/80 border border-warm-200/40',
-                                'text-xs text-warm-400'
-                            )}>
-                                <kbd className="px-1 py-0.5 bg-white rounded text-micro font-medium shadow-sm border border-warm-200/60">&#8984;</kbd>
-                                <kbd className="px-1 py-0.5 bg-white rounded text-micro font-medium shadow-sm border border-warm-200/60">K</kbd>
-                            </div>
-                        </div>
+            {/* HEADER */}
+            <LargeTitleHeader
+                title={`${greeting}, ${firstName}`}
+                subtitle={
+                    <div className="flex items-center gap-2 min-w-0">
+                        <span className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse flex-shrink-0" aria-hidden="true" />
+                        <span className="text-warm-500 text-sm font-medium truncate">
+                            {team?.name || 'Golf Team'}
+                        </span>
+                        {todayStr && (
+                            <>
+                                <span className="hidden md:inline text-warm-300" aria-hidden="true">&middot;</span>
+                                <span className="hidden md:inline text-warm-400 text-xs truncate" suppressHydrationWarning>
+                                    {todayStr}
+                                </span>
+                            </>
+                        )}
                     </div>
+                }
+            >
+                <DateRangeSelector value={dateRange} onChange={handleDateRangeChange} />
+                <div className={cn(
+                    'hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg',
+                    'bg-warm-50/80 border border-warm-200/40',
+                    'text-xs text-warm-400'
+                )}>
+                    <kbd className="px-1 py-0.5 bg-white rounded text-micro font-medium shadow-sm border border-warm-200/60">&#8984;</kbd>
+                    <kbd className="px-1 py-0.5 bg-white rounded text-micro font-medium shadow-sm border border-warm-200/60">K</kbd>
                 </div>
-            </div>
+            </LargeTitleHeader>
 
             {/* MAIN CONTENT */}
             <m.div

@@ -15,7 +15,7 @@ import {
 import dynamic from 'next/dynamic';
 import { cn } from '@/lib/utils';
 import { ShineEffect } from '@/components/ui/shine-effect';
-import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
+import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { PlayerFocusAreas } from '@/components/golf/coachhelm/insights';
 
 const TrendChart = dynamic(() => import('./TrendChart').then(mod => ({ default: mod.TrendChart })), {
@@ -139,9 +139,10 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
     const [todayStr, setTodayStr] = useState('');
 
     useEffect(() => {
-        const hour = new Date().getHours();
+        const now = new Date();
+        const hour = now.getHours();
         setGreeting(hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening');
-        setTodayStr(new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }));
+        setTodayStr(now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }));
     }, []);
 
     const chartData = useMemo(() => {
@@ -154,25 +155,26 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
 
     return (
         <div className="min-h-full bg-transparent">
-            {/* HEADER — z-10 is sufficient inside the isolate main container */}
-            <div className="golf-mobile-page-header">
-                <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-4">
-                    <div className="flex items-center gap-3">
-                        <MobileMenuButton />
-                        <div className="flex-1 min-w-0">
-                            <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900 truncate">
-                                {greeting}, {player.first_name}
-                            </h1>
-                            <div className="flex items-center gap-2 mt-0.5">
-                                <span className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse flex-shrink-0" />
-                                <span className="text-warm-500 text-xs font-medium truncate">{team?.name || 'Your Team'}</span>
-                                <span className="hidden sm:inline text-warm-300">&middot;</span>
-                                <span className="hidden sm:inline text-warm-400 text-xs">{todayStr}</span>
-                            </div>
-                        </div>
+            {/* HEADER */}
+            <LargeTitleHeader
+                title={`${greeting}, ${player.first_name}`}
+                subtitle={
+                    <div className="flex items-center gap-2 min-w-0">
+                        <span className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse flex-shrink-0" aria-hidden="true" />
+                        <span className="text-warm-500 text-sm font-medium truncate">
+                            {team?.name || 'Your Team'}
+                        </span>
+                        {todayStr && (
+                            <>
+                                <span className="hidden md:inline text-warm-300" aria-hidden="true">&middot;</span>
+                                <span className="hidden md:inline text-warm-400 text-xs truncate" suppressHydrationWarning>
+                                    {todayStr}
+                                </span>
+                            </>
+                        )}
                     </div>
-                </div>
-            </div>
+                }
+            />
 
             {/* MAIN CONTENT */}
             <m.div

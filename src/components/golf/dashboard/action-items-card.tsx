@@ -72,7 +72,7 @@ export const ActionItemsCard = memo(function ActionItemsCard({ items, role }: Ac
 
     return (
         <div className={cn(
-            'relative overflow-hidden',
+            'relative overflow-clip',
             'glass-premium',
             'rounded-2xl'
         )}>
@@ -119,12 +119,12 @@ export const ActionItemsCard = memo(function ActionItemsCard({ items, role }: Ac
                         transition={{ duration: 0.2 }}
                     >
                         {activeItems.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-10 text-center">
-                                <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center mb-3">
-                                    <IconCheck size={18} className="text-primary-500" />
+                            <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
+                                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary-50 to-emerald-50 flex items-center justify-center mb-4">
+                                    <IconCheck size={24} className="text-primary-600/80" />
                                 </div>
-                                <p className="text-sm font-medium text-warm-700 mb-0.5">All caught up</p>
-                                <p className="text-xs text-warm-400">
+                                <p className="text-[15px] font-semibold text-warm-900 tracking-tight mb-1">All caught up</p>
+                                <p className="text-xs leading-relaxed text-warm-500">
                                     {activeTab === 'tasks' ? 'No pending tasks' :
                                      activeTab === 'announcements' ? 'No new announcements' :
                                      'No upcoming deadlines'}

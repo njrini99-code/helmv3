@@ -253,8 +253,8 @@ function SingleCoachQuickAction({
               <h3 className="font-bold text-base">{coach.name}</h3>
               <p className="text-warm-300 text-sm">{coach.school} &middot; {coach.conference}</p>
             </div>
-            <button onClick={onClose} className="p-1.5 rounded-xl hover:bg-white/10 transition-colors">
-              <IconX size={18} className="text-white/70" />
+            <button onClick={onClose} aria-label="Close" className="p-1.5 rounded-xl hover:bg-white/10 transition-colors">
+              <IconX size={18} className="text-white/70" aria-hidden="true" />
             </button>
           </div>
         </div>

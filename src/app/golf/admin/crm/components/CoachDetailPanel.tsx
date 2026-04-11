@@ -427,8 +427,8 @@ function CoachDetailPanelInner({
                     <button onClick={cancelEditContact} className="px-3 py-1.5 text-xs text-warm-600 hover:text-warm-800">Cancel</button>
                   </div>
                 </div>
-                <button onClick={handleClose} className="p-2 rounded-xl hover:bg-white/60 active:bg-white/80 transition-colors text-warm-400 hover:text-warm-600 ml-2">
-                  <IconX size={18} />
+                <button onClick={handleClose} aria-label="Close" className="p-2 rounded-xl hover:bg-white/60 active:bg-white/80 transition-colors text-warm-400 hover:text-warm-600 ml-2">
+                  <IconX size={18} aria-hidden="true" />
                 </button>
               </div>
             </div>
@@ -439,6 +439,8 @@ function CoachDetailPanelInner({
                   <div className="flex items-center gap-2 mb-1">
                     <button
                       onClick={() => onUpdate({ is_starred: !coach.is_starred })}
+                      aria-label={coach.is_starred ? 'Unstar coach' : 'Star coach'}
+                      aria-pressed={coach.is_starred}
                       className="hover:scale-110 active:scale-95 transition-all duration-200 flex-shrink-0"
                     >
                       <IconStar size={18} className={cn(
@@ -486,12 +488,13 @@ function CoachDetailPanelInner({
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
                   <button onClick={() => setEditingContact(true)}
+                    aria-label="Edit contact info"
                     className="p-2 rounded-xl hover:bg-white/60 active:bg-white/80 transition-colors text-warm-400 hover:text-warm-600"
                     title="Edit contact info">
-                    <Pencil size={14} />
+                    <Pencil size={14} aria-hidden="true" />
                   </button>
-                  <button onClick={handleClose} className="p-2 rounded-xl hover:bg-white/60 active:bg-white/80 transition-colors text-warm-400 hover:text-warm-600">
-                    <IconX size={18} />
+                  <button onClick={handleClose} aria-label="Close" className="p-2 rounded-xl hover:bg-white/60 active:bg-white/80 transition-colors text-warm-400 hover:text-warm-600">
+                    <IconX size={18} aria-hidden="true" />
                   </button>
                 </div>
               </div>
@@ -589,13 +592,13 @@ function CoachDetailPanelInner({
                   {(coach.tags || []).map((tag, i) => (
                     <span key={i} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-primary-50 text-primary-700 rounded-md text-[10px] font-medium">
                       {tag}
-                      <button onClick={() => removeTag(tag)} className="hover:text-red-600 transition-colors"><IconX size={8} /></button>
+                      <button onClick={() => removeTag(tag)} aria-label={`Remove tag ${tag}`} className="hover:text-red-600 transition-colors"><IconX size={8} aria-hidden="true" /></button>
                     </span>
                   ))}
                   <div className="flex items-center gap-0.5">
                     <input id="tag-input" type="text" value={newTag} onChange={e => setNewTag(e.target.value)} onKeyDown={e => e.key === 'Enter' && addTag()}
                       placeholder="+" className="bg-transparent border-none text-[10px] text-warm-400 w-12 focus:outline-none focus:w-20 transition-all placeholder:text-warm-300" />
-                    {newTag && <button onClick={addTag} className="w-4 h-4 rounded bg-primary-100 text-primary-600 flex items-center justify-center hover:bg-primary-200 transition-colors"><IconPlus size={8} /></button>}
+                    {newTag && <button onClick={addTag} aria-label="Add tag" className="w-4 h-4 rounded bg-primary-100 text-primary-600 flex items-center justify-center hover:bg-primary-200 transition-colors"><IconPlus size={8} aria-hidden="true" /></button>}
                   </div>
                 </div>
               </div>
@@ -615,8 +618,8 @@ function CoachDetailPanelInner({
                   <div className="flex items-center gap-1">
                     <input type="date" value={followUpDate} onChange={e => setFollowUpDate(e.target.value)}
                       className="bg-white/50 border border-warm-200/60 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500/30" />
-                    <button onClick={saveFollowUp} className="text-primary-600"><IconCheck size={12} /></button>
-                    <button onClick={() => setEditingFollowUp(false)} className="text-warm-400"><IconX size={12} /></button>
+                    <button onClick={saveFollowUp} aria-label="Save follow-up date" className="text-primary-600"><IconCheck size={12} aria-hidden="true" /></button>
+                    <button onClick={() => setEditingFollowUp(false)} aria-label="Cancel" className="text-warm-400"><IconX size={12} aria-hidden="true" /></button>
                   </div>
                 ) : (
                   <button onClick={() => setEditingFollowUp(true)}

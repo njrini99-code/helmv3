@@ -298,7 +298,11 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
 
           {/* Log List */}
           {loading ? (
-            <div className="text-center py-8 text-warm-500">Loading...</div>
+            <div className="py-4 space-y-3" aria-label="Loading">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="h-16 rounded-xl bg-warm-100 animate-pulse" />
+              ))}
+            </div>
           ) : logs.length === 0 ? (
             <div className="text-center py-8 text-warm-500">No contact history yet</div>
           ) : (

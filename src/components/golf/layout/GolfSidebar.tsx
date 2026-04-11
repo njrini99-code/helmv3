@@ -7,6 +7,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { useSidebar } from '@/contexts/sidebar-context';
+import { triggerHaptic } from '@/lib/utils/capacitor';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import { CountBadge } from '@/components/ui/badge';
 import {
@@ -120,6 +121,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
   const isCollapsed = isMobile ? false : collapsed;
 
   const handleSignOut = async () => {
+    void triggerHaptic('heavy');
     setIsSigningOut(true);
     await supabase.auth.signOut();
     router.push('/golf/login');
@@ -127,6 +129,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
 
   const handleNavClick = () => {
     if (isMobile) {
+      void triggerHaptic('light');
       setMobileOpen(false);
     }
   };

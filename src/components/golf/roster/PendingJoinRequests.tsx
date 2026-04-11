@@ -143,7 +143,11 @@ export function PendingJoinRequests() {
                 Pending Join Requests
               </h3>
               <p className="text-sm text-amber-700">
-                {loading ? 'Loading...' : `${requests.length} ${requests.length === 1 ? 'player' : 'players'} waiting for approval`}
+                {loading ? (
+                  <span className="inline-block h-3 w-40 rounded bg-amber-200/70 animate-pulse" aria-label="Loading" />
+                ) : (
+                  `${requests.length} ${requests.length === 1 ? 'player' : 'players'} waiting for approval`
+                )}
               </p>
             </div>
           </div>

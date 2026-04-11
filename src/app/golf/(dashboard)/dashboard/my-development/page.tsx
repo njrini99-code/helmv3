@@ -18,7 +18,7 @@ import {
   IconActivity,
 } from '@/components/icons';
 import { cn } from '@/lib/utils';
-import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
+import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
@@ -116,25 +116,12 @@ export default async function MyDevelopmentPage() {
   return (
     <AnimatedPage className="min-h-full">
       <AnimatedItem>
-        <div className="golf-mobile-page-header">
-          <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <MobileMenuButton />
-                <div>
-                  <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">
-                    My Development
-                  </h1>
-                  <p className="text-sm text-warm-500 mt-0.5">
-                    Focus areas assigned by your coach to help you improve
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Summary stats bar */}
-            {(focusAreas || []).length > 0 && (
-              <div className="flex items-center gap-6 mt-4 pt-4 border-t border-warm-100">
+        <LargeTitleHeader
+          title="My Development"
+          subtitle="Focus areas assigned by your coach to help you improve"
+          belowContent={
+            (focusAreas || []).length > 0 ? (
+              <div className="flex items-center gap-6 pt-4 border-t border-warm-100">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-primary-500" />
                   <span className="text-sm text-warm-600">
@@ -154,9 +141,9 @@ export default async function MyDevelopmentPage() {
                   </span>
                 </div>
               </div>
-            )}
-          </div>
-        </div>
+            ) : undefined
+          }
+        />
       </AnimatedItem>
 
       <AnimatedItem>

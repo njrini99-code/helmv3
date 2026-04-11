@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { m } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { GlassCard } from '@/components/ui/glass-card';
@@ -71,7 +72,7 @@ const trendConfig = {
   declining: { icon: IconTrendingDown, color: 'text-red-500', label: 'Declining' },
 };
 
-export function CompositeRatingCard({
+function CompositeRatingCardImpl({
   composite,
   categories,
   percentiles,
@@ -186,22 +187,19 @@ export function CompositeRatingCard({
           {(Object.entries(displayCategories) as [keyof typeof displayCategories, number][])
             .filter(([key]) => key in categoryLabels)
             .map(([key, value], i) => (
-              <m.div
+              <div
                 key={key}
                 className="flex items-center gap-3"
-                initial={{ opacity: 0, x: -12 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.3 + i * 0.08 }}
               >
                 <span className="text-sm font-medium text-warm-700 w-24 shrink-0">
                   {categoryLabels[key]}
                 </span>
-                <div className={cn('flex-1 h-2.5 rounded-full overflow-hidden', getBarBgColor(value))}>
+                <div className={cn('flex-1 h-2.5 rounded-full overflow-clip', getBarBgColor(value))}>
                   <m.div
                     className={cn('h-full rounded-full', getBarColor(value))}
                     initial={{ width: 0 }}
                     animate={{ width: `${Math.min(Math.max(value, 0), 100)}%` }}
-                    transition={{ duration: 0.8, delay: 0.4 + i * 0.08, ease: 'easeOut' }}
+                    transition={{ duration: 0.6, delay: 0.1 + i * 0.04, ease: [0.25, 0.1, 0.25, 1] }}
                   />
                 </div>
                 <span className="text-sm font-semibold text-warm-900 tabular-nums w-8 text-right">
@@ -212,7 +210,7 @@ export function CompositeRatingCard({
                     {resolvedPercentiles[key].team}th %ile
                   </span>
                 )}
-              </m.div>
+              </div>
             )
           )}
         </div>
@@ -220,3 +218,7 @@ export function CompositeRatingCard({
     </GlassCard>
   );
 }
+
+// Memoized export — prevents unnecessary re-animation of the SVG ring when
+// the parent dashboard re-renders but the rating data is unchanged.
+export const CompositeRatingCard = memo(CompositeRatingCardImpl);

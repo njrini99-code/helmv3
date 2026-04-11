@@ -3,36 +3,65 @@
 import { isNativeApp } from './capacitor';
 
 /**
- * Register for push notifications on iOS via Capacitor.
- * Call this AFTER the user has logged in and the app has loaded.
+ * Push notification registration for iOS (Capacitor).
+ *
+ * iOS UX best practice (Apple HIG): before calling the system permission
+ * prompt, show a "soft ask" that explains WHY we want to notify the user.
+ * The system prompt can only be shown ONCE — if the user denies it there,
+ * the only way back is Settings. So we gate it behind a pre-prompt sheet.
  *
  * Flow:
- * 1. Request notification permissions
- * 2. Register with APNs
- * 3. Listen for token, then save it to Supabase via server action
+ *   1. App launches → `initPushListeners()` wires up listeners only
+ *      (no permission prompt, no system dialog).
+ *   2. Dashboard shell renders → shows a soft-ask BottomSheet on first
+ *      visit (tracked via localStorage).
+ *   3. User taps "Enable" → `requestPushPermission()` shows the system
+ *      prompt and registers with APNs on grant.
+ *   4. User taps "Not now" → we record the choice and don't nag again.
  */
-export async function registerForPushNotifications(): Promise<void> {
+
+const SOFT_ASK_STORAGE_KEY = 'golfhelm-push-soft-ask-state';
+
+type SoftAskState = 'pending' | 'accepted' | 'dismissed';
+
+export function getPushSoftAskState(): SoftAskState {
+  if (typeof window === 'undefined') return 'pending';
+  try {
+    const raw = window.localStorage.getItem(SOFT_ASK_STORAGE_KEY);
+    if (raw === 'accepted' || raw === 'dismissed') return raw;
+  } catch {
+    // localStorage unavailable
+  }
+  return 'pending';
+}
+
+export function setPushSoftAskState(state: SoftAskState): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(SOFT_ASK_STORAGE_KEY, state);
+  } catch {
+    // localStorage unavailable
+  }
+}
+
+/**
+ * Wire up push notification listeners without prompting for permission.
+ * Safe to call on every app launch.
+ */
+export async function initPushListeners(): Promise<void> {
   if (!isNativeApp()) return;
 
   try {
     const { PushNotifications } = await import('@capacitor/push-notifications');
 
-    // Check current permission status
+    // If permission was previously granted, silently re-register with APNs
+    // so the token stays fresh.
     const permStatus = await PushNotifications.checkPermissions();
-
-    if (permStatus.receive === 'prompt' || permStatus.receive === 'prompt-with-rationale') {
-      const result = await PushNotifications.requestPermissions();
-      if (result.receive !== 'granted') {
-        return; // User declined — respect their choice
-      }
-    } else if (permStatus.receive !== 'granted') {
-      return; // Previously denied
+    if (permStatus.receive === 'granted') {
+      await PushNotifications.register();
     }
 
-    // Register with APNs to get a device token
-    await PushNotifications.register();
-
-    // Listen for the registration event (fires once with the APNs token)
+    // Listen for the registration event (fires once per session with APNs token)
     PushNotifications.addListener('registration', async (token) => {
       try {
         const { registerDeviceToken } = await import('@/app/golf/actions/push-notifications');
@@ -47,28 +76,78 @@ export async function registerForPushNotifications(): Promise<void> {
       console.error('[Push] Registration failed:', error);
     });
 
-    // Listen for received notifications (foreground)
+    // Foreground notifications are displayed by the system based on
+    // capacitor.config.ts presentationOptions: ["badge", "sound", "alert"].
     PushNotifications.addListener('pushNotificationReceived', (notification) => {
-      // Notification received while app is in foreground
-      // The Capacitor config already handles badge/sound/alert presentation
       console.log('[Push] Received in foreground:', notification.title);
     });
 
-    // Listen for notification tap (background/killed → user opened via notification)
+    // Tap handler — deep-link via the URL in the notification payload
     PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
       const data = action.notification.data;
       if (data?.url && typeof window !== 'undefined') {
-        // Navigate to the deep link URL
         window.location.href = data.url;
       }
     });
   } catch (err) {
-    console.error('[Push] Setup failed:', err);
+    console.error('[Push] Listener setup failed:', err);
   }
 }
 
 /**
- * Unregister push notifications (call on logout).
+ * Determine whether the app should show the soft-ask pre-prompt to the user.
+ *
+ * Returns true only when:
+ *  - Running on a native iOS build
+ *  - System permission is still `prompt` (never asked)
+ *  - User has not previously accepted or dismissed the soft-ask
+ */
+export async function shouldShowPushSoftAsk(): Promise<boolean> {
+  if (!isNativeApp()) return false;
+
+  const localState = getPushSoftAskState();
+  if (localState !== 'pending') return false;
+
+  try {
+    const { PushNotifications } = await import('@capacitor/push-notifications');
+    const permStatus = await PushNotifications.checkPermissions();
+    return permStatus.receive === 'prompt' || permStatus.receive === 'prompt-with-rationale';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Trigger the system permission prompt and register with APNs on grant.
+ * Call this from the soft-ask sheet's "Enable" button.
+ */
+export async function requestPushPermission(): Promise<'granted' | 'denied'> {
+  if (!isNativeApp()) {
+    setPushSoftAskState('dismissed');
+    return 'denied';
+  }
+
+  try {
+    const { PushNotifications } = await import('@capacitor/push-notifications');
+    const result = await PushNotifications.requestPermissions();
+
+    if (result.receive === 'granted') {
+      setPushSoftAskState('accepted');
+      await PushNotifications.register();
+      return 'granted';
+    }
+
+    setPushSoftAskState('dismissed');
+    return 'denied';
+  } catch (err) {
+    console.error('[Push] Permission request failed:', err);
+    setPushSoftAskState('dismissed');
+    return 'denied';
+  }
+}
+
+/**
+ * Unregister push listeners (call on logout).
  */
 export async function unregisterPushNotifications(): Promise<void> {
   if (!isNativeApp()) return;
@@ -79,4 +158,26 @@ export async function unregisterPushNotifications(): Promise<void> {
   } catch {
     // Plugin not available
   }
+}
+
+/**
+ * Clear the iOS app icon badge count. Call when the user reads all notifications.
+ */
+export async function clearPushBadge(): Promise<void> {
+  if (!isNativeApp()) return;
+  try {
+    const { PushNotifications } = await import('@capacitor/push-notifications');
+    await PushNotifications.removeAllDeliveredNotifications();
+  } catch {
+    // Plugin not available
+  }
+}
+
+/**
+ * @deprecated Kept for backwards-compat with existing callers.
+ * Use `initPushListeners()` on app launch and `requestPushPermission()`
+ * from the soft-ask sheet instead.
+ */
+export async function registerForPushNotifications(): Promise<void> {
+  await initPushListeners();
 }

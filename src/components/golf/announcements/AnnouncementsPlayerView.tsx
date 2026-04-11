@@ -11,6 +11,7 @@ import { AnnouncementTaskItem } from './AnnouncementTaskItem';
 import { AcknowledgementTracker } from './AcknowledgementTracker';
 import { getAnnouncementDetail } from '@/app/golf/actions/announcements';
 import { acknowledgeAnnouncement } from '@/app/golf/actions/communication';
+import { openExternalUrl } from '@/lib/utils/capacitor';
 import type { GolfAnnouncementMeta, GolfAnnouncementEnriched } from '@/lib/types/golf';
 
 // ─── Animation ────────────────────────────────────────────────────────────────
@@ -302,12 +303,14 @@ function PlayerAnnouncementCard({ announcement: ann, playerId, nowTs }: { announ
                       <p className="text-label font-semibold text-warm-400 uppercase tracking-widest mb-2.5">Attachments</p>
                       <div className="space-y-1.5">
                         {detail.documents.map((d) => (
-                          <a
+                          <button
+                            type="button"
                             key={d.document_id}
-                            href={d.document?.file_url || '#'}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-3 px-3.5 py-3 bg-warm-50/80 rounded-xl border border-warm-200 hover:bg-warm-100 hover:border-warm-300 active:scale-[0.99] transition-all group/doc"
+                            onClick={() => {
+                              const url = d.document?.file_url;
+                              if (url) void openExternalUrl(url);
+                            }}
+                            className="w-full text-left flex items-center gap-3 px-3.5 py-3 bg-warm-50/80 rounded-xl border border-warm-200 hover:bg-warm-100 hover:border-warm-300 active:scale-[0.99] transition-all group/doc"
                           >
                             <div className="w-9 h-9 rounded-lg bg-white border border-warm-200 flex items-center justify-center flex-shrink-0 group-hover/doc:border-warm-300 transition-colors">
                               <IconFile size={15} className="text-warm-400" />
@@ -320,7 +323,7 @@ function PlayerAnnouncementCard({ announcement: ann, playerId, nowTs }: { announ
                               </p>
                             </div>
                             <IconDownload size={14} className="text-warm-300 group-hover/doc:text-primary-600 transition-colors flex-shrink-0" />
-                          </a>
+                          </button>
                         ))}
                       </div>
                     </div>

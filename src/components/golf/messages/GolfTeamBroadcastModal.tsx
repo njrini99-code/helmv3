@@ -3,10 +3,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { cn } from '@/lib/utils';
-import { Modal, ModalFooter } from '@/components/ui/modal';
+import { ModalFooter } from '@/components/ui/modal';
+import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { SearchBar } from '@/components/ui/search-bar';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { IconCheck, IconUsers, IconAlertCircle, IconMail } from '@/components/icons';
 import { getGolfTeamPlayersForBroadcast, createGolfTeamBroadcast } from '@/app/golf/actions/messages';
 
@@ -154,8 +156,8 @@ export function GolfTeamBroadcastModal({
   };
 
   return (
-    <Modal
-      isOpen={isOpen}
+    <BottomSheet
+      open={isOpen}
       onClose={onClose}
       title={step === 'recipients' ? 'New Team Message' : 'Group Details'}
       description={
@@ -163,9 +165,8 @@ export function GolfTeamBroadcastModal({
           ? 'Select players to include in this group conversation'
           : 'Name your group conversation'
       }
-      size="md"
     >
-      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div ref={modalRef}>
       {step === 'recipients' ? (
         <div className="space-y-4">
           {/* Error Display */}
@@ -275,27 +276,17 @@ export function GolfTeamBroadcastModal({
           )}
 
           {/* Group Name Input */}
-          <div>
-            <label htmlFor="broadcast-title" className="block text-sm font-medium text-warm-700 mb-1.5">
-              Group Name
-            </label>
-            <input
-              id="broadcast-title"
-              type="text"
-              value={broadcastTitle}
-              onChange={(e) => setBroadcastTitle(e.target.value)}
-              placeholder="e.g., Team Updates, Practice Reminders"
-              className={cn(
-                'w-full px-4 py-2.5 rounded-lg border border-warm-200',
-                'focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20',
-                'text-warm-900 placeholder:text-warm-400 transition-colors'
-              )}
-              autoFocus
-            />
-            <p className="text-xs text-warm-500 mt-1.5">
-              Choose a name that describes the purpose of this group
-            </p>
-          </div>
+          <Input
+            id="broadcast-title"
+            label="Group Name"
+            type="text"
+            value={broadcastTitle}
+            onChange={(e) => setBroadcastTitle(e.target.value)}
+            placeholder="e.g., Team Updates, Practice Reminders"
+            hint="Choose a name that describes the purpose of this group"
+            autoFocus
+            enterKeyHint="done"
+          />
 
           {/* Selected Players Preview */}
           <div className="p-4 bg-warm-50 rounded-xl">
@@ -396,6 +387,6 @@ export function GolfTeamBroadcastModal({
         )}
       </ModalFooter>
       </div>
-    </Modal>
+    </BottomSheet>
   );
 }

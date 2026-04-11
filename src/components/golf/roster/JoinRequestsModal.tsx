@@ -171,7 +171,11 @@ export function JoinRequestsModal({ onClose }: JoinRequestsModalProps) {
                 <div>
                   <h2 id="join-requests-modal-title" className="text-xl font-bold text-white">Join Requests</h2>
                   <p className="text-white/80 text-sm">
-                    {loading ? 'Loading...' : `${requests.length} player${requests.length !== 1 ? 's' : ''} waiting`}
+                    {loading ? (
+                      <span className="inline-block h-3 w-24 rounded bg-white/20 animate-pulse" aria-label="Loading" />
+                    ) : (
+                      `${requests.length} player${requests.length !== 1 ? 's' : ''} waiting`
+                    )}
                   </p>
                 </div>
               </div>

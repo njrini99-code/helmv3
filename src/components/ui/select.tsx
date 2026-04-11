@@ -171,15 +171,15 @@ export function Select({
           aria-haspopup="listbox"
           aria-expanded={isOpen}
           className={cn(
-            'w-full min-h-[44px] px-3 rounded-[10px] border bg-white text-base lg:text-sm text-left',
+            'w-full min-h-[48px] px-4 rounded-xl border bg-white/90 text-base lg:text-sm text-left',
             'flex items-center justify-between gap-2',
-            'transition-colors duration-200',
-            'focus:outline-none focus:ring-[3px] focus:ring-primary-600/10 focus:border-primary-600',
+            'transition-all duration-200',
+            'focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500',
             'disabled:bg-warm-50 disabled:text-warm-400 disabled:cursor-not-allowed',
             error
-              ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10'
+              ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20'
               : 'border-warm-200 hover:border-warm-300',
-            isOpen && !error && 'ring-[3px] ring-primary-600/10 border-primary-600',
+            isOpen && !error && 'ring-2 ring-primary-500/30 border-primary-500',
             className
           )}
         >
@@ -233,9 +233,13 @@ export function Select({
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Search..."
-                  className="w-full h-9 px-3 rounded-lg border border-warm-200 text-base lg:text-sm
-                             focus:outline-none focus:border-primary-600 focus:ring-[3px] focus:ring-primary-600/10
+                  className="w-full h-10 px-3 rounded-lg border border-warm-200 text-base lg:text-sm
+                             focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30
                              transition-colors duration-200"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  enterKeyHint="search"
                 />
               </div>
             )}
@@ -387,15 +391,15 @@ export function MultiSelect({
           aria-haspopup="listbox"
           aria-expanded={isOpen}
           className={cn(
-            'w-full min-h-[44px] px-3 rounded-[10px] border bg-white text-base lg:text-sm text-left',
+            'w-full min-h-[48px] px-4 rounded-xl border bg-white/90 text-base lg:text-sm text-left',
             'flex items-center justify-between gap-2',
-            'transition-colors duration-200',
-            'focus:outline-none focus:ring-[3px] focus:ring-primary-600/10 focus:border-primary-600',
+            'transition-all duration-200',
+            'focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500',
             'disabled:bg-warm-50 disabled:text-warm-400 disabled:cursor-not-allowed',
             error
-              ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10'
+              ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20'
               : 'border-warm-200 hover:border-warm-300',
-            isOpen && !error && 'ring-[3px] ring-primary-600/10 border-primary-600',
+            isOpen && !error && 'ring-2 ring-primary-500/30 border-primary-500',
             className
           )}
         >
@@ -530,12 +534,12 @@ export const NativeSelect = forwardRef<HTMLSelectElement, NativeSelectProps>(
       <select
         ref={ref}
         className={cn(
-          'w-full min-h-[44px] px-3 rounded-[10px] border bg-white text-warm-900 text-base lg:text-sm',
-          'transition-colors duration-200 appearance-none cursor-pointer',
-          'focus:outline-none focus:ring-[3px] focus:ring-primary-600/10 focus:border-primary-600',
+          'w-full min-h-[48px] px-4 rounded-xl border bg-white/90 text-warm-900 text-base lg:text-sm',
+          'transition-all duration-200 appearance-none cursor-pointer',
+          'focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500',
           'disabled:bg-warm-50 disabled:text-warm-400 disabled:cursor-not-allowed',
           error
-            ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10'
+            ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20'
             : 'border-warm-200 hover:border-warm-300',
           className
         )}

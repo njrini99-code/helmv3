@@ -8,7 +8,7 @@ import { getAnnouncementsWithMeta } from '@/app/golf/actions/announcements';
 import { AnnouncementsCoachView } from '@/components/golf/announcements/AnnouncementsCoachView';
 import { AnnouncementsPlayerView } from '@/components/golf/announcements/AnnouncementsPlayerView';
 import { CreateAnnouncementFlow } from '@/components/golf/announcements/CreateAnnouncementFlow';
-import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
+import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 
 export const metadata: Metadata = {
   title: 'Team Announcements | Helm Sports',
@@ -94,33 +94,23 @@ export default async function GolfAnnouncementsPage() {
   return (
     <AnimatedPage>
       {/* Header */}
-      <AnimatedItem className="golf-mobile-page-header">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <MobileMenuButton />
-              <div>
-                <div className="flex items-center gap-2.5">
-                  <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">Announcements</h1>
-                  {recentCount > 0 && (
-                    <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-primary-50 text-primary-700">
-                      {recentCount} new
-                    </span>
-                  )}
-                </div>
-                <p className="text-sm text-warm-500 mt-0.5">
-                  {isCoach ? 'Share updates with your team' : 'Team news and updates'}
-                </p>
-              </div>
-            </div>
-            {isCoach && (
-              <CreateAnnouncementFlow
-                players={players}
-                documents={documents}
-              />
-            )}
-          </div>
-        </div>
+      <AnimatedItem>
+        <LargeTitleHeader
+          title="Announcements"
+          subtitle={isCoach ? 'Share updates with your team' : 'Team news and updates'}
+        >
+          {recentCount > 0 && (
+            <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-primary-50 text-primary-700">
+              {recentCount} new
+            </span>
+          )}
+          {isCoach && (
+            <CreateAnnouncementFlow
+              players={players}
+              documents={documents}
+            />
+          )}
+        </LargeTitleHeader>
       </AnimatedItem>
 
       {/* Content */}

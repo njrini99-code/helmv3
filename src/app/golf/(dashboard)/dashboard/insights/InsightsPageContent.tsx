@@ -13,7 +13,7 @@ import {
   IconTrendingUp,
   IconCheck,
 } from '@/components/icons';
-import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
+import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { InsightSearchBar } from '@/components/golf/coachhelm/insights/InsightSearchBar';
 import { InsightFiltersPanel, type InsightFilters } from '@/components/golf/coachhelm/insights/InsightFiltersPanel';
 import { InsightListView } from '@/components/golf/coachhelm/insights/InsightListView';
@@ -276,59 +276,45 @@ export function InsightsPageContent({
   return (
     <div className="relative">
       {/* Header */}
-      <div className="golf-mobile-page-header">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <MobileMenuButton />
-              <div>
-                <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">
-                  AI Insights
-                </h1>
-                <p className="text-sm text-warm-500 mt-0.5">
-                  Manage and act on coaching insights
-                </p>
-              </div>
-            </div>
+      <LargeTitleHeader
+        title="AI Insights"
+        subtitle="Manage and act on coaching insights"
+      >
+        {/* Generate Button */}
+        <Button
+          variant="secondary"
+          onClick={handleGenerateInsights}
+          isLoading={isGenerating}
+          disabled={isGenerating || isRefreshing}
+        >
+          <IconSparkles size={16} className="mr-1.5" />
+          <span className="hidden sm:inline">{isGenerating ? 'Generating...' : 'Generate'}</span>
+          <span className="sm:hidden">{isGenerating ? '...' : 'New'}</span>
+        </Button>
 
-            <div className="flex items-center gap-3">
-              {/* Generate Button */}
-              <Button
-                variant="secondary"
-                onClick={handleGenerateInsights}
-                isLoading={isGenerating}
-                disabled={isGenerating || isRefreshing}
-              >
-                <IconSparkles size={16} className="mr-1.5" />
-                {isGenerating ? 'Generating...' : 'Generate'}
-              </Button>
+        {/* Refresh Button */}
+        <button
+          onClick={handleRefresh}
+          disabled={isRefreshing || isGenerating}
+          className={cn(
+            'p-2.5 min-w-[44px] min-h-[44px] rounded-lg text-warm-500 hover:text-warm-700 hover:bg-white/50 active:bg-warm-100 transition-all flex items-center justify-center',
+            isRefreshing && 'animate-spin'
+          )}
+          title="Refresh insights"
+          aria-label="Refresh insights"
+        >
+          <IconRefresh size={18} />
+        </button>
 
-              {/* Refresh Button */}
-              <button
-                onClick={handleRefresh}
-                disabled={isRefreshing || isGenerating}
-                className={cn(
-                  'p-2.5 min-w-[44px] min-h-[44px] rounded-lg text-warm-500 hover:text-warm-700 hover:bg-white/50 active:bg-warm-100 transition-all flex items-center justify-center',
-                  isRefreshing && 'animate-spin'
-                )}
-                title="Refresh insights"
-                aria-label="Refresh insights"
-              >
-                <IconRefresh size={18} />
-              </button>
-
-              {/* Settings Link */}
-              <a
-                href="/golf/dashboard/settings/coaching-intelligence"
-                className="p-2.5 min-w-[44px] min-h-[44px] rounded-lg text-warm-500 hover:text-warm-700 hover:bg-white/50 active:bg-warm-100 transition-all flex items-center justify-center"
-                title="AI Settings"
-              >
-                <IconSettings size={18} />
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
+        {/* Settings Link */}
+        <a
+          href="/golf/dashboard/settings/coaching-intelligence"
+          className="p-2.5 min-w-[44px] min-h-[44px] rounded-lg text-warm-500 hover:text-warm-700 hover:bg-white/50 active:bg-warm-100 transition-all flex items-center justify-center"
+          title="AI Settings"
+        >
+          <IconSettings size={18} />
+        </a>
+      </LargeTitleHeader>
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-8">

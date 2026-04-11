@@ -23,9 +23,10 @@ import { m } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconArrowRight, IconTrendingUp, IconTrendingDown } from '@/components/icons';
 import { Avatar } from '@/components/ui/avatar';
+import { IOS_DURATION_NORMAL, IOS_EASE } from '@/lib/ios-animations';
 
 // ============================================================================
-// ANIMATION VARIANTS
+// ANIMATION VARIANTS — iOS-native (250ms, ease-out, quick stagger)
 // ============================================================================
 
 export const containerVariants = {
@@ -33,22 +34,23 @@ export const containerVariants = {
     visible: {
         opacity: 1,
         transition: {
-            staggerChildren: 0.03,
-            delayChildren: 0
-        }
-    }
+            // Quick 40ms stagger keeps entrance snappy; iOS feels sluggish past ~50ms.
+            staggerChildren: 0.04,
+            delayChildren: 0,
+        },
+    },
 } as const;
 
 export const itemVariants = {
-    hidden: { opacity: 0, y: 12 },
+    hidden: { opacity: 0, y: 8 },
     visible: {
         opacity: 1,
         y: 0,
         transition: {
-            duration: 0.25,
-            ease: [0.16, 1, 0.3, 1] as [number, number, number, number]
-        }
-    }
+            duration: IOS_DURATION_NORMAL,
+            ease: IOS_EASE as unknown as [number, number, number, number],
+        },
+    },
 };
 
 // ============================================================================
@@ -80,7 +82,7 @@ export const PremiumGlassCard = memo(function PremiumGlassCard({
     return (
         <Component
             className={cn(
-                'relative overflow-hidden',
+                'relative overflow-clip',
                 // Premium glass treatment (products page aesthetic)
                 'glass-premium',
                 'rounded-2xl', // Standardized: 16px
@@ -142,7 +144,7 @@ const PremiumStatCard = memo(function PremiumStatCard({
             aria-label={accessibleLabel}
             className={cn(
                 // Enhanced Premium glass effect - More transparent
-                "relative overflow-hidden group cursor-pointer",
+                "relative overflow-clip group cursor-pointer",
                 "bg-glass-subtle backdrop-blur-glass-prominent",
                 "border rounded-2xl", // Standardized: 16px
                 "p-5",

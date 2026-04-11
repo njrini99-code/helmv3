@@ -178,9 +178,10 @@ export function InboundLeadsView() {
         </div>
         <button
           onClick={fetchRequests}
+          aria-label="Refresh leads"
           className="p-2 rounded-lg hover:bg-warm-50 text-warm-400 hover:text-warm-600 transition-colors"
         >
-          <IconRefresh size={16} />
+          <IconRefresh size={16} aria-hidden="true" />
         </button>
       </div>
 

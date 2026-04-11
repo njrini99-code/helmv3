@@ -4,7 +4,7 @@ import { useState, useMemo, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import { Button } from '@/components/ui/button';
-import { Modal } from '@/components/ui/modal';
+import { BottomSheet } from '@/components/ui/bottom-sheet';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import {
@@ -12,7 +12,6 @@ import {
   IconTarget,
   IconUser,
   IconCheck,
-  IconMenu,
   IconSend,
   IconWind,
   IconCrosshair,
@@ -29,7 +28,7 @@ import {
   IconTrash,
   IconChevronDown,
 } from '@/components/icons';
-import { useSidebar } from '@/contexts/sidebar-context';
+import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { createFocusArea, updateFocusArea, deleteFocusArea } from '@/app/golf/actions/development';
 
 // ============================================================================
@@ -275,7 +274,6 @@ export function DevelopmentPlansClient({
   playerStats,
 }: DevelopmentPlansClientProps) {
   const router = useRouter();
-  const { toggleMobile } = useSidebar();
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -783,90 +781,68 @@ export function DevelopmentPlansClient({
   // MAIN RENDER
   // ============================================================================
 
+  const playerFilterPills = players.length > 0 ? (
+    <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-4 px-4 md:-mx-6 md:px-6">
+      <button
+        onClick={() => setSelectedPlayerId(null)}
+        className={cn(
+          'px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-[color,background-color,box-shadow] duration-150 flex-shrink-0',
+          selectedPlayerId === null
+            ? 'bg-primary-600 text-white shadow-sm'
+            : 'bg-white/70 text-warm-600 hover:bg-white border border-warm-200/60',
+        )}
+      >
+        All Players
+      </button>
+      {players.map(player => {
+        const playerAreaCount = focusAreas.filter(fa => fa.player_id === player.id && fa.status !== 'completed').length;
+        return (
+          <button
+            key={player.id}
+            onClick={() => setSelectedPlayerId(player.id)}
+            className={cn(
+              'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-[color,background-color,box-shadow] duration-150 flex-shrink-0',
+              selectedPlayerId === player.id
+                ? 'bg-primary-600 text-white shadow-sm'
+                : 'bg-white/70 text-warm-600 hover:bg-white border border-warm-200/60',
+            )}
+          >
+            {player.first_name} {player.last_name?.[0]}.
+            {playerAreaCount > 0 && (
+              <span className={cn(
+                'text-xs rounded-full w-5 h-5 flex items-center justify-center',
+                selectedPlayerId === player.id
+                  ? 'bg-white/20 text-white'
+                  : 'bg-warm-100 text-warm-500',
+              )}>
+                {playerAreaCount}
+              </span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  ) : null;
+
   return (
     <div className="min-h-full">
-      {/* Header */}
-      <div className="border-b border-warm-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={toggleMobile}
-                className={cn(
-                  'lg:hidden p-2 -ml-2 rounded-xl',
-                  'text-warm-500 hover:text-warm-700 hover:bg-warm-100/80',
-                  'transition-colors duration-150 active:scale-95',
-                  'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
-                )}
-                aria-label="Open navigation menu"
-              >
-                <IconMenu size={22} />
-              </button>
-              <div>
-                <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">
-                  Development Plans
-                </h1>
-                <p className="text-warm-500 mt-0.5 text-sm">
-                  Create and track focus areas for your players
-                </p>
-              </div>
-            </div>
-            <Button
-              onClick={() => {
-                resetForm();
-                setIsCreateModalOpen(true);
-              }}
-            >
-              <IconPlus size={16} className="mr-1.5" />
-              New Focus Area
-            </Button>
-          </div>
-
-          {/* Player filter pills */}
-          {players.length > 0 && (
-            <div className="flex items-center gap-2 mt-4 overflow-x-auto pb-1 scrollbar-hide">
-              <button
-                onClick={() => setSelectedPlayerId(null)}
-                className={cn(
-                  'px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-[color,background-color,box-shadow] duration-150',
-                  selectedPlayerId === null
-                    ? 'bg-primary-600 text-white shadow-sm'
-                    : 'bg-white/70 text-warm-600 hover:bg-white border border-warm-200/60',
-                )}
-              >
-                All Players
-              </button>
-              {players.map(player => {
-                const playerAreaCount = focusAreas.filter(fa => fa.player_id === player.id && fa.status !== 'completed').length;
-                return (
-                  <button
-                    key={player.id}
-                    onClick={() => setSelectedPlayerId(player.id)}
-                    className={cn(
-                      'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-[color,background-color,box-shadow] duration-150',
-                      selectedPlayerId === player.id
-                        ? 'bg-primary-600 text-white shadow-sm'
-                        : 'bg-white/70 text-warm-600 hover:bg-white border border-warm-200/60',
-                    )}
-                  >
-                    {player.first_name} {player.last_name?.[0]}.
-                    {playerAreaCount > 0 && (
-                      <span className={cn(
-                        'text-xs rounded-full w-5 h-5 flex items-center justify-center',
-                        selectedPlayerId === player.id
-                          ? 'bg-white/20 text-white'
-                          : 'bg-warm-100 text-warm-500',
-                      )}>
-                        {playerAreaCount}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
+      <LargeTitleHeader
+        title="Development Plans"
+        subtitle="Create and track focus areas for your players"
+        belowContent={playerFilterPills}
+      >
+        <Button
+          size="sm"
+          onClick={() => {
+            resetForm();
+            setIsCreateModalOpen(true);
+          }}
+        >
+          <IconPlus size={16} />
+          <span className="hidden sm:inline">New Focus Area</span>
+          <span className="sm:hidden">New</span>
+        </Button>
+      </LargeTitleHeader>
 
       {/* Summary stats */}
       {focusAreas.length > 0 && (
@@ -1087,25 +1063,23 @@ export function DevelopmentPlansClient({
         )}
       </div>
 
-      {/* Create Modal */}
-      <Modal
+      {/* Create Sheet */}
+      <BottomSheet
         open={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         title="New Focus Area"
-        size="lg"
       >
         {renderFormContent(false)}
-      </Modal>
+      </BottomSheet>
 
-      {/* Edit Modal */}
-      <Modal
+      {/* Edit Sheet */}
+      <BottomSheet
         open={isEditModalOpen}
         onClose={() => { setIsEditModalOpen(false); setEditingFocusArea(null); }}
         title="Edit Focus Area"
-        size="lg"
       >
         {renderFormContent(true)}
-      </Modal>
+      </BottomSheet>
 
       <style jsx>{`
         @keyframes fadeInUp {

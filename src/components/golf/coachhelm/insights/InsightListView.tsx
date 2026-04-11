@@ -515,20 +515,19 @@ export function InsightListView({
         </div>
       </div>
 
-      {/* Insight List */}
+      {/* Insight List — popLayout removed for mobile perf; layout animations
+          were causing O(N) re-measure on every pagination/filter change. */}
       <div className="p-4 space-y-3">
-        <AnimatePresence mode="popLayout">
-          {insights.map((insight) => (
-            <InsightRow
-              key={insight.id}
-              insight={insight}
-              isSelected={selectedIds.has(insight.id)}
-              onToggleSelect={() => handleToggleSelect(insight.id)}
-              onRefresh={onRefresh}
-              coachId={coachId}
-            />
-          ))}
-        </AnimatePresence>
+        {insights.map((insight) => (
+          <InsightRow
+            key={insight.id}
+            insight={insight}
+            isSelected={selectedIds.has(insight.id)}
+            onToggleSelect={() => handleToggleSelect(insight.id)}
+            onRefresh={onRefresh}
+            coachId={coachId}
+          />
+        ))}
       </div>
 
       {/* Pagination */}

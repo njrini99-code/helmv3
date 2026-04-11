@@ -19,6 +19,7 @@ import { NoTeamBanner } from '@/components/golf/NoTeamBanner';
 import { LastSeenUpdater } from '@/components/admin/LastSeenUpdater';
 import { LazyMotion, domAnimation, MotionConfig } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { triggerHaptic } from '@/lib/utils/capacitor';
 
 // PERF: Lazy-load CommandPalette — only shown on Cmd+K
 const CommandPalette = dynamic(
@@ -29,6 +30,12 @@ const CommandPalette = dynamic(
 // PERF: Lazy-load announcement modal — only shown for players with unseen announcements
 const NewAnnouncementsModalWrapper = dynamic(
   () => import('@/components/golf/announcements/NewAnnouncementsModalWrapper').then(mod => ({ default: mod.NewAnnouncementsModalWrapper })),
+  { ssr: false }
+);
+
+// PERF: Lazy-load push permission soft-ask — only relevant on native iOS
+const PushPermissionSoftAsk = dynamic(
+  () => import('@/components/golf/PushPermissionSoftAsk').then(mod => ({ default: mod.PushPermissionSoftAsk })),
   { ssr: false }
 );
 
@@ -49,7 +56,10 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
   useEffect(() => {
     if (!mobileOpen) return;
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') setMobileOpen(false);
+      if (e.key === 'Escape') {
+        void triggerHaptic('light');
+        setMobileOpen(false);
+      }
     }
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
@@ -140,7 +150,10 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
             ? 'opacity-100 pointer-events-auto'
             : 'opacity-0 pointer-events-none'
         )}
-        onClick={() => setMobileOpen(false)}
+        onClick={() => {
+          void triggerHaptic('light');
+          setMobileOpen(false);
+        }}
         aria-hidden="true"
       />
 
@@ -204,6 +217,9 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
 
       {/* New Announcements Modal (players only) */}
       <NewAnnouncementsModalWrapper />
+
+      {/* Push Permission Soft Ask (native iOS only, shown once) */}
+      <PushPermissionSoftAsk />
     </div>
   );
 }
@@ -239,7 +255,7 @@ export function GolfDashboardShell({
               <NotificationBadgeProvider>
                 <LazyMotion features={domAnimation}>
                   <AppearanceMotionConfig>
-                    <OfflineProvider showSyncStatus={false} showWarningBanner={false}>
+                    <OfflineProvider showSyncStatus={false} showWarningBanner={true}>
                       <LastSeenUpdater />
                       <GolfDashboardContent userData={userData}>
                         {children}

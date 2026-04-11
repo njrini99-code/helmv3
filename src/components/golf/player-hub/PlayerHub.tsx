@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { GolfTabBar } from '@/components/golf/GolfTabBar';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
-import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
+import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import {
   IconAirplane,
   IconMapPin,
@@ -397,7 +397,6 @@ function PlayerTaskCard({
   return (
     <m.div
       variants={fadeUp}
-      layout
       className={cn(
         'relative glass-premium rounded-2xl overflow-clip transition-[transform,box-shadow] duration-300',
         isCompleted && 'opacity-60',
@@ -506,7 +505,6 @@ function EventRSVPCard({
   return (
     <m.div
       variants={fadeUp}
-      layout
       className={cn(
         'relative glass-premium rounded-2xl overflow-clip transition-[transform,box-shadow] duration-300',
         !isPast && 'hover:shadow-lg hover:-translate-y-0.5',
@@ -700,30 +698,14 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
   return (
     <div className="min-h-full">
       {/* Header */}
-      <m.div
-        initial={{ opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-        className="golf-mobile-page-header"
-      >
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
-          <div className="flex items-center gap-3">
-            <MobileMenuButton />
-            <div>
-              <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900" suppressHydrationWarning>
-                {greeting}, {firstName}
-              </h1>
-              {urgentCount > 0 ? (
-                <p className="text-warm-500 mt-0.5 text-sm">
-                  {urgentCount} item{urgentCount !== 1 ? 's' : ''} need{urgentCount === 1 ? 's' : ''} your attention
-                </p>
-              ) : (
-                <p className="text-warm-500 mt-0.5 text-sm">You&apos;re all caught up</p>
-              )}
-            </div>
-          </div>
-        </div>
-      </m.div>
+      <LargeTitleHeader
+        title={`${greeting}, ${firstName}`}
+        subtitle={
+          urgentCount > 0
+            ? `${urgentCount} item${urgentCount !== 1 ? 's' : ''} need${urgentCount === 1 ? 's' : ''} your attention`
+            : "You're all caught up"
+        }
+      />
 
       {/* Tab navigation */}
       <div className="sticky top-[var(--golf-mobile-header-offset)] z-[9] border-b border-warm-100 bg-white/80 backdrop-blur-sm md:top-[73px] md:backdrop-blur-xl">

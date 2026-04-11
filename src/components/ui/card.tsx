@@ -19,7 +19,7 @@ export function Card({ className, variant = 'base', padding = 'lg', loading = fa
     return (
       <div
         className={cn(
-          'bg-white border border-warm-200 rounded-2xl overflow-hidden',
+          'bg-white border border-warm-200 rounded-2xl overflow-clip',
           paddingClasses[padding],
           className
         )}

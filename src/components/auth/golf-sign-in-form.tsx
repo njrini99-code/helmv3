@@ -5,7 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { loginAction } from '@/app/golf/actions/auth';
 import { Input } from '@/components/ui/input';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Loader2 } from 'lucide-react';
+import { triggerHaptic } from '@/lib/utils/capacitor';
 
 function getErrorMessage(error: string): string {
   const lower = error.toLowerCase();
@@ -46,15 +47,21 @@ export function GolfSignInForm() {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+    // Light haptic when the user taps Sign In — matches native iOS button feel.
+    void triggerHaptic('light');
 
     try {
       const result = await loginAction(email, password);
 
       if (!result.success) {
+        void triggerHaptic('error');
         setError(getErrorMessage(result.error || 'Login failed'));
         setIsLoading(false);
         return;
       }
+
+      // Success haptic before the nav — feels like a confirmation tap-through.
+      void triggerHaptic('success');
 
       // CRITICAL: After login, refresh first to ensure the session cookies
       // are recognized by the Next.js router cache before navigating.
@@ -106,32 +113,17 @@ export function GolfSignInForm() {
         </div>
       )}
 
-      {/* Email */}
-      <div className="space-y-1.5">
-        <label htmlFor="golf-signin-email" className="text-sm font-medium text-warm-700">
-          Email
-        </label>
-        <input
-          id="golf-signin-email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@example.com"
-          required
-          autoFocus
-          autoComplete="email"
-          className="
-            w-full px-4 py-2.5
-            bg-white
-            border border-warm-200
-            rounded-[10px]
-            text-warm-900 text-base lg:text-sm
-            placeholder:text-warm-400
-            transition-all duration-200
-            focus:outline-none focus:border-primary-500 focus:ring-[3px] focus:ring-primary-500/10
-          "
-        />
-      </div>
+      {/* Email — uses the shared Input which auto-applies iOS email keyboard defaults */}
+      <Input
+        id="golf-signin-email"
+        label="Email"
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="you@example.com"
+        required
+        enterKeyHint="next"
+      />
 
       {/* Password */}
       <div className="space-y-1.5">
@@ -154,34 +146,34 @@ export function GolfSignInForm() {
           placeholder="Enter your password"
           required
           autoComplete="current-password"
+          enterKeyHint="go"
         />
       </div>
 
-      {/* Submit button */}
+      {/* Submit button — inline spinner, iOS ease, tactile press */}
       <button
         type="submit"
         disabled={isLoading}
+        aria-busy={isLoading}
         className="
-          w-full py-3
+          w-full min-h-[50px] py-3
           bg-primary-600 text-white
-          font-semibold text-sm
+          font-semibold text-[15px] tracking-[-0.01em]
           rounded-xl
           shadow-lg shadow-primary-600/25
-          transition-all duration-200
+          transition-all duration-200 ease-ios
           hover:bg-primary-700 hover:shadow-primary-600/30
-          active:scale-[0.98]
-          disabled:opacity-50 disabled:cursor-not-allowed
-          flex items-center justify-center
-          focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2
+          active:scale-[0.97] active:duration-75
+          disabled:opacity-70 disabled:cursor-not-allowed disabled:active:scale-100
+          flex items-center justify-center gap-2
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2
         "
       >
         {isLoading ? (
-          <div className="flex items-center gap-1" role="status" aria-label="Signing in">
-            <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-            <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-            <span className="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-            <span className="sr-only">Signing in...</span>
-          </div>
+          <>
+            <Loader2 className="w-[18px] h-[18px] animate-spin" aria-hidden="true" />
+            <span>Signing in…</span>
+          </>
         ) : (
           'Sign in'
         )}

@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { IconMail, IconPlus, IconSend, IconArrowLeft, IconMessageSquare, IconAlertCircle, IconPencil, IconTrash, IconCheck, IconX, IconUsers } from '@/components/icons';
-import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
+import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { AnimatedPage } from '@/components/golf/layout/AnimatedPage';
 import { useToast } from '@/components/ui/toast';
 import { useGolfConversations, useGolfMessages } from '@/hooks/golf/use-golf-messages';
@@ -19,6 +19,7 @@ import { AttachmentButton } from '@/components/golf/messages/AttachmentButton';
 import { AttachmentPreview } from '@/components/golf/messages/AttachmentPreview';
 import { useMessageAttachments } from '@/hooks/golf/use-message-attachments';
 import type { PendingAttachment } from '@/lib/storage/attachments';
+import { PullToRefresh } from '@/components/golf/PullToRefresh';
 
 export default function GolfMessagesPage() {
   const { showToast } = useToast();
@@ -30,6 +31,10 @@ export default function GolfMessagesPage() {
   const { userId, role: userRole, teamId, teamName } = useGolfUser();
 
   const { conversations, loading: conversationsLoading, refetch } = useGolfConversations();
+
+  const handleConversationsRefresh = async () => {
+    await refetch();
+  };
 
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [showNewMessageModal, setShowNewMessageModal] = useState(false);
@@ -307,44 +312,38 @@ export default function GolfMessagesPage() {
         'w-full lg:w-80 xl:w-96 flex-shrink-0 border-r border-warm-200/60 glass-standard flex flex-col',
         mobileShowChat && 'hidden lg:flex'
       )}>
-        {/* Header */}
-        <div className="p-4 border-b border-warm-100">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <MobileMenuButton />
-              <div>
-                <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">Messages</h1>
-                <p className="text-sm text-warm-500 mt-0.5">Team conversations</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {userRole === 'coach' && (
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => setShowTeamBroadcastModal(true)}
-                  className="gap-1"
-                  title="Message team"
-                >
-                  <IconUsers size={16} />
-                  <span className="hidden sm:inline">Team</span>
-                </Button>
-              )}
-              <Button
-                size="sm"
-                onClick={() => setShowNewMessageModal(true)}
-                className="gap-1"
-              >
-                <IconPlus size={16} />
-                New
-              </Button>
-            </div>
-          </div>
-          <p className="text-sm text-warm-500">{teamName || 'Team'} communication</p>
-        </div>
+        {/* Header — uses shared LargeTitleHeader for consistent safe area, sticky, backdrop */}
+        <LargeTitleHeader
+          title="Messages"
+          subtitle={teamName ? `${teamName} communication` : 'Team conversations'}
+        >
+          {userRole === 'coach' && (
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => setShowTeamBroadcastModal(true)}
+              className="gap-1"
+              title="Message team"
+              aria-label="Message team"
+            >
+              <IconUsers size={16} />
+              <span className="hidden sm:inline">Team</span>
+            </Button>
+          )}
+          <Button
+            size="sm"
+            onClick={() => setShowNewMessageModal(true)}
+            className="gap-1"
+            aria-label="New message"
+          >
+            <IconPlus size={16} />
+            <span className="hidden xs:inline sm:inline">New</span>
+          </Button>
+        </LargeTitleHeader>
 
         {/* Conversation List */}
-        <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y pt-[env(safe-area-inset-top)]" data-scroll-container>
+        <div className="flex-1 min-h-0 pt-[env(safe-area-inset-top)]" data-scroll-container>
+          <PullToRefresh onRefresh={handleConversationsRefresh} className="overscroll-contain touch-pan-y">
           {conversationsLoading ? (
             <div className="p-2 space-y-1">
               {Array.from({ length: 5 }).map((_, i) => (
@@ -406,6 +405,7 @@ export default function GolfMessagesPage() {
               )}
             </div>
           )}
+          </PullToRefresh>
         </div>
       </div>
 

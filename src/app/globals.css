@@ -174,6 +174,75 @@
     /* Remove tap highlight on mobile */
   }
 
+  /* ===== iOS NATIVE FEEL LAYER =====
+     When the app is running inside the Capacitor iOS webview (body.capacitor
+     class is added by Capacitor automatically), swap to the system font and
+     remove web-isms so the app reads as native. */
+  body.capacitor {
+    /* San Francisco system font — the single biggest "feels native" change */
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, sans-serif;
+    /* Match iOS UIKit letter-spacing */
+    letter-spacing: -0.022em;
+    /* Prevent accidental text selection on UI chrome (iOS apps don't allow it) */
+    -webkit-user-select: none;
+    user-select: none;
+    /* Disable double-tap zoom — iOS apps never zoom */
+    touch-action: manipulation;
+    /* Disable iOS browser long-press callout (copy/paste menu on buttons) */
+    -webkit-touch-callout: none;
+  }
+
+  /* Re-enable text selection inside actual content areas */
+  body.capacitor input,
+  body.capacitor textarea,
+  body.capacitor [contenteditable],
+  body.capacitor .selectable,
+  body.capacitor p,
+  body.capacitor h1,
+  body.capacitor h2,
+  body.capacitor h3,
+  body.capacitor h4,
+  body.capacitor h5,
+  body.capacitor h6,
+  body.capacitor span {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
+  /* Scroll containers on iOS — momentum + no rubber-band at body level */
+  body.capacitor {
+    overscroll-behavior-y: none;
+  }
+
+  body.capacitor [data-scroll-container],
+  body.capacitor main {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
+
+  /* ===== NATIVE KEYBOARD HANDLING =====
+     When the iOS keyboard opens, the CapacitorProvider adds
+     body.keyboard-open and sets --keyboard-height. Auth forms
+     (centered by flex) can break visually — switch from items-center
+     to items-start and add bottom padding equal to keyboard height. */
+  :root {
+    --keyboard-height: 0px;
+  }
+
+  body.capacitor.keyboard-open .auth-shell {
+    align-items: flex-start !important;
+    padding-top: max(2rem, env(safe-area-inset-top));
+    padding-bottom: var(--keyboard-height);
+  }
+
+  /* Make sure inputs scroll into view with breathing room above */
+  body.capacitor input,
+  body.capacitor textarea,
+  body.capacitor select {
+    scroll-margin-top: 120px;
+    scroll-margin-bottom: calc(var(--keyboard-height) + 40px);
+  }
+
   /* NOTE: Global transition-timing-function removed — it applied to every DOM
      element, increasing style recalculation cost on every frame. Individual
      components already define their own timing functions where needed. */
@@ -250,8 +319,8 @@
 
 @layer components {
   .golf-mobile-page-header {
-    @apply sticky top-0 z-10 border-b border-warm-200/30;
-    background: rgba(255, 254, 250, 0.6);
+    @apply sticky top-0 z-20 border-b border-warm-200/30;
+    background: rgba(255, 254, 250, 0.72);
     backdrop-filter: blur(24px) saturate(1.2);
     -webkit-backdrop-filter: blur(24px) saturate(1.2);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
@@ -261,6 +330,17 @@
   @media (min-width: 1024px) {
     .golf-mobile-page-header {
       padding-top: 0;
+    }
+  }
+
+  /* ===== MOBILE SAFE-AREA SAFETY NET =====
+     Any page inside the dashboard that did NOT wrap itself in
+     .golf-mobile-page-header gets automatic top padding at the main
+     content level. This prevents content from hiding under the Dynamic
+     Island / notch on notched iPhones. Desktop disables this. */
+  @media (max-width: 1023px) {
+    main[role="main"] > :first-child:not(.golf-mobile-page-header):not([data-safe-top-exempt]) {
+      padding-top: max(0.5rem, env(safe-area-inset-top, 0px));
     }
   }
 
@@ -1906,20 +1986,15 @@ body {
   }
 }
 
-/* Shimmer animation for product cards */
-@keyframes shimmer-product {
-  0% {
-    background-position: -200% 0;
-  }
-
-  100% {
-    background-position: 200% 0;
-  }
-}
-
-.animate-shimmer {
-  animation: shimmer-product 2s infinite;
-}
+/* ============================================================================
+   SHIMMER — single source of truth.
+   Tailwind provides the canonical `animate-shimmer` utility via
+   tailwind.config.ts (2s, translateX(-100%) -> translateX(100%)), which is
+   GPU-accelerated and what every golf skeleton is designed around.
+   We intentionally do NOT redefine `.animate-shimmer` here — a prior
+   background-position based override collided with the Tailwind utility and
+   broke translate-based skeletons (src/components/ui/skeleton.tsx).
+   ============================================================================ */
 
 /* ========================================
    VIEW TRANSITIONS - DISABLED
@@ -1949,7 +2024,8 @@ body {
       transparent 0%,
       rgba(255, 255, 255, 0.5) 50%,
       transparent 100%);
-  animation: shimmer-sweep 1.5s ease-in-out infinite;
+  /* 2s to match Tailwind `animate-shimmer` — single global shimmer cadence. */
+  animation: shimmer-sweep 2s linear infinite;
   pointer-events: none;
   will-change: transform;
 }
@@ -1960,7 +2036,7 @@ body {
   }
 
   100% {
-    transform: translateX(200%);
+    transform: translateX(100%);
   }
 }
 

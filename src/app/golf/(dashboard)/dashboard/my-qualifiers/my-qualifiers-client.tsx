@@ -6,7 +6,7 @@ import Link from 'next/link';
 import type { PlayerQualifierInfo } from '@/app/golf/actions/golf';
 import { IconTrophy, IconChevronRight, IconCalendar, IconMapPin, IconGolf } from '@/components/icons';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
-import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
+import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 
 interface MyQualifiersClientProps {
   qualifiers: PlayerQualifierInfo[];
@@ -51,18 +51,11 @@ export function MyQualifiersClient({ qualifiers, error }: MyQualifiersClientProp
   return (
     <AnimatedPage className="min-h-full bg-transparent">
       {/* Header */}
-      <AnimatedItem className="golf-mobile-page-header">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <MobileMenuButton />
-              <div>
-                <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">My Qualifiers</h1>
-                <p className="text-sm text-warm-500 mt-0.5">View your qualifier progress and leaderboards</p>
-              </div>
-            </div>
-          </div>
-        </div>
+      <AnimatedItem>
+        <LargeTitleHeader
+          title="My Qualifiers"
+          subtitle="View your qualifier progress and leaderboards"
+        />
       </AnimatedItem>
 
       <div className="max-w-4xl mx-auto px-4 md:px-6 py-6 md:py-8">
