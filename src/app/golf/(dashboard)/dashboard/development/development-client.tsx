@@ -292,6 +292,14 @@ export function DevelopmentPlansClient({
     target_value: '',
   });
 
+  // Helper — must be above summaryStats useMemo which calls it.
+  // Using const arrow function means it's subject to TDZ if accessed
+  // before this line, so it must come before any code that references it.
+  const getProgressPercent = (current: number | null, target: number | null) => {
+    if (!current || !target || target === 0) return 0;
+    return Math.min(100, Math.round((current / target) * 100));
+  };
+
   // Derived data
   const filteredFocusAreas = selectedPlayerId
     ? focusAreas.filter(fa => fa.player_id === selectedPlayerId)
@@ -421,11 +429,6 @@ export function DevelopmentPlansClient({
     } catch {
       // Error handled by server action
     }
-  };
-
-  const getProgressPercent = (current: number | null, target: number | null) => {
-    if (!current || !target || target === 0) return 0;
-    return Math.min(100, Math.round((current / target) * 100));
   };
 
   // When player selection changes in create modal, auto-suggest metric based on area type
