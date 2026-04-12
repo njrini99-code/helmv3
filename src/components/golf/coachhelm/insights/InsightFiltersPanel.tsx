@@ -240,10 +240,10 @@ export function InsightFiltersPanel({
             value={filters.playerId || ''}
             onChange={(e) => updateFilter('playerId', e.target.value || undefined)}
             className={cn(
-              'w-full px-3 py-2 text-sm',
+              'w-full min-h-[44px] px-3 py-2 text-base lg:text-sm',
               'bg-white border border-warm-200 rounded-lg',
               'text-warm-900',
-              'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20',
+              'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30',
               'transition-colors duration-200'
             )}
           >
@@ -265,10 +265,10 @@ export function InsightFiltersPanel({
             value={filters.insightType || ''}
             onChange={(e) => updateFilter('insightType', e.target.value as InsightType || undefined)}
             className={cn(
-              'w-full px-3 py-2 text-sm',
+              'w-full min-h-[44px] px-3 py-2 text-base lg:text-sm',
               'bg-white border border-warm-200 rounded-lg',
               'text-warm-900',
-              'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20',
+              'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30',
               'transition-colors duration-200'
             )}
           >
@@ -293,10 +293,10 @@ export function InsightFiltersPanel({
             value={filters.priority || ''}
             onChange={(e) => updateFilter('priority', e.target.value as InsightPriority || undefined)}
             className={cn(
-              'w-full px-3 py-2 text-sm',
+              'w-full min-h-[44px] px-3 py-2 text-base lg:text-sm',
               'bg-white border border-warm-200 rounded-lg',
               'text-warm-900',
-              'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20',
+              'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30',
               'transition-colors duration-200'
             )}
           >
@@ -318,10 +318,10 @@ export function InsightFiltersPanel({
             value={filters.status || ''}
             onChange={(e) => updateFilter('status', e.target.value as InsightStatus || undefined)}
             className={cn(
-              'w-full px-3 py-2 text-sm',
+              'w-full min-h-[44px] px-3 py-2 text-base lg:text-sm',
               'bg-white border border-warm-200 rounded-lg',
               'text-warm-900',
-              'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20',
+              'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30',
               'transition-colors duration-200'
             )}
           >
@@ -352,10 +352,10 @@ export function InsightFiltersPanel({
               }
             }}
             className={cn(
-              'w-full px-3 py-2 text-sm',
+              'w-full min-h-[44px] px-3 py-2 text-base lg:text-sm',
               'bg-white border border-warm-200 rounded-lg',
               'text-warm-900',
-              'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20',
+              'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30',
               'transition-colors duration-200'
             )}
           >
@@ -374,10 +374,10 @@ export function InsightFiltersPanel({
                 value={filters.startDate || ''}
                 onChange={(e) => updateFilter('startDate', e.target.value || undefined)}
                 className={cn(
-                  'w-full px-3 py-2 text-sm',
+                  'w-full min-h-[44px] px-3 py-2 text-base lg:text-sm',
                   'bg-white border border-warm-200 rounded-lg',
                   'text-warm-900',
-                  'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20',
+                  'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30',
                   'transition-colors duration-200'
                 )}
               />
@@ -386,10 +386,10 @@ export function InsightFiltersPanel({
                 value={filters.endDate || ''}
                 onChange={(e) => updateFilter('endDate', e.target.value || undefined)}
                 className={cn(
-                  'w-full px-3 py-2 text-sm',
+                  'w-full min-h-[44px] px-3 py-2 text-base lg:text-sm',
                   'bg-white border border-warm-200 rounded-lg',
                   'text-warm-900',
-                  'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20',
+                  'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30',
                   'transition-colors duration-200'
                 )}
               />

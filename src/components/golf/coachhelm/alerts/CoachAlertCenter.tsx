@@ -224,7 +224,8 @@ function CoachAlertCenter({
 
       {/* Alerts List */}
       <GlassCard className="p-3" glow={criticalCount > 0 ? 'green' : 'subtle'}>
-        <AnimatePresence mode="popLayout">
+        {/* popLayout removed — simple fade on dismiss, no layout measurement needed */}
+        <AnimatePresence>
           {visibleAlerts.length > 0 ? (
             <div className="space-y-2">
               {visibleAlerts.map((alert) => (

@@ -153,7 +153,8 @@ export function TeamCategoryView({
       </div>
 
       {/* Active category content */}
-      <AnimatePresence mode="popLayout">
+      {/* mode="wait" — tab switch crossfade; popLayout was re-measuring on every frame */}
+      <AnimatePresence mode="wait">
         {activeCategory && (
           <motion.div
             key={activeCategory.id}

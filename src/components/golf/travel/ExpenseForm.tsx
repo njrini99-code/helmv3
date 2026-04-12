@@ -346,8 +346,11 @@ export function ExpenseForm({
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Additional details about this expense..."
             rows={2}
-            className="w-full px-4 py-2.5 rounded-lg border border-warm-200
-                     focus:border-primary-500 focus:ring-2 focus:ring-primary-100
+            aria-label="Expense notes"
+            autoCapitalize="sentences"
+            autoCorrect="on"
+            className="w-full px-4 py-2.5 rounded-lg border border-warm-200 text-base lg:text-sm
+                     focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30
                      text-warm-900 placeholder:text-warm-400 transition-colors resize-none"
           />
         </div>

@@ -123,7 +123,7 @@ export const ActionItemsCard = memo(function ActionItemsCard({ items, role }: Ac
                                 <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary-50 to-emerald-50 flex items-center justify-center mb-4">
                                     <IconCheck size={24} className="text-primary-600/80" />
                                 </div>
-                                <p className="text-[15px] font-semibold text-warm-900 tracking-tight mb-1">All caught up</p>
+                                <p className="text-subhead font-semibold text-warm-900 mb-1">All caught up</p>
                                 <p className="text-xs leading-relaxed text-warm-500">
                                     {activeTab === 'tasks' ? 'No pending tasks' :
                                      activeTab === 'announcements' ? 'No new announcements' :

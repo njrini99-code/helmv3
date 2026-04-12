@@ -51,8 +51,9 @@ export function ConfirmDialog({
       button: 'bg-[#FF3B30] hover:bg-[#E0352B] text-white',
     },
     warning: {
-      icon: 'bg-amber-50 text-amber-600',
-      button: 'bg-amber-600 hover:bg-amber-700 text-white',
+      // iOS SF Orange (#FF9500)
+      icon: 'bg-[#FF9500]/10 text-[#FF9500]',
+      button: 'bg-[#FF9500] hover:bg-[#E08600] text-white',
     },
     default: {
       icon: 'bg-warm-100 text-warm-600',

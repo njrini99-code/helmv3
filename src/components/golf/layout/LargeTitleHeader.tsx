@@ -101,7 +101,7 @@ export function LargeTitleHeader({
       >
         <IconChevronLeft size={22} />
         {backLabel && (
-          <span className="text-[15px] font-medium max-w-[120px] truncate">{backLabel}</span>
+          <span className="text-subhead font-medium max-w-[120px] truncate">{backLabel}</span>
         )}
       </Link>
     ) : (
@@ -125,7 +125,7 @@ export function LargeTitleHeader({
       >
         <IconChevronLeft size={22} />
         {backLabel && (
-          <span className="text-[15px] font-medium max-w-[120px] truncate">{backLabel}</span>
+          <span className="text-subhead font-medium max-w-[120px] truncate">{backLabel}</span>
         )}
       </button>
     )
@@ -218,7 +218,7 @@ export function LargeTitleHeader({
                 scrolled ? 'opacity-100' : 'opacity-0 pointer-events-none',
               )}
             >
-              <span className="block text-[17px] font-semibold tracking-[-0.01em] text-warm-900 truncate">
+              <span className="block text-headline text-warm-900 truncate">
                 {title}
               </span>
             </button>
@@ -252,14 +252,14 @@ export function LargeTitleHeader({
       {/* ===== Large title — part of scrollable content (mobile only) =====
           Not sticky. Scrolls away naturally. Zero flicker. */}
       <div className="lg:hidden max-w-7xl mx-auto px-4 pt-0.5 pb-2">
-        <h1 className="text-[34px] leading-[1.1] font-bold tracking-[-0.022em] text-warm-900 truncate">
+        <h1 className="text-large-title text-warm-900 truncate">
           {title}
         </h1>
         {subtitle && (
           typeof subtitle === 'string' ? (
-            <p className="text-warm-500 mt-1 text-[15px] leading-tight truncate">{subtitle}</p>
+            <p className="text-warm-500 mt-1 text-subhead leading-tight truncate">{subtitle}</p>
           ) : (
-            <div className="text-warm-500 mt-1 text-[15px] leading-tight min-w-0">{subtitle}</div>
+            <div className="text-warm-500 mt-1 text-subhead leading-tight min-w-0">{subtitle}</div>
           )
         )}
       </div>

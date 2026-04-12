@@ -38,7 +38,7 @@ export function GolfTabBar<T extends string>({
   // iOS UISegmentedControl sizing: ~32pt compact / ~40pt regular
   const sizeClasses = compact
     ? 'min-h-[32px] px-3 py-1 text-xs'
-    : 'min-h-[40px] px-3.5 py-1.5 text-[13px]';
+    : 'min-h-[40px] px-3.5 py-1.5 text-footnote';
 
   return (
     <div

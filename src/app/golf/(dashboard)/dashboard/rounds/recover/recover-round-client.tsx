@@ -452,15 +452,15 @@ export default function RecoverRoundClient({ playerId }: { playerId: string }) {
                     key={round.id}
                     className="bg-white/60 border border-warm-200/50 rounded-xl p-4"
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-medium text-warm-900">
+                    <div className="flex items-center justify-between gap-3 mb-2">
+                      <h3 className="font-medium text-warm-900 truncate min-w-0">
                         {draft.setupData.courseName || 'Unknown Course'}
                       </h3>
-                      <span className="text-xs text-warm-400 capitalize">
+                      <span className="text-xs text-warm-400 capitalize flex-shrink-0">
                         {draft.setupData.roundType}
                       </span>
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-warm-500 mb-3">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-warm-500 mb-3">
                       <span>{completedCount} holes completed</span>
                       {totalScore > 0 && <span>Score: {totalScore}</span>}
                       <span>{draft.setupData.roundDate}</span>

@@ -125,12 +125,18 @@ export function CalendarFeedManager({
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-400" />
               <input
-                type="text"
+                type="search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search feeds..."
-                className="w-full pl-9 pr-4 py-2 rounded-lg border border-warm-200 text-sm
-                         focus:border-primary-500 focus:ring-2 focus:ring-primary-100
+                aria-label="Search feeds"
+                inputMode="search"
+                autoCorrect="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                enterKeyHint="search"
+                className="w-full min-h-[44px] pl-9 pr-4 py-2 rounded-lg border border-warm-200 text-base lg:text-sm
+                         focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30
                          placeholder:text-warm-400 transition-colors"
               />
             </div>
@@ -142,9 +148,10 @@ export function CalendarFeedManager({
                 <select
                   value={filterType}
                   onChange={(e) => setFilterType(e.target.value as FeedType | 'all')}
-                  className="pl-9 pr-10 py-2 rounded-lg border border-warm-200 text-sm font-medium
+                  aria-label="Filter by feed type"
+                  className="pl-9 pr-10 py-2 min-h-[44px] rounded-lg border border-warm-200 text-base lg:text-sm font-medium
                            bg-white text-warm-700 cursor-pointer
-                           hover:border-warm-300 focus:outline-none focus:ring-2 focus:ring-primary-100
+                           hover:border-warm-300 focus:outline-none focus:ring-2 focus:ring-primary-500/30
                            focus:border-primary-500 appearance-none"
                 >
                   <option value="all">All Types</option>

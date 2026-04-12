@@ -3,6 +3,7 @@
 import { useState, memo } from 'react';
 import { cn } from '@/lib/utils';
 import { IconDownload, IconFilter, IconChevronDown } from '@/components/icons';
+import { triggerHaptic } from '@/lib/utils/capacitor';
 
 type SortField = 'name' | 'handicap' | 'rounds' | 'avg_score';
 type SortDirection = 'asc' | 'desc';
@@ -30,11 +31,17 @@ export const RosterToolbar = memo(function RosterToolbar({
   const [showSortMenu, setShowSortMenu] = useState(false);
 
   const handleSortChange = (field: SortField) => {
+    void triggerHaptic('light');
     const newDirection = field === sortField && sortDirection === 'asc' ? 'desc' : 'asc';
     setSortField(field);
     setSortDirection(newDirection);
     setShowSortMenu(false);
     onSortChange?.(field, newDirection);
+  };
+
+  const handleToggleMenu = () => {
+    void triggerHaptic('light');
+    setShowSortMenu((v) => !v);
   };
 
   const selectedSort = SORT_OPTIONS.find(o => o.value === sortField);
@@ -44,14 +51,17 @@ export const RosterToolbar = memo(function RosterToolbar({
       {/* Sort Controls */}
       <div className="relative">
         <button
-          onClick={() => setShowSortMenu(!showSortMenu)}
+          onClick={handleToggleMenu}
           className={cn(
-            'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium',
-            'bg-white border border-warm-200 text-warm-600',
-            'hover:bg-warm-50 hover:border-warm-300',
-            'transition-all duration-150 active:scale-95'
+            'flex items-center gap-2 h-11 px-3 rounded-xl text-sm font-medium',
+            'bg-white/70 backdrop-blur-sm border border-warm-200/60 text-warm-700',
+            'hover:bg-white/90 hover:border-warm-300',
+            'transition-[color,background-color,transform] duration-150 active:scale-95',
+            'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
           )}
           aria-label="Sort roster"
+          aria-haspopup="menu"
+          aria-expanded={showSortMenu}
         >
           <IconFilter size={14} className="text-warm-400" />
           <span>Sort: {selectedSort?.label}</span>
@@ -62,25 +72,31 @@ export const RosterToolbar = memo(function RosterToolbar({
         {showSortMenu && (
           <>
             <div className="fixed inset-0 z-30" onClick={() => setShowSortMenu(false)} />
-            <div className={cn(
-              'absolute left-0 top-full mt-1 z-40',
-              'bg-white rounded-xl border border-warm-200 shadow-lg',
-              'py-1 min-w-[180px]'
-            )}>
+            <div
+              role="menu"
+              className={cn(
+                'absolute left-0 top-full mt-1.5 z-40',
+                'bg-white/95 backdrop-blur-xl rounded-2xl border border-warm-200/50',
+                'shadow-[0_12px_40px_rgba(16,24,40,0.14)]',
+                'py-1.5 min-w-[200px]',
+                'origin-top-left animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-180'
+              )}
+            >
               {SORT_OPTIONS.map((option) => (
                 <button
                   key={option.value}
+                  role="menuitem"
                   onClick={() => handleSortChange(option.value)}
                   className={cn(
-                    'w-full text-left px-3 py-2 text-sm transition-colors flex items-center justify-between',
+                    'w-full text-left px-3 py-2.5 min-h-[44px] text-[15px] transition-colors flex items-center justify-between',
                     option.value === sortField
-                      ? 'text-primary-700 bg-primary-50 font-medium'
-                      : 'text-warm-600 hover:bg-warm-50 active:bg-warm-100'
+                      ? 'text-primary-700 bg-primary-50/70 font-semibold'
+                      : 'text-warm-800 font-medium hover:bg-warm-100/60 active:bg-warm-100/80'
                   )}
                 >
                   <span>{option.label}</span>
                   {option.value === sortField && (
-                    <span className="text-primary-500">{sortDirection === 'asc' ? '\u2191' : '\u2193'}</span>
+                    <span className="text-primary-500 text-base">{sortDirection === 'asc' ? '\u2191' : '\u2193'}</span>
                   )}
                 </button>
               ))}
@@ -92,12 +108,16 @@ export const RosterToolbar = memo(function RosterToolbar({
       {/* Export Button */}
       {onExport && (
         <button
-          onClick={onExport}
+          onClick={() => {
+            void triggerHaptic('light');
+            onExport();
+          }}
           className={cn(
-            'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium',
-            'bg-white border border-warm-200 text-warm-600',
-            'hover:bg-warm-50 hover:border-warm-300',
-            'transition-all duration-150 active:scale-95'
+            'flex items-center gap-2 h-11 px-3 rounded-xl text-sm font-medium',
+            'bg-white/70 backdrop-blur-sm border border-warm-200/60 text-warm-700',
+            'hover:bg-white/90 hover:border-warm-300',
+            'transition-[color,background-color,transform] duration-150 active:scale-95',
+            'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
           )}
           aria-label={`Export ${playerCount} players as CSV`}
         >

@@ -163,15 +163,15 @@ export function NotificationCenter() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -8, scale: 0.98 }}
               transition={{ duration: 0.18, ease: [0.32, 0.72, 0, 1] }}
-              className="fixed left-4 right-4 top-full mt-2 sm:absolute sm:left-auto sm:right-0 sm:w-96 bg-white/85 backdrop-blur-xl rounded-2xl border border-white/40 shadow-2xl z-50 overflow-clip"
+              className="fixed left-4 right-4 top-full mt-2 sm:absolute sm:left-auto sm:right-0 sm:w-[380px] bg-white/90 backdrop-blur-2xl rounded-2xl border border-white/50 shadow-[0_12px_40px_rgba(16,24,40,0.18)] z-50 overflow-clip"
             >
               {/* Header */}
               <div className="px-4 py-3 border-b border-warm-200/60 flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-warm-900">Notifications</h3>
+                <h3 className="text-subhead font-semibold text-warm-900">Notifications</h3>
                 {unreadCount > 0 && (
                   <button
                     onClick={handleMarkAllRead}
-                    className="text-xs text-primary-600 hover:text-primary-700 font-semibold flex items-center gap-1 active:scale-95 transition-transform"
+                    className="text-footnote text-primary-600 hover:text-primary-700 font-semibold flex items-center gap-1 active:scale-95 transition-transform"
                   >
                     <IconCheck size={12} />
                     Clear all
@@ -233,12 +233,12 @@ export function NotificationCenter() {
 
 function EmptyState() {
   return (
-    <div className="flex flex-col items-center justify-center py-12 text-center">
-      <div className="w-12 h-12 rounded-2xl bg-warm-100/80 flex items-center justify-center mb-3">
-        <IconBell size={20} className="text-warm-300" />
+    <div className="flex flex-col items-center justify-center py-14 px-6 text-center">
+      <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary-100/60 to-emerald-100/50 flex items-center justify-center mb-4">
+        <IconBell size={22} className="text-primary-600/70" />
       </div>
-      <p className="text-sm font-medium text-warm-800">All caught up!</p>
-      <p className="text-xs text-warm-500 mt-1">No new notifications</p>
+      <p className="text-subhead font-semibold text-warm-900">All caught up</p>
+      <p className="text-footnote text-warm-500 mt-1">You have no new notifications</p>
     </div>
   );
 }
@@ -256,8 +256,8 @@ function NotificationGroup({
 }) {
   return (
     <section>
-      <div className="px-4 pt-3 pb-1.5 sticky top-0 bg-white/85 backdrop-blur-xl z-10">
-        <p className="text-[11px] font-semibold text-warm-500 uppercase tracking-wider">
+      <div className="px-4 pt-3 pb-1.5 sticky top-0 bg-white/90 backdrop-blur-xl z-10">
+        <p className="text-caption-2 font-semibold text-warm-500 uppercase tracking-[0.08em]">
           {label}
         </p>
       </div>
@@ -337,18 +337,18 @@ function NotificationRow({
         <div className="flex-1 min-w-0">
           <p
             className={cn(
-              'text-sm font-medium',
+              'text-[14px] font-semibold leading-snug',
               !notification.read ? 'text-warm-900' : 'text-warm-700',
             )}
           >
             {notification.title}
           </p>
           {notification.message && (
-            <p className="text-xs text-warm-500 mt-0.5 line-clamp-2">
+            <p className="text-footnote text-warm-500 mt-0.5 line-clamp-2 leading-snug">
               {notification.message}
             </p>
           )}
-          <p className="text-xs text-warm-400 mt-1 tabular-nums">
+          <p className="text-caption-2 text-warm-500 mt-1 tabular-nums">
             {formatTimeAgo(notification.created_at)}
           </p>
         </div>

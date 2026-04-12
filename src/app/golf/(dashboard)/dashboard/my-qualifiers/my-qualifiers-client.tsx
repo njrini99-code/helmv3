@@ -123,7 +123,7 @@ export function MyQualifiersClient({ qualifiers, error }: MyQualifiersClientProp
                         </div>
 
                         {/* Progress */}
-                        <div className="flex items-center gap-6">
+                        <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
                           <div>
                             <p className="text-xs text-warm-500 uppercase font-medium mb-1">Rounds</p>
                             <p className="text-lg font-semibold text-warm-900">

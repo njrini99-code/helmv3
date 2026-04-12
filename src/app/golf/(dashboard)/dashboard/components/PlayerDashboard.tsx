@@ -178,7 +178,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
 
             {/* MAIN CONTENT */}
             <m.div
-                className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-6"
+                className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-6 min-w-0"
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
@@ -207,7 +207,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                                                 'inline-flex items-center gap-2 px-5 py-3 rounded-xl',
                                                 'bg-primary-600 hover:bg-primary-700 text-white font-semibold text-sm',
                                                 'shadow-[0_4px_16px_rgba(22,163,74,0.3)]',
-                                                'transition-all duration-200 active:scale-[0.97]'
+                                                'transition-colors duration-200 active:scale-[0.97]'
                                             )}
                                         >
                                             <IconPlus size={16} />
@@ -301,15 +301,15 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
 
                         {/* ROW 2: Schedule + Strokes Gained */}
                         <DashboardErrorBoundary name="Schedule & Performance">
-                        <m.div className="grid lg:grid-cols-5 gap-4 md:gap-5 mb-5 md:mb-6" variants={itemVariants}>
-                            <div className="lg:col-span-3">
+                        <m.div className="grid grid-cols-1 lg:grid-cols-5 gap-4 md:gap-5 mb-5 md:mb-6" variants={itemVariants}>
+                            <div className="lg:col-span-3 min-w-0">
                                 <TodayTimeline
                                     events={enhancedData?.todayEvents ?? EMPTY_EVENTS}
                                     role="player"
                                     timezone={enhancedData?.timezone}
                                 />
                             </div>
-                            <div className="lg:col-span-2 flex flex-col gap-4 md:gap-5">
+                            <div className="lg:col-span-2 flex flex-col gap-4 md:gap-5 min-w-0">
                                 <PerformanceRadar
                                     data={enhancedData?.strokesGained ?? EMPTY_STROKES_GAINED}
                                 />
@@ -320,8 +320,8 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
 
                         {/* ROW 3: Trend + Focus Areas */}
                         <DashboardErrorBoundary name="Scoring Trend">
-                        <m.div className="grid lg:grid-cols-5 gap-4 md:gap-5 mb-5 md:mb-6" variants={itemVariants}>
-                            <div className="lg:col-span-3">
+                        <m.div className="grid grid-cols-1 lg:grid-cols-5 gap-4 md:gap-5 mb-5 md:mb-6" variants={itemVariants}>
+                            <div className="lg:col-span-3 min-w-0">
                                 {chartData.length >= 2 ? (
                                     <>
                                         <SectionHeader title="Scoring Trend" />
@@ -344,7 +344,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                                     </>
                                 )}
                             </div>
-                            <div className="lg:col-span-2">
+                            <div className="lg:col-span-2 min-w-0">
                                 <SectionHeader title="Focus Areas" icon={<IconTarget size={14} />} />
                                 <PremiumGlassCard glow>
                                     <ShineEffect />
@@ -399,7 +399,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                                     'flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl text-sm font-semibold',
                                     'bg-primary-600 hover:bg-primary-700 text-white',
                                     'shadow-[0_4px_16px_rgba(22,163,74,0.25)]',
-                                    'transition-all duration-200 active:scale-[0.98]'
+                                    'transition-colors duration-200 active:scale-[0.98]'
                                 )}
                             >
                                 <IconPlus size={16} />

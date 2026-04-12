@@ -12,6 +12,7 @@ import {
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 
 import { cn } from '@/lib/utils';
+import { triggerHaptic } from '@/lib/utils/capacitor';
 import {
   uploadGolfDocument,
   createGolfDocument,
@@ -717,29 +718,35 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
             {/* Sort dropdown */}
             <div className="relative flex-shrink-0">
               <button
-                onClick={() => setShowSortMenu(!showSortMenu)}
-                className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-warm-600 bg-white/80 border border-warm-200 rounded-lg hover:bg-white hover:border-warm-300 transition-colors whitespace-nowrap"
+                onClick={() => { void triggerHaptic('light'); setShowSortMenu(!showSortMenu); }}
+                className="flex items-center gap-1.5 h-11 px-3 text-xs font-semibold text-warm-700 bg-white/70 backdrop-blur-sm border border-warm-200/60 rounded-xl hover:bg-white/90 hover:border-warm-300 active:scale-95 transition-[color,background-color,transform] duration-150 whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
+                aria-haspopup="menu"
+                aria-expanded={showSortMenu}
               >
                 {sortBy === 'newest' ? 'Newest' : sortBy === 'oldest' ? 'Oldest' : sortBy === 'name' ? 'Name' : 'Size'}
-                <IconChevronDown size={12} />
+                <IconChevronDown size={12} className={cn('transition-transform', showSortMenu && 'rotate-180')} />
               </button>
               {showSortMenu && (
                 <>
                   <div className="fixed inset-0 z-30" onClick={() => setShowSortMenu(false)} />
-                  <div className="absolute right-0 top-full mt-1 z-40 w-36 bg-white rounded-xl shadow-xl border border-warm-200 py-1 animate-in fade-in slide-in-from-top-1 duration-150">
+                  <div
+                    role="menu"
+                    className="absolute right-0 top-full mt-1.5 z-40 w-44 bg-white/95 backdrop-blur-xl rounded-2xl shadow-[0_12px_40px_rgba(16,24,40,0.14)] border border-warm-200/50 py-1.5 origin-top-right animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-180"
+                  >
                     {([['newest', 'Newest first'], ['oldest', 'Oldest first'], ['name', 'Name A-Z'], ['size', 'Largest first']] as const).map(([value, label]) => (
                       <button
                         key={value}
-                        onClick={() => { setSortBy(value); setShowSortMenu(false); }}
+                        role="menuitem"
+                        onClick={() => { void triggerHaptic('light'); setSortBy(value); setShowSortMenu(false); }}
                         className={cn(
-                          'flex items-center gap-2 w-full px-3 py-2 text-sm transition-colors',
+                          'flex items-center gap-2 w-full px-3 py-2.5 min-h-[44px] text-[15px] transition-colors',
                           sortBy === value
-                            ? 'text-primary-600 bg-primary-50 font-medium'
-                            : 'text-warm-700 hover:bg-warm-50'
+                            ? 'text-primary-700 bg-primary-50/70 font-semibold'
+                            : 'text-warm-800 font-medium hover:bg-warm-100/60 active:bg-warm-100/80'
                         )}
                       >
-                        {sortBy === value && <IconCheck size={12} />}
-                        <span className={sortBy === value ? '' : 'ml-5'}>{label}</span>
+                        {sortBy === value ? <IconCheck size={14} className="text-primary-600" /> : <span className="w-[14px]" />}
+                        <span>{label}</span>
                       </button>
                     ))}
                   </div>
@@ -866,53 +873,67 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
+                              void triggerHaptic('light');
                               setActiveDropdown(activeDropdown === doc.id ? null : doc.id);
                             }}
-                            className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100/80 active:bg-warm-200 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-colors"
+                            className="w-11 h-11 flex items-center justify-center rounded-xl text-warm-400 hover:text-warm-700 hover:bg-warm-100/60 active:bg-warm-200/60 active:scale-95 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-[color,background-color,transform,opacity] duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
+                            aria-label="Document actions"
+                            aria-haspopup="menu"
+                            aria-expanded={activeDropdown === doc.id}
                           >
-                            <IconMoreVertical size={14} />
+                            <IconMoreVertical size={16} />
                           </button>
 
                           {activeDropdown === doc.id && (
                             <>
                               <div className="fixed inset-0 z-30" onClick={(e) => { e.stopPropagation(); setActiveDropdown(null); }} />
-                              <div className="absolute right-0 top-8 z-40 w-48 bg-white rounded-xl shadow-xl border border-warm-200 py-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
+                              <div
+                                role="menu"
+                                className="absolute right-0 top-full mt-1.5 z-40 w-56 bg-white/95 backdrop-blur-xl rounded-2xl shadow-[0_12px_40px_rgba(16,24,40,0.14)] border border-warm-200/50 py-1.5 origin-top-right animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-180"
+                              >
                                 <button
-                                  onClick={(e) => { e.stopPropagation(); openPreview(doc); setActiveDropdown(null); }}
-                                  className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors"
+                                  role="menuitem"
+                                  onClick={(e) => { e.stopPropagation(); void triggerHaptic('light'); openPreview(doc); setActiveDropdown(null); }}
+                                  className="flex items-center gap-3 w-full px-3 py-2.5 min-h-[44px] text-[15px] font-medium text-warm-800 hover:bg-warm-100/60 active:bg-warm-100/80 transition-colors"
                                 >
-                                  <IconEye size={14} /> Preview
+                                  <IconEye size={18} className="text-warm-500" /> Preview
                                 </button>
                                 <button
-                                  onClick={(e) => { e.stopPropagation(); openVersionHistory(doc); }}
-                                  className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors"
+                                  role="menuitem"
+                                  onClick={(e) => { e.stopPropagation(); void triggerHaptic('light'); openVersionHistory(doc); }}
+                                  className="flex items-center gap-3 w-full px-3 py-2.5 min-h-[44px] text-[15px] font-medium text-warm-800 hover:bg-warm-100/60 active:bg-warm-100/80 transition-colors"
                                 >
-                                  <IconClock size={14} /> Version History
+                                  <IconClock size={18} className="text-warm-500" /> Version History
                                 </button>
                                 <button
-                                  onClick={(e) => { e.stopPropagation(); openUploadVersionModal(doc); }}
-                                  className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors"
+                                  role="menuitem"
+                                  onClick={(e) => { e.stopPropagation(); void triggerHaptic('light'); openUploadVersionModal(doc); }}
+                                  className="flex items-center gap-3 w-full px-3 py-2.5 min-h-[44px] text-[15px] font-medium text-warm-800 hover:bg-warm-100/60 active:bg-warm-100/80 transition-colors"
                                 >
-                                  <IconUpload size={14} /> Upload New Version
+                                  <IconUpload size={18} className="text-warm-500" /> Upload New Version
                                 </button>
                                 <button
-                                  onClick={(e) => { e.stopPropagation(); openEditModal(doc); }}
-                                  className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors"
+                                  role="menuitem"
+                                  onClick={(e) => { e.stopPropagation(); void triggerHaptic('light'); openEditModal(doc); }}
+                                  className="flex items-center gap-3 w-full px-3 py-2.5 min-h-[44px] text-[15px] font-medium text-warm-800 hover:bg-warm-100/60 active:bg-warm-100/80 transition-colors"
                                 >
-                                  <IconEdit size={14} /> Edit Details
+                                  <IconEdit size={18} className="text-warm-500" /> Edit Details
                                 </button>
                                 <button
-                                  onClick={(e) => { e.stopPropagation(); openMoveModal(doc); }}
-                                  className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors"
+                                  role="menuitem"
+                                  onClick={(e) => { e.stopPropagation(); void triggerHaptic('light'); openMoveModal(doc); }}
+                                  className="flex items-center gap-3 w-full px-3 py-2.5 min-h-[44px] text-[15px] font-medium text-warm-800 hover:bg-warm-100/60 active:bg-warm-100/80 transition-colors"
                                 >
-                                  <IconFolder size={14} /> Move to Folder
+                                  <IconFolder size={18} className="text-warm-500" /> Move to Folder
                                 </button>
-                                <div className="my-1 h-px bg-warm-100" />
+                                <div className="my-1 h-px bg-warm-200/50" />
                                 <button
-                                  onClick={(e) => { e.stopPropagation(); setDeleteConfirmDoc(doc); setActiveDropdown(null); }}
-                                  className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                                  role="menuitem"
+                                  onClick={(e) => { e.stopPropagation(); void triggerHaptic('light'); setDeleteConfirmDoc(doc); setActiveDropdown(null); }}
+                                  className="flex items-center gap-3 w-full px-3 py-2.5 min-h-[44px] text-[15px] font-medium hover:bg-[#FF3B30]/8 active:bg-[#FF3B30]/12 transition-colors"
+                                  style={{ color: '#FF3B30' }}
                                 >
-                                  <IconTrash size={14} /> Delete
+                                  <IconTrash size={18} /> Delete
                                 </button>
                               </div>
                             </>

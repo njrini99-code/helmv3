@@ -4,6 +4,7 @@ import { useState, useId } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IconChevronDown } from '@/components/icons';
 import { useAnimatedNumber } from '@/hooks/useAnimatedNumber';
+import { IOS_EASE, IOS_DURATION_NORMAL, IOS_DURATION_FAST } from '@/lib/ios-animations';
 
 // ============================================================================
 // ANIMATION VARIANTS
@@ -27,21 +28,22 @@ const itemVariants = {
     opacity: 1,
     y: 0,
     transition: {
-      duration: 0.25,
-      ease: [0.25, 0.1, 0.25, 1] as [number, number, number, number],
+      duration: IOS_DURATION_NORMAL,
+      ease: IOS_EASE as unknown as [number, number, number, number],
     },
   },
 };
 
+// Use the same distance/tween as itemVariants — 30px + spring caused
+// a subtle layout-shift flicker on iOS when cards staggered in.
 export const sectionVariants = {
-  hidden: { opacity: 0, y: 30 },
+  hidden: { opacity: 0, y: 12 },
   visible: {
     opacity: 1,
     y: 0,
     transition: {
-      type: 'spring' as const,
-      stiffness: 200,
-      damping: 20,
+      duration: IOS_DURATION_NORMAL,
+      ease: IOS_EASE as unknown as [number, number, number, number],
     },
   },
 };
@@ -245,7 +247,9 @@ export function StatCard({
   numericValue,
   decimals = 1,
   animate = true,
-  index = 0,
+  // index kept in API for backwards compat but no longer used for staggered
+  // delays — the parent stagger container handles entrance timing.
+  index: _index = 0,
   trend,
   comparisonValue,
   comparisonLabel,
@@ -296,8 +300,8 @@ export function StatCard({
       whileHover={{
         scale: 1.02,
         y: -4,
-        transition: { type: 'spring', stiffness: 400, damping: 20 }
       }}
+      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
       style={{ willChange: 'transform' }}
     >
       {/* Animated shine effect on hover */}
@@ -329,51 +333,33 @@ export function StatCard({
             className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-medium ${trendStyles.bg} ${trendStyles.color}`}
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.3 }}
+            transition={{ duration: IOS_DURATION_FAST, ease: IOS_EASE as unknown as [number, number, number, number] }}
           >
             {trendStyles.icon}
           </motion.span>
         )}
       </div>
-      <motion.div
+      <div
         className={`font-bold ${large ? 'text-3xl' : 'text-2xl'} ${highlight ? 'text-primary-600' : 'text-warm-900'} tabular-nums`}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: index * 0.05 }}
       >
         {displayValue}
-      </motion.div>
+      </div>
       {subValue && (
-        <motion.div
-          className="text-xs text-warm-400 mt-0.5"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 + index * 0.05 }}
-        >
+        <div className="text-xs text-warm-400 mt-0.5">
           {subValue}
-        </motion.div>
+        </div>
       )}
       {comparisonValue !== undefined && comparisonValue !== null && (
-        <motion.div
-          className="flex items-center gap-1 mt-1.5 text-xs"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-        >
+        <div className="flex items-center gap-1 mt-1.5 text-xs">
           <span className="text-warm-400">{comparisonLabel || 'vs team'}:</span>
           <span className={comparisonValue > 0 ? 'text-red-500' : comparisonValue < 0 ? 'text-primary-500' : 'text-warm-500'}>
             {comparisonValue > 0 ? '+' : ''}{comparisonValue.toFixed(1)}
           </span>
-        </motion.div>
+        </div>
       )}
       {/* Sparkline */}
       {sparklineData && sparklineData.length >= 3 && (
-        <motion.div
-          className="mt-2"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-        >
+        <div className="mt-2">
           <Sparkline
             data={sparklineData}
             width={70}
@@ -381,7 +367,7 @@ export function StatCard({
             showDots
             lowerIsBetter={sparklineLowerIsBetter}
           />
-        </motion.div>
+        </div>
       )}
     </motion.div>
   );
@@ -392,12 +378,14 @@ export function StatCard({
 // ============================================================================
 
 export function StatRow({ label, value, index = 0 }: { label: string; value: string; index?: number }) {
+  // Cap stagger at 40ms per row — any longer and the list feels sluggish on iOS.
+  const stagger = Math.min(index, 8) * 0.03;
   return (
     <motion.div
       className="flex justify-between items-center py-2.5 border-b border-warm-100/80 last:border-0 group hover:bg-warm-50/50 transition-colors rounded px-1 -mx-1"
       initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: index * 0.03, type: 'spring', stiffness: 300, damping: 25 }}
+      transition={{ delay: stagger, duration: IOS_DURATION_NORMAL, ease: IOS_EASE as unknown as [number, number, number, number] }}
     >
       <span className="text-sm text-warm-600 group-hover:text-warm-800 transition-colors">{label}</span>
       <span className="text-sm font-semibold text-warm-900 tabular-nums">{value}</span>
@@ -429,14 +417,10 @@ export function StatSection({
       initial="hidden"
       animate="visible"
       transition={{ delay }}
-      whileHover={{ boxShadow: '0 8px 30px rgba(0,0,0,0.08)' }}
     >
-      {/* Animated shine effect */}
-      <motion.div
+      {/* Static shine — animating scaleX was causing paint work during entrance */}
+      <div
         className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
-        initial={{ opacity: 0.5, scaleX: 0.8 }}
-        animate={{ opacity: 1, scaleX: 1 }}
-        transition={{ delay: delay + 0.1, duration: 0.5 }}
         style={{
           background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.9), transparent)',
         }}
@@ -453,7 +437,7 @@ export function StatSection({
           {collapsible && (
             <motion.div
               animate={{ rotate: isOpen ? 0 : -90 }}
-              transition={{ duration: 0.2 }}
+              transition={{ duration: IOS_DURATION_FAST, ease: IOS_EASE as unknown as [number, number, number, number] }}
             >
               <IconChevronDown size={16} className="text-warm-400" />
             </motion.div>
@@ -466,8 +450,14 @@ export function StatSection({
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
-              className="mt-3"
+              // Tween (not spring) on height — springs on height cause
+              // micro-flicker on iOS because height keeps overshooting past
+              // its target on each frame.
+              transition={{
+                height: { duration: IOS_DURATION_NORMAL, ease: IOS_EASE as unknown as [number, number, number, number] },
+                opacity: { duration: IOS_DURATION_FAST, ease: IOS_EASE as unknown as [number, number, number, number] },
+              }}
+              className="mt-3 overflow-hidden"
             >
               {children}
             </motion.div>

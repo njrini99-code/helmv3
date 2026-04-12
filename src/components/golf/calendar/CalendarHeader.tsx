@@ -6,6 +6,7 @@ import { startOfWeek, endOfWeek, format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { useSidebarSafe } from '@/contexts/sidebar-context';
+import { triggerHaptic } from '@/lib/utils/capacitor';
 
 export type CalendarView = 'day' | 'week' | 'month';
 
@@ -59,6 +60,14 @@ export function CalendarHeader({
 
   const getTitle = () => {
     if (view === 'day') {
+      // Mobile: "Apr 11" — desktop: "Thursday, April 11, 2026"
+      if (isMobile) {
+        return currentDate.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+        });
+      }
       return currentDate.toLocaleDateString('en-US', {
         weekday: 'long',
         month: 'long',
@@ -94,9 +103,9 @@ export function CalendarHeader({
   };
 
   return (
-    <header className="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 flex-shrink-0">
+    <header className="flex items-center justify-between gap-2 px-4 md:px-6 py-3 md:py-4 flex-shrink-0 min-w-0">
       {/* Left: Title + Nav */}
-      <div className="flex items-center gap-2 md:gap-3">
+      <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
         {/* Mobile hamburger menu */}
         <button
           type="button"
@@ -113,7 +122,7 @@ export function CalendarHeader({
         </button>
 
         {/* Title — larger, bolder */}
-        <h2 className="text-lg md:text-xl font-bold text-warm-900 tracking-tight">
+        <h2 className="text-base md:text-xl font-bold text-warm-900 tracking-tight truncate min-w-0">
           {getTitle()}
         </h2>
 
@@ -163,7 +172,7 @@ export function CalendarHeader({
       </div>
 
       {/* Right: View Toggle + Add Event */}
-      <div className="flex items-center gap-2 md:gap-3">
+      <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
         {/* View Toggle — glass segment control (hidden on mobile) */}
         {!isMobile && (
           <div
@@ -179,7 +188,7 @@ export function CalendarHeader({
                 aria-checked={view === v}
                 onClick={() => onViewChange(v)}
                 className={cn(
-                  'px-3.5 py-1.5 text-[13px] font-medium rounded-lg transition-[color,background-color,box-shadow] duration-200',
+                  'px-3.5 py-1.5 text-footnote font-medium rounded-lg transition-[color,background-color,box-shadow] duration-200',
                   view === v
                     ? 'bg-white text-warm-900 shadow-sm'
                     : 'text-warm-400 hover:text-warm-600'
@@ -196,10 +205,12 @@ export function CalendarHeader({
           <div ref={tzDropdownRef} className="relative">
             <button
               type="button"
-              onClick={() => setTzDropdownOpen(!tzDropdownOpen)}
+              onClick={() => { void triggerHaptic('light'); setTzDropdownOpen(!tzDropdownOpen); }}
               aria-label={secondaryTimezone ? `Secondary timezone: ${secondaryTimezone}` : 'Add secondary timezone'}
+              aria-haspopup="menu"
+              aria-expanded={tzDropdownOpen}
               className={cn(
-                'flex items-center gap-1.5 rounded-lg text-[13px] font-medium transition-[color,background-color,transform] duration-150 active:scale-95',
+                'flex items-center gap-1.5 rounded-lg text-footnote font-medium transition-[color,background-color,transform] duration-150 active:scale-95',
                 secondaryTimezone
                   ? 'px-2.5 py-1.5 bg-primary-50 text-primary-700 border border-primary-200/60'
                   : 'px-2 py-1.5 text-warm-400 hover:text-warm-600 hover:bg-warm-100/60'
@@ -213,15 +224,22 @@ export function CalendarHeader({
               )}
             </button>
             {tzDropdownOpen && (
-              <div className="absolute right-0 top-full mt-1 z-50 w-44 rounded-xl bg-white/95 backdrop-blur-xl border border-warm-200/60 shadow-lg py-1">
+              <div
+                role="menu"
+                className="absolute right-0 top-full mt-1.5 z-50 w-48 rounded-2xl bg-white/95 backdrop-blur-xl border border-warm-200/50 shadow-[0_12px_40px_rgba(16,24,40,0.14)] py-1.5 origin-top-right animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-180"
+              >
                 {secondaryTimezone && (
-                  <button
-                    type="button"
-                    onClick={() => { onSecondaryTimezoneChange(null); setTzDropdownOpen(false); }}
-                    className="w-full text-left px-3 py-2 text-sm text-warm-500 hover:bg-warm-50 transition-colors"
-                  >
-                    Remove overlay
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => { void triggerHaptic('light'); onSecondaryTimezoneChange(null); setTzDropdownOpen(false); }}
+                      className="w-full text-left px-3 py-2.5 min-h-[40px] text-[14px] font-medium text-warm-500 hover:bg-warm-100/60 active:bg-warm-100/80 transition-colors"
+                    >
+                      Remove overlay
+                    </button>
+                    <div className="h-px bg-warm-200/50 my-1" />
+                  </>
                 )}
                 {TZ_OPTIONS
                   .filter(tz => tz.value !== teamTimezone)
@@ -229,12 +247,13 @@ export function CalendarHeader({
                   <button
                     key={tz.value}
                     type="button"
-                    onClick={() => { onSecondaryTimezoneChange(tz.value); setTzDropdownOpen(false); }}
+                    role="menuitem"
+                    onClick={() => { void triggerHaptic('light'); onSecondaryTimezoneChange(tz.value); setTzDropdownOpen(false); }}
                     className={cn(
-                      'w-full text-left px-3 py-2 text-sm transition-colors',
+                      'w-full text-left px-3 py-2.5 min-h-[40px] text-[14px] transition-colors',
                       secondaryTimezone === tz.value
-                        ? 'bg-primary-50 text-primary-700 font-medium'
-                        : 'text-warm-700 hover:bg-warm-50'
+                        ? 'bg-primary-50/70 text-primary-700 font-semibold'
+                        : 'text-warm-800 font-medium hover:bg-warm-100/60 active:bg-warm-100/80'
                     )}
                   >
                     {tz.label}

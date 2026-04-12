@@ -86,13 +86,14 @@ export function ChatWindow({
   };
 
   return (
-    <div className={cn('flex flex-col bg-white', className)}>
-      {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-200 bg-white">
+    <div className={cn('flex flex-col bg-[#FFFEFA]', className)}>
+      {/* Header — iOS-native chat title bar with back chevron on mobile */}
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-warm-200/70 bg-white/90 backdrop-blur-xl sticky top-0 z-10">
         {onBack && (
           <button
             onClick={onBack}
-            className="lg:hidden p-2 -ml-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg"
+            aria-label="Back"
+            className="lg:hidden p-2 -ml-2 text-warm-500 hover:text-warm-800 hover:bg-warm-100 rounded-lg active:scale-95 transition-all"
           >
             <IconArrowLeft size={20} />
           </button>
@@ -101,23 +102,26 @@ export function ChatWindow({
           <>
             <Avatar name={participant.name} src={participant.avatar} size="md" />
             <div className="flex-1 min-w-0">
-              <p className="font-medium text-slate-900 truncate">{participant.name}</p>
-              <p className="text-sm text-slate-500 truncate">{participant.subtitle}</p>
+              <p className="text-[15px] font-semibold text-warm-900 tracking-[-0.01em] truncate">{participant.name}</p>
+              <p className="text-[12px] text-warm-500 truncate">{participant.subtitle}</p>
             </div>
           </>
         )}
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto overscroll-contain p-4 space-y-4 [-webkit-overflow-scrolling:touch]">
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <div className="animate-spin h-6 w-6 border-2 border-primary-600 border-t-transparent rounded-full" />
           </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
-            <p className="text-slate-500">No messages yet</p>
-            <p className="text-sm text-slate-400 mt-1">Send a message to start the conversation</p>
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary-100/60 to-emerald-100/50 flex items-center justify-center mb-4">
+              <IconSend size={22} className="text-primary-600/80" />
+            </div>
+            <p className="text-[15px] font-semibold text-warm-900">No messages yet</p>
+            <p className="text-[13px] text-warm-500 mt-1">Send a message to start the conversation</p>
           </div>
         ) : (
           messages.map((message, index) => {
@@ -141,16 +145,16 @@ export function ChatWindow({
                 )}
                 <div
                   className={cn(
-                    'max-w-[70%] rounded-2xl px-4 py-2',
+                    'max-w-[75%] rounded-[18px] px-3.5 py-2 shadow-[0_1px_1px_rgba(16,24,40,0.05)]',
                     isOwn
-                      ? 'bg-primary-600 text-white rounded-br-md'
-                      : 'bg-slate-100 text-slate-900 rounded-bl-md'
+                      ? 'bg-primary-600 text-white rounded-br-[6px]'
+                      : 'bg-warm-100 text-warm-900 rounded-bl-[6px]'
                   )}
                 >
-                  <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                  <p className="text-[15px] whitespace-pre-wrap break-words leading-snug">{message.content}</p>
                   <p className={cn(
-                    'text-xs mt-1 flex items-center',
-                    isOwn ? 'text-primary-200 justify-end' : 'text-slate-400'
+                    'text-[11px] mt-1 flex items-center',
+                    isOwn ? 'text-primary-100/90 justify-end' : 'text-warm-400'
                   )}>
                     {formatTime(message.created_at)}
                     <MessageStatus read={message.read} isOwn={isOwn} />
@@ -164,14 +168,18 @@ export function ChatWindow({
       </div>
 
       {/* Input */}
-      <form onSubmit={handleSubmit} className="p-4 border-t border-slate-200 bg-white">
+      <form
+        onSubmit={handleSubmit}
+        className="px-4 pt-3 border-t border-warm-200/70 bg-white/90 backdrop-blur-xl"
+        style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}
+      >
         <div className="flex items-center gap-2">
           <input
             type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Type a message..."
-            className="flex-1 px-4 py-2 border border-slate-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/40"
+            placeholder="Message"
+            className="flex-1 px-4 py-2.5 bg-warm-100/80 border border-warm-200/60 rounded-full text-[15px] text-warm-900 placeholder:text-warm-400 focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:bg-white transition-colors"
             disabled={sending}
           />
           <Button

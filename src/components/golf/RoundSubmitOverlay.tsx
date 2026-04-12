@@ -261,16 +261,16 @@ export function RoundSubmitOverlay({
               className="relative glass-prominent rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center"
             >
               {/* Error icon */}
-              <div className="w-14 h-14 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-center mx-auto mb-4">
-                <IconAlertCircle size={28} className="text-red-500" />
+              <div className="w-14 h-14 rounded-2xl bg-sf-red/10 border border-sf-red/20 flex items-center justify-center mx-auto mb-4">
+                <IconAlertCircle size={28} className="text-sf-red" />
               </div>
-              <h3 className="text-lg font-semibold text-warm-900 mb-2">
+              <h3 className="text-title-3 text-warm-900 mb-2">
                 Submission Failed
               </h3>
-              <p className="text-sm text-warm-500 mb-1">
+              <p className="text-footnote text-warm-500 mb-1">
                 {error}
               </p>
-              <p className="text-xs text-warm-400 mb-6">
+              <p className="text-caption-1 text-warm-500 mb-6">
                 Your round data is saved and won&apos;t be lost.
               </p>
 
@@ -307,7 +307,7 @@ export function RoundSubmitOverlay({
                 {onDiscard && (
                   <button
                     onClick={onDiscard}
-                    className="w-full py-3 rounded-xl bg-red-50 text-red-700 border border-red-200 font-medium hover:bg-red-100 active:bg-red-200 transition-colors"
+                    className="w-full py-3 rounded-xl bg-sf-red/5 text-sf-red border border-sf-red/20 font-medium hover:bg-sf-red/10 active:bg-sf-red/15 transition-colors"
                   >
                     Discard Round
                   </button>

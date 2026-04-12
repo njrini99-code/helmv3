@@ -72,7 +72,7 @@ export const PerformanceRadar = memo(function PerformanceRadar({ data }: Perform
                     <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary-50 to-emerald-50 flex items-center justify-center mb-4">
                         <IconChartBar size={26} className="text-primary-600/70" />
                     </div>
-                    <p className="text-[15px] font-semibold text-warm-900 tracking-tight mb-1.5">No strokes gained data</p>
+                    <p className="text-subhead font-semibold text-warm-900 mb-1.5">No strokes gained data</p>
                     <p className="text-xs leading-relaxed text-warm-500 max-w-[240px]">
                         Submit rounds with shot tracking to see your strokes gained breakdown
                     </p>

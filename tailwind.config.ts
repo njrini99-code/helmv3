@@ -72,10 +72,26 @@ const config: Config = {
         },
 
         // SEMANTIC COLORS
-        success: '#16A34A',  // Same as primary
-        warning: '#F59E0B',  // Amber
-        danger: '#DC2626',   // Red
-        info: '#3B82F6',     // Blue
+        success: '#16A34A',  // Same as primary (brand)
+        warning: '#FF9500',  // SF Orange (iOS system)
+        danger: '#FF3B30',   // SF Red (iOS system)
+        info: '#007AFF',     // SF Blue (iOS system)
+
+        // ═══════════════════════════════════════════════════════════════
+        // iOS SYSTEM COLORS — use for semantic UI (alerts/errors/toggles)
+        // Brand primary stays `primary-600` (#16A34A) for primary actions
+        // ═══════════════════════════════════════════════════════════════
+        'sf-red': '#FF3B30',
+        'sf-orange': '#FF9500',
+        'sf-yellow': '#FFCC00',
+        'sf-green': '#34C759',
+        'sf-mint': '#00C7BE',
+        'sf-teal': '#30B0C7',
+        'sf-cyan': '#32ADE6',
+        'sf-blue': '#007AFF',
+        'sf-indigo': '#5856D6',
+        'sf-purple': '#AF52DE',
+        'sf-pink': '#FF2D55',
 
         // GLASS EFFECTS - Standardized System
         // Use with backdrop-blur-glass, backdrop-blur-glass-subtle, or backdrop-blur-glass-prominent
@@ -126,6 +142,22 @@ const config: Config = {
         serif: ['var(--font-serif)', 'Playfair Display', 'Georgia', 'serif'],
       },
       fontSize: {
+        // ═══════════════════════════════════════════════════════════════
+        // iOS TYPE SCALE — Apple HIG (San Francisco)
+        // Use these on mobile/native surfaces for authentic iOS feel
+        // ═══════════════════════════════════════════════════════════════
+        'large-title': ['34px', { lineHeight: '1.1', letterSpacing: '-0.022em', fontWeight: '700' }],
+        'title-1':     ['28px', { lineHeight: '1.15', letterSpacing: '-0.02em',  fontWeight: '700' }],
+        'title-2':     ['22px', { lineHeight: '1.2',  letterSpacing: '-0.018em', fontWeight: '700' }],
+        'title-3':     ['20px', { lineHeight: '1.2',  letterSpacing: '-0.015em', fontWeight: '600' }],
+        'headline':    ['17px', { lineHeight: '1.25', letterSpacing: '-0.01em',  fontWeight: '600' }],
+        'body':        ['17px', { lineHeight: '1.3',  letterSpacing: '-0.01em',  fontWeight: '400' }],
+        'callout':     ['16px', { lineHeight: '1.3',  letterSpacing: '-0.01em',  fontWeight: '400' }],
+        'subhead':     ['15px', { lineHeight: '1.35', letterSpacing: '-0.006em', fontWeight: '400' }],
+        'footnote':    ['13px', { lineHeight: '1.4',  letterSpacing: '0em',      fontWeight: '400' }],
+        'caption-1':   ['12px', { lineHeight: '1.4',  letterSpacing: '0em',      fontWeight: '400' }],
+        'caption-2':   ['11px', { lineHeight: '1.4',  letterSpacing: '0em',      fontWeight: '400' }],
+
         'micro': ['10px', { lineHeight: '14px' }],  // Badges, annotations
         'label': ['11px', { lineHeight: '16px' }],   // Form labels, captions
         'xs': '12px',

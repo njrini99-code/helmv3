@@ -201,16 +201,16 @@ export default async function MyDevelopmentPage() {
                               <AreaIcon size={22} className={areaConfig.color} />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-start justify-between gap-4">
-                                <div>
-                                  <h3 className="font-semibold text-warm-900">{fa.title || 'Untitled'}</h3>
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0 flex-1">
+                                  <h3 className="font-semibold text-warm-900 line-clamp-2">{fa.title || 'Untitled'}</h3>
                                   <p className={cn('text-sm font-medium mt-0.5', areaConfig.color)}>
                                     {areaConfig.label}
                                   </p>
                                 </div>
                                 <span
                                   className={cn(
-                                    'px-2.5 py-1 text-xs font-medium rounded-full border',
+                                    'flex-shrink-0 px-2.5 py-1 text-xs font-medium rounded-full border whitespace-nowrap',
                                     statusConfig.color,
                                     statusConfig.borderColor
                                   )}

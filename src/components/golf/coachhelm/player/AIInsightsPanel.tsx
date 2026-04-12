@@ -304,7 +304,8 @@ export function AIInsightsPanel({
 
       {/* Insights list */}
       <div className="space-y-3">
-        <AnimatePresence mode="popLayout">
+        {/* popLayout removed — list just fades items in/out, no layout measurement needed */}
+        <AnimatePresence>
           {displayInsights.map((insight, index) => (
             <InsightCard
               key={`${insight.headline}-${index}`}

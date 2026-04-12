@@ -65,15 +65,15 @@ export function TaskCard({ task }: TaskCardProps) {
 
       <div className="p-5">
         {/* Header */}
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex-1">
-            <h3 className="font-semibold text-warm-900 mb-1">{task.title}</h3>
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-warm-900 mb-1 line-clamp-2">{task.title}</h3>
             {task.description && (
               <p className="text-sm text-warm-500 line-clamp-2">{task.description}</p>
             )}
           </div>
           {task.status === 'completed' && (
-            <div className="ml-3 px-2.5 py-1 rounded-full bg-primary-100 text-primary-700 text-xs font-medium">
+            <div className="flex-shrink-0 px-2.5 py-1 rounded-full bg-primary-100 text-primary-700 text-xs font-medium">
               Completed
             </div>
           )}

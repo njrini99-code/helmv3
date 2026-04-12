@@ -118,6 +118,12 @@ export default function SignupPage() {
                     type="text"
                     inputMode="numeric"
                     pattern="[0-9]*"
+                    autoComplete="one-time-code"
+                    autoCorrect="off"
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    enterKeyHint="go"
+                    aria-label="Access code"
                     value={code}
                     onChange={(e) => { setCode(e.target.value); setCodeError(false); }}
                     placeholder="Enter access code"

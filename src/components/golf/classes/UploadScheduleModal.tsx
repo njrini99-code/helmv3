@@ -333,7 +333,11 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
                 onChange={(e) => setPastedText(e.target.value)}
                 placeholder={`Paste your schedule here...\n\nExample format:\nBUAD 123 - Business Fundamentals\nMWF 9:30AM - 10:45AM\nHAL 101\nProf. Smith\n\nMATH 201 - Calculus II\nTTh 1:00PM - 2:15PM\nSCI 205`}
                 rows={10}
-                className="w-full px-4 py-3 border border-warm-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/40 resize-none font-mono"
+                aria-label="Paste schedule text"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                className="w-full px-4 py-3 border border-warm-200 rounded-xl text-base lg:text-sm focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30 resize-none font-mono"
               />
               
               <Button

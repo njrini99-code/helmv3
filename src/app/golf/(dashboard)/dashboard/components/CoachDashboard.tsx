@@ -143,11 +143,14 @@ const InviteCodeCard = memo(function InviteCodeCard({ inviteCode }: { inviteCode
             transition={{ delay: 0.1 }}
         >
             <div className="relative z-10 flex items-center justify-between gap-3 px-4 py-3 md:px-5 md:py-3.5">
-                <div className="flex items-center gap-2.5 min-w-0">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
                     <div className="w-7 h-7 rounded-lg bg-primary-100 flex items-center justify-center flex-shrink-0">
                         <IconUsers size={13} className="text-primary-600" />
                     </div>
-                    <p className="text-primary-700 text-xs font-medium">Share invite code with players</p>
+                    <p className="text-primary-700 text-xs font-medium truncate">
+                        <span className="hidden sm:inline">Share invite code with players</span>
+                        <span className="sm:hidden">Invite code</span>
+                    </p>
                 </div>
                 <m.button
                     onClick={handleCopy}
@@ -155,7 +158,7 @@ const InviteCodeCard = memo(function InviteCodeCard({ inviteCode }: { inviteCode
                         'flex items-center gap-2 px-3 py-1.5 rounded-lg',
                         'bg-white/80 hover:bg-white border border-primary-200/60',
                         'text-xs font-mono tracking-widest text-primary-700',
-                        'transition-all duration-200 active:scale-95'
+                        'transition-colors duration-200 active:scale-95'
                     )}
                     whileTap={{ scale: 0.97 }}
                 >
@@ -218,7 +221,7 @@ const DateRangeSelector = memo(function DateRangeSelector({
                     'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium',
                     'bg-white/50 backdrop-blur-sm border border-white/30',
                     'text-warm-600 hover:text-warm-800 hover:bg-white/70',
-                    'transition-all duration-150 active:scale-95 shadow-sm'
+                    'transition-colors duration-150 active:scale-95 shadow-sm'
                 )}
                 aria-label="Select date range"
                 aria-haspopup="listbox"
@@ -345,7 +348,7 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
 
             {/* MAIN CONTENT */}
             <m.div
-                className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-6"
+                className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-6 min-w-0"
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
@@ -423,8 +426,8 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
 
                 {/* ROW 3: Recent Rounds + Notifications/Actions side by side */}
                 <DashboardErrorBoundary name="Recent Rounds">
-                <m.div className="grid lg:grid-cols-3 gap-4 md:gap-5 mb-5 md:mb-6" variants={itemVariants}>
-                    <div className="lg:col-span-2">
+                <m.div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-5 mb-5 md:mb-6" variants={itemVariants}>
+                    <div className="lg:col-span-2 min-w-0">
                         <SectionHeader title="Recent Rounds" action={{ label: 'View All', href: '/golf/dashboard/rounds' }} />
                         <PremiumGlassCard noPadding>
                             <ShineEffect />
@@ -460,7 +463,7 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
                             )}
                         </PremiumGlassCard>
                     </div>
-                    <div className="flex flex-col gap-4 md:gap-5">
+                    <div className="flex flex-col gap-4 md:gap-5 min-w-0">
                         <ActionItemsCard items={enhancedData?.actionItems ?? EMPTY_ACTION_ITEMS} role="coach" />
                     </div>
                 </m.div>
@@ -468,8 +471,8 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
 
                 {/* ROW 4: Trend + Team Pulse + Top Performers */}
                 <DashboardErrorBoundary name="Performance Trend">
-                <m.div className="grid lg:grid-cols-5 gap-4 md:gap-5 mb-5 md:mb-6" variants={itemVariants}>
-                    <div className="lg:col-span-3">
+                <m.div className="grid grid-cols-1 lg:grid-cols-5 gap-4 md:gap-5 mb-5 md:mb-6" variants={itemVariants}>
+                    <div className="lg:col-span-3 min-w-0">
                         <SectionHeader title="Performance Trend" />
                         {hasTrendData ? (
                             <PremiumGlassCard glow>
@@ -500,9 +503,9 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
                             </PremiumGlassCard>
                         )}
                     </div>
-                    <div className="lg:col-span-2 flex flex-col gap-4 md:gap-5">
+                    <div className="lg:col-span-2 flex flex-col gap-4 md:gap-5 min-w-0">
                         <TeamPulseCard data={enhancedData?.teamPulse ?? EMPTY_TEAM_PULSE} />
-                        <div>
+                        <div className="min-w-0">
                             <SectionHeader
                                 title="Top Performers"
                                 action={{ label: 'Full Rankings', href: '/golf/dashboard/stats/team' }}

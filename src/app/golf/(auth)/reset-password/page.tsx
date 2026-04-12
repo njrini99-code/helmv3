@@ -204,6 +204,10 @@ export default function ResetPasswordPage() {
                   required
                   autoFocus
                   autoComplete="new-password"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  enterKeyHint="next"
                   className="
                     w-full px-4 py-2.5 sm:py-3
                     bg-white
@@ -228,6 +232,10 @@ export default function ResetPasswordPage() {
                   placeholder="Confirm your new password"
                   required
                   autoComplete="new-password"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  enterKeyHint="go"
                   className={`
                     w-full px-4 py-2.5 sm:py-3
                     bg-white

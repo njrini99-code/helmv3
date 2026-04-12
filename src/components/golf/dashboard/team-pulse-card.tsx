@@ -122,7 +122,7 @@ export const TeamPulseCard = memo(function TeamPulseCard({ data }: TeamPulseCard
                         <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary-50 to-emerald-50 flex items-center justify-center mb-3">
                             <IconActivity size={22} className="text-primary-600/70" />
                         </div>
-                        <p className="text-[15px] font-semibold text-warm-900 tracking-tight mb-1">No player trends yet</p>
+                        <p className="text-subhead font-semibold text-warm-900 mb-1">No player trends yet</p>
                         <p className="text-xs leading-relaxed text-warm-500 max-w-[240px]">Trends appear after players submit 6+ rounds</p>
                     </div>
                 )}

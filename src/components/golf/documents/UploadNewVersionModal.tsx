@@ -206,7 +206,10 @@ export function UploadNewVersionModal({
               onChange={(e) => setChangeNotes(e.target.value)}
               placeholder="Describe what changed in this version..."
               rows={3}
-              className="w-full px-4 py-2.5 border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600 focus:border-transparent text-warm-900 placeholder:text-warm-400 resize-none"
+              aria-label="Change notes"
+              autoCapitalize="sentences"
+              autoCorrect="on"
+              className="w-full px-4 py-2.5 border border-warm-200 rounded-lg text-base lg:text-sm focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30 text-warm-900 placeholder:text-warm-400 resize-none"
             />
           </div>
         </div>

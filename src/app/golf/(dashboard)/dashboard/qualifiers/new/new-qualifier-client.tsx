@@ -84,7 +84,7 @@ export default function NewQualifierClient({ players }: NewQualifierClientProps)
       />
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="max-w-3xl mx-auto px-6 py-8">
+      <form onSubmit={handleSubmit} className="max-w-3xl mx-auto px-4 md:px-6 py-6 md:py-8">
         <div className="space-y-8">
           {/* Error Message */}
           {error && (
@@ -201,12 +201,12 @@ export default function NewQualifierClient({ players }: NewQualifierClientProps)
           {/* Player Selection */}
           <section className="relative glass-standard rounded-2xl p-6 overflow-clip">
             <ShineEffect />
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center flex-shrink-0">
                   <IconUsers size={20} className="text-primary-600" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <h2 className="text-lg font-semibold text-warm-900">Players</h2>
                   <p className="text-sm text-warm-500">
                     {selectedPlayers.length} of {players.length} selected
@@ -214,7 +214,7 @@ export default function NewQualifierClient({ players }: NewQualifierClientProps)
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-shrink-0">
                 <button
                   type="button"
                   onClick={selectAll}

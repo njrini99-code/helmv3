@@ -130,7 +130,7 @@ export function TodayTimeline({ events, role, timezone }: TodayTimelineProps) {
                     <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary-50 to-emerald-50 flex items-center justify-center mb-5">
                         <IconCalendar size={26} className="text-primary-600/70" />
                     </div>
-                    <p className="text-[15px] font-semibold text-warm-900 tracking-tight mb-1.5">Clear schedule today</p>
+                    <p className="text-subhead font-semibold text-warm-900 mb-1.5">Clear schedule today</p>
                     <p className="text-xs leading-relaxed text-warm-500 mb-6 max-w-[240px]">No events scheduled. Use this time for practice or recovery.</p>
                     <Link
                         href="/golf/dashboard/calendar"

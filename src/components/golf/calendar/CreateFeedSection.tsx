@@ -218,8 +218,11 @@ export function CreateFeedSection({
             }}
             placeholder="e.g., My Team Events"
             disabled={loading}
-            className="w-full px-4 py-2.5 rounded-lg border border-warm-200
-                     focus:border-primary-500 focus:ring-2 focus:ring-primary-100
+            autoCapitalize="words"
+            autoCorrect="on"
+            enterKeyHint="done"
+            className="w-full min-h-[48px] px-4 py-2.5 rounded-lg border border-warm-200 text-base lg:text-sm
+                     focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30
                      text-warm-900 placeholder:text-warm-400 transition-colors
                      disabled:opacity-50 disabled:cursor-not-allowed"
           />

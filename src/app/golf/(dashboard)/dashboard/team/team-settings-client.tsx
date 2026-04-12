@@ -122,7 +122,7 @@ export function TeamSettingsClient({ team }: TeamSettingsClientProps) {
           title="Create Your Team"
           subtitle="Set up your team to start adding players and creating events."
         />
-        <div className="max-w-2xl mx-auto px-6 py-8">
+        <div className="max-w-2xl mx-auto px-4 md:px-6 py-6 md:py-8">
 
         <div className="bg-white rounded-2xl border border-warm-200 p-6 space-y-6">
           <div>
@@ -218,13 +218,13 @@ export function TeamSettingsClient({ team }: TeamSettingsClientProps) {
         </p>
 
         <div className="flex items-center gap-3">
-          <div className="flex-1 px-4 py-3 bg-warm-50 rounded-lg font-mono text-sm text-warm-700 truncate">
+          <div className="flex-1 min-w-0 px-4 py-3 bg-warm-50 rounded-lg font-mono text-sm text-warm-700 truncate">
             {`${typeof window !== 'undefined' ? window.location.origin : ''}/golf/join/${team.join_code}`}
           </div>
           <Button
             variant={copied ? 'secondary' : 'primary'}
             onClick={handleCopyInviteCode}
-            className="gap-2"
+            className="gap-2 flex-shrink-0"
           >
             {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
             {copied ? 'Copied!' : 'Copy'}

@@ -426,7 +426,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
                         size="sm"
                         onClick={() => setShowDeleteConfirm(true)}
                         leftIcon={<IconTrash size={13} />}
-                        className="text-red-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                        className="text-sf-red hover:text-sf-red hover:bg-sf-red/5 transition-colors"
                       >
                         Delete
                       </Button>

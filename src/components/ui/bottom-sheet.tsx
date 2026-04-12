@@ -12,6 +12,7 @@ import { AnimatePresence, m, type PanInfo } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { triggerHaptic } from '@/lib/utils/capacitor';
 import { IconX } from '@/components/icons';
+import { IOS_SPRING, IOS_DURATION_SLOW } from '@/lib/ios-animations';
 
 export interface BottomSheetProps {
   open: boolean;
@@ -19,6 +20,12 @@ export interface BottomSheetProps {
   title?: string;
   description?: string;
   children: React.ReactNode;
+  /**
+   * Optional pinned footer. Rendered OUTSIDE the scroll container so the last
+   * scroll item can fully clear it (no "partial card behind footer" bug). The
+   * footer stays flush to the bottom of the sheet and respects the safe area.
+   */
+  footer?: React.ReactNode;
   /** Snap points as percentages of viewport height — default [0.9] = 90% height */
   snapPoints?: number[];
   /** Show drag handle at top (default: true) */
@@ -27,10 +34,13 @@ export interface BottomSheetProps {
   swipeToClose?: boolean;
   /** Class applied to the sheet content wrapper */
   className?: string;
+  /** Class applied to the scrollable content area */
+  contentClassName?: string;
 }
 
-// iOS-style easing curve used for the slide animation.
-const IOS_EASE: [number, number, number, number] = [0.32, 0.72, 0, 1];
+// iOS sheet presentation curve — matches UIKit's default modal presentation.
+// Sourced from the shared ios-animations token file.
+const SHEET_EASE = IOS_SPRING as unknown as [number, number, number, number];
 
 const FOCUSABLE_SELECTORS = [
   'button:not([disabled])',
@@ -53,10 +63,12 @@ export function BottomSheet({
   title,
   description,
   children,
+  footer,
   snapPoints = [0.9],
   showHandle = true,
   swipeToClose = true,
   className,
+  contentClassName,
 }: BottomSheetProps) {
   const sheetRef = useRef<HTMLDivElement>(null);
   const previousActiveElement = useRef<HTMLElement | null>(null);
@@ -163,14 +175,14 @@ export function BottomSheet({
     <AnimatePresence>
       {open && (
         <div className="fixed inset-0 z-50">
-          {/* Backdrop */}
+          {/* Backdrop — iOS-style dimmed, subtle blur */}
           <m.div
             key="bottom-sheet-backdrop"
-            className="absolute inset-0 bg-warm-900/50 backdrop-blur-sm"
+            className="absolute inset-0 bg-warm-900/40 backdrop-blur-[6px]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.3, ease: IOS_EASE }}
+            transition={{ duration: IOS_DURATION_SLOW, ease: SHEET_EASE }}
             onClick={onClose}
             aria-hidden="true"
           />
@@ -195,29 +207,29 @@ export function BottomSheet({
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
-            transition={{ duration: 0.3, ease: IOS_EASE }}
+            transition={{ duration: IOS_DURATION_SLOW, ease: SHEET_EASE }}
             drag={swipeToClose ? 'y' : false}
             dragConstraints={{ top: 0, bottom: 0 }}
             dragElastic={{ top: 0, bottom: 0.4 }}
             onDragEnd={handleDragEnd}
           >
-            {/* Drag handle */}
+            {/* Drag handle — subtle iOS pill */}
             {showHandle && (
               <div
-                className="flex-shrink-0 flex items-center justify-center pt-3 pb-2"
+                className="flex-shrink-0 flex items-center justify-center pt-2.5 pb-1.5"
                 aria-hidden="true"
               >
-                <span className="block h-[5px] w-9 rounded-full bg-warm-300" />
+                <span className="block h-[5px] w-[36px] rounded-full bg-warm-300/80" />
               </div>
             )}
 
             {/* Header */}
             {(title || description) && (
-              <div className="relative flex-shrink-0 px-6 pt-2 pb-4 border-b border-warm-100">
+              <div className="relative flex-shrink-0 px-6 pt-2 pb-3.5 border-b border-warm-100/80">
                 {title && (
                   <h2
                     id={titleId}
-                    className="text-lg font-semibold text-warm-900 pr-10"
+                    className="text-[17px] font-semibold text-warm-900 tracking-[-0.01em] pr-10"
                   >
                     {title}
                   </h2>
@@ -225,7 +237,7 @@ export function BottomSheet({
                 {description && (
                   <p
                     id={descriptionId}
-                    className="text-sm text-warm-500 mt-1 pr-10"
+                    className="text-[13px] text-warm-500 mt-1 pr-10"
                   >
                     {description}
                   </p>
@@ -239,7 +251,7 @@ export function BottomSheet({
                     'absolute top-2 right-3 w-10 h-10 rounded-full',
                     'flex items-center justify-center',
                     'text-warm-400 hover:text-warm-600 hover:bg-warm-100',
-                    'transition-all duration-150 active:scale-90',
+                    'transition-colors duration-150 active:scale-90',
                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
                   )}
                 >
@@ -258,7 +270,7 @@ export function BottomSheet({
                   'absolute top-2 right-3 w-10 h-10 rounded-full',
                   'flex items-center justify-center',
                   'text-warm-400 hover:text-warm-600 hover:bg-warm-100',
-                  'transition-all duration-150 active:scale-90',
+                  'transition-colors duration-150 active:scale-90',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
                 )}
               >
@@ -268,13 +280,34 @@ export function BottomSheet({
 
             {/* Content */}
             <div
-              className="flex-1 min-h-0 overflow-y-auto px-6 pt-4"
-              style={{
-                paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))',
-              }}
+              className={cn(
+                'flex-1 min-h-0 overflow-y-auto overscroll-contain px-6 pt-4',
+                '[-webkit-overflow-scrolling:touch]',
+                contentClassName,
+              )}
+              style={
+                footer
+                  ? { paddingBottom: '1rem' }
+                  : { paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }
+              }
+              data-scroll-container
             >
               {children}
             </div>
+
+            {/* Pinned footer — lives outside the scroll area so the last
+                content item can fully clear it. Carries the safe-area inset
+                itself so the home indicator never overlaps buttons. */}
+            {footer && (
+              <div
+                className="flex-shrink-0 px-6 pt-3 bg-white/95 backdrop-blur-xl border-t border-warm-100/80"
+                style={{
+                  paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))',
+                }}
+              >
+                {footer}
+              </div>
+            )}
           </m.div>
         </div>
       )}

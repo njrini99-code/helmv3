@@ -252,6 +252,15 @@
     scroll-margin-bottom: calc(var(--keyboard-height) + 40px);
   }
 
+  /* Native browser tooltips never fire on touch devices, but on the off-chance
+     the Capacitor webview surfaces them we explicitly strip the title attribute
+     by blanking pointer-events on the pseudo. Belt-and-suspenders: we just
+     prefer aria-label over title in new code. */
+  body.capacitor [title] {
+    /* Prevent long-press magnifier from showing title attr on iOS */
+    -webkit-touch-callout: none;
+  }
+
   /* NOTE: Global transition-timing-function removed — it applied to every DOM
      element, increasing style recalculation cost on every frame. Individual
      components already define their own timing functions where needed. */
@@ -2303,3 +2312,139 @@ body {
     margin-top: 0.5cm;
   }
 }
+
+/* ============================================================
+ * iOS-NATIVE FORM POLISH
+ * Global rules to make every input, textarea, and select feel
+ * native on iOS without touching each call site.
+ * ============================================================ */
+
+/* 1. iOS zoom-prevention safety net.
+ *    iOS Safari zooms on focus when font-size < 16px. Tailwind's
+ *    `text-sm` (14px) inside forms is a common offender. On mobile
+ *    viewports, force a 16px floor on all form controls that don't
+ *    explicitly opt out via `.ios-allow-small`. Desktop is untouched. */
+@media (max-width: 768px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not(.ios-allow-small),
+  textarea:not(.ios-allow-small),
+  select:not(.ios-allow-small) {
+    font-size: 16px;
+  }
+}
+
+/* 2. Native date/time picker theming.
+ *    WebKit exposes two pseudo-elements we can style to match the
+ *    cream/green brand language. */
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"],
+input[type="month"],
+input[type="week"] {
+  -webkit-appearance: none;
+  appearance: none;
+  font-variant-numeric: tabular-nums;
+}
+
+input[type="date"]::-webkit-date-and-time-value,
+input[type="time"]::-webkit-date-and-time-value,
+input[type="datetime-local"]::-webkit-date-and-time-value {
+  text-align: left;
+  color: #1c1917; /* warm-900 */
+}
+
+input[type="date"]:disabled::-webkit-date-and-time-value,
+input[type="time"]:disabled::-webkit-date-and-time-value,
+input[type="datetime-local"]:disabled::-webkit-date-and-time-value {
+  color: #78716c; /* warm-500 */
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.55;
+  transition: opacity 150ms ease-out;
+  filter: invert(45%) sepia(15%) saturate(380%) hue-rotate(349deg) brightness(92%) contrast(88%);
+}
+
+input[type="date"]:hover::-webkit-calendar-picker-indicator,
+input[type="time"]:hover::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]:hover::-webkit-calendar-picker-indicator {
+  opacity: 0.85;
+}
+
+input[type="date"]:focus::-webkit-calendar-picker-indicator,
+input[type="time"]:focus::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]:focus::-webkit-calendar-picker-indicator {
+  opacity: 1;
+  /* primary-600 tint */
+  filter: invert(42%) sepia(65%) saturate(680%) hue-rotate(94deg) brightness(92%) contrast(92%);
+}
+
+/* Empty-state placeholder for native date/time inputs */
+input[type="date"]:not(:focus):in-range::-webkit-datetime-edit-year-field,
+input[type="date"]:not(:focus):in-range::-webkit-datetime-edit-month-field,
+input[type="date"]:not(:focus):in-range::-webkit-datetime-edit-day-field,
+input[type="time"]:not(:focus):in-range::-webkit-datetime-edit-hour-field,
+input[type="time"]:not(:focus):in-range::-webkit-datetime-edit-minute-field {
+  color: inherit;
+}
+
+/* 3. Better number input — hide Chrome/Safari spinners so the
+ *    design stays clean (iOS doesn't show them anyway, but browser
+ *    preview needs to match). */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* 4. Remove iOS tap highlight on form controls — haptics + press
+ *    states already provide feedback and the grey flash feels cheap. */
+input,
+textarea,
+select,
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 5. Search input — hide the native WebKit close button (we have
+ *    our own clearable prop on shared Input). */
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-decoration {
+  -webkit-appearance: none;
+}
+
+/* 6. Autofill — iOS Safari's yellow autofill bg clashes with cream.
+ *    Use a massive box-shadow inset to paint over it and keep
+ *    the original text color. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px rgba(255, 255, 255, 0.95) inset;
+  -webkit-text-fill-color: #1c1917; /* warm-900 */
+  caret-color: #16a34a; /* primary-600 */
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* ============================================================
+ * iOS LIST ROW — shared press state helper
+ * Apply `.ios-row` to any tappable list row for a consistent
+ * press highlight + slight scale feedback. Works on top of any
+ * existing bg-white / glass row style.
+ * ============================================================ */
+.ios-row {
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 120ms ease-out, transform 150ms ease-out;
+  touch-action: manipulation;
+}
+.ios-row:active {
+  background-color: rgba(120, 113, 108, 0.08); /* warm-500/8 */
+  transform: scale(0.985);
+}
+

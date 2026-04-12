@@ -88,6 +88,9 @@ export function Tooltip({
         <div
           role="tooltip"
           className={cn(
+            // Hide tooltips on touch devices / iOS Capacitor shell —
+            // they can't be dismissed and just cover content.
+            '[body.capacitor_&]:hidden max-[768px]:hidden',
             'absolute z-50 pointer-events-none',
             positionClasses[side],
             'transition-all duration-150 ease-out',

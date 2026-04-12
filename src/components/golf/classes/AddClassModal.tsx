@@ -439,7 +439,8 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
               <select
                 value={formData.semester}
                 onChange={(e) => setFormData(prev => ({ ...prev, semester: e.target.value }))}
-                className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/40"
+                aria-label="Semester"
+                className="w-full px-3 py-2 border border-warm-200 rounded-lg text-base lg:text-sm min-h-[44px] bg-white focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30"
               >
                 <option value="Spring 2025">Spring 2025</option>
                 <option value="Summer 2025">Summer 2025</option>
@@ -473,7 +474,10 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
               onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
               placeholder="Any additional notes... (optional)"
               rows={2}
-              className="w-full px-3 py-2 border border-warm-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/40 resize-none"
+              aria-label="Notes"
+              autoCapitalize="sentences"
+              autoCorrect="on"
+              className="w-full px-3 py-2 border border-warm-200 rounded-lg text-base lg:text-sm focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30 resize-none"
             />
           </div>
         </form>

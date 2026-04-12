@@ -28,12 +28,14 @@ function getIOSDefaults(type?: string): Partial<React.InputHTMLAttributes<HTMLIn
         autoCapitalize: 'none',
         autoCorrect: 'off',
         spellCheck: false,
+        enterKeyHint: 'next',
       };
     case 'tel':
       return {
         inputMode: 'tel',
         autoComplete: 'tel',
         autoCorrect: 'off',
+        enterKeyHint: 'next',
       };
     case 'url':
       return {
@@ -41,23 +43,27 @@ function getIOSDefaults(type?: string): Partial<React.InputHTMLAttributes<HTMLIn
         autoCapitalize: 'none',
         autoCorrect: 'off',
         spellCheck: false,
+        enterKeyHint: 'go',
       };
     case 'search':
       return {
         inputMode: 'search',
         autoCorrect: 'off',
         autoCapitalize: 'none',
+        enterKeyHint: 'search',
       };
     case 'number':
       return {
         inputMode: 'decimal',
         autoComplete: 'off',
+        enterKeyHint: 'next',
       };
     case 'password':
       return {
         autoCapitalize: 'none',
         autoCorrect: 'off',
         spellCheck: false,
+        enterKeyHint: 'go',
       };
     default:
       return {};

@@ -2,6 +2,7 @@
 
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import { triggerHaptic } from '@/lib/utils/capacitor';
 import {
   IconPaperclip,
   IconImage,
@@ -54,6 +55,7 @@ export function AttachmentButton({
 
   const handleButtonClick = () => {
     if (disabled) return;
+    void triggerHaptic('light');
     if (showDropdown) {
       setIsOpen(!isOpen);
     } else {
@@ -63,6 +65,7 @@ export function AttachmentButton({
 
   const handleSelectType = (type: 'all' | 'image' | 'video' | 'document' | 'audio' | 'camera') => {
     if (disabled) return;
+    void triggerHaptic('light');
     setIsOpen(false);
 
     if (type === 'camera' && cameraInputRef.current) {
@@ -119,17 +122,16 @@ export function AttachmentButton({
         onClick={handleButtonClick}
         disabled={disabled}
         className={cn(
-          'p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200',
-          'transition-colors duration-200',
-          'focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:ring-offset-1',
-          isOpen && 'bg-warm-100 text-warm-600',
+          'w-11 h-11 flex items-center justify-center rounded-xl text-warm-400 hover:text-warm-700 hover:bg-warm-100/60 active:bg-warm-200/60 active:scale-95',
+          'transition-[color,background-color,transform] duration-150',
+          'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
+          isOpen && 'bg-warm-100/80 text-warm-700',
           disabled && 'opacity-50 cursor-not-allowed',
           className
         )}
-        title="Attach files"
         aria-label="Attach files"
         aria-expanded={isOpen}
-        aria-haspopup="true"
+        aria-haspopup="menu"
       >
         <IconPaperclip size={20} />
       </button>
@@ -137,14 +139,17 @@ export function AttachmentButton({
       {/* Dropdown Menu */}
       {showDropdown && isOpen && (
         <div
+          role="menu"
           className={cn(
-            'absolute bottom-full left-0 mb-2 w-56',
-            'bg-white rounded-xl border border-warm-200 shadow-lg',
-            'py-2 z-50'
+            'absolute bottom-full left-0 mb-2 w-60',
+            'bg-white/95 backdrop-blur-xl rounded-2xl border border-warm-200/50',
+            'shadow-[0_12px_40px_rgba(16,24,40,0.14)]',
+            'py-1.5 z-50',
+            'origin-bottom-left animate-in fade-in zoom-in-95 slide-in-from-bottom-1 duration-180'
           )}
         >
-          <div className="px-3 py-1.5 mb-1 border-b border-warm-100">
-            <p className="text-xs font-medium text-warm-500">Attach</p>
+          <div className="px-3 py-1.5 mb-1 border-b border-warm-200/50">
+            <p className="text-[11px] font-semibold text-warm-400 uppercase tracking-[0.08em]">Attach</p>
           </div>
 
           <AttachmentTypeOption
@@ -173,7 +178,7 @@ export function AttachmentButton({
           />
 
           {/* Camera option - mobile only */}
-          <div className="lg:hidden border-t border-warm-100 mt-1 pt-1">
+          <div className="lg:hidden border-t border-warm-200/50 mt-1 pt-1">
             <AttachmentTypeOption
               icon={<IconCamera size={18} />}
               label="Take Photo"
@@ -182,7 +187,7 @@ export function AttachmentButton({
             />
           </div>
 
-          <div className="border-t border-warm-100 mt-1 pt-1">
+          <div className="border-t border-warm-200/50 mt-1 pt-1">
             <AttachmentTypeOption
               icon={<IconPaperclip size={18} />}
               label="Browse All"
@@ -232,18 +237,19 @@ function AttachmentTypeOption({
   return (
     <button
       type="button"
+      role="menuitem"
       onClick={onClick}
       className={cn(
-        'w-full flex items-center gap-3 px-3 py-2',
-        'text-left hover:bg-warm-50 active:bg-warm-100 transition-colors duration-150'
+        'w-full flex items-center gap-3 px-3 py-2.5 min-h-[44px]',
+        'text-left hover:bg-warm-100/60 active:bg-warm-100/80 transition-colors duration-100'
       )}
     >
-      <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-warm-100 flex items-center justify-center text-warm-500">
+      <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-warm-100/60 flex items-center justify-center text-warm-600">
         {icon}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-warm-700">{label}</p>
-        <p className="text-xs text-warm-400">{description}</p>
+        <p className="text-[15px] font-medium text-warm-800 leading-snug">{label}</p>
+        <p className="text-xs text-warm-500 leading-snug">{description}</p>
       </div>
     </button>
   );

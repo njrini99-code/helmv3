@@ -273,6 +273,10 @@ function AnnouncementDialog({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Announcement title"
+              aria-label="Announcement title"
+              autoCapitalize="sentences"
+              autoCorrect="on"
+              enterKeyHint="next"
               className="w-full text-lg font-semibold text-warm-900 placeholder:text-warm-300 bg-transparent outline-none border-none"
             />
 
@@ -281,6 +285,9 @@ function AnnouncementDialog({
               value={body}
               onChange={(e) => setBody(e.target.value)}
               rows={3}
+              aria-label="Announcement message"
+              autoCapitalize="sentences"
+              autoCorrect="on"
               className="w-full text-sm text-warm-700 placeholder:text-warm-400 bg-warm-50/60 rounded-xl border border-warm-200 px-3.5 py-2.5 outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition-colors resize-none min-h-[80px]"
               placeholder="Write your message to the team..."
             />
@@ -370,10 +377,16 @@ function AnnouncementDialog({
                     <div className="px-3 py-2 border-b border-warm-100 flex items-center gap-2">
                       <IconSearch size={14} className="text-warm-400" />
                       <input
-                        type="text"
+                        type="search"
                         value={playerSearch}
                         onChange={(e) => setPlayerSearch(e.target.value)}
                         placeholder="Search players..."
+                        aria-label="Search players"
+                        inputMode="search"
+                        autoCorrect="off"
+                        autoCapitalize="none"
+                        spellCheck={false}
+                        enterKeyHint="search"
                         className="w-full text-sm text-warm-900 placeholder:text-warm-400 bg-transparent outline-none"
                       />
                       {(recipientPlayerIds?.length ?? 0) > 0 && (
@@ -514,10 +527,16 @@ function AnnouncementDialog({
                       <div className="px-3 py-2 border-b border-warm-100 flex items-center gap-2">
                         <IconSearch size={14} className="text-warm-400" />
                         <input
-                          type="text"
+                          type="search"
                           value={docSearch}
                           onChange={(e) => setDocSearch(e.target.value)}
                           placeholder="Search documents..."
+                          aria-label="Search documents"
+                          inputMode="search"
+                          autoCorrect="off"
+                          autoCapitalize="none"
+                          spellCheck={false}
+                          enterKeyHint="search"
                           className="w-full text-sm text-warm-900 placeholder:text-warm-400 bg-transparent outline-none"
                         />
                       </div>
@@ -590,6 +609,10 @@ function AnnouncementDialog({
                           setInlineTasks(updated);
                         }}
                         placeholder="Task title..."
+                        aria-label={`Task ${index + 1} title`}
+                        autoCapitalize="sentences"
+                        autoCorrect="on"
+                        enterKeyHint="next"
                         className="w-full text-sm font-medium text-warm-900 placeholder:text-warm-400 bg-transparent outline-none"
                         autoFocus={task.title === ''}
                       />
@@ -602,6 +625,10 @@ function AnnouncementDialog({
                             setInlineTasks(updated);
                           }}
                           placeholder="Description (optional)"
+                          aria-label={`Task ${index + 1} description`}
+                          autoCapitalize="sentences"
+                          autoCorrect="on"
+                          enterKeyHint="next"
                           className="flex-1 text-xs text-warm-600 placeholder:text-warm-400 bg-transparent outline-none min-w-0"
                         />
                         <div className="flex items-center gap-1 flex-shrink-0">

@@ -206,8 +206,8 @@ export default async function PlayerProfilePage({ params }: PageProps) {
               {/* Info */}
               <div className="flex-1 min-w-0">
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                  <div>
-                    <h1 className="text-2xl font-semibold text-warm-900">
+                  <div className="min-w-0">
+                    <h1 className="text-2xl font-semibold text-warm-900 break-words">
                       {player.first_name} {player.last_name}
                     </h1>
                     <div className="flex flex-wrap items-center gap-2 mt-2">

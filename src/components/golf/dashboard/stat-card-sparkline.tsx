@@ -55,11 +55,11 @@ export const StatCardSparkline = memo(function StatCardSparkline({
             role={href ? 'link' : 'region'}
             aria-label={`${label}: ${displayValue}${suffix}`}
             className={cn(
-                'relative overflow-clip group',
+                'relative overflow-clip group min-w-0',
                 'glass-premium',
                 'rounded-2xl',
                 'transition-shadow duration-200',
-                'p-4 md:p-5',
+                'p-3.5 md:p-5',
                 accent
                     ? 'border-l-[3px] border-l-primary-600 border-t-white/30 border-r-white/30 border-b-white/30'
                     : 'border-white/30',
@@ -69,11 +69,11 @@ export const StatCardSparkline = memo(function StatCardSparkline({
             whileTap={href ? { y: -1, scale: 0.99 } : undefined}
             transition={{ type: 'spring', stiffness: 400, damping: 25 }}
         >
-            <div className="relative flex items-start justify-between gap-2">
+            <div className="relative flex items-start justify-between gap-2 min-w-0">
                 <div className="flex-1 min-w-0">
-                    <p className="text-label md:text-xs font-medium text-warm-400 uppercase tracking-wider mb-1.5">{label}</p>
-                    <div className="flex items-baseline gap-1.5" aria-live="polite">
-                        <p className="text-2xl md:text-3xl font-bold tracking-tight text-warm-900 tabular-nums">
+                    <p className="text-label md:text-xs font-medium text-warm-400 uppercase tracking-wider mb-1.5 truncate">{label}</p>
+                    <div className="flex items-baseline gap-1.5 min-w-0" aria-live="polite">
+                        <p className="text-title-2 md:text-3xl text-warm-900 tabular-nums truncate">
                             {isNumeric ? (
                                 <AnimatedNumber value={value} decimals={suffix === '%' ? 0 : 1} suffix={suffix} />
                             ) : (
@@ -82,7 +82,7 @@ export const StatCardSparkline = memo(function StatCardSparkline({
                         </p>
                         {trend && trend !== 'stable' && (
                             <span className={cn(
-                                'flex items-center gap-0.5 text-micro font-semibold px-1.5 py-0.5 rounded-full',
+                                'flex items-center gap-0.5 text-micro font-semibold px-1.5 py-0.5 rounded-full flex-shrink-0',
                                 trendColor
                             )}>
                                 {trendIsPositive ? <IconTrendingUp size={10} /> : <IconTrendingDown size={10} />}
@@ -93,15 +93,29 @@ export const StatCardSparkline = memo(function StatCardSparkline({
 
                 <div className="flex-shrink-0 mt-1">
                     {hasSparkline ? (
-                        <Sparkline
-                            data={sparkline}
-                            color={sparkColor}
-                            width={72}
-                            height={26}
-                        />
+                        <>
+                            {/* Mobile: compact 48px sparkline */}
+                            <div className="md:hidden">
+                                <Sparkline
+                                    data={sparkline}
+                                    color={sparkColor}
+                                    width={44}
+                                    height={22}
+                                />
+                            </div>
+                            {/* Desktop: 72px sparkline */}
+                            <div className="hidden md:block">
+                                <Sparkline
+                                    data={sparkline}
+                                    color={sparkColor}
+                                    width={72}
+                                    height={26}
+                                />
+                            </div>
+                        </>
                     ) : (
                         <div className={cn(
-                            'w-10 h-10 rounded-lg flex items-center justify-center',
+                            'w-9 h-9 md:w-10 md:h-10 rounded-lg flex items-center justify-center',
                             'shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]',
                             'group-hover:scale-105 transition-transform duration-200',
                             iconBg, iconColor

@@ -13,12 +13,45 @@ import type { GolfAnnouncementMeta } from '@/lib/types/golf';
 
 // ─── Urgency config ─────────────────────────────────────────────────────────
 
-type UrgencyStyle = { dot: string; bg: string; text: string; border: string; label: string };
+// iOS semantic colors — SF Blue (info), SF Orange (warning), SF Red (destructive),
+// neutral warm for low priority. Accent bar color is kept very soft so it reads
+// as a subtle stripe rather than a loud alert rail.
+type UrgencyStyle = {
+  bar: string;     // left accent bar background (hex)
+  badgeBg: string; // badge surface
+  badgeText: string;
+  badgeDot: string; // tiny dot inside badge
+  label: string;
+};
 const urgencyConfig: Record<string, UrgencyStyle> = {
-  low:    { dot: 'bg-warm-400',  bg: 'bg-warm-50',  text: 'text-warm-600',  border: 'border-warm-200', label: 'Low' },
-  normal: { dot: 'bg-blue-400',  bg: 'bg-blue-50',  text: 'text-blue-700',  border: 'border-blue-200', label: 'Normal' },
-  high:   { dot: 'bg-amber-400', bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', label: 'High' },
-  urgent: { dot: 'bg-red-500',   bg: 'bg-red-50',   text: 'text-red-700',   border: 'border-red-200', label: 'Urgent' },
+  low: {
+    bar: '#D6D3D1',
+    badgeBg: 'bg-warm-100/80',
+    badgeText: 'text-warm-600',
+    badgeDot: 'bg-warm-400',
+    label: 'Low',
+  },
+  normal: {
+    bar: '#007AFF',
+    badgeBg: 'bg-[#007AFF]/10',
+    badgeText: 'text-[#0A6CDC]',
+    badgeDot: 'bg-[#007AFF]',
+    label: 'Normal',
+  },
+  high: {
+    bar: '#FF9500',
+    badgeBg: 'bg-[#FF9500]/10',
+    badgeText: 'text-[#B26A00]',
+    badgeDot: 'bg-[#FF9500]',
+    label: 'High',
+  },
+  urgent: {
+    bar: '#FF3B30',
+    badgeBg: 'bg-[#FF3B30]/10',
+    badgeText: 'text-[#C7291F]',
+    badgeDot: 'bg-[#FF3B30]',
+    label: 'Urgent',
+  },
 };
 const defaultUrg: UrgencyStyle = urgencyConfig['normal']!;
 
@@ -82,25 +115,46 @@ export function NewAnnouncementsModal({ announcements, onDismiss }: NewAnnouncem
       snapPoints={[0.85]}
       showHandle
       swipeToClose
+      footer={
+        <div className="flex items-center gap-3">
+          <Button
+            variant="primary"
+            className="flex-1"
+            onClick={onDismiss}
+          >
+            Got it
+          </Button>
+          {count > 1 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleViewAll}
+              rightIcon={<IconChevronRight size={14} />}
+            >
+              View all
+            </Button>
+          )}
+        </div>
+      }
     >
       {/* Header */}
       <div className="flex items-center gap-3 pb-4">
-        <div className="w-10 h-10 rounded-xl bg-primary-50 border border-primary-200/60 flex items-center justify-center flex-shrink-0">
-          <IconBell size={18} className="text-primary-600" />
+        <div className="w-11 h-11 rounded-2xl bg-primary-50 border border-primary-200/60 flex items-center justify-center flex-shrink-0">
+          <IconBell size={20} className="text-primary-600" />
         </div>
         <div className="flex-1 min-w-0">
-          <h2 className="text-lg font-semibold text-warm-900 tracking-tight">
+          <h2 className="text-headline text-warm-900">
             {title}
           </h2>
-          <p className="text-sm text-warm-500">From your coaching staff</p>
+          <p className="text-footnote text-warm-500">From your coaching staff</p>
         </div>
       </div>
 
       {/* Divider */}
-      <div className="h-px bg-gradient-to-r from-warm-200/80 via-warm-200/40 to-transparent mb-4" />
+      <div className="h-px bg-gradient-to-r from-warm-200/80 via-warm-200/40 to-transparent mb-3" />
 
       {/* Announcement cards */}
-      <div className="space-y-2.5">
+      <div className="space-y-3">
         {announcements.map((ann, i) => {
           const urg = urgencyConfig[ann.urgency || 'normal'] ?? defaultUrg;
           const needsAck = ann.requires_acknowledgement && !ann.has_player_acknowledged && !acknowledged.has(ann.id);
@@ -113,38 +167,42 @@ export function NewAnnouncementsModal({ announcements, onDismiss }: NewAnnouncem
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.04, type: 'spring', stiffness: 400, damping: 30 }}
               className={cn(
-                'relative rounded-xl overflow-hidden border transition-all duration-200',
+                'relative rounded-2xl overflow-hidden border transition-all duration-200',
                 needsAck
-                  ? 'border-primary-200/80 bg-gradient-to-r from-primary-50/30 via-white to-white shadow-sm'
+                  ? 'border-primary-200/70 bg-gradient-to-br from-primary-50/40 via-white to-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_1px_3px_rgba(16,24,40,0.06)]'
                   : isAcked
-                    ? 'border-warm-200/60 bg-warm-50/30'
-                    : 'border-warm-200/80 bg-white',
+                    ? 'border-warm-200/60 bg-warm-50/40'
+                    : 'border-warm-200/70 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.03)]',
               )}
             >
-              {/* Urgency accent bar */}
-              <div className={cn('absolute left-0 top-0 bottom-0 w-1 rounded-l-xl', urg.dot)} />
+              {/* Urgency accent bar — soft, narrow, matches SF semantic color */}
+              <div
+                className="absolute left-0 top-0 bottom-0 w-[3px]"
+                style={{ backgroundColor: urg.bar, opacity: 0.65 }}
+                aria-hidden="true"
+              />
 
               <div className="pl-4 pr-4 py-3.5">
                 {/* Title row */}
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-start gap-2 mb-1">
                   <h3 className={cn(
-                    'font-semibold text-sm text-warm-900 truncate flex-1',
+                    'text-subhead font-semibold text-warm-900 line-clamp-2 flex-1 leading-snug',
                     isAcked && 'text-warm-500',
                   )}>
                     {ann.title}
                   </h3>
                   <span className={cn(
-                    'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-micro font-semibold uppercase tracking-wider border flex-shrink-0',
-                    urg.bg, urg.text, urg.border
+                    'inline-flex items-center gap-1 px-2 py-[3px] rounded-full text-[10px] font-semibold uppercase tracking-wider flex-shrink-0 mt-0.5',
+                    urg.badgeBg, urg.badgeText,
                   )}>
-                    <span className={cn('w-1.5 h-1.5 rounded-full', urg.dot)} />
+                    <span className={cn('w-1.5 h-1.5 rounded-full', urg.badgeDot)} />
                     {urg.label}
                   </span>
                 </div>
 
                 {/* Body preview */}
                 <p className={cn(
-                  'text-sm text-warm-500 line-clamp-2 leading-relaxed mb-2.5',
+                  'text-[14px] text-warm-600 line-clamp-3 leading-relaxed mb-2.5',
                   isAcked && 'text-warm-400',
                 )}>
                   {ann.body}
@@ -152,7 +210,7 @@ export function NewAnnouncementsModal({ announcements, onDismiss }: NewAnnouncem
 
                 {/* Footer: time + action */}
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-warm-400 tabular-nums">
+                  <span className="text-caption-1 text-warm-500 tabular-nums">
                     {ann.published_at ? relativeTime(ann.published_at) : ''}
                   </span>
 
@@ -168,7 +226,7 @@ export function NewAnnouncementsModal({ announcements, onDismiss }: NewAnnouncem
                     </Button>
                   )}
                   {isAcked && (
-                    <span className="inline-flex items-center gap-1 text-xs text-primary-600 font-medium">
+                    <span className="inline-flex items-center gap-1 text-[12px] text-primary-600 font-medium">
                       <IconCheck size={12} />
                       Acknowledged
                     </span>
@@ -178,27 +236,6 @@ export function NewAnnouncementsModal({ announcements, onDismiss }: NewAnnouncem
             </m.div>
           );
         })}
-      </div>
-
-      {/* Footer actions */}
-      <div className="sticky bottom-0 -mx-6 px-6 pt-4 pb-2 mt-4 bg-white/95 backdrop-blur-xl border-t border-warm-100/80 flex items-center gap-3">
-        <Button
-          variant="primary"
-          className="flex-1"
-          onClick={onDismiss}
-        >
-          Got it
-        </Button>
-        {count > 1 && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleViewAll}
-            rightIcon={<IconChevronRight size={14} />}
-          >
-            View all
-          </Button>
-        )}
       </div>
     </BottomSheet>
   );

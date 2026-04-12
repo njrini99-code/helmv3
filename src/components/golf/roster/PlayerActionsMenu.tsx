@@ -6,6 +6,7 @@ import { removePlayerFromTeam } from '@/app/golf/actions/roster';
 import { updatePlayerStatus } from '@/app/golf/actions/golf';
 import { useToast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
+import { triggerHaptic } from '@/lib/utils/capacitor';
 import {
   IconMoreVertical,
   IconUsers,
@@ -134,11 +135,16 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
     <div className="relative">
       {/* Three-dot menu button */}
       <button
-        onClick={() => setShowMenu(!showMenu)}
-        className="p-2 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
+        onClick={() => {
+          void triggerHaptic('light');
+          setShowMenu(!showMenu);
+        }}
+        className="w-11 h-11 flex items-center justify-center rounded-xl text-warm-500 hover:text-warm-700 hover:bg-warm-100/60 active:bg-warm-200/60 active:scale-95 transition-[color,background-color,transform] duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
         aria-label="Player actions"
+        aria-haspopup="menu"
+        aria-expanded={showMenu}
       >
-        <IconMoreVertical size={18} className="text-warm-500" />
+        <IconMoreVertical size={18} />
       </button>
 
       {/* Dropdown menu */}
@@ -151,36 +157,48 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
           />
 
           {/* Menu */}
-          <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-warm-200 py-1 z-20">
+          <div
+            role="menu"
+            className="absolute right-0 top-full mt-1.5 w-52 bg-white/95 backdrop-blur-xl rounded-2xl shadow-[0_12px_40px_rgba(16,24,40,0.14)] border border-warm-200/50 py-1.5 z-20 origin-top-right animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-180"
+          >
             <button
+              role="menuitem"
               onClick={() => {
+                void triggerHaptic('light');
                 router.push(`/golf/dashboard/players/${playerId}`);
                 setShowMenu(false);
               }}
-              className="w-full px-4 py-2 text-left text-sm hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2 text-warm-700"
+              className="w-full px-3 py-2.5 min-h-[44px] text-left text-[15px] font-medium hover:bg-warm-100/60 active:bg-warm-100/80 transition-colors flex items-center gap-3 text-warm-800"
             >
-              <IconChevronRight size={16} />
+              <IconChevronRight size={18} className="text-warm-500" />
               View Profile
             </button>
 
             <button
-              onClick={openStatusModal}
-              className="w-full px-4 py-2 text-left text-sm hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2 text-warm-700"
+              role="menuitem"
+              onClick={() => {
+                void triggerHaptic('light');
+                openStatusModal();
+              }}
+              className="w-full px-3 py-2.5 min-h-[44px] text-left text-[15px] font-medium hover:bg-warm-100/60 active:bg-warm-100/80 transition-colors flex items-center gap-3 text-warm-800"
             >
-              <IconUser size={16} />
+              <IconUser size={18} className="text-warm-500" />
               Change Status
             </button>
 
-            <div className="border-t border-warm-100 my-1" />
+            <div className="h-px bg-warm-200/50 my-1" />
 
             <button
+              role="menuitem"
               onClick={() => {
+                void triggerHaptic('light');
                 setShowRemoveConfirm(true);
                 setShowMenu(false);
               }}
-              className="w-full px-4 py-2 text-left text-sm hover:bg-red-50 transition-colors flex items-center gap-2 text-red-600"
+              className="w-full px-3 py-2.5 min-h-[44px] text-left text-[15px] font-medium hover:bg-[#FF3B30]/8 active:bg-[#FF3B30]/12 transition-colors flex items-center gap-3"
+              style={{ color: '#FF3B30' }}
             >
-              <IconUsers size={16} />
+              <IconUsers size={18} />
               Remove from Team
             </button>
           </div>
@@ -214,7 +232,8 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
               <button
                 onClick={handleRemovePlayer}
                 disabled={removing}
-                className="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
+                className="px-4 py-2 rounded-lg text-white font-medium transition-colors disabled:opacity-50 flex items-center gap-2 active:scale-95"
+                style={{ backgroundColor: '#FF3B30' }}
               >
                 {removing ? (
                   <>

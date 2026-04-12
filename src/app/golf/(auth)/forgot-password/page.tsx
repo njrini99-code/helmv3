@@ -231,6 +231,10 @@ export default function ForgotPasswordPage() {
                     required
                     autoFocus
                     autoComplete="email"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    enterKeyHint="send"
                     className="
                       w-full px-4 py-2.5 sm:py-3
                       bg-white

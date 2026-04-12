@@ -78,11 +78,11 @@ export function TeamInfoPlayer({ team, coach, roster, announcements, tasks = [] 
             <SectionHeader title="Head Coach" icon={<IconUser size={18} />} />
             <PremiumGlassCard className="mt-3">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-semibold text-lg">
+                <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-semibold text-lg flex-shrink-0">
                   {coach.full_name?.charAt(0) || 'C'}
                 </div>
-                <div>
-                  <p className="font-medium text-warm-900">{coach.full_name || 'Coach'}</p>
+                <div className="min-w-0">
+                  <p className="font-medium text-warm-900 truncate">{coach.full_name || 'Coach'}</p>
                   <p className="text-sm text-warm-500">Head Coach</p>
                 </div>
               </div>
@@ -188,11 +188,11 @@ export function TeamInfoPlayer({ team, coach, roster, announcements, tasks = [] 
               ) : (
                 roster.slice(0, 5).map((player) => (
                   <div key={player.id} className="flex items-center gap-3 p-4">
-                    <div className="w-10 h-10 rounded-full bg-warm-100 flex items-center justify-center text-warm-600 font-medium">
+                    <div className="w-10 h-10 rounded-full bg-warm-100 flex items-center justify-center text-warm-600 font-medium flex-shrink-0">
                       {(player.first_name || 'P').charAt(0)}{(player.last_name || '').charAt(0)}
                     </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-warm-900">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-warm-900 truncate">
                         {player.first_name || 'Unknown'} {player.last_name || ''}
                       </p>
                       {player.handicap !== null && (

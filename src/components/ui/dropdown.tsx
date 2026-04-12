@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { cn } from '@/lib/utils';
+import { triggerHaptic } from '@/lib/utils/capacitor';
 
 interface DropdownProps {
   trigger: React.ReactNode;
@@ -17,6 +18,7 @@ export function Dropdown({ trigger, children, align = 'start', className }: Drop
   const menuRef = useRef<HTMLDivElement>(null);
 
   const openMenu = useCallback(() => {
+    void triggerHaptic('light');
     setOpen(true);
     requestAnimationFrame(() => {
       requestAnimationFrame(() => setIsAnimating(true));
@@ -25,7 +27,7 @@ export function Dropdown({ trigger, children, align = 'start', className }: Drop
 
   const closeMenu = useCallback(() => {
     setIsAnimating(false);
-    const timer = setTimeout(() => setOpen(false), 150);
+    const timer = setTimeout(() => setOpen(false), 180);
     return () => clearTimeout(timer);
   }, []);
 
@@ -104,16 +106,19 @@ export function Dropdown({ trigger, children, align = 'start', className }: Drop
           className={cn(
             'absolute z-50 mt-2',
             alignClasses[align],
-            'min-w-[200px]',
-            'bg-white',
-            'border border-warm-200',
-            'rounded-[14px]',
-            'shadow-lg',
+            'min-w-[220px]',
+            'bg-white/95 backdrop-blur-xl',
+            'border border-warm-200/50',
+            'rounded-2xl',
+            'shadow-[0_12px_40px_rgba(16,24,40,0.14)]',
             'py-1.5',
-            'transition-all duration-150 ease-out origin-top',
+            'transition-[opacity,transform] duration-180 ease-[cubic-bezier(0.32,0.72,0,1)] origin-top',
+            align === 'end' && 'origin-top-right',
+            align === 'center' && 'origin-top',
+            align === 'start' && 'origin-top-left',
             isAnimating
-              ? 'opacity-100 scale-y-100 translate-y-0'
-              : 'opacity-0 scale-y-95 -translate-y-1',
+              ? 'opacity-100 scale-100 translate-y-0'
+              : 'opacity-0 scale-95 -translate-y-1',
             className,
           )}
         >
@@ -141,27 +146,39 @@ export function DropdownItem({
   disabled,
   shortcut,
 }: DropdownItemProps) {
+  const handleClick = () => {
+    if (disabled) return;
+    void triggerHaptic('light');
+    onClick?.();
+  };
   return (
     <button
-      onClick={onClick}
+      onClick={handleClick}
       disabled={disabled}
       role="menuitem"
       className={cn(
         'w-full flex items-center gap-3',
-        'px-4 py-2.5 min-h-[40px]',
-        'text-sm text-left',
+        'px-3 py-2.5 min-h-[44px]',
+        'text-[15px] text-left',
         'transition-colors duration-100',
         'focus:outline-none',
         danger
-          ? 'text-red-600 hover:bg-red-50 focus:bg-red-50'
-          : 'text-warm-700 hover:bg-warm-50 focus:bg-warm-50',
+          ? 'text-[#FF3B30] hover:bg-[#FF3B30]/8 focus:bg-[#FF3B30]/8 active:bg-[#FF3B30]/12'
+          : 'text-warm-800 hover:bg-warm-100/60 focus:bg-warm-100/60 active:bg-warm-100/80',
         disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
       )}
     >
-      {Icon && <Icon className="w-4 h-4 flex-shrink-0" />}
-      <span className="flex-1">{children}</span>
+      {Icon && (
+        <Icon
+          className={cn(
+            'w-[18px] h-[18px] flex-shrink-0',
+            danger ? 'text-[#FF3B30]' : 'text-warm-500',
+          )}
+        />
+      )}
+      <span className="flex-1 font-medium">{children}</span>
       {shortcut && (
-        <span className="text-xs text-warm-400 ml-auto pl-4">{shortcut}</span>
+        <span className="text-xs text-warm-400 ml-auto pl-4 tabular-nums">{shortcut}</span>
       )}
     </button>
   );
@@ -169,7 +186,7 @@ export function DropdownItem({
 
 export function DropdownSeparator() {
   return (
-    <div className="h-px bg-gradient-to-r from-transparent via-warm-200 to-transparent my-1.5" />
+    <div className="h-px bg-warm-200/50 my-1" />
   );
 }
 

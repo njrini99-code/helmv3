@@ -554,6 +554,10 @@ export function EventDetailModal({
             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
             disabled={isViewMode || isSaving}
             placeholder="Event name..."
+            aria-label="Event title"
+            autoCapitalize="sentences"
+            autoCorrect="on"
+            enterKeyHint="next"
             className="w-full px-0 py-2 text-xl font-semibold text-warm-900 placeholder:text-warm-300 border-none focus:ring-0 focus:outline-none bg-transparent disabled:text-warm-500"
             required
           />
@@ -644,6 +648,10 @@ export function EventDetailModal({
               onChange={(e) => setFormData({ ...formData, location: e.target.value || null })}
               disabled={isViewMode || isSaving}
               placeholder="Add location..."
+              aria-label="Location"
+              autoCapitalize="words"
+              autoCorrect="on"
+              enterKeyHint="next"
               className="flex-1 bg-transparent border-none focus:ring-0 focus:outline-none text-sm text-warm-900 placeholder:text-warm-400 disabled:text-warm-500"
             />
           </div>
@@ -656,6 +664,10 @@ export function EventDetailModal({
               disabled={isViewMode || isSaving}
               rows={2}
               placeholder="Add notes or description..."
+              aria-label="Description"
+              autoCapitalize="sentences"
+              autoCorrect="on"
+              enterKeyHint="enter"
               className="w-full bg-transparent border-none focus:ring-0 focus:outline-none text-sm text-warm-900 placeholder:text-warm-400 resize-none disabled:text-warm-500"
             />
           </div>

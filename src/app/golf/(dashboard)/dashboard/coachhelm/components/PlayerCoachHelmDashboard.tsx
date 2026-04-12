@@ -218,7 +218,7 @@ export function PlayerCoachHelmDashboard({
                   transition={{ duration: 0.15 }}
                 >
                   {/* Top Row — Composite Rating + Trend Dashboard */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 md:gap-6 mb-6">
                     <CompositeRatingCard
                       profileData={profileData ?? undefined}
                       playerState={dashboardData.playerState}
@@ -231,9 +231,9 @@ export function PlayerCoachHelmDashboard({
                   </div>
 
                   {/* Main Content — 2 columns */}
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 md:gap-6 mb-6">
                     {/* Left Column — AI Insights */}
-                    <div className="lg:col-span-7 space-y-6">
+                    <div className="lg:col-span-7 space-y-5 md:space-y-6 min-w-0">
                       <AIInsightsPanel
                         insights={dashboardData.insights}
                         maxDisplay={5}
@@ -241,7 +241,7 @@ export function PlayerCoachHelmDashboard({
                     </div>
 
                     {/* Right Column — Focus Areas, Prediction */}
-                    <div className="lg:col-span-5 space-y-6">
+                    <div className="lg:col-span-5 space-y-5 md:space-y-6 min-w-0">
                       <FocusAreasGrid focusAreas={dashboardData.focusAreas} />
                       <PerformancePrediction
                         prediction={dashboardData.prediction}

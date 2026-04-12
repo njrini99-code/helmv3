@@ -87,17 +87,23 @@ export function InsightSearchBar({
       {/* Input */}
       <input
         ref={inputRef}
-        type="text"
+        type="search"
         value={localValue}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
+        aria-label="Search insights"
+        inputMode="search"
+        autoCorrect="off"
+        autoCapitalize="none"
+        spellCheck={false}
+        enterKeyHint="search"
         className={cn(
-          'w-full pl-10 pr-10 py-2.5 text-sm',
+          'w-full min-h-[44px] pl-10 pr-10 py-2.5 text-base lg:text-sm',
           'bg-white/80 backdrop-blur-sm',
           'border border-warm-200 rounded-xl',
           'text-warm-900 placeholder:text-warm-400',
-          'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20',
+          'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30',
           'transition-all duration-200'
         )}
       />

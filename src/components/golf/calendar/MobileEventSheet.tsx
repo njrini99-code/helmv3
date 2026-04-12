@@ -385,6 +385,9 @@ export function MobileEventSheet({
               placeholder="Event title..."
               aria-label="Event title"
               aria-describedby={error ? 'event-form-error' : undefined}
+              autoCapitalize="sentences"
+              autoCorrect="on"
+              enterKeyHint="next"
               className={cn(
                 'w-full text-xl font-semibold text-warm-900 placeholder:text-warm-300',
                 'bg-transparent border-0 outline-none p-0',
@@ -512,6 +515,9 @@ export function MobileEventSheet({
                 disabled={isViewMode || isSaving}
                 placeholder="Add location..."
                 aria-label="Location"
+                autoCapitalize="words"
+                autoCorrect="on"
+                enterKeyHint="next"
                 className={cn(
                   'flex-1 bg-transparent text-base text-warm-900 placeholder:text-warm-400',
                   'border-0 outline-none min-h-[40px]',
@@ -530,6 +536,8 @@ export function MobileEventSheet({
               rows={2}
               placeholder="Add notes..."
               aria-label="Description"
+              autoCapitalize="sentences"
+              autoCorrect="on"
               className={cn(
                 'w-full bg-warm-50 rounded-2xl px-4 py-3 text-base text-warm-900',
                 'placeholder:text-warm-400 border-0 outline-none resize-none',
