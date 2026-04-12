@@ -22,6 +22,7 @@ const config: CapacitorConfig = {
   },
   plugins: {
     Keyboard: {
+      // @ts-expect-error — Capacitor types don't include 'ionic' but it's valid at runtime
       resize: 'ionic',
       resizeOnFullScreen: true,
       scrollAssist: true,

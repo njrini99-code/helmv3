@@ -237,7 +237,7 @@ export async function updateGolfTravelItinerary(input: UpdateTravelItineraryInpu
     const { data: teamMatch } = await supabase
       .from('golf_teams')
       .select('id')
-      .eq('organization_id', coachTeam?.organization_id)
+      .eq('organization_id', coachTeam?.organization_id ?? '')
       .eq('id', itineraryRecord.team_id)
       .maybeSingle();
     if (!teamMatch) return { success: false, error: 'Not authorized for this team' };
@@ -350,7 +350,7 @@ export async function deleteGolfTravelItinerary(itineraryId: string) {
   const { data: teamMatch } = await supabase
     .from('golf_teams')
     .select('id')
-    .eq('organization_id', coachTeam?.organization_id)
+    .eq('organization_id', coachTeam?.organization_id ?? '')
     .eq('id', itineraryRecord.team_id)
     .maybeSingle();
   if (!teamMatch) return { success: false, error: 'Not authorized for this team' };

@@ -351,9 +351,9 @@ function computeTrendSummary(rounds: RoundRow[]): TrendSummary {
 
   // Compute streak
   let streakCount = 1;
-  let streakType: TrendSummary['streakType'] = diffs[0] <= 0 ? 'positive' : diffs[0] > 5 ? 'negative' : 'neutral';
+  let streakType: TrendSummary['streakType'] = (diffs[0] ?? 0) <= 0 ? 'positive' : (diffs[0] ?? 0) > 5 ? 'negative' : 'neutral';
   for (let i = 1; i < diffs.length; i++) {
-    const currentType = diffs[i] <= 0 ? 'positive' : diffs[i] > 5 ? 'negative' : 'neutral';
+    const currentType = (diffs[i] ?? 0) <= 0 ? 'positive' : (diffs[i] ?? 0) > 5 ? 'negative' : 'neutral';
     if (currentType === streakType) {
       streakCount++;
     } else {

@@ -355,7 +355,6 @@ function CoachDetailPanelInner({
   // --------------------------------------------------------------------------
   // Formatting helpers
   // --------------------------------------------------------------------------
-  const formatDate = (s: string) => new Date(s).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
   const formatShort = (s: string) => new Date(s).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
   const relativeTime = (dateStr: string): string => {

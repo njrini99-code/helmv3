@@ -59,7 +59,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
   const [personalizedDrafts, setPersonalizedDrafts] = useState<Map<string, { subject: string; body: string }>>(new Map());
   const [showOriginal, setShowOriginal] = useState(false);
   const [originalBody, setOriginalBody] = useState('');
-  const [originalSubject, setOriginalSubject] = useState('');
+  const [, setOriginalSubject] = useState('');
 
   const bodyRef = useRef<HTMLTextAreaElement>(null);
   const cursorPosRef = useRef<number>(0);

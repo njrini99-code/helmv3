@@ -177,7 +177,7 @@ export default function GolfClassesPage() {
       .from('golf_player_classes')
       .delete()
       .eq('id', selectedClass.id)
-      .eq('player_id', playerId);
+      .eq('player_id', playerId as string);
 
     if (error) throw error;
 
