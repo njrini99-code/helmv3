@@ -15,6 +15,11 @@ class GolfBridgeViewController: CAPBridgeViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
+        // Clear WKWebView cache so we always load the latest Vercel deployment
+        let dataStore = WKWebsiteDataStore.default()
+        let dataTypes = Set([WKWebsiteDataTypeDiskCache, WKWebsiteDataTypeMemoryCache])
+        dataStore.removeData(ofTypes: dataTypes, modifiedSince: .distantPast) { }
+
         if let webView = webView {
             webView.translatesAutoresizingMaskIntoConstraints = false
             webView.scrollView.contentInsetAdjustmentBehavior = .never
