@@ -44,6 +44,9 @@ export function TrendChart({
 
     const currentTheme = colors[color];
 
+    // Filter out data points with null/undefined/NaN values to prevent chart crashes
+    const safeData = data.filter(d => d.value != null && Number.isFinite(d.value));
+
     if (loading) {
         return (
             <div className="h-[160px] sm:h-[180px] md:h-[200px] relative bg-white/45 backdrop-blur-[20px] border border-white/30 rounded-2xl overflow-clip">
@@ -61,7 +64,7 @@ export function TrendChart({
         );
     }
 
-    if (data.length === 0) {
+    if (safeData.length === 0) {
         return (
             <div className="h-[160px] sm:h-[180px] md:h-[200px] flex items-center justify-center bg-warm-50/50 rounded-xl border border-warm-100">
                 <p className="text-sm leading-relaxed text-warm-400 font-medium">No data available</p>
@@ -69,8 +72,8 @@ export function TrendChart({
         );
     }
 
-    const minValue = Math.min(...data.map(d => d.value));
-    const maxValue = Math.max(...data.map(d => d.value));
+    const minValue = Math.min(...safeData.map(d => d.value));
+    const maxValue = Math.max(...safeData.map(d => d.value));
     const range = maxValue - minValue || 1;
     const domainMin = minValue - range * 0.1;
     const domainMax = maxValue + range * 0.05;
@@ -111,7 +114,7 @@ export function TrendChart({
                 }}
             >
                 <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={data} margin={{ top: 8, right: 8, left: -25, bottom: 0 }}>
+                    <AreaChart data={safeData} margin={{ top: 8, right: 8, left: -25, bottom: 0 }}>
                         <defs>
                             <linearGradient id={`colorGreen-${uid}`} x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%" stopColor="#16A34A" stopOpacity={0.2} />

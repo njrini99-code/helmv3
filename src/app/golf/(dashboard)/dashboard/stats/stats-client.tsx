@@ -11,6 +11,7 @@ import {
   getCourseBreakdown,
   getWorstHoleAnalysis,
   getTrendAnalysis,
+  getCoachRosterStats,
 } from '@/app/golf/actions/stats-data';
 import type {
   StatsSummary,
@@ -538,122 +539,8 @@ export default function StatsClient({
   async function loadCoachPlayers(teamId: string | undefined): Promise<(Player & { stats?: PlayerStats })[]> {
     if (!teamId) return [];
 
-    const supabase = createClient();
-
-    const { data: teamMembers } = await supabase
-      .from('golf_team_members')
-      .select('player_id')
-      .eq('team_id', teamId)
-      .eq('status', 'active');
-
-    const playerIds = teamMembers?.map(tm => tm.player_id) || [];
-
-    if (playerIds.length === 0) return [];
-
-    // Fetch player details and recent rounds in parallel
-    const [{ data: teamPlayers }, { data: allRounds }] = await Promise.all([
-      supabase
-        .from('golf_players')
-        .select('id, first_name, last_name, avatar_url, graduation_year, handicap')
-        .in('id', playerIds)
-        .order('last_name'),
-      supabase
-        .from('golf_rounds')
-        .select('player_id, total_score, round_date, holes_played')
-        .in('player_id', playerIds)
-        .eq('status', 'completed')
-        .not('total_score', 'is', null)
-        .order('round_date', { ascending: false }),
-    ]);
-
-    if (!teamPlayers || teamPlayers.length === 0) return [];
-
-    // Group rounds by player
-    const roundsByPlayer = (allRounds || []).reduce((acc, round) => {
-      if (!acc[round.player_id]) acc[round.player_id] = [];
-      if (round.total_score !== null) {
-        const hp = round.holes_played ?? 18;
-        acc[round.player_id]!.push({
-          score: round.total_score,
-          normalizedScore: Math.round(round.total_score * (18 / hp)),
-          holesPlayed: hp,
-          date: round.round_date,
-        });
-      }
-      return acc;
-    }, {} as Record<string, { score: number; normalizedScore: number; holesPlayed: number; date: string }[]>);
-
-    // Calculate stats for each player including trend — normalize to 18-hole equivalents
-    const playersWithStats = teamPlayers.map(player => {
-      const rounds = roundsByPlayer[player.id] || [];
-      const normalizedScores = rounds.map(r => r.normalizedScore);
-      const recentNormalized = normalizedScores.slice(0, 5);
-
-      // Compute per-hole average then express as 18-hole equivalent
-      let totalStrokes = 0;
-      let totalHoles = 0;
-      let totalStrokes18 = 0;
-      let totalStrokes9 = 0;
-      let roundsPlayed18 = 0;
-      let roundsPlayed9 = 0;
-      const scores18: number[] = [];
-      const scores9: number[] = [];
-      for (const r of rounds) {
-        totalStrokes += r.score;
-        totalHoles += r.holesPlayed;
-        if (r.holesPlayed <= 9) {
-          totalStrokes9 += r.score;
-          roundsPlayed9++;
-          scores9.push(r.score);
-        } else {
-          totalStrokes18 += r.score;
-          roundsPlayed18++;
-          scores18.push(r.score);
-        }
-      }
-
-      // Calculate trend based on normalized recent scores
-      let trend: 'up' | 'down' | 'stable' = 'stable';
-      if (recentNormalized.length >= 3) {
-        const firstHalf = recentNormalized.slice(Math.floor(recentNormalized.length / 2));
-        const secondHalf = recentNormalized.slice(0, Math.floor(recentNormalized.length / 2));
-        const firstAvg = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
-        const secondAvg = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
-        // Lower is better in golf
-        if (secondAvg < firstAvg - 1) trend = 'up';
-        else if (secondAvg > firstAvg + 1) trend = 'down';
-      }
-
-      // Format last played
-      let lastPlayed = '';
-      if (rounds[0]?.date) {
-        const daysAgo = Math.floor((Date.now() - new Date(rounds[0].date).getTime()) / (1000 * 60 * 60 * 24));
-        if (daysAgo === 0) lastPlayed = 'Today';
-        else if (daysAgo === 1) lastPlayed = 'Yesterday';
-        else lastPlayed = `${daysAgo} days ago`;
-      }
-
-      return {
-        ...player,
-        stats: {
-          rounds_played: rounds.length,
-          scoring_average: totalHoles > 0
-            ? (totalStrokes / totalHoles) * 18
-            : null,
-          best_round: normalizedScores.length > 0 ? Math.min(...normalizedScores) : null,
-          recent_scores: recentNormalized.reverse(), // Oldest to newest for sparkline
-          trend,
-          last_played: lastPlayed,
-          equivalent_rounds_all: totalHoles / 18,
-          rounds_played_18: roundsPlayed18,
-          rounds_played_9: roundsPlayed9,
-          scoring_average_18: roundsPlayed18 > 0 ? totalStrokes18 / roundsPlayed18 : null,
-          scoring_average_9: roundsPlayed9 > 0 ? totalStrokes9 / roundsPlayed9 : null,
-          best_round_18: scores18.length > 0 ? Math.min(...scores18) : null,
-          best_round_9: scores9.length > 0 ? Math.min(...scores9) : null,
-        }
-      };
-    });
+    // Use server action to bypass client-side RLS restrictions on golf_team_members
+    const playersWithStats = await getCoachRosterStats(teamId);
 
     setPlayers(playersWithStats);
     return playersWithStats;

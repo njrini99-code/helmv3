@@ -2127,3 +2127,147 @@ export async function getPlayerStrengthsWeaknesses(
     return null;
   }
 }
+
+// ============================================================================
+// COACH ROSTER STATS
+// ============================================================================
+
+export interface CoachRosterPlayer {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+  graduation_year: number | null;
+  handicap: number | null;
+  stats?: {
+    rounds_played: number;
+    scoring_average: number | null;
+    best_round: number | null;
+    recent_scores?: number[];
+    trend?: 'up' | 'down' | 'stable';
+    last_played?: string;
+    equivalent_rounds_all?: number;
+    rounds_played_18: number;
+    rounds_played_9: number;
+    scoring_average_18: number | null;
+    scoring_average_9: number | null;
+    best_round_18: number | null;
+    best_round_9: number | null;
+  };
+}
+
+/**
+ * Server action to fetch coach roster with player stats.
+ * Uses server-side Supabase client (bypasses RLS restrictions that may block
+ * client-side reads of golf_team_members for coaches).
+ */
+export async function getCoachRosterStats(teamId: string): Promise<CoachRosterPlayer[]> {
+  if (!teamId) return [];
+
+  const supabase = await createClient();
+
+  const { data: teamMembers } = await supabase
+    .from('golf_team_members')
+    .select('player_id')
+    .eq('team_id', teamId)
+    .eq('status', 'active');
+
+  const playerIds = teamMembers?.map(tm => tm.player_id) || [];
+  if (playerIds.length === 0) return [];
+
+  const [{ data: teamPlayers }, { data: allRounds }] = await Promise.all([
+    supabase
+      .from('golf_players')
+      .select('id, first_name, last_name, avatar_url, graduation_year, handicap')
+      .in('id', playerIds)
+      .order('last_name'),
+    supabase
+      .from('golf_rounds')
+      .select('player_id, total_score, round_date, holes_played')
+      .in('player_id', playerIds)
+      .eq('status', 'completed')
+      .not('total_score', 'is', null)
+      .order('round_date', { ascending: false }),
+  ]);
+
+  if (!teamPlayers || teamPlayers.length === 0) return [];
+
+  const roundsByPlayer = (allRounds || []).reduce((acc, round) => {
+    if (!acc[round.player_id]) acc[round.player_id] = [];
+    if (round.total_score !== null) {
+      const hp = round.holes_played ?? 18;
+      acc[round.player_id]!.push({
+        score: round.total_score,
+        normalizedScore: Math.round(round.total_score * (18 / hp)),
+        holesPlayed: hp,
+        date: round.round_date,
+      });
+    }
+    return acc;
+  }, {} as Record<string, { score: number; normalizedScore: number; holesPlayed: number; date: string }[]>);
+
+  return teamPlayers.map(player => {
+    const rounds = roundsByPlayer[player.id] || [];
+    const normalizedScores = rounds.map(r => r.normalizedScore);
+    const recentNormalized = normalizedScores.slice(0, 5);
+
+    let totalStrokes = 0;
+    let totalHoles = 0;
+    let totalStrokes18 = 0;
+    let totalStrokes9 = 0;
+    let roundsPlayed18 = 0;
+    let roundsPlayed9 = 0;
+    const scores18: number[] = [];
+    const scores9: number[] = [];
+    for (const r of rounds) {
+      totalStrokes += r.score;
+      totalHoles += r.holesPlayed;
+      if (r.holesPlayed <= 9) {
+        totalStrokes9 += r.score;
+        roundsPlayed9++;
+        scores9.push(r.score);
+      } else {
+        totalStrokes18 += r.score;
+        roundsPlayed18++;
+        scores18.push(r.score);
+      }
+    }
+
+    let trend: 'up' | 'down' | 'stable' = 'stable';
+    if (recentNormalized.length >= 3) {
+      const firstHalf = recentNormalized.slice(Math.floor(recentNormalized.length / 2));
+      const secondHalf = recentNormalized.slice(0, Math.floor(recentNormalized.length / 2));
+      const firstAvg = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
+      const secondAvg = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
+      if (secondAvg < firstAvg - 1) trend = 'up';
+      else if (secondAvg > firstAvg + 1) trend = 'down';
+    }
+
+    let lastPlayed = '';
+    if (rounds[0]?.date) {
+      const daysAgo = Math.floor((Date.now() - new Date(rounds[0].date).getTime()) / (1000 * 60 * 60 * 24));
+      if (daysAgo === 0) lastPlayed = 'Today';
+      else if (daysAgo === 1) lastPlayed = 'Yesterday';
+      else lastPlayed = `${daysAgo} days ago`;
+    }
+
+    return {
+      ...player,
+      stats: {
+        rounds_played: rounds.length,
+        scoring_average: totalHoles > 0 ? (totalStrokes / totalHoles) * 18 : null,
+        best_round: normalizedScores.length > 0 ? Math.min(...normalizedScores) : null,
+        recent_scores: [...recentNormalized].reverse(),
+        trend,
+        last_played: lastPlayed,
+        equivalent_rounds_all: totalHoles / 18,
+        rounds_played_18: roundsPlayed18,
+        rounds_played_9: roundsPlayed9,
+        scoring_average_18: roundsPlayed18 > 0 ? totalStrokes18 / roundsPlayed18 : null,
+        scoring_average_9: roundsPlayed9 > 0 ? totalStrokes9 / roundsPlayed9 : null,
+        best_round_18: scores18.length > 0 ? Math.min(...scores18) : null,
+        best_round_9: scores9.length > 0 ? Math.min(...scores9) : null,
+      },
+    };
+  });
+}

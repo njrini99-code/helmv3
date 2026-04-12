@@ -147,10 +147,12 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
 
     const chartData = useMemo(() => {
         const sortedRounds = [...recentRounds].reverse();
-        return sortedRounds.map(r => ({
-            label: new Date(r.round_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-            value: r.total_score
-        }));
+        return sortedRounds
+            .filter(r => r.total_score != null && Number.isFinite(r.total_score))
+            .map(r => ({
+                label: new Date(r.round_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                value: r.total_score
+            }));
     }, [recentRounds]);
 
     return (
@@ -321,12 +323,14 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                         {/* ROW 3: Trend + Focus Areas */}
                         <DashboardErrorBoundary name="Scoring Trend">
                         <m.div className="grid grid-cols-1 lg:grid-cols-5 gap-4 md:gap-5 mb-5 md:mb-6" variants={itemVariants}>
-                            <div className="lg:col-span-3 min-w-0">
+                            <div className="lg:col-span-3 min-w-0 w-full">
                                 {chartData.length >= 2 ? (
                                     <>
                                         <SectionHeader title="Scoring Trend" />
                                         <PremiumGlassCard glow>
-                                            <TrendChart data={chartData} reverse={true} />
+                                            <div className="w-full min-h-[200px]">
+                                                <TrendChart data={chartData} reverse={true} />
+                                            </div>
                                         </PremiumGlassCard>
                                     </>
                                 ) : (

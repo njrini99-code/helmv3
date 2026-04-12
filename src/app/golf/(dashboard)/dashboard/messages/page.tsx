@@ -283,7 +283,7 @@ export default function GolfMessagesPage() {
   // No team error state - CRITICAL: Show helpful message
   if (!teamId) {
     return (
-      <div className="h-[calc(100dvh-64px)] flex items-center justify-center p-6">
+      <div className="h-[calc(100dvh-var(--golf-mobile-bottom-nav-offset))] lg:h-[100dvh] flex items-center justify-center p-6">
         <div className="max-w-md text-center">
           <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
             <IconAlertCircle size={32} className="text-amber-500" />
@@ -306,7 +306,7 @@ export default function GolfMessagesPage() {
   }
 
   return (
-    <AnimatedPage className="h-[calc(100dvh-64px)] flex">
+    <AnimatedPage className="h-[calc(100dvh-var(--golf-mobile-bottom-nav-offset))] lg:h-[100dvh] flex">
       {/* Conversation List */}
       <div className={cn(
         'w-full lg:w-80 xl:w-96 flex-shrink-0 border-r border-warm-200/60 glass-standard flex flex-col',

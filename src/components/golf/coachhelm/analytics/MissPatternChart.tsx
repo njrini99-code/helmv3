@@ -256,11 +256,11 @@ export function MissPatternChart({
             transition={animated ? { delay: 0.5, duration: 0.3 } : undefined}
             className="absolute inset-0 flex items-center justify-center pointer-events-none"
           >
-            <div className="text-center bg-white/90 backdrop-blur-sm rounded-full p-3 shadow-sm">
-              <div className="text-2xl font-bold text-warm-900">
+            <div className="text-center bg-white/90 backdrop-blur-sm rounded-full px-2.5 py-1.5 shadow-sm">
+              <div className="text-base font-bold text-warm-900 leading-tight">
                 {primaryMiss.percentage}%
               </div>
-              <div className="text-xs font-medium text-warm-500 uppercase tracking-wide">
+              <div className="text-[10px] font-medium text-warm-500 uppercase tracking-wide leading-tight">
                 {DIRECTION_LABELS[primaryMiss.direction] || primaryMiss.direction}
               </div>
             </div>

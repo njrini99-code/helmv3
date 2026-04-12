@@ -60,6 +60,10 @@ export function TeamCompositeCard({
 }: TeamCompositeCardProps) {
   const displayComposite = Math.max(0, Math.min(100, Number(composite)));
 
+  // Detect default/placeholder data: all categories at exactly 50 means z-score
+  // normalization had no meaningful spread (all players similar or no real data)
+  const allDefault = Object.values(categories).every(v => v === 50) && displayComposite === 50;
+
   if (playerCount === 0) {
     return (
       <GlassCard className="relative overflow-hidden" glow="subtle">
@@ -73,6 +77,28 @@ export function TeamCompositeCard({
           </div>
           <p className="text-sm text-warm-600">No active players on the team</p>
           <p className="text-xs text-warm-400">Add players to see team game strength</p>
+        </div>
+      </GlassCard>
+    );
+  }
+
+  if (allDefault) {
+    return (
+      <GlassCard className="relative overflow-hidden" glow="subtle">
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600" />
+        <div className="flex flex-col items-center gap-4 py-8">
+          <p className="text-sm font-semibold uppercase tracking-wider text-warm-500">
+            Team Game Strength
+          </p>
+          <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center">
+            <IconUsers size={24} className="text-warm-400" />
+          </div>
+          <p className="text-sm text-warm-600 max-w-xs text-center">
+            Not enough round data to calculate team strengths
+          </p>
+          <p className="text-xs text-warm-400 text-center max-w-xs">
+            As players submit more rounds, detailed category ratings will appear here
+          </p>
         </div>
       </GlassCard>
     );
