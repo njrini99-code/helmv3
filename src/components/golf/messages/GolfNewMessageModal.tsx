@@ -1,9 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { cn } from '@/lib/utils';
-import { ModalFooter } from '@/components/ui/modal';
 import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { SearchBar } from '@/components/ui/search-bar';
 import { Avatar } from '@/components/ui/avatar';
@@ -35,7 +33,6 @@ export function GolfNewMessageModal({
   currentUserRole,
   teamId,
 }: GolfNewMessageModalProps) {
-  const { modalRef } = useFocusTrap(isOpen, onClose);
   const [searchQuery, setSearchQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -214,14 +211,29 @@ export function GolfNewMessageModal({
     }
   };
 
+  const footer = (
+    <div className="flex items-center justify-end gap-3">
+      <Button variant="secondary" onClick={onClose}>
+        Cancel
+      </Button>
+      <Button
+        variant="primary"
+        onClick={handleStartConversation}
+        disabled={!selectedId || noTeamError}
+      >
+        Start Conversation
+      </Button>
+    </div>
+  );
+
   return (
     <BottomSheet
       open={isOpen}
       onClose={onClose}
       title="New Message"
       description={currentUserRole === 'coach' ? 'Select a player to start a conversation' : 'Select a team member to start a conversation'}
+      footer={footer}
     >
-      <div ref={modalRef}>
       <div className="space-y-4">
         {/* No Team Error */}
         {noTeamError && (
@@ -300,19 +312,6 @@ export function GolfNewMessageModal({
         </div>
       </div>
 
-      <ModalFooter>
-        <Button variant="secondary" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button
-          variant="primary"
-          onClick={handleStartConversation}
-          disabled={!selectedId || noTeamError}
-        >
-          Start Conversation
-        </Button>
-      </ModalFooter>
-      </div>
     </BottomSheet>
   );
 }

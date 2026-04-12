@@ -1,9 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { cn } from '@/lib/utils';
-import { ModalFooter } from '@/components/ui/modal';
 import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { SearchBar } from '@/components/ui/search-bar';
 import { Avatar } from '@/components/ui/avatar';
@@ -33,7 +31,6 @@ export function GolfTeamBroadcastModal({
   onSuccess,
   teamId,
 }: GolfTeamBroadcastModalProps) {
-  const { modalRef } = useFocusTrap(isOpen, onClose);
   const [step, setStep] = useState<'recipients' | 'details'>('recipients');
   const [searchQuery, setSearchQuery] = useState('');
   const [players, setPlayers] = useState<Player[]>([]);
@@ -155,6 +152,53 @@ export function GolfTeamBroadcastModal({
     setError(null);
   };
 
+  const footer = (
+    <div className="flex items-center justify-end gap-3">
+      {step === 'recipients' ? (
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            onClick={handleNext}
+            disabled={selectedPlayerIds.size === 0}
+          >
+            Next
+          </Button>
+        </>
+      ) : (
+        <>
+          <Button variant="secondary" onClick={handleBack}>
+            Back
+          </Button>
+          <Button
+            variant="primary"
+            onClick={handleCreate}
+            disabled={!broadcastTitle.trim() || creating}
+            className="gap-2"
+          >
+            {creating ? (
+              <>
+                <span className="flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '0ms' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '150ms' }} />
+                  <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '300ms' }} />
+                </span>
+                Creating...
+              </>
+            ) : (
+              <>
+                <IconMail size={16} />
+                Create Group
+              </>
+            )}
+          </Button>
+        </>
+      )}
+    </div>
+  );
+
   return (
     <BottomSheet
       open={isOpen}
@@ -165,8 +209,8 @@ export function GolfTeamBroadcastModal({
           ? 'Select players to include in this group conversation'
           : 'Name your group conversation'
       }
+      footer={footer}
     >
-      <div ref={modalRef}>
       {step === 'recipients' ? (
         <div className="space-y-4">
           {/* Error Display */}
@@ -342,51 +386,6 @@ export function GolfTeamBroadcastModal({
         </div>
       )}
 
-      <ModalFooter>
-        {step === 'recipients' ? (
-          <>
-            <Button variant="secondary" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              onClick={handleNext}
-              disabled={selectedPlayerIds.size === 0}
-            >
-              Next
-            </Button>
-          </>
-        ) : (
-          <>
-            <Button variant="secondary" onClick={handleBack}>
-              Back
-            </Button>
-            <Button
-              variant="primary"
-              onClick={handleCreate}
-              disabled={!broadcastTitle.trim() || creating}
-              className="gap-2"
-            >
-              {creating ? (
-                <>
-                  <span className="flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '0ms' }} />
-                    <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '150ms' }} />
-                    <span className="w-1.5 h-1.5 rounded-full bg-white skeleton-shimmer" style={{ animationDelay: '300ms' }} />
-                  </span>
-                  Creating...
-                </>
-              ) : (
-                <>
-                  <IconMail size={16} />
-                  Create Group
-                </>
-              )}
-            </Button>
-          </>
-        )}
-      </ModalFooter>
-      </div>
     </BottomSheet>
   );
 }

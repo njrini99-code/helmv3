@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { ConfirmModal } from '@/components/ui/modal';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { triggerHaptic } from '@/lib/utils/capacitor';
 import {
   IconCheck,
@@ -83,29 +83,29 @@ export function InsightBulkActions({
       case 'dismiss':
         return {
           title: `Dismiss ${selectedCount} insight${selectedCount !== 1 ? 's' : ''}?`,
-          description: 'Dismissed insights will be hidden from your active feed. You can still view them by filtering for dismissed insights.',
-          confirmText: 'Dismiss All',
+          message: 'Dismissed insights will be hidden from your active feed. You can still view them by filtering for dismissed insights.',
+          confirmLabel: 'Dismiss All',
           variant: 'danger' as const,
         };
       case 'acknowledge':
         return {
           title: `Acknowledge ${selectedCount} insight${selectedCount !== 1 ? 's' : ''}?`,
-          description: 'Acknowledged insights indicate you have reviewed them. They will remain visible but marked as acknowledged.',
-          confirmText: 'Acknowledge All',
+          message: 'Acknowledged insights indicate you have reviewed them. They will remain visible but marked as acknowledged.',
+          confirmLabel: 'Acknowledge All',
           variant: 'default' as const,
         };
       case 'resolve':
         return {
           title: `Resolve ${selectedCount} insight${selectedCount !== 1 ? 's' : ''}?`,
-          description: 'Resolved insights indicate the issue has been addressed. They will be marked as completed.',
-          confirmText: 'Resolve All',
+          message: 'Resolved insights indicate the issue has been addressed. They will be marked as completed.',
+          confirmLabel: 'Resolve All',
           variant: 'default' as const,
         };
       default:
         return {
           title: '',
-          description: '',
-          confirmText: '',
+          message: '',
+          confirmLabel: '',
           variant: 'default' as const,
         };
     }
@@ -257,16 +257,17 @@ export function InsightBulkActions({
         )}
       </AnimatePresence>
 
-      {/* Confirmation Modal */}
-      <ConfirmModal
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
         open={confirmModal.open}
-        onClose={() => setConfirmModal({ open: false, action: null })}
+        onCancel={() => setConfirmModal({ open: false, action: null })}
         onConfirm={handleConfirmAction}
         title={modalProps.title}
-        description={modalProps.description}
-        confirmText={isProcessing ? 'Processing...' : modalProps.confirmText}
-        cancelText="Cancel"
+        message={modalProps.message}
+        confirmLabel={modalProps.confirmLabel}
+        cancelLabel="Cancel"
         variant={modalProps.variant}
+        isLoading={isProcessing}
       />
     </>
   );

@@ -3,14 +3,7 @@
 import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { cn } from '@/lib/utils';
 import { formatFileSize, type DocumentVersion, type GolfDocument } from '@/lib/types/golf';
 import { revertToVersion } from '@/app/golf/actions/documents';
@@ -19,7 +12,6 @@ import {
   EyeIcon,
   DownloadIcon,
   RotateCcwIcon,
-  Loader2Icon,
   CheckCircle2Icon,
   ClockIcon,
   UserIcon,
@@ -227,48 +219,21 @@ export function VersionHistory({
       </Card>
 
       {/* Revert Confirmation Dialog */}
-      <Dialog open={showRevertDialog} onOpenChange={setShowRevertDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Revert to Version {revertingTo}?</DialogTitle>
-            <DialogDescription>
-              This will create a new version based on version {revertingTo}. The current version will not be deleted - you can always revert back.
-            </DialogDescription>
-          </DialogHeader>
-
-          {revertError && (
-            <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-md">
-              {revertError}
-            </div>
-          )}
-
-          <DialogFooter>
-            <Button
-              variant="secondary"
-              onClick={() => setShowRevertDialog(false)}
-              disabled={isReverting}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleConfirmRevert}
-              disabled={isReverting}
-            >
-              {isReverting ? (
-                <>
-                  <Loader2Icon className="h-4 w-4 mr-2 animate-spin" />
-                  Reverting...
-                </>
-              ) : (
-                <>
-                  <RotateCcwIcon className="h-4 w-4 mr-2" />
-                  Revert to v{revertingTo}
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDialog
+        open={showRevertDialog}
+        onCancel={() => setShowRevertDialog(false)}
+        onConfirm={handleConfirmRevert}
+        title={`Revert to Version ${revertingTo}?`}
+        message={
+          revertError
+            ? `${revertError}`
+            : `This will create a new version based on version ${revertingTo}. The current version will not be deleted - you can always revert back.`
+        }
+        confirmLabel={`Revert to v${revertingTo}`}
+        cancelLabel="Cancel"
+        variant="warning"
+        isLoading={isReverting}
+      />
     </>
   );
 }

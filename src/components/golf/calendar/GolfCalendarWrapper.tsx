@@ -5,12 +5,7 @@ import { PremiumCalendarClient, type TeamMember } from './PremiumCalendarClient'
 import { CalendarFeedManager, type FeedType } from './CalendarFeedManager';
 import type { CalendarFeed } from './FeedCard';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { useTeamContext } from '@/hooks/golf/use-team-context';
 
 async function loadCalendarFeedActions() {
@@ -143,32 +138,29 @@ export function GolfCalendarWrapper({
         teamId={teamId ?? undefined}
       />
 
-      <Dialog open={showFeedManager} onOpenChange={setShowFeedManager}>
-        <DialogContent className="max-w-[calc(100vw-2rem)] sm:max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>Calendar Feeds</DialogTitle>
-          </DialogHeader>
-          <div className="p-6">
-            {feedsError && (
-              <p className="text-sm text-rose-600 mb-4">{feedsError}</p>
-            )}
-            {feedsLoading ? (
-              <div className="py-10 text-center text-sm text-warm-500">
-                Loading calendar feeds...
-              </div>
-            ) : (
-              <CalendarFeedManager
-                feeds={feeds}
-                onCreateFeed={handleCreateFeed}
-                onRegenerateFeed={handleRegenerateFeed}
-                onDeleteFeed={handleDeleteFeed}
-                allowedTypes={allowedTypes}
-                showNameInput={false}
-              />
-            )}
+      <BottomSheet
+        open={showFeedManager}
+        onClose={() => setShowFeedManager(false)}
+        title="Calendar Feeds"
+      >
+        {feedsError && (
+          <p className="text-sm text-rose-600 mb-4">{feedsError}</p>
+        )}
+        {feedsLoading ? (
+          <div className="py-10 text-center text-sm text-warm-500">
+            Loading calendar feeds...
           </div>
-        </DialogContent>
-      </Dialog>
+        ) : (
+          <CalendarFeedManager
+            feeds={feeds}
+            onCreateFeed={handleCreateFeed}
+            onRegenerateFeed={handleRegenerateFeed}
+            onDeleteFeed={handleDeleteFeed}
+            allowedTypes={allowedTypes}
+            showNameInput={false}
+          />
+        )}
+      </BottomSheet>
     </>
   );
 }

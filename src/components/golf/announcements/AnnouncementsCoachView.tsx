@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconChevronDown, IconTrash, IconFile, IconCheck, IconUsers, IconClock, IconClipboardList } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import { ConfirmModal } from '@/components/ui/modal';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useToast } from '@/components/ui/toast';
 import { deleteAnnouncement, getAnnouncementDetail } from '@/app/golf/actions/announcements';
 import { openExternalUrl } from '@/lib/utils/capacitor';
@@ -441,13 +441,13 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
         </AnimatePresence>
       </div>
 
-      <ConfirmModal
+      <ConfirmDialog
         open={showDeleteConfirm}
-        onClose={() => setShowDeleteConfirm(false)}
+        onCancel={() => setShowDeleteConfirm(false)}
         onConfirm={handleDelete}
         title="Delete Announcement"
-        description="This will permanently delete the announcement and all associated tasks and acknowledgements. This cannot be undone."
-        confirmText="Delete"
+        message="This will permanently delete the announcement and all associated tasks and acknowledgements. This cannot be undone."
+        confirmLabel="Delete"
         variant="danger"
         isLoading={deleting}
       />

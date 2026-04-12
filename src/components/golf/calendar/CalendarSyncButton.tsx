@@ -22,15 +22,9 @@ import {
   Check,
   RefreshCw,
   Shield,
-  X,
   Loader2,
 } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { Tooltip } from '@/components/ui/tooltip';
 import { openExternalUrl } from '@/lib/utils/capacitor';
 
@@ -200,42 +194,14 @@ export function CalendarSyncButton({
         </button>
       )}
 
-      {/* Modal */}
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent
-          className={cn(
-            'max-w-md p-0 overflow-hidden',
-            'bg-white/95 backdrop-blur-xl',
-            'border border-white/50',
-            'shadow-2xl'
-          )}
-        >
-          <DialogHeader className="px-6 pt-6 pb-4 border-b border-warm-100">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center">
-                  <Calendar className="w-5 h-5 text-primary-600" />
-                </div>
-                <div>
-                  <DialogTitle className="text-lg font-semibold text-warm-900">
-                    Subscribe to Calendar
-                  </DialogTitle>
-                  <p className="text-sm text-warm-500 mt-0.5">
-                    Add GolfHelm events to your calendar
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="p-2 rounded-lg hover:bg-warm-100 active:bg-warm-200 text-warm-400 hover:text-warm-600 transition-colors"
-                aria-label="Close"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          </DialogHeader>
-
-          <div className="px-6 py-5 space-y-5">
+      {/* Sheet */}
+      <BottomSheet
+        open={isOpen}
+        onClose={() => setIsOpen(false)}
+        title="Subscribe to Calendar"
+        description="Add GolfHelm events to your calendar"
+      >
+        <div className="space-y-5">
             {/* Loading State */}
             {loading && (
               <div className="flex items-center justify-center py-8">
@@ -389,10 +355,8 @@ export function CalendarSyncButton({
                 </div>
               </>
             )}
-          </div>
-
-                  </DialogContent>
-      </Dialog>
+        </div>
+      </BottomSheet>
     </>
   );
 }
