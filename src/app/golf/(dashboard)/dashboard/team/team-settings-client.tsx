@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { IconCopy, IconCheck, IconRefresh } from '@/components/icons';
 import { useToast } from '@/components/ui/toast';
+import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import {
   createTeam,
   updateTeam,
@@ -116,13 +117,12 @@ export function TeamSettingsClient({ team }: TeamSettingsClientProps) {
   // No team - show create form
   if (!team) {
     return (
-      <div className="max-w-2xl mx-auto px-6 py-12">
-        <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-warm-900">Create Your Team</h1>
-          <p className="text-warm-500 mt-1">
-            Set up your team to start adding players and creating events.
-          </p>
-        </div>
+      <div>
+        <LargeTitleHeader
+          title="Create Your Team"
+          subtitle="Set up your team to start adding players and creating events."
+        />
+        <div className="max-w-2xl mx-auto px-6 py-8">
 
         <div className="bg-white rounded-2xl border border-warm-200 p-6 space-y-6">
           <div>
@@ -157,19 +157,19 @@ export function TeamSettingsClient({ team }: TeamSettingsClientProps) {
             {isPending ? 'Creating...' : 'Create Team'}
           </Button>
         </div>
+        </div>
       </div>
     );
   }
 
   // Has team - show settings
   return (
-    <div className="max-w-2xl mx-auto px-6 py-12">
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-warm-900">Team Settings</h1>
-        <p className="text-warm-500 mt-1">
-          Manage your team details and invite players.
-        </p>
-      </div>
+    <div>
+      <LargeTitleHeader
+        title="Team Settings"
+        subtitle="Manage your team details and invite players."
+      />
+      <div className="max-w-2xl mx-auto px-6 py-8">
 
       {/* Team Info */}
       <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6 space-y-6 mb-6">
@@ -244,6 +244,7 @@ export function TeamSettingsClient({ team }: TeamSettingsClientProps) {
         <p className="text-xs text-warm-400">
           Regenerating will invalidate the old invite link.
         </p>
+      </div>
       </div>
     </div>
   );

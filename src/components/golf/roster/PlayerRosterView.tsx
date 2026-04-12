@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { IconUsers, IconMessage } from '@/components/icons';
 import { YearBadge } from '@/components/golf/roster/YearBadge';
-import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
+import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 
 interface PlayerRosterPlayer {
@@ -39,7 +39,7 @@ export function PlayerRosterView({ players, teamName }: PlayerRosterViewProps) {
   return (
     <AnimatedPage className="min-h-full bg-transparent">
       <AnimatedItem>
-        <MobileNavHeader
+        <LargeTitleHeader
           title="Team Roster"
           subtitle={`${players.length} ${players.length === 1 ? 'teammate' : 'teammates'} on ${teamName}`}
         />

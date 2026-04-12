@@ -171,7 +171,7 @@ export default function CoachHelmLoading() {
       <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-transparent to-transparent pointer-events-none" />
 
       {/* Header skeleton */}
-      <div className="golf-mobile-page-header relative bg-white/50 backdrop-blur-sm">
+      <div className="sticky top-0 z-20 border-b border-warm-200/30 relative bg-white/50 backdrop-blur-sm pt-[max(0.25rem,env(safe-area-inset-top,0px))] lg:pt-0">
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">

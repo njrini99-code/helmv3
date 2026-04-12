@@ -3,7 +3,7 @@ import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { TeamStatsTable } from './team-stats-table';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
-import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
+import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -95,12 +95,12 @@ export default async function TeamStatsPage() {
   if (!players || players.length === 0) {
     return (
       <div className="min-h-full">
-        <div className="border-b border-warm-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
-          <div className="max-w-7xl mx-auto px-4 md:px-6 py-5">
-            <h1 className="text-2xl font-semibold tracking-tight text-warm-900">Team Stats Overview</h1>
-            <p className="text-warm-500 mt-0.5">{team?.name || 'Your Team'}</p>
-          </div>
-        </div>
+        <MobileNavHeader
+          title="Team Stats Overview"
+          subtitle={team?.name || 'Your Team'}
+          backHref="/golf/dashboard/stats"
+          backLabel="Stats"
+        />
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-16 text-center">
           <p className="text-warm-500">No players on your roster yet.</p>
         </div>
@@ -294,21 +294,12 @@ export default async function TeamStatsPage() {
     <AnimatedPage className="min-h-full">
       {/* Header */}
       <AnimatedItem>
-      <div className="border-b border-warm-200/60 bg-white/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <MobileMenuButton />
-              <div>
-                <h1 className="text-2xl font-semibold tracking-tight text-warm-900">Team Stats Overview</h1>
-                <p className="text-warm-500 mt-0.5">
-                  {team?.name || 'Your Team'} • {playersWithStats.length} player{playersWithStats.length !== 1 ? 's' : ''}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+        <MobileNavHeader
+          title="Team Stats Overview"
+          subtitle={`${team?.name || 'Your Team'} • ${playersWithStats.length} player${playersWithStats.length !== 1 ? 's' : ''}`}
+          backHref="/golf/dashboard/stats"
+          backLabel="Stats"
+        />
       </AnimatedItem>
 
       {/* Table */}

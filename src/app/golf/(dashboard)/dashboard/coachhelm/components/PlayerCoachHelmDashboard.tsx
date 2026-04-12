@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import Link from 'next/link';
 import { m, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -9,7 +10,10 @@ import {
   IconSparkles,
   IconChartRadar,
   IconInfo,
+  IconRefresh,
+  IconSettings,
 } from '@/components/icons';
+import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import {
   PerformancePrediction,
   AIInsightsPanel,
@@ -23,7 +27,6 @@ import { ShotAnalyticsPanel } from '@/components/golf/coachhelm/analytics';
 import { GolfTabBar } from '@/components/golf/GolfTabBar';
 import type { PlayerCoachHelmDashboardData } from '@/app/golf/actions/insights';
 import type { PlayerShotAnalytics } from '@/app/golf/actions/shot-analytics';
-import { CoachHelmHeader } from './CoachHelmHeader';
 
 async function loadCoachHelmActions() {
   const [{ getPlayerCoachHelmDashboard }, { getPlayerShotAnalytics }] = await Promise.all([
@@ -159,13 +162,31 @@ export function PlayerCoachHelmDashboard({
       )} />
 
       {/* Header */}
-      <CoachHelmHeader
-        lastUpdated={dashboardData.lastUpdated}
-        alertLevel={dashboardData.alertLevel}
-        playerState={dashboardData.playerState}
-        onRefresh={handleRefresh}
-        isRefreshing={refreshing}
-      />
+      <LargeTitleHeader
+        title="CoachHelm AI"
+        subtitle="Your personal golf intelligence"
+      >
+        <button
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className={cn(
+            'p-2 rounded-lg text-warm-500 hover:text-warm-700 hover:bg-white/50 active:bg-white/70 transition-all flex-shrink-0',
+            refreshing && 'animate-spin pointer-events-none'
+          )}
+          title="Refresh insights"
+          aria-label="Refresh insights"
+        >
+          <IconRefresh size={18} />
+        </button>
+        <Link
+          href="/golf/dashboard/settings"
+          className="p-2 rounded-lg text-warm-500 hover:text-warm-700 hover:bg-white/50 active:bg-white/70 transition-all flex-shrink-0"
+          title="AI Settings"
+          aria-label="AI Settings"
+        >
+          <IconSettings size={18} />
+        </Link>
+      </LargeTitleHeader>
 
       {/* Main Content */}
       <div className="relative max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">

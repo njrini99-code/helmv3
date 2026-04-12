@@ -20,7 +20,7 @@ import {
   IconChartRadar,
   IconCalendar,
 } from '@/components/icons';
-import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
+import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { AnalyticsSummaryCards } from './AnalyticsSummaryCards';
 import { InsightEffectivenessPanel } from './InsightEffectivenessPanel';
 import { PredictionAccuracyPanel } from './PredictionAccuracyPanel';
@@ -126,78 +126,53 @@ export function CoachHelmAnalyticsDashboard({
   return (
     <div className="min-h-full">
       {/* Header */}
-      <div className="golf-mobile-page-header bg-white/50 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-5">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div className="flex items-center gap-4">
-              <MobileMenuButton />
-              <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/20"
-              >
-                <IconChartBar size={24} className="text-white" />
-              </motion.div>
-              <div>
-                <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">
-                  CoachHelm Analytics
-                </h1>
-                <p className="text-warm-500 text-sm">
-                  Track insight effectiveness and prediction accuracy
-                </p>
-              </div>
-            </div>
-
-            <div className="w-full md:w-auto flex items-center gap-3">
-              {/* Date Range Selector */}
-              <div className="flex items-center gap-2">
-                <IconCalendar size={16} className="text-warm-400" />
-                <select
-                  value={selectedRange}
-                  onChange={(e) => handleDateRangeChange(e.target.value as DateRangeType)}
-                  disabled={isPending}
-                  className="text-base md:text-sm px-3 py-1.5 rounded-lg border border-warm-200 bg-white text-warm-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
-                >
-                  {dateRanges.map((range) => (
-                    <option key={range.id} value={range.id}>
-                      Last {range.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Refresh Button */}
-              <button
-                onClick={handleRefresh}
-                disabled={isPending}
-                className={cn(
-                  'flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-lg transition-all',
-                  isPending
-                    ? 'bg-warm-100 text-warm-400 cursor-not-allowed'
-                    : 'bg-primary-600 text-white hover:bg-primary-700 shadow-sm'
-                )}
-              >
-                {isPending ? (
-                  <>
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                    >
-                      <IconRefresh size={16} />
-                    </motion.div>
-                    Refreshing...
-                  </>
-                ) : (
-                  <>
-                    <IconRefresh size={16} />
-                    Refresh
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
+      <LargeTitleHeader
+        title="CoachHelm Analytics"
+        subtitle="Track insight effectiveness and prediction accuracy"
+      >
+        <div className="flex items-center gap-2">
+          <IconCalendar size={16} className="text-warm-400" />
+          <select
+            value={selectedRange}
+            onChange={(e) => handleDateRangeChange(e.target.value as DateRangeType)}
+            disabled={isPending}
+            className="text-base md:text-sm px-3 py-1.5 rounded-lg border border-warm-200 bg-white text-warm-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+          >
+            {dateRanges.map((range) => (
+              <option key={range.id} value={range.id}>
+                Last {range.label}
+              </option>
+            ))}
+          </select>
         </div>
-      </div>
+        <button
+          onClick={handleRefresh}
+          disabled={isPending}
+          className={cn(
+            'flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-lg transition-all',
+            isPending
+              ? 'bg-warm-100 text-warm-400 cursor-not-allowed'
+              : 'bg-primary-600 text-white hover:bg-primary-700 shadow-sm'
+          )}
+        >
+          {isPending ? (
+            <>
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+              >
+                <IconRefresh size={16} />
+              </motion.div>
+              <span className="hidden sm:inline">Refreshing...</span>
+            </>
+          ) : (
+            <>
+              <IconRefresh size={16} />
+              <span className="hidden sm:inline">Refresh</span>
+            </>
+          )}
+        </button>
+      </LargeTitleHeader>
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
