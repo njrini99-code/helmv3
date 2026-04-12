@@ -9,5 +9,5 @@ xcuserdata
 capacitor-cordova-ios-plugins
 
 # Generated Config files
-App/App/capacitor.config.json
+# App/App/capacitor.config.json  ← MUST be tracked for Xcode Cloud builds
 App/App/config.xml
