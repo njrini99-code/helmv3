@@ -148,6 +148,15 @@
     /* scroll-behavior: smooth; -- Disabled: can feel sluggish */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Lock horizontal scroll at the root — prevents any page from
+       accidentally side-scrolling on narrow iPhone widths. */
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+
+  body {
+    overflow-x: hidden;
+    max-width: 100vw;
   }
 
   /* GPU acceleration for smoother animations */

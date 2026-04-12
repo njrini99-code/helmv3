@@ -11,10 +11,7 @@ import { triggerHaptic } from '@/lib/utils/capacitor';
 interface LargeTitleHeaderProps {
   title: string;
   /**
-   * Subtitle — accepts a plain string (auto-truncated) OR arbitrary JSX
-   * (for status indicators, pulsing dots, date strings, etc.).
-   * When a string is passed, the component applies `truncate`. When JSX is
-   * passed, the caller is responsible for its own overflow handling.
+   * Subtitle — string (auto-truncated) or JSX (caller handles overflow).
    */
   subtitle?: React.ReactNode;
   /** Action buttons shown on the right (icons or short labels) */
@@ -34,23 +31,27 @@ interface LargeTitleHeaderProps {
   backLabel?: string;
 }
 
-/** Scroll distance (px) at which the large title fully collapses into the top bar. */
-const COLLAPSE_THRESHOLD = 40;
+/** Scroll distance (px) at which the compact title fully fades in. */
+const COLLAPSE_THRESHOLD = 32;
 
 /**
- * Large-title page header that mimics iOS's signature "large title that
- * collapses on scroll" pattern.
+ * iOS-native large title header.
  *
- * - At the top of the scroll container: big centered title + subtitle sits
- *   below the sticky top bar (which just shows the hamburger + actions).
- * - After scrolling ~40px: the large title fades/shrinks away and a compact
- *   version slides into the sticky top bar next to the hamburger.
- * - On desktop (lg+): collapses are disabled and the header renders as a
- *   standard title-left / actions-right layout.
- * - Respects `prefers-reduced-motion` by snapping between states with no
- *   transition.
+ * Structure (mirrors UIKit UINavigationController large title mode):
  *
- * Drop-in replacement for `MobileNavHeader` with an added scroll behavior.
+ * 1. **Sticky nav bar** — ~44pt, always at the top of the viewport.
+ *    Contains [hamburger/back] [compact title fading in when scrolled]
+ *    [action buttons]. Compact title only visible once the user has
+ *    scrolled past the large title below.
+ *
+ * 2. **Large title row** — lives INSIDE the scrollable content, not in
+ *    the sticky header. As the user scrolls, it moves up and off-screen
+ *    naturally — no max-height animation, zero flicker.
+ *
+ * 3. **belowContent** — optional sticky row for filter chips or tabs.
+ *
+ * On desktop (lg+) the layout collapses into a standard single-row header
+ * with the full title on the left and actions on the right.
  */
 export function LargeTitleHeader({
   title,
@@ -63,9 +64,25 @@ export function LargeTitleHeader({
   backLabel,
 }: LargeTitleHeaderProps) {
   const router = useRouter();
-  const [collapsed, setCollapsed] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const scrollTargetRef = useRef<HTMLElement | Window | null>(null);
+
+  // Tap compact title → scroll to top (iOS native behavior).
+  const handleTapTitle = () => {
+    const target = scrollTargetRef.current;
+    if (!target) return;
+    try {
+      if (target instanceof Window) {
+        target.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        target.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    } catch {
+      // no-op
+    }
+  };
 
   const backChevron = backHref ? (
     typeof backHref === 'string' ? (
@@ -75,7 +92,7 @@ export function LargeTitleHeader({
           void triggerHaptic('light');
         }}
         className={cn(
-          'flex items-center gap-1 -ml-2 px-2 py-2 rounded-lg lg:hidden flex-shrink-0',
+          'flex items-center gap-1 -ml-2 px-2 h-11 rounded-lg lg:hidden flex-shrink-0',
           'text-warm-600 hover:text-warm-900 hover:bg-warm-100/60 active:bg-warm-200/60',
           'transition-colors duration-150',
           'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
@@ -84,7 +101,7 @@ export function LargeTitleHeader({
       >
         <IconChevronLeft size={22} />
         {backLabel && (
-          <span className="text-sm font-medium max-w-[80px] truncate">{backLabel}</span>
+          <span className="text-[15px] font-medium max-w-[120px] truncate">{backLabel}</span>
         )}
       </Link>
     ) : (
@@ -99,7 +116,7 @@ export function LargeTitleHeader({
           }
         }}
         className={cn(
-          'flex items-center gap-1 -ml-2 px-2 py-2 rounded-lg lg:hidden flex-shrink-0',
+          'flex items-center gap-1 -ml-2 px-2 h-11 rounded-lg lg:hidden flex-shrink-0',
           'text-warm-600 hover:text-warm-900 hover:bg-warm-100/60 active:bg-warm-200/60',
           'transition-colors duration-150',
           'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
@@ -108,7 +125,7 @@ export function LargeTitleHeader({
       >
         <IconChevronLeft size={22} />
         {backLabel && (
-          <span className="text-sm font-medium max-w-[80px] truncate">{backLabel}</span>
+          <span className="text-[15px] font-medium max-w-[120px] truncate">{backLabel}</span>
         )}
       </button>
     )
@@ -124,14 +141,11 @@ export function LargeTitleHeader({
     return () => mq.removeEventListener('change', update);
   }, []);
 
-  // Scroll listener — tracks collapse state based on scrollTop of the container
+  // Scroll listener — resolves the nearest scroll container and toggles
+  // the compact-title visibility based on scrollTop.
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // Resolve the scroll container:
-    // 1. Explicit ref
-    // 2. Nearest main[role="main"] ancestor
-    // 3. window
     let target: HTMLElement | Window = window;
     if (scrollContainerRef?.current) {
       target = scrollContainerRef.current;
@@ -139,6 +153,7 @@ export function LargeTitleHeader({
       const main = wrapperRef.current.closest('main[role="main"]') as HTMLElement | null;
       if (main) target = main;
     }
+    scrollTargetRef.current = target;
 
     const getScrollTop = () =>
       target instanceof Window ? target.scrollY || window.pageYOffset : target.scrollTop;
@@ -148,46 +163,69 @@ export function LargeTitleHeader({
       if (ticking) return;
       ticking = true;
       window.requestAnimationFrame(() => {
-        setCollapsed(getScrollTop() > COLLAPSE_THRESHOLD);
+        setScrolled(getScrollTop() > COLLAPSE_THRESHOLD);
         ticking = false;
       });
     };
 
-    // Initialize immediately in case the container is already scrolled
-    setCollapsed(getScrollTop() > COLLAPSE_THRESHOLD);
-
+    setScrolled(getScrollTop() > COLLAPSE_THRESHOLD);
     target.addEventListener('scroll', onScroll, { passive: true });
     return () => {
       target.removeEventListener('scroll', onScroll);
     };
   }, [scrollContainerRef]);
 
-  const transitionClass = reducedMotion ? '' : 'transition-all duration-300 ease-out';
+  // iOS easing; falls back to instant if reduced motion
+  const transitionClass = reducedMotion
+    ? ''
+    : 'transition-opacity duration-200 ease-[cubic-bezier(0.25,0.1,0.25,1)]';
 
   return (
     <div ref={wrapperRef} className={cn('relative', className)}>
-      {/* ===== Sticky top bar ===== */}
+      {/* ===== Sticky nav bar — always ~44pt + safe area =====
+          Key insight: backdrop-filter is ALWAYS on. Only the background
+          tint + border opacity toggle based on scroll. Eliminates the
+          flicker that comes from toggling backdrop-filter itself. */}
       <div
-        className={cn(
-          'sticky top-0 z-20 border-b border-warm-200/30 backdrop-blur-xl',
-          // Reproduce .golf-mobile-page-header styling inline (no class dependency)
-        )}
+        className="sticky top-0 z-30"
         style={{
-          backgroundColor: 'rgba(255, 254, 250, 0.72)',
-          paddingTop: 'max(0.25rem, env(safe-area-inset-top))',
-          // `backdrop-blur-xl` in Tailwind is already 24px, but set explicitly as a safeguard
-          backdropFilter: 'blur(24px)',
-          WebkitBackdropFilter: 'blur(24px)',
+          paddingTop: 'env(safe-area-inset-top)',
+          backgroundColor: scrolled ? 'rgba(255, 254, 250, 0.88)' : 'rgba(255, 254, 250, 0.001)',
+          backdropFilter: 'blur(24px) saturate(1.4)',
+          WebkitBackdropFilter: 'blur(24px) saturate(1.4)',
+          borderBottom: `0.5px solid ${scrolled ? 'rgba(120, 113, 108, 0.18)' : 'transparent'}`,
+          transition: reducedMotion
+            ? 'none'
+            : 'background-color 220ms ease-out, border-bottom-color 220ms ease-out',
         }}
       >
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
-          <div className="flex items-center justify-between gap-3">
-            {/* Left: hamburger OR back chevron + (collapsed title on mobile) OR (full title on desktop) */}
-            <div className="flex items-center gap-3 min-w-0 flex-1">
+        <div className="max-w-7xl mx-auto px-4 md:px-6">
+          <div className="flex items-center justify-between gap-2 h-11 md:h-14">
+            {/* Left: hamburger or back button */}
+            <div className="flex items-center flex-shrink-0">
               {backChevron ?? <MobileMenuButton />}
+            </div>
 
-              {/* Desktop: always-visible full title block */}
-              <div className="hidden lg:block min-w-0 flex-1">
+            {/* Center (mobile): compact title — tap to scroll to top */}
+            <button
+              type="button"
+              onClick={handleTapTitle}
+              aria-hidden={!scrolled}
+              tabIndex={scrolled ? 0 : -1}
+              className={cn(
+                'lg:hidden flex-1 min-w-0 px-2 text-center',
+                transitionClass,
+                scrolled ? 'opacity-100' : 'opacity-0 pointer-events-none',
+              )}
+            >
+              <span className="block text-[17px] font-semibold tracking-[-0.01em] text-warm-900 truncate">
+                {title}
+              </span>
+            </button>
+
+            {/* Desktop: always-visible full title block on the left */}
+            <div className="hidden lg:flex flex-1 min-w-0 ml-3 items-center">
+              <div className="min-w-0 flex-1">
                 <h1 className="text-2xl font-semibold tracking-tight text-warm-900 truncate">
                   {title}
                 </h1>
@@ -198,22 +236,6 @@ export function LargeTitleHeader({
                     <div className="text-warm-500 mt-0.5 text-sm min-w-0">{subtitle}</div>
                   )
                 )}
-              </div>
-
-              {/* Mobile: compact title that fades in once collapsed */}
-              <div
-                className={cn(
-                  'lg:hidden min-w-0 flex-1',
-                  transitionClass,
-                  collapsed
-                    ? 'opacity-100 translate-y-0'
-                    : 'opacity-0 -translate-y-1 pointer-events-none'
-                )}
-                aria-hidden={!collapsed}
-              >
-                <h2 className="text-lg font-semibold tracking-tight text-warm-900 truncate">
-                  {title}
-                </h2>
               </div>
             </div>
 
@@ -227,39 +249,22 @@ export function LargeTitleHeader({
         </div>
       </div>
 
-      {/* ===== Expanded large-title row (mobile only) ===== */}
-      <div
-        className={cn(
-          'lg:hidden overflow-hidden',
-          transitionClass,
-          collapsed ? 'max-h-0 opacity-0' : 'max-h-40 opacity-100'
+      {/* ===== Large title — part of scrollable content (mobile only) =====
+          Not sticky. Scrolls away naturally. Zero flicker. */}
+      <div className="lg:hidden max-w-7xl mx-auto px-4 pt-0.5 pb-2">
+        <h1 className="text-[34px] leading-[1.1] font-bold tracking-[-0.022em] text-warm-900 truncate">
+          {title}
+        </h1>
+        {subtitle && (
+          typeof subtitle === 'string' ? (
+            <p className="text-warm-500 mt-1 text-[15px] leading-tight truncate">{subtitle}</p>
+          ) : (
+            <div className="text-warm-500 mt-1 text-[15px] leading-tight min-w-0">{subtitle}</div>
+          )
         )}
-        aria-hidden={collapsed}
-      >
-        <div className="max-w-7xl mx-auto px-4 pt-2 pb-4">
-          <h1
-            className={cn(
-              'text-3xl font-semibold tracking-tight text-warm-900 truncate',
-              transitionClass
-            )}
-          >
-            {title}
-          </h1>
-          {subtitle && (
-            typeof subtitle === 'string' ? (
-              <p className={cn('text-warm-500 mt-1 text-sm truncate', transitionClass)}>
-                {subtitle}
-              </p>
-            ) : (
-              <div className={cn('text-warm-500 mt-1 text-sm min-w-0', transitionClass)}>
-                {subtitle}
-              </div>
-            )
-          )}
-        </div>
       </div>
 
-      {/* ===== belowContent (filters / tabs) — always visible, below the header ===== */}
+      {/* ===== belowContent (filters / tabs) ===== */}
       {belowContent && (
         <div className="max-w-7xl mx-auto px-4 md:px-6 pb-3 md:pb-0 md:pt-3">
           {belowContent}

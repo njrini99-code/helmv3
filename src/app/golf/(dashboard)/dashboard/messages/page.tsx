@@ -342,7 +342,7 @@ export default function GolfMessagesPage() {
         </LargeTitleHeader>
 
         {/* Conversation List */}
-        <div className="flex-1 min-h-0 pt-[env(safe-area-inset-top)]" data-scroll-container>
+        <div className="flex-1 min-h-0" data-scroll-container>
           <PullToRefresh onRefresh={handleConversationsRefresh} className="overscroll-contain touch-pan-y">
           {conversationsLoading ? (
             <div className="p-2 space-y-1">
@@ -417,13 +417,19 @@ export default function GolfMessagesPage() {
         {selectedConversation ? (
           <>
             {/* Chat Header */}
-            <div className="p-4 border-b border-warm-200/60 glass-standard flex items-center gap-3">
+            <div
+              className="border-b border-warm-200/60 glass-standard flex items-center gap-3 px-4"
+              style={{
+                paddingTop: 'calc(env(safe-area-inset-top) + 0.5rem)',
+                paddingBottom: '0.75rem',
+              }}
+            >
               <button
                 onClick={handleBack}
-                className="lg:hidden p-3 -ml-3 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-warm-400 hover:text-warm-600 active:bg-warm-100 transition-colors"
+                className="lg:hidden p-2 -ml-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-warm-600 hover:text-warm-900 active:bg-warm-100 transition-colors"
                 aria-label="Back to conversations"
               >
-                <IconArrowLeft size={20} />
+                <IconArrowLeft size={22} />
               </button>
               {selectedConversation.is_group ? (
                 <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
