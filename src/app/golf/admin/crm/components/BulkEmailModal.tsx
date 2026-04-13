@@ -831,12 +831,23 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
                     {/* Signature */}
                     <div className="px-5 pb-5">
                       <div className="border-t border-warm-200 pt-4">
-                        <p className="text-sm text-warm-600">Best,</p>
-                        <p className="text-sm font-semibold text-warm-800 mt-1">Rick Nini</p>
-                        <p className="text-xs text-warm-500">Founder, Helm Sports Labs</p>
-                        <a href="https://helmsportslabs.com" className="text-xs text-primary-600 no-underline hover:underline">
-                          helmsportslabs.com
-                        </a>
+                        <div className="flex items-start gap-3">
+                          <img src="https://helmsportslabs.com/helm-golf-logo-transparent.png" alt="GolfHelm" className="w-10 h-10 object-contain flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-sm text-warm-600">Best,</p>
+                            <p className="text-sm font-semibold text-warm-900 mt-1">Leah Potter & Nick Rini</p>
+                            <p className="text-xs text-warm-500">Co-Founders, Helm Sports Labs</p>
+                            <div className="flex items-center gap-3 mt-1">
+                              <a href="https://helmsportslabs.com" className="text-xs font-medium text-primary-600 no-underline hover:underline">
+                                helmsportslabs.com
+                              </a>
+                              <span className="text-warm-300">|</span>
+                              <a href="mailto:admin@helmsportslabs.com" className="text-xs text-warm-500 no-underline hover:underline">
+                                admin@helmsportslabs.com
+                              </a>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>

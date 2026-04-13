@@ -212,7 +212,7 @@ export async function POST(request: Request) {
             Authorization: `Bearer ${apiKey}`,
           },
           body: JSON.stringify({
-            from: 'Rick Nini <rick@helmsportslabs.com>',
+            from: 'Helm Sports Labs <admin@helmsportslabs.com>',
             to: [recipient.email],
             subject: personalizedSubject,
             html: buildEmailHtml(recipient.name, personalizedSubject, personalizedBody),
@@ -360,12 +360,21 @@ function buildEmailHtml(recipientName: string, _subject: string, body: string): 
         <tr><td style="padding:0 32px 32px 32px;">
           <table width="100%" cellpadding="0" cellspacing="0">
             <tr><td style="border-top:1px solid #e7e5e4;padding-top:20px;">
-              <p style="margin:0 0 2px 0;font-size:15px;color:#44403c;line-height:1.6;">Best,</p>
-              <p style="margin:0 0 2px 0;font-size:15px;color:#1c1917;font-weight:600;line-height:1.6;">Rick Nini</p>
-              <p style="margin:0 0 2px 0;font-size:13px;color:#78716c;line-height:1.6;">Founder, Helm Sports Labs</p>
-              <p style="margin:0;font-size:13px;line-height:1.6;">
-                <a href="https://helmsportslabs.com" style="color:#16A34A;text-decoration:none;font-weight:500;">helmsportslabs.com</a>
-              </p>
+              <table cellpadding="0" cellspacing="0"><tr>
+                <td style="vertical-align:top;padding-right:14px;">
+                  <img src="https://helmsportslabs.com/helm-golf-logo-transparent.png" alt="GolfHelm" width="44" height="44" style="display:block;border:0;" />
+                </td>
+                <td style="vertical-align:top;">
+                  <p style="margin:0 0 2px 0;font-size:15px;color:#44403c;line-height:1.5;">Best,</p>
+                  <p style="margin:0 0 2px 0;font-size:15px;color:#1c1917;font-weight:600;line-height:1.5;">Leah Potter &amp; Nick Rini</p>
+                  <p style="margin:0 0 4px 0;font-size:13px;color:#78716c;line-height:1.5;">Co-Founders, Helm Sports Labs</p>
+                  <p style="margin:0;font-size:13px;line-height:1.5;">
+                    <a href="https://helmsportslabs.com" style="color:#16A34A;text-decoration:none;font-weight:500;">helmsportslabs.com</a>
+                    <span style="color:#d6d3d1;margin:0 6px;">|</span>
+                    <a href="mailto:admin@helmsportslabs.com" style="color:#78716c;text-decoration:none;">admin@helmsportslabs.com</a>
+                  </p>
+                </td>
+              </tr></table>
             </td></tr>
           </table>
         </td></tr>
