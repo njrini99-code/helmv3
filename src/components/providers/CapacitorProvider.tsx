@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect } from 'react';
-import { Keyboard } from '@capacitor/keyboard';
 import { initCapacitor, isNativeApp, hideSplashScreen, setStatusBarStyle } from '@/lib/utils/capacitor';
 import { initPushListeners } from '@/lib/utils/push-registration';
 
@@ -18,8 +17,6 @@ export function CapacitorProvider() {
       setStatusBarStyle('dark');
 
       // Hide splash screen once the login content has actually painted.
-      // Double-rAF ensures layout + paint of the first frame are committed
-      // before we fade the native splash — eliminates the brief white flash.
       let innerRaf = 0;
       const rafId = requestAnimationFrame(() => {
         innerRaf = requestAnimationFrame(() => {
@@ -28,31 +25,36 @@ export function CapacitorProvider() {
       });
 
       // Wire up push notification listeners WITHOUT prompting the user.
-      // The actual permission prompt is gated behind a soft-ask BottomSheet
-      // shown from the dashboard shell (see PushPermissionSoftAsk).
       initPushListeners();
 
-      // Keyboard lifecycle — add body class + expose CSS variable so
-      // layouts can reclaim space when the native keyboard opens.
-      // This prevents the sign-in form from looking "sloppy" when the
-      // keyboard pushes content around.
-      const showListener = Keyboard.addListener('keyboardWillShow', (info) => {
-        document.body.classList.add('keyboard-open');
-        document.documentElement.style.setProperty(
-          '--keyboard-height',
-          `${info.keyboardHeight}px`
-        );
-      });
-      const hideListener = Keyboard.addListener('keyboardWillHide', () => {
-        document.body.classList.remove('keyboard-open');
-        document.documentElement.style.setProperty('--keyboard-height', '0px');
+      // Keyboard lifecycle — dynamic import to avoid "Keyboard plugin
+      // is not implemented on web" errors. The static import was causing
+      // unhandled rejections on every web page load.
+      let cleanupKeyboard: (() => void) | undefined;
+      import('@capacitor/keyboard').then(({ Keyboard }) => {
+        const showListener = Keyboard.addListener('keyboardWillShow', (info) => {
+          document.body.classList.add('keyboard-open');
+          document.documentElement.style.setProperty(
+            '--keyboard-height',
+            `${info.keyboardHeight}px`
+          );
+        });
+        const hideListener = Keyboard.addListener('keyboardWillHide', () => {
+          document.body.classList.remove('keyboard-open');
+          document.documentElement.style.setProperty('--keyboard-height', '0px');
+        });
+        cleanupKeyboard = () => {
+          showListener.then((h) => h.remove()).catch(() => {});
+          hideListener.then((h) => h.remove()).catch(() => {});
+        };
+      }).catch(() => {
+        // Keyboard plugin not available — no-op on web
       });
 
       return () => {
         cancelAnimationFrame(rafId);
         if (innerRaf) cancelAnimationFrame(innerRaf);
-        showListener.then((h) => h.remove()).catch(() => {});
-        hideListener.then((h) => h.remove()).catch(() => {});
+        cleanupKeyboard?.();
       };
     }
     return undefined;
