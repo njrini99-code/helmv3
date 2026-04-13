@@ -148,15 +148,15 @@
     /* scroll-behavior: smooth; -- Disabled: can feel sluggish */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    /* Lock horizontal scroll at the root — prevents any page from
-       accidentally side-scrolling on narrow iPhone widths. */
-    overflow-x: hidden;
-    max-width: 100vw;
   }
 
-  body {
-    overflow-x: hidden;
-    max-width: 100vw;
+  /* Lock horizontal scroll on mobile only — prevents iPhone side-scroll
+     without breaking desktop nested scroll containers (CRM panels etc.) */
+  @media (max-width: 1024px) {
+    html, body {
+      overflow-x: hidden;
+      max-width: 100vw;
+    }
   }
 
   /* GPU acceleration for smoother animations */
