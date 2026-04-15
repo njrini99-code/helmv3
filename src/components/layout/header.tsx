@@ -211,7 +211,7 @@ export function Header({ title, subtitle, children, backHref }: HeaderProps) {
                     onClick={() => setShowUserMenu(false)}
                   />
                   <UserMenuItem
-                    href="/help"
+                    href="/support"
                     icon={IconHelp}
                     label="Help & Support"
                     onClick={() => setShowUserMenu(false)}
