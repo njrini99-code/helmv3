@@ -15,7 +15,8 @@
 		"scrollEnabled": true,
 		"webContentsDebuggingEnabled": false,
 		"preferredContentMode": "mobile",
-		"contentInset": "never"
+		"contentInset": "never",
+		"appendUserAgent": "HelmSportsLabsApp"
 	},
 	"plugins": {
 		"Keyboard": {
