@@ -1,6 +1,34 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
 
+const NATIVE_UA_MARKER = 'HelmSportsLabsApp';
+
+// Routes that belong to the app itself. Anything outside of these on a native
+// request is treated as a marketing page and redirected away (App Store
+// Guideline 3.1.1 — no membership/pricing surfaces inside the iOS app).
+const APP_ROUTE_PREFIXES = [
+  '/golf',
+  '/baseball',
+  '/api',
+  '/auth',
+  '/support',
+  '/privacy',
+  '/terms',
+  '/dev',
+];
+
+function isNativeUserAgent(request: NextRequest): boolean {
+  const ua = request.headers.get('user-agent') ?? '';
+  return ua.includes(NATIVE_UA_MARKER);
+}
+
+function isMarketingRoute(pathname: string): boolean {
+  if (pathname === '/') return true;
+  return !APP_ROUTE_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+}
+
 /**
  * Proxy runs on every request to:
  * 1. Refresh the user's Supabase session
@@ -15,6 +43,11 @@ import { updateSession } from '@/lib/supabase/middleware';
  * Use proper authentication even in development.
  */
 export async function proxy(request: NextRequest) {
+  // App Store Guideline 3.1.1: block marketing routes for native iOS requests.
+  if (isNativeUserAgent(request) && isMarketingRoute(request.nextUrl.pathname)) {
+    return NextResponse.redirect(new URL('/golf/login', request.url));
+  }
+
   // Only bypass auth for specific dev design system routes if explicitly enabled
   const DEV_BYPASS_ROUTES = ['/dev/design-system', '/dev/components'];
 

@@ -32,7 +32,7 @@ import {
   IconCheck,
 } from '@/components/icons';
 import { useGolfUser } from '@/contexts/golf-user-context';
-import { triggerHaptic } from '@/lib/utils/capacitor';
+import { triggerHaptic, isNativeApp } from '@/lib/utils/capacitor';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { JoinTeamSection } from '@/components/golf/settings/JoinTeamSection';
 import { CoachHelmToggle } from '@/components/golf/coachhelm/v2';
@@ -207,7 +207,7 @@ export default function GolfSettingsPage() {
       }
       void triggerHaptic('success');
       showToast('Account deleted successfully', 'success');
-      window.location.href = '/';
+      window.location.href = isNativeApp() ? '/golf/login' : '/';
     } catch {
       void triggerHaptic('error');
       showToast('Failed to delete account', 'error');

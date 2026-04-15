@@ -9,6 +9,7 @@ import {
   FileText,
   ArrowRight,
 } from 'lucide-react';
+import { SupportHeader } from './SupportHeader';
 
 export const metadata: Metadata = {
   title: 'Support | Helm Sports Labs',
@@ -18,24 +19,12 @@ export const metadata: Metadata = {
 
 const faqs = [
   {
-    q: 'How do I become a member?',
-    a: 'Memberships are purchased on our website at helmsportslabs.com. Once you sign up and complete your membership on the web, you can log in to the iOS app with the same credentials to access your account on the go.',
-  },
-  {
-    q: 'Why can\'t I sign up inside the app?',
-    a: 'Helm Sports Labs is a membership platform. All sign-ups and membership purchases are handled on our website to keep the mobile experience focused on the features you use day-to-day. After becoming a member on helmsportslabs.com, simply log in to the app with your member credentials.',
-  },
-  {
     q: 'I forgot my password. How do I reset it?',
     a: 'On the login screen, tap "Forgot Password" and enter the email associated with your account. We\'ll send you a secure reset link. If it doesn\'t arrive within a few minutes, check your spam folder or email us at admin@helmsportslabs.com.',
   },
   {
     q: 'How do I delete my account?',
     a: 'Open the app, go to Settings, and tap "Delete Account". This permanently removes your profile, stats, and personal data. You can also email admin@helmsportslabs.com and we\'ll process the deletion within 7 days.',
-  },
-  {
-    q: 'Is Helm Sports Labs free to use?',
-    a: 'Yes — core features are free. Some advanced features (like CoachHelm AI insights and team management tools) may require a subscription. You\'ll see all pricing clearly before any purchase.',
   },
   {
     q: 'Which devices are supported?',
@@ -59,22 +48,7 @@ export default function SupportPage() {
   return (
     <div className="min-h-screen bg-[#FFFEFA]">
       {/* Header */}
-      <header className="border-b border-warm-200/60 bg-white/70 backdrop-blur-xl">
-        <div className="max-w-4xl mx-auto px-6 py-5 flex items-center justify-between">
-          <Link
-            href="/"
-            className="flex items-center gap-2 text-warm-900 font-semibold hover:opacity-80 transition-opacity"
-          >
-            <span className="text-xl">Helm Sports Labs</span>
-          </Link>
-          <Link
-            href="/"
-            className="text-sm text-warm-600 hover:text-warm-900 transition-colors"
-          >
-            Home
-          </Link>
-        </div>
-      </header>
+      <SupportHeader />
 
       <main className="max-w-4xl mx-auto px-6 py-12 md:py-16">
         {/* Hero */}
@@ -171,7 +145,7 @@ export default function SupportPage() {
           <h2 className="text-2xl font-bold text-warm-900 mb-6">
             More Resources
           </h2>
-          <div className="grid sm:grid-cols-3 gap-4">
+          <div className="grid sm:grid-cols-2 gap-4">
             <Link
               href="/privacy"
               className="flex items-center gap-3 p-5 bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass hover:bg-white/80 hover:shadow-card-hover transition-all duration-200"
@@ -185,13 +159,6 @@ export default function SupportPage() {
             >
               <FileText size={18} className="text-primary-600 flex-shrink-0" />
               <span className="font-medium text-warm-900">Terms of Service</span>
-            </Link>
-            <Link
-              href="/about"
-              className="flex items-center gap-3 p-5 bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass hover:bg-white/80 hover:shadow-card-hover transition-all duration-200"
-            >
-              <BookOpen size={18} className="text-primary-600 flex-shrink-0" />
-              <span className="font-medium text-warm-900">About Helm</span>
             </Link>
           </div>
         </section>

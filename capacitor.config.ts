@@ -19,6 +19,9 @@ const config: CapacitorConfig = {
     preferredContentMode: 'mobile',
     // Edge-to-edge content — web code handles env(safe-area-inset-*) itself
     contentInset: 'never',
+    // Marker appended to UA so the server-side proxy can detect native iOS
+    // requests and block marketing/membership pages (App Store Guideline 3.1.1).
+    appendUserAgent: 'HelmSportsLabsApp',
   },
   plugins: {
     Keyboard: {
