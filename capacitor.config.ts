@@ -6,7 +6,7 @@ const config: CapacitorConfig = {
   webDir: 'public',
   server: {
     // Point to the app (not the marketing landing page)
-    url: 'https://www.helmsportslabs.com/golf/login',
+    url: 'https://www.helmsportslabs.com/golf/welcome',
     cleartext: false,
     allowNavigation: ['*.helmsportslabs.com', 'helmsportslabs.com'],
   },

@@ -3,7 +3,7 @@
 	"appName": "Helm Sports Labs",
 	"webDir": "public",
 	"server": {
-		"url": "https://www.helmsportslabs.com/golf/login",
+		"url": "https://www.helmsportslabs.com/golf/welcome",
 		"cleartext": false,
 		"allowNavigation": [
 			"*.helmsportslabs.com",
