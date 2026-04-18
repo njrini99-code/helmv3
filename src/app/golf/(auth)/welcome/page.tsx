@@ -6,12 +6,17 @@ import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 
 // Animation timing constants (ms) — one source of truth.
-const T_EYEBROW_IN = 0;
-const T_RULE_IN = 400;
-const T_NAME_IN = 700;
-const T_FADE_OUT = 2200;
-const T_NAV = 2700;
-const T_FAILSAFE = 4500;
+// Measured from the moment `ready` becomes true (after identity is fetched).
+const T_GREETING_IN = 0;
+const T_RULE_IN = 500;
+const T_NAME_IN = 950;
+// Name animation finishes ~1950ms. Hold ~1050ms so the moment breathes,
+// then begin the exit. Total on-screen after data load: ~3s.
+const T_FADE_OUT = 3000;
+const T_NAV = 3500;
+// Failsafe: if router.replace hasn't committed after ~5.5s (service-worker
+// edge case, middleware loop), hard-navigate via window.location.
+const T_FAILSAFE = 5500;
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -164,7 +169,6 @@ function WelcomeContent() {
   const nextParam = searchParams.get('next');
   const [greeting] = useState(getGreeting);
   const [name, setName] = useState<string | null>(null);
-  const [role, setRole] = useState<'coach' | 'player' | 'generic'>('generic');
   const [ready, setReady] = useState(false);
   const [leaving, setLeaving] = useState(false);
 
@@ -210,14 +214,11 @@ function WelcomeContent() {
 
       if (coachName) {
         const last = extractLastName(coachName);
-        setName(last ?? 'Coach');
-        setRole('coach');
+        setName(last ? `Coach ${last}` : 'Coach');
       } else if (playerFirst) {
         setName(playerFirst);
-        setRole('player');
       } else {
         setName(null);
-        setRole('generic');
       }
 
       setReady(true);
@@ -274,11 +275,6 @@ function WelcomeContent() {
     }
   }, [ready, router]);
 
-  const roleLabel =
-    role === 'coach' ? 'COACH' :
-    role === 'player' ? 'PLAYER' :
-    null;
-
   const displayName = name ?? 'welcome back';
 
   return (
@@ -292,96 +288,83 @@ function WelcomeContent() {
       >
         <BackgroundScene />
 
-        {/* Content — editorial greeting in the upper half, course below */}
+        {/* Content — editorial greeting in upper third, course stays at bottom */}
         <m.div
           className="relative z-10 h-full flex flex-col items-center px-6"
           style={{
-            paddingTop: 'max(3rem, calc(env(safe-area-inset-top) + 2.25rem))',
+            paddingTop: 'max(4.5rem, calc(env(safe-area-inset-top) + 3.25rem))',
             paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
           }}
-          animate={{ opacity: leaving ? 0 : 1, y: leaving ? -6 : 0 }}
-          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+          initial={false}
+          animate={{
+            opacity: leaving ? 0 : 1,
+            scale: leaving ? 1.035 : 1,
+            y: leaving ? -4 : 0,
+          }}
+          transition={{ duration: 0.55, ease: [0.32, 0.72, 0, 1] }}
         >
-          {/* Role eyebrow (appears subtly above greeting) */}
-          {ready && roleLabel && (
-            <m.div
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{
-                duration: 0.5,
-                delay: T_EYEBROW_IN / 1000,
-                ease: [0.22, 1, 0.36, 1],
-              }}
-              style={{
-                fontSize: 11,
-                fontWeight: 600,
-                letterSpacing: '0.24em',
-                color: '#15803D',
-                textTransform: 'uppercase',
-              }}
-            >
-              {roleLabel}
-            </m.div>
-          )}
-
-          {/* Greeting — editorial pairing: sans-eyebrow + serif-ish display name */}
-          <div className="mt-6 flex flex-col items-center text-center">
+          <div className="flex flex-col items-center text-center">
             {ready && (
               <>
+                {/* Greeting — system serif italic for editorial contrast */}
                 <m.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{
-                    duration: 0.65,
-                    delay: T_EYEBROW_IN / 1000 + 0.1,
+                    duration: 0.75,
+                    delay: T_GREETING_IN / 1000,
                     ease: [0.22, 1, 0.36, 1],
                   }}
                   style={{
-                    fontSize: 20,
+                    fontSize: 21,
                     fontWeight: 400,
                     color: '#78716c',
-                    letterSpacing: '-0.01em',
-                    lineHeight: 1.1,
+                    letterSpacing: '-0.015em',
+                    lineHeight: 1.15,
                     fontStyle: 'italic',
+                    fontFamily: 'ui-serif, "New York", Georgia, "Times New Roman", serif',
                   }}
                 >
                   {greeting},
                 </m.div>
 
-                {/* Drawing accent rule — subtle transition between greeting and name */}
+                {/* Hairline accent — draws in from the centre */}
                 <m.div
                   initial={{ scaleX: 0, opacity: 0 }}
                   animate={{ scaleX: 1, opacity: 1 }}
                   transition={{
-                    duration: 0.55,
+                    duration: 0.6,
                     delay: T_RULE_IN / 1000,
                     ease: [0.22, 1, 0.36, 1],
                   }}
-                  className="my-4"
+                  className="my-5"
                   style={{
-                    width: 44,
+                    width: 48,
                     height: 1,
-                    background: 'linear-gradient(90deg, transparent, #a8a29e 50%, transparent)',
+                    background: 'linear-gradient(90deg, transparent, rgba(168,162,158,0.85) 50%, transparent)',
                     transformOrigin: '50% 50%',
                   }}
                 />
 
+                {/* Display name — the hero. Subtle blur-in + rise, with a gentle breathing hold. */}
                 <m.div
-                  initial={{ opacity: 0, y: 14, filter: 'blur(4px)' }}
+                  initial={{ opacity: 0, y: 16, filter: 'blur(6px)' }}
                   animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
                   transition={{
-                    duration: 0.9,
+                    duration: 1.0,
                     delay: T_NAME_IN / 1000,
                     ease: [0.22, 1, 0.36, 1],
                   }}
                   style={{
-                    fontSize: 'clamp(40px, 11vw, 54px)',
+                    fontSize: 'clamp(40px, 11.5vw, 56px)',
                     fontWeight: 700,
                     color: '#1c1917',
-                    letterSpacing: '-0.042em',
+                    letterSpacing: '-0.045em',
                     lineHeight: 1.02,
                     textWrap: 'balance' as const,
                     filter: 'drop-shadow(0 1px 1px rgba(60,40,20,0.08))',
+                    fontFeatureSettings: '"ss01", "ss02"',
+                    maxWidth: '90vw',
                   }}
                 >
                   {displayName}.
@@ -390,7 +373,8 @@ function WelcomeContent() {
             )}
           </div>
 
-          {/* Spacer — pushes everything above the course silhouette */}
+          {/* Spacer — keeps the greeting in the upper third so the course
+              illustration remains visible and uncrowded at the bottom */}
           <div className="flex-1" />
         </m.div>
 
