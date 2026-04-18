@@ -10,11 +10,10 @@ import { createClient } from '@/lib/supabase/client';
 import { isNativeApp } from '@/lib/utils/capacitor';
 
 // ─────────────────────────────────────────────────────────────
-// Painterly "golf course at dusk" scene
-// Ported from the Scenic Chooser design (Helm design file)
+// Painterly "golf course at dusk" scene — pure background decoration.
+// Ported from the Scenic Chooser design (Helm design file).
 // ─────────────────────────────────────────────────────────────
 function CourseScene() {
-  // Dusk palette — matches the design file
   const P = {
     cream1: '#FFFEFA',
     cream2: '#FFF7E0',
@@ -29,17 +28,7 @@ function CourseScene() {
     flag: '#b83a29',
   };
 
-  const Tree = ({
-    x,
-    y,
-    scale = 1,
-    sway = 0,
-  }: {
-    x: number;
-    y: number;
-    scale?: number;
-    sway?: number;
-  }) => (
+  const Tree = ({ x, y, scale = 1, sway = 0 }: { x: number; y: number; scale?: number; sway?: number }) => (
     <g transform={`translate(${x}, ${y})`}>
       <g
         style={{
@@ -69,7 +58,6 @@ function CourseScene() {
 
   return (
     <div aria-hidden="true" style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
-      {/* Cream field */}
       <div
         style={{
           position: 'absolute',
@@ -77,8 +65,6 @@ function CourseScene() {
           background: `linear-gradient(180deg, ${P.cream1} 0%, ${P.cream2} 55%, ${P.cream3} 100%)`,
         }}
       />
-
-      {/* Soft warm halo up top */}
       <div
         style={{
           position: 'absolute',
@@ -91,83 +77,35 @@ function CourseScene() {
           pointerEvents: 'none',
         }}
       />
-
-      {/* Course bottom */}
       <svg
-        style={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          width: '100%',
-          height: 340,
-          pointerEvents: 'none',
-          display: 'block',
-        }}
+        style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: 340, pointerEvents: 'none', display: 'block' }}
         viewBox="0 0 390 340"
         preserveAspectRatio="xMidYMax slice"
       >
-        {/* Rolling fairway */}
         <path
           d="M -20 220 C 40 200, 90 225, 150 215 C 210 200, 260 225, 330 215 C 370 210, 400 220, 410 225 L 410 360 L -20 360 Z"
           fill={P.grass}
           opacity="0.85"
         />
-        {/* Fairway shadow curves */}
-        <path
-          d="M 20 260 Q 120 248, 220 262 Q 310 255, 390 268"
-          stroke={P.grassShadow}
-          strokeWidth="1.5"
-          fill="none"
-          opacity="0.5"
-        />
-        <path
-          d="M -10 300 Q 100 290, 200 302 Q 300 295, 400 305"
-          stroke={P.grassShadow}
-          strokeWidth="1.5"
-          fill="none"
-          opacity="0.4"
-        />
-        {/* Left bunker */}
+        <path d="M 20 260 Q 120 248, 220 262 Q 310 255, 390 268" stroke={P.grassShadow} strokeWidth="1.5" fill="none" opacity="0.5" />
+        <path d="M -10 300 Q 100 290, 200 302 Q 300 295, 400 305" stroke={P.grassShadow} strokeWidth="1.5" fill="none" opacity="0.4" />
         <path
           d="M 30 240 C 10 238, -5 252, 5 268 C 15 285, 55 288, 95 280 C 130 275, 145 260, 125 248 C 95 240, 60 238, 30 240 Z"
           fill={P.sand}
         />
-        <path
-          d="M 10 270 C 35 282, 75 284, 115 276"
-          stroke={P.sandShadow}
-          strokeWidth="1.2"
-          fill="none"
-          opacity="0.6"
-        />
-        {/* Right bunker */}
+        <path d="M 10 270 C 35 282, 75 284, 115 276" stroke={P.sandShadow} strokeWidth="1.2" fill="none" opacity="0.6" />
         <path
           d="M 290 260 C 315 254, 365 258, 395 268 C 405 285, 375 295, 340 292 C 305 288, 275 278, 285 266 Z"
           fill={P.sand}
         />
-        <path
-          d="M 300 280 C 335 290, 375 288, 395 280"
-          stroke={P.sandShadow}
-          strokeWidth="1.2"
-          fill="none"
-          opacity="0.6"
-        />
-        {/* Putting green */}
+        <path d="M 300 280 C 335 290, 375 288, 395 280" stroke={P.sandShadow} strokeWidth="1.2" fill="none" opacity="0.6" />
         <ellipse cx="200" cy="260" rx="72" ry="22" fill={P.grassShadow} opacity="0.95" />
         <ellipse cx="200" cy="258" rx="66" ry="18" fill={P.grass} opacity="0.7" />
-        {/* Cup */}
         <ellipse cx="205" cy="258" rx="4.5" ry="2.2" fill="#1a1612" />
         <ellipse cx="205" cy="257.5" rx="3.5" ry="1.5" fill="#000" />
-
-        {/* Pin flag */}
         <g transform="translate(205, 258)">
           <line x1="0" y1="0" x2="0" y2="-52" stroke="#2d2a25" strokeWidth="2.4" strokeLinecap="round" />
-          <g
-            style={{
-              transformBox: 'fill-box',
-              transformOrigin: '0% 50%',
-              animation: 'flagFlutter 2.4s ease-in-out infinite',
-            }}
-          >
+          <g style={{ transformBox: 'fill-box', transformOrigin: '0% 50%', animation: 'flagFlutter 2.4s ease-in-out infinite' }}>
             <path
               d="M 0 -52 C 7 -54, 15 -50, 22 -52 L 22 -38 C 15 -36, 7 -40, 0 -38 Z"
               fill={P.flag}
@@ -179,18 +117,8 @@ function CourseScene() {
           <circle cx="0" cy="0" r="2" fill="#1c1917" />
         </g>
       </svg>
-
-      {/* Trees — separate layer so they animate independently */}
       <svg
-        style={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          width: '100%',
-          height: 340,
-          pointerEvents: 'none',
-          display: 'block',
-        }}
+        style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: 340, pointerEvents: 'none', display: 'block' }}
         viewBox="0 0 390 340"
         preserveAspectRatio="xMidYMax slice"
       >
@@ -201,8 +129,6 @@ function CourseScene() {
         <Tree x={112} y={278} scale={0.7} sway={1.5} />
         <Tree x={290} y={282} scale={0.7} sway={2.5} />
       </svg>
-
-      {/* Film grain */}
       <svg
         style={{
           position: 'absolute',
@@ -215,22 +141,20 @@ function CourseScene() {
           animation: 'grainShift 1.4s steps(4) infinite',
         }}
       >
-        <filter id="grain-filter">
+        <filter id="grain-filter-login">
           <feTurbulence type="fractalNoise" baseFrequency="1.8" numOctaves="2" stitchTiles="stitch" />
         </filter>
-        <rect width="100%" height="100%" filter="url(#grain-filter)" />
+        <rect width="100%" height="100%" filter="url(#grain-filter-login)" />
       </svg>
-
-      {/* Top fade for readability */}
       <div
         style={{
           position: 'absolute',
           top: 0,
           left: 0,
           right: 0,
-          height: 260,
+          height: 220,
           background:
-            'linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.5) 35%, rgba(255,255,255,0.15) 75%, rgba(255,255,255,0) 100%)',
+            'linear-gradient(180deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.45) 40%, rgba(255,255,255,0) 100%)',
           pointerEvents: 'none',
         }}
       />
@@ -265,16 +189,12 @@ function LoginContent() {
 
   useEffect(() => {
     async function checkAuth() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data } = await supabase.from('users').select('role').eq('id', user.id).maybeSingle();
         const admin = (data?.role as string) === 'admin';
         setIsAdmin(admin);
         setIsLoggedIn(true);
-        // Already signed in — route through the greeting animation on the way
-        // to the dashboard so the cold-start experience matches fresh sign-in.
         const dest = returnTo && (returnTo.startsWith('/golf/') || returnTo.startsWith('/baseball/'))
           ? returnTo
           : admin
@@ -300,11 +220,10 @@ function LoginContent() {
   return (
     <LazyMotion features={domAnimation}>
       <div
-        className="relative min-h-dvh overflow-hidden"
+        className="relative overflow-hidden"
         style={{
+          height: '100dvh',
           fontFamily: '"DM Sans", -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif',
-          paddingTop: 'env(safe-area-inset-top)',
-          paddingBottom: 'env(safe-area-inset-bottom)',
         }}
       >
         <a
@@ -316,24 +235,27 @@ function LoginContent() {
 
         <CourseScene />
 
-        {/* Content */}
+        {/* Content — flex column that fits any iPhone without scroll */}
         <div
-          className="relative z-10 flex flex-col items-center min-h-dvh px-5 pb-6"
-          style={{ paddingTop: 'max(5rem, calc(env(safe-area-inset-top) + 3rem))' }}
+          className="relative z-10 h-full flex flex-col items-center px-5"
+          style={{
+            paddingTop: 'max(2.5rem, calc(env(safe-area-inset-top) + 1.75rem))',
+            paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
+          }}
         >
           {/* Brand lockup */}
           <m.div
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className="flex flex-col items-center gap-3"
+            className="flex flex-col items-center gap-2.5 shrink-0"
           >
             <div style={{ animation: 'logoFloat 5s ease-in-out infinite' }}>
               <Image
                 src="/helm-golf-logo-transparent.png"
                 alt=""
-                width={76}
-                height={76}
+                width={64}
+                height={64}
                 className="object-contain"
                 priority
                 unoptimized
@@ -342,7 +264,7 @@ function LoginContent() {
             </div>
             <h1
               style={{
-                fontSize: 30,
+                fontSize: 28,
                 fontWeight: 600,
                 letterSpacing: '-0.033em',
                 lineHeight: 1,
@@ -362,23 +284,22 @@ function LoginContent() {
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-            className="w-full max-w-[420px] mt-8"
+            className="w-full max-w-[420px] mt-5 shrink-0"
             style={{
-              padding: '28px 22px 24px',
-              background: 'rgba(255,253,245,0.78)',
+              padding: '22px 20px 18px',
+              background: 'rgba(255,253,245,0.82)',
               backdropFilter: 'blur(28px) saturate(180%)',
               WebkitBackdropFilter: 'blur(28px) saturate(180%)',
-              borderRadius: 28,
+              borderRadius: 24,
               border: '0.5px solid rgba(255,255,255,0.9)',
               boxShadow:
                 '0 20px 50px rgba(60, 40, 20, 0.18), 0 4px 12px rgba(60, 40, 20, 0.08), inset 0 1px 0 rgba(255,255,255,0.95)',
             }}
           >
-            {/* Title */}
             <div className="text-center">
               <h2
                 style={{
-                  fontSize: 27,
+                  fontSize: 24,
                   fontWeight: 700,
                   color: '#1c1917',
                   letterSpacing: '-0.03em',
@@ -389,21 +310,19 @@ function LoginContent() {
               </h2>
             </div>
 
-            {/* Success message */}
             {successMessage && (
               <m.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mt-5 bg-primary-400/10 border border-primary-400/30 text-primary-700 px-4 py-3 rounded-xl text-sm"
+                className="mt-4 bg-primary-400/10 border border-primary-400/30 text-primary-700 px-4 py-3 rounded-xl text-sm"
               >
                 {successMessage}
               </m.div>
             )}
 
-            {/* Form body */}
-            <div className="mt-5">
+            <div className="mt-4">
               {checkingAuth ? (
-                <div className="flex justify-center py-8">
+                <div className="flex justify-center py-6">
                   <span className="flex items-center gap-1.5" aria-label="Loading">
                     <span className="w-2 h-2 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
                     <span className="w-2 h-2 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
@@ -435,50 +354,32 @@ function LoginContent() {
                 <GolfSignInForm />
               )}
             </div>
+
+            {/* Tiny caption below form: signup link (web) + legal (all) */}
+            {!isLoggedIn && !checkingAuth && (
+              <div
+                className="mt-4 pt-3 text-center"
+                style={{ borderTop: '0.5px solid rgba(120,113,108,0.14)' }}
+              >
+                {!isNative && (
+                  <p className="text-warm-600 text-[12px]">
+                    New to GolfHelm?{' '}
+                    <Link href={signupHref} className="text-primary-700 font-semibold hover:text-primary-600 transition-colors">
+                      Create an account
+                    </Link>
+                  </p>
+                )}
+                <div className="flex items-center justify-center gap-1.5 text-[10px] text-warm-500 mt-1.5 tracking-[0.02em]">
+                  <Link href="/privacy" className="hover:text-warm-700 transition-colors">Privacy</Link>
+                  <span className="text-warm-400" aria-hidden="true">·</span>
+                  <Link href="/terms" className="hover:text-warm-700 transition-colors">Terms</Link>
+                </div>
+              </div>
+            )}
           </m.div>
 
-          {/* Footer links */}
-          <m.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5, duration: 0.5 }}
-            className="w-full max-w-[420px] mt-auto"
-          >
-            {!isLoggedIn && !checkingAuth && !isNative && (
-              <p className="text-center mt-6 text-warm-600 text-sm">
-                Don&apos;t have an account?{' '}
-                <Link href={signupHref} className="text-primary-700 font-semibold hover:text-primary-600 transition-colors">
-                  Sign up
-                </Link>
-              </p>
-            )}
-
-            {isLoggedIn && isAdmin && (
-              <p className="text-center mt-4">
-                <Link href="/golf/admin" className="text-xs text-warm-500 hover:text-warm-700 transition-colors">
-                  Admin Dashboard
-                </Link>
-              </p>
-            )}
-
-            <div className="flex items-center justify-center gap-2 mt-5">
-              <Link
-                href="/privacy"
-                className="text-warm-500 hover:text-warm-700 transition-colors text-xs px-3 py-3 -my-3 min-h-[44px] flex items-center rounded-lg"
-              >
-                Privacy
-              </Link>
-              <span className="text-warm-400" aria-hidden="true">
-                ·
-              </span>
-              <Link
-                href="/terms"
-                className="text-warm-500 hover:text-warm-700 transition-colors text-xs px-3 py-3 -my-3 min-h-[44px] flex items-center rounded-lg"
-              >
-                Terms
-              </Link>
-            </div>
-          </m.div>
+          {/* Course scene decorates the remaining space below naturally — nothing else here */}
+          <div className="flex-1" />
         </div>
 
         <style jsx>{`
@@ -522,7 +423,7 @@ export default function GolfLoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-dvh flex items-center justify-center" style={{ background: '#FFFEFA' }}>
+        <div className="flex items-center justify-center" style={{ height: '100dvh', background: '#FFFEFA' }}>
           <span className="flex items-center gap-1.5" aria-label="Loading">
             <span className="w-2 h-2 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
             <span className="w-2 h-2 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
