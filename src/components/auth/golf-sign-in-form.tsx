@@ -84,13 +84,22 @@ export function GolfSignInForm() {
       // redirect to onboarding with the joinCode anyway.
       const needsOnboarding = result.redirectTo === '/golf/coach' || result.redirectTo === '/golf/player';
 
+      let destination: string;
       if (storedReturnTo && !needsOnboarding && isValidReturnTo(storedReturnTo)) {
         sessionStorage.removeItem('golf_login_returnTo');
-        router.push(storedReturnTo);
+        destination = storedReturnTo;
       } else {
         // Clear stale returnTo if present — onboarding takes priority
         if (storedReturnTo) sessionStorage.removeItem('golf_login_returnTo');
-        router.push(result.redirectTo || '/golf/dashboard');
+        destination = result.redirectTo || '/golf/dashboard';
+      }
+
+      // Skip the greeting animation for onboarding flows (user hasn't set up
+      // their profile yet — the animation wouldn't know their name).
+      if (needsOnboarding) {
+        router.push(destination);
+      } else {
+        router.push(`/golf/welcome?next=${encodeURIComponent(destination)}`);
       }
     } catch {
       setError('An unexpected error occurred. Please try again.');

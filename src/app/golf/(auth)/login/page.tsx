@@ -268,15 +268,26 @@ function LoginContent() {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      setIsLoggedIn(!!user);
       if (user) {
         const { data } = await supabase.from('users').select('role').eq('id', user.id).maybeSingle();
-        setIsAdmin((data?.role as string) === 'admin');
+        const admin = (data?.role as string) === 'admin';
+        setIsAdmin(admin);
+        setIsLoggedIn(true);
+        // Already signed in — route through the greeting animation on the way
+        // to the dashboard so the cold-start experience matches fresh sign-in.
+        const dest = returnTo && (returnTo.startsWith('/golf/') || returnTo.startsWith('/baseball/'))
+          ? returnTo
+          : admin
+          ? '/golf/admin'
+          : '/golf/dashboard';
+        router.replace(`/golf/welcome?next=${encodeURIComponent(dest)}`);
+        return;
       }
+      setIsLoggedIn(false);
       setCheckingAuth(false);
     }
     checkAuth();
-  }, [supabase, supabase.auth]);
+  }, [supabase, supabase.auth, returnTo, router]);
 
   async function handleSignOut() {
     setIsLoggingOut(true);
