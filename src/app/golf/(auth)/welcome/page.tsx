@@ -10,20 +10,48 @@ import { createClient } from '@/lib/supabase/client';
 const T_GREETING_IN = 0;
 const T_RULE_IN = 500;
 const T_NAME_IN = 950;
-// Name animation finishes ~1950ms. Hold ~1050ms so the moment breathes,
-// then begin the exit. Total on-screen after data load: ~3s.
-const T_FADE_OUT = 3000;
-const T_NAV = 3500;
-// Failsafe: if router.replace hasn't committed after ~5.5s (service-worker
+const T_TAGLINE_IN = 1500;
+// Tagline animation finishes ~2300ms. Hold ~1100ms, then begin the exit.
+// Total on-screen after data load: ~3.9s.
+const T_FADE_OUT = 3400;
+const T_NAV = 3900;
+// Failsafe: if router.replace hasn't committed after ~6s (service-worker
 // edge case, middleware loop), hard-navigate via window.location.
-const T_FAILSAFE = 5500;
+const T_FAILSAFE = 6000;
 
-function getGreeting(): string {
+type TimeOfDay = 'morning' | 'afternoon' | 'evening';
+type Role = 'coach' | 'player' | 'generic';
+
+function getTimeOfDay(): TimeOfDay {
   const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 17) return 'Good afternoon';
-  return 'Good evening';
+  if (h < 12) return 'morning';
+  if (h < 17) return 'afternoon';
+  return 'evening';
 }
+
+function getGreeting(t: TimeOfDay): string {
+  return t === 'morning' ? 'Good morning' : t === 'afternoon' ? 'Good afternoon' : 'Good evening';
+}
+
+// Role × time-of-day copy matrix. Taglines are understated and golf-native —
+// they should feel like something a program director would say, not a chatbot.
+const TAGLINES: Record<Role, Record<TimeOfDay, string>> = {
+  coach: {
+    morning: 'Your team is ready.',
+    afternoon: "Let's make it count.",
+    evening: 'Another round in the books.',
+  },
+  player: {
+    morning: 'A good day to be on the course.',
+    afternoon: 'Stay in rhythm.',
+    evening: 'Log today, grow tomorrow.',
+  },
+  generic: {
+    morning: "Let's get started.",
+    afternoon: 'Welcome back.',
+    evening: 'Welcome back.',
+  },
+};
 
 function isSafeInternalPath(path: string | null): path is string {
   if (!path) return false;
@@ -167,8 +195,12 @@ function WelcomeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextParam = searchParams.get('next');
-  const [greeting] = useState(getGreeting);
+  // Time-of-day is captured once at mount — a user isn't realistically
+  // going to be on this screen long enough for it to change mid-animation.
+  const [timeOfDay] = useState<TimeOfDay>(getTimeOfDay);
+  const greeting = getGreeting(timeOfDay);
   const [name, setName] = useState<string | null>(null);
+  const [role, setRole] = useState<Role>('generic');
   const [ready, setReady] = useState(false);
   const [leaving, setLeaving] = useState(false);
 
@@ -215,10 +247,13 @@ function WelcomeContent() {
       if (coachName) {
         const last = extractLastName(coachName);
         setName(last ? `Coach ${last}` : 'Coach');
+        setRole('coach');
       } else if (playerFirst) {
         setName(playerFirst);
+        setRole('player');
       } else {
         setName(null);
+        setRole('generic');
       }
 
       setReady(true);
@@ -275,7 +310,8 @@ function WelcomeContent() {
     }
   }, [ready, router]);
 
-  const displayName = name ?? 'welcome back';
+  const displayName = name ?? 'Welcome back';
+  const tagline = TAGLINES[role][timeOfDay];
 
   return (
     <LazyMotion features={domAnimation}>
@@ -368,6 +404,33 @@ function WelcomeContent() {
                   }}
                 >
                   {displayName}.
+                </m.div>
+
+                {/* Tagline — role × time-of-day adaptive. Editorial italic,
+                    warmer tone than the greeting so the hierarchy stays
+                    greeting (cool grey) → name (near-black) → tagline (warm). */}
+                <m.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{
+                    duration: 0.8,
+                    delay: T_TAGLINE_IN / 1000,
+                    ease: [0.22, 1, 0.36, 1],
+                  }}
+                  className="mt-5"
+                  style={{
+                    fontSize: 16,
+                    fontWeight: 400,
+                    color: '#8b7355',
+                    letterSpacing: '-0.005em',
+                    lineHeight: 1.25,
+                    fontStyle: 'italic',
+                    fontFamily: 'ui-serif, "New York", Georgia, "Times New Roman", serif',
+                    textWrap: 'balance' as const,
+                    maxWidth: '80vw',
+                  }}
+                >
+                  {tagline}
                 </m.div>
               </>
             )}
