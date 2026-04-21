@@ -136,13 +136,24 @@ export function CoachDetailPanel(props: CoachDetailPanelProps) {
 }
 
 function CoachDetailPanelInner({
-  coach,
+  coach: coachProp,
   onClose,
   onUpdate,
   statusConfig,
   priorityConfig,
 }: CoachDetailPanelProps) {
   const { toast } = useToast();
+
+  // The list-view fetch is narrowed for payload size, so heavy columns
+  // (internal_comments, budget_range, timezone, athletics_url,
+  // best_contact_*) arrive as nulls in the prop. We hydrate the full row
+  // once when the panel opens and overlay onto the prop so the UI sees
+  // real values.
+  const [hydratedCoach, setHydratedCoach] = useState<Partial<Coach> | null>(null);
+  const coach = useMemo<Coach>(
+    () => (hydratedCoach ? { ...coachProp, ...hydratedCoach } : coachProp),
+    [coachProp, hydratedCoach],
+  );
 
   const [logs, setLogs] = useState<ContactLog[]>([]);
   const [events, setEvents] = useState<CrmEvent[]>([]);
@@ -179,6 +190,26 @@ function CoachDetailPanelInner({
   const [showInfo, setShowInfo] = useState(false);
 
   const supabase = createClient();
+
+  // --------------------------------------------------------------------------
+  // Hydrate full coach row on open (list view fetches a narrow column set).
+  // --------------------------------------------------------------------------
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('crm_coaches')
+        .select(
+          'internal_comments, budget_range, timezone, best_contact_method, best_contact_time, athletics_url, highlight_color, source, is_archived, archived_at, archived_by',
+        )
+        .eq('id', coachProp.id)
+        .maybeSingle();
+      if (!cancelled && data) {
+        setHydratedCoach(data as Partial<Coach>);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [coachProp.id, supabase]);
 
   // --------------------------------------------------------------------------
   // Data fetching

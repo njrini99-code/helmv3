@@ -143,19 +143,93 @@ export default function CRMPage() {
   // ============================================================================
   // DATA FETCHING
   // ============================================================================
+  // Narrowed column list for the list/pipeline/conferences/dashboard views.
+  // Heavy/rarely-used columns (internal_comments, highlight_color,
+  // best_contact_method, best_contact_time, budget_range, timezone, source,
+  // archived_*, created_by, athletics_url) are dropped from the list payload
+  // and fetched on-demand by CoachDetailPanel / BulkEmailModal on open.
+  //
+  // Columns kept because they're used by: CoachTable, filteredCoaches,
+  // stats, CSV export, CoachDetailPanel (via prop), BulkEmailModal (via prop).
+  const CRM_COACHES_LIST_COLUMNS = [
+    'id',
+    'name',
+    'title',
+    'email',
+    'phone',
+    'school',
+    'conference',
+    'division',
+    'program',
+    'status',
+    'priority',
+    'is_starred',
+    'notes',
+    'tags',
+    'team_size',
+    'current_software',
+    'decision_timeline',
+    'pain_points',
+    'last_contacted_at',
+    'next_follow_up_at',
+    'email_status',
+    'last_email_event_type',
+    'last_email_event_at',
+    'created_at',
+    'updated_at',
+  ].join(', ');
+
   const fetchAllCoaches = useCallback(async () => {
     try {
       const { data } = await supabase
         .from('crm_coaches')
-        .select('*')
+        .select(CRM_COACHES_LIST_COLUMNS)
         .order('is_starred', { ascending: false })
         .order('priority', { ascending: false })
         .order('updated_at', { ascending: false });
       // Precompute a lowercased search blob once at fetch time so we don't
       // call toLowerCase() 4x per row per keystroke in filteredCoaches.
-      const rows = (data || []) as Coach[];
+      // The dropped columns (internal_comments, highlight_color, etc.) are
+      // filled with nulls / defaults so callers still match the Coach shape.
+      const rows = (data || []) as Partial<Coach>[];
       const coachData: Array<Coach & { _searchBlob: string }> = rows.map(c => ({
-        ...c,
+        // fields we fetched
+        id: c.id!,
+        name: c.name ?? '',
+        title: c.title ?? null,
+        email: c.email ?? null,
+        phone: c.phone ?? null,
+        school: c.school ?? '',
+        conference: c.conference ?? '',
+        division: (c.division ?? 'D3') as Coach['division'],
+        program: (c.program ?? 'mens') as Coach['program'],
+        status: (c.status ?? 'new_lead') as Coach['status'],
+        priority: c.priority ?? 0,
+        is_starred: c.is_starred ?? false,
+        notes: c.notes ?? null,
+        tags: c.tags ?? null,
+        team_size: c.team_size ?? null,
+        current_software: c.current_software ?? null,
+        decision_timeline: c.decision_timeline ?? null,
+        pain_points: c.pain_points ?? null,
+        last_contacted_at: c.last_contacted_at ?? null,
+        next_follow_up_at: c.next_follow_up_at ?? null,
+        email_status: (c.email_status ?? 'unknown') as Coach['email_status'],
+        created_at: c.created_at ?? '',
+        updated_at: c.updated_at ?? '',
+        // fields we deliberately didn't fetch — null/default them.
+        // CoachDetailPanel and BulkEmailModal lazy-load these when needed.
+        highlight_color: null,
+        internal_comments: null,
+        budget_range: null,
+        best_contact_method: null,
+        best_contact_time: null,
+        timezone: null,
+        source: null,
+        is_archived: false,
+        archived_at: null,
+        archived_by: null,
+        athletics_url: null,
         _searchBlob: `${c.name ?? ''} ${c.school ?? ''} ${c.email ?? ''} ${c.conference ?? ''}`.toLowerCase(),
       }));
       setAllCoaches(coachData);
@@ -166,6 +240,8 @@ export default function CRMPage() {
     } finally {
       setLoading(false);
     }
+    // CRM_COACHES_LIST_COLUMNS is a stable string literal.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase]);
 
   // Client-side filtering from allCoaches — eliminates server round-trips on every keystroke
