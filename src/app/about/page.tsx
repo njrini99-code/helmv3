@@ -5,7 +5,6 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { Navigation } from '@/components/landing/Navigation';
 import { Footer } from '@/components/landing/Footer';
-import { SmoothScroll } from '@/components/landing/SmoothScroll';
 
 const pillars = [
   {
@@ -64,8 +63,6 @@ export default function AboutPage() {
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary-600 focus:text-white focus:rounded-lg focus:shadow-lg">
         Skip to main content
       </a>
-      <SmoothScroll />
-
       {/* Navigation */}
       <div className="relative z-10">
         <Navigation />
