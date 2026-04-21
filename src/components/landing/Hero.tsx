@@ -69,12 +69,12 @@ function EmailCapture() {
           placeholder="coach@university.edu"
           required
           disabled={loading}
-          className="px-5 py-3.5 rounded-xl bg-white/[0.1] border border-white/[0.18] text-white placeholder:text-white/40 focus:outline-none focus:border-primary-500/50 focus:bg-white/[0.14] focus:ring-1 focus:ring-primary-500/20 transition-all disabled:opacity-50 text-sm w-full sm:w-72"
+          className="px-5 py-3.5 rounded-xl bg-white/[0.1] border border-white/[0.18] text-white placeholder:text-white/40 focus:outline-none focus:border-primary-500/50 focus:bg-white/[0.14] focus:ring-1 focus:ring-primary-500/20 transition-[background-color,border-color,box-shadow] duration-150 disabled:opacity-50 text-sm w-full sm:w-72"
         />
         <button
           type="submit"
           disabled={loading}
-          className="px-7 py-3.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-semibold text-sm transition-all whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5 active:translate-y-0"
+          className="px-7 py-3.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-semibold text-sm transition-[background-color,transform,opacity] duration-150 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5 active:translate-y-0"
         >
           {loading ? (
             <span className="flex items-center justify-center gap-2">
@@ -227,7 +227,7 @@ export function Hero() {
             >
               <Link href="/products#golfhelm" className="group inline-flex">
                 <div
-                  className="flex items-center gap-3 px-5 py-3 rounded-full border border-white/[0.1] hover:border-white/[0.18] transition-all duration-200 group-hover:scale-[1.02] group-active:scale-[0.98]"
+                  className="flex items-center gap-3 px-5 py-3 rounded-full border border-white/[0.1] hover:border-white/[0.18] transition-[border-color,transform] duration-200 group-hover:scale-[1.02] group-active:scale-[0.98]"
                   style={{
                     background: 'rgba(255,255,255,0.05)',
                     backdropFilter: 'blur(12px)',
@@ -244,7 +244,7 @@ export function Hero() {
                   <span className="text-white/70 text-sm font-medium tracking-tight group-hover:text-white/90 transition-colors">
                     Explore GolfHelm
                   </span>
-                  <svg className="w-4 h-4 text-white/30 group-hover:text-white/50 group-hover:translate-x-0.5 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <svg className="w-4 h-4 text-white/30 group-hover:text-white/50 group-hover:translate-x-0.5 transition-[color,transform] duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                   </svg>
                 </div>
