@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import {
   IconChartBar,
@@ -70,7 +70,6 @@ type TabId = (typeof TABS)[number]['id'];
 // MAIN COMPONENT
 // ============================================================================
 export default function CRMPage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
 
   // coaches state removed — using filteredCoaches (client-side) from allCoaches instead
@@ -79,8 +78,18 @@ export default function CRMPage() {
   // loading is set to false after first fetchAllCoaches completes
   const [error, setError] = useState<string | null>(null);
 
-  const urlTab = searchParams.get('tab') as TabId | null;
-  const activeTab: TabId = TABS.some((t) => t.id === urlTab) ? urlTab! : 'dashboard';
+  // Tab state lives in local React state. URL is kept in sync via
+  // history.replaceState so deep links still work, but we don't pay the
+  // cost of a router.replace() soft navigation on every tab click.
+  const [activeTab, setActiveTabState] = useState<TabId>(() => {
+    // Initial value is derived once from the URL. After that, local state
+    // is the source of truth.
+    if (typeof window !== 'undefined') {
+      const t = new URLSearchParams(window.location.search).get('tab') as TabId | null;
+      if (t && TABS.some((tab) => tab.id === t)) return t;
+    }
+    return 'dashboard';
+  });
 
   const [filters, setFilters] = useState<Filters>({
     status: 'all',
@@ -121,11 +130,22 @@ export default function CRMPage() {
   // ============================================================================
   // TAB NAVIGATION
   // ============================================================================
-  function setActiveTab(tab: TabId) {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('tab', tab);
-    router.replace(`/golf/admin/crm?${params.toString()}`, { scroll: false });
-  }
+  const setActiveTab = useCallback((tab: TabId) => {
+    setActiveTabState(tab);
+    // Keep URL in sync for bookmarkability WITHOUT triggering a Next.js
+    // soft navigation / server re-eval.
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      params.set('tab', tab);
+      const newUrl = `${window.location.pathname}?${params.toString()}`;
+      window.history.replaceState(null, '', newUrl);
+    }
+  }, []);
+
+  // Register the 1-7 number keyboard shortcut once, using a ref so we
+  // don't churn listeners on every tab change.
+  const activeTabRef = useRef(activeTab);
+  useEffect(() => { activeTabRef.current = activeTab; }, [activeTab]);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -137,7 +157,16 @@ export default function CRMPage() {
     }
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setActiveTab]);
+
+  // If searchParams (deep-link) changes to a different tab — e.g. the user
+  // uses back/forward — sync local state to match. This does not trigger
+  // for the normal setActiveTab path since we only use history.replaceState.
+  useEffect(() => {
+    const urlTab = searchParams.get('tab') as TabId | null;
+    if (urlTab && TABS.some((t) => t.id === urlTab) && urlTab !== activeTabRef.current) {
+      setActiveTabState(urlTab);
+    }
   }, [searchParams]);
 
   // ============================================================================
