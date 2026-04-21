@@ -497,8 +497,14 @@ function round2(v: number | null | undefined): number | null {
  */
 export async function fetchAdminRollupB(): Promise<RollupB> {
   const admin = createAdminClient();
-  // Cast `admin.rpc` to a generic invoker — identical pattern to rollup-a.ts.
-  const rpc = admin.rpc as unknown as RpcInvoker;
+  // Wrap admin.rpc in a closure to preserve `this` binding — extracting the
+  // method directly strips the binding and breaks at runtime with
+  // "Cannot read properties of undefined (reading 'rest')".
+  const rpc: RpcInvoker = <T>(fn: string, args?: Record<string, unknown>) =>
+    (admin.rpc as unknown as (
+      f: string,
+      a?: Record<string, unknown>,
+    ) => Promise<{ data: T | null; error: unknown }>)(fn, args);
 
   const ago7d = daysAgoIso(7);
   const ago24h = daysAgoIso(1);
