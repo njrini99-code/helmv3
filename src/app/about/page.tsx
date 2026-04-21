@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
+import { m, LazyMotion, domAnimation } from 'framer-motion';
 import { Navigation } from '@/components/landing/Navigation';
 import { Footer } from '@/components/landing/Footer';
 
@@ -59,6 +59,7 @@ const staggerContainer = {
 
 export default function AboutPage() {
   return (
+    <LazyMotion features={domAnimation}>
     <main className="min-h-screen bg-background overflow-x-hidden">
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary-600 focus:text-white focus:rounded-lg focus:shadow-lg">
         Skip to main content
@@ -79,34 +80,34 @@ export default function AboutPage() {
           `
         }}
       >
-        <motion.div
+        <m.div
           className="relative max-w-3xl mx-auto px-5 sm:px-6 text-center"
           initial="hidden"
           animate="visible"
           variants={staggerContainer}
         >
-          <motion.p
+          <m.p
             variants={fadeInUp}
             className="text-sm font-medium text-primary-600 tracking-[0.2em] uppercase mb-5"
           >
             Our Story
-          </motion.p>
+          </m.p>
 
-          <motion.h1
+          <m.h1
             variants={fadeInUp}
             className="text-4xl sm:text-5xl md:text-[3.5rem] font-bold text-warm-900 tracking-tight leading-[1.1] mb-7"
           >
             There has to be a better way
-          </motion.h1>
+          </m.h1>
 
-          <motion.p
+          <m.p
             variants={fadeInUp}
             className="text-lg md:text-xl text-warm-600 leading-relaxed max-w-2xl mx-auto"
           >
             Helm Sports Labs was created by two former collegiate athletes who were tired of
             spreadsheets and group chats and thought &ldquo;there has to be a better way.&rdquo;
-          </motion.p>
-        </motion.div>
+          </m.p>
+        </m.div>
       </section>
 
       {/* Origin Story */}
@@ -119,7 +120,7 @@ export default function AboutPage() {
           `
         }}
       >
-        <motion.div
+        <m.div
           className="max-w-5xl mx-auto"
           initial="hidden"
           whileInView="visible"
@@ -127,7 +128,7 @@ export default function AboutPage() {
           variants={staggerContainer}
         >
           <div className="grid md:grid-cols-2 gap-10 md:gap-16 items-center">
-            <motion.div variants={fadeInUp}>
+            <m.div variants={fadeInUp}>
               <p className="text-sm font-medium text-warm-500 uppercase tracking-[0.15em] mb-3">
                 The Problem
               </p>
@@ -143,9 +144,9 @@ export default function AboutPage() {
                 We built Helm to unify everything into one premium platform — so coaches
                 can focus on coaching and players can focus on improving.
               </p>
-            </motion.div>
+            </m.div>
 
-            <motion.div variants={fadeInUp}>
+            <m.div variants={fadeInUp}>
               <div
                 className="rounded-2xl p-7 md:p-8 border border-white/60"
                 style={{
@@ -172,9 +173,9 @@ export default function AboutPage() {
                   gives you the clarity to lead with confidence.
                 </p>
               </div>
-            </motion.div>
+            </m.div>
           </div>
-        </motion.div>
+        </m.div>
       </section>
 
       {/* What Helm Unifies */}
@@ -187,14 +188,14 @@ export default function AboutPage() {
           `
         }}
       >
-        <motion.div
+        <m.div
           className="max-w-5xl mx-auto"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-80px" }}
           variants={staggerContainer}
         >
-          <motion.div variants={fadeInUp} className="text-center mb-12 md:mb-14">
+          <m.div variants={fadeInUp} className="text-center mb-12 md:mb-14">
             <p className="text-sm font-medium text-warm-500 uppercase tracking-[0.15em] mb-3">
               What We&apos;re Building
             </p>
@@ -204,11 +205,11 @@ export default function AboutPage() {
             <p className="text-lg text-warm-600 max-w-xl mx-auto leading-relaxed">
               Helm replaces the patchwork of tools that slow your program down.
             </p>
-          </motion.div>
+          </m.div>
 
           <div className="grid sm:grid-cols-2 gap-4 md:gap-5">
             {pillars.map((item, index) => (
-              <motion.div
+              <m.div
                 key={item.title}
                 variants={fadeInUp}
               >
@@ -230,10 +231,10 @@ export default function AboutPage() {
                     {item.description}
                   </p>
                 </div>
-              </motion.div>
+              </m.div>
             ))}
           </div>
-        </motion.div>
+        </m.div>
       </section>
 
       {/* Values */}
@@ -246,14 +247,14 @@ export default function AboutPage() {
           `
         }}
       >
-        <motion.div
+        <m.div
           className="max-w-5xl mx-auto"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-80px" }}
           variants={staggerContainer}
         >
-          <motion.div variants={fadeInUp} className="text-center mb-12 md:mb-14">
+          <m.div variants={fadeInUp} className="text-center mb-12 md:mb-14">
             <p className="text-sm font-medium text-warm-500 uppercase tracking-[0.15em] mb-3">
               How We Work
             </p>
@@ -263,11 +264,11 @@ export default function AboutPage() {
             <p className="text-lg text-warm-600 max-w-xl mx-auto leading-relaxed">
               Values that shape every feature we ship.
             </p>
-          </motion.div>
+          </m.div>
 
           <div className="grid md:grid-cols-3 gap-4 md:gap-5">
             {values.map((item) => (
-              <motion.div
+              <m.div
                 key={item.title}
                 variants={fadeInUp}
               >
@@ -286,10 +287,10 @@ export default function AboutPage() {
                     {item.description}
                   </p>
                 </div>
-              </motion.div>
+              </m.div>
             ))}
           </div>
-        </motion.div>
+        </m.div>
       </section>
 
       {/* CTA */}
@@ -302,7 +303,7 @@ export default function AboutPage() {
           `
         }}
       >
-        <motion.div
+        <m.div
           className="max-w-3xl mx-auto"
           initial="hidden"
           whileInView="visible"
@@ -348,10 +349,11 @@ export default function AboutPage() {
               </Link>
             </div>
           </div>
-        </motion.div>
+        </m.div>
       </section>
 
       <Footer />
     </main>
+    </LazyMotion>
   );
 }

@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { motion } from "framer-motion"
+import { m, LazyMotion, domAnimation } from "framer-motion"
 import { Navigation } from "@/components/landing/Navigation"
 import { Footer } from "@/components/landing/Footer"
 import { HelmFlipAnimation } from "@/components/products/HelmFlipAnimation"
@@ -43,6 +43,7 @@ const staggerContainer = {
 
 export default function ProductsPage() {
   return (
+    <LazyMotion features={domAnimation}>
     <main className="min-h-screen bg-background overflow-x-hidden">
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary-600 focus:text-white focus:rounded-lg focus:shadow-lg">
         Skip to main content
@@ -67,14 +68,14 @@ export default function ProductsPage() {
         </div>
 
         {/* Content below animation */}
-        <motion.div
+        <m.div
           className="relative px-5 sm:px-6 pt-7 pb-12 sm:pt-10 sm:pb-16 md:pt-14 md:pb-24 max-w-5xl mx-auto"
           initial="hidden"
           animate="visible"
           variants={staggerContainer}
         >
           {/* Tagline + CTA */}
-          <motion.div className="text-center mb-8 sm:mb-12" variants={fadeInUp}>
+          <m.div className="text-center mb-8 sm:mb-12" variants={fadeInUp}>
             <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-xl mx-auto leading-relaxed mb-6 sm:mb-8">
               The ultimate platform to manage your team with precision and clarity.
             </p>
@@ -135,10 +136,10 @@ export default function ProductsPage() {
                 </button>
               </Link>
             </div>
-          </motion.div>
+          </m.div>
 
           {/* Features Strip */}
-          <motion.div
+          <m.div
             className="pt-10 border-t border-warm-200"
             variants={staggerContainer}
             initial="hidden"
@@ -147,7 +148,7 @@ export default function ProductsPage() {
           >
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
               {features.map((feature, index) => (
-                <motion.div
+                <m.div
                   key={feature.title}
                   variants={fadeInUp}
                 >
@@ -165,11 +166,11 @@ export default function ProductsPage() {
                       </p>
                     </div>
                   </div>
-                </motion.div>
+                </m.div>
               ))}
             </div>
-          </motion.div>
-        </motion.div>
+          </m.div>
+        </m.div>
       </section>
 
       {/* GolfHelm Section */}
@@ -180,5 +181,6 @@ export default function ProductsPage() {
 
       <Footer />
     </main>
+    </LazyMotion>
   )
 }

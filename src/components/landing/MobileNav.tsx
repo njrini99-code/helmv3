@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { motion, AnimatePresence } from 'framer-motion'
+import { m, LazyMotion, domAnimation, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import Image from 'next/image'
 import { submitDemoRequest } from '@/app/actions/demo-request'
@@ -87,7 +87,7 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
   }
 
   return (
-    <>
+    <LazyMotion features={domAnimation}>
       {/* Hamburger */}
       <button
         onClick={() => setIsOpen(!isOpen)}
@@ -125,7 +125,7 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
       {mounted && createPortal(
         <AnimatePresence>
           {isOpen && (
-            <motion.div
+            <m.div
               key="mobile-nav-overlay"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -174,7 +174,7 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
               >
                 {/* Navigation links */}
                 <div className="flex-1 flex flex-col justify-center -mt-8">
-                  <motion.div
+                  <m.div
                     initial="closed"
                     animate="open"
                     exit="closed"
@@ -185,7 +185,7 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
                     className="space-y-1"
                   >
                     {navLinks.map((link) => (
-                      <motion.div
+                      <m.div
                         key={link.name}
                         variants={{
                           closed: {
@@ -219,13 +219,13 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
                             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                           </svg>
                         </Link>
-                      </motion.div>
+                      </m.div>
                     ))}
-                  </motion.div>
+                  </m.div>
                 </div>
 
                 {/* Bottom CTA */}
-                <motion.div
+                <m.div
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
@@ -234,7 +234,7 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
                 >
                   <AnimatePresence mode="wait">
                     {!showDemoForm && !submitted && (
-                      <motion.div
+                      <m.div
                         key="cta"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -255,11 +255,11 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
                         <p className="text-center text-xs text-warm-400 tracking-wide">
                           BaseballHelm & GolfHelm
                         </p>
-                      </motion.div>
+                      </m.div>
                     )}
 
                     {showDemoForm && !submitted && (
-                      <motion.form
+                      <m.form
                         key="form"
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -326,11 +326,11 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
                             ) : 'Submit'}
                           </button>
                         </div>
-                      </motion.form>
+                      </m.form>
                     )}
 
                     {submitted && (
-                      <motion.div
+                      <m.div
                         key="success"
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
@@ -353,13 +353,13 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
                         >
                           Back to Home
                         </button>
-                      </motion.div>
+                      </m.div>
                     )}
                   </AnimatePresence>
-                </motion.div>
+                </m.div>
 
                 {/* Logo at very bottom */}
-                <motion.div
+                <m.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.5, delay: 0.45 }}
@@ -373,13 +373,13 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
                     className="w-6 h-6 object-contain opacity-40"
                   />
                   <span className="text-xs text-warm-400 tracking-wide">Helm Sports Labs</span>
-                </motion.div>
+                </m.div>
               </nav>
-            </motion.div>
+            </m.div>
           )}
         </AnimatePresence>,
         document.body
       )}
-    </>
+    </LazyMotion>
   )
 }

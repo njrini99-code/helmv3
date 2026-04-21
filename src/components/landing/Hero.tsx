@@ -1,6 +1,6 @@
 'use client'
 
-import { motion, useScroll, useTransform, useReducedMotion } from 'framer-motion'
+import { m, LazyMotion, domAnimation, useScroll, useTransform, useReducedMotion } from 'framer-motion'
 import { useRef, useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -34,7 +34,7 @@ function EmailCapture() {
 
   if (submitted) {
     return (
-      <motion.div
+      <m.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
       >
@@ -47,7 +47,7 @@ function EmailCapture() {
         <p className="text-white/25 text-sm mt-3">
           We&apos;ll notify you as soon as we launch.
         </p>
-      </motion.div>
+      </m.div>
     )
   }
 
@@ -120,6 +120,7 @@ export function Hero() {
   const opacity = useTransform(scrollYProgress, [0, 0.6], [1, enableParallax ? 0 : 1])
 
   return (
+    <LazyMotion features={domAnimation} strict>
     <section
       ref={containerRef}
       className="relative min-h-[100svh] min-h-[-webkit-fill-available] md:min-h-screen overflow-hidden bg-stone-950"
@@ -173,14 +174,14 @@ export function Hero() {
       </div>
 
       {/* Main Content */}
-      <motion.div
+      <m.div
         style={{ opacity }}
         className="relative z-20 max-w-[90rem] mx-auto px-6 lg:px-14 xl:px-20"
       >
         <div className="grid grid-cols-1 lg:grid-cols-2 items-center min-h-[calc(100svh-64px)] min-h-[calc(-webkit-fill-available-64px)] md:min-h-[calc(100vh-64px)] gap-0 lg:gap-4">
 
           {/* ─── Left: Typography + CTA ─── */}
-          <motion.div
+          <m.div
             style={{ y: textY }}
             className="pt-10 sm:pt-16 lg:pt-0 pb-8 lg:pb-0"
           >
@@ -249,10 +250,10 @@ export function Hero() {
                 </div>
               </Link>
             </div>
-          </motion.div>
+          </m.div>
 
           {/* ─── Right: Dashboard in premium browser frame ─── */}
-          <motion.div
+          <m.div
             style={{ y: mockupY }}
             className="relative pb-16 lg:pb-0 hidden lg:block"
           >
@@ -331,24 +332,25 @@ export function Hero() {
                 />
               </div>
             </div>
-          </motion.div>
+          </m.div>
         </div>
-      </motion.div>
+      </m.div>
 
       {/* Scroll indicator */}
-      <motion.div
+      <m.div
         style={{ opacity }}
         className="absolute bottom-8 pb-safe left-1/2 -translate-x-1/2 z-20 hidden md:flex flex-col items-center gap-2 transition-opacity duration-700 ease-out"
       >
         <span className="text-white/15 text-[10px] tracking-[0.3em] uppercase font-medium">
           Scroll
         </span>
-        <motion.div
+        <m.div
           animate={{ y: [0, 8, 0] }}
           transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
           className="w-px h-8 bg-gradient-to-b from-white/15 to-transparent"
         />
-      </motion.div>
+      </m.div>
     </section>
+    </LazyMotion>
   )
 }

@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { DiscoveryMockup, CompareMockup, VideoMockup, PipelineMiniMockup } from './baseball-mockups';
 import { IconArrowRight, IconVideo } from '@/components/icons';
 
@@ -33,7 +33,7 @@ export function BaseballHelmSection() {
       id="baseballhelm"
       className="relative py-14 sm:py-20 md:py-28 overflow-hidden scroll-mt-20 bg-[#F5F0E8]"
     >
-      <motion.div
+      <m.div
         className="relative max-w-5xl mx-auto px-5 sm:px-6"
         variants={containerVariants}
         initial="hidden"
@@ -41,7 +41,7 @@ export function BaseballHelmSection() {
         viewport={{ once: true, margin: "-50px" }}
       >
         {/* Hero Intro */}
-        <motion.div variants={itemVariants} className="text-center max-w-2xl mx-auto mb-12 sm:mb-16 md:mb-20">
+        <m.div variants={itemVariants} className="text-center max-w-2xl mx-auto mb-12 sm:mb-16 md:mb-20">
           <div className="flex flex-col items-center justify-center gap-3 sm:gap-4 mb-5 sm:mb-6">
             <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 relative">
               <Image
@@ -80,10 +80,10 @@ export function BaseballHelmSection() {
               Request Demo
             </button>
           </div>
-        </motion.div>
+        </m.div>
 
         {/* Feature 1: Player Discovery */}
-        <motion.div
+        <m.div
           variants={itemVariants}
           className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center mb-14 sm:mb-20 md:mb-28"
         >
@@ -110,10 +110,10 @@ export function BaseballHelmSection() {
               ))}
             </ul>
           </div>
-        </motion.div>
+        </m.div>
 
         {/* Feature 2: Recruiting Pipeline */}
-        <motion.div
+        <m.div
           variants={itemVariants}
           className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center mb-14 sm:mb-20 md:mb-28"
         >
@@ -140,10 +140,10 @@ export function BaseballHelmSection() {
           <div>
             <PipelineMiniMockup />
           </div>
-        </motion.div>
+        </m.div>
 
         {/* Feature 3: Player Comparison */}
-        <motion.div
+        <m.div
           variants={itemVariants}
           className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center mb-14 sm:mb-20 md:mb-28"
         >
@@ -170,10 +170,10 @@ export function BaseballHelmSection() {
               ))}
             </ul>
           </div>
-        </motion.div>
+        </m.div>
 
         {/* Feature 4: Video Library */}
-        <motion.div variants={itemVariants} className="relative">
+        <m.div variants={itemVariants} className="relative">
           <div className="bg-gradient-to-b from-[#0c0c10] via-[#0e0f14] to-[#0a0a0e] rounded-2xl p-5 sm:p-8 md:p-12 overflow-hidden relative">
             {/* Subtle dot grid */}
             <div className="absolute inset-0 opacity-[0.025]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '28px 28px' }} />
@@ -206,8 +206,8 @@ export function BaseballHelmSection() {
               </div>
             </div>
           </div>
-        </motion.div>
-      </motion.div>
+        </m.div>
+      </m.div>
     </section>
   );
 }
