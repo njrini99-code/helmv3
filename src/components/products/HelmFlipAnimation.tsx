@@ -303,7 +303,6 @@ export function HelmFlipAnimation() {
                     alt={word}
                     width={80}
                     height={80}
-                    unoptimized
                   />
                 </div>
                 {word}
@@ -342,7 +341,6 @@ export function HelmFlipAnimation() {
             alt="Helm Sports Labs"
             width={80}
             height={80}
-            unoptimized
           />
         </div>
       </div>

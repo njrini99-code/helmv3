@@ -171,7 +171,7 @@ export function GolfHelmSection() {
               <div className="text-center mb-8 sm:mb-12">
                 <div className="flex flex-col items-center gap-4 mb-6">
                   <div className="w-16 h-16 sm:w-20 sm:h-20 relative">
-                    <Image src="/anim/helm-coach-icon.png" alt="CoachHelm" fill className="object-contain" sizes="80px" unoptimized />
+                    <Image src="/anim/helm-coach-icon.png" alt="CoachHelm" fill className="object-contain" sizes="80px" />
                   </div>
                   <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/[0.06] text-white/80 text-base font-bold rounded-xl ring-1 ring-white/[0.08]">
                     Coach<span className="text-emerald-400">Helm</span>&nbsp;AI
