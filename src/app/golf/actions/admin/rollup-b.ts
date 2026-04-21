@@ -497,14 +497,9 @@ function round2(v: number | null | undefined): number | null {
  */
 export async function fetchAdminRollupB(): Promise<RollupB> {
   const admin = createAdminClient();
-  // Wrap admin.rpc in a closure to preserve `this` binding — extracting the
-  // method directly strips the binding and breaks at runtime with
-  // "Cannot read properties of undefined (reading 'rest')".
-  const rpc: RpcInvoker = <T>(fn: string, args?: Record<string, unknown>) =>
-    (admin.rpc as unknown as (
-      f: string,
-      a?: Record<string, unknown>,
-    ) => Promise<{ data: T | null; error: unknown }>)(fn, args);
+  // Explicit .bind(admin) guarantees `this` is preserved through any bundler
+  // transform. Cast is TypeScript-only (RPCs not in generated schema yet).
+  const rpc = admin.rpc.bind(admin) as unknown as RpcInvoker;
 
   const ago7d = daysAgoIso(7);
   const ago24h = daysAgoIso(1);

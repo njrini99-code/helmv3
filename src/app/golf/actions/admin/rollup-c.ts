@@ -200,17 +200,11 @@ export async function fetchAdminRollupC(
   const ago14dIso = ago14d.toISOString();
   const ago30dIso = ago30d.toISOString();
 
-  // Wrap admin.rpc in a closure to preserve the `this` binding — extracting
-  // the method directly strips the binding and breaks with
-  // "Cannot read properties of undefined (reading 'rest')" at runtime.
-  const rpcCall = (
+  // Explicit .bind(admin) guarantees `this` is preserved.
+  const rpcCall = admin.rpc.bind(admin) as unknown as (
     fn: 'get_admin_analytics_rollup',
     args: { p_ago7d: string; p_ago30d: string; p_ago12w: string },
-  ): Promise<{ data: RpcPayload | null; error: unknown }> =>
-    (admin.rpc as unknown as (
-      f: string,
-      a?: Record<string, unknown>,
-    ) => Promise<{ data: RpcPayload | null; error: unknown }>)(fn, args);
+  ) => Promise<{ data: RpcPayload | null; error: unknown }>;
 
   const { data, error } = await rpcCall('get_admin_analytics_rollup', {
     p_ago7d: ago7dIso,

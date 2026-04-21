@@ -256,16 +256,10 @@ function unwrap<T>(label: string, res: { data: T | null; error: unknown }): T {
  */
 export async function fetchAdminRollupA(): Promise<RollupA> {
   const admin = createAdminClient();
-  // `admin.rpc` is typed against the generated `Database` schema, which does
-  // not yet list these 4 functions — types are regenerated later. Wrap in a
-  // closure so `this` is bound to `admin`; extracting `admin.rpc` directly
-  // strips the binding and breaks with "Cannot read properties of undefined
-  // (reading 'rest')" at runtime.
-  const rpc: RpcInvoker = <T>(fn: string, args?: Record<string, unknown>) =>
-    (admin.rpc as unknown as (
-      f: string,
-      a?: Record<string, unknown>,
-    ) => Promise<{ data: T | null; error: unknown }>)(fn, args);
+  // Explicit .bind(admin) guarantees the method's `this` context survives
+  // bundler transforms. Cast is TypeScript-only (these 4 RPCs aren't in the
+  // generated Database schema yet).
+  const rpc = admin.rpc.bind(admin) as unknown as RpcInvoker;
 
   const today = startOfTodayIso();
   const ago24h = daysAgoIso(1);

@@ -68,12 +68,10 @@ const ADMIN_DASHBOARD_CACHE_TAG = 'admin-dashboard';
 const cachedAdminDashboardData = unstable_cache(
   async (): Promise<AdminDashboardRollup> => {
     const admin = createAdminClient();
-    // Wrap in a closure to preserve `this` binding on admin.rpc.
-    const invokeRpc = (fn: string) =>
-      (admin.rpc as unknown as (
-        f: string,
-      ) => Promise<{ data: AdminDashboardRollup | null; error: unknown }>)(fn);
-    const { data, error } = await invokeRpc('get_admin_dashboard_rollup');
+    const rpc = admin.rpc.bind(admin) as unknown as (
+      fn: 'get_admin_dashboard_rollup',
+    ) => Promise<{ data: AdminDashboardRollup | null; error: unknown }>;
+    const { data, error } = await rpc('get_admin_dashboard_rollup');
     if (error) throw error instanceof Error ? error : new Error(String(error));
     if (!data) throw new Error('Empty rollup response');
     return data;
@@ -1433,12 +1431,10 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     (async (): Promise<PlatformHealthStatsResult | null> => {
       try {
         const admin = createAdminClient();
-        // Wrap in a closure to preserve `this` binding on admin.rpc.
-        const invokeRpc = (fn: string) =>
-          (admin.rpc as unknown as (
-            f: string,
-          ) => Promise<{ data: PlatformHealthStatsResult | null; error: unknown }>)(fn);
-        const res = await invokeRpc('get_platform_health_stats');
+        const rpc = admin.rpc.bind(admin) as unknown as (
+          fn: 'get_platform_health_stats',
+        ) => Promise<{ data: PlatformHealthStatsResult | null; error: unknown }>;
+        const res = await rpc('get_platform_health_stats');
         return res.data ?? null;
       } catch {
         return null;
