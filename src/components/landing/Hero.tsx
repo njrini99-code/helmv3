@@ -58,7 +58,6 @@ function EmailCapture() {
         background: 'rgba(255,255,255,0.07)',
         backdropFilter: 'blur(24px)',
         WebkitBackdropFilter: 'blur(24px)',
-        boxShadow: '0 0 40px rgba(22,163,74,0.08), inset 0 1px 0 rgba(255,255,255,0.1)',
       }}
     >
       <p className="text-white/80 text-sm font-medium mb-3">Request a demo — see Helm in action</p>
@@ -75,7 +74,7 @@ function EmailCapture() {
         <button
           type="submit"
           disabled={loading}
-          className="px-7 py-3.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-semibold text-sm transition-all whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_24px_rgba(22,163,74,0.35)] hover:shadow-[0_0_36px_rgba(22,163,74,0.5)] hover:-translate-y-0.5 active:translate-y-0"
+          className="px-7 py-3.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-semibold text-sm transition-all whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5 active:translate-y-0"
         >
           {loading ? (
             <span className="flex items-center justify-center gap-2">
@@ -275,21 +274,9 @@ export function Hero() {
             className="relative pb-16 lg:pb-0 hidden lg:block"
           >
             <div className="lg:-mr-[25%]">
-              {/* Glow behind frame */}
-              <div
-                className="absolute -inset-8 z-0 hidden lg:block"
-                style={{
-                  background: 'radial-gradient(ellipse at 50% 40%, rgba(22,163,74,0.08), transparent 60%)',
-                  filter: 'blur(40px)',
-                }}
-              />
-
               {/* Browser frame — desktop only */}
               <div
-                className="relative z-10 rounded-2xl overflow-hidden max-h-[70vh]"
-                style={{
-                  boxShadow: '0 0 0 1px rgba(255,255,255,0.08)',
-                }}
+                className="relative z-10 rounded-2xl overflow-hidden max-h-[70vh] border border-white/[0.08]"
               >
                 {/* Title bar — dark chrome */}
                 <div className="bg-[#161616] px-4 py-3 flex items-center border-b border-white/[0.04]">
