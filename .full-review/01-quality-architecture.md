@@ -1,93 +1,96 @@
 # Phase 1: Code Quality & Architecture Review
 
-## Executive Summary
+Detailed findings in companion files:
+- `01a-code-quality.md` — code-reviewer agent output
+- `01b-architecture.md` — architect-review agent output
 
-Both reviews converge on the same root causes: the RLS migration was **redundant** (policies were already correct), and the real issues are in the application code. Two Critical issues and several High-severity bugs explain why event editing doesn't persist.
+## Findings consolidated by severity
 
-## Code Quality Findings
+### CRITICAL (must fix before shipping)
 
-### Critical
+#### C1. Cross-tenant data leak in 3 new dashboard RPCs
+**Source:** 1B
+**Files:** `supabase/migrations/20260421000003_dashboard_rpcs.sql`
+**Issue:** `get_coach_today_schedule(team_id, date)`, `get_player_hub_announcements(team_id, player_id)`, and `get_player_hub_events(team_id, player_id, since)` are `SECURITY DEFINER` + granted to `authenticated` but accept caller-supplied team/player IDs with no ownership verification. Any authenticated user can read any team's events/announcements/schedules.
+**Blast radius:** full multi-tenant data exposure for dashboards.
+**Fix:** enforce ownership inside each function — verify `auth.uid()` belongs to `p_team_id` (coaches: `golf_coaches.team_id`, players: `golf_players.team_id`), or derive the IDs from `auth.uid()` entirely.
 
-**CQ-1: Silent Update Failure — No Row Count Verification**
-- **File:** `src/app/golf/actions/golf.ts:1555`
-- `updateGolfEvent` does `const { error } = await query;` — Supabase returns no error when 0 rows are affected (RLS blocks or filter mismatch). Action returns `{ success: true }` even when nothing was saved.
-- **Fix:** Add `.select('id')` and verify returned array is non-empty.
+#### C2. Admin dashboard data readable by non-admins
+**Source:** 1B
+**Files:** `supabase/migrations/20260421000001_admin_dashboard_rollup.sql`
+**Issue:** `get_admin_dashboard_rollup()` is `SECURITY DEFINER` + granted to `authenticated` with no admin-role check. Previously the `admin/layout.tsx` route gate protected this data; the RPC bypasses the layout entirely. Any authenticated user can query it.
+**Fix:** add `IF NOT EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND role = 'admin') THEN RAISE EXCEPTION 'Forbidden'; END IF;` at top of function body. Change `LANGUAGE sql` to `LANGUAGE plpgsql` to allow the check.
 
-### High
+#### C3. `unstable_cache` wraps `cookies()`/`auth.getUser()` — explicitly unsupported in Next.js 16
+**Source:** 1A + 1B
+**Files:** `src/app/golf/actions/admin-data.ts:55-74`
+**Issue:** Inside the `unstable_cache` body, `createClient()` calls `cookies()`, which throws inside cached scopes in Next.js 16 (the parallel Team D removed this exact pattern in `dashboard-data.ts:928-930` and documented why). Additionally:
+- `revalidateTag(tag, 'default')` at line 84 passes a second arg that belongs to Cache Components, not legacy `unstable_cache`
+- `invalidateAdminDashboardRollup()` is exported but has **zero call sites** — admin mutations still use `revalidatePath`, cache tag is never invalidated
+**Fix:** auth check outside the cache; cache only the pure RPC data using `createAdminClient()` (service-role, no cookies). Drop the profile arg on `revalidateTag` OR switch to `revalidatePath`. Wire invalidation to admin write paths OR accept 60s staleness and remove the invalidation API.
 
-**CQ-2: `allDay` Flag Derived from Parsed Time, Not Database Value (Desktop)**
-- **File:** `src/components/golf/calendar/EventDetailModal.tsx:295,307`
-- Form sets `allDay: !hasTime` where `hasTime` comes from datetime parsing. The `event.all_day` DB boolean is ignored. All-day events get normalized to `T00:00:00` by the server page, so `hasTime` is always `true`, converting all-day events to timed events on edit.
-- **Fix:** Use `event.all_day ?? false` directly.
+### HIGH
 
-**CQ-3: Same `allDay` Bug in MobileEventSheet**
-- **File:** `src/components/golf/calendar/MobileEventSheet.tsx:168`
-- `allDay: !startTime && !endTime` — same problem as CQ-2.
-- **Fix:** Use `event.all_day ?? false` directly.
+#### H1. LazyMotion orphans in admin tree
+**Source:** 1B
+**Files:** `AdminStatCard.tsx`, `TracerHealthOverview.tsx`, `ui/animated-number.tsx` use `<m.*>` but there's no `<LazyMotion>` ancestor in the admin layout
+**Impact:** animations silently no-op (static DOM); visual regression from the pre-sweep state
+**Fix:** add `<LazyMotion features={domAnimation}>` at `admin/layout.tsx` wrapping children
 
-**CQ-4: Time-Only Edit Can Strip Time Component**
-- **File:** `src/app/golf/actions/golf.ts:65-69`
-- `buildDateTimeString` returns date-only when `time` is undefined/falsy. If form sends `startTime: null ?? undefined = undefined` for a timed event, the time is silently stripped.
-- **Fix:** Guard against undefined time when `allDay` is false.
+#### H2. 4 new RPCs not in `database.ts` — `as any` casts at every call site
+**Source:** 1B
+**Files:** `admin-data.ts`, `dashboard-data.ts`, `player-notifications.ts`
+**Impact:** no compile-time validation of RPC arg shapes or return types; silent drift risk
+**Fix:** run `npm run db:types` after applying migrations locally; commit the regenerated `database.ts`. Note: `database.ts` was deleted then re-added during parallel work (per Team A notes), so review that round-trip first
 
-### Medium
+#### H3. Error swallowing — admin & CRM
+**Source:** 1A
+**Locations:**
+- `admin/page.tsx` — `.catch(() => null)` on the rollup call silently hides failures
+- `crm/page.tsx:540-558` — `error` state declared but never `setError(...)`'d; the error UI is dead code
+- `crm/page.tsx fetchAllCoaches` — destructures only `{ data }`, ignores `error`
+**Fix:** set error state on failure; render the error UI when it's set; log failures
 
-**CQ-5: `??` vs `||` Coercion Asymmetry Between Desktop and Mobile**
-- **File:** `PremiumCalendarClient.tsx:465` (desktop `??`) vs line 889 (mobile `||`)
-- Empty string `""` passes through `??` but not `||`. Can produce malformed datetime like `"2026-03-07T"`.
-- **Fix:** Standardize on `||` or add `.min(1)` to Zod time fields.
+### MEDIUM
 
-**CQ-6: `deleteGolfEvent` Same Silent Failure Pattern**
-- **File:** `src/app/golf/actions/golf.ts` (deleteGolfEvent function)
-- Same issue as CQ-1 — no row count verification on delete.
+#### M1. PlayerHub memoization is ~mostly~ theater
+**Source:** 1A
+**Files:** `src/components/golf/player-hub/PlayerHub.tsx`
+**Issue:** `React.memo` added to TripCard / PlayerTaskCard / EventRSVPCard, but parent passes inline arrow callbacks (`onExpand={() => setSelectedTrip(trip)}`). Every parent render creates fresh callback identities → memo comparators fail → cards re-render anyway. The memoization buys ONLY the per-mount `now` effect removal, not the inline-callback re-render prevention.
+**Fix:** `useCallback` per-id wrappers, or use stable refs keyed by trip/task/event id
 
-### Low
+#### M2. Tab unmounting loses scroll + form state
+**Source:** 1A
+**Files:** `PlayerHub.tsx`
+**Issue:** `{activeTab === X && <TabBody />}` destroys offscreen tabs. Any in-flight `setSubmitting` state (RSVP in progress) or scroll position is lost on tab switch.
+**Fix:** use `display: activeTab === x ? 'block' : 'none'` to preserve state, OR accept the tradeoff and document
 
-**CQ-7: `isMandatory` Always Reset to False on Edit** — EventDetailModal:311
-**CQ-8: No Visual Multi-Day Spanning** — MonthView/WeekView render separate blocks per day
-**CQ-9: Duplicate RLS Policies** — Harmless but should be cleaned up
+#### M3. Hand-rolled visibility-interval patterns in 5+ other files
+**Source:** 1A
+**Files:** `useAdminRealtime.ts`, `use-presence.ts`, `useNotifications.ts`, `notification-badge-context.tsx`, and both round-start pollers
+**Issue:** `useVisibilityAwareInterval` is clean, but only applied to the 3 targets in the plan; the rest still hand-roll the same pattern
+**Fix:** wave-3 cleanup
 
----
+### Notable architecture concerns (surfaced in 1B)
 
-## Architecture Findings
+- No cross-zone file writes detected across 38 parallel commits — the ownership-boundary strategy worked
+- Single-pass CTE design in the admin rollup is the highest-quality artifact in the diff
+- `useVisibilityAwareInterval` is a clean, tested shared utility with correct effect lifecycle
 
-### Critical
+### Positive notes
 
-**AR-1: Silent Success on Zero-Row Update** (same as CQ-1)
-- The entire error propagation chain Client -> Server Action -> Supabase has a gap where success is reported but nothing changed. This is the most likely root cause.
+- CRM stats reducer, single-pass filter, `roundsByPlayer` Map fanout, and `useSyncExternalStore`-based `use-media-query.ts` are all correct textbook improvements
+- `AdminRealtimeProvider` context memoization correctly addresses the audit's P0-2
+- `hero-golf.jpg` resize + `quality={72}` is a real LCP win
+- SQL migrations are well-commented and use composable CTEs
 
-**AR-2: All-Day Detection Heuristic Destroys Times on Edit** (same as CQ-2/CQ-3)
-- The heuristic ignores the authoritative `event.all_day` boolean. Combined with server-side date normalization, this creates a data corruption loop.
+## Critical issues for Phase 2 context
 
-### High
+Phase 2 (Security + Performance) should know:
+- C1 and C2 are SECURITY issues — the security-auditor agent will likely re-surface them with CVSS scoring
+- C3 is a PERFORMANCE + correctness issue — the cache is broken; first-load path is hitting the RPC every time + throwing or silently mis-caching
+- H1 (LazyMotion orphans) is a silent perf regression — animations that used to work now no-op
 
-**AR-3: Duplicated Save Logic Across Desktop and Mobile**
-- Three separate save implementations with subtle differences (field sets, null coalescing, error handling).
-- **Fix:** Extract shared `buildEventPayload()` function.
+## Migration deployment caveat (from 1A)
 
-**AR-4: Bare Date Strings in timestamptz Column**
-- `src/app/golf/actions/golf.ts:1531` stores `endDate` as bare date string (e.g., `"2026-03-15"`) in a `timestamptz` column. Postgres interprets this as midnight UTC, shifting the date backward in western timezones.
-- **Fix:** Never store date-only strings in timestamptz; always construct full timestamps.
-
-**AR-5: Form Type Divergence Between Desktop and Mobile**
-- `GolfEventFormData` has 14 fields; `MobileEventFormData` has 8. Mobile edits don't include RSVP/attendee fields.
-
-### Medium
-
-**AR-6: Unused `useCalendarEvents` Hook Creates Dual Data Paths**
-**AR-7: `router.refresh()` Creates Stale Data Window**
-**AR-8: Multi-Day Event Query Misses Events Starting Before Visible Range**
-- `.gte('start_time', threeMonthsAgo)` excludes events whose end_time extends into visible range.
-
-### Low
-
-**AR-9: `GolfEventInput` Type vs Zod Schema Mismatch**
-**AR-10: Error Presentation — Errors Thrown Into Void**
-
----
-
-## Critical Issues for Phase 2 Context
-
-1. **Silent update success** (CQ-1/AR-1) — Security review should verify if this creates an authorization bypass where users believe they've modified data they can't actually change
-2. **Bare date in timestamptz** (AR-4) — Performance review should check if timezone-dependent queries return incorrect results
-3. **No error feedback to user** (AR-10) — After fixing CQ-1, errors need to surface in the UI
+`20260421000001_admin_dashboard_rollup.sql` references `baseball_teams` (line 8 CTE) — if that table doesn't exist in a given environment, the migration fails. Gate with `to_regclass('public.baseball_teams') IS NOT NULL` or remove the reference.

@@ -62,3 +62,4 @@ next-shadcn-dashboard-starter/
 .vercel
 .env*.local
 .playwright-mcp/
+.full-review-archive-*/
