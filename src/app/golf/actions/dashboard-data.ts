@@ -446,6 +446,16 @@ export async function getCoachDashboardData(
         teamPulse.roundsThisWeek = weekRoundsResult.count || 0;
 
         if (allRounds.length > 0) {
+            // Group rounds by player once — used by both top-players and team-pulse rollups.
+            // Was O(P × R) per rollup × 2 rollups = O(2·P·R); now O(R) once + O(P) lookup.
+            type AllRound = typeof allRounds[number];
+            const roundsByPlayer = new Map<string, AllRound[]>();
+            for (const r of allRounds) {
+                const arr = roundsByPlayer.get(r.player_id);
+                if (arr) arr.push(r);
+                else roundsByPlayer.set(r.player_id, [r]);
+            }
+
             // Team scoring average + trend (normalized to 18-hole equivalents)
             const normalizedScores = allRounds
                 .filter(r => r.total_score != null && r.total_score > 0)
@@ -464,10 +474,10 @@ export async function getCoachDashboardData(
                 previousAverage = olderScores.reduce((a, b) => a + b, 0) / olderScores.length;
             }
 
-            // Top players
+            // Top players — single-pass lookup via roundsByPlayer Map
             const playerAvgs: TopPlayer[] = [];
             players.forEach(p => {
-                const pRounds = allRounds.filter(r => r.player_id === p.id);
+                const pRounds = roundsByPlayer.get(p.id) ?? [];
                 if (pRounds.length > 0) {
                     const pNormScores = pRounds
                         .filter(r => r.total_score != null && r.total_score > 0)
@@ -572,7 +582,7 @@ export async function getCoachDashboardData(
             let bestDelta = 0;
             let bestMoverName = '';
             players.forEach(p => {
-                const pRounds = allRounds.filter(r => r.player_id === p.id);
+                const pRounds = roundsByPlayer.get(p.id) ?? [];
                 // Normalize to 18-hole equivalents (matches stats page)
                 const pNormalized = pRounds
                     .map(r => {
