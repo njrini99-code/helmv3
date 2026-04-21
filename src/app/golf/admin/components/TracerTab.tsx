@@ -37,6 +37,7 @@ import { fixRoundData } from '@/app/golf/actions/admin-tracer-data';
 import type { DataQualityIssue, FixResult } from './tracer/tracer-types';
 import { useAdminRealtimeContext } from './AdminRealtimeProvider';
 import type { AdminEvent } from '@/hooks/useAdminRealtime';
+import { useVisibilityAwareInterval } from '@/hooks/useVisibilityAwareInterval';
 
 function asObject(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object' && !Array.isArray(value)
@@ -120,9 +121,10 @@ export function TracerTab() {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(() => loadData(true), 20000);
-    return () => clearInterval(interval);
   }, [loadData]);
+  // Tracer data refresh pauses while the tab is hidden.
+  const tracerTick = useCallback(() => loadData(true), [loadData]);
+  useVisibilityAwareInterval(tracerTick, 20_000);
 
   const latestTracerRealtimeEvent = useMemo(
     () => realtime.events.find((event) => isTracerRealtimeEvent(event)) ?? null,

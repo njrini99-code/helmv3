@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, useCallback, useRef, lazy, Suspense } from 'react';
+import { useEffect, useMemo, useState, useCallback, lazy, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -9,6 +9,7 @@ import { getAdminDashboardData } from '@/app/golf/actions/admin-data';
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { cn } from '@/lib/utils';
 import { useAnalyticsTracking } from '@/hooks/useAnalyticsTracking';
+import { useVisibilityAwareInterval } from '@/hooks/useVisibilityAwareInterval';
 import {
   IconUsers,
   IconTarget,
@@ -91,7 +92,9 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]['id'];
 
-const AUTO_REFRESH_INTERVAL = 60000;
+// Realtime pushes incremental updates; this is a safety-net refresh that
+// only fires while the tab is visible.
+const AUTO_REFRESH_INTERVAL = 300_000; // 5 minutes
 
 // Skeleton loaders
 const StatSkeleton = ImprovedStatSkeleton;
@@ -198,7 +201,6 @@ function AdminDashboardContent() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [crmStats, setCrmStats] = useState<CRMStats | null>(null);
-  const refreshTimerRef = useRef<ReturnType<typeof setInterval>>(undefined);
   const { trackFeature } = useAnalyticsTracking();
   const supabase = useMemo(() => createClient(), []);
 
@@ -270,14 +272,11 @@ function AdminDashboardContent() {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load dashboard';
 
-      // If the error is auth-related, stop polling and show session expired UI
+      // If the error is auth-related, stop polling and show session expired UI.
+      // Flipping sessionExpired=true passes null to useVisibilityAwareInterval
+      // below, which tears the timer down.
       if (message === 'Unauthorized' || message === 'Forbidden') {
         setSessionExpired(true);
-        // Clear the auto-refresh interval immediately
-        if (refreshTimerRef.current) {
-          clearInterval(refreshTimerRef.current);
-          refreshTimerRef.current = undefined;
-        }
         if (!silent) {
           setError(message);
         }
@@ -297,15 +296,14 @@ function AdminDashboardContent() {
     loadData();
   }, [loadData]);
 
-  useEffect(() => {
-    // Don't start auto-refresh if session is expired
-    if (sessionExpired) return;
-
-    refreshTimerRef.current = setInterval(() => {
-      loadData(true);
-    }, AUTO_REFRESH_INTERVAL);
-    return () => clearInterval(refreshTimerRef.current);
-  }, [loadData, sessionExpired]);
+  const refreshTick = useCallback(() => {
+    loadData(true);
+  }, [loadData]);
+  // Pauses while tab is hidden; disables entirely when session is expired.
+  useVisibilityAwareInterval(
+    refreshTick,
+    sessionExpired ? null : AUTO_REFRESH_INTERVAL,
+  );
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {

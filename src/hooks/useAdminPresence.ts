@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import type { RealtimeChannel, RealtimePresenceState, User } from '@supabase/supabase-js';
+import { useVisibilityAwareInterval } from './useVisibilityAwareInterval';
 
 // ============================================
 // TYPES
@@ -67,7 +68,8 @@ export function useAdminPresence(options: UseAdminPresenceOptions = {}): UseAdmi
   const [currentTab, setCurrentTab] = useState('command');
 
   const channelRef = useRef<RealtimeChannel | null>(null);
-  const supabase = createClient();
+  // Memoize to avoid thrashing a fresh client ref on every parent re-render.
+  const [supabase] = useState(() => createClient());
 
   // Get current user on mount
   useEffect(() => {
@@ -172,25 +174,8 @@ export function useAdminPresence(options: UseAdminPresenceOptions = {}): UseAdmi
 
     channelRef.current = channel;
 
-    // Periodic sync to keep presence alive
-    const syncId = setInterval(() => {
-      if (channelRef.current && currentUser) {
-        const presenceInfo: Partial<AdminPresenceInfo> = {
-          id: currentUser.id,
-          email: currentUser.email ?? null,
-          name: currentUser.user_metadata?.full_name ?? currentUser.email?.split('@')[0] ?? null,
-          avatar_url: currentUser.user_metadata?.avatar_url ?? null,
-          currentTab: currentTab,
-          last_active: new Date().toISOString(),
-        };
-
-        channelRef.current.track(presenceInfo).catch(() => {
-          // Silent fail - will retry on next interval
-        });
-      }
-    }, syncInterval);
-
-    // Handle visibility change
+    // Handle visibility change — push a fresh presence update the moment
+    // the admin returns to the tab so they aren't stuck showing as "away".
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && channelRef.current && currentUser) {
         updatePresence(currentTab);
@@ -200,16 +185,34 @@ export function useAdminPresence(options: UseAdminPresenceOptions = {}): UseAdmi
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
-      clearInterval(syncId);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      
+
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current).catch(() => {
           // Ignore cleanup errors
         });
       }
     };
-  }, [currentUser, channelName, syncInterval, supabase, extractAdmins, currentTab, updatePresence]);
+  }, [currentUser, channelName, supabase, extractAdmins, currentTab, updatePresence]);
+
+  // Periodic sync to keep presence alive. Pauses when the tab is hidden so
+  // we aren't hammering the realtime channel for admins who left the dashboard
+  // open in a background tab.
+  const heartbeat = useCallback(() => {
+    if (!channelRef.current || !currentUser) return;
+    const presenceInfo: Partial<AdminPresenceInfo> = {
+      id: currentUser.id,
+      email: currentUser.email ?? null,
+      name: currentUser.user_metadata?.full_name ?? currentUser.email?.split('@')[0] ?? null,
+      avatar_url: currentUser.user_metadata?.avatar_url ?? null,
+      currentTab,
+      last_active: new Date().toISOString(),
+    };
+    channelRef.current.track(presenceInfo).catch(() => {
+      // Silent fail - will retry on next interval
+    });
+  }, [currentUser, currentTab]);
+  useVisibilityAwareInterval(heartbeat, currentUser ? syncInterval : null);
 
   return {
     activeAdmins,
