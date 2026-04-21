@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef, lazy, Suspense } from 'react';
+import { useEffect, useMemo, useState, useCallback, useRef, lazy, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -161,9 +161,9 @@ export default function AdminDashboardPage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const activeTab = (searchParams.get('tab') || 'overview') as string;
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
-    const supabase = createClient();
     supabase.auth
       .getUser()
       .then(({ data }) => {
@@ -172,7 +172,7 @@ export default function AdminDashboardPage() {
       .catch(() => {
         setCurrentUserId(null);
       });
-  }, []);
+  }, [supabase]);
 
   return (
     <AdminRealtimeProvider currentUserId={currentUserId} currentTab={activeTab}>
@@ -200,6 +200,7 @@ function AdminDashboardContent() {
   const [crmStats, setCrmStats] = useState<CRMStats | null>(null);
   const refreshTimerRef = useRef<ReturnType<typeof setInterval>>(undefined);
   const { trackFeature } = useAnalyticsTracking();
+  const supabase = useMemo(() => createClient(), []);
 
   const { realtime, alerts } = useAdminRealtimeContext();
 
@@ -240,7 +241,6 @@ function AdminDashboardContent() {
     else setIsRefreshing(true);
     try {
       // Fetch main data and CRM data in parallel
-      const supabase = createClient();
       const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
 
       const [result, crmResult] = await Promise.all([
@@ -291,7 +291,7 @@ function AdminDashboardContent() {
       setLoading(false);
       setIsRefreshing(false);
     }
-  }, [sessionExpired]);
+  }, [sessionExpired, supabase]);
 
   useEffect(() => {
     loadData();
@@ -329,7 +329,6 @@ function AdminDashboardContent() {
   }, [searchParams, loadData]);
 
   async function handleSignOut() {
-    const supabase = createClient();
     await supabase.auth.signOut();
     router.push('/golf/login');
   }
