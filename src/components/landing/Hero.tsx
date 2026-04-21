@@ -56,8 +56,8 @@ function EmailCapture() {
       className="rounded-2xl border border-white/[0.15] p-5 sm:p-6"
       style={{
         background: 'rgba(255,255,255,0.07)',
-        backdropFilter: 'blur(24px)',
-        WebkitBackdropFilter: 'blur(24px)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
       }}
     >
       <p className="text-white/80 text-sm font-medium mb-3">Request a demo — see Helm in action</p>
@@ -98,7 +98,6 @@ function EmailCapture() {
 }
 
 export function Hero() {
-  const [isHeroReady, setIsHeroReady] = useState(false)
   const [enableParallax, setEnableParallax] = useState(false)
   const shouldReduceMotion = useReducedMotion()
 
@@ -110,25 +109,15 @@ export function Hero() {
 
   useEffect(() => {
     if (shouldReduceMotion) {
-      setIsHeroReady(true)
       setEnableParallax(false)
       return
     }
-
-    const isCoarsePointer = window.matchMedia('(pointer: coarse)').matches
-    setEnableParallax(!isCoarsePointer)
-
-    // Reveal immediately on mount — the image onLoad will also trigger this,
-    // but we don't gate on it to avoid a blank/dark screen if the image is slow.
-    setIsHeroReady(true)
+    setEnableParallax(!window.matchMedia('(pointer: coarse)').matches)
   }, [shouldReduceMotion])
 
-  // Keep the hero static on first paint, then enable subtle parallax only on
-  // fine pointers once the layout is already settled.
   const textY = useTransform(scrollYProgress, [0, 1], [0, enableParallax ? -60 : 0])
   const mockupY = useTransform(scrollYProgress, [0, 1], [0, enableParallax ? 40 : 0])
   const opacity = useTransform(scrollYProgress, [0, 0.6], [1, enableParallax ? 0 : 1])
-  const heroVisible = isHeroReady || shouldReduceMotion
 
   return (
     <section
@@ -146,15 +135,8 @@ export function Hero() {
           fetchPriority="high"
           quality={90}
           sizes="100vw"
-          onLoad={() => setIsHeroReady(true)}
         />
       </div>
-
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 z-[4] pointer-events-none bg-[#05070d] transition-opacity duration-300 ease-out"
-        style={{ opacity: heroVisible ? 0 : 1 }}
-      />
 
       {/* Overlay — narrow left-side gradient for text readability only */}
       <div
@@ -193,7 +175,7 @@ export function Hero() {
       {/* Main Content */}
       <motion.div
         style={{ opacity }}
-        className="relative z-20 max-w-[90rem] mx-auto px-6 lg:px-14 xl:px-20 transition-[filter] duration-500 ease-out"
+        className="relative z-20 max-w-[90rem] mx-auto px-6 lg:px-14 xl:px-20"
       >
         <div className="grid grid-cols-1 lg:grid-cols-2 items-center min-h-[calc(100svh-64px)] min-h-[calc(-webkit-fill-available-64px)] md:min-h-[calc(100vh-64px)] gap-0 lg:gap-4">
 
@@ -247,7 +229,8 @@ export function Hero() {
                   className="flex items-center gap-3 px-5 py-3 rounded-full border border-white/[0.1] hover:border-white/[0.18] transition-all duration-200 group-hover:scale-[1.02] group-active:scale-[0.98]"
                   style={{
                     background: 'rgba(255,255,255,0.05)',
-                    backdropFilter: 'blur(20px)',
+                    backdropFilter: 'blur(12px)',
+                    WebkitBackdropFilter: 'blur(12px)',
                   }}
                 >
                   <Image
@@ -345,14 +328,6 @@ export function Hero() {
                   fetchPriority="low"
                   loading="eager"
                   quality={95}
-                />
-
-                {/* Bottom fade — makes the crop look intentional */}
-                <div
-                  className="absolute bottom-0 left-0 right-0 h-32 z-10 pointer-events-none"
-                  style={{
-                    background: 'linear-gradient(to top, rgba(0,0,0,0.6), transparent)',
-                  }}
                 />
               </div>
             </div>
