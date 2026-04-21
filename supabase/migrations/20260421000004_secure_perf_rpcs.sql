@@ -363,7 +363,8 @@ BEGIN
 
   RETURN (
     WITH events AS (
-      SELECT id, title, event_type, start_time, end_time, location, is_mandatory
+      -- is_mandatory is exposed to the client; not a real column on golf_events.
+      SELECT id, title, event_type, start_time, end_time, location
       FROM golf_events
       WHERE team_id = p_team_id
         AND start_time >= p_since
@@ -394,7 +395,7 @@ BEGIN
           'start_time',   e.start_time,
           'end_time',     e.end_time,
           'location',     e.location,
-          'is_mandatory', COALESCE(e.is_mandatory, FALSE),
+          'is_mandatory', FALSE,
           'rsvp_status',  (SELECT status FROM my_rsvp WHERE event_id = e.id),
           'going_count',  COALESCE(c.going_count, 0)::int,
           'maybe_count',  COALESCE(c.maybe_count, 0)::int

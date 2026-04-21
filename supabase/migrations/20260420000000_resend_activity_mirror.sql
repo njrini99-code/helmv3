@@ -115,6 +115,9 @@ CREATE INDEX IF NOT EXISTS idx_emails_sent_at
 CREATE INDEX IF NOT EXISTS idx_emails_to_gin
   ON emails USING GIN (to_addresses);
 
+-- Trigram extension must be enabled BEFORE the index that uses gin_trgm_ops.
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
 CREATE INDEX IF NOT EXISTS idx_emails_subject_trgm
   ON emails USING GIN (subject gin_trgm_ops);
 
@@ -123,9 +126,6 @@ CREATE INDEX IF NOT EXISTS idx_emails_source
 
 CREATE INDEX IF NOT EXISTS idx_emails_contact_log
   ON emails (contact_log_id) WHERE contact_log_id IS NOT NULL;
-
--- Enable trigram extension for fast subject search (no-op if already enabled)
-CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 -- ---------------------------------------------------------------------------
 -- 4. RLS on the new snapshot table
@@ -305,8 +305,10 @@ SELECT
   ),
   max(ev.raw_payload #>> '{data,subject}'),
   (array_agg(ev.raw_payload -> 'data' -> 'tags') FILTER (WHERE ev.raw_payload -> 'data' -> 'tags' IS NOT NULL))[1],
-  max(ev.contact_log_id),
-  CASE WHEN max(ev.contact_log_id) IS NOT NULL THEN 'crm' ELSE 'transactional' END,
+  -- max() has no aggregate on uuid; pull any non-null contact_log_id via array_agg
+  (array_agg(ev.contact_log_id) FILTER (WHERE ev.contact_log_id IS NOT NULL))[1],
+  CASE WHEN (array_agg(ev.contact_log_id) FILTER (WHERE ev.contact_log_id IS NOT NULL))[1] IS NOT NULL
+       THEN 'crm' ELSE 'transactional' END,
   min(ev.occurred_at) FILTER (WHERE ev.event_type = 'email.sent'),
   min(ev.occurred_at) FILTER (WHERE ev.event_type = 'email.delivered'),
   min(ev.occurred_at) FILTER (WHERE ev.event_type = 'email.delivery_delayed'),

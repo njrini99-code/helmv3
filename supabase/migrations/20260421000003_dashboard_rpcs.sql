@@ -187,7 +187,9 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
   WITH events AS (
-    SELECT id, title, event_type, start_time, end_time, location, is_mandatory
+    -- is_mandatory is exposed to the client as a boolean; not a real column
+    -- on golf_events today (derived from metadata when needed).
+    SELECT id, title, event_type, start_time, end_time, location
     FROM golf_events
     WHERE team_id = p_team_id
       AND start_time >= p_since
@@ -218,7 +220,7 @@ AS $$
         'start_time',   e.start_time,
         'end_time',     e.end_time,
         'location',     e.location,
-        'is_mandatory', coalesce(e.is_mandatory, FALSE),
+        'is_mandatory', FALSE,
         'rsvp_status',  (SELECT status FROM my_rsvp WHERE event_id = e.id),
         'going_count',  coalesce(c.going_count, 0)::int,
         'maybe_count',  coalesce(c.maybe_count, 0)::int

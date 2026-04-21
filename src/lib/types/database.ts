@@ -4686,6 +4686,8 @@ export type Database = {
           is_archived: boolean | null
           is_starred: boolean | null
           last_contacted_at: string | null
+          last_email_event_at: string | null
+          last_email_event_type: string | null
           name: string
           next_follow_up_at: string | null
           notes: string | null
@@ -4723,6 +4725,8 @@ export type Database = {
           is_archived?: boolean | null
           is_starred?: boolean | null
           last_contacted_at?: string | null
+          last_email_event_at?: string | null
+          last_email_event_type?: string | null
           name: string
           next_follow_up_at?: string | null
           notes?: string | null
@@ -4760,6 +4764,8 @@ export type Database = {
           is_archived?: boolean | null
           is_starred?: boolean | null
           last_contacted_at?: string | null
+          last_email_event_at?: string | null
+          last_email_event_type?: string | null
           name?: string
           next_follow_up_at?: string | null
           notes?: string | null
@@ -4846,47 +4852,6 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      crm_email_events: {
-        Row: {
-          contact_log_id: string | null
-          created_at: string | null
-          event_type: string
-          id: string
-          occurred_at: string
-          raw_payload: Json | null
-          recipient_email: string | null
-          resend_message_id: string
-        }
-        Insert: {
-          contact_log_id?: string | null
-          created_at?: string | null
-          event_type: string
-          id?: string
-          occurred_at: string
-          raw_payload?: Json | null
-          recipient_email?: string | null
-          resend_message_id: string
-        }
-        Update: {
-          contact_log_id?: string | null
-          created_at?: string | null
-          event_type?: string
-          id?: string
-          occurred_at?: string
-          raw_payload?: Json | null
-          recipient_email?: string | null
-          resend_message_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "crm_email_events_contact_log_id_fkey"
-            columns: ["contact_log_id"]
-            isOneToOne: false
-            referencedRelation: "crm_contact_log"
             referencedColumns: ["id"]
           },
         ]
@@ -5197,6 +5162,175 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_clicks: {
+        Row: {
+          clicked_url: string | null
+          email_event_id: string
+          id: string
+          inserted_at: string
+          ip_address: string | null
+          occurred_at: string
+          recipient_email: string
+          resend_message_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          clicked_url?: string | null
+          email_event_id: string
+          id?: string
+          inserted_at?: string
+          ip_address?: string | null
+          occurred_at: string
+          recipient_email: string
+          resend_message_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          clicked_url?: string | null
+          email_event_id?: string
+          id?: string
+          inserted_at?: string
+          ip_address?: string | null
+          occurred_at?: string
+          recipient_email?: string
+          resend_message_id?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_clicks_email_event_id_fkey"
+            columns: ["email_event_id"]
+            isOneToOne: false
+            referencedRelation: "crm_email_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_clicks_email_event_id_fkey"
+            columns: ["email_event_id"]
+            isOneToOne: false
+            referencedRelation: "email_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_events: {
+        Row: {
+          contact_log_id: string | null
+          created_at: string | null
+          event_type: string
+          id: string
+          occurred_at: string
+          raw_payload: Json | null
+          recipient_email: string | null
+          resend_message_id: string
+        }
+        Insert: {
+          contact_log_id?: string | null
+          created_at?: string | null
+          event_type: string
+          id?: string
+          occurred_at: string
+          raw_payload?: Json | null
+          recipient_email?: string | null
+          resend_message_id: string
+        }
+        Update: {
+          contact_log_id?: string | null
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          occurred_at?: string
+          raw_payload?: Json | null
+          recipient_email?: string | null
+          resend_message_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_email_events_contact_log_id_fkey"
+            columns: ["contact_log_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contact_log"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      emails: {
+        Row: {
+          bounced_at: string | null
+          click_count: number
+          clicked_at: string | null
+          complained_at: string | null
+          contact_log_id: string | null
+          delivered_at: string | null
+          delivery_delayed_at: string | null
+          first_seen_at: string
+          from_address: string | null
+          last_event_at: string | null
+          last_event_type: string | null
+          open_count: number
+          opened_at: string | null
+          resend_message_id: string
+          sent_at: string | null
+          source: string
+          subject: string | null
+          tags: Json | null
+          to_addresses: string[]
+          updated_at: string
+        }
+        Insert: {
+          bounced_at?: string | null
+          click_count?: number
+          clicked_at?: string | null
+          complained_at?: string | null
+          contact_log_id?: string | null
+          delivered_at?: string | null
+          delivery_delayed_at?: string | null
+          first_seen_at?: string
+          from_address?: string | null
+          last_event_at?: string | null
+          last_event_type?: string | null
+          open_count?: number
+          opened_at?: string | null
+          resend_message_id: string
+          sent_at?: string | null
+          source?: string
+          subject?: string | null
+          tags?: Json | null
+          to_addresses?: string[]
+          updated_at?: string
+        }
+        Update: {
+          bounced_at?: string | null
+          click_count?: number
+          clicked_at?: string | null
+          complained_at?: string | null
+          contact_log_id?: string | null
+          delivered_at?: string | null
+          delivery_delayed_at?: string | null
+          first_seen_at?: string
+          from_address?: string | null
+          last_event_at?: string | null
+          last_event_type?: string | null
+          open_count?: number
+          opened_at?: string | null
+          resend_message_id?: string
+          sent_at?: string | null
+          source?: string
+          subject?: string | null
+          tags?: Json | null
+          to_addresses?: string[]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emails_contact_log_id_fkey"
+            columns: ["contact_log_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contact_log"
             referencedColumns: ["id"]
           },
         ]
@@ -10185,7 +10319,47 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      crm_email_events: {
+        Row: {
+          contact_log_id: string | null
+          created_at: string | null
+          event_type: string | null
+          id: string | null
+          occurred_at: string | null
+          raw_payload: Json | null
+          recipient_email: string | null
+          resend_message_id: string | null
+        }
+        Insert: {
+          contact_log_id?: string | null
+          created_at?: string | null
+          event_type?: string | null
+          id?: string | null
+          occurred_at?: string | null
+          raw_payload?: Json | null
+          recipient_email?: string | null
+          resend_message_id?: string | null
+        }
+        Update: {
+          contact_log_id?: string | null
+          created_at?: string | null
+          event_type?: string | null
+          id?: string | null
+          occurred_at?: string | null
+          raw_payload?: Json | null
+          recipient_email?: string | null
+          resend_message_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_email_events_contact_log_id_fkey"
+            columns: ["contact_log_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contact_log"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       calculate_round_strokes_gained: {
@@ -10198,6 +10372,7 @@ export type Database = {
           sg_total: number
         }[]
       }
+      get_admin_dashboard_rollup: { Args: never; Returns: Json }
       get_admin_event_summary: { Args: { p_days_back?: number }; Returns: Json }
       get_api_performance_summary: {
         Args: { days_back?: number }
@@ -10240,6 +10415,10 @@ export type Database = {
           reviews_published: number
           team_count: number
         }[]
+      }
+      get_coach_today_schedule: {
+        Args: { p_team_id: string; p_today_end: string; p_today_start: string }
+        Returns: Json
       }
       get_crm_coach_email_events: {
         Args: { p_coach_id: string }
@@ -10370,6 +10549,14 @@ export type Database = {
           users_signed_in_today: number
         }[]
       }
+      get_player_hub_announcements: {
+        Args: { p_player_id: string; p_team_id: string }
+        Returns: Json
+      }
+      get_player_hub_events: {
+        Args: { p_player_id: string; p_since: string; p_team_id: string }
+        Returns: Json
+      }
       get_player_stats_summary: {
         Args: { p_player_id: string }
         Returns: {
@@ -10400,6 +10587,11 @@ export type Database = {
           rounds_played: number
           total_score: number
         }[]
+      }
+      get_resend_activity_stats: { Args: { p_window?: string }; Returns: Json }
+      get_resend_domain_breakdown: {
+        Args: { p_window?: string }
+        Returns: Json
       }
       get_team_health_dashboard: {
         Args: never
@@ -10510,6 +10702,8 @@ export type Database = {
         Returns: number
       }
       sg_normalize_lie: { Args: { p_lie: string }; Returns: string }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       submit_round_atomic: {
         Args: {
           p_approach_details?: Json
