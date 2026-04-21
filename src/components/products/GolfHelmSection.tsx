@@ -160,8 +160,11 @@ export function GolfHelmSection() {
           <div className="bg-gradient-to-b from-[#0c0c10] via-[#0e0f14] to-[#0a0a0e] rounded-2xl p-5 sm:p-8 md:p-12 overflow-hidden relative">
             {/* Subtle dot grid */}
             <div className="absolute inset-0 opacity-[0.025]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '28px 28px' }} />
-            {/* Soft warm glow top center */}
-            <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-96 h-96 bg-white/[0.02] blur-[120px] rounded-full" />
+            {/* Soft warm glow top center — static radial gradient (no blur) */}
+            <div
+              className="absolute -top-20 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full pointer-events-none"
+              style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 60%)' }}
+            />
 
             <div className="relative">
               {/* Header — centered */}
