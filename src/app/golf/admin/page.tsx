@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useCallback, lazy, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
@@ -35,7 +36,19 @@ import {
 import { OverviewTab } from './components/OverviewTab';
 const PeopleTab = lazy(() => import('./components/PeopleTab').then(m => ({ default: m.PeopleTab })));
 const SystemTab = lazy(() => import('./components/SystemTab').then(m => ({ default: m.SystemTab })));
-const BusinessIntelligenceTab = lazy(() => import('./components/BusinessIntelligenceTab').then(m => ({ default: m.BusinessIntelligenceTab })));
+// Recharts is ~100KB gz + the BI tab body is 1.3k lines. Use next/dynamic
+// so the chunk (a) stays off the initial paint, (b) renders its own loading
+// shim instead of the generic TabLoadingSkeleton, and (c) never evaluates
+// Recharts on the server.
+const BusinessIntelligenceTab = dynamic(
+  () => import('./components/BusinessIntelligenceTab').then(m => ({ default: m.BusinessIntelligenceTab })),
+  {
+    loading: () => (
+      <div className="p-8 text-warm-500">Loading analytics…</div>
+    ),
+    ssr: false,
+  },
+);
 const TracerTab = lazy(() => import('./components/TracerTab').then(m => ({ default: m.TracerTab })));
 
 // Real-time components
