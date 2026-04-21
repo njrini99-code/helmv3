@@ -13,8 +13,11 @@
 --   * ownership assertion on get_coach_today_schedule
 --   * ownership assertion on get_player_hub_announcements / _events
 --
--- Per the codebase convention (see 20260311100000_rpc_resilient_detail_inserts.sql),
--- we use `auth.uid()` lookups against golf_coaches / golf_players / users.
+-- Ownership join pattern (canonical — see 20260328000000_fix_calendar_notifications_rls.sql):
+--   Coach ↔ team:   golf_coaches.organization_id == golf_teams.organization_id
+--                   (no team_id column on golf_coaches — DO NOT use it)
+--   Player ↔ team:  golf_team_members(player_id, team_id, status='active')
+--                   (no team_id column on golf_players — DO NOT use it)
 --
 -- IMPORTANT: the function bodies below PRESERVE the semantics of 00001 and
 -- 00003 verbatim (same signatures, same CTEs, same return shapes). Only a
@@ -153,9 +156,11 @@ SET search_path = public
 AS $$
 BEGIN
   IF NOT EXISTS (
-    SELECT 1 FROM golf_coaches
-    WHERE user_id = auth.uid()
-      AND team_id = p_team_id
+    SELECT 1
+    FROM golf_coaches gc
+    JOIN golf_teams   gt ON gt.organization_id = gc.organization_id
+    WHERE gc.user_id = auth.uid()
+      AND gt.id = p_team_id
   ) THEN
     RAISE EXCEPTION 'Forbidden' USING ERRCODE = '42501';
   END IF;
@@ -217,15 +222,20 @@ AS $$
 BEGIN
   IF NOT (
     EXISTS (
-      SELECT 1 FROM golf_players
-      WHERE id = p_player_id
-        AND team_id = p_team_id
-        AND user_id = auth.uid()
+      SELECT 1
+      FROM golf_players       gp
+      JOIN golf_team_members  gtm ON gtm.player_id = gp.id
+      WHERE gp.id = p_player_id
+        AND gp.user_id = auth.uid()
+        AND gtm.team_id = p_team_id
+        AND gtm.status = 'active'
     )
     OR EXISTS (
-      SELECT 1 FROM golf_coaches
-      WHERE user_id = auth.uid()
-        AND team_id = p_team_id
+      SELECT 1
+      FROM golf_coaches gc
+      JOIN golf_teams   gt ON gt.organization_id = gc.organization_id
+      WHERE gc.user_id = auth.uid()
+        AND gt.id = p_team_id
     )
   ) THEN
     RAISE EXCEPTION 'Forbidden' USING ERRCODE = '42501';
@@ -332,15 +342,20 @@ AS $$
 BEGIN
   IF NOT (
     EXISTS (
-      SELECT 1 FROM golf_players
-      WHERE id = p_player_id
-        AND team_id = p_team_id
-        AND user_id = auth.uid()
+      SELECT 1
+      FROM golf_players       gp
+      JOIN golf_team_members  gtm ON gtm.player_id = gp.id
+      WHERE gp.id = p_player_id
+        AND gp.user_id = auth.uid()
+        AND gtm.team_id = p_team_id
+        AND gtm.status = 'active'
     )
     OR EXISTS (
-      SELECT 1 FROM golf_coaches
-      WHERE user_id = auth.uid()
-        AND team_id = p_team_id
+      SELECT 1
+      FROM golf_coaches gc
+      JOIN golf_teams   gt ON gt.organization_id = gc.organization_id
+      WHERE gc.user_id = auth.uid()
+        AND gt.id = p_team_id
     )
   ) THEN
     RAISE EXCEPTION 'Forbidden' USING ERRCODE = '42501';
