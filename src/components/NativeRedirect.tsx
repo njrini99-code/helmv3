@@ -26,27 +26,37 @@ export function NativeRedirect({ to }: { to: string }) {
     let cancelled = false;
     const supabase = createClient();
 
+    // Always fall back to `to` on any error so a slow-cold-start or offline
+    // native launch still lands on the sign-in screen instead of stranding
+    // the user on the marketing landing page. The old one-liner redirect
+    // couldn't fail; this async version must preserve that guarantee.
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (cancelled) return;
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (cancelled) return;
 
-      if (!user) {
-        // No session → the caller's preferred destination (typically login).
-        router.replace(to);
-        return;
+        if (!user) {
+          router.replace(to);
+          return;
+        }
+
+        // Authed → skip the login flash. Look up role for admin routing.
+        const { data: userRow } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (cancelled) return;
+
+        const isAdmin = (userRow?.role as string | undefined) === 'admin';
+        const dest = isAdmin ? '/golf/admin' : '/golf/dashboard';
+        router.replace(`/golf/welcome?next=${encodeURIComponent(dest)}`);
+      } catch {
+        // Network timeout, AbortError, or unexpected Supabase failure —
+        // fall back to the caller's default so the native shell is never
+        // stuck on the marketing page.
+        if (!cancelled) router.replace(to);
       }
-
-      // Authed → skip the login flash. Look up role for admin routing.
-      const { data: userRow } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', user.id)
-        .maybeSingle();
-      if (cancelled) return;
-
-      const isAdmin = (userRow?.role as string | undefined) === 'admin';
-      const dest = isAdmin ? '/golf/admin' : '/golf/dashboard';
-      router.replace(`/golf/welcome?next=${encodeURIComponent(dest)}`);
     })();
 
     return () => {
