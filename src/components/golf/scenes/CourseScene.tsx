@@ -18,7 +18,6 @@ const Tree = ({ x, y, scale = 1, sway = 0 }: { x: number; y: number; scale?: num
         transformOrigin: '50% 100%',
         animation: `helmSceneTreeSway ${7 + sway}s ease-in-out infinite`,
         animationDelay: `${sway * 0.5}s`,
-        willChange: 'transform',
       }}
     >
       <path
@@ -74,7 +73,6 @@ export function CourseScene({ idSuffix = 'course', className }: CourseSceneProps
           background: `radial-gradient(circle, ${P.glow} 0%, transparent 70%)`,
           animation: 'helmSceneSunPulse 8s ease-in-out infinite',
           pointerEvents: 'none',
-          willChange: 'transform, opacity',
         }}
       />
       <svg

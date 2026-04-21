@@ -10,7 +10,9 @@
  *   - no `mix-blend-mode` on the grain (forces software composite on Safari)
  *   - grain is static (not animated) — opacity 0.05 is imperceptible at 1Hz
  *   - `numOctaves=1`, `baseFrequency=1.2` halves the feTurbulence cost
- *   - animated transforms carry `willChange` hints for layer promotion
+ *   - `willChange` is only set on the fastest continuous motion (flag flutter);
+ *     slower decorative animations let WebKit auto-promote to avoid holding
+ *     permanent GPU layers for idle elements (WKWebView memory pressure).
  */
 
 export interface CoastalSceneProps {
@@ -117,7 +119,7 @@ export function CoastalScene({ className, idSuffix = 'coastal' }: CoastalScenePr
         <g
           data-scene-animated
           opacity=".55"
-          style={{ animation: 'helmSceneWaveShift 9s ease-in-out infinite', willChange: 'transform' }}
+          style={{ animation: 'helmSceneWaveShift 9s ease-in-out infinite' }}
         >
           <path d="M 40 560 Q 200 554, 360 562 Q 520 570, 680 562 Q 840 554, 1000 562 Q 1160 570, 1320 562 Q 1480 554, 1640 562" stroke="#DFEFF1" strokeWidth="1.4" fill="none" />
           <path d="M 10 610 Q 170 602, 330 612 Q 490 620, 650 610 Q 810 602, 970 612 Q 1130 622, 1290 612 Q 1450 602, 1610 614" stroke="#D0E3E5" strokeWidth="1.2" fill="none" opacity=".7" />
@@ -244,7 +246,6 @@ export function CoastalScene({ className, idSuffix = 'coastal' }: CoastalScenePr
               transformBox: 'fill-box',
               transformOrigin: '50% 100%',
               animation: 'helmSceneCypressSway 9s ease-in-out infinite',
-              willChange: 'transform',
             }}
           >
             <path d="M -4 22 Q -2 52, -6 84 L 6 84 Q 2 52, 4 22 Z" fill="#6C513C" opacity=".9" />
@@ -266,14 +267,14 @@ export function CoastalScene({ className, idSuffix = 'coastal' }: CoastalScenePr
         <g opacity=".35">
           <g
             data-scene-animated
-            style={{ animation: 'helmSceneGullDrift 40s linear infinite', willChange: 'transform' }}
+            style={{ animation: 'helmSceneGullDrift 40s linear infinite' }}
           >
             <path d="M 240 280 q 10 -8 20 0 q 10 -8 20 0" stroke="#3E4848" strokeWidth="1.8" fill="none" strokeLinecap="round" />
             <path d="M 340 326 q 8 -6 16 0 q 8 -6 16 0" stroke="#3E4848" strokeWidth="1.5" fill="none" strokeLinecap="round" />
           </g>
           <g
             data-scene-animated
-            style={{ animation: 'helmSceneGullDrift 55s linear infinite reverse', willChange: 'transform' }}
+            style={{ animation: 'helmSceneGullDrift 55s linear infinite reverse' }}
           >
             <path d="M 1020 240 q 9 -7 18 0 q 9 -7 18 0" stroke="#3E4848" strokeWidth="1.6" fill="none" strokeLinecap="round" />
           </g>
